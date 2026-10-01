@@ -72,6 +72,19 @@ impl PersistedIndeterminatePhysicalMutation {
 }
 
 impl PersistedPhysicalMutationFate {
+    pub(in crate::physical_runtime) fn indeterminate_wal_binding(
+        &self,
+    ) -> Option<&PersistedPhysicalMutationAttemptBinding> {
+        let Self::Indeterminate(indeterminate) = self else {
+            return None;
+        };
+        let PersistedIndeterminatePhysicalMutationBasis::WalBound(binding) = &indeterminate.basis
+        else {
+            return None;
+        };
+        Some(binding)
+    }
+
     pub(in crate::physical_runtime) const fn proven_no_effect(
         terminal: ProvenNoEffectPhysicalMutation,
     ) -> Self {
@@ -102,12 +115,14 @@ impl PersistedPhysicalMutationFate {
             Self::Indeterminate(fate) => fate.fate.request_fingerprint() == fingerprint,
         };
         matches.then(|| match self {
-            Self::ProvenNoEffect(fate) => DuplicatePhysicalMutationTerminal::ProvenNoEffect(*fate),
+            Self::ProvenNoEffect(fate) => {
+                DuplicatePhysicalMutationTerminal::ProvenNoEffect(fate.clone())
+            }
             Self::Completed(fate) => {
                 DuplicatePhysicalMutationTerminal::Completed(Arc::clone(&fate.fact))
             }
             Self::Indeterminate(fate) => {
-                DuplicatePhysicalMutationTerminal::Indeterminate(fate.fate)
+                DuplicatePhysicalMutationTerminal::Indeterminate(fate.fate.clone())
             }
         })
     }
@@ -130,11 +145,11 @@ impl PersistedPhysicalMutationFate {
         lease.is_expired_at(generation) && last_compacted.is_some()
     }
 
-    pub(in crate::physical_runtime) const fn as_proven_no_effect(
+    pub(in crate::physical_runtime) fn as_proven_no_effect(
         &self,
     ) -> Option<ProvenNoEffectPhysicalMutation> {
         match self {
-            Self::ProvenNoEffect(terminal) => Some(*terminal),
+            Self::ProvenNoEffect(terminal) => Some(terminal.clone()),
             Self::Completed(_) | Self::Indeterminate(_) => None,
         }
     }
@@ -332,7 +347,7 @@ fn write_field(target: &mut Vec<u8>, field: &[u8]) {
 impl PhysicalMutationBindingBasis {
     pub(in crate::physical_runtime) fn matches_terminal(
         &self,
-        terminal: IndeterminatePhysicalMutation,
+        terminal: &IndeterminatePhysicalMutation,
     ) -> bool {
         self.key().identity() == terminal.idempotency_identity()
             && self.fingerprint() == terminal.request_fingerprint()

@@ -18,6 +18,12 @@ pub enum PhysicalRecoveryWalIntegrityObservationOutcome {
 }
 
 impl PhysicalRecoveryIntegrityObservations {
+    pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {
+        u64::try_from(self.wal.capacity())
+            .ok()?
+            .checked_mul(std::mem::size_of::<PhysicalRecoveryWalIntegrityObservation>() as u64)
+    }
+
     pub(crate) const fn new(wal: Vec<PhysicalRecoveryWalIntegrityObservation>) -> Self {
         Self { wal }
     }

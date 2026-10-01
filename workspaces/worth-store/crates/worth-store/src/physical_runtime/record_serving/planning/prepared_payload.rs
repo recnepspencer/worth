@@ -19,18 +19,25 @@ use super::super::{
         append_observation::PublicationObservation, segment_publication::SegmentDataPlan,
         CandidateDataArtifact,
     },
-    RecordAppendError,
+    RecordAppendDenial, RecordAppendError,
 };
 
 pub(in crate::physical_runtime::record_serving) struct PreparedRecordPayloadPlan {
+    pub(in crate::physical_runtime::record_serving) derived_updates:
+        super::prepared_root_projection::DerivedRootUpdates,
+    pub(in crate::physical_runtime::record_serving) release_head_effect:
+        Option<worth_store_physical_format::PersistedReleaseCustodyHeadEffectV1>,
     pub(in crate::physical_runtime::record_serving) arena_reservations:
         Vec<super::super::arena::ArenaReservation>,
     pub(in crate::physical_runtime::record_serving) source_root: DurablePhysicalRootManifest,
+    pub(in crate::physical_runtime::record_serving) blob_reuse_source_fence: bool,
     pub(in crate::physical_runtime::record_serving) manifest_capacity_transition:
         super::super::publication::PhysicalManifestCapacityTransition,
     pub(in crate::physical_runtime::record_serving) placement:
         super::super::AdmittedRecordPlacementPolicy,
     pub(in crate::physical_runtime::record_serving) records: Vec<PersistedRecordIdentity>,
+    pub(in crate::physical_runtime::record_serving) drop_records:
+        std::collections::BTreeSet<PersistedRecordIdentity>,
     pub(in crate::physical_runtime::record_serving) data: Vec<CandidateDataArtifact>,
     pub(in crate::physical_runtime::record_serving) payload_manifests:
         Vec<(worth_store_physical_format::RecordFrameCoordinate, Vec<u8>)>,
@@ -64,7 +71,15 @@ pub(in crate::physical_runtime::record_serving) fn prepare_payload_plan(
         placement,
         residency,
         arena_owner,
+        released_control_placement,
     } = context;
+    if released_control_placement.is_some()
+        && (!classified.inline.is_empty() || classified.extents.len() != 1)
+    {
+        return Err(RecordAppendError::Denied(
+            RecordAppendDenial::ReclaimFenceUnavailable,
+        ));
+    }
     let mut data = Vec::new();
     let mut payload_manifests = Vec::new();
     let mut placements = BTreeMap::new();
@@ -89,6 +104,7 @@ pub(in crate::physical_runtime::record_serving) fn prepare_payload_plan(
         frontier,
         &arena_owner,
         classified.extents,
+        released_control_placement,
         &mut data,
         &mut payload_manifests,
         &mut placements,
@@ -111,12 +127,16 @@ pub(in crate::physical_runtime::record_serving) fn prepare_payload_plan(
         manifest_bytes_read: 0,
     };
     Ok(PreparedRecordPayloadPlan {
+        blob_reuse_source_fence: false,
+        derived_updates: Default::default(),
+        release_head_effect: None,
         arena_reservations,
         source_root: current_root.clone(),
         manifest_capacity_transition:
             super::super::publication::PhysicalManifestCapacityTransition::PreserveCurrent,
         placement,
         records: classified.identities,
+        drop_records: Default::default(),
         data,
         payload_manifests,
         placements,

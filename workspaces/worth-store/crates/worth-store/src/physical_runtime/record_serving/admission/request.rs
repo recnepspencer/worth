@@ -59,6 +59,8 @@ impl PhysicalRecordInitialization {
 }
 
 pub struct PhysicalRecordOpen {
+    pub(in crate::physical_runtime::record_serving) recovered_checkpoint_custody:
+        Option<crate::physical_runtime::RecoveredPhysicalCheckpointCustody>,
     pub(in crate::physical_runtime::record_serving) read_protection:
         crate::physical_runtime::PhysicalReadProtectionPolicy,
     pub(in crate::physical_runtime::record_serving) format: AdmittedPhysicalRecordFormat,
@@ -77,6 +79,7 @@ impl PhysicalRecordOpen {
         durability: crate::physical_runtime::AdmittedPhysicalDurabilityPolicy,
     ) -> Self {
         Self {
+            recovered_checkpoint_custody: None,
             read_protection: crate::physical_runtime::PhysicalReadProtectionPolicy::default(),
             format,
             access,
@@ -91,6 +94,14 @@ impl PhysicalRecordOpen {
         policy: AdmittedPhysicalRecordResidencyPolicy,
     ) -> Self {
         self.residency = policy;
+        self
+    }
+
+    pub fn with_recovered_checkpoint_custody(
+        mut self,
+        custody: crate::physical_runtime::RecoveredPhysicalCheckpointCustody,
+    ) -> Self {
+        self.recovered_checkpoint_custody = Some(custody);
         self
     }
 

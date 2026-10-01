@@ -7,9 +7,17 @@ mod tests;
 use crate::{
     DurableExtentManifest, DurableExtentRecordPlacement, ExtentArenaFrameLayout, ExtentArenaRange,
     PhysicalGeneration, PhysicalGenerationAuthority, PhysicalRecordFormatDeclaration,
+    SelectedRecordRouteMetadata,
 };
 
 pub const EXTENT_COPY_DOMAIN: &[u8] = b"store.physical.extent-copy.v1";
+pub const EXTENT_COPY_V2_DOMAIN: &[u8] = b"store.physical.extent-copy.v2";
+
+/// Classifies either durable extent-copy wire generation before a caller
+/// chooses the bounded version-aware decoder. This is not validity proof.
+pub fn payload_is_extent_copy_any(bytes: &[u8]) -> bool {
+    bytes.starts_with(EXTENT_COPY_DOMAIN) || bytes.starts_with(EXTENT_COPY_V2_DOMAIN)
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PhysicalExtentCopyIntent {
@@ -65,6 +73,31 @@ impl PhysicalExtentCopyIntent {
         alignment: u64,
         source_digest: [u8; 32],
     ) -> Option<Self> {
+        Self::new_with_target_tier(
+            format,
+            operation,
+            source_root,
+            source,
+            destination,
+            alignment,
+            source_digest,
+            source.tier_class(),
+        )
+    }
+
+    /// Encodes a requested destination tier; the Store owner must authenticate
+    /// the selected source and durable arena epoch before effectful reservation.
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_target_tier(
+        format: PhysicalRecordFormatDeclaration,
+        operation: [u8; 32],
+        source_root: u64,
+        source: DurableExtentRecordPlacement,
+        destination: ExtentArenaRange,
+        alignment: u64,
+        source_digest: [u8; 32],
+        target_tier: crate::PhysicalTierClass,
+    ) -> Option<Self> {
         if operation == [0; 32]
             || source_root == 0
             || source.arena_range().arena() == destination.arena()
@@ -87,11 +120,14 @@ impl PhysicalExtentCopyIntent {
             .with_extent_generation(
                 PhysicalGeneration::from_raw(source.extent_generation().checked_add(1)?).ok()?,
             );
-        let destination = DurableExtentRecordPlacement::new(
+        let destination_metadata =
+            SelectedRecordRouteMetadata::new(source.content_class(), target_tier)?;
+        let destination = DurableExtentRecordPlacement::new_selected(
             source.record(),
             cell,
             source.payload_bytes(),
             destination,
+            destination_metadata,
         )?;
         let value = Self {
             operation,

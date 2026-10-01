@@ -361,6 +361,15 @@ payload frames occupy that one aligned arena range; a chunk's
 manifest before its chunks and still holds at most one current resident frame,
 regardless of how many other extents share the arena file.
 
+A record-read chunk is a borrowed transfer view, not a persisted blob chunk.
+Native `BlobIngestSession` and `BlobReadSession` are Store-owned consumers of
+the Blob allocation scope and these ordinary record paths. A blob chunk may
+span several record frames, while a small caller transfer may reuse one
+authenticated blob chunk without another physical read. The mechanism crate
+does not issue or own Store allocations. See
+[Physical Blobs And Chunk Trees](physical-blobs-and-chunk-trees.md) for the
+ingest, publication, protected-range, and unfinished-custody contract.
+
 The chunk mutably borrows its session. The compiler therefore rejects
 advancing, copying from, moving, or dropping the session while either the
 chunk or its borrowed byte slice remains live. The chunk and its basis have no

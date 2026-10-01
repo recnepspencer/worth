@@ -5,7 +5,8 @@ use worth_store_io_scheduler::foreground_reservation::{
 use crate::{AdmittedBlobPlacement, LifecycleReceipt};
 
 use super::{
-    BlobPlacementMovementColdOutcome, BlobPlacementMovementFreshness, BlobPlacementMovementReadHold,
+    BlobPlacementMovementColdOutcome, BlobPlacementMovementFreshness,
+    BlobPlacementMovementReadPlanBasis,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -19,7 +20,7 @@ pub struct BlobPlacementMovementRequest {
     lifecycle: LifecycleReceipt,
     source: AdmittedBlobPlacement,
     target: AdmittedBlobPlacement,
-    read_hold: Option<BlobPlacementMovementReadHold>,
+    read_plan: Option<BlobPlacementMovementReadPlanBasis>,
     foreground_reservation: BlobPlacementMovementForegroundReservation,
     cold_outcome: BlobPlacementMovementColdOutcome,
     freshness: BlobPlacementMovementFreshness,
@@ -30,7 +31,7 @@ impl BlobPlacementMovementRequest {
         lifecycle: LifecycleReceipt,
         source: AdmittedBlobPlacement,
         target: AdmittedBlobPlacement,
-        read_hold: BlobPlacementMovementReadHold,
+        read_plan: BlobPlacementMovementReadPlanBasis,
         foreground_reservation: BlobPlacementMovementForegroundReservation,
         cold_outcome: BlobPlacementMovementColdOutcome,
         freshness: BlobPlacementMovementFreshness,
@@ -39,14 +40,14 @@ impl BlobPlacementMovementRequest {
             lifecycle,
             source,
             target,
-            read_hold: Some(read_hold),
+            read_plan: Some(read_plan),
             foreground_reservation,
             cold_outcome,
             freshness,
         }
     }
 
-    pub const fn without_movement_read_hold(
+    pub const fn without_movement_read_plan(
         lifecycle: LifecycleReceipt,
         source: AdmittedBlobPlacement,
         target: AdmittedBlobPlacement,
@@ -58,7 +59,7 @@ impl BlobPlacementMovementRequest {
             lifecycle,
             source,
             target,
-            read_hold: None,
+            read_plan: None,
             foreground_reservation,
             cold_outcome,
             freshness,
@@ -77,8 +78,8 @@ impl BlobPlacementMovementRequest {
         &self.target
     }
 
-    pub(crate) const fn read_hold(&self) -> Option<BlobPlacementMovementReadHold> {
-        self.read_hold
+    pub(crate) const fn read_plan(&self) -> Option<BlobPlacementMovementReadPlanBasis> {
+        self.read_plan
     }
 
     pub(crate) const fn foreground_reservation(

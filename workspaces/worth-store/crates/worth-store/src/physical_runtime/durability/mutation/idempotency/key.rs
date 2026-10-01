@@ -21,6 +21,12 @@ impl PhysicalMutationIdempotencyMaterial {
 pub struct PhysicalMutationIdempotencyKeyIdentity([u8; 32]);
 
 impl PhysicalMutationIdempotencyKeyIdentity {
+    pub(in crate::physical_runtime::durability::mutation::idempotency) const fn from_observed_bytes(
+        bytes: [u8; 32],
+    ) -> Self {
+        Self(bytes)
+    }
+
     pub const fn bytes(self) -> [u8; 32] {
         self.0
     }

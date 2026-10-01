@@ -61,7 +61,7 @@ pub fn root_leaf() -> PhysicalRootRoutingBlock {
     let cell = PhysicalGenerationAuthority::for_canonical_physical_format()
         .record_extent_cell(extent)
         .with_extent_generation(generation);
-    let placement = DurableExtentRecordPlacement::new(
+    let placement = DurableExtentRecordPlacement::legacy_unknown(
         record,
         cell,
         23,

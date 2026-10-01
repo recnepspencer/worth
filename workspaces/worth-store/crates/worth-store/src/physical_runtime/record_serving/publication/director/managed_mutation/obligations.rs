@@ -1,15 +1,20 @@
 use crate::physical_runtime::durability::{PendingPublicationLease, PhysicalCurrentRootOwner};
-use crate::physical_runtime::PhysicalMutationTerminalFact;
+use crate::physical_runtime::{PhysicalMutationIdentity, PhysicalMutationTerminalFact};
 
 pub(super) struct RewriteGrowthGuard<'a> {
     owner: &'a PhysicalCurrentRootOwner,
+    identity: PhysicalMutationIdentity,
     committed: bool,
 }
 
 impl<'a> RewriteGrowthGuard<'a> {
-    pub(super) fn new(owner: &'a PhysicalCurrentRootOwner) -> Self {
+    pub(super) fn new(
+        owner: &'a PhysicalCurrentRootOwner,
+        identity: PhysicalMutationIdentity,
+    ) -> Self {
         Self {
             owner,
+            identity,
             committed: false,
         }
     }
@@ -18,7 +23,8 @@ impl<'a> RewriteGrowthGuard<'a> {
         if self.committed {
             return;
         }
-        self.owner.commit_rewrite_candidate();
+        // Common namespace-durable advance settled exactly this member's
+        // candidate and displaced-source obligations.
         self.committed = true;
     }
 
@@ -26,7 +32,8 @@ impl<'a> RewriteGrowthGuard<'a> {
         if self.committed {
             return;
         }
-        self.owner.retain_unresolved_rewrite_candidate();
+        self.owner
+            .retain_unresolved_rewrite_candidate(self.identity);
         self.committed = true;
     }
 }
@@ -34,7 +41,7 @@ impl<'a> RewriteGrowthGuard<'a> {
 impl Drop for RewriteGrowthGuard<'_> {
     fn drop(&mut self) {
         if !self.committed {
-            self.owner.release_rewrite_candidate();
+            self.owner.release_rewrite_candidate(self.identity);
         }
     }
 }

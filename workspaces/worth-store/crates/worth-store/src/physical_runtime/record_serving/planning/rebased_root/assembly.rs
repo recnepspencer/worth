@@ -93,5 +93,6 @@ pub(super) fn assemble_successor(
             (coordinate, bytes)
         })
         .collect();
+    publication.routing_metadata_bytes = publication.retained_metadata_bytes();
     (publication, projected.free_space)
 }

@@ -90,3 +90,12 @@ exact_scope_allocation!(ScrubPhysicalAllocation, ScrubScope);
 exact_scope_allocation!(MaintenancePhysicalAllocation, MaintenanceScope);
 exact_scope_allocation!(VerificationPhysicalAllocation, VerificationScope);
 exact_scope_allocation!(BlobPhysicalAllocation, BlobScope);
+exact_scope_allocation!(LayoutPhysicalAllocation, LayoutReadScope);
+
+impl BlobPhysicalAllocation<'_> {
+    pub(in crate::physical_runtime::record_serving) fn operation_grant(
+        &self,
+    ) -> &OperationAllocationGrant {
+        &self.allocation.grant
+    }
+}

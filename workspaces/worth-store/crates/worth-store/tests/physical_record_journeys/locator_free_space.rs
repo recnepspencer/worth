@@ -1,12 +1,10 @@
-use worth_proof::{NonEmpty, TransitionOutcome};
+use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
     ExternalPhysicalRecordLocator, PhysicalLocatorReadmissionDenial,
     PhysicalManifestCapacityTransition, PhysicalMutationIdempotencyMaterial,
-    PhysicalMutationPreparationDenial, PhysicalMutationPreparationSuccess,
-    PhysicalRecordInitialization, PhysicalRecordOpen, PhysicalWalGroupAppendFailureCause,
-    PhysicalWalGroupAppendOutcome, PhysicalWalReservationDenial, PhysicalWorkEffectFate,
-    RecordAppendBatch, RecordAppendDenial, RecordByteLimit, RecordReadDenial, RecordReadLimits,
-    RecordServingTerminalPosture,
+    PhysicalMutationPreparationDenial, PhysicalRecordInitialization, PhysicalRecordOpen,
+    PhysicalWorkEffectFate, RecordAppendBatch, RecordAppendDenial, RecordBootstrapDenial,
+    RecordByteLimit, RecordReadDenial, RecordReadLimits, RecordServingTerminalPosture,
 };
 use worth_store_physical_backend::MediaOperationRole;
 use worth_store_physical_format::{
@@ -37,7 +35,9 @@ fn locator_readmission_and_free_space_truth_survive_reopen() {
     let free = super::manifest_fixture::decode_free_space_tree(&root, 2, format.declaration(), 128);
     assert_eq!(free.header.next_segment(), 2);
     assert_eq!(free.header.next_page(), 2);
-    assert_eq!(free.entries.len(), 2);
+    assert_eq!(free.entries.len(), 1);
+    assert_eq!(free.entries[0].class(), RecordAllocationClass::InlinePage);
+    assert!(free.entries[0].arena_free_range().is_none());
     let reopened = success(open_record_store!(media(&root), |durability| {
         PhysicalRecordOpen::new(format, access, durability)
     }));
@@ -116,16 +116,23 @@ fn locator_readmission_damage_revokes_the_shared_serving_authority() {
     );
     serving.close();
 
+    let reopened = success(open_record_store!(media(&root), |durability| {
+        PhysicalRecordOpen::new(format, access, durability)
+    }));
+
     let block_path =
         root.join("families/records/roots/root-0000000000000002-block-0000000000000001.manifest");
     let mut damaged = std::fs::read(&block_path).unwrap();
     let final_byte = damaged.len() - 1;
     damaged[final_byte] ^= 1;
     std::fs::write(&block_path, damaged).unwrap();
-
-    let reopened = success(open_record_store!(media(&root), |durability| {
-        PhysicalRecordOpen::new(format, access, durability)
-    }));
+    assert!(
+        reopened
+            .certification_physical_residency()
+            .drain_unpinned_clean_frames()
+            > 0,
+        "the damaged route must be read from media, not a pre-damage resident frame"
+    );
     let invalidations_before = reopened
         .physical_signal_observation()
         .unwrap()
@@ -169,22 +176,7 @@ fn locator_readmission_damage_revokes_the_shared_serving_authority() {
         RecordServingTerminalPosture::InspectionRequired
     );
 
-    let reopened = success(open_record_store!(media(&root), |durability| {
-        PhysicalRecordOpen::new(format, access, durability)
-    }));
-    assert_eq!(
-        reopened
-            .records()
-            .expect("read protection admission")
-            .readmit_locator(locator)
-            .into_result(),
-        Err(PhysicalLocatorReadmissionDenial::CurrentRootUnavailable)
-    );
-    assert_mutation_fenced(&reopened, placement);
-    assert_eq!(
-        reopened.close().records().posture(),
-        RecordServingTerminalPosture::InspectionRequired
-    );
+    assert_current_root_damage_denies_bootstrap(&root, format, access);
 }
 
 fn assert_mutation_fenced(
@@ -207,7 +199,7 @@ fn assert_mutation_fenced(
 }
 
 #[test]
-fn validly_framed_extra_free_space_claim_is_not_accepted_as_truth() {
+fn unreferenced_extra_free_space_block_denies_bootstrap() {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join("store");
     let (format, placement, access) = dense_configuration(4);
@@ -228,15 +220,11 @@ fn validly_framed_extra_free_space_claim_is_not_accepted_as_truth() {
     entries.sort_by_key(|entry| worth_store_physical_format::FreeSpaceKey::from(*entry));
     overwrite_free_space_root_block(&root, format.declaration(), &free.header, entries);
 
-    let reopened = success(open_record_store!(media(&root), |durability| {
-        PhysicalRecordOpen::new(format, access, durability)
-    }));
-    assert_layout_damage_denies_data_planning(&reopened, placement, 210);
-    reopened.close();
+    assert_current_root_damage_denies_bootstrap(&root, format, access);
 }
 
 #[test]
-fn altered_free_range_and_generation_cannot_be_readmitted_as_authority() {
+fn unreferenced_free_range_or_generation_edit_denies_bootstrap() {
     for (case, count_delta, generation_delta) in [("range", 1, 0), ("generation", 0, 1)] {
         let parent = tempfile::tempdir().unwrap();
         let root = parent.path().join(case);
@@ -269,69 +257,24 @@ fn altered_free_range_and_generation_cannot_be_readmitted_as_authority() {
         .unwrap();
         overwrite_free_space_root_block(&root, format.declaration(), &free.header, entries);
 
-        let reopened = success(open_record_store!(media(&root), |durability| {
-            PhysicalRecordOpen::new(format, access, durability)
-        }));
-        assert_layout_damage_denies_data_planning(&reopened, placement, 211);
-        reopened.close();
+        assert_current_root_damage_denies_bootstrap(&root, format, access);
     }
 }
 
-fn assert_layout_damage_denies_data_planning(
-    serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
-    placement: worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
-    material: u8,
+fn assert_current_root_damage_denies_bootstrap(
+    root: &std::path::Path,
+    format: worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    access: worth_store::physical_runtime::AdmittedRecordAccessPolicy,
 ) {
-    let submission = serving.certification_record_submission();
-    let prepared = match durable_publication::prepare_single(
-        &submission,
-        placement,
-        PhysicalManifestCapacityTransition::PreserveCurrent,
-        PhysicalMutationIdempotencyMaterial::new([material; 32]),
-        RecordAppendBatch::try_from_iter([b"tree damage".as_slice()]).unwrap(),
-    )
-    .into_raw()
-    {
-        TransitionOutcome::Success(PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
-            prepared
-        }
-        _ => panic!("free-space corruption is discovered during canonical data planning"),
+    let outcome = open_record_store!(media(root), |durability| PhysicalRecordOpen::new(
+        format, access, durability
+    ))
+    .into_raw();
+    let TransitionOutcome::Denied(denial) = outcome else {
+        panic!("an unreferenced free-space or routing block must deny Store bootstrap");
     };
-    let before = serving.media_counters();
-    assert!(matches!(
-        submission.append_prepared_wal_group(NonEmpty::new(prepared, Vec::new())),
-        PhysicalWalGroupAppendOutcome::NotAdmitted {
-            cause: PhysicalWalGroupAppendFailureCause::Reservation(
-                PhysicalWalReservationDenial::DataPlanning(
-                    RecordAppendDenial::PublishedLayoutDamaged
-                )
-            ),
-            ..
-        }
-    ));
-    let after = serving.media_counters();
-    for role in [
-        MediaOperationRole::CreateDirectory,
-        MediaOperationRole::CreateNew,
-        MediaOperationRole::PositionedWrite,
-        MediaOperationRole::Append,
-        MediaOperationRole::Truncate,
-        MediaOperationRole::Allocate,
-        MediaOperationRole::SynchronizeFileData,
-        MediaOperationRole::SynchronizeFileState,
-        MediaOperationRole::SynchronizeDirectoryPublication,
-        MediaOperationRole::SynchronizeStoreRootPublication,
-        MediaOperationRole::SynchronizeRootParentPublication,
-        MediaOperationRole::AtomicReplace,
-        MediaOperationRole::Delete,
-    ] {
-        assert_eq!(
-            after.attempts_for(role),
-            before.attempts_for(role),
-            "dishonest free-space truth must deny before {role:?}"
-        );
-    }
-    assert_mutation_fenced(serving, placement);
+    assert_eq!(denial.reason(), RecordBootstrapDenial::CurrentRootDamaged);
+    denial.into_runtime().close();
 }
 
 fn overwrite_free_space_root_block(

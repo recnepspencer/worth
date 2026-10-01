@@ -7,7 +7,7 @@ fn record_count_is_rejected_before_record_vector_allocation() {
     field(&mut encoded, REDO_DOMAIN);
     encoded.extend_from_slice(&2_u64.to_le_bytes());
     assert_eq!(
-        decode_physical_redo_records(&encoded, range, 1),
+        decode_physical_redo_records(&encoded, range, 1, test_format()),
         Err(PhysicalRedoPlanningDenial::TargetLimit)
     );
 }
@@ -18,10 +18,21 @@ fn new_one_over_distinct_target_is_rejected_before_retention() {
     let encoded = encoded_record(&[(1, [1; 32]), (2, [2; 32])]);
     let mut distinct = BTreeSet::new();
     assert_eq!(
-        decode_physical_redo_records_with_distinct(&encoded, range, 2, &mut distinct, 1),
+        decode_physical_redo_records_with_distinct(
+            &encoded,
+            range,
+            2,
+            &mut distinct,
+            1,
+            test_format(),
+        ),
         Err(PhysicalRedoPlanningDenial::DistinctTargetLimit)
     );
     assert_eq!(distinct.len(), 1);
+}
+
+fn test_format() -> PhysicalRecordFormatDeclaration {
+    PhysicalRecordFormatDeclaration::builder().admit().unwrap()
 }
 
 fn encoded_record(targets: &[(u64, [u8; 32])]) -> Vec<u8> {

@@ -83,6 +83,8 @@ pub(super) fn matches_artifact(
                             && identity.reference().block() == block
                     })
         }
-        Artifact::SegmentManifest { .. } => false,
+        // Custody blocks are admitted by the SHA-rooted head walker, not a
+        // record-routing scope. Never let a routing witness alias this family.
+        Artifact::ReleaseCustodyHeadBlock { .. } | Artifact::SegmentManifest { .. } => false,
     }
 }

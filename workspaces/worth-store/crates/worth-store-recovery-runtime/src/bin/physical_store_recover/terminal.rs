@@ -12,6 +12,8 @@ pub(super) fn execute(
     // profile; these profiles are never evidence of process death.
     match profile {
         super::arguments::BoundedProfile::PhaseTwoAdmission
+        | super::arguments::BoundedProfile::C11BlobCrash
+        | super::arguments::BoundedProfile::C11BlobMultilevel
         | super::arguments::BoundedProfile::FateCoverage => Ok(match yieldpoint {
             Some(yieldpoint) => {
                 WorthStoreRecovery::recover_with_process_yieldpoint(request, yieldpoint)

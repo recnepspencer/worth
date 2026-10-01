@@ -108,7 +108,7 @@ fn root_manifest(
             PhysicalRecordSlot::from_raw(1).unwrap(),
         )
         .with_slot_generation(PhysicalGeneration::from_raw(1).unwrap());
-    let placement = DurableInlineRecordPlacement::new(record, segment, page, slot, 1, 1).unwrap();
+    let placement = DurableInlineRecordPlacement::legacy_unknown(record, segment, page, slot, 1, 1).unwrap();
     let block = PhysicalRootRoutingBlock::leaf(
         1,
         1,
@@ -276,6 +276,7 @@ fn wal_tail(frontier: u64) -> worth_store_recovery_physics::SelectedPhysicalWalT
         .inspection();
     admit_physical_wal_tail(
         frontier,
+        Some(frontier),
         vec![PhysicalWalSegmentCandidate::from_frame_facts(
             inspection,
             None,

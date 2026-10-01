@@ -12,10 +12,11 @@ pub(super) fn project(
     target: PhysicalIntegrityScrubTarget,
     observation: &PhysicalIntegrityScrubWindowObservation,
 ) -> Value {
-    let scope = target.scope();
+    let scope = observation.scope;
     let (path, identity, generation) = address(target, observation);
+    let range = json!({"offset":scope.byte_range().offset(),"length":scope.byte_range().length()});
     json!({"path":path, "family":super::vocabulary::family(scope.artifact_family()),
-        "identity":identity, "generation":generation, "range":{"offset":scope.byte_range().offset(),"length":scope.byte_range().length()},
+        "identity":identity, "generation":generation, "range":range,
         "duplicates":[], "outcome":super::outcome::project(observation.outcome)})
 }
 
@@ -24,7 +25,11 @@ fn address(
     observation: &PhysicalIntegrityScrubWindowObservation,
 ) -> (String, String, Option<u64>) {
     let scope = target.scope();
-    match target.range().target() {
+    match target
+        .media_range()
+        .expect("version-one raw target")
+        .target()
+    {
         Target::Record(record) => record_address(record, scope, observation),
         Target::Wal(identity) => {
             let file = worth_store_wal::WalSegmentArtifactIdentity::new(
@@ -95,6 +100,11 @@ fn record_address(
         Record::RootRoutingBlock { generation, block } => (
             "families/records/roots",
             format!("block:{block:016x}"),
+            Some(generation),
+        ),
+        Record::ReleaseCustodyHeadBlock { generation, block } => (
+            "families/records/roots",
+            format!("release-head:{generation:016x}:{block:016x}"),
             Some(generation),
         ),
         Record::SegmentMembershipBlock { generation, block } => (

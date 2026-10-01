@@ -1,5 +1,7 @@
 use super::*;
 
+mod retained_storage;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct RecoverySelectedSourceInventory {
     pub(crate) free_space: DurableFreeSpaceManifestHeader,

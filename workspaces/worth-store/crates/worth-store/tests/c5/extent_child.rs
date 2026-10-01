@@ -2,8 +2,8 @@ use std::io::Write;
 use std::path::Path;
 
 use worth_store::physical_runtime::{
-    ExternalPhysicalRecordLocator, PhysicalRecordOpen, RecordAppendBatch, RecordByteLimit,
-    RecordReadLimits,
+    ExternalPhysicalRecordLocator, PhysicalOperationAllocationScope, PhysicalRecordOpen,
+    RecordAppendBatch, RecordByteLimit, RecordReadLimits,
 };
 
 use super::child_process::{hex, unhex};
@@ -138,12 +138,21 @@ pub(super) fn scale_allocation_reader(root: &Path, encoded_locator: &str) {
     let point = serving
         .residency_observation()
         .counters()
-        .peak_operation_bytes();
+        .peak_operation_bytes_for(PhysicalOperationAllocationScope::ForegroundRead);
     super::scale_support::complete_scan(&serving, 7, 16_384);
     let scan = serving
         .residency_observation()
         .counters()
-        .peak_operation_bytes();
+        .peak_operation_bytes_for(PhysicalOperationAllocationScope::ForegroundRead);
+    // Fresh reopen admits a separate Recovery grant; its lifetime peak must
+    // remain bounded, but it is not foreground point-read or scan scratch.
+    let residency = serving.residency_observation();
+    let counters = residency.counters();
+    let policy = residency.admitted_policy();
+    let recovery = PhysicalOperationAllocationScope::Recovery;
+    assert!(counters.peak_operation_bytes() <= policy.operation_bytes());
+    assert!(counters.peak_operation_bytes_for(recovery) > 0);
+    assert!(counters.peak_operation_bytes_for(recovery) <= policy.scope_bytes(recovery));
     super::scenario_evidence::emit_process("scale-allocation-probe", &serving);
     println!("C5_SCALE_ALLOC {point} {scan}");
     std::io::stdout().flush().unwrap();

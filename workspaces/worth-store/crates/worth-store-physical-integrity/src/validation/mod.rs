@@ -16,7 +16,8 @@ pub use rejection::{
 pub use untrusted_artifact::UntrustedPhysicalArtifact;
 pub use validated::{
     CheckpointBindingPayloadProjectionDenial, CheckpointFooterRoutingProjection,
-    ExtentChunkProjectionDenial, InlineRecordProjectionDenial, IntegrityValidatedBootstrapCatalog,
+    ExtentChunkProjectionDenial, InlineRecordProjectionDenial, IntegrityValidatedBTreeNode,
+    IntegrityValidatedBlobRecord, IntegrityValidatedBootstrapCatalog,
     IntegrityValidatedCheckpointBinding, IntegrityValidatedCheckpointBindingCompaction,
     IntegrityValidatedCheckpointBindingPayloadProjection, IntegrityValidatedCheckpointDirtyBasis,
     IntegrityValidatedCheckpointFooter, IntegrityValidatedCheckpointFooterEnvelope,
@@ -27,8 +28,10 @@ pub use validated::{
     IntegrityValidatedInlineRecordProjection, IntegrityValidatedPageFrame,
     IntegrityValidatedPhysicalWorkObligation, IntegrityValidatedPreviousRootSelector,
     IntegrityValidatedRootManifest, IntegrityValidatedRootRoutingBlock,
-    IntegrityValidatedSegmentMembershipBlock, IntegrityValidatedWalFrame,
-    IntegrityValidatedWalPayloadProjection, WalPayloadProjectionDenial,
+    IntegrityValidatedRootRoutingBlockView, IntegrityValidatedSegmentMembershipBlock,
+    IntegrityValidatedSelectedExtentPayload, IntegrityValidatedWalFrame,
+    IntegrityValidatedWalPayloadProjection, SelectedExtentPayloadBuilder,
+    WalPayloadProjectionDenial,
 };
 pub use validation_record::{
     PhysicalIntegrityValidationDigest, PhysicalIntegrityValidationMechanism,

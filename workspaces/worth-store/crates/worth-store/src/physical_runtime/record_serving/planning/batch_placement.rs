@@ -1,5 +1,6 @@
 use worth_store_physical_format::{
-    PersistedRecordIdentity, DURABLE_FRAME_HEADER_BYTES, DURABLE_INLINE_PAGE_PREFIX_BYTES,
+    BlobRecordKind, PersistedRecordIdentity, SelectedRecordContentClass,
+    SelectedRecordRouteMetadata, DURABLE_FRAME_HEADER_BYTES, DURABLE_INLINE_PAGE_PREFIX_BYTES,
     DURABLE_INLINE_SLOT_BYTES,
 };
 
@@ -16,17 +17,20 @@ pub(in crate::physical_runtime::record_serving) struct ExtentInput {
     pub(in crate::physical_runtime::record_serving) record: PersistedRecordIdentity,
     pub(in crate::physical_runtime::record_serving) source: Box<dyn RecordWriteSource>,
     pub(in crate::physical_runtime::record_serving) length: u64,
+    pub(in crate::physical_runtime::record_serving) route_metadata: SelectedRecordRouteMetadata,
 }
 
 pub(in crate::physical_runtime::record_serving) struct PendingInlineInput {
     pub(in crate::physical_runtime::record_serving) record: PersistedRecordIdentity,
     input: RecordAppendInput,
     pub(in crate::physical_runtime::record_serving) length: u64,
+    pub(in crate::physical_runtime::record_serving) route_metadata: SelectedRecordRouteMetadata,
 }
 
 pub(in crate::physical_runtime::record_serving) struct MaterializedInlineInput {
     pub(in crate::physical_runtime::record_serving) record: PersistedRecordIdentity,
     pub(in crate::physical_runtime::record_serving) bytes: Vec<u8>,
+    pub(in crate::physical_runtime::record_serving) route_metadata: SelectedRecordRouteMetadata,
 }
 
 pub(in crate::physical_runtime::record_serving) struct MaterializedInlineBatch {
@@ -83,6 +87,9 @@ pub(in crate::physical_runtime::record_serving) fn classify_batch(
     manifest: &super::super::access::manifest_routing::ManifestReader<'_>,
     allocation: &worth_store_buffer_pool::OperationAllocationGrant,
     placement: AdmittedRecordPlacementPolicy,
+    blob_record_kind: Option<BlobRecordKind>,
+    selected_content_class: SelectedRecordContentClass,
+    inline_only: bool,
     batch: AdmittedRecordAppendBatch,
 ) -> Result<ClassifiedBatch, RecordAppendError> {
     let identities =
@@ -90,9 +97,12 @@ pub(in crate::physical_runtime::record_serving) fn classify_batch(
             .map_err(RecordAppendError::Denied)?;
     let mut inline = Vec::new();
     let mut extents = Vec::new();
+    let route_metadata = SelectedRecordRouteMetadata::primary(selected_content_class).ok_or(
+        RecordAppendError::Denied(RecordAppendDenial::PublishedLayoutDamaged),
+    )?;
     for (record, admitted) in identities.iter().copied().zip(batch.records) {
         let length = admitted.declared_length;
-        match placement_class(length, placement) {
+        match placement_class(length, placement, blob_record_kind, inline_only) {
             RecordPlacementClass::ExtentBacked => {
                 let source: Box<dyn RecordWriteSource> = match admitted.input {
                     RecordAppendInput::Bytes(bytes) => Box::new(OwnedRecordSource::new(bytes)),
@@ -102,6 +112,7 @@ pub(in crate::physical_runtime::record_serving) fn classify_batch(
                     record,
                     source,
                     length,
+                    route_metadata,
                 });
             }
             RecordPlacementClass::InlinePage => {
@@ -109,6 +120,7 @@ pub(in crate::physical_runtime::record_serving) fn classify_batch(
                     record,
                     input: admitted.input,
                     length,
+                    route_metadata,
                 });
             }
         }
@@ -140,6 +152,7 @@ pub(in crate::physical_runtime::record_serving) fn materialize_inline_inputs(
         records.push(MaterializedInlineInput {
             record: input.record,
             bytes,
+            route_metadata: input.route_metadata,
         });
     }
     Ok(MaterializedInlineBatch {
@@ -153,11 +166,14 @@ pub(in crate::physical_runtime::record_serving) fn preflight_placement(
     format: AdmittedPhysicalRecordFormat,
     placement: AdmittedRecordPlacementPolicy,
     batch: &RecordAppendBatch,
+    blob_record_kind: Option<BlobRecordKind>,
+    inline_only: bool,
 ) -> Result<(), RecordAppendError> {
     let inline_limit = maximum_inline_payload_bytes(format, placement);
     if batch.records.iter().any(|record| {
         let length = record.declared_length();
-        placement_class(length, placement) == RecordPlacementClass::InlinePage
+        placement_class(length, placement, blob_record_kind, inline_only)
+            == RecordPlacementClass::InlinePage
             && length > inline_limit
     }) {
         return Err(RecordAppendError::Denied(
@@ -171,11 +187,18 @@ pub(in crate::physical_runtime::record_serving) fn append_operation_allocation_b
     format: AdmittedPhysicalRecordFormat,
     placement: AdmittedRecordPlacementPolicy,
     batch: &RecordAppendBatch,
+    blob_record_kind: Option<BlobRecordKind>,
+    inline_only: bool,
 ) -> u64 {
     let page_bytes = u64::from(format.declaration().page_size().bytes());
     let mut has_extent = false;
     for record in &batch.records {
-        match placement_class(record.declared_length(), placement) {
+        match placement_class(
+            record.declared_length(),
+            placement,
+            blob_record_kind,
+            inline_only,
+        ) {
             RecordPlacementClass::InlinePage => {}
             RecordPlacementClass::ExtentBacked => has_extent = true,
         }
@@ -197,15 +220,22 @@ pub(in crate::physical_runtime::record_serving) fn append_operation_allocation_b
         .saturating_add(routing_working_set)
 }
 
-fn placement_class(length: u64, placement: AdmittedRecordPlacementPolicy) -> RecordPlacementClass {
-    if length >= u64::from(placement.extent_threshold().get()) {
+fn placement_class(
+    length: u64,
+    placement: AdmittedRecordPlacementPolicy,
+    blob_record_kind: Option<BlobRecordKind>,
+    inline_only: bool,
+) -> RecordPlacementClass {
+    if !inline_only
+        && (blob_record_kind.is_some() || length >= u64::from(placement.extent_threshold().get()))
+    {
         RecordPlacementClass::ExtentBacked
     } else {
         RecordPlacementClass::InlinePage
     }
 }
 
-fn maximum_inline_payload_bytes(
+pub(in crate::physical_runtime) fn maximum_inline_payload_bytes(
     format: AdmittedPhysicalRecordFormat,
     placement: AdmittedRecordPlacementPolicy,
 ) -> u64 {
@@ -278,4 +308,41 @@ fn stream_failure(kind: RecordStreamFailureKind, completed: usize) -> RecordAppe
         kind,
         completed as u64,
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::physical_runtime::record_serving::PhysicalRecordPlacementPolicy;
+    use worth_store_physical_format::PhysicalRecordFormatDeclaration;
+
+    #[test]
+    fn all_canonical_blob_families_force_extent_even_below_inline_threshold() {
+        let format = AdmittedPhysicalRecordFormat::admit(
+            PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
+        );
+        let placement = PhysicalRecordPlacementPolicy::builder()
+            .admit(format)
+            .unwrap();
+        assert_eq!(
+            placement_class(100, placement, None, false),
+            RecordPlacementClass::InlinePage
+        );
+        for kind in [
+            BlobRecordKind::SessionDeclared,
+            BlobRecordKind::Chunk,
+            BlobRecordKind::TreeNode,
+            BlobRecordKind::GenerationPublished,
+            BlobRecordKind::SessionFrontier,
+            BlobRecordKind::SessionAbandoned,
+            BlobRecordKind::DropSetManifestV3,
+            BlobRecordKind::OriginalDropReserved,
+            BlobRecordKind::ReclaimDescriptorV3,
+        ] {
+            assert_eq!(
+                placement_class(100, placement, Some(kind), false),
+                RecordPlacementClass::ExtentBacked,
+            );
+        }
+    }
 }

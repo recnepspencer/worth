@@ -17,6 +17,8 @@ use worth_store_recovery_physics::{
 use super::super::context::PlanningContext;
 use super::super::resolved_basis::ResolvedPlanningBasis;
 
+#[path = "historical_rewrite.rs"]
+mod historical_rewrite;
 #[path = "rewrite_extent.rs"]
 mod rewrite_extent;
 #[path = "rewrite_span.rs"]
@@ -36,6 +38,23 @@ pub(super) fn install(
     if pending.is_empty() {
         return Ok(context);
     }
+    let selected = context
+        .selection
+        .root()
+        .selected()
+        .selector()
+        .root_generation();
+    let mut current = Vec::new();
+    for admission in pending {
+        if selected > admission.redo().resulting_root_generation() {
+            context = historical_rewrite::verify(context, basis, admission)?;
+        } else {
+            current.push(admission);
+        }
+    }
+    if current.is_empty() {
+        return Ok(context);
+    }
     let format = context.authority.record_format;
     let byte_limit = context.limits.observation_bytes;
     let media = context.authority.media;
@@ -43,7 +62,7 @@ pub(super) fn install(
         .bounded_discovery(64, byte_limit)
         .expect("admitted nonzero recovery limits create a bounded planning reader");
     let mut applying = Vec::new();
-    for admission in pending {
+    for admission in current {
         match rewrite_disposition(
             &mut discovery,
             &context.selection,
@@ -322,13 +341,14 @@ fn project_rewrite(
             continue;
         }
         rebound.push(
-            DurableInlineRecordPlacement::new(
+            DurableInlineRecordPlacement::new_selected(
                 existing.record(),
                 destination_segment,
                 destination_page,
                 existing.slot_cell(),
                 existing.segment_page_capacity(),
                 existing.payload_bytes(),
+                existing.route_metadata(),
             )
             .ok_or(())?,
         );

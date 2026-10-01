@@ -38,6 +38,7 @@ pub(super) struct PhysicalSignalGraph {
     context: PhysicalSignalContext,
     locality: PhysicalSignalLocalityIndex,
     healthy: bool,
+    settled_since_compaction: u32,
 }
 
 impl PhysicalSignalGraph {
@@ -59,6 +60,7 @@ impl PhysicalSignalGraph {
             context: PhysicalSignalContext { version: 0 },
             locality,
             healthy: true,
+            settled_since_compaction: 0,
         };
         owner
             .evaluate_dirty()

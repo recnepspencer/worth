@@ -1,9 +1,37 @@
 use super::*;
-use crate::{ExtentArenaId, PersistedRecordIdentity, PhysicalExtentId};
+use crate::{
+    ExtentArenaId, PersistedRecordIdentity, PhysicalExtentId, SelectedRecordRouteMetadata,
+};
 
 impl PhysicalExtentCopyRecord {
+    pub fn encoded_bytes(self) -> usize {
+        match self {
+            Self::Intent(intent) if !intent.source().route_metadata().is_legacy_unknown() => {
+                EXTENT_COPY_V2_DOMAIN.len() + 215
+            }
+            Self::Intent(_) => EXTENT_COPY_DOMAIN.len() + 201,
+            Self::Resolved(_) => EXTENT_COPY_DOMAIN.len() + 90,
+        }
+    }
+
     pub fn encode(self) -> Vec<u8> {
-        let mut bytes = EXTENT_COPY_DOMAIN.to_vec();
+        self.encode_in_reserved(Vec::with_capacity(self.encoded_bytes()))
+            .expect("exact copy-record backing")
+    }
+
+    /// Encode without growing the caller's backing; sizing is a pure format contract.
+    pub fn encode_in_reserved(self, mut bytes: Vec<u8>) -> Option<Vec<u8>> {
+        if bytes.capacity() < self.encoded_bytes() {
+            return None;
+        }
+        bytes.clear();
+        let domain = match self {
+            Self::Intent(intent) if !intent.source().route_metadata().is_legacy_unknown() => {
+                EXTENT_COPY_V2_DOMAIN
+            }
+            _ => EXTENT_COPY_DOMAIN,
+        };
+        bytes.extend_from_slice(domain);
         match self {
             Self::Intent(intent) => {
                 bytes.push(1);
@@ -32,6 +60,10 @@ impl PhysicalExtentCopyRecord {
                 bytes.extend_from_slice(&intent.maximum_frame_bytes.to_le_bytes());
                 bytes.extend_from_slice(&intent.chunk_count.to_le_bytes());
                 bytes.extend_from_slice(&intent.source_digest);
+                if !intent.source().route_metadata().is_legacy_unknown() {
+                    bytes.extend_from_slice(&intent.source().route_metadata().encode());
+                    bytes.extend_from_slice(&intent.destination().route_metadata().encode());
+                }
             }
             Self::Resolved(resolution) => {
                 bytes.push(2);
@@ -50,19 +82,30 @@ impl PhysicalExtentCopyRecord {
                 push_u64(&mut bytes, publication);
             }
         }
-        bytes
+        Some(bytes)
     }
 
     pub fn decode(
         bytes: &[u8],
         format: PhysicalRecordFormatDeclaration,
     ) -> Result<Self, PhysicalExtentCopyDenial> {
-        let body = bytes
-            .strip_prefix(EXTENT_COPY_DOMAIN)
-            .ok_or(PhysicalExtentCopyDenial::Domain)?;
+        let (body, classified) = if let Some(body) = bytes.strip_prefix(EXTENT_COPY_V2_DOMAIN) {
+            (body, true)
+        } else {
+            (
+                bytes
+                    .strip_prefix(EXTENT_COPY_DOMAIN)
+                    .ok_or(PhysicalExtentCopyDenial::Domain)?,
+                false,
+            )
+        };
         match body.split_first() {
-            Some((1, body)) if body.len() == 200 => decode_intent(body, format).map(Self::Intent),
-            Some((2, body)) if body.len() == 89 => decode_resolution(body).map(Self::Resolved),
+            Some((1, body)) if body.len() == if classified { 214 } else { 200 } => {
+                decode_intent(body, format, classified).map(Self::Intent)
+            }
+            Some((2, body)) if !classified && body.len() == 89 => {
+                decode_resolution(body).map(Self::Resolved)
+            }
             Some((1 | 2, _)) => Err(PhysicalExtentCopyDenial::Length),
             _ => Err(PhysicalExtentCopyDenial::Tag),
         }
@@ -72,6 +115,7 @@ impl PhysicalExtentCopyRecord {
 fn decode_intent(
     body: &[u8],
     format: PhysicalRecordFormatDeclaration,
+    classified: bool,
 ) -> Result<PhysicalExtentCopyIntent, PhysicalExtentCopyDenial> {
     use PhysicalExtentCopyDenial::{Geometry, Identity};
     let operation = body[..32].try_into().unwrap();
@@ -93,14 +137,28 @@ fn decode_intent(
             read_u64(body, start + 16),
         )
     };
-    let source = DurableExtentRecordPlacement::new(
+    let source_metadata = if classified {
+        SelectedRecordRouteMetadata::decode(body[200..207].try_into().unwrap()).ok_or(Identity)?
+    } else {
+        SelectedRecordRouteMetadata::legacy_primary()
+    };
+    let destination_metadata = if classified {
+        SelectedRecordRouteMetadata::decode(body[207..214].try_into().unwrap()).ok_or(Identity)?
+    } else {
+        SelectedRecordRouteMetadata::legacy_primary()
+    };
+    if classified && source_metadata.is_legacy_unknown() {
+        return Err(Identity);
+    }
+    let source = DurableExtentRecordPlacement::new_selected(
         record,
         cell,
         read_u64(body, 144),
         range(96).ok_or(Geometry)?,
+        source_metadata,
     )
     .ok_or(Identity)?;
-    let intent = PhysicalExtentCopyIntent::new(
+    let intent = PhysicalExtentCopyIntent::new_with_target_tier(
         format,
         operation,
         read_u64(body, 32),
@@ -108,9 +166,11 @@ fn decode_intent(
         range(120).ok_or(Geometry)?,
         read_u64(body, 152),
         body[168..200].try_into().unwrap(),
+        destination_metadata.tier_class(),
     )
     .ok_or(Geometry)?;
     if intent.destination.extent_generation() != read_u64(body, 88)
+        || intent.destination.route_metadata() != destination_metadata
         || intent.maximum_frame_bytes != u32::from_le_bytes(body[160..164].try_into().unwrap())
         || intent.chunk_count != u32::from_le_bytes(body[164..168].try_into().unwrap())
     {

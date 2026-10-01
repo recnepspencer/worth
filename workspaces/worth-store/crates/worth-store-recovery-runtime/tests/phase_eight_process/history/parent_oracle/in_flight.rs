@@ -9,7 +9,6 @@ pub(crate) use checkpoint_binding::scan_checkpoint_binding;
 
 const WAL_HEADER_BYTES: usize = 116;
 const WAL_FOOTER_BYTES: usize = 32;
-const CHECKPOINT_PREFIX_BYTES: usize = 16;
 const COMPACTION_DOMAIN: &[u8] =
     worth_store_physical_format::PHYSICAL_MUTATION_BINDING_COMPACTION_RECORD_DOMAIN;
 const ATTEMPT_DOMAIN: &[u8] = b"store.physical.mutation-attempt-binding.v1";
@@ -316,30 +315,10 @@ fn read_u16(bytes: &[u8], offset: usize) -> Option<u16> {
         .map(u16::from_le_bytes)
 }
 
-fn read_u32(bytes: &[u8], offset: usize) -> Option<u32> {
-    bytes
-        .get(offset..offset + 4)?
-        .try_into()
-        .ok()
-        .map(u32::from_le_bytes)
-}
-
 fn read_u64(bytes: &[u8], offset: usize) -> Option<u64> {
     bytes
         .get(offset..offset + 8)?
         .try_into()
         .ok()
         .map(u64::from_le_bytes)
-}
-
-fn crc32c(bytes: &[u8]) -> u32 {
-    let mut value = !0_u32;
-    for byte in bytes {
-        value ^= u32::from(*byte);
-        for _ in 0..8 {
-            let mask = 0_u32.wrapping_sub(value & 1);
-            value = (value >> 1) ^ (0x82f6_3b78 & mask);
-        }
-    }
-    !value
 }

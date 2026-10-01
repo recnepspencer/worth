@@ -1,5 +1,7 @@
 mod admission;
+mod artifact_family;
 mod availability;
+mod blob;
 #[cfg(feature = "certification-test-authority")]
 mod certification_input;
 mod diagnostics;
@@ -7,6 +9,7 @@ mod durability;
 mod identity;
 mod instance;
 mod integrity;
+mod layout;
 mod lifecycle;
 #[cfg(feature = "certification-test-authority")]
 mod media_evidence;
@@ -19,6 +22,7 @@ mod recovery_construction;
 mod recovery_coordination;
 #[cfg(feature = "recovery-runtime-owner")]
 mod recovery_freshness;
+mod recovery_residency;
 pub mod recovery_wal;
 #[cfg(feature = "recovery-runtime-owner")]
 mod recovery_yieldpoint;
@@ -34,6 +38,23 @@ pub use admission::{
     PhysicalRuntimeAdmission, PhysicalStore,
 };
 pub use availability::{CapabilityAvailability, InstalledCapabilityStatus, PhysicalCapability};
+pub use blob::{
+    AdmittedBlobScope, BlobAppendFailure, BlobCheckpointLimit, BlobDeclarationDenial,
+    BlobDedupeFailure, BlobFacadeDenial, BlobGeneration, BlobIngestClaimDenial,
+    BlobIngestDeclaration, BlobIngestFailure, BlobIngestFrontier, BlobIngestSession,
+    BlobMemoryDenial, BlobMemoryObservation, BlobMovementFailure, BlobMovementReadHold,
+    BlobMovementReceipt, BlobMovementSession, BlobObjectId, BlobReachabilityFailure,
+    BlobReachabilityLimits, BlobReachabilityObservation, BlobReachabilityRecord, BlobReadFailure,
+    BlobReadLimits, BlobReadObservation, BlobReadOpenFailure, BlobReadSession,
+    BlobReclaimContinuationFailure, BlobReclaimDeferral, BlobReclaimDisplacedExtent,
+    BlobReclaimDisposition, BlobReclaimFailure, BlobReclaimHandle, BlobReclaimLimitDenial,
+    BlobReclaimLimits, BlobReclaimObservation, BlobReclaimPublicationStage, BlobReclaimReceipt,
+    BlobReclaimRequest, BlobReclaimRetirement, BlobReclaimRetirementBudget, BlobRecordReachability,
+    BlobResidentComponent, BlobResumeFailure, BlobResumeLimits, BlobResumeObservation,
+    BlobResumeToken, BlobResumeTokenDenial, BlobScrubTargetFailure, BlobSessionId,
+    BlobTerminalDisposition, BlobTerminalFailure, BlobTerminalLimits, BlobTerminalReceipt,
+    PhysicalBlobFacade, PublishedBlobGeneration,
+};
 pub use diagnostics::{ProcessRuntimeCounterSnapshot, RuntimeCounterSnapshot};
 pub use durability::{
     lower_physical_durability_performance_receipt, AdmittedPhysicalDurabilityGroup,
@@ -89,20 +110,22 @@ pub use durability::{
     PhysicalMutationIdempotencyKeyIdentity, PhysicalMutationIdempotencyLease,
     PhysicalMutationIdempotencyMaterial, PhysicalMutationIdentity,
     PhysicalMutationIndeterminateStage, PhysicalMutationObservation, PhysicalMutationOutcome,
-    PhysicalMutationPerformanceEvidence, PhysicalMutationPoll, PhysicalMutationProgress,
+    PhysicalMutationPerformanceEvidence, PhysicalMutationPoll,
+    PhysicalMutationPreSealAdmissionDetail, PhysicalMutationProgress,
     PhysicalMutationProgressPhase, PhysicalMutationProvenNoEffectCause, PhysicalMutationRequest,
-    PhysicalMutationRequestFingerprint, PhysicalMutationShutdown,
-    PhysicalMutationTerminalObservation, PhysicalNamespaceDurableCheckpointGeneration,
-    PhysicalQueuePerformanceExpectation, PhysicalRecoveryAllocationAdmission,
-    PhysicalRecoveryAttemptBindingFact, PhysicalRecoveryCheckpointBasis,
-    PhysicalRecoveryCompletedMutationFact, PhysicalRecoveryOperationFact,
-    PhysicalRecoveryOperationFate, PhysicalRecoveryOperationFateCounts,
-    PhysicalRecoveryOperationFates, PhysicalRecoveryRootBasis, PhysicalRecoveryWalAttemptBinding,
-    PhysicalRecoveryWalSegment, PhysicalRecoveryWalTail, PhysicalRedoLsn, PhysicalRedoTargetClaim,
-    PhysicalRetirementDenial, PhysicalRootCandidateSynchronizationFailureCause,
-    PhysicalRootCandidateWriteFailureCause, PhysicalRootCandidateWriteFailurePosture,
-    PhysicalRootNamespaceDurabilityEvidence, PhysicalRootNamespaceDurabilityFailureCause,
-    PhysicalRootNamespaceDurabilityNotStarted, PhysicalRootNamespaceDurabilityOutcome,
+    PhysicalMutationRequestFingerprint, PhysicalMutationRootPreparationFailure,
+    PhysicalMutationShutdown, PhysicalMutationTerminalObservation,
+    PhysicalNamespaceDurableCheckpointGeneration, PhysicalQueuePerformanceExpectation,
+    PhysicalRecoveryAllocationAdmission, PhysicalRecoveryAttemptBindingFact,
+    PhysicalRecoveryCheckpointBasis, PhysicalRecoveryCompletedMutationFact,
+    PhysicalRecoveryOperationFact, PhysicalRecoveryOperationFate,
+    PhysicalRecoveryOperationFateCounts, PhysicalRecoveryOperationFates, PhysicalRecoveryRootBasis,
+    PhysicalRecoveryWalAttemptBinding, PhysicalRecoveryWalSegment, PhysicalRecoveryWalTail,
+    PhysicalRedoLsn, PhysicalRedoTargetClaim, PhysicalRetirementDenial,
+    PhysicalRootCandidateSynchronizationFailureCause, PhysicalRootCandidateWriteFailureCause,
+    PhysicalRootCandidateWriteFailurePosture, PhysicalRootNamespaceDurabilityEvidence,
+    PhysicalRootNamespaceDurabilityFailureCause, PhysicalRootNamespaceDurabilityNotStarted,
+    PhysicalRootNamespaceDurabilityOutcome, PhysicalRootPreparationEffectPosture,
     PhysicalRootPublicationMemberIdentity, PhysicalRootPublicationPreparationFailureCause,
     PhysicalRootPublicationPreparationNotStarted, PhysicalRootPublicationPreparationOutcome,
     PhysicalRootPublicationTransitionDenial, PhysicalRootPublicationWorkFailureCause,
@@ -122,10 +145,11 @@ pub use durability::{
     RetainedWalTailLimit, RetirementReleaseProjection, RootNamespaceDurablePhysicalMutationMembers,
     RootPublicationPhysicalMutationMember, RootPublicationPreparedPhysicalMutationMembers,
     RootReplacedPhysicalMutationMembers, SealedPhysicalDurabilityGroupMembers,
-    SharedPhysicalRootPublicationPlan, StorePhysicalDurabilityPerformanceReceiptEvidence,
-    SuspendedPhysicalDataDispatch, WalAppendedPhysicalMutation, WalBarrierMember,
-    WalDurablePhysicalMutation, WalDurablePhysicalMutationMembers,
-    WalRangeReservedPhysicalMutation, WalSegmentByteLimit, WalSegmentInventoryLimit,
+    SelectedReleaseHeadDenial, SharedPhysicalRootPublicationPlan,
+    StorePhysicalDurabilityPerformanceReceiptEvidence, SuspendedPhysicalDataDispatch,
+    WalAppendedPhysicalMutation, WalBarrierMember, WalDurablePhysicalMutation,
+    WalDurablePhysicalMutationMembers, WalRangeReservedPhysicalMutation, WalSegmentByteLimit,
+    WalSegmentInventoryLimit,
 };
 pub use identity::{DeclaredStoreRoot, RuntimeIdentity};
 pub use instance::{
@@ -154,10 +178,20 @@ pub use integrity::{
     ManagedPhysicalIntegrityScrubRequest, PhysicalIntegrityScrubCancellation,
     PhysicalIntegrityScrubCounters, PhysicalIntegrityScrubDeferral,
     PhysicalIntegrityScrubRequestDenial, PhysicalIntegrityScrubResume,
-    PhysicalIntegrityScrubTarget, PhysicalIntegrityScrubWindowObservation,
+    PhysicalIntegrityScrubSource, PhysicalIntegrityScrubTarget,
+    PhysicalIntegrityScrubWindowObservation,
 };
 pub(in crate::physical_runtime) use integrity::{
     ResidentAdmissionCounterCells, RootProtocolRouteCounterCells,
+};
+pub use layout::{
+    DeferredDerivedRetirementCause, LayoutRebuildFailure, LayoutRebuildLimits,
+    LayoutRebuildReceipt, PhysicalBTreeIndex, PhysicalBTreePointObservation,
+    PhysicalBTreeRangeCursor, PhysicalBTreeRangeEntry, PhysicalBTreeReadCounters,
+    PhysicalIndexPointKey, PhysicalIndexPointKeyDenial, PhysicalIndexPrefix, PhysicalIndexRange,
+    PhysicalIndexScanBudget, PhysicalIndexScanRequestDenial, PhysicalLayoutAccess,
+    PhysicalLayoutAppendFailure, PhysicalLayoutDenial, PhysicalLayoutMaintenanceFailure,
+    PhysicalLayoutMaintenanceReceipt, PhysicalLayoutPageReadFailure,
 };
 pub use lifecycle::LifecycleGeneration;
 #[cfg(feature = "recovery-runtime-owner")]
@@ -183,6 +217,7 @@ pub use record_serving::*;
 #[cfg(feature = "recovery-runtime-owner")]
 pub use recovery_construction::{
     PhysicalRecoveryConstructionAuthority, PhysicalRecoveryConstructionPort,
+    PhysicalRecoveryRejoinResidentBoundary, PhysicalRecoveryWalResidentStage,
     RecoveredPhysicalRuntimeConstructionDenial, RecoveredPhysicalRuntimeCore,
 };
 #[cfg(feature = "recovery-runtime-owner")]
@@ -205,13 +240,15 @@ pub use recovery_coordination::{
     PhysicalRecoveryPublicationCommandDenial, PhysicalRecoveryPublicationCommandDenialKind,
     PhysicalRecoveryPublicationCommandIndeterminate, PhysicalRecoveryPublicationCommandOutcome,
     PhysicalRecoveryPublicationCommandStage, PhysicalRecoveryPublicationSettlementFailure,
-    PhysicalRecoveryQuiescenceObservation, PhysicalRecoveryStagingCommand,
-    PhysicalRecoveryStagingCommandDenial, PhysicalRecoveryStagingCommandDenialKind,
-    PhysicalRecoveryStagingCommandIndeterminate, PhysicalRecoveryStagingCommandOutcome,
-    PhysicalRecoveryStagingCommandStage, PhysicalRecoveryStagingMaterialization,
-    PhysicalRecoveryStagingMaterializationEvidence, RecoveryCleanupRemovalAction,
-    RecoveryCleanupRemovalOccurrence, RecoveryFreshReopenAction, RecoveryFreshReopenOccurrence,
-    RecoveryPhysicalEffectOccurrence, RecoveryPublicationCandidateMaterializationAction,
+    PhysicalRecoveryQuiescenceObservation, PhysicalRecoveryRejoinResidentAdmissionDenial,
+    PhysicalRecoveryStagingCommand, PhysicalRecoveryStagingCommandDenial,
+    PhysicalRecoveryStagingCommandDenialKind, PhysicalRecoveryStagingCommandIndeterminate,
+    PhysicalRecoveryStagingCommandOutcome, PhysicalRecoveryStagingCommandStage,
+    PhysicalRecoveryStagingMaterialization, PhysicalRecoveryStagingMaterializationEvidence,
+    RecoveryCheckpointResidueDenial, RecoveryCheckpointResidueOutcome,
+    RecoveryCleanupRemovalAction, RecoveryCleanupRemovalOccurrence, RecoveryFreshReopenAction,
+    RecoveryFreshReopenOccurrence, RecoveryPhysicalEffectOccurrence,
+    RecoveryPublicationCandidateMaterializationAction,
     RecoveryPublicationCandidateMaterializationOccurrence, RecoveryPublicationCandidateOccurrence,
     RecoveryPublicationCandidateSynchronizationAction,
     RecoveryPublicationCandidateSynchronizationOccurrence, RecoveryPublicationOccurrence,
@@ -230,8 +267,9 @@ pub use recovery_freshness::{
     StoreRecoveryCleanupFreshnessSample, StoreRecoveryCleanupPlan,
     StoreRecoveryCleanupPlanAdmissionFailure, StoreRecoveryOperationEvidence,
     StoreRecoveryOperationFate, StoreRecoveryRetiredArtifact, StoreRecoveryRetirementObligation,
-    StoreRecoveryWalMember,
+    StoreRecoveryWalMember, StoreTierEpochActivationObservation,
 };
+pub use recovery_residency::PhysicalRecoveryRejoinResidentDenial;
 #[cfg(feature = "recovery-runtime-owner")]
 pub use recovery_yieldpoint::{
     PhysicalRecoveryProcessYieldpoint, PhysicalRecoveryYieldpointStage,

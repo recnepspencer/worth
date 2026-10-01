@@ -1,12 +1,13 @@
 use worth_store::physical_runtime::{
-    ManifestEntryCapacity, PageFillPercent, PhysicalOperationAllocationScope as Scope,
-    PhysicalRecordPlacementPolicy, PhysicalRecordResidencyPolicy,
-    PhysicalSpeculativeWorkKind as Speculation, RecordByteLimit, SegmentPageCount,
+    AdmittedPhysicalRecordFormat, ManifestEntryCapacity, PageFillPercent,
+    PhysicalOperationAllocationScope as Scope, PhysicalRecordPlacementPolicy,
+    PhysicalRecordResidencyPolicy, PhysicalSpeculativeWorkKind as Speculation, RecordByteLimit,
+    SegmentPageCount,
 };
 
 use super::{
-    admitted_store_base, bytes, frames, PhysicalResidencyStoreConfiguration, FIXTURE_FRAME_BYTES,
-    FIXTURE_METADATA_BYTES,
+    admitted_store_base, admitted_store_base_with_format_and_manifest_capacity, bytes, frames,
+    PhysicalResidencyStoreConfiguration, FIXTURE_FRAME_BYTES, FIXTURE_METADATA_BYTES,
 };
 
 const OPERATION_BYTES: u64 = 32 * 1024 * 1024;
@@ -18,6 +19,17 @@ pub(in crate::harness::physical_residency) fn recovery_planning_configuration(
         4 * FIXTURE_FRAME_BYTES,
         4 * FIXTURE_FRAME_BYTES,
     )
+}
+
+pub(in crate::harness::physical_residency) fn recovery_planning_configuration_with_format_and_manifest_capacity(
+    format: AdmittedPhysicalRecordFormat,
+    manifest_capacity: u16,
+) -> PhysicalResidencyStoreConfiguration {
+    let base = admitted_store_base_with_format_and_manifest_capacity(format, manifest_capacity);
+    let four_format_pages = u64::from(format.declaration().page_size().bytes())
+        .checked_mul(4)
+        .expect("four admitted physical pages fit the fixture budget");
+    configuration(base, four_format_pages, four_format_pages)
 }
 
 pub(in crate::harness::physical_residency) fn span_rewrite_configuration(

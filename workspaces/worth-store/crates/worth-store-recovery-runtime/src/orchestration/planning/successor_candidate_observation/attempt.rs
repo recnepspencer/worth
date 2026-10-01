@@ -2,6 +2,7 @@ use worth_store::physical_runtime::AdmittedRecoveryFilesystemMedia;
 use worth_store_physical_format::{DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration};
 
 use crate::entry::PhysicalRecoverySuccessorCandidateDenial;
+use crate::progression::PlanningResidentAllowance;
 use crate::progression::RecoveryObservedSuccessorCandidate;
 
 use super::materialization::CandidateMaterialization;
@@ -27,6 +28,7 @@ pub(in crate::orchestration::planning) fn observe(
     maximum_manifest_entries: u64,
     maximum_bytes: u64,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
+    allowance: &mut PlanningResidentAllowance,
 ) -> (
     AdmittedRecoveryFilesystemMedia,
     SuccessorCandidateObservationAttempt,
@@ -72,6 +74,7 @@ pub(in crate::orchestration::planning) fn observe(
         &mut materialization,
         &mut root_protocol_counters,
         integrity_trace,
+        allowance,
     );
     let counters = discovery.counters();
     let peak_materialization_bytes = materialization.peak_bytes();

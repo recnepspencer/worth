@@ -39,7 +39,7 @@ pub(crate) struct StrategyDeclaration {
 }
 
 impl StrategyDeclaration {
-    pub(super) const fn baseline_btree_range(
+    pub(super) const fn btree_range(
         authority_basis: StrategyAuthorityBasis,
         key_laws: DeclaredKeyLawPosture,
     ) -> Self {
@@ -47,8 +47,8 @@ impl StrategyDeclaration {
         let artifact = lifecycle.declaration();
         Self {
             authority_basis,
-            family: LayoutStrategyFamily::BaselineBTreeRange,
-            capability: StrategyCapability::baseline_btree_range(),
+            family: LayoutStrategyFamily::BTreeRange,
+            capability: StrategyCapability::btree_range(),
             locality: StrategyLocalityProfile::OrderedPageLocality,
             amplification: StrategyAmplificationProfile::SplitMergeBounded,
             materialization: StrategyMaterializationPosture::PublishedTreeLifecycle,

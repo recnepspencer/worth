@@ -26,10 +26,29 @@ pub enum RecoveryPageSource {
         coordinate: RecordFrameCoordinate,
         root_membership_identity: [u8; 32],
     },
+    HistoricalReleasedDrop {
+        coordinate: RecordFrameCoordinate,
+        selected_root_identity: [u8; 32],
+        descriptor_operation: [u8; 32],
+        old_operation: [u8; 32],
+        wal_target_digest: [u8; 32],
+    },
     PlannedResult {
         coordinate: RecordFrameCoordinate,
         causal_identity: [u8; 32],
     },
+}
+
+/// Only the admitted WAL/selected-control join can mint this exact target
+/// classification. It carries no authority to issue a Serving seal.
+#[derive(Debug, Clone, Copy)]
+pub struct HistoricalReleasedDropTargetWitness {
+    pub(crate) selected_root_identity: [u8; 32],
+    pub(crate) descriptor_operation: [u8; 32],
+    pub(crate) old_operation: [u8; 32],
+    pub(crate) target: PhysicalRedoTargetIdentity,
+    pub(crate) wal_target_digest: [u8; 32],
+    pub(crate) target_coordinate: RecordFrameCoordinate,
 }
 
 impl RecoveryPageObservation {
@@ -63,6 +82,33 @@ impl RecoveryPageObservation {
                 root_membership_identity,
             },
         }
+    }
+    /// A selected V3 result has removed this exact older WAL image. The
+    /// selected control join is completed before this observation is issued.
+    pub fn historical_released_drop(
+        target: &PhysicalRedoTarget,
+        witness: HistoricalReleasedDropTargetWitness,
+    ) -> Option<Self> {
+        if witness.target != target.identity()
+            || witness.wal_target_digest != target.resulting_digest()
+            || witness.target_coordinate != target_format_basis(target).1
+        {
+            return None;
+        }
+        let (_, coordinate) = target_format_basis(target);
+        Some(Self {
+            target: target.identity(),
+            page_lsn: 0,
+            frame_digest: absent_digest(target),
+            absent_prior: false,
+            source: RecoveryPageSource::HistoricalReleasedDrop {
+                coordinate,
+                selected_root_identity: witness.selected_root_identity,
+                descriptor_operation: witness.descriptor_operation,
+                old_operation: witness.old_operation,
+                wal_target_digest: witness.wal_target_digest,
+            },
+        })
     }
     pub const fn target(&self) -> PhysicalRedoTargetIdentity {
         self.target

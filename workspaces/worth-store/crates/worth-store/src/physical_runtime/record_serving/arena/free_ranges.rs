@@ -1,19 +1,57 @@
 use super::ArenaAllocationDenial;
 use std::collections::{BTreeMap, BTreeSet};
-use worth_store_physical_format::{ExtentArenaId, ExtentArenaRange};
+use worth_store_physical_format::{
+    arena_tier_at_epoch, ExtentArenaId, ExtentArenaRange, PhysicalTierClass,
+};
 
 /// Two indexes over the same admitted free ranges. The address index owns
 /// coalescing; the size index selects best fit without a media read or scan.
-#[derive(Default)]
 pub(super) struct ArenaFreeRanges {
     by_address: BTreeMap<(ExtentArenaId, u64), u64>,
-    by_size: BTreeSet<(u64, ExtentArenaId, u64)>,
+    by_tier_size: [BTreeSet<(u64, ExtentArenaId, u64)>; 3],
+    tier_epoch_start: Option<u64>,
     excluded: Option<ExtentArenaId>,
 }
 
 impl ArenaFreeRanges {
+    pub(super) fn new(tier_epoch_start: Option<u64>) -> Self {
+        Self {
+            by_address: BTreeMap::new(),
+            by_tier_size: std::array::from_fn(|_| BTreeSet::new()),
+            tier_epoch_start,
+            excluded: None,
+        }
+    }
+
+    fn tier_index(&self, arena: ExtentArenaId) -> usize {
+        match arena_tier_at_epoch(self.tier_epoch_start, arena) {
+            PhysicalTierClass::Primary => 0,
+            PhysicalTierClass::Hot => 1,
+            PhysicalTierClass::Cold => 2,
+        }
+    }
+
     pub(super) fn len(&self) -> usize {
         self.by_address.len()
+    }
+
+    pub(super) fn has_exclusion(&self) -> bool {
+        self.excluded.is_some()
+    }
+
+    /// At the epoch frontier every existing arena remains Primary, so the
+    /// size indexes require no migration and future insertions use the epoch.
+    pub(super) fn activate_tier_epoch(&mut self, epoch: u64) -> Result<(), ArenaAllocationDenial> {
+        if self.tier_epoch_start.is_some()
+            || self
+                .by_address
+                .keys()
+                .any(|(arena, _)| arena.get() >= epoch)
+        {
+            return Err(ArenaAllocationDenial::InvalidGeometry);
+        }
+        self.tier_epoch_start = Some(epoch);
+        Ok(())
     }
 
     /// Exact final address-entry count; coalescing releases can reduce a full
@@ -173,26 +211,57 @@ impl ArenaFreeRanges {
         }
         self.by_address.insert((arena, start), end - start);
         if self.excluded != Some(arena) {
-            self.by_size.insert((end - start, arena, start));
+            let tier_index = self.tier_index(arena);
+            self.by_tier_size[tier_index].insert((end - start, arena, start));
         }
         Ok(())
     }
 
-    pub(super) fn take_best_fit(&mut self, bytes: u64) -> Option<ExtentArenaRange> {
+    pub(super) fn select_best_fit(
+        &self,
+        bytes: u64,
+        tier: PhysicalTierClass,
+    ) -> Option<ExtentArenaRange> {
         let minimum = ExtentArenaId::new(1)?;
-        let (length, arena, offset) = self.by_size.range((bytes, minimum, 0)..).next().copied()?;
-        self.remove(arena, offset, length);
-        if length > bytes {
+        let index = match tier {
+            PhysicalTierClass::Primary => 0,
+            PhysicalTierClass::Hot => 1,
+            PhysicalTierClass::Cold => 2,
+        };
+        let (length, arena, offset) = self.by_tier_size[index]
+            .range((bytes, minimum, 0)..)
+            .next()
+            .copied()?;
+        ExtentArenaRange::new(arena, offset, length)
+    }
+
+    pub(super) fn take_selected(
+        &mut self,
+        selected: ExtentArenaRange,
+        bytes: u64,
+    ) -> ExtentArenaRange {
+        let arena = selected.arena();
+        let offset = selected.offset();
+        assert!(
+            selected.length() >= bytes,
+            "selected free range contains claim"
+        );
+        let claim = ExtentArenaRange::new(arena, offset, bytes)
+            .expect("selected free range contains the admitted aligned reservation");
+        self.remove(arena, offset, selected.length());
+        if selected.length() > bytes {
             self.by_address
-                .insert((arena, offset + bytes), length - bytes);
-            self.by_size.insert((length - bytes, arena, offset + bytes));
+                .insert((arena, offset + bytes), selected.length() - bytes);
+            let index = self.tier_index(arena);
+            self.by_tier_size[index].insert((selected.length() - bytes, arena, offset + bytes));
         }
-        ExtentArenaRange::new(arena, offset, bytes)
+        claim
     }
 
     fn remove(&mut self, arena: ExtentArenaId, offset: u64, length: u64) {
         self.by_address.remove(&(arena, offset));
-        self.by_size.remove(&(length, arena, offset));
+        let tier_index = self.tier_index(arena);
+        self.by_tier_size[tier_index].remove(&(length, arena, offset));
     }
 
     pub(super) fn exclude(&mut self, arena: ExtentArenaId) -> Result<(), ArenaAllocationDenial> {
@@ -200,8 +269,9 @@ impl ArenaFreeRanges {
             return Err(ArenaAllocationDenial::EvacuationBusy);
         }
         self.excluded = Some(arena);
+        let tier_index = self.tier_index(arena);
         for (&(id, offset), &length) in self.by_address.range((arena, 0)..=(arena, u64::MAX)) {
-            self.by_size.remove(&(length, id, offset));
+            self.by_tier_size[tier_index].remove(&(length, id, offset));
         }
         Ok(())
     }
@@ -212,8 +282,9 @@ impl ArenaFreeRanges {
             Some(arena),
             "only the exclusion lease may restore allocation"
         );
+        let tier_index = self.tier_index(arena);
         for (&(id, offset), &length) in self.by_address.range((arena, 0)..=(arena, u64::MAX)) {
-            self.by_size.insert((length, id, offset));
+            self.by_tier_size[tier_index].insert((length, id, offset));
         }
         self.excluded = None;
     }

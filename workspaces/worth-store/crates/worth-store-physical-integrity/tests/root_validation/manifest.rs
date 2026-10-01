@@ -138,14 +138,14 @@ fn manifest_b_k_l_s_p_t_u_matrix_has_exact_localization_and_counters() {
     );
 
     let mut unsupported_schema = manifest_bytes(11, format);
-    // Schema 3 is the admitted maintenance root; 4 is the first unknown schema.
-    unsupported_schema[9] = 4;
+    // Schemas 3 through 7 are admitted; 8 is the first unknown schema.
+    unsupported_schema[9] = 8;
     reseal_durable_frame(&mut unsupported_schema);
     assert_unsupported(
         &unsupported_schema,
         scope,
         PhysicalIntegrityVersionAxis::EnvelopeSchema,
-        4,
+        8,
     );
 
     let mut unsupported_format = manifest_bytes(11, format);

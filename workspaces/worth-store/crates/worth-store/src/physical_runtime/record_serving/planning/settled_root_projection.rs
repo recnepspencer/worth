@@ -15,6 +15,11 @@ pub enum SettledRootProjectionMergeDenial {
     OverlappingPayloadManifest,
     DuplicatePlacement,
     DuplicateSegmentUpdate,
+    DuplicateDerivedDirectoryUpdate,
+    DuplicateBlobPublicationUpdate,
+    DuplicateBlobQuarantineUpdate,
+    DuplicateDroppedRecord,
+    DropConflictsWithPlacement,
     AllocationBudgetOverflow,
 }
 
@@ -60,10 +65,26 @@ pub(in crate::physical_runtime::record_serving) fn merge_settled_root_projection
         .expect("NonEmpty settled root projections contain one member");
     let mut merged = first.into_payload_plan();
     for projection in projections {
+        if projection.derived_updates.latest_blob_publication.is_some() {
+            merged.derived_updates.latest_blob_publication =
+                projection.derived_updates.latest_blob_publication;
+        }
+        if projection.derived_updates.latest_blob_quarantine.is_some() {
+            merged.derived_updates.latest_blob_quarantine =
+                projection.derived_updates.latest_blob_quarantine;
+        }
+        if projection.derived_updates.directory.is_some() {
+            merged.derived_updates.directory = projection.derived_updates.directory;
+            merged.derived_updates.expected_previous_directory =
+                projection.derived_updates.expected_previous_directory;
+            merged.derived_updates.indexed_through_quarantine =
+                projection.derived_updates.indexed_through_quarantine;
+        }
         merged
             .arena_reservations
             .extend(projection.arena_reservations);
         merged.records.extend(projection.records);
+        merged.drop_records.extend(projection.drop_records);
         merged
             .payload_manifests
             .extend(projection.payload_manifests);
@@ -77,6 +98,7 @@ pub(in crate::physical_runtime::record_serving) fn merge_settled_root_projection
             merged.last_inline_segment = projection.last_inline_segment;
         }
         merged.requires_maintenance_protocol |= projection.requires_maintenance_protocol;
+        merged.blob_reuse_source_fence |= projection.blob_reuse_source_fence;
         merge_observation(&mut merged.observation, projection.observation);
     }
     Ok(MergedSettledRootProjection {
@@ -93,7 +115,11 @@ fn validate(
     let mut records = BTreeSet::<PersistedRecordIdentity>::new();
     let mut payload_artifacts = BTreeSet::<RecordFrameCoordinate>::new();
     let mut placements = BTreeSet::new();
+    let mut drops = BTreeSet::new();
     let mut segment_updates = BTreeSet::new();
+    let mut saw_directory_update = false;
+    let mut saw_blob_publication_update = false;
+    let mut saw_blob_quarantine_update = false;
     for projection in projections.as_slice() {
         if projection.source_root != first.source_root {
             return Err(SettledRootProjectionMergeDenial::SourceRootMismatch);
@@ -104,6 +130,18 @@ fn validate(
         if projection.manifest_capacity_transition != first.manifest_capacity_transition {
             return Err(SettledRootProjectionMergeDenial::ManifestCapacityTransitionMismatch);
         }
+        admit_unique_directory_update(
+            &mut saw_directory_update,
+            projection.derived_updates.directory.is_some(),
+        )?;
+        admit_unique_blob_publication_update(
+            &mut saw_blob_publication_update,
+            projection.derived_updates.latest_blob_publication.is_some(),
+        )?;
+        admit_unique_blob_quarantine_update(
+            &mut saw_blob_quarantine_update,
+            projection.derived_updates.latest_blob_quarantine.is_some(),
+        )?;
         allocation_bytes = allocation_bytes
             .checked_add(projection.root_publication_allocation_bytes().get())
             .ok_or(SettledRootProjectionMergeDenial::AllocationBudgetOverflow)?;
@@ -120,14 +158,52 @@ fn validate(
                 return Err(SettledRootProjectionMergeDenial::DuplicatePlacement);
             }
         }
+        for record in &projection.drop_records {
+            if !drops.insert(*record) {
+                return Err(SettledRootProjectionMergeDenial::DuplicateDroppedRecord);
+            }
+        }
         for page in projection.segment_updates.keys() {
             if !segment_updates.insert(*page) {
                 return Err(SettledRootProjectionMergeDenial::DuplicateSegmentUpdate);
             }
         }
     }
+    if drops.iter().any(|record| placements.contains(record)) {
+        return Err(SettledRootProjectionMergeDenial::DropConflictsWithPlacement);
+    }
     NonZeroU64::new(allocation_bytes)
         .ok_or(SettledRootProjectionMergeDenial::AllocationBudgetOverflow)
+}
+
+fn admit_unique_directory_update(
+    saw_directory_update: &mut bool,
+    member_updates_directory: bool,
+) -> Result<(), SettledRootProjectionMergeDenial> {
+    if member_updates_directory && std::mem::replace(saw_directory_update, true) {
+        return Err(SettledRootProjectionMergeDenial::DuplicateDerivedDirectoryUpdate);
+    }
+    Ok(())
+}
+
+fn admit_unique_blob_publication_update(
+    saw_blob_publication_update: &mut bool,
+    member_publishes_blob: bool,
+) -> Result<(), SettledRootProjectionMergeDenial> {
+    if member_publishes_blob && std::mem::replace(saw_blob_publication_update, true) {
+        return Err(SettledRootProjectionMergeDenial::DuplicateBlobPublicationUpdate);
+    }
+    Ok(())
+}
+
+fn admit_unique_blob_quarantine_update(
+    saw_blob_quarantine_update: &mut bool,
+    member_updates_quarantine: bool,
+) -> Result<(), SettledRootProjectionMergeDenial> {
+    if member_updates_quarantine && std::mem::replace(saw_blob_quarantine_update, true) {
+        return Err(SettledRootProjectionMergeDenial::DuplicateBlobQuarantineUpdate);
+    }
+    Ok(())
 }
 
 fn insert_payload_range(
@@ -177,6 +253,43 @@ mod payload_range_tests {
         assert_eq!(
             insert_payload_range(&mut ranges, range(1, 4080, 104)),
             Err(SettledRootProjectionMergeDenial::OverlappingPayloadManifest)
+        );
+    }
+}
+
+#[cfg(test)]
+mod directory_group_tests {
+    use super::*;
+
+    #[test]
+    fn two_classified_directory_members_in_one_group_are_denied() {
+        let mut saw_directory_update = false;
+        for classified in [false, true, false] {
+            admit_unique_directory_update(&mut saw_directory_update, classified).unwrap();
+        }
+        assert_eq!(
+            admit_unique_directory_update(&mut saw_directory_update, true),
+            Err(SettledRootProjectionMergeDenial::DuplicateDerivedDirectoryUpdate)
+        );
+    }
+
+    #[test]
+    fn two_blob_publication_members_in_one_group_are_denied_before_last_wins() {
+        let mut saw_blob_publication_update = false;
+        admit_unique_blob_publication_update(&mut saw_blob_publication_update, true).unwrap();
+        assert_eq!(
+            admit_unique_blob_publication_update(&mut saw_blob_publication_update, true),
+            Err(SettledRootProjectionMergeDenial::DuplicateBlobPublicationUpdate)
+        );
+    }
+
+    #[test]
+    fn two_quarantine_members_in_one_group_are_denied_before_last_wins() {
+        let mut saw = false;
+        admit_unique_blob_quarantine_update(&mut saw, true).unwrap();
+        assert_eq!(
+            admit_unique_blob_quarantine_update(&mut saw, true),
+            Err(SettledRootProjectionMergeDenial::DuplicateBlobQuarantineUpdate)
         );
     }
 }

@@ -8,6 +8,7 @@ use worth_store_physical_backend::{
 mod cleanup;
 mod publication_candidate;
 mod reopen;
+mod resident_storage;
 
 pub use cleanup::{RecoveryCleanupRemovalAction, RecoveryCleanupRemovalOccurrence};
 pub(in crate::physical_runtime::recovery_coordination) use cleanup::{

@@ -1,4 +1,17 @@
-use worth_store_physical_format::{DurableExtentRecordPlacement, DurableInlineRecordPlacement};
+use worth_store_physical_format::{
+    BlobRecordKind, DurableExtentRecordPlacement, DurableInlineRecordPlacement,
+    SelectedRecordContentClass,
+};
+
+mod directory_basis;
+mod released_control;
+mod released_head_basis;
+mod resource_shape;
+mod reuse_basis;
+pub(in crate::physical_runtime) use directory_basis::PreparedDerivedDirectoryBasis;
+pub(in crate::physical_runtime) use released_head_basis::PreparedReleaseHeadBasis;
+pub use resource_shape::PhysicalMutationResourceShape;
+pub(in crate::physical_runtime) use reuse_basis::PreparedReuseDeclarationBasis;
 
 use crate::physical_runtime::{
     durability::{AdmittedPhysicalMutation, PreparedPhysicalDataPlan},
@@ -15,13 +28,6 @@ mod extent_copy;
 pub enum PhysicalMutationAdmissionDisposition {
     Fresh,
     DuplicateUnresolved,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct PhysicalMutationResourceShape {
-    record_count: u32,
-    payload_bytes: u64,
-    prepared_payload_bytes: u64,
 }
 
 /// The exact current placement a record-preserving rewrite was prepared from.
@@ -47,6 +53,14 @@ pub struct PreparedPhysicalMutation {
     rewrite_pages: u32,
     source_root_generation: u64,
     rewrite_anchor: Option<PreparedRewriteAnchor>,
+    blob_record_kind: Option<BlobRecordKind>,
+    selected_content_class: SelectedRecordContentClass,
+    inline_only: bool,
+    derived_directory_basis: Option<PreparedDerivedDirectoryBasis>,
+    released_head_basis: Option<PreparedReleaseHeadBasis>,
+    released_control_placement:
+        Option<crate::physical_runtime::record_serving::arena::ReleasedControlArenaPlacement>,
+    reuse_declaration_basis: Option<PreparedReuseDeclarationBasis>,
 }
 
 pub(in crate::physical_runtime) struct PreparedPhysicalMutationContext {
@@ -63,6 +77,11 @@ pub(in crate::physical_runtime) struct PreparedPhysicalMutationContext {
     pub(in crate::physical_runtime) rewrite_pages: u32,
     pub(in crate::physical_runtime) source_root_generation: u64,
     pub(in crate::physical_runtime) rewrite_anchor: Option<PreparedRewriteAnchor>,
+    pub(in crate::physical_runtime) blob_record_kind: Option<BlobRecordKind>,
+    pub(in crate::physical_runtime) selected_content_class: SelectedRecordContentClass,
+    pub(in crate::physical_runtime) inline_only: bool,
+    pub(in crate::physical_runtime) derived_directory_basis: Option<PreparedDerivedDirectoryBasis>,
+    pub(in crate::physical_runtime) reuse_declaration_basis: Option<PreparedReuseDeclarationBasis>,
 }
 
 pub(in crate::physical_runtime) struct PlannedPhysicalMutationParts {
@@ -84,31 +103,6 @@ enum PreparedPhysicalMutationData {
         data: PreparedPhysicalDataPlan,
         root: PreparedPhysicalRootProjection,
     },
-}
-
-impl PhysicalMutationResourceShape {
-    pub(in crate::physical_runtime::record_serving) const fn prepared(
-        record_count: u32,
-        payload_bytes: u64,
-    ) -> Self {
-        Self {
-            record_count,
-            payload_bytes,
-            prepared_payload_bytes: payload_bytes,
-        }
-    }
-
-    pub const fn record_count(self) -> u32 {
-        self.record_count
-    }
-
-    pub const fn payload_bytes(self) -> u64 {
-        self.payload_bytes
-    }
-
-    pub const fn prepared_payload_bytes(self) -> u64 {
-        self.prepared_payload_bytes
-    }
 }
 
 impl PreparedPhysicalMutation {
@@ -137,6 +131,13 @@ impl PreparedPhysicalMutation {
             rewrite_pages: context.rewrite_pages,
             source_root_generation: context.source_root_generation,
             rewrite_anchor: context.rewrite_anchor,
+            blob_record_kind: context.blob_record_kind,
+            selected_content_class: context.selected_content_class,
+            inline_only: context.inline_only,
+            derived_directory_basis: context.derived_directory_basis,
+            released_head_basis: None,
+            released_control_placement: None,
+            reuse_declaration_basis: context.reuse_declaration_basis,
         }
     }
 
@@ -231,6 +232,32 @@ impl PreparedPhysicalMutation {
         self.placement
     }
 
+    pub(in crate::physical_runtime) const fn blob_record_kind(&self) -> Option<BlobRecordKind> {
+        self.blob_record_kind
+    }
+
+    pub(in crate::physical_runtime) const fn selected_content_class(
+        &self,
+    ) -> SelectedRecordContentClass {
+        self.selected_content_class
+    }
+
+    pub(in crate::physical_runtime) const fn inline_only(&self) -> bool {
+        self.inline_only
+    }
+
+    pub(in crate::physical_runtime) fn derived_directory_basis(
+        &self,
+    ) -> Option<PreparedDerivedDirectoryBasis> {
+        self.derived_directory_basis.clone()
+    }
+
+    pub(in crate::physical_runtime) const fn reuse_declaration_basis(
+        &self,
+    ) -> Option<PreparedReuseDeclarationBasis> {
+        self.reuse_declaration_basis
+    }
+
     pub(in crate::physical_runtime) const fn manifest_capacity_transition(
         &self,
     ) -> super::PhysicalManifestCapacityTransition {
@@ -302,6 +329,10 @@ impl PreparedPhysicalMutation {
     }
 
     pub(in crate::physical_runtime) fn into_parts(self) -> PlannedPhysicalMutationParts {
+        assert!(
+            self.released_control_placement.is_none(),
+            "a planned root owns its released-control arena claim"
+        );
         let PreparedPhysicalMutationData::Planned { batch, data, root } = self.data else {
             unreachable!("fresh WAL reservation requires the director-attached data plan")
         };
@@ -323,6 +354,11 @@ impl PreparedPhysicalMutation {
                 rewrite_pages: self.rewrite_pages,
                 source_root_generation: self.source_root_generation,
                 rewrite_anchor: self.rewrite_anchor,
+                blob_record_kind: self.blob_record_kind,
+                selected_content_class: self.selected_content_class,
+                inline_only: self.inline_only,
+                derived_directory_basis: self.derived_directory_basis,
+                reuse_declaration_basis: self.reuse_declaration_basis,
             },
         }
     }
@@ -349,6 +385,15 @@ impl PreparedPhysicalMutation {
             rewrite_pages: parts.context.rewrite_pages,
             source_root_generation: parts.context.source_root_generation,
             rewrite_anchor: parts.context.rewrite_anchor,
+            blob_record_kind: parts.context.blob_record_kind,
+            selected_content_class: parts.context.selected_content_class,
+            inline_only: parts.context.inline_only,
+            derived_directory_basis: parts.context.derived_directory_basis,
+            reuse_declaration_basis: parts.context.reuse_declaration_basis,
+            // The immutable planned root now owns the exact WAL head effect.
+            // This derivation basis is only needed before data planning.
+            released_head_basis: None,
+            released_control_placement: None,
         }
     }
 }

@@ -6,6 +6,7 @@ pub enum BackgroundPressureKind {
     ReplicationPrepRead,
     BlobIngestPressure,
     BlobMigrationPressure,
+    BlobReclaimPressure,
     BackupPrepRead,
     RepairScan,
     VerificationPressure,
@@ -58,6 +59,12 @@ impl BackgroundPressureDeclaration {
 
     pub const fn blob_migration_pressure(bytes: u64) -> Self {
         Self::new(BackgroundPressureKind::BlobMigrationPressure)
+            .with_bytes(bytes)
+            .with_reclaim_permits(1)
+    }
+
+    pub const fn blob_reclaim_pressure(bytes: u64) -> Self {
+        Self::new(BackgroundPressureKind::BlobReclaimPressure)
             .with_bytes(bytes)
             .with_reclaim_permits(1)
     }

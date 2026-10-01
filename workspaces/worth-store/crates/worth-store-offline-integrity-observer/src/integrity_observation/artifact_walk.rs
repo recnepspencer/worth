@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{collections::BTreeSet, time::Instant};
 
 use super::namespace_identity_walk::observe_namespace_identity;
 use super::report_boundary::prove_report_destination;
@@ -39,18 +39,26 @@ pub fn observe_store(
     let mut observations = namespace.observations;
     observations.extend(root_observations.artifacts);
     let mut retirements = super::retirement_evidence::RetirementEvidence::default();
-    observations.extend(super::journal_walk::observe_journals(
+    let journals = super::journal_walk::observe_journals(
         &store_root,
         namespace.expected_store_identity,
         &mut walk,
         &mut retirements,
-    ));
+        root_observations
+            .roots
+            .iter()
+            .find(|root| Some(root.generation) == root_observations.current_generation),
+    );
+    observations.extend(journals.artifacts);
+    let mut selected_records = BTreeSet::new();
     observations.extend(super::record_walk::observe_records(
         &store_root,
         namespace.expected_store_identity,
         &root_observations.roots,
         root_observations.current_generation,
         retirements,
+        journals.checkpoint,
+        &mut selected_records,
         &mut walk,
     ));
     let residue = super::namespace_inventory::observe_namespace_residue(
@@ -68,6 +76,8 @@ pub fn observe_store(
         counters,
         completeness,
         observations,
+        root_observations.selected_root,
+        selected_records,
     );
     super::report_wire::stabilize_report_bytes(&mut report)
         .map_err(OfflineIntegrityObservationDenial::ReportWire)?;

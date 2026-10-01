@@ -63,6 +63,15 @@ pub(super) fn project(scope: PhysicalArtifactScope) -> ProcessScopeIdentity {
         Family::ExtentArenaFrame => {
             unreachable!("typed manifest/chunk scopes identify frames inside the arena")
         }
+        Family::BlobResumeSession
+        | Family::BlobChunkFrame
+        | Family::BlobTreeNode
+        | Family::BlobGenerationPublication => {
+            unreachable!("payload-only blob validation has no artifact scope")
+        }
+        Family::BlobDropSetManifest | Family::BlobReclaimDescriptor => {
+            unreachable!("payload-only blob validation has no artifact scope")
+        }
         Family::BootstrapCatalog => ProcessScopeIdentity::Bootstrap,
         Family::CurrentRootSelector => ProcessScopeIdentity::CurrentSelector,
         Family::PreviousRootSelector => ProcessScopeIdentity::PreviousSelector,

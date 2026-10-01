@@ -25,10 +25,22 @@ use super::{
 pub struct StoreRecoveryCheckpointBindingBasis {
     checkpoint: PhysicalCheckpointIdentity,
     compaction_generation: u64,
+    checkpoint_stream_bytes: u64,
+    checkpoint_stream_digest: [u8; 32],
     binding_count: u64,
     binding_bytes: u64,
     binding_digest: [u8; 32],
     outcome: Result<Box<[StoreRecoveryOperationEvidence]>, StoreRecoveryBindingSampleFailure>,
+}
+
+impl StoreRecoveryCheckpointBindingBasis {
+    /// The reusable basis retains operation evidence, not checkpoint stream bytes.
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        match &self.outcome {
+            Ok(operations) => u64::try_from(std::mem::size_of_val(&**operations)).ok(),
+            Err(_) => Some(0),
+        }
+    }
 }
 
 /// Bounded, uncommitted Store interpretation of integrity-admitted bindings.
@@ -157,6 +169,8 @@ impl StoreRecoveryCheckpointBindingRebuilder {
         StoreRecoveryCheckpointBindingBasis {
             checkpoint: self.checkpoint,
             compaction_generation: self.compaction_generation,
+            checkpoint_stream_bytes: checkpoint.encoded_bytes(),
+            checkpoint_stream_digest: checkpoint.encoded_digest(),
             binding_count: summary.record_count(),
             binding_bytes: summary.encoded_bytes(),
             binding_digest: summary.digest(),
@@ -181,6 +195,8 @@ impl StoreRecoveryCheckpointBindingBasis {
         let footer = checkpoint.footer();
         if checkpoint.source().identity() != self.checkpoint
             || checkpoint.compaction_cutover().product_generation() != self.compaction_generation
+            || checkpoint.encoded_bytes() != self.checkpoint_stream_bytes
+            || checkpoint.encoded_digest() != self.checkpoint_stream_digest
             || footer.binding_record_count() != self.binding_count
             || footer.binding_record_bytes() != self.binding_bytes
             || footer.binding_records_digest() != self.binding_digest

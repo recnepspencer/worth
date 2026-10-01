@@ -1,6 +1,6 @@
 use super::*;
 use std::sync::{Arc, Mutex};
-use worth_store_physical_format::{ExtentArenaId, ExtentArenaRange};
+use worth_store_physical_format::{ExtentArenaId, ExtentArenaRange, PhysicalTierClass};
 
 mod release_budget;
 mod retained_charge;
@@ -11,6 +11,115 @@ fn range(arena: u64, offset: u64, length: u64) -> ExtentArenaRange {
 
 fn owner(next: u64) -> ExtentArenaAllocationOwner {
     ExtentArenaAllocationOwner::new(ExtentArenaCapacity::DEFAULT, 4096, 64, next).unwrap()
+}
+
+#[test]
+fn tiered_allocator_segregates_best_fit_and_skips_at_most_two_arena_names() {
+    let mut allocator =
+        ExtentArenaAllocationOwner::new_tiered(ExtentArenaCapacity::DEFAULT, 4096, 64, 7, Some(7))
+            .unwrap();
+    let hot = allocator
+        .reserve_in_tier(4096, PhysicalTierClass::Hot)
+        .unwrap()
+        .1;
+    assert_eq!(hot, range(8, 0, 4096));
+    let primary = allocator.reserve(4096).unwrap().1;
+    assert_eq!(primary, range(7, 0, 4096));
+    let cold = allocator
+        .reserve_in_tier(4096, PhysicalTierClass::Cold)
+        .unwrap()
+        .1;
+    assert_eq!(cold, range(9, 0, 4096));
+    assert_ne!(primary.arena(), hot.arena());
+    assert_ne!(hot.arena(), cold.arena());
+
+    let mut cold_first =
+        ExtentArenaAllocationOwner::new_tiered(ExtentArenaCapacity::DEFAULT, 4096, 64, 7, Some(7))
+            .unwrap();
+    assert_eq!(
+        cold_first
+            .reserve_in_tier(4096, PhysicalTierClass::Cold)
+            .unwrap()
+            .1,
+        range(9, 0, 4096)
+    );
+    assert_eq!(cold_first.reserve(4096).unwrap().1, range(7, 0, 4096));
+    assert_eq!(
+        cold_first
+            .reserve_in_tier(4096, PhysicalTierClass::Hot)
+            .unwrap()
+            .1,
+        range(8, 0, 4096)
+    );
+}
+
+#[test]
+fn legacy_allocator_denies_non_primary_before_any_claim() {
+    let mut allocator = owner(7);
+    assert_eq!(
+        allocator.reserve_in_tier(4096, PhysicalTierClass::Cold),
+        Err(ArenaAllocationDenial::InvalidGeometry)
+    );
+    assert_eq!(allocator.reserve(4096).unwrap().1, range(7, 0, 4096));
+}
+
+#[test]
+fn denied_tier_skip_does_not_consume_frontier_or_claim_budget() {
+    let mut allocator =
+        ExtentArenaAllocationOwner::new_tiered(ExtentArenaCapacity::DEFAULT, 4096, 3, 7, Some(7))
+            .unwrap();
+    assert_eq!(
+        allocator.reserve_in_tier(4096, PhysicalTierClass::Cold),
+        Err(ArenaAllocationDenial::RangeBudget {
+            required: 4,
+            maximum: 3,
+        })
+    );
+    assert_eq!(allocator.reserve(4096).unwrap().1, range(7, 0, 4096));
+}
+
+#[test]
+fn epoch_fence_atomically_denies_claims_and_quarantines_uncertain_effects() {
+    let shared = Arc::new(Mutex::new(owner(7)));
+    let fence = ArenaTierEpochFence::begin(&shared, 7).unwrap();
+    let concurrent = Arc::clone(&shared);
+    let denial = std::thread::spawn(move || ArenaReservation::reserve(&concurrent, 4096).err())
+        .join()
+        .unwrap();
+    assert_eq!(denial, Some(ArenaAllocationDenial::EvacuationBusy));
+    drop(fence);
+    assert_eq!(
+        ArenaReservation::reserve(&shared, 4096).unwrap().range(),
+        range(7, 0, 4096)
+    );
+
+    let shared = Arc::new(Mutex::new(owner(7)));
+    let mut uncertain = ArenaTierEpochFence::begin(&shared, 7).unwrap();
+    uncertain.mark_effect_may_exist();
+    drop(uncertain);
+    assert!(matches!(
+        ArenaReservation::reserve(&shared, 4096),
+        Err(ArenaAllocationDenial::EvacuationBusy)
+    ));
+}
+
+#[test]
+fn completed_epoch_fence_preserves_old_primary_and_admits_new_hot_arena() {
+    let shared = Arc::new(Mutex::new(owner(7)));
+    let mut fence = ArenaTierEpochFence::begin(&shared, 7).unwrap();
+    assert_eq!(fence.epoch(), 7);
+    fence.mark_effect_may_exist();
+    fence.complete().unwrap();
+    assert!(matches!(
+        ArenaTierEpochFence::begin(&shared, 7),
+        Err(ArenaAllocationDenial::EvacuationBusy)
+    ));
+    let hot = ArenaReservation::reserve_in_tier(&shared, 4096, PhysicalTierClass::Hot).unwrap();
+    assert_eq!(hot.range(), range(8, 0, 4096));
+    assert_eq!(
+        ArenaReservation::reserve(&shared, 4096).unwrap().range(),
+        range(7, 0, 4096)
+    );
 }
 
 #[test]
@@ -107,16 +216,46 @@ fn published_copy_obligation_cannot_cancel_live_destination() {
 }
 
 #[test]
-fn range_limit_denies_before_consuming_a_claim() {
+fn best_fit_split_uses_one_slot_and_denial_preserves_claim_and_frontier() {
     let mut allocator =
         ExtentArenaAllocationOwner::new(ExtentArenaCapacity::DEFAULT, 4096, 3, 1).unwrap();
-    let (token, first) = allocator.reserve(4096).unwrap();
+    let (first_token, first) = allocator.reserve(4096).unwrap();
+    let (second_token, second) = allocator.reserve(4096).unwrap();
+    assert_eq!(second, range(first.arena().get(), first.end(), 4096));
     assert_eq!(
         allocator.reserve(4096),
-        Err(ArenaAllocationDenial::RangeBudget)
+        Err(ArenaAllocationDenial::RangeBudget {
+            required: 4,
+            maximum: 3,
+        })
     );
+    allocator.cancel(second_token).unwrap();
+    let (retry_token, retry) = allocator.reserve(4096).unwrap();
+    assert_eq!(retry_token, second_token + 1);
+    assert_eq!(retry, second);
+    allocator.cancel(first_token).unwrap();
+    allocator.cancel(retry_token).unwrap();
+    let capacity = ExtentArenaCapacity::DEFAULT.get();
+    assert_eq!(
+        allocator.reserve(capacity).unwrap().1,
+        range(1, 0, capacity)
+    );
+    assert_eq!(
+        allocator.reserve(capacity).unwrap().1,
+        range(2, 0, capacity)
+    );
+}
+
+#[test]
+fn best_fit_exact_match_needs_no_spare_slot_at_full_quota() {
+    let mut allocator =
+        ExtentArenaAllocationOwner::new(ExtentArenaCapacity::DEFAULT, 4096, 2, 2).unwrap();
+    allocator.restore_free_range(range(1, 0, 4096)).unwrap();
+    allocator.restore_free_range(range(1, 8192, 4096)).unwrap();
+    let (token, selected) = allocator.reserve(4096).unwrap();
+    assert_eq!(selected, range(1, 0, 4096));
     allocator.cancel(token).unwrap();
-    assert_eq!(allocator.reserve(4096).unwrap().1, first);
+    assert_eq!(allocator.reserve(4096).unwrap().1, selected);
 }
 
 #[test]

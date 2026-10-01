@@ -232,6 +232,8 @@ mod tests {
             OfflineIntegrityObservationCounters::default(),
             OfflineIntegrityReportCompleteness::Complete,
             observations,
+            None,
+            Default::default(),
         );
         assert_eq!(report.artifacts().len(), 1);
         assert_eq!(

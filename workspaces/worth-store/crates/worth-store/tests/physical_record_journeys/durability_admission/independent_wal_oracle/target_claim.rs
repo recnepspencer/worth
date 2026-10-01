@@ -52,7 +52,6 @@ fn independent_target_identity(target: PhysicalDataFrameIdentity) -> Vec<u8> {
         RecordArtifactFile::ExtentArena { arena } => {
             bytes.push(16);
             bytes.extend_from_slice(&arena.to_le_bytes());
-            bytes.extend_from_slice(&0_u64.to_le_bytes());
         }
         _ => panic!("redo targets are data artifacts only"),
     }

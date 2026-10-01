@@ -5,6 +5,14 @@ use worth_store_offline_integrity_observer::{
 use super::arguments::ObserveArguments;
 
 pub(super) fn observe(arguments: ObserveArguments) -> Result<(), String> {
+    observe_with(arguments, false)
+}
+
+pub(super) fn observe_selected(arguments: ObserveArguments) -> Result<(), String> {
+    observe_with(arguments, true)
+}
+
+fn observe_with(arguments: ObserveArguments, selected: bool) -> Result<(), String> {
     let process = std::process::id().to_string();
     let context = OfflineIntegrityProtocolContext::new(
         "physical_store_integrity_observer",
@@ -22,5 +30,9 @@ pub(super) fn observe(arguments: ObserveArguments) -> Result<(), String> {
     .map_err(|denial| format!("observation request denied: {denial:?}"))?;
     let report =
         observe_store(&request).map_err(|denial| format!("observation denied: {denial:?}"))?;
-    super::report_output::emit(&request, &report)
+    if selected {
+        super::report_output::emit_selected(&request, &report)
+    } else {
+        super::report_output::emit(&request, &report)
+    }
 }

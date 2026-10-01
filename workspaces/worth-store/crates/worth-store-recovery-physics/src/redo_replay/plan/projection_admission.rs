@@ -240,6 +240,10 @@ fn invalid<T>() -> Result<T, PhysicalRedoPlanningDenial> {
 }
 
 #[cfg(test)]
+#[path = "projection_admission/retired_inline_tests.rs"]
+mod retired_inline_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use worth_store_physical_format::store_namespace::{
@@ -294,7 +298,7 @@ mod tests {
         let extent = authority
             .record_extent_cell(PhysicalExtentId::from_raw(7).unwrap())
             .with_extent_generation(PhysicalGeneration::from_raw(2).unwrap());
-        let placement = DurableExtentRecordPlacement::new(
+        let placement = DurableExtentRecordPlacement::legacy_unknown(
             record,
             extent,
             PAYLOAD.len() as u64,

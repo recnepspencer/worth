@@ -16,17 +16,14 @@ pub(crate) mod tests;
 mod watermark;
 
 pub use admission::{
-    btree_lookup_materialization_admission_cases,
     btree_publication_materialization_admission_cases,
-    btree_replay_materialization_admission_cases, catalog_root_materialization_admission_cases,
+    catalog_root_materialization_admission_cases,
     imported_blob_materialization_admission_cases, lsm_lookup_materialization_admission_cases,
     lsm_publication_materialization_admission_cases, lsm_replay_materialization_admission_cases,
-    AdmittedLayoutMaterialization, BTreeLookupMaterializationAdmissionCaseId,
-    BTreeLookupMaterializationAdmissionOutcome, BTreeLookupMaterializationAdmissionView,
+    AdmittedLayoutMaterialization,
     BTreePublicationMaterializationAdmissionCaseId,
     BTreePublicationMaterializationAdmissionOutcome, BTreePublicationMaterializationAdmissionView,
-    BTreeReplayMaterializationAdmissionCaseId, BTreeReplayMaterializationAdmissionOutcome,
-    BTreeReplayMaterializationAdmissionView, CatalogRootMaterializationAdmissionCaseId,
+    CatalogRootMaterializationAdmissionCaseId,
     CatalogRootMaterializationAdmissionOutcome, CatalogRootMaterializationAdmissionView,
     ImportedBlobMaterializationAdmissionCaseId, ImportedBlobMaterializationAdmissionOutcome,
     ImportedBlobMaterializationAdmissionView, LsmLookupMaterializationAdmissionCaseId,

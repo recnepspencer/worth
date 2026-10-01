@@ -288,6 +288,7 @@ const fn coordinate_matches_role(role: CandidateFrameRole, artifact: RecordArtif
                 | RecordArtifactFile::SegmentMembershipBlock { .. }
                 | RecordArtifactFile::FreeSpaceManifest { .. }
                 | RecordArtifactFile::FreeSpaceMembershipBlock { .. }
+                | RecordArtifactFile::ReleaseCustodyHeadBlock { .. }
         ) | (
             CandidateFrameRole::RootManifest,
             RecordArtifactFile::RootManifest { .. }

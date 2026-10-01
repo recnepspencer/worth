@@ -1,17 +1,25 @@
 use std::collections::BTreeMap;
 
 use worth_store::physical_runtime::AdmittedRecoveryFilesystemMedia;
+use worth_store::physical_runtime::{
+    IntegrityAdmittedRecoveryWalFrame, StoreRecoveryBindingFreshnessSample,
+};
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration,
 };
 use worth_store_recovery_physics::{
-    PhysicalRedoTarget, PhysicalRedoTargetIdentity, RecoveryPageObservation,
+    PhysicalRedoTarget, PhysicalRedoTargetIdentity, PhysicalSourceSelection,
+    RecoveryPageObservation,
 };
 
 mod allocation_truth;
 mod failure;
+mod historical_chain;
+mod historical_drop;
 mod materialized;
+mod ordered_history;
 mod selected_basis;
+mod tier_routes;
 
 pub(in crate::orchestration::planning) use allocation_truth::InlineAllocationTruth;
 pub(super) use failure::PageObservationFailure;
@@ -29,12 +37,26 @@ pub(super) struct ObservedPageBasis {
     pub(super) inline_truth: Option<allocation_truth::InlineAllocationTruth>,
     pub(super) selected_source: crate::progression::RecoverySelectedSourceInventory,
     pub(super) manifest_budget: super::manifest_entry_budget::ManifestEntryBudget,
+    pub(super) tier_custody: Option<worth_store_recovery_physics::VerifiedSelectedTierEpochCustody>,
+    pub(super) historical_drops: Vec<historical_drop::HistoricalDropEvidence>,
+    pub(super) ordered_releases: Option<Vec<ordered_history::OrderedReleasedObservation>>,
+    pub(super) historical_chain_peak_scratch_bytes: u64,
 }
+pub(super) use historical_drop::HistoricalDropEvidence;
+pub(super) use ordered_history::OrderedReleasedObservation;
 
 pub(super) use selected_basis::{artifact_read_ceiling, ArtifactReadCeilingDenial};
 
+#[derive(Clone, Copy)]
+pub(super) struct TierEvidence<'a> {
+    pub(super) selection: &'a PhysicalSourceSelection,
+    pub(super) sample: &'a StoreRecoveryBindingFreshnessSample,
+    pub(super) selected_wal: &'a [&'a IntegrityAdmittedRecoveryWalFrame],
+}
+
 pub(super) fn observe_selected_pages(
     media: AdmittedRecoveryFilesystemMedia,
+    tier_evidence: TierEvidence<'_>,
     root_manifest: &DurablePhysicalRootManifest,
     retained_fallback: Option<(
         &DurablePhysicalRootManifest,
@@ -47,6 +69,7 @@ pub(super) fn observe_selected_pages(
     admitted_manifest_entries: u64,
     maximum_manifest_entries: u64,
     maximum_bytes: u64,
+    maximum_staging_bytes: u64,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) -> (AdmittedRecoveryFilesystemMedia, PageObservationAttempt) {
     let targets = admitted_redo.observation_targets();
@@ -56,6 +79,7 @@ pub(super) fn observe_selected_pages(
     let mut integrity = crate::integrity_ingress::RecoveryIntegrityIngressTrace::new();
     let result = observe(
         &mut discovery,
+        tier_evidence,
         root_manifest,
         retained_fallback,
         placements,
@@ -65,6 +89,7 @@ pub(super) fn observe_selected_pages(
         admitted_manifest_entries,
         maximum_manifest_entries,
         maximum_bytes,
+        maximum_staging_bytes,
         &mut integrity,
         integrity_trace,
     );
@@ -84,6 +109,7 @@ pub(super) fn observe_selected_pages(
 
 fn observe(
     discovery: &mut worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery,
+    tier_evidence: TierEvidence<'_>,
     root_manifest: &DurablePhysicalRootManifest,
     retained_fallback: Option<(
         &DurablePhysicalRootManifest,
@@ -96,6 +122,7 @@ fn observe(
     admitted_manifest_entries: u64,
     maximum_manifest_entries: u64,
     byte_limit: u64,
+    maximum_staging_bytes: u64,
     integrity: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) -> Result<ObservedPageBasis, PageObservationFailure> {
@@ -111,6 +138,13 @@ fn observe(
         &mut budget,
         byte_limit,
         integrity_trace,
+    )?;
+    let tier_custody = tier_routes::validate(
+        root_manifest.generation(),
+        placements,
+        &selected_source.free_space,
+        root_manifest.tier_epoch_anchor(),
+        tier_evidence,
     )?;
     if let Some((fallback, fallback_format)) = retained_fallback {
         let fallback_source = super::selected_source_inventory::observe_with_budget(
@@ -196,7 +230,29 @@ fn observe(
         .into_values()
         .filter_map(|targets| targets.into_iter().next())
         .chain(extent_targets.into_values().flat_map(BTreeMap::into_values))
-        .collect();
+        .collect::<Vec<_>>();
+    let (
+        historical_observations,
+        absent_targets,
+        historical_drops,
+        chain_scratch,
+        ordered_releases,
+    ) = historical_drop::classify(
+        discovery,
+        tier_evidence.selection,
+        root_manifest,
+        placements,
+        &absent_targets,
+        admitted_redo,
+        &selected_source,
+        format,
+        &mut budget,
+        byte_limit,
+        admitted_manifest_entries,
+        maximum_staging_bytes,
+        integrity_trace,
+    )?;
+    observations.extend(historical_observations);
     let absent = allocation_truth::admit_absent_targets(
         root_manifest,
         placements,
@@ -211,6 +267,10 @@ fn observe(
         inline_truth: absent.inline_truth,
         selected_source,
         manifest_budget: budget,
+        tier_custody,
+        historical_drops,
+        ordered_releases,
+        historical_chain_peak_scratch_bytes: chain_scratch,
     })
 }
 

@@ -1,8 +1,9 @@
 use worth_store_physical_backend::{ArtifactTreeFile, ArtifactTreeMedia};
 use worth_store_wal::{
-    inspect_interrupted_wal_segment_start, inspect_verified_wal_active_tail,
-    inspect_verified_wal_segment, InterruptedWalSegmentStart, InterruptedWalTail,
-    VerifiedWalSegment, WalSegmentArtifactIdentity, WalTopologyDenialKind,
+    inspect_bounded_wal_active_tail_with_evidence, inspect_interrupted_wal_segment_start,
+    InterruptedWalSegmentStart, InterruptedWalTail, VerifiedWalSegment,
+    WalActiveTailInspectionDenial, WalArtifactStoreDenial, WalSegmentArtifactIdentity,
+    WalTopologyDenialKind,
 };
 
 use super::PhysicalWalOpenFailure;
@@ -36,31 +37,44 @@ pub(super) fn inspect<'segment>(
     artifact: &ArtifactTreeFile,
     bytes: &'segment [u8],
     is_active: bool,
+    maximum_frames: u64,
 ) -> Result<ActiveTailInspection<'segment>, PhysicalWalOpenFailure> {
-    if !is_active {
-        let prefix = inspect_verified_wal_segment(identity, bytes)
-            .map_err(PhysicalWalOpenFailure::SegmentInspection)?;
-        return Ok(ActiveTailInspection::Verified {
-            prefix,
-            interrupted_tail: None,
-        });
+    let admitted =
+        match inspect_bounded_wal_active_tail_with_evidence(identity, bytes, maximum_frames) {
+            Ok(admitted) => admitted,
+            Err(failure) => {
+                let denial = match failure.denial() {
+                    WalActiveTailInspectionDenial::FrameLimitExceeded { observed, admitted } => {
+                        let frame_bytes = std::mem::size_of::<
+                            worth_store_wal::VerifiedWalFramePayload<'_>,
+                        >() as u64;
+                        return Err(PhysicalWalOpenFailure::ReopenAllocationLimitExceeded {
+                            admitted: admitted.saturating_mul(frame_bytes),
+                            required: observed.saturating_mul(frame_bytes),
+                        });
+                    }
+                    WalActiveTailInspectionDenial::Artifact(denial) => denial,
+                };
+                if !is_active {
+                    return Err(PhysicalWalOpenFailure::SegmentInspection(denial));
+                }
+                return match inspect_interrupted_wal_segment_start(identity, bytes) {
+                    Ok(proof) => Ok(ActiveTailInspection::InterruptedStart(
+                        InterruptedActiveSegmentCandidate {
+                            identity,
+                            artifact: artifact.clone(),
+                            proof,
+                        },
+                    )),
+                    Err(_) => Err(PhysicalWalOpenFailure::SegmentInspection(denial)),
+                };
+            }
+        };
+    if !is_active && admitted.interrupted_tail().is_some() {
+        return Err(PhysicalWalOpenFailure::SegmentInspection(
+            WalArtifactStoreDenial::InvalidFrame,
+        ));
     }
-
-    let admitted = match inspect_verified_wal_active_tail(identity, bytes) {
-        Ok(admitted) => admitted,
-        Err(denial) => {
-            return match inspect_interrupted_wal_segment_start(identity, bytes) {
-                Ok(proof) => Ok(ActiveTailInspection::InterruptedStart(
-                    InterruptedActiveSegmentCandidate {
-                        identity,
-                        artifact: artifact.clone(),
-                        proof,
-                    },
-                )),
-                Err(_) => Err(PhysicalWalOpenFailure::SegmentInspection(denial)),
-            };
-        }
-    };
     let interrupted_tail = admitted
         .interrupted_tail()
         .map(|proof| InterruptedActiveTail {

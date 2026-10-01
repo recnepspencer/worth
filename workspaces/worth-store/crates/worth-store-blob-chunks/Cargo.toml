@@ -8,13 +8,11 @@ description = "Roadmap 2 S.7 native content-addressed blob and object chunk stor
 
 [features]
 certification-test-authority = [
-    "worth-store/certification-test-authority",
     "worth-store-io-scheduler/certification-test-authority",
     "worth-store-physical-backend/certification-test-authority",
     "worth-store-physical-isolation/certification-authority",
     "worth-store-reclaim-policy/certification-test-authority",
     "worth-store-tiering/certification-test-authority",
-    "worth-store-test-support/physical-compaction-fixtures",
 ]
 
 [dependencies]
@@ -34,10 +32,8 @@ worth-store-retention.workspace = true
 worth-store-security.workspace = true
 worth-store-tiering.workspace = true
 worth-store-wal.workspace = true
-worth-store.workspace = true
 
 [dev-dependencies]
-worth-store = { workspace = true, features = ["certification-test-authority"] }
 tempfile = "3"
 worth-store-aspect-native.workspace = true
 worth-store-offline-verifier.workspace = true
@@ -46,7 +42,6 @@ worth-store-io-scheduler = { workspace = true, features = ["certification-test-a
 worth-store-physical-isolation = { workspace = true, features = ["certification-authority"] }
 worth-store-reclaim-policy = { workspace = true, features = ["certification-test-authority"] }
 worth-store-tiering = { workspace = true, features = ["certification-test-authority"] }
-worth-store-test-support = { workspace = true, default-features = false, features = ["physical-isolation-fixtures"] }
 
 [lints]
 workspace = true

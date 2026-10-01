@@ -16,6 +16,7 @@ pub enum OfflineUnsupportedVersionAxis {
     WalFrame,
     CheckpointRecord,
     PhysicalWork,
+    BTreeNode,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

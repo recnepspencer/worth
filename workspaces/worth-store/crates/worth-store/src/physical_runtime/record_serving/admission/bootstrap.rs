@@ -23,7 +23,8 @@ pub(in crate::physical_runtime) struct RecordServingState {
     /// Rewrite sources that still occupy growth until retirement removes them.
     pub(in crate::physical_runtime) displaced_artifacts:
         Vec<crate::physical_runtime::durability::DisplacedArtifact>,
-    pub(in crate::physical_runtime) publication_overheads: Vec<(u64, u64)>,
+    pub(in crate::physical_runtime) publication_overheads:
+        Vec<super::ReconstructedPublicationMetadata>,
     pub(in crate::physical_runtime) publication_residue: RecordPublicationResidueObservation,
     pub(in crate::physical_runtime) free_space: DurableFreeSpaceManifestHeader,
     pub(in crate::physical_runtime) root_protocol_counters:
@@ -68,7 +69,7 @@ impl BootstrapCatalogReadLimits {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RecordBootstrapDenial {
     ReadProtectionUnavailable(crate::physical_runtime::PhysicalReadProtectionDenial),
     IdentityEntropyUnavailable,
@@ -81,6 +82,8 @@ pub enum RecordBootstrapDenial {
     UnsupportedPhysicalRecordFormat(UnsupportedPhysicalRecordFormat),
     PhysicalRecordFormatMismatch(PhysicalRecordFormatMismatch),
     CurrentRootDamaged,
+    RecoveredCheckpointCustodyMismatch,
+    RecoveredCustodyResident(crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial),
     FreeSpaceManifestDamaged,
     BackendUnavailable(ArtifactTreeFailure),
     ResidencyUnavailable(super::super::PhysicalRecordResidencyFailure),
@@ -134,7 +137,7 @@ impl PhysicalRecordFormatMismatch {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RecordBootstrapFailure {
     Backend(ArtifactTreeFailure),
     FormatEncoding,

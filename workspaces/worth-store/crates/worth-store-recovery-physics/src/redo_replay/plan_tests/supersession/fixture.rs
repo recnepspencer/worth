@@ -125,7 +125,15 @@ pub(super) fn image_generations(
         .zip(&slots)
         .map(|(&record, &slot)| {
             CurrentPhysicalRecordPlacement::Inline(
-                DurableInlineRecordPlacement::new(record, segment_cell, page, slot, 4, 12).unwrap(),
+                DurableInlineRecordPlacement::legacy_unknown(
+                    record,
+                    segment_cell,
+                    page,
+                    slot,
+                    4,
+                    12,
+                )
+                .unwrap(),
             )
         })
         .collect();

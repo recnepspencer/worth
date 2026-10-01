@@ -5,6 +5,7 @@ mod handle;
 mod owner;
 mod progress;
 mod request;
+mod selected_record;
 mod target;
 mod window_inspection;
 
@@ -16,4 +17,5 @@ pub use progress::{
     PhysicalIntegrityScrubDeferral, PhysicalIntegrityScrubWindowObservation,
 };
 pub use request::{ManagedPhysicalIntegrityScrubRequest, PhysicalIntegrityScrubRequestDenial};
-pub use target::PhysicalIntegrityScrubTarget;
+pub(in crate::physical_runtime) use target::SelectedRecordScrubBasis;
+pub use target::{PhysicalIntegrityScrubSource, PhysicalIntegrityScrubTarget};

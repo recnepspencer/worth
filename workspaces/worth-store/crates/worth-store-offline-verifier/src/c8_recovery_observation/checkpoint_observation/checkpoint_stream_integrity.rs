@@ -1,12 +1,21 @@
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
     CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES, CHECKPOINT_BINDING_RECORD_PREFIX_BYTES,
-    CHECKPOINT_DIRTY_FRAME_RECORD_BYTES, CHECKPOINT_STREAM_FOOTER_RECORD_BYTES,
-    CHECKPOINT_STREAM_HEADER_RECORD_BYTES, MAX_CHECKPOINT_BINDING_RECORD_BYTES,
+    CHECKPOINT_CERTIFIED_FOOTER_RECORD_BYTES, CHECKPOINT_DIRTY_FRAME_RECORD_BYTES,
+    CHECKPOINT_STREAM_FOOTER_RECORD_BYTES, CHECKPOINT_STREAM_HEADER_RECORD_BYTES,
+    MAX_CHECKPOINT_BINDING_RECORD_BYTES,
 };
 
-const RECORD_PREFIX_BYTES: usize = 16;
-const RECORD_CHECKSUM_BYTES: usize = 4;
+#[path = "checkpoint_stream_integrity/certificate_section.rs"]
+mod certificate_section;
+#[path = "checkpoint_stream_integrity/record_framing.rs"]
+mod record_framing;
+
+use record_framing::{
+    fixed_record, prefix_payload_bytes, read_u32, read_u64, supported_schema, CERTIFIED_SCHEMA,
+    CHECKSUM_BYTES, PREFIX_BYTES,
+};
+
 const HEADER_KIND: u8 = 1;
 const DIRTY_KIND: u8 = 2;
 const COMPACTION_KIND: u8 = 3;
@@ -69,20 +78,31 @@ impl OfflineObservedCheckpointStream {
 }
 
 pub(super) fn observe(bytes: &[u8]) -> Option<OfflineObservedCheckpointStream> {
+    let schema = supported_schema(bytes.get(..PREFIX_BYTES)?)?;
+    let footer_bytes = if schema == CERTIFIED_SCHEMA {
+        CHECKPOINT_CERTIFIED_FOOTER_RECORD_BYTES
+    } else {
+        CHECKPOINT_STREAM_FOOTER_RECORD_BYTES
+    };
     let minimum = CHECKPOINT_STREAM_HEADER_RECORD_BYTES
-        + CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES
-        + CHECKPOINT_STREAM_FOOTER_RECORD_BYTES;
+        .checked_add(CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES)?
+        .checked_add(footer_bytes)?;
     if bytes.len() < minimum {
         return None;
     }
     let header_record = bytes.get(..CHECKPOINT_STREAM_HEADER_RECORD_BYTES)?;
-    let header = fixed_record(header_record, HEADER_KIND, 144)?;
+    let header = fixed_record(header_record, schema, HEADER_KIND, 144)?;
     let header_fields = header_fields(header)?;
 
-    let footer_offset = bytes.len() - CHECKPOINT_STREAM_FOOTER_RECORD_BYTES;
+    let footer_offset = bytes.len().checked_sub(footer_bytes)?;
     let footer_record = bytes.get(footer_offset..)?;
-    let footer = fixed_record(footer_record, FOOTER_KIND, 136)?;
-    let footer_fields = footer_fields(footer)?;
+    let footer = fixed_record(
+        footer_record,
+        schema,
+        FOOTER_KIND,
+        if schema == CERTIFIED_SCHEMA { 184 } else { 136 },
+    )?;
+    let footer_fields = footer_fields(footer, schema)?;
     if footer_fields.store != header_fields.store
         || footer_fields.sequence != header_fields.sequence
     {
@@ -101,7 +121,7 @@ pub(super) fn observe(bytes: &[u8]) -> Option<OfflineObservedCheckpointStream> {
     for _ in 0..dirty_count {
         let end = offset.checked_add(CHECKPOINT_DIRTY_FRAME_RECORD_BYTES)?;
         let record = bytes.get(offset..end)?;
-        let payload = fixed_record(record, DIRTY_KIND, 48)?;
+        let payload = fixed_record(record, schema, DIRTY_KIND, 48)?;
         valid_dirty_basis(payload)?;
         dirty_digest.update(record);
         offset = end;
@@ -113,7 +133,12 @@ pub(super) fn observe(bytes: &[u8]) -> Option<OfflineObservedCheckpointStream> {
     }
 
     let compaction_end = offset.checked_add(CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES)?;
-    let compaction = fixed_record(bytes.get(offset..compaction_end)?, COMPACTION_KIND, 16)?;
+    let compaction = fixed_record(
+        bytes.get(offset..compaction_end)?,
+        schema,
+        COMPACTION_KIND,
+        16,
+    )?;
     let compaction_generation = read_u64(compaction, 0)?;
     let compaction_cutoff = read_u64(compaction, 8)?;
     if compaction_generation == 0
@@ -128,27 +153,38 @@ pub(super) fn observe(bytes: &[u8]) -> Option<OfflineObservedCheckpointStream> {
     let binding_start = offset;
     let mut binding_digest = Sha256::new();
     for _ in 0..binding_count {
-        let prefix = bytes.get(offset..offset.checked_add(RECORD_PREFIX_BYTES)?)?;
-        let payload_bytes = record_prefix(prefix, BINDING_KIND)?;
+        let prefix = bytes.get(offset..offset.checked_add(PREFIX_BYTES)?)?;
+        let payload_bytes = prefix_payload_bytes(prefix, schema, BINDING_KIND)?;
         if payload_bytes == 0 || payload_bytes > MAX_CHECKPOINT_BINDING_RECORD_BYTES {
             return None;
         }
-        let frame_bytes = RECORD_PREFIX_BYTES
+        let frame_bytes = PREFIX_BYTES
             .checked_add(payload_bytes)?
-            .checked_add(RECORD_CHECKSUM_BYTES)?;
+            .checked_add(CHECKSUM_BYTES)?;
         let end = offset.checked_add(frame_bytes)?;
         if end > footer_offset {
             return None;
         }
         let record = bytes.get(offset..end)?;
-        fixed_record(record, BINDING_KIND, payload_bytes)?;
+        fixed_record(record, schema, BINDING_KIND, payload_bytes)?;
         binding_digest.update(record);
         offset = end;
     }
-    if offset != footer_offset
-        || (offset - binding_start) as u64 != footer_fields.binding_bytes
+    if u64::try_from(offset.checked_sub(binding_start)?).ok()? != footer_fields.binding_bytes
         || binding_digest.finalize().as_slice() != footer_fields.binding_digest
     {
+        return None;
+    }
+    if schema == CERTIFIED_SCHEMA {
+        certificate_section::observe(
+            bytes,
+            offset,
+            footer_offset,
+            footer_fields.certificate_records,
+            footer_fields.certificate_bytes,
+            footer_fields.certificate_digest,
+        )?;
+    } else if offset != footer_offset {
         return None;
     }
 
@@ -243,9 +279,12 @@ struct FooterFields {
     binding_records: u64,
     binding_bytes: u64,
     binding_digest: [u8; 32],
+    certificate_records: u64,
+    certificate_bytes: u64,
+    certificate_digest: [u8; 32],
 }
 
-fn footer_fields(payload: &[u8]) -> Option<FooterFields> {
+fn footer_fields(payload: &[u8], schema: u8) -> Option<FooterFields> {
     Some(FooterFields {
         store: payload.get(..16)?.try_into().ok()?,
         sequence: read_u64(payload, 16)?,
@@ -257,6 +296,21 @@ fn footer_fields(payload: &[u8]) -> Option<FooterFields> {
         binding_records: read_u64(payload, 88)?,
         binding_bytes: read_u64(payload, 96)?,
         binding_digest: payload.get(104..136)?.try_into().ok()?,
+        certificate_records: if schema == CERTIFIED_SCHEMA {
+            read_u64(payload, 136)?
+        } else {
+            0
+        },
+        certificate_bytes: if schema == CERTIFIED_SCHEMA {
+            read_u64(payload, 144)?
+        } else {
+            0
+        },
+        certificate_digest: if schema == CERTIFIED_SCHEMA {
+            payload.get(152..184)?.try_into().ok()?
+        } else {
+            Sha256::digest([]).into()
+        },
     })
 }
 
@@ -268,7 +322,8 @@ fn valid_dirty_basis(payload: &[u8]) -> Option<()> {
         1 | 12 | 13 => first == 0 && second == 0,
         2 | 3 | 10 | 14 | 15 => second == 0,
         16 => first != 0 && second == 0,
-        4..=9 | 11 => true,
+        17 => first != 0 && second != 0,
+        4..=7 | 11 => true,
         _ => false,
     };
     let offset = read_u64(payload, 24)?;
@@ -284,72 +339,6 @@ fn valid_dirty_basis(payload: &[u8]) -> Option<()> {
     Some(())
 }
 
-fn fixed_record<'a>(record: &'a [u8], kind: u8, payload_bytes: usize) -> Option<&'a [u8]> {
-    if record_prefix(record.get(..RECORD_PREFIX_BYTES)?, kind)? != payload_bytes
-        || record.len()
-            != RECORD_PREFIX_BYTES
-                .checked_add(payload_bytes)?
-                .checked_add(RECORD_CHECKSUM_BYTES)?
-    {
-        return None;
-    }
-    let checksum_offset = record.len() - RECORD_CHECKSUM_BYTES;
-    if read_u32(record, checksum_offset)? != crc32c(&record[..checksum_offset]) {
-        return None;
-    }
-    record.get(RECORD_PREFIX_BYTES..checksum_offset)
-}
-
-fn record_prefix(prefix: &[u8], kind: u8) -> Option<usize> {
-    if prefix.get(..8)? != b"WCP7REC\0"
-        || prefix[8] != 1
-        || prefix[9] != kind
-        || prefix.get(10..12)? != [0; 2]
-    {
-        return None;
-    }
-    usize::try_from(read_u32(prefix, 12)?).ok()
-}
-
-fn read_u32(bytes: &[u8], offset: usize) -> Option<u32> {
-    Some(u32::from_le_bytes(
-        bytes.get(offset..offset + 4)?.try_into().ok()?,
-    ))
-}
-
-fn read_u64(bytes: &[u8], offset: usize) -> Option<u64> {
-    Some(u64::from_le_bytes(
-        bytes.get(offset..offset + 8)?.try_into().ok()?,
-    ))
-}
-
-fn crc32c(bytes: &[u8]) -> u32 {
-    let mut crc = !0_u32;
-    for byte in bytes {
-        crc ^= u32::from(*byte);
-        for _ in 0..8 {
-            let mask = 0_u32.wrapping_sub(crc & 1);
-            crc = (crc >> 1) ^ (0x82f6_3b78 & mask);
-        }
-    }
-    !crc
-}
-
 #[cfg(test)]
-mod tests {
-    use super::valid_dirty_basis;
-
-    #[test]
-    fn arena_dirty_basis_requires_a_real_arena_and_no_second_identity() {
-        let mut payload = [0_u8; 48];
-        payload[0] = 16;
-        payload[8..16].copy_from_slice(&1_u64.to_le_bytes());
-        payload[32..36].copy_from_slice(&1_u32.to_le_bytes());
-        assert!(valid_dirty_basis(&payload).is_some());
-        payload[8..16].fill(0);
-        assert!(valid_dirty_basis(&payload).is_none());
-        payload[8..16].copy_from_slice(&1_u64.to_le_bytes());
-        payload[16..24].copy_from_slice(&1_u64.to_le_bytes());
-        assert!(valid_dirty_basis(&payload).is_none());
-    }
-}
+#[path = "checkpoint_stream_integrity/tests.rs"]
+mod tests;

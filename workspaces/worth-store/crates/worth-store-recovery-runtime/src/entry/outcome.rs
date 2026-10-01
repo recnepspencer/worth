@@ -43,6 +43,7 @@ pub struct PhysicalRecoveryPublicationIndeterminate {
     integrity_observations: super::PhysicalRecoveryIntegrityObservations,
     reopen: Option<super::PhysicalRecoveryReopenFailure>,
     handoff: Option<RecoveredPhysicalRuntimeConstructionDenial>,
+    checkpoint_residue_indeterminate: bool,
     recovery_effects: u64,
     integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 }
@@ -110,6 +111,8 @@ pub struct PhysicalRecoveryBlockEvidence {
     pub publication_counters: Option<super::PhysicalRecoveryPublicationCounters>,
     pub publication_denial: Option<super::PhysicalRecoveryPublicationDenial>,
     pub publication_settlements: Option<super::PhysicalRecoveryPublicationSettlementLedger>,
+    pub checkpoint_residue_denial:
+        Option<worth_store::physical_runtime::RecoveryCheckpointResidueDenial>,
     pub(crate) integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 }
 
@@ -147,6 +150,7 @@ impl PhysicalRecoveryPublicationIndeterminate {
             integrity_observations: super::PhysicalRecoveryIntegrityObservations::new(Vec::new()),
             reopen: None,
             handoff: None,
+            checkpoint_residue_indeterminate: false,
             recovery_effects,
             integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace::new(),
         }
@@ -226,13 +230,30 @@ impl PhysicalRecoveryPublicationIndeterminate {
         self
     }
 
-    pub const fn handoff_failure(&self) -> Option<RecoveredPhysicalRuntimeConstructionDenial> {
-        self.handoff
+    pub fn handoff_failure(&self) -> Option<RecoveredPhysicalRuntimeConstructionDenial> {
+        self.handoff.clone()
+    }
+
+    pub(crate) fn with_checkpoint_residue_indeterminate(mut self) -> Self {
+        self.checkpoint_residue_indeterminate = true;
+        self
+    }
+
+    pub const fn checkpoint_residue_indeterminate(&self) -> bool {
+        self.checkpoint_residue_indeterminate
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PhysicalRecoveryPlanningDenial {
+    PublicationCandidateAllocation {
+        requested_bytes: u64,
+        cause: std::collections::TryReserveError,
+    },
+    ExecutionImageAllocation {
+        requested_bytes: u64,
+        cause: std::collections::TryReserveError,
+    },
     BindingFreshness(StoreRecoveryBindingSampleDenial),
     OperationReconciliation(OperationReconciliationDenial),
     Redo(PhysicalRedoPlanningDenial),
@@ -260,9 +281,34 @@ pub enum PhysicalRecoveryPageAdmissionDenial {
         denial: super::PhysicalRecoveryRootProtocolDenial,
     },
     InvalidTarget(PhysicalRedoTargetIdentity),
+    HistoricalDrop {
+        operation: [u8; 32],
+        stage: HistoricalDropAdmissionStage,
+        target: Option<PhysicalRedoTargetIdentity>,
+    },
+    AbsentExtentBelowFrontier {
+        target: PhysicalRedoTargetIdentity,
+        next_extent: u64,
+    },
+    MaterializedExtentChunkCount {
+        target: PhysicalRedoTargetIdentity,
+        admitted_chunk_count: u32,
+    },
+    MaterializedExtentCoordinate(PhysicalRedoTargetIdentity),
     InvalidPage(PhysicalRedoTargetIdentity),
     ManifestEntryLimit,
     ObservationByteLimit,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HistoricalDropAdmissionStage {
+    DescriptorBinding,
+    OrderedHistory,
+    SelectedControls,
+    ManifestBinding,
+    SourceRoot,
+    SourceResultHistory,
+    TargetWitness,
 }
 
 #[derive(Debug)]

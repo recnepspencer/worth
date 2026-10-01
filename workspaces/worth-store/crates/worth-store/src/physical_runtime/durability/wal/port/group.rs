@@ -168,15 +168,16 @@ impl PhysicalWalAppendPort {
         reserved: ReservedPhysicalWalGroupMembers,
         sealing_bindings: &[crate::physical_runtime::durability::PhysicalMutationGroupSealingBinding],
     ) -> PhysicalWalGroupAppendOutcome {
-        let growth = reserved.retained_publication_bytes();
-        let (segment, generation) = reserved.publication_segment();
-        let charged = self
+        let Some(reservation) = reserved.retained_publication_reservation() else {
+            return self.growth_denied(reserved);
+        };
+        let Some(charged) = self
             .publication
             .get()
-            .and_then(|admission| admission.reserve_retained_bytes(growth).ok());
-        if growth > 0 && charged.is_none() {
+            .and_then(|admission| admission.reserve_wal_publication(reservation).ok())
+        else {
             return self.growth_denied(reserved);
-        }
+        };
         if !sealing_bindings.is_empty() {
             if let Err(denial) = self.idempotency.seal_group(sealing_bindings) {
                 if !matches!(
@@ -194,12 +195,8 @@ impl PhysicalWalAppendPort {
             }
         }
         let outcome = self.append_reserved_group(basis, appended, reserved.into_members());
-        if let Some(lease) = charged {
-            if !matches!(outcome, PhysicalWalGroupAppendOutcome::NotStarted(_)) {
-                lease.seal();
-                self.owner
-                    .note_sealed_publication(segment, generation, growth);
-            }
+        if !matches!(outcome, PhysicalWalGroupAppendOutcome::NotStarted(_)) {
+            charged.seal();
         }
         outcome
     }

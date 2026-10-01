@@ -25,12 +25,13 @@ pub(in crate::physical_runtime) use completion_projection::PreparedRecordComplet
 pub(in crate::physical_runtime::record_serving) use data_image::ExistingDataFrameImage;
 #[cfg(feature = "certification-test-authority")]
 pub use director::CertificationPhysicalRecordSubmission;
+pub(in crate::physical_runtime) use director::{
+    AdmittedPublicationRetention, RecordPublicationDirector, RecordPublicationFoundation,
+    SelectedBlobManifestPin, SelectedBlobManifestPinDenial, SelectedBlobManifestPins,
+};
 pub use director::{
     InlineArtifactRewritePlanDenial, PhysicalArenaEvacuationPreparationOutcome,
     PhysicalRecordSubmission, PlannedInlineRewriteArtifact,
-};
-pub(in crate::physical_runtime) use director::{
-    RecordPublicationDirector, RecordPublicationFoundation,
 };
 pub(in crate::physical_runtime::record_serving) use durable_data_plan::materialize_durable_data;
 pub(in crate::physical_runtime::record_serving) use durable_preparation::{
@@ -47,7 +48,8 @@ pub use durable_preparation::{
     PreparedPhysicalMutation,
 };
 pub(in crate::physical_runtime) use durable_preparation::{
-    PlannedPhysicalMutationParts, PreparedPhysicalMutationContext,
+    PlannedPhysicalMutationParts, PreparedDerivedDirectoryBasis, PreparedPhysicalMutationContext,
+    PreparedReleaseHeadBasis, PreparedReuseDeclarationBasis,
 };
 pub(in crate::physical_runtime::record_serving) use plan::{
     CandidateDataArtifact, PublicationPlan,

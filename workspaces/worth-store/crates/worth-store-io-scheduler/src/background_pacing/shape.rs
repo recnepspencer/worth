@@ -75,10 +75,41 @@ impl BackgroundIoPressureShape {
         )
     }
 
+    /// Store-owned blob ingestion on qualified buffered-file media.
+    pub const fn buffered_file_blob_ingest_pressure() -> Self {
+        Self::new(
+            BackgroundIoPressureClass::IngestPressure,
+            IoSchedulerBackendCapabilityRequirement::BufferedFile,
+        )
+    }
+
     pub const fn blob_migration_pressure() -> Self {
         Self::new(
             BackgroundIoPressureClass::MigrationPressure,
             IoSchedulerBackendCapabilityRequirement::DirectIo,
+        )
+    }
+
+    /// Store-owned selected blob relocation on qualified buffered-file media.
+    pub const fn buffered_file_blob_migration_pressure() -> Self {
+        Self::new(
+            BackgroundIoPressureClass::MigrationPressure,
+            IoSchedulerBackendCapabilityRequirement::BufferedFile,
+        )
+    }
+
+    pub const fn blob_reclaim_pressure() -> Self {
+        Self::new(
+            BackgroundIoPressureClass::BlobReclaimPressure,
+            IoSchedulerBackendCapabilityRequirement::DirectIo,
+        )
+    }
+
+    /// Store-owned bounded reclaim-control write on qualified buffered media.
+    pub const fn buffered_file_blob_reclaim_pressure() -> Self {
+        Self::new(
+            BackgroundIoPressureClass::BlobReclaimPressure,
+            IoSchedulerBackendCapabilityRequirement::BufferedFile,
         )
     }
 
@@ -93,6 +124,14 @@ impl BackgroundIoPressureShape {
         Self::new_secure_scope_required(
             BackgroundIoPressureClass::RepairScan,
             IoSchedulerBackendCapabilityRequirement::DirectIo,
+        )
+    }
+
+    /// Store-owned reconstructive read on qualified buffered-file media.
+    pub const fn buffered_file_repair_scan() -> Self {
+        Self::new_secure_scope_required(
+            BackgroundIoPressureClass::RepairScan,
+            IoSchedulerBackendCapabilityRequirement::BufferedFile,
         )
     }
 
@@ -118,6 +157,7 @@ impl BackgroundIoPressureShape {
             BackgroundPressureKind::ReplicationPrepRead => Self::replication_prep_read(),
             BackgroundPressureKind::BlobIngestPressure => Self::blob_ingest_pressure(),
             BackgroundPressureKind::BlobMigrationPressure => Self::blob_migration_pressure(),
+            BackgroundPressureKind::BlobReclaimPressure => Self::blob_reclaim_pressure(),
             BackgroundPressureKind::BackupPrepRead => Self::backup_prep_read(),
             BackgroundPressureKind::RepairScan => Self::repair_scan(),
             BackgroundPressureKind::VerificationPressure => Self::verification_pressure(),

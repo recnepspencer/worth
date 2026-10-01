@@ -11,11 +11,15 @@ use super::super::{
 };
 
 mod assembly;
+mod manifest_residue;
 mod projection;
 mod retirement;
+mod tier_epoch;
+pub(in crate::physical_runtime::record_serving) use manifest_residue::plan_manifest_residue_cleanup;
 pub(in crate::physical_runtime::record_serving) use retirement::{
     plan_arena_forget, plan_retirement_release, RetirementRootPlanningContext,
 };
+pub(in crate::physical_runtime::record_serving) use tier_epoch::plan_tier_epoch_activation;
 
 pub(in crate::physical_runtime::record_serving) struct RootRebaseContext<'plan> {
     pub(in crate::physical_runtime::record_serving) allocation:
@@ -66,6 +70,7 @@ pub(in crate::physical_runtime::record_serving) fn project_settled_root(
     }
     let payload_manifests = prepared.payload_manifests;
     let publication = PublicationPlan {
+        routing_metadata_bytes: None,
         arena_reservations: prepared.arena_reservations,
         generation,
         manifests: Vec::new(),

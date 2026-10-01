@@ -84,7 +84,14 @@ pub(in crate::physical_runtime) fn artifact_matches_scope(
                     })
             }),
         Family::NamespaceIdentity
+        | Family::BTreeNode
         | Family::ExtentArenaFrame
+        | Family::BlobResumeSession
+        | Family::BlobChunkFrame
+        | Family::BlobTreeNode
+        | Family::BlobGenerationPublication
+        | Family::BlobDropSetManifest
+        | Family::BlobReclaimDescriptor
         | Family::PhysicalWorkObligation
         | Family::WalFrame
         | Family::CheckpointStreamHeader
@@ -201,7 +208,8 @@ mod tests {
                 PhysicalArtifactScope::extent_manifest(
                     store,
                     format,
-                    DurableExtentRecordPlacement::new(record(7), extent, 1024, arena).unwrap(),
+                    DurableExtentRecordPlacement::legacy_unknown(record(7), extent, 1024, arena)
+                        .unwrap(),
                     range,
                 ),
             ),

@@ -1,0 +1,289 @@
+use worth_store_physical_format::{ExtentArenaRange, RecordArtifactFile};
+
+use crate::filesystem_media::{
+    ArtifactTreeAllocatedReadFailure, ArtifactTreeDirectory, ArtifactTreeFailureKind,
+    ArtifactTreeFile,
+};
+
+use super::{
+    record_artifact, BoundedRecoveryFilesystemDiscovery, ObservedRecoveryArtifact,
+    RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryFailure,
+};
+
+#[derive(Debug)]
+pub enum RecoveryDiscoveryAllocationFailure<E> {
+    Discovery(RecoveryDiscoveryFailure),
+    Allocation {
+        artifact: RecoveryDiscoveryArtifact,
+        offset: u64,
+        requested: usize,
+        cause: E,
+    },
+    BufferLengthMismatch {
+        artifact: RecoveryDiscoveryArtifact,
+        offset: u64,
+        requested: usize,
+        observed: usize,
+    },
+}
+
+impl<E> From<RecoveryDiscoveryFailure> for RecoveryDiscoveryAllocationFailure<E> {
+    fn from(failure: RecoveryDiscoveryFailure) -> Self {
+        Self::Discovery(failure)
+    }
+}
+
+impl BoundedRecoveryFilesystemDiscovery {
+    pub fn read_extent_manifest_with_allocator<E>(
+        &mut self,
+        range: ExtentArenaRange,
+        byte_limit: u64,
+        allocate: impl FnOnce(usize) -> Result<Vec<u8>, E>,
+    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryAllocationFailure<E>> {
+        self.read_extent_range_with_allocator(range, 0, 104, byte_limit, allocate)
+    }
+
+    pub fn read_extent_range_with_allocator<E>(
+        &mut self,
+        range: ExtentArenaRange,
+        offset: u64,
+        length: u32,
+        byte_limit: u64,
+        allocate: impl FnOnce(usize) -> Result<Vec<u8>, E>,
+    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryAllocationFailure<E>> {
+        let address = RecordArtifactFile::ExtentArena {
+            arena: range.arena().get(),
+        };
+        let context = RecoveryDiscoveryArtifact::Record(address);
+        let end = offset
+            .checked_add(u64::from(length))
+            .filter(|end| *end <= range.length())
+            .ok_or_else(|| RecoveryDiscoveryFailure::invalid(context.clone()))?;
+        let absolute = range
+            .offset()
+            .checked_add(end - u64::from(length))
+            .ok_or_else(|| RecoveryDiscoveryFailure::invalid(context))?;
+        self.read_record_range_with_allocator(address, absolute, length, byte_limit, allocate)
+    }
+
+    pub fn read_record_artifact_with_allocator<E>(
+        &mut self,
+        address: RecordArtifactFile,
+        byte_limit: u64,
+        allocate: impl FnOnce(usize) -> Result<Vec<u8>, E>,
+    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryAllocationFailure<E>> {
+        let context = RecoveryDiscoveryArtifact::Record(address);
+        let artifact = record_artifact(address)?;
+        let fixed = matches!(
+            address,
+            RecordArtifactFile::BootstrapCatalog
+                | RecordArtifactFile::CurrentRootSelector
+                | RecordArtifactFile::PreviousRootSelector
+        );
+        let result = self.read_whole(artifact, context, byte_limit, fixed, allocate)?;
+        if fixed {
+            self.counters.fixed_slots_read += 1;
+        }
+        Ok(result)
+    }
+
+    pub fn read_current_checkpoint_with_allocator<E>(
+        &mut self,
+        byte_limit: u64,
+        allocate: impl FnOnce(usize) -> Result<Vec<u8>, E>,
+    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryAllocationFailure<E>> {
+        let context = RecoveryDiscoveryArtifact::CurrentCheckpoint;
+        let artifact = ArtifactTreeDirectory::families()
+            .file("checkpoint.current")
+            .map_err(|_| RecoveryDiscoveryFailure::invalid(context.clone()))?;
+        self.read_whole(artifact, context, byte_limit, false, allocate)
+    }
+
+    pub fn read_record_range_with_allocator<E>(
+        &mut self,
+        address: RecordArtifactFile,
+        offset: u64,
+        length: u32,
+        byte_limit: u64,
+        allocate: impl FnOnce(usize) -> Result<Vec<u8>, E>,
+    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryAllocationFailure<E>> {
+        let context = RecoveryDiscoveryArtifact::Record(address);
+        let artifact = record_artifact(address)?;
+        let length = u64::from(length);
+        let admitted = self.remaining_bytes.min(byte_limit);
+        if length == 0 || length > admitted {
+            return Err(RecoveryDiscoveryFailure::ByteLimitExceeded {
+                observed: self.counters.bytes_read.saturating_add(length),
+                admitted: self.maximum_bytes.min(byte_limit),
+                scope: if self.remaining_bytes <= byte_limit {
+                    RecoveryDiscoveryByteLimitScope::Observation
+                } else {
+                    RecoveryDiscoveryByteLimitScope::Requested
+                },
+            }
+            .into());
+        }
+        if self.remaining_entries == 0 {
+            return Err(RecoveryDiscoveryFailure::EntryLimitExceeded {
+                observed: 1,
+                admitted: 0,
+            }
+            .into());
+        }
+        let capacity = usize::try_from(length)
+            .map_err(|_| RecoveryDiscoveryFailure::invalid(context.clone()))?;
+        self.remaining_entries -= 1;
+        match self
+            .parts
+            .artifact_tree()
+            .read_exact_at_with_allocator(&artifact, offset, capacity, allocate)
+        {
+            Ok(bytes) => {
+                self.remaining_bytes -= length;
+                self.counters.bytes_read += length;
+                self.counters.addressed_artifacts_read += 1;
+                Ok(ObservedRecoveryArtifact::new(
+                    self.parts.store_identity,
+                    context,
+                    offset,
+                    Some(bytes),
+                ))
+            }
+            Err(ArtifactTreeAllocatedReadFailure::Media(failure))
+                if failure.kind() == ArtifactTreeFailureKind::Absent =>
+            {
+                Ok(ObservedRecoveryArtifact::new(
+                    self.parts.store_identity,
+                    context,
+                    offset,
+                    None,
+                ))
+            }
+            Err(failure) => Err(map_allocated_failure(failure, context, offset)),
+        }
+    }
+
+    pub(super) fn read_whole<E>(
+        &mut self,
+        artifact: ArtifactTreeFile,
+        context: RecoveryDiscoveryArtifact,
+        byte_limit: u64,
+        fixed: bool,
+        allocate: impl FnOnce(usize) -> Result<Vec<u8>, E>,
+    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryAllocationFailure<E>> {
+        let observation_is_tighter = self.remaining_bytes <= byte_limit;
+        let effective_byte_limit = byte_limit.min(self.remaining_bytes);
+        if self.remaining_entries == 0 {
+            return Err(RecoveryDiscoveryFailure::EntryLimitExceeded {
+                observed: 1,
+                admitted: 0,
+            }
+            .into());
+        }
+        self.remaining_entries -= 1;
+        match self.parts.artifact_tree().read_bounded_with_allocator(
+            &artifact,
+            effective_byte_limit,
+            allocate,
+        ) {
+            Ok(bytes) => {
+                self.counters.bytes_read = self
+                    .counters
+                    .bytes_read
+                    .checked_add(bytes.len() as u64)
+                    .ok_or(RecoveryDiscoveryFailure::ByteLimitExceeded {
+                        observed: u64::MAX,
+                        admitted: self.maximum_bytes,
+                        scope: RecoveryDiscoveryByteLimitScope::Observation,
+                    })?;
+                self.remaining_bytes = self.remaining_bytes.checked_sub(bytes.len() as u64).ok_or(
+                    RecoveryDiscoveryFailure::ByteLimitExceeded {
+                        observed: bytes.len() as u64,
+                        admitted: self.maximum_bytes,
+                        scope: RecoveryDiscoveryByteLimitScope::Observation,
+                    },
+                )?;
+                if !fixed {
+                    self.counters.addressed_artifacts_read += 1;
+                }
+                Ok(ObservedRecoveryArtifact::new(
+                    self.parts.store_identity,
+                    context,
+                    0,
+                    Some(bytes),
+                ))
+            }
+            Err(ArtifactTreeAllocatedReadFailure::Media(failure))
+                if failure.kind() == ArtifactTreeFailureKind::Absent =>
+            {
+                Ok(ObservedRecoveryArtifact::new(
+                    self.parts.store_identity,
+                    context,
+                    0,
+                    None,
+                ))
+            }
+            Err(ArtifactTreeAllocatedReadFailure::Media(failure))
+                if failure.kind() == ArtifactTreeFailureKind::AccessLimitExceeded =>
+            {
+                let limit = failure.access_limit().unwrap_or(
+                    crate::filesystem_media::ArtifactTreeAccessLimit {
+                        observed: effective_byte_limit.saturating_add(1),
+                        admitted: effective_byte_limit,
+                    },
+                );
+                Err(RecoveryDiscoveryFailure::ByteLimitExceeded {
+                    observed: if observation_is_tighter {
+                        self.counters.bytes_read.saturating_add(limit.observed)
+                    } else {
+                        limit.observed
+                    },
+                    admitted: if observation_is_tighter {
+                        self.maximum_bytes
+                    } else {
+                        limit.admitted
+                    },
+                    scope: if observation_is_tighter {
+                        RecoveryDiscoveryByteLimitScope::Observation
+                    } else {
+                        RecoveryDiscoveryByteLimitScope::Requested
+                    },
+                }
+                .into())
+            }
+            Err(failure) => Err(map_allocated_failure(failure, context, 0)),
+        }
+    }
+}
+
+fn map_allocated_failure<E>(
+    failure: ArtifactTreeAllocatedReadFailure<E>,
+    artifact: RecoveryDiscoveryArtifact,
+    offset: u64,
+) -> RecoveryDiscoveryAllocationFailure<E> {
+    match failure {
+        ArtifactTreeAllocatedReadFailure::Media(failure) => {
+            RecoveryDiscoveryAllocationFailure::Discovery(RecoveryDiscoveryFailure::Media {
+                artifact,
+                failure,
+            })
+        }
+        ArtifactTreeAllocatedReadFailure::Allocation { requested, cause } => {
+            RecoveryDiscoveryAllocationFailure::Allocation {
+                artifact,
+                offset,
+                requested,
+                cause,
+            }
+        }
+        ArtifactTreeAllocatedReadFailure::BufferLengthMismatch {
+            requested,
+            observed,
+        } => RecoveryDiscoveryAllocationFailure::BufferLengthMismatch {
+            artifact,
+            offset,
+            requested,
+            observed,
+        },
+    }
+}

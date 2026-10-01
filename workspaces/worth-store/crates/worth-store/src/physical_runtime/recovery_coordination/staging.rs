@@ -11,6 +11,7 @@ use super::{
 };
 
 mod execution;
+mod resident_storage;
 
 pub struct PhysicalRecoveryStagingCommand<'bytes> {
     ordinal: u64,

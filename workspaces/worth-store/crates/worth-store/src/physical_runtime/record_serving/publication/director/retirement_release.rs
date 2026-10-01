@@ -4,6 +4,7 @@ use crate::physical_runtime::durability::{
     PhysicalRetirementDenial, PhysicalRootPublicationTransition, RetainedByteLease,
     RetirementReleaseProjection, ScheduledMaintenanceDenial,
 };
+use crate::physical_runtime::record_serving::arena::ArenaAllocationDenial;
 use crate::physical_runtime::record_serving::publication::PublicationPlan;
 use sha2::{Digest, Sha256};
 use std::num::NonZeroU64;
@@ -222,7 +223,7 @@ impl RecordPublicationDirector {
                 .lock()
                 .unwrap_or_else(|e| e.into_inner())
                 .admit_durable_release(range)
-                .map_err(|_| PhysicalRetirementDenial::Waiting)?;
+                .map_err(arena_release_denial)?;
         }
         Ok(())
     }
@@ -245,5 +246,50 @@ fn maintenance_denial(denial: ScheduledMaintenanceDenial) -> PhysicalRetirementD
         ScheduledMaintenanceDenial::Write => PhysicalRetirementDenial::WalWrite,
         ScheduledMaintenanceDenial::Sync => PhysicalRetirementDenial::WalSync,
         ScheduledMaintenanceDenial::Finish => PhysicalRetirementDenial::WalFinish,
+    }
+}
+
+fn arena_release_denial(denial: ArenaAllocationDenial) -> PhysicalRetirementDenial {
+    match denial {
+        ArenaAllocationDenial::RangeBudget { .. } => PhysicalRetirementDenial::ArenaIndexCapacity,
+        ArenaAllocationDenial::Capacity => PhysicalRetirementDenial::ArenaCapacity,
+        ArenaAllocationDenial::InvalidGeometry
+        | ArenaAllocationDenial::Overlap
+        | ArenaAllocationDenial::StaleReservation => PhysicalRetirementDenial::ArenaReleaseInvalid,
+        ArenaAllocationDenial::EvacuationBusy => PhysicalRetirementDenial::Waiting,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn allocator_index_pressure_is_not_a_scheduler_wait_or_invalid_range() {
+        assert_eq!(
+            arena_release_denial(ArenaAllocationDenial::RangeBudget {
+                required: 4,
+                maximum: 3,
+            }),
+            PhysicalRetirementDenial::ArenaIndexCapacity
+        );
+        assert_eq!(
+            arena_release_denial(ArenaAllocationDenial::Capacity),
+            PhysicalRetirementDenial::ArenaCapacity
+        );
+        for invalid in [
+            ArenaAllocationDenial::InvalidGeometry,
+            ArenaAllocationDenial::Overlap,
+            ArenaAllocationDenial::StaleReservation,
+        ] {
+            assert_eq!(
+                arena_release_denial(invalid),
+                PhysicalRetirementDenial::ArenaReleaseInvalid
+            );
+        }
+        assert_eq!(
+            arena_release_denial(ArenaAllocationDenial::EvacuationBusy),
+            PhysicalRetirementDenial::Waiting
+        );
     }
 }

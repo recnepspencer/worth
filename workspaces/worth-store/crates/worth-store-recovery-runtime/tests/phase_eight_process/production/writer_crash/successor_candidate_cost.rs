@@ -12,7 +12,6 @@ pub(super) struct CandidateCost {
     pub(super) reads: u64,
     pub(super) raw_bytes: u64,
     pub(super) peak_bytes: u64,
-    pub(super) comparison_scratch_bytes: u64,
     pub(super) manifest_entries: u64,
     pub(super) partial_peaks: CandidatePartialPeaks,
 }
@@ -42,7 +41,6 @@ pub(super) fn candidate_cost(root: &Path, generation: u64) -> CandidateCost {
     let mut segment_entries = 0_usize;
     let mut free_entries = 0_usize;
     let mut manifest_entries = 0_u64;
-    let mut largest_artifact = root_bytes.len() as u64;
     let root_routing_peak = materialized_bytes(
         retained_bytes,
         retained_artifacts,
@@ -83,7 +81,6 @@ pub(super) fn candidate_cost(root: &Path, generation: u64) -> CandidateCost {
         if reference.generation() == generation {
             retained_artifacts += 1;
             retained_bytes += bytes.len() as u64;
-            largest_artifact = largest_artifact.max(bytes.len() as u64);
         }
     }
 
@@ -126,7 +123,6 @@ pub(super) fn candidate_cost(root: &Path, generation: u64) -> CandidateCost {
         if reference.generation() == generation {
             retained_artifacts += 1;
             retained_bytes += bytes.len() as u64;
-            largest_artifact = largest_artifact.max(bytes.len() as u64);
         }
     }
 
@@ -144,7 +140,6 @@ pub(super) fn candidate_cost(root: &Path, generation: u64) -> CandidateCost {
     raw_bytes += free_bytes.len() as u64;
     retained_artifacts += 1;
     retained_bytes += free_bytes.len() as u64;
-    largest_artifact = largest_artifact.max(free_bytes.len() as u64);
     retained_references += 1;
 
     let free_space_peak = materialized_bytes(
@@ -186,7 +181,6 @@ pub(super) fn candidate_cost(root: &Path, generation: u64) -> CandidateCost {
         if reference.generation() == generation {
             retained_artifacts += 1;
             retained_bytes += bytes.len() as u64;
-            largest_artifact = largest_artifact.max(bytes.len() as u64);
         }
     }
 
@@ -204,7 +198,6 @@ pub(super) fn candidate_cost(root: &Path, generation: u64) -> CandidateCost {
         reads,
         raw_bytes,
         peak_bytes,
-        comparison_scratch_bytes: largest_artifact,
         manifest_entries,
         partial_peaks: CandidatePartialPeaks {
             root_routing: root_routing_peak,

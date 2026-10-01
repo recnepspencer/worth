@@ -18,6 +18,7 @@ mod path;
 mod publication_effect;
 mod range_io;
 mod range_read;
+mod resident_read;
 mod range_write;
 mod range_write_outcome;
 
@@ -49,6 +50,7 @@ pub use range_read::{
     ArtifactRangeReadOutcome, CompletedArtifactRangeRead, CompletedScheduledArtifactRangeRead,
     ScheduledArtifactRangeReadOutcome,
 };
+pub(crate) use resident_read::ArtifactTreeAllocatedReadFailure;
 pub use range_write_outcome::{
     ArtifactRangeWriteDurability, ArtifactRangeWriteDurabilityRequirement,
     ArtifactRangeWriteOutcome, CompletedArtifactRangeWrite, CompletedScheduledArtifactRangeWrite,

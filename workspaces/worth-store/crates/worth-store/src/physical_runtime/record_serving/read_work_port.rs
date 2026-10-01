@@ -19,7 +19,9 @@ use super::{
     RecordWorkAdmission,
 };
 
+mod diagnostic;
 mod inspection;
+mod rebuild;
 mod scheduler_preparation;
 pub use inspection::PhysicalIntegrityScrubReadDeferral;
 
@@ -33,6 +35,8 @@ pub(in crate::physical_runtime) struct CanonicalRecordReadPort {
     physical: PhysicalWorkAdmissionAuthority,
     scheduler: PhysicalSchedulerAdmissionOwner,
     record: Arc<RecordWorkAdmission>,
+    rebuild: Option<super::RebuildReadShape>,
+    diagnostic_scrub: bool,
 }
 
 struct PreparedPhysicalCommand {
@@ -135,6 +139,8 @@ impl CanonicalRecordReadPort {
             physical,
             scheduler,
             record,
+            rebuild: None,
+            diagnostic_scrub: false,
         }
     }
 
@@ -151,6 +157,12 @@ impl CanonicalRecordReadPort {
         coordinate: RecordFrameCoordinate,
         partition: RecordReadPartition,
     ) -> Result<PreparedCanonicalRecordRead, CanonicalRecordReadFailureEvidence> {
+        if let Some(shape) = self.rebuild {
+            return self.prepare_rebuild_range(coordinate, partition, shape);
+        }
+        if self.diagnostic_scrub {
+            return self.prepare_diagnostic_range(coordinate, partition);
+        }
         self.prepare_range(coordinate, partition, RangeSchedulerRoute::ordinary())
     }
 
@@ -237,6 +249,12 @@ impl CanonicalRecordReadPort {
         artifact: worth_store_physical_format::RecordArtifactFile,
         partition: RecordReadPartition,
     ) -> Result<PreparedCanonicalMetadataRead, CanonicalRecordReadFailureEvidence> {
+        if let Some(shape) = self.rebuild {
+            return self.prepare_rebuild_metadata(artifact, partition, shape);
+        }
+        if self.diagnostic_scrub {
+            return self.prepare_diagnostic_metadata(artifact, partition);
+        }
         let runtime = self.runtime.upgrade().ok_or_else(|| {
             CanonicalRecordReadFailureEvidence::before_work(
                 CanonicalRecordReadFailure::RuntimeReleased,

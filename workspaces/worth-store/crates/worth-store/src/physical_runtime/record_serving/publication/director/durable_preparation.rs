@@ -1,6 +1,9 @@
 use worth_proof::TransitionOutcome;
 
 use super::RecordPublicationDirector;
+mod admission_failure;
+mod blob_record;
+mod protected_index;
 use crate::physical_runtime::{
     durability::{
         AdmittedPhysicalMutation, PhysicalMutationIdempotencyRegistryAdmission,
@@ -25,6 +28,8 @@ use crate::physical_runtime::{
     PhysicalMutationRequest, PhysicalMutationRequestFingerprint, PhysicalWorkSubmissionFailure,
     PhysicalWorkSubmissionStale,
 };
+use admission_failure::map_idempotency_admission;
+pub(super) use protected_index::ProtectedAppendKind;
 
 pub(super) struct AdmittedMutationPreparation {
     pub(super) admission: AdmittedPhysicalMutation,
@@ -46,17 +51,104 @@ impl RecordPublicationDirector {
         manifest_capacity_transition: crate::physical_runtime::PhysicalManifestCapacityTransition,
         request: PhysicalMutationRequest,
     ) -> PhysicalMutationPreparationOutcome {
+        self.prepare_durable_append_classified(
+            batch,
+            placement,
+            manifest_capacity_transition,
+            request,
+            ProtectedAppendKind::Ordinary,
+        )
+    }
+
+    pub(super) fn prepare_durable_append_classified(
+        &self,
+        batch: RecordAppendBatch,
+        placement: AdmittedRecordPlacementPolicy,
+        manifest_capacity_transition: crate::physical_runtime::PhysicalManifestCapacityTransition,
+        request: PhysicalMutationRequest,
+        classified: ProtectedAppendKind,
+    ) -> PhysicalMutationPreparationOutcome {
+        self.prepare_durable_append_with_released_fingerprint(
+            batch,
+            placement,
+            manifest_capacity_transition,
+            request,
+            classified,
+            None,
+        )
+    }
+
+    /// A V3 custody frame embeds the already-reserved drop fingerprint. The
+    /// idempotency preimage must therefore remain its exact V2 base frame;
+    /// the selected payload and WAL still bind the full V3 frame separately.
+    pub(super) fn prepare_released_descriptor_append(
+        &self,
+        descriptor: worth_store_physical_format::BlobReclaimDescriptorV3,
+        placement: AdmittedRecordPlacementPolicy,
+        request: PhysicalMutationRequest,
+    ) -> PhysicalMutationPreparationOutcome {
+        let batch = match RecordAppendBatch::builder()
+            .push_owned(descriptor.encode())
+            .build()
+        {
+            Ok(batch) => batch,
+            Err(denial) => return map_record_denial(denial),
+        };
+        self.prepare_durable_append_with_released_fingerprint(
+            batch,
+            placement,
+            crate::physical_runtime::PhysicalManifestCapacityTransition::PreserveCurrent,
+            request,
+            ProtectedAppendKind::Blob(
+                worth_store_physical_format::BlobRecordKind::ReclaimDescriptorV3,
+            ),
+            Some(descriptor),
+        )
+    }
+
+    fn prepare_durable_append_with_released_fingerprint(
+        &self,
+        batch: RecordAppendBatch,
+        placement: AdmittedRecordPlacementPolicy,
+        manifest_capacity_transition: crate::physical_runtime::PhysicalManifestCapacityTransition,
+        request: PhysicalMutationRequest,
+        classified: ProtectedAppendKind,
+        released_descriptor: Option<worth_store_physical_format::BlobReclaimDescriptorV3>,
+    ) -> PhysicalMutationPreparationOutcome {
         if let Err(outcome) = self.require_preparation_health() {
             return outcome;
         }
-        if let Err(outcome) =
-            self.preflight_durable_append(&batch, placement, manifest_capacity_transition)
-        {
+        if let Err(outcome) = self.preflight_durable_append(
+            &batch,
+            placement,
+            manifest_capacity_transition,
+            classified.blob_kind(),
+            classified.inline_only(),
+        ) {
             return outcome;
         }
         let payload = match canonical_payload(batch) {
             Ok(payload) => payload,
             Err(outcome) => return outcome,
+        };
+        if let Err(denial) = protected_index::validate_prepared_payload(&payload.batch, &classified)
+        {
+            return map_record_denial(denial);
+        }
+        let fingerprint_payload_digest = if let Some(descriptor) = released_descriptor {
+            let base = match RecordAppendBatch::builder()
+                .push_owned(descriptor.request_fingerprint_descriptor_bytes())
+                .build()
+            {
+                Ok(base) => base,
+                Err(denial) => return map_record_denial(denial),
+            };
+            match canonical_payload(base) {
+                Ok(base) => base.digest,
+                Err(outcome) => return outcome,
+            }
+        } else {
+            payload.digest
         };
         let group_queue_admission = match self.group_queue_admission_tick() {
             Ok(tick) => tick,
@@ -65,9 +157,9 @@ impl RecordPublicationDirector {
         let admitted = match self.admit_mutation_preparation(
             placement,
             manifest_capacity_transition,
-            payload.digest,
+            fingerprint_payload_digest,
             request,
-            PhysicalMutationOperationFamily::RecordAppend,
+            classified.operation_family(),
         ) {
             Ok(admitted) => admitted,
             Err(outcome) => return outcome,
@@ -115,6 +207,11 @@ impl RecordPublicationDirector {
                     rewrite_pages: 0,
                     source_root_generation: 0,
                     rewrite_anchor: None,
+                    blob_record_kind: classified.blob_kind(),
+                    selected_content_class: classified.selected_content_class(),
+                    inline_only: classified.inline_only(),
+                    derived_directory_basis: classified.directory_basis(),
+                    reuse_declaration_basis: classified.reuse_declaration_basis(),
                 },
             ),
         ))
@@ -151,6 +248,8 @@ impl RecordPublicationDirector {
         batch: &RecordAppendBatch,
         placement: AdmittedRecordPlacementPolicy,
         manifest_capacity_transition: crate::physical_runtime::PhysicalManifestCapacityTransition,
+        blob_record_kind: Option<worth_store_physical_format::BlobRecordKind>,
+        inline_only: bool,
     ) -> Result<(), PhysicalMutationPreparationOutcome> {
         if !placement.admits(self.format) {
             return Err(TransitionOutcome::denied(
@@ -161,7 +260,8 @@ impl RecordPublicationDirector {
             .into());
         }
         batch.preflight(self.access).map_err(map_record_denial)?;
-        preflight_placement(self.format, placement, batch).map_err(map_record_preflight)?;
+        preflight_placement(self.format, placement, batch, blob_record_kind, inline_only)
+            .map_err(map_record_preflight)?;
         if manifest_capacity_transition
             == crate::physical_runtime::PhysicalManifestCapacityTransition::PreserveCurrent
             && placement.manifest_capacity().get() != self.root_owner.snapshot().0.node_capacity()
@@ -286,97 +386,4 @@ pub(super) fn map_record_denial(denial: RecordAppendDenial) -> PhysicalMutationP
 
 pub(super) fn canonical_request_failure() -> PhysicalMutationPreparationOutcome {
     TransitionOutcome::failed(PhysicalMutationPreparationFailure::CanonicalRequestRejected).into()
-}
-
-fn map_idempotency_admission(
-    error: PhysicalMutationIdempotencyRegistryAdmissionError<
-        PhysicalMutationIdentityReservationError,
-    >,
-) -> PhysicalMutationPreparationOutcome {
-    match error {
-        PhysicalMutationIdempotencyRegistryAdmissionError::Reservation(error) => {
-            map_identity_reservation(error)
-        }
-        PhysicalMutationIdempotencyRegistryAdmissionError::Denied(denial) => {
-            map_idempotency_denial(denial)
-        }
-    }
-}
-
-fn map_idempotency_denial(
-    denial: PhysicalMutationIdempotencyRegistryDenial,
-) -> PhysicalMutationPreparationOutcome {
-    match denial {
-        PhysicalMutationIdempotencyRegistryDenial::AuthorityReleased => {
-            TransitionOutcome::stale(PhysicalMutationPreparationStale::DurabilityAuthorityReleased)
-                .into()
-        }
-        PhysicalMutationIdempotencyRegistryDenial::ForeignStore
-        | PhysicalMutationIdempotencyRegistryDenial::ForeignMutationStore => {
-            TransitionOutcome::rebind_required(
-                PhysicalMutationPreparationRebindRequired::ForeignStore,
-            )
-            .into()
-        }
-        PhysicalMutationIdempotencyRegistryDenial::ForeignPolicy => {
-            TransitionOutcome::rebind_required(
-                PhysicalMutationPreparationRebindRequired::ForeignDurabilityPolicy,
-            )
-            .into()
-        }
-        PhysicalMutationIdempotencyRegistryDenial::ForeignMutationRuntime => {
-            TransitionOutcome::rebind_required(
-                PhysicalMutationPreparationRebindRequired::ForeignRuntime,
-            )
-            .into()
-        }
-        PhysicalMutationIdempotencyRegistryDenial::Expired => {
-            TransitionOutcome::denied(PhysicalMutationPreparationDenial::IdempotencyExpired).into()
-        }
-        PhysicalMutationIdempotencyRegistryDenial::Conflict => {
-            TransitionOutcome::denied(PhysicalMutationPreparationDenial::IdempotencyConflict).into()
-        }
-        PhysicalMutationIdempotencyRegistryDenial::PendingUnresolvedLimitReached => {
-            TransitionOutcome::deferred(
-                PhysicalMutationPreparationDeferred::PendingUnresolvedLimitReached,
-            )
-            .into()
-        }
-        PhysicalMutationIdempotencyRegistryDenial::LiveBindingLimitReached => {
-            TransitionOutcome::deferred(
-                PhysicalMutationPreparationDeferred::LiveBindingLimitReached,
-            )
-            .into()
-        }
-    }
-}
-
-fn map_identity_reservation(
-    error: PhysicalMutationIdentityReservationError,
-) -> PhysicalMutationPreparationOutcome {
-    match error {
-        PhysicalMutationIdentityReservationError::Stale(stale) => {
-            let stale = match stale {
-                PhysicalWorkSubmissionStale::OwnerReleased => {
-                    PhysicalMutationPreparationStale::WorkOwnerReleased
-                }
-                PhysicalWorkSubmissionStale::LifecycleGenerationAdvanced => {
-                    PhysicalMutationPreparationStale::LifecycleGenerationAdvanced
-                }
-                PhysicalWorkSubmissionStale::AdmissionStopped => {
-                    PhysicalMutationPreparationStale::AdmissionStopped
-                }
-                PhysicalWorkSubmissionStale::SignalOwnerUnavailable => {
-                    PhysicalMutationPreparationStale::SignalOwnerUnavailable
-                }
-            };
-            TransitionOutcome::stale(stale).into()
-        }
-        PhysicalMutationIdentityReservationError::Failed(
-            PhysicalWorkSubmissionFailure::OperationIdentityExhausted,
-        ) => TransitionOutcome::failed(
-            PhysicalMutationPreparationFailure::OperationIdentityExhausted,
-        )
-        .into(),
-    }
 }

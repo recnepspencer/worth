@@ -40,7 +40,10 @@ fn recovered_unpublished_arena_claim_checks_budget_before_mutation() {
         ExtentArenaAllocationOwner::new(ExtentArenaCapacity::DEFAULT, 4096, 6, 1).unwrap();
     assert_eq!(
         owner.restore_claim(range(9, 4096, 4096)),
-        Err(ArenaAllocationDenial::RangeBudget)
+        Err(ArenaAllocationDenial::RangeBudget {
+            required: 11,
+            maximum: 6,
+        })
     );
     let claim = owner.restore_claim(range(2, 4096, 4096)).unwrap();
     assert_eq!(owner.reserve(4096).unwrap().1, range(2, 0, 4096));
@@ -69,11 +72,17 @@ fn full_index_admits_coalescing_release_but_not_a_new_isolated_range() {
     let isolated = range(1, 49152, 4096);
     assert_eq!(
         allocator.preflight_release(isolated),
-        Err(ArenaAllocationDenial::RangeBudget)
+        Err(ArenaAllocationDenial::RangeBudget {
+            required: 6,
+            maximum: 5,
+        })
     );
     assert_eq!(
         allocator.admit_durable_release(isolated),
-        Err(ArenaAllocationDenial::RangeBudget)
+        Err(ArenaAllocationDenial::RangeBudget {
+            required: 6,
+            maximum: 5,
+        })
     );
     // Pressure did not mutate either index; an adjacent bridge still succeeds.
     allocator

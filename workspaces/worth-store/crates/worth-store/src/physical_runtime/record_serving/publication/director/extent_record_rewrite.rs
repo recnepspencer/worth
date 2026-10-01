@@ -104,6 +104,11 @@ impl RecordPublicationDirector {
                 batch,
                 CanonicalPayloadMaterializationObservation::default(),
                 PreparedPhysicalMutationContext {
+                    blob_record_kind: None,
+                    selected_content_class: worth_store_physical_format::SelectedRecordContentClass::UnknownLegacy,
+                    inline_only: false,
+                    derived_directory_basis: None,
+                    reuse_declaration_basis: None,
                     placement,
                     manifest_capacity_transition:
                         crate::physical_runtime::PhysicalManifestCapacityTransition::PreserveCurrent,
@@ -142,6 +147,13 @@ impl RecordPublicationDirector {
         // name exactly that extent generation.
         let source = self.current_extent_source(&current_root, prepared_source.record())?;
         if source != prepared_source {
+            return Err(damaged());
+        }
+        if worth_store_physical_format::arena_tier_at_epoch(
+            current_free_space.tier_epoch_start(),
+            source.arena_range().arena(),
+        ) != source.tier_class()
+        {
             return Err(damaged());
         }
         let format = self.format.declaration();
@@ -185,11 +197,12 @@ impl RecordPublicationDirector {
             .alignment();
         let layout = ExtentArenaFrameLayout::new(format, alignment).ok_or_else(damaged)?;
         let reservation =
-            crate::physical_runtime::record_serving::arena::ArenaReservation::reserve(
+            crate::physical_runtime::record_serving::arena::ArenaReservation::reserve_in_tier(
                 &arena_owner,
                 layout
                     .allocated_bytes(loaded.manifest.chunk_count())
                     .ok_or_else(damaged)?,
+                source.tier_class(),
             )
             .map_err(|_| RecordAppendError::Denied(RecordAppendDenial::PhysicalPressure))?;
         let destination_range = reservation.range();
@@ -240,6 +253,7 @@ impl RecordPublicationDirector {
         let manifest_bytes = manifest.encode(format);
         self.root_owner
             .hold_rewrite_candidate(
+                prepared.mutation_identity(),
                 destination,
                 written_bytes.saturating_add(manifest_bytes.len() as u64),
             )
@@ -247,6 +261,7 @@ impl RecordPublicationDirector {
         // One record owns an extent, so the successor always leaves the whole
         // source generation unreachable from the resulting root.
         self.root_owner.note_displaced(
+            prepared.mutation_identity(),
             current_root.generation(),
             RetiredArtifact::Extent {
                 extent: source.extent().get(),
@@ -255,11 +270,12 @@ impl RecordPublicationDirector {
             },
             loaded.artifact_bytes,
         );
-        let placement = DurableExtentRecordPlacement::new(
+        let placement = DurableExtentRecordPlacement::new_selected(
             source.record(),
             destination_cell,
             source.payload_bytes(),
             destination_range,
+            source.route_metadata(),
         )
         .ok_or_else(damaged)?;
         let mut placements = BTreeMap::new();
@@ -272,12 +288,16 @@ impl RecordPublicationDirector {
             .map_err(|_| damaged())?
             .with_rewrite(rewrite);
         let root = PreparedPhysicalRootProjection {
+            derived_updates: Default::default(),
+            release_head_effect: None,
             arena_reservations: vec![reservation],
             root_publication_allocation_bytes: allocation_bytes,
             source_root: current_root,
+            blob_reuse_source_fence: false,
             manifest_capacity_transition: prepared.manifest_capacity_transition(),
             placement: prepared.placement(),
             records: vec![source.record()],
+            drop_records: Default::default(),
             inserted_records: 0,
             payload_manifests: vec![(
                 RecordFrameCoordinate::new(
@@ -289,6 +309,7 @@ impl RecordPublicationDirector {
                 manifest_bytes,
             )],
             placements,
+            retired_inline_witnesses: BTreeMap::new(),
             segment_updates: BTreeMap::new(),
             inline_allocations: Vec::new(),
             // None inherits the current inline tail, which this rewrite leaves alone.

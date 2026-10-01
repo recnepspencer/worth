@@ -33,11 +33,14 @@ pub(in crate::physical_runtime) use resident_admission::page::{
     admit_resident_page, IntegrityAdmittedResidentPageBasis,
 };
 pub use root_protocol_admission_denial::RootProtocolAdmissionDenial;
-pub(in crate::physical_runtime) use scrub::PhysicalIntegrityScrubOwner;
 pub use scrub::{
     ManagedPhysicalIntegrityScrubHandle, ManagedPhysicalIntegrityScrubProgress,
     ManagedPhysicalIntegrityScrubRequest, PhysicalIntegrityScrubCancellation,
     PhysicalIntegrityScrubCounters, PhysicalIntegrityScrubDeferral,
     PhysicalIntegrityScrubRequestDenial, PhysicalIntegrityScrubResume,
-    PhysicalIntegrityScrubTarget, PhysicalIntegrityScrubWindowObservation,
+    PhysicalIntegrityScrubSource, PhysicalIntegrityScrubTarget,
+    PhysicalIntegrityScrubWindowObservation,
+};
+pub(in crate::physical_runtime) use scrub::{
+    PhysicalIntegrityScrubOwner, SelectedRecordScrubBasis,
 };

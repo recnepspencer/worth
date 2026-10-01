@@ -40,6 +40,7 @@ impl RecordPublicationDirector {
             NonZeroU64::new(page_bytes * 3).expect("admitted page geometry is nonzero");
         let (proof, reservation) = copy.into_adoption();
         self.root_owner.note_displaced(
+            prepared.mutation_identity(),
             root.generation(),
             RetiredArtifact::Extent {
                 extent: current.extent().get(),
@@ -55,17 +56,22 @@ impl RecordPublicationDirector {
             CurrentPhysicalRecordPlacement::Extent(intent.destination()),
         );
         let projection = PreparedPhysicalRootProjection {
+            derived_updates: Default::default(),
+            release_head_effect: None,
             arena_reservations: vec![reservation],
             root_publication_allocation_bytes: allocation_bytes,
             source_root: root,
+            blob_reuse_source_fence: false,
             manifest_capacity_transition: prepared.manifest_capacity_transition(),
             placement: prepared.placement(),
             records: vec![current.record()],
+            drop_records: Default::default(),
             inserted_records: 0,
             // Manifest and data already have exact copy receipts and both
             // synchronizations; final publication must not rewrite either.
             payload_manifests: Vec::new(),
             placements,
+            retired_inline_witnesses: BTreeMap::new(),
             segment_updates: BTreeMap::new(),
             inline_allocations: Vec::new(),
             last_inline_record: None,

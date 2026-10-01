@@ -40,7 +40,7 @@ impl StrategyCapability {
         }
     }
 
-    pub(crate) const fn baseline_btree_range() -> Self {
+    pub(crate) const fn btree_range() -> Self {
         Self::new(true, true, true, false, false, true, true, false, false)
     }
 

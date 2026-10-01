@@ -41,6 +41,30 @@ fn buffered_arena_compaction_does_not_claim_direct_io() {
 }
 
 #[test]
+fn store_blob_ingest_uses_buffered_media_without_claiming_async_io() {
+    let buffered = BackgroundIoPressureShape::buffered_file_blob_ingest_pressure();
+    assert_eq!(buffered.class(), BackgroundIoPressureClass::IngestPressure);
+    assert_eq!(
+        buffered.backend_requirement(),
+        IoSchedulerBackendCapabilityRequirement::BufferedFile
+    );
+    assert_eq!(
+        BackgroundIoPressureShape::blob_ingest_pressure().backend_requirement(),
+        IoSchedulerBackendCapabilityRequirement::AsyncIo
+    );
+}
+
+#[test]
+fn store_blob_reclaim_uses_buffered_media_and_its_own_pressure_class() {
+    let buffered = BackgroundIoPressureShape::buffered_file_blob_reclaim_pressure();
+    assert_eq!(buffered.class(), BackgroundIoPressureClass::BlobReclaimPressure);
+    assert_eq!(
+        buffered.backend_requirement(),
+        IoSchedulerBackendCapabilityRequirement::BufferedFile
+    );
+}
+
+#[test]
 fn background_pressure_classes_are_distinct_physical_shapes() {
     let classes = [
         BackgroundIoPressureShape::compaction_rewrite().class(),
@@ -49,17 +73,19 @@ fn background_pressure_classes_are_distinct_physical_shapes() {
         BackgroundIoPressureShape::replication_prep_read().class(),
         BackgroundIoPressureShape::blob_ingest_pressure().class(),
         BackgroundIoPressureShape::blob_migration_pressure().class(),
+        BackgroundIoPressureShape::blob_reclaim_pressure().class(),
         BackgroundIoPressureShape::backup_prep_read().class(),
         BackgroundIoPressureShape::repair_scan().class(),
         BackgroundIoPressureShape::verification_pressure().class(),
     ];
-    assert_eq!(classes.len(), 9);
+    assert_eq!(classes.len(), 10);
     assert!(classes.contains(&BackgroundIoPressureClass::CompactionRewrite));
     assert!(classes.contains(&BackgroundIoPressureClass::CheckpointFlush));
     assert!(classes.contains(&BackgroundIoPressureClass::ScrubScan));
     assert!(classes.contains(&BackgroundIoPressureClass::ReplicationPrepRead));
     assert!(classes.contains(&BackgroundIoPressureClass::IngestPressure));
     assert!(classes.contains(&BackgroundIoPressureClass::MigrationPressure));
+    assert!(classes.contains(&BackgroundIoPressureClass::BlobReclaimPressure));
     assert!(classes.contains(&BackgroundIoPressureClass::BackupPrepRead));
     assert!(classes.contains(&BackgroundIoPressureClass::RepairScan));
     assert!(classes.contains(&BackgroundIoPressureClass::VerificationPressure));
@@ -73,6 +99,10 @@ fn background_pressure_classes_are_distinct_physical_shapes() {
     );
     assert_eq!(
         BackgroundIoPressureClass::MigrationPressure.debt_kind(),
+        BackgroundDebtKind::BlobContention
+    );
+    assert_eq!(
+        BackgroundIoPressureClass::BlobReclaimPressure.debt_kind(),
         BackgroundDebtKind::BlobContention
     );
     assert_eq!(

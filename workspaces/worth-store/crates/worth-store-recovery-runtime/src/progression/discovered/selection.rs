@@ -118,12 +118,20 @@ pub(super) fn select_sources(
     let frontier = checkpoint
         .as_ref()
         .map_or(0, |checkpoint| checkpoint.wal_tail_begin_lsn());
+    let checkpoint_cutoff = checkpoint.as_ref().map(|checkpoint| {
+        checkpoint
+            .checkpoint()
+            .compaction_cutover()
+            .wal_cutoff_lsn_exclusive()
+    });
     let (wal_tail, admitted_wal, wal_integrity_observations) =
-        select_wal(&root, input.wal, frontier, &mut counters).map_err(|failure| {
-            failure
-                .with_root_protocol_denials(&root_protocol_denials)
-                .with_integrity_trace(integrity_trace.clone())
-        })?;
+        select_wal(&root, input.wal, frontier, checkpoint_cutoff, &mut counters).map_err(
+            |failure| {
+                failure
+                    .with_root_protocol_denials(&root_protocol_denials)
+                    .with_integrity_trace(integrity_trace.clone())
+            },
+        )?;
     let compaction = checkpoint.as_ref().map(SelectedCompactionProduct::admit);
     let selection = select_final_cut(FinalSelectionInput {
         root,
@@ -240,6 +248,7 @@ fn select_wal(
     root: &SelectedPhysicalRoot,
     wal: WalDiscovery,
     frontier: u64,
+    checkpoint_cutoff: Option<u64>,
     counters: &mut PhysicalRecoveryDiscoveryCounters,
 ) -> Result<
     (
@@ -266,7 +275,7 @@ fn select_wal(
         .with_integrity_observations(observations)
         .with_source_denials(denials));
     }
-    match admit_physical_wal_tail(frontier, candidates) {
+    match admit_physical_wal_tail(frontier, checkpoint_cutoff, candidates) {
         Ok(selected) => Ok((selected, admitted, observations)),
         Err(denial) => {
             counters.wal_missing_range_denials += 1;

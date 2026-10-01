@@ -116,7 +116,8 @@ impl RecordReadPartition {
             | RecordArtifactFile::RootSelectorCandidate { .. }
             | RecordArtifactFile::CatalogCandidate { .. }
             | RecordArtifactFile::RootManifest { .. }
-            | RecordArtifactFile::RootRoutingBlock { .. } => Self::Root,
+            | RecordArtifactFile::RootRoutingBlock { .. }
+            | RecordArtifactFile::ReleaseCustodyHeadBlock { .. } => Self::Root,
             RecordArtifactFile::Segment { .. } | RecordArtifactFile::ExtentArena { .. } => {
                 Self::Frame
             }
@@ -134,7 +135,8 @@ impl RecordReadPartition {
             | RecordArtifactFile::PreviousRootSelector
             | RecordArtifactFile::CatalogCandidate { .. }
             | RecordArtifactFile::RootManifest { .. }
-            | RecordArtifactFile::RootRoutingBlock { .. } => Self::Root,
+            | RecordArtifactFile::RootRoutingBlock { .. }
+            | RecordArtifactFile::ReleaseCustodyHeadBlock { .. } => Self::Root,
             _ => Self::Artifact,
         }
     }

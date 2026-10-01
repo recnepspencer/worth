@@ -1,8 +1,45 @@
 use super::*;
 
 impl StoreRecoveryBindingFreshnessSample {
+    /// Owned recovery-data backing, excluding this inline value and past scratch.
+    /// Canonical redo and copy frames are distinct retained allocations.
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        let storage = [
+            std::mem::size_of_val(&*self.operations),
+            std::mem::size_of_val(&*self.wal_members),
+            std::mem::size_of_val(&*self.retirements),
+            std::mem::size_of_val(&*self.extent_copy_frames),
+            std::mem::size_of_val(&*self.blob_manifest_residue_cleanups),
+        ];
+        let mut bytes = storage.into_iter().try_fold(0_u64, |total, size| {
+            total.checked_add(u64::try_from(size).ok()?)
+        })?;
+        for member in &self.wal_members {
+            bytes = bytes.checked_add(u64::try_from(member.canonical_redo.len()).ok()?)?;
+        }
+        for (_, frame) in &self.extent_copy_frames {
+            bytes = bytes.checked_add(u64::try_from(frame.len()).ok()?)?;
+        }
+        Some(bytes)
+    }
+
+    pub const fn tier_epoch_activation(&self) -> Option<StoreTierEpochActivationObservation> {
+        self.tier_epoch_activation
+    }
     pub fn extent_copy_frames(&self) -> &[(WalLsnRange, Box<[u8]>)] {
         &self.extent_copy_frames
+    }
+    pub fn blob_manifest_residue_cleanups(
+        &self,
+    ) -> &[(
+        WalLsnRange,
+        worth_store_physical_format::BlobManifestResidueCleanup,
+        bool,
+    )] {
+        &self.blob_manifest_residue_cleanups
+    }
+    pub const fn manifest_cleanup_sampling_peak_bytes(&self) -> u64 {
+        self.manifest_cleanup_sampling_peak_bytes
     }
     pub const fn store_identity(&self) -> StableStoreIdentity {
         self.store

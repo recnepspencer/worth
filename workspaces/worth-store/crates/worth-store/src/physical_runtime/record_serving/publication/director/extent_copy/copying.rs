@@ -1,6 +1,6 @@
 use super::super::{selected_segment_rewrite::damaged, RecordPublicationDirector};
 use super::{
-    session::{CopyPhase, ExtentCopySession},
+    session::{CopyPhase, CopyProducer, ExtentCopySession},
     ExtentCopySynchronization,
 };
 use crate::physical_runtime::record_serving::{
@@ -104,21 +104,36 @@ impl RecordPublicationDirector {
 
     fn write_copy_pending(&self, copy: &mut ExtentCopySession) -> Result<(), RecordAppendError> {
         let (coordinate, bytes) = copy.pending.as_ref().ok_or_else(damaged)?;
-        let admission = self
-            .mutation
-            .admit_compaction_frame(bytes.len() as u64)
-            .map_err(|_| RecordAppendError::Denied(RecordAppendDenial::PhysicalPressure))?;
-        let completed = self
-            .mutation
-            .prepare_compaction_artifact(
-                RecordPublicationStage::CandidateDataWrite,
-                *coordinate,
-                bytes,
-                admission,
-            )
-            .map_err(|_| damaged())?
+        let prepared = match copy.producer {
+            CopyProducer::ArenaEvacuation => {
+                let admission = self
+                    .mutation
+                    .admit_compaction_frame(bytes.len() as u64)
+                    .map_err(|_| RecordAppendError::Denied(RecordAppendDenial::PhysicalPressure))?;
+                self.mutation.prepare_compaction_artifact(
+                    RecordPublicationStage::CandidateDataWrite,
+                    *coordinate,
+                    bytes,
+                    admission,
+                )
+            }
+            CopyProducer::BlobMovement => {
+                let admission = self
+                    .mutation
+                    .admit_blob_movement_frame(bytes.len() as u64)
+                    .map_err(|_| RecordAppendError::Denied(RecordAppendDenial::PhysicalPressure))?;
+                self.mutation.prepare_blob_movement_artifact(
+                    RecordPublicationStage::CandidateDataWrite,
+                    *coordinate,
+                    bytes,
+                    admission,
+                )
+            }
+        }
+        .map_err(|failure| copy_work_failure(copy.producer, failure))?;
+        let completed = prepared
             .execute()
-            .map_err(|_| damaged())?;
+            .map_err(|failure| copy_work_failure(copy.producer, failure))?;
         copy.writes
             .as_mut()
             .ok_or_else(damaged)?
@@ -187,5 +202,17 @@ impl RecordPublicationDirector {
             } => Ok((physical, identity)),
             _ => Err(damaged()),
         }
+    }
+}
+
+fn copy_work_failure(
+    producer: CopyProducer,
+    failure: crate::physical_runtime::record_serving::CanonicalRecordMutationFailure,
+) -> RecordAppendError {
+    match producer {
+        CopyProducer::BlobMovement => RecordAppendError::Denied(
+            RecordAppendDenial::PhysicalWorkUnavailable(Box::new(failure.evidence())),
+        ),
+        CopyProducer::ArenaEvacuation => damaged(),
     }
 }

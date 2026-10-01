@@ -42,6 +42,13 @@ impl ObservedRecoveryArtifact {
         self.bytes.as_deref()
     }
 
+    /// Heap backing retained by this observation, excluding the inline wrapper.
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        self.bytes
+            .as_ref()
+            .map_or(Some(0), |bytes| u64::try_from(bytes.capacity()).ok())
+    }
+
     pub fn into_bytes(self) -> Option<Vec<u8>> {
         self.bytes
     }

@@ -210,7 +210,10 @@ fn target_chunk(
         return Err(PageObservationFailure::InvalidPage(target.identity()));
     };
     if chunk == 0 || chunk > manifest.chunk_count() {
-        return Err(PageObservationFailure::InvalidTarget(target.identity()));
+        return Err(PageObservationFailure::MaterializedExtentChunkCount {
+            target: target.identity(),
+            admitted_chunk_count: manifest.chunk_count(),
+        });
     }
     Ok(chunk)
 }
@@ -222,9 +225,12 @@ fn require_chunk_coordinate(
     offset: u64,
     length: u32,
 ) -> Result<(), PageObservationFailure> {
-    let coordinate = target
-        .extent_coordinate()
-        .ok_or(PageObservationFailure::InvalidTarget(target.identity()))?;
+    let coordinate =
+        target
+            .extent_coordinate()
+            .ok_or(PageObservationFailure::MaterializedExtentCoordinate(
+                target.identity(),
+            ))?;
     if coordinate.allocation_epoch() == manifest.record().allocation_epoch()
         && coordinate.record_ordinal() == manifest.record().ordinal()
         && coordinate.logical_bytes() == manifest.logical_bytes()
@@ -234,7 +240,9 @@ fn require_chunk_coordinate(
     {
         Ok(())
     } else {
-        Err(PageObservationFailure::InvalidTarget(target.identity()))
+        Err(PageObservationFailure::MaterializedExtentCoordinate(
+            target.identity(),
+        ))
     }
 }
 

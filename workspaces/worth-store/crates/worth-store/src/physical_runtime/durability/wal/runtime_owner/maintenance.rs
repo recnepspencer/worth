@@ -13,7 +13,7 @@ impl PhysicalWalRuntimeOwner {
         if state.sealed || state.in_flight {
             return Err(());
         }
-        let extent_copy = if payload.starts_with(worth_store_physical_format::EXTENT_COPY_DOMAIN) {
+        let extent_copy = if worth_store_physical_format::payload_is_extent_copy_any(payload) {
             Some(
                 worth_store_physical_format::PhysicalExtentCopyRecord::decode(
                     payload,
@@ -23,6 +23,12 @@ impl PhysicalWalRuntimeOwner {
             )
         } else {
             None
+        };
+        let tier_epoch = if worth_store_physical_format::payload_is_tier_epoch_activation(payload) {
+            worth_store_physical_format::TierEpochActivationV1::decode(payload).map_err(|_| ())?;
+            true
+        } else {
+            false
         };
         if let Some(record) = extent_copy {
             let mut projected = state.copy_obligations.clone();
@@ -48,6 +54,8 @@ impl PhysicalWalRuntimeOwner {
             range,
             if extent_copy.is_some() {
                 "store.physical.extent-copy.v1"
+            } else if tier_epoch {
+                "store.physical.tier-epoch-activation.v1"
             } else {
                 "store.physical.retirement.v2"
             },
@@ -59,6 +67,18 @@ impl PhysicalWalRuntimeOwner {
             return Err(());
         }
         let bytes = planned.frame().encoded_frame().to_vec();
+        let frame = worth_store_physical_format::wal_frame::decode_bounded_wal_frame_v1(&bytes)
+            .map_err(|_| ())?;
+        let header = frame.header();
+        let payload_digest: [u8; 32] = Sha256::digest(payload).into();
+        if header.segment_id() != state.frontier.segment().get()
+            || header.generation() != state.frontier.generation().get()
+            || header.lsn_start() != start.get()
+            || header.lsn_end() != end.get()
+            || header.payload_digest() != payload_digest
+        {
+            return Err(());
+        }
         let offset = state.frontier.valid_prefix_bytes();
         let segment = state.frontier.segment().get();
         let generation = state.frontier.generation().get();
@@ -66,7 +86,9 @@ impl PhysicalWalRuntimeOwner {
         let retirement = super::super::super::retention::decode_retirement(payload)
             .map(|record| (record.artifact, record.completion));
         state.maintenance = Some(PlannedMaintenanceFrame {
-            payload_digest: Sha256::digest(payload).into(),
+            payload_digest,
+            frame_identity_digest: header.identity_digest(),
+            frame_payload_digest: header.payload_digest(),
             bytes: bytes.clone(),
             frontier: planned.resulting_frontier(),
             segment: state.frontier.segment(),
@@ -112,6 +134,21 @@ impl PhysicalWalRuntimeOwner {
             .maintenance
             .as_ref()
             .is_some_and(|planned| planned.payload_digest == payload_digest)
+    }
+
+    pub(in crate::physical_runtime) fn planned_maintenance_frame_digests(
+        &self,
+        payload_digest: [u8; 32],
+    ) -> Option<([u8; 32], [u8; 32])> {
+        let state = self
+            .shared
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        state
+            .maintenance
+            .as_ref()
+            .filter(|planned| planned.payload_digest == payload_digest && state.awaiting_barrier)
+            .map(|planned| (planned.frame_identity_digest, planned.frame_payload_digest))
     }
 
     pub(in crate::physical_runtime) fn note_maintenance_written(&self) {
@@ -169,6 +206,8 @@ impl PhysicalWalRuntimeOwner {
             state.in_flight = false;
             return Err(());
         }
+        state.segment_count = u32::try_from(state.segments.entries().len())
+            .expect("the bounded WAL segment inventory fits its declared counter");
         state.frontier = planned.frontier;
         state.appended_frames = state.appended_frames.saturating_add(1);
         state.appended_bytes = state

@@ -40,6 +40,10 @@ impl RecordPublicationDirector {
     ) -> PhysicalCurrentRootAdvanceOutcome {
         let outcome = self.root_owner.advance(durable);
         if let PhysicalCurrentRootAdvanceOutcome::Advanced(completed) = &outcome {
+            // Only this group's completed data becomes live payload. Another
+            // manually driven group may still hold candidate growth leases.
+            self.root_owner
+                .settle_completed_candidate_growth(completed.settled_members());
             for member in completed.settled_members() {
                 if let Some(copy) = member.source_copy_evidence() {
                     if self

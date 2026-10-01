@@ -208,6 +208,11 @@ impl RecordPublicationDirector {
                 batch,
                 super::super::durable_preparation::CanonicalPayloadMaterializationObservation::default(),
                 PreparedPhysicalMutationContext {
+                    blob_record_kind: None,
+                    selected_content_class: worth_store_physical_format::SelectedRecordContentClass::UnknownLegacy,
+                    inline_only: false,
+                    derived_directory_basis: None,
+                    reuse_declaration_basis: None,
                     placement,
                     manifest_capacity_transition:
                         crate::physical_runtime::PhysicalManifestCapacityTransition::PreserveCurrent,
@@ -249,6 +254,8 @@ fn artifact_digest(artifact: &PlannedInlineRewriteArtifact) -> [u8; 32] {
 fn plan_denial(error: RecordAppendError) -> InlineArtifactRewritePlanDenial {
     match error {
         RecordAppendError::Denied(RecordAppendDenial::PhysicalPressure)
+        | RecordAppendError::Denied(RecordAppendDenial::ArenaAllocationUnavailable(_))
+        | RecordAppendError::Denied(RecordAppendDenial::PlanningAllocationUnavailable { .. })
         | RecordAppendError::PhysicalPressure { .. } => {
             InlineArtifactRewritePlanDenial::PhysicalPressure
         }

@@ -169,6 +169,7 @@ pub(crate) enum ProcessIntegrityVersionAxis {
     PhysicalWorkObligation,
     WalFrame,
     CheckpointRecordSchema,
+    BlobRecord,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -281,4 +282,10 @@ pub(crate) enum ProcessIntegrityArtifactFamily {
     ExtentManifest,
     FreeSpaceHeader,
     FreeSpaceMembershipBlock,
+    BlobResumeSession,
+    BlobChunkFrame,
+    BlobTreeNode,
+    BlobGenerationPublication,
+    BlobDropSetManifest,
+    BlobReclaimDescriptor,
 }

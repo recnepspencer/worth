@@ -14,6 +14,67 @@ impl CertificationPhysicalRecordSubmission {
         Self { submission }
     }
 
+    /// Prepares the classified Store blob route for grouped C5 certification.
+    pub fn prepare_blob_record_append(
+        &self,
+        encoded: Vec<u8>,
+        placement: crate::physical_runtime::AdmittedRecordPlacementPolicy,
+        request: crate::physical_runtime::PhysicalMutationRequest,
+    ) -> crate::physical_runtime::PhysicalMutationPreparationOutcome {
+        self.submission
+            .prepare_blob_record_append(encoded, placement, request)
+    }
+
+    /// Exercises the same selected-root source and destination verifier used
+    /// by WAL planning, without granting an append or advancing the root.
+    pub fn verify_blob_reuse_claim_before_append(
+        &self,
+        encoded: Vec<u8>,
+        declaration_record: worth_store_physical_format::PersistedRecordIdentity,
+        declaration_digest: [u8; 32],
+    ) -> Result<(), crate::physical_runtime::RecordAppendDenial> {
+        use crate::physical_runtime::record_serving::publication::PreparedReuseDeclarationBasis;
+        let director = self
+            .submission
+            .director
+            .upgrade()
+            .ok_or(crate::physical_runtime::RecordAppendDenial::PublicationAuthorityReleased)?;
+        let batch = crate::physical_runtime::RecordAppendBatch::builder()
+            .push_owned(encoded)
+            .build()?;
+        let generation = director.root_owner.snapshot().0.generation();
+        director
+            .verify_new_reuse_claim(
+                &batch,
+                generation,
+                PreparedReuseDeclarationBasis {
+                    record: declaration_record,
+                    digest: declaration_digest,
+                },
+            )
+            .map_err(|error| match error {
+                crate::physical_runtime::RecordAppendError::Denied(denial) => denial,
+                _ => crate::physical_runtime::RecordAppendDenial::ReuseSourceInvalid,
+            })
+    }
+
+    pub fn prepare_blob_reuse_claim_append(
+        &self,
+        encoded: Vec<u8>,
+        declaration_record: worth_store_physical_format::PersistedRecordIdentity,
+        declaration_digest: [u8; 32],
+        placement: crate::physical_runtime::AdmittedRecordPlacementPolicy,
+        request: crate::physical_runtime::PhysicalMutationRequest,
+    ) -> crate::physical_runtime::PhysicalMutationPreparationOutcome {
+        self.submission.prepare_blob_reuse_claim_append(
+            encoded,
+            declaration_record,
+            declaration_digest,
+            placement,
+            request,
+        )
+    }
+
     pub fn cancel_prepared_before_group_seal(
         &self,
         prepared: crate::physical_runtime::PreparedPhysicalMutation,

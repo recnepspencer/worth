@@ -9,9 +9,11 @@ mod selected;
 mod staged;
 
 pub(crate) use planned::{
-    derive_execution_basis, requires_successor_candidate, CandidateMaterializationCost,
-    ExecutionBasisDenial, RecoveryObservedCandidateArtifact, RecoveryObservedSuccessorCandidate,
-    RecoverySelectedSegmentPage, RecoverySelectedSourceInventory,
+    derive_execution_basis, requires_successor_candidate, verified_historical_release_transition,
+    CandidateMaterializationCost, ExecutionBasisDenial, PlanningMemoryDenial,
+    PlanningResidentAllowance, RecoveryObservedCandidateArtifact,
+    RecoveryObservedSuccessorCandidate, RecoverySelectedSegmentPage,
+    RecoverySelectedSourceInventory,
 };
 
 pub use admitted::AdmittedPhysicalRecovery;

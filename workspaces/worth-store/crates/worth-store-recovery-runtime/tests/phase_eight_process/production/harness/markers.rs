@@ -13,6 +13,7 @@ pub struct RecoveryFateMarker {
     pub durable_unacknowledged: u64,
     pub proven_no_effect: u64,
     pub indeterminate: u64,
+    pub historical_consumed: u64,
 }
 
 impl RecoveryFateMarker {
@@ -21,6 +22,7 @@ impl RecoveryFateMarker {
             .saturating_add(self.durable_unacknowledged)
             .saturating_add(self.proven_no_effect)
             .saturating_add(self.indeterminate)
+            .saturating_add(self.historical_consumed)
     }
 }
 
@@ -73,12 +75,14 @@ pub fn parse_recovery_fate_marker(output: &Output) -> RecoveryFateMarker {
     let durable_unacknowledged = parse_marker_field(fields.next(), "durable_unacknowledged");
     let proven_no_effect = parse_marker_field(fields.next(), "proven_no_effect");
     let indeterminate = parse_marker_field(fields.next(), "indeterminate");
+    let historical_consumed = parse_marker_field(fields.next(), "historical_consumed");
     assert!(fields.next().is_none());
     RecoveryFateMarker {
         acknowledged,
         durable_unacknowledged,
         proven_no_effect,
         indeterminate,
+        historical_consumed,
     }
 }
 

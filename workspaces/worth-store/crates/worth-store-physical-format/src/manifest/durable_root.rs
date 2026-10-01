@@ -1,4 +1,4 @@
-use crate::record_framing::{decode_durable_frame, encode_durable_frame_schema, FRAME_SCHEMA};
+use crate::record_framing::{decode_durable_frame, FRAME_SCHEMA};
 use crate::{
     DurableFrameDenial, DurableFrameKind, PersistedRecordIdentity, PhysicalGeneration,
     PhysicalGenerationAuthority, PhysicalRecordFormatDeclaration, PhysicalRootReference,
@@ -16,22 +16,17 @@ use super::free_space_routing::{
     decode_reference as decode_free_space_reference,
     encode_reference as encode_free_space_reference, FreeSpaceBlockReference,
 };
+use super::release_custody_head::ReleaseCustodyHeadBlockReferenceV1;
 use super::routing_tree_height::required_tree_level;
+use super::{DerivedFamilyRootDirectoryBinding, IndexedThroughBlobPublication};
 
 pub const CURRENT_ROOT_MANIFEST_PREFIX_BYTES: usize = 24;
 pub const CURRENT_ROOT_MANIFEST_ENTRY_BYTES: usize = 88;
-
-pub const fn maximum_current_root_entries(format: PhysicalRecordFormatDeclaration) -> u16 {
-    let available = format.page_size().bytes() as usize
-        - crate::record_framing::DURABLE_FRAME_HEADER_BYTES
-        - CURRENT_ROOT_MANIFEST_PREFIX_BYTES;
-    let entries = available / CURRENT_ROOT_MANIFEST_ENTRY_BYTES;
-    if entries > u16::MAX as usize {
-        u16::MAX
-    } else {
-        entries as u16
-    }
-}
+const LEGACY_ROOT_PAYLOAD_BYTES: usize = 336;
+const DIRECTORY_BOUND_ROOT_PAYLOAD_BYTES: usize = 496;
+const QUARANTINE_BOUND_ROOT_PAYLOAD_BYTES: usize = 528;
+const TIER_ANCHORED_ROOT_PAYLOAD_BYTES: usize = 560;
+const HEAD_BOUND_ROOT_PAYLOAD_BYTES: usize = 680;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DurablePhysicalRootManifest {
@@ -45,6 +40,12 @@ pub struct DurablePhysicalRootManifest {
     routing_root: Option<ManifestBlockReference>,
     segment_root: Option<SegmentManifestBlockReference>,
     free_space_root: Option<FreeSpaceBlockReference>,
+    release_custody_head_root: Option<ReleaseCustodyHeadBlockReferenceV1>,
+    next_release_custody_head_block: u64,
+    latest_blob_publication: Option<IndexedThroughBlobPublication>,
+    latest_blob_quarantine: Option<PersistedRecordIdentity>,
+    tier_epoch_anchor: Option<[u8; 32]>,
+    derived_family_directory: Option<DerivedFamilyRootDirectoryBinding>,
     last_inline_record: Option<PersistedRecordIdentity>,
     last_inline_segment: Option<SegmentGenerationCell>,
     requires_maintenance_protocol: bool,
@@ -62,11 +63,23 @@ pub struct DurablePhysicalRootManifestBuilder {
     routing_root: Option<ManifestBlockReference>,
     segment_root: Option<SegmentManifestBlockReference>,
     free_space_root: Option<FreeSpaceBlockReference>,
+    release_custody_head_root: Option<ReleaseCustodyHeadBlockReferenceV1>,
+    next_release_custody_head_block: u64,
+    latest_blob_publication: Option<IndexedThroughBlobPublication>,
+    latest_blob_quarantine: Option<PersistedRecordIdentity>,
+    tier_epoch_anchor: Option<[u8; 32]>,
+    derived_family_directory: Option<DerivedFamilyRootDirectoryBinding>,
     last_inline_record: Option<PersistedRecordIdentity>,
     last_inline_segment: Option<SegmentGenerationCell>,
 }
 
 impl DurablePhysicalRootManifest {
+    /// Maximum co-live payload and framed-output storage used by `encode`.
+    /// Canonical admission may encode the current layout even for an older input.
+    pub const fn maximum_encoding_scratch_bytes() -> usize {
+        2 * HEAD_BOUND_ROOT_PAYLOAD_BYTES + crate::record_framing::DURABLE_FRAME_HEADER_BYTES
+    }
+
     pub const fn builder(
         generation: u64,
         tree_identity: u64,
@@ -84,87 +97,132 @@ impl DurablePhysicalRootManifest {
             routing_root: None,
             segment_root: None,
             free_space_root: None,
+            release_custody_head_root: None,
+            next_release_custody_head_block: 1,
+            latest_blob_publication: None,
+            latest_blob_quarantine: None,
+            tier_epoch_anchor: None,
+            derived_family_directory: None,
             last_inline_record: None,
             last_inline_segment: None,
         }
     }
 
-    pub const fn generation(&self) -> u64 {
-        self.root.generation().get()
-    }
-    pub const fn root_cell(&self) -> RootPublicationCell {
-        self.root
-    }
-    pub const fn node_capacity(&self) -> u16 {
-        self.node_capacity
-    }
-    pub const fn tree_identity(&self) -> u64 {
-        self.tree_identity
-    }
-    pub const fn record_count(&self) -> u64 {
-        self.record_count
-    }
-    pub const fn next_block(&self) -> u64 {
-        self.next_block
-    }
-    pub const fn next_segment_block(&self) -> u64 {
-        self.next_segment_block
-    }
-    pub const fn free_space_checksum(&self) -> u32 {
-        self.free_space_checksum
-    }
-    pub const fn routing_root(&self) -> Option<ManifestBlockReference> {
-        self.routing_root
-    }
-    pub const fn segment_root(&self) -> Option<SegmentManifestBlockReference> {
-        self.segment_root
-    }
-    pub const fn free_space_root(&self) -> Option<FreeSpaceBlockReference> {
-        self.free_space_root
-    }
-    pub const fn last_inline_record(&self) -> Option<PersistedRecordIdentity> {
-        self.last_inline_record
-    }
-    pub const fn last_inline_segment(&self) -> Option<SegmentGenerationCell> {
-        self.last_inline_segment
+    pub fn encode(&self, format: PhysicalRecordFormatDeclaration) -> Vec<u8> {
+        let length = self.encoded_frame_bytes();
+        self.encode_in_reserved(format, Vec::with_capacity(length))
+            .expect("reserved root manifest encoding")
     }
 
-    pub fn encode(&self, format: PhysicalRecordFormatDeclaration) -> Vec<u8> {
-        let mut payload = vec![0_u8; 336];
-        payload[..8].copy_from_slice(&self.generation().to_le_bytes());
-        payload[8..16].copy_from_slice(&self.tree_identity.to_le_bytes());
-        payload[16..18].copy_from_slice(&self.node_capacity.to_le_bytes());
-        payload[24..32].copy_from_slice(&self.record_count.to_le_bytes());
-        payload[32..40].copy_from_slice(&self.next_block.to_le_bytes());
-        payload[152..156].copy_from_slice(&self.free_space_checksum.to_le_bytes());
-        payload[224..232].copy_from_slice(&self.next_segment_block.to_le_bytes());
-        if let Some(reference) = self.routing_root {
-            payload[40] = 1;
-            encode_reference(&mut payload[48..120], reference);
-        }
-        if let Some(record) = self.last_inline_record {
-            payload[120] = 1;
-            encode_identity(&mut payload[128..152], record);
-        }
-        if let Some(reference) = self.segment_root {
-            payload[160] = 1;
-            encode_segment_reference(&mut payload[168..224], reference);
-        }
-        if let Some(reference) = self.free_space_root {
-            payload[232] = 1;
-            encode_free_space_reference(&mut payload[240..312], reference);
-        }
-        if let Some(segment) = self.last_inline_segment {
-            payload[312] = 1;
-            payload[320..328].copy_from_slice(&segment.segment_id().get().to_le_bytes());
-            payload[328..336].copy_from_slice(&segment.generation().get().to_le_bytes());
-        }
-        encode_durable_frame_schema(
+    pub fn encoded_frame_bytes(&self) -> usize {
+        crate::record_framing::DURABLE_FRAME_HEADER_BYTES
+            + if self.release_custody_head_root.is_some()
+                || self.next_release_custody_head_block > 1
+            {
+                HEAD_BOUND_ROOT_PAYLOAD_BYTES
+            } else if self.tier_epoch_anchor.is_some() {
+                TIER_ANCHORED_ROOT_PAYLOAD_BYTES
+            } else if self.latest_blob_quarantine.is_some() {
+                QUARANTINE_BOUND_ROOT_PAYLOAD_BYTES
+            } else if self.latest_blob_publication.is_some()
+                || self.derived_family_directory.is_some()
+            {
+                DIRECTORY_BOUND_ROOT_PAYLOAD_BYTES
+            } else {
+                LEGACY_ROOT_PAYLOAD_BYTES
+            }
+    }
+
+    pub fn encode_in_reserved(
+        &self,
+        format: PhysicalRecordFormatDeclaration,
+        frame: Vec<u8>,
+    ) -> Option<Vec<u8>> {
+        let payload_bytes =
+            self.encoded_frame_bytes() - crate::record_framing::DURABLE_FRAME_HEADER_BYTES;
+        let schema = if payload_bytes == HEAD_BOUND_ROOT_PAYLOAD_BYTES {
+            10
+        } else if self.tier_epoch_anchor.is_some() {
+            9
+        } else {
+            FRAME_SCHEMA
+                + u8::from(self.requires_maintenance_protocol)
+                + if self.latest_blob_quarantine.is_some() {
+                    4
+                } else if self.latest_blob_publication.is_some()
+                    || self.derived_family_directory.is_some()
+                {
+                    2
+                } else {
+                    0
+                }
+        };
+        crate::record_framing::encode_durable_frame_in_reserved(
             DurableFrameKind::RootManifest,
             format,
             self.generation(),
-            &payload,
-            FRAME_SCHEMA + u8::from(self.requires_maintenance_protocol),
+            payload_bytes,
+            schema,
+            frame,
+            |payload| {
+                payload[..8].copy_from_slice(&self.generation().to_le_bytes());
+                payload[8..16].copy_from_slice(&self.tree_identity.to_le_bytes());
+                payload[16..18].copy_from_slice(&self.node_capacity.to_le_bytes());
+                payload[24..32].copy_from_slice(&self.record_count.to_le_bytes());
+                payload[32..40].copy_from_slice(&self.next_block.to_le_bytes());
+                payload[152..156].copy_from_slice(&self.free_space_checksum.to_le_bytes());
+                payload[224..232].copy_from_slice(&self.next_segment_block.to_le_bytes());
+                if let Some(reference) = self.routing_root {
+                    payload[40] = 1;
+                    encode_reference(&mut payload[48..120], reference);
+                }
+                if let Some(record) = self.last_inline_record {
+                    payload[120] = 1;
+                    encode_identity(&mut payload[128..152], record);
+                }
+                if let Some(reference) = self.segment_root {
+                    payload[160] = 1;
+                    encode_segment_reference(&mut payload[168..224], reference);
+                }
+                if let Some(reference) = self.free_space_root {
+                    payload[232] = 1;
+                    encode_free_space_reference(&mut payload[240..312], reference);
+                }
+                if let Some(segment) = self.last_inline_segment {
+                    payload[312] = 1;
+                    payload[320..328].copy_from_slice(&segment.segment_id().get().to_le_bytes());
+                    payload[328..336].copy_from_slice(&segment.generation().get().to_le_bytes());
+                }
+                if let Some(publication) = self.latest_blob_publication {
+                    payload[401] = 1;
+                    super::derived_family_directory::encode_publication(
+                        &mut payload[336..400],
+                        publication,
+                    );
+                }
+                if let Some(binding) = self.derived_family_directory {
+                    payload[400] = 1;
+                    super::derived_family_directory::encode_root_binding(
+                        &mut payload[408..496],
+                        binding,
+                    );
+                }
+                if let Some(quarantine) = self.latest_blob_quarantine {
+                    payload[496] = 1;
+                    encode_identity(&mut payload[504..528], quarantine);
+                }
+                if let Some(anchor) = self.tier_epoch_anchor {
+                    payload[528..560].copy_from_slice(&anchor);
+                }
+                if payload.len() == HEAD_BOUND_ROOT_PAYLOAD_BYTES {
+                    release_head_reference::encode(
+                        payload,
+                        self.release_custody_head_root,
+                        self.next_release_custody_head_block,
+                        self.requires_maintenance_protocol,
+                    );
+                }
+            },
         )
     }
 
@@ -174,8 +232,9 @@ impl DurablePhysicalRootManifest {
     ) -> Result<(Self, PhysicalRecordFormatDeclaration), RootManifestDenial> {
         let (format, frame) = decode_durable_frame(bytes, DurableFrameKind::RootManifest)
             .map_err(RootManifestDenial::Frame)?;
-        if frame.payload.len() != 336
-            || frame.payload[18..24] != [0; 6]
+        let (latest_blob_publication, bound_directory, latest_blob_quarantine) =
+            publication_fields::decode(frame.schema, frame.payload)?;
+        if frame.payload[18..24] != [0; 6]
             || frame.payload[41..48] != [0; 7]
             || frame.payload[121..128] != [0; 7]
             || frame.payload[156..160] != [0; 4]
@@ -192,6 +251,8 @@ impl DurablePhysicalRootManifest {
         let next_block = u64::from_le_bytes(frame.payload[32..40].try_into().unwrap());
         let free_space_checksum = u32::from_le_bytes(frame.payload[152..156].try_into().unwrap());
         let next_segment_block = u64::from_le_bytes(frame.payload[224..232].try_into().unwrap());
+        let (tier_epoch_anchor, head_root, next_head_block, head_maintenance) =
+            release_head_reference::decode(frame.schema, frame.payload)?;
         if generation == 0 || generation != frame.identity {
             return Err(RootManifestDenial::IdentityMismatch);
         }
@@ -261,127 +322,41 @@ impl DurablePhysicalRootManifest {
         .routing_root(routing_root)
         .segment_root(segment_root)
         .free_space_root(free_space_root)
+        .release_custody_head_root(head_root)
+        .next_release_custody_head_block(next_head_block)
+        .latest_blob_publication(latest_blob_publication)
+        .latest_blob_quarantine(latest_blob_quarantine)
+        .tier_epoch_anchor(tier_epoch_anchor)
+        .derived_family_directory(bound_directory)
         .last_inline_record(last_inline_record)
         .last_inline_segment(last_inline_segment)
         .admit()
-        .map(|manifest| (manifest.with_root_schema(frame.schema), format))
+        .map(|mut manifest| {
+            manifest = manifest.with_root_schema(frame.schema);
+            if frame.schema == 10 {
+                manifest.requires_maintenance_protocol = head_maintenance;
+            }
+            (manifest, format)
+        })
         .ok_or(RootManifestDenial::InvalidPlacement)
     }
 }
 
-impl DurablePhysicalRootManifestBuilder {
-    pub const fn record_count(mut self, record_count: u64) -> Self {
-        self.record_count = record_count;
-        self
-    }
-    pub const fn next_block(mut self, next_block: u64) -> Self {
-        self.next_block = next_block;
-        self
-    }
-    pub const fn next_segment_block(mut self, next_segment_block: u64) -> Self {
-        self.next_segment_block = next_segment_block;
-        self
-    }
-    pub const fn routing_root(mut self, routing_root: Option<ManifestBlockReference>) -> Self {
-        self.routing_root = routing_root;
-        self
-    }
-    pub const fn segment_root(
-        mut self,
-        segment_root: Option<SegmentManifestBlockReference>,
-    ) -> Self {
-        self.segment_root = segment_root;
-        self
-    }
-    pub const fn free_space_root(
-        mut self,
-        free_space_root: Option<FreeSpaceBlockReference>,
-    ) -> Self {
-        self.free_space_root = free_space_root;
-        self
-    }
-    pub const fn last_inline_record(
-        mut self,
-        last_inline_record: Option<PersistedRecordIdentity>,
-    ) -> Self {
-        self.last_inline_record = last_inline_record;
-        self
-    }
-    pub const fn last_inline_segment(
-        mut self,
-        last_inline_segment: Option<SegmentGenerationCell>,
-    ) -> Self {
-        self.last_inline_segment = last_inline_segment;
-        self
-    }
+#[path = "durable_root/accessors.rs"]
+mod accessors;
+#[path = "durable_root/builder.rs"]
+mod builder;
+#[path = "durable_root/capacity.rs"]
+mod capacity;
+#[path = "durable_root/publication_fields.rs"]
+mod publication_fields;
+#[path = "durable_root/release_head_reference.rs"]
+mod release_head_reference;
+pub use capacity::maximum_current_root_entries;
 
-    pub fn admit(self) -> Option<DurablePhysicalRootManifest> {
-        let Self {
-            generation,
-            tree_identity,
-            node_capacity,
-            free_space_checksum,
-            record_count,
-            next_block,
-            next_segment_block,
-            routing_root,
-            segment_root,
-            free_space_root,
-            last_inline_record,
-            last_inline_segment,
-        } = self;
-        let generation = PhysicalGeneration::from_raw(generation).ok()?;
-        let root_reference = PhysicalRootReference::from_raw(generation.get()).ok()?;
-        let tail_shape_is_valid = last_inline_record.is_some() == last_inline_segment.is_some();
-        let shape_is_valid = match (record_count, routing_root) {
-            (0, None) => last_inline_record.is_none() && last_inline_segment.is_none(),
-            (0, Some(_)) | (_, None) => false,
-            (_, Some(reference)) => {
-                required_tree_level(record_count, node_capacity) == Some(reference.level())
-                    && reference.generation() <= generation.get()
-                    && reference.block() < next_block
-                    && last_inline_record.is_none_or(|record| reference.contains(record))
-            }
-        };
-        let segment_shape_is_valid = segment_root.is_none_or(|reference| {
-            required_tree_level(record_count, node_capacity)
-                .is_some_and(|maximum| reference.level() <= maximum)
-                && reference.generation() <= generation.get()
-                && reference.block() < next_segment_block
-        });
-        let free_space_shape_is_valid =
-            free_space_root.is_none_or(|reference| reference.generation() <= generation.get());
-        if tree_identity == 0
-            || node_capacity < 2
-            || next_block == 0
-            || next_segment_block == 0
-            || free_space_checksum == 0
-            || !shape_is_valid
-            || !tail_shape_is_valid
-            || !segment_shape_is_valid
-            || !free_space_shape_is_valid
-        {
-            return None;
-        }
-        Some(DurablePhysicalRootManifest {
-            root: PhysicalGenerationAuthority::for_canonical_physical_format()
-                .root_publication_cell(root_reference)
-                .with_root_publication_generation(generation),
-            tree_identity,
-            node_capacity,
-            record_count,
-            next_block,
-            next_segment_block,
-            free_space_checksum,
-            routing_root,
-            segment_root,
-            free_space_root,
-            last_inline_record,
-            last_inline_segment,
-            requires_maintenance_protocol: false,
-        })
-    }
-}
+#[cfg(test)]
+#[path = "durable_root/preallocated_encode_tests.rs"]
+mod preallocated_encode_tests;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RootManifestDenial {

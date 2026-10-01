@@ -3,6 +3,9 @@ use std::sync::Weak;
 use worth_proof::NonEmpty;
 use worth_proof::TransitionOutcome;
 
+mod blob_append;
+mod blob_reclaim;
+
 use super::RecordPublicationDirector;
 use crate::physical_runtime::{
     record_serving::{

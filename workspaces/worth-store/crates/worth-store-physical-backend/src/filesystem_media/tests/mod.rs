@@ -18,3 +18,5 @@ mod namespace_confinement;
 mod operation_contract;
 mod operation_outcome;
 mod root_qualification;
+#[cfg(feature = "recovery-runtime-owner")]
+mod resident_read;

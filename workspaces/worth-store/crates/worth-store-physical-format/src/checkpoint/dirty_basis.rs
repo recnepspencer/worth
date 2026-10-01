@@ -56,6 +56,9 @@ fn encode_artifact(artifact: RecordArtifactFile) -> (u8, u64, u64) {
         RecordArtifactFile::CatalogCandidate { publication } => (2, publication, 0),
         RecordArtifactFile::RootManifest { generation } => (3, generation, 0),
         RecordArtifactFile::RootRoutingBlock { generation, block } => (4, generation, block),
+        RecordArtifactFile::ReleaseCustodyHeadBlock { generation, block } => {
+            (17, generation, block)
+        }
         RecordArtifactFile::Segment {
             segment,
             generation,
@@ -83,6 +86,10 @@ fn decode_artifact(
         2 if second == 0 => RecordArtifactFile::CatalogCandidate { publication: first },
         3 if second == 0 => RecordArtifactFile::RootManifest { generation: first },
         4 => RecordArtifactFile::RootRoutingBlock {
+            generation: first,
+            block: second,
+        },
+        17 if first != 0 && second != 0 => RecordArtifactFile::ReleaseCustodyHeadBlock {
             generation: first,
             block: second,
         },

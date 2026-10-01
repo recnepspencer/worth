@@ -203,10 +203,27 @@ fn prepare_command(
         ResourceAdmittedPhysicalWork,
     ) -> Result<PhysicalExecutorCommand, PhysicalExecutorCommandDenial>,
 ) -> Result<PreparedPhysicalCommand, CanonicalRecordReadFailureEvidence> {
+    let policy = super::super::record_queue_policy::admit_record_queue_policy(demand.queue_work());
+    prepare_admitted_command(runtime, effects, identity, (demand, backend, policy), build)
+}
+
+pub(super) fn prepare_admitted_command(
+    runtime: &PhysicalStoreWorkRuntime,
+    effects: &crate::physical_runtime::work::PhysicalEffectAdmission,
+    identity: PhysicalWorkIdentity,
+    admission: (
+        PhysicalSchedulerDemand,
+        worth_store_io_scheduler::IoSchedulerBackendCapabilityAdmission,
+        worth_foundational::FoundationalPolicyAdmissionReceipt,
+    ),
+    build: impl FnOnce(
+        ResourceAdmittedPhysicalWork,
+    ) -> Result<PhysicalExecutorCommand, PhysicalExecutorCommandDenial>,
+) -> Result<PreparedPhysicalCommand, CanonicalRecordReadFailureEvidence> {
+    let (demand, backend, policy) = admission;
     PhysicalWorkAdmission::require_current(&runtime.submission, demand.intent(), &runtime.health)
         .map_err(CanonicalRecordReadFailure::PreEffect)
         .map_err(|failure| CanonicalRecordReadFailureEvidence::during_work(failure, identity))?;
-    let policy = super::super::record_queue_policy::admit_record_queue_policy(demand.queue_work());
     let work =
         crate::physical_runtime::PhysicalWorkScheduler::admit(effects, demand, &backend, policy)
             .map_err(CanonicalRecordReadFailure::Scheduler)

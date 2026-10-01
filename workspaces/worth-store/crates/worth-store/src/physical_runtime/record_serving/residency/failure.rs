@@ -17,6 +17,7 @@ pub enum PhysicalRecordResidencyFailureKind {
     SettlementAuthorityMismatch,
     AllocationUnavailable,
     AllocationAuthorityMismatch,
+    AllocationUseConflict,
     CaptureSessionAuthorityMismatch,
     DirtyGenerationExhausted,
     SpeculativeContractConflict,
@@ -47,6 +48,10 @@ pub enum PhysicalRecordResidencyFailureReason {
         actual: u64,
     },
     AllocationGrantMismatch,
+    AllocationGrantResizeBelowActiveUse {
+        requested: u64,
+        active: u64,
+    },
     DirtyGenerationCaptureSessionMismatch,
     DirtyGenerationExhausted,
     DirtyGenerationCaptureBudgetExceeded {
@@ -132,6 +137,12 @@ impl PhysicalRecordResidencyFailure {
             }
             PhysicalResidencyDenial::AllocationGrantMismatch => {
                 PhysicalRecordResidencyFailureReason::AllocationGrantMismatch
+            }
+            PhysicalResidencyDenial::AllocationGrantResizeBelowActiveUse { requested, active } => {
+                PhysicalRecordResidencyFailureReason::AllocationGrantResizeBelowActiveUse {
+                    requested,
+                    active,
+                }
             }
             PhysicalResidencyDenial::DirtyGenerationCaptureSessionMismatch => {
                 PhysicalRecordResidencyFailureReason::DirtyGenerationCaptureSessionMismatch
@@ -268,6 +279,9 @@ impl From<PhysicalResidencyDenial> for PhysicalRecordResidencyFailure {
             }
             PhysicalResidencyDenial::AllocationGrantMismatch => {
                 PhysicalRecordResidencyFailureKind::AllocationAuthorityMismatch
+            }
+            PhysicalResidencyDenial::AllocationGrantResizeBelowActiveUse { .. } => {
+                PhysicalRecordResidencyFailureKind::AllocationUseConflict
             }
             PhysicalResidencyDenial::DirtyGenerationCaptureSessionMismatch => {
                 PhysicalRecordResidencyFailureKind::CaptureSessionAuthorityMismatch

@@ -3,7 +3,7 @@ use crate::{ExtentArenaId, PersistedRecordIdentity, PhysicalExtentId};
 
 fn fixture() -> (PhysicalRecordFormatDeclaration, PhysicalExtentCopyIntent) {
     let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
-    let source = DurableExtentRecordPlacement::new(
+    let source = DurableExtentRecordPlacement::legacy_unknown(
         PersistedRecordIdentity::new([7; 16], 9).unwrap(),
         PhysicalGenerationAuthority::for_canonical_physical_format()
             .record_extent_cell(PhysicalExtentId::from_raw(3).unwrap())
@@ -24,6 +24,10 @@ fn fixture() -> (PhysicalRecordFormatDeclaration, PhysicalExtentCopyIntent) {
 fn intent_wire_binds_geometry_without_claiming_final_root_or_lsn() {
     let (format, intent) = fixture();
     let bytes = PhysicalExtentCopyRecord::Intent(intent).encode();
+    assert!(payload_is_extent_copy_any(&bytes));
+    assert!(!payload_is_extent_copy_any(
+        b"store.physical.extent-copy.v3"
+    ));
     let body = &bytes[EXTENT_COPY_DOMAIN.len() + 1..];
     assert_eq!(body.len(), 200);
     assert_eq!(&body[32..40], &12_u64.to_le_bytes());
@@ -151,4 +155,116 @@ fn source_copy_projection_has_explicit_recipe_and_no_fake_frame_set() {
     let mut trailing = bytes;
     trailing.push(0);
     assert!(PersistedPhysicalRecoveryProjection::decode(&trailing, limits, format).is_err());
+}
+
+#[test]
+fn classified_copy_binds_route_class_in_intent_and_recovery_projection() {
+    use crate::{
+        BlobRecordKind, PersistedExtentCopyRecipe, PersistedPhysicalRecoveryProjection,
+        PersistedPhysicalRecoveryRootState, PhysicalRecoveryProjectionDecodeLimits,
+        SelectedRecordContentClass, SelectedRecordRouteMetadata,
+    };
+    use sha2::{Digest, Sha256};
+
+    let (format, legacy) = fixture();
+    let metadata = SelectedRecordRouteMetadata::primary(SelectedRecordContentClass::Blob(
+        BlobRecordKind::Chunk,
+    ))
+    .unwrap();
+    let source = DurableExtentRecordPlacement::new_selected(
+        legacy.source().record(),
+        legacy.source().extent_cell(),
+        legacy.source().payload_bytes(),
+        legacy.source().arena_range(),
+        metadata,
+    )
+    .unwrap();
+    let intent = PhysicalExtentCopyIntent::new(
+        format,
+        legacy.operation(),
+        legacy.source_root(),
+        source,
+        legacy.destination().arena_range(),
+        legacy.alignment(),
+        legacy.source_digest(),
+    )
+    .unwrap();
+    assert_eq!(intent.destination().route_metadata(), metadata);
+    let encoded = PhysicalExtentCopyRecord::Intent(intent).encode();
+    assert!(encoded.starts_with(EXTENT_COPY_V2_DOMAIN));
+    assert!(payload_is_extent_copy_any(&encoded));
+    assert_eq!(
+        PhysicalExtentCopyRecord::decode(&encoded, format),
+        Ok(PhysicalExtentCopyRecord::Intent(intent))
+    );
+    let mut forged_tier = encoded.clone();
+    let destination_tier_offset = forged_tier.len() - 3;
+    forged_tier[destination_tier_offset] = 0xff;
+    assert_eq!(
+        PhysicalExtentCopyRecord::decode(&forged_tier, format),
+        Err(PhysicalExtentCopyDenial::Identity)
+    );
+    let cold = PhysicalExtentCopyIntent::new_with_target_tier(
+        format,
+        legacy.operation(),
+        legacy.source_root(),
+        source,
+        legacy.destination().arena_range(),
+        legacy.alignment(),
+        legacy.source_digest(),
+        crate::PhysicalTierClass::Cold,
+    )
+    .unwrap();
+    assert_eq!(cold.source().route_metadata(), metadata);
+    assert_eq!(
+        cold.destination().tier_class(),
+        crate::PhysicalTierClass::Cold
+    );
+    let cold_encoded = PhysicalExtentCopyRecord::Intent(cold).encode();
+    assert_eq!(
+        PhysicalExtentCopyRecord::decode(&cold_encoded, format),
+        Ok(PhysicalExtentCopyRecord::Intent(cold))
+    );
+    assert_ne!(cold_encoded, encoded);
+    let cold_recipe =
+        PersistedExtentCopyRecipe::new(cold, 41, Sha256::digest(&cold_encoded).into()).unwrap();
+    let cold_root =
+        PersistedPhysicalRecoveryRootState::new(65_536, 1, 32, vec![], None, None).unwrap();
+    let cold_projection =
+        PersistedPhysicalRecoveryProjection::from_source_copy(17, cold_root, cold_recipe).unwrap();
+    let cold_limits = PhysicalRecoveryProjectionDecodeLimits {
+        frames: 0,
+        record_identities: 1,
+        placements: 1,
+        segment_updates: 0,
+        manifests: 0,
+        total_entries: 1,
+        inline_allocations: 0,
+    };
+    assert_eq!(
+        PersistedPhysicalRecoveryProjection::decode(&cold_projection.encode(), cold_limits, format,),
+        Ok(cold_projection)
+    );
+    let digest = Sha256::digest(&encoded).into();
+    let recipe = PersistedExtentCopyRecipe::new(intent, 41, digest).unwrap();
+    let root = PersistedPhysicalRecoveryRootState::new(65_536, 1, 32, vec![], None, None).unwrap();
+    let projection =
+        PersistedPhysicalRecoveryProjection::from_source_copy(17, root, recipe).unwrap();
+    let bytes = projection.encode();
+    assert!(bytes
+        .windows(b"store.physical.recovery-projection.v13".len())
+        .any(|window| window == b"store.physical.recovery-projection.v13"));
+    let limits = PhysicalRecoveryProjectionDecodeLimits {
+        frames: 0,
+        record_identities: 1,
+        placements: 1,
+        segment_updates: 0,
+        manifests: 0,
+        total_entries: 1,
+        inline_allocations: 0,
+    };
+    assert_eq!(
+        PersistedPhysicalRecoveryProjection::decode(&bytes, limits, format),
+        Ok(projection)
+    );
 }

@@ -41,7 +41,9 @@ pub use request::{
 };
 pub(super) use retained_wal_tail::RetainedWalTailAdmissionDenial;
 pub use retained_wal_tail::{ContiguousRetainedWalTail, RetainedWalSegment};
-pub(in crate::physical_runtime) use runtime_owner::PhysicalCheckpointRuntimeOwner;
+pub(in crate::physical_runtime) use runtime_owner::{
+    CompletedDurableCheckpointWitness, PhysicalCheckpointRuntimeOwner,
+};
 pub use runtime_owner::{PhysicalCheckpointShutdown, PhysicalCheckpointSubmission};
 pub(in crate::physical_runtime) use work_port::{
     PhysicalCheckpointActionFailure, PhysicalCheckpointWorkPort,

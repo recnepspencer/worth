@@ -21,6 +21,14 @@ pub struct PersistedInlineSegmentAllocation {
 }
 
 impl PersistedPhysicalRecoveryRootState {
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        u64::try_from(self.inline_allocations.len())
+            .ok()?
+            .checked_mul(
+                u64::try_from(std::mem::size_of::<PersistedInlineSegmentAllocation>()).ok()?,
+            )
+    }
+
     pub fn new(
         root_publication_allocation_bytes: u64,
         manifest_capacity_transition: u8,

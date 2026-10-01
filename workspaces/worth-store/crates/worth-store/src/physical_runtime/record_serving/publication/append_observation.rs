@@ -51,6 +51,13 @@ pub struct RecordRootPlanningObservation {
 }
 
 impl RecordAppendObservation {
+    /// No performance counters from the original process survive C.8 redo.
+    /// Zero here means unobserved in this Serving runtime, not zero physical
+    /// work by the original producer.
+    pub(in crate::physical_runtime) const fn unobserved_recovery() -> Self {
+        Self::from_persisted_fields([0; 13])
+    }
+
     pub(in crate::physical_runtime::record_serving) const fn from_publication(
         value: PublicationObservation,
     ) -> Self {
@@ -136,6 +143,21 @@ impl RecordAppendObservation {
                 manifest_bytes_read: fields[12],
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::RecordAppendObservation;
+
+    #[test]
+    fn recovered_completion_does_not_invent_append_performance() {
+        let observed = RecordAppendObservation::unobserved_recovery();
+        assert_eq!(observed.persisted_fields(), [0; 13]);
+        assert_eq!(observed.records(), 0);
+        assert_eq!(observed.bytes_requested(), 0);
+        assert_eq!(observed.bytes_completed(), 0);
+        assert_eq!(observed.transfer_count(), 0);
     }
 }
 

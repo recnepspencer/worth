@@ -1,5 +1,6 @@
 mod copy_publication;
 mod live_segment_inventory;
+mod publication_roster;
 mod reopen;
 mod reopened_member;
 mod retained_maintenance;
@@ -14,6 +15,7 @@ pub(in crate::physical_runtime::durability) use live_segment_inventory::Physical
 pub(super) use live_segment_inventory::{
     PhysicalWalSegmentInventory, PhysicalWalSegmentInventoryUpdateDenial,
 };
+pub(in crate::physical_runtime) use publication_roster::ReopenedWalPublicationGroup;
 pub(in crate::physical_runtime) use reopen::reopen_wal_inventory;
 pub(in crate::physical_runtime) use reopened_member::{
     PhysicalWalBindingReopenCutoff, ReopenedPhysicalWalMember,
@@ -28,8 +30,11 @@ pub enum PhysicalWalOpenFailure {
     EmptySegment,
     SegmentByteLimitExceeded { admitted: u64, observed: u64 },
     SegmentAllocationRejected,
+    ReopenAllocationRejected,
+    ReopenAllocationLimitExceeded { admitted: u64, required: u64 },
     SegmentInspection(WalArtifactStoreDenial),
     MemberPayloadRejected,
+    IncompletePublicationGroup,
     CheckpointCutoffOutsideRetainedWal,
     Topology(WalTopologyDenialKind),
     CounterOverflow,
@@ -43,8 +48,7 @@ pub(in crate::physical_runtime) struct ReopenedPhysicalWalInventory {
     pub(super) active_artifact: ArtifactTreeFile,
     pub(super) segment_count: u32,
     pub(super) frame_count: u64,
-    /// Mutation frames still retained; each one's publication stays charged.
-    pub(super) publication_frames: u64,
+    pub(super) publication_groups: Vec<ReopenedWalPublicationGroup>,
     /// Candidate root, exact charge, and the retained intent's WAL segment/generation.
     pub(super) release_metadata: Vec<(u64, u64, u64, u64)>,
     pub(super) retained_maintenance: Vec<RetainedMaintenanceIntent>,

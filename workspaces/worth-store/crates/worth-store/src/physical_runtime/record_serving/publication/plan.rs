@@ -17,6 +17,9 @@ pub(in crate::physical_runtime::record_serving) enum CandidateDataArtifact {
 }
 
 pub(in crate::physical_runtime::record_serving) struct PublicationPlan {
+    /// Captured before payload manifests are spliced in and frame buffers move
+    /// into writeback. Payload bytes are already charged by their WAL frame.
+    pub(in crate::physical_runtime::record_serving) routing_metadata_bytes: Option<u64>,
     pub(in crate::physical_runtime::record_serving) arena_reservations:
         Vec<super::super::arena::ArenaReservation>,
     pub(in crate::physical_runtime::record_serving) generation: u64,
@@ -56,6 +59,8 @@ impl PublicationPlan {
     pub(in crate::physical_runtime::record_serving) fn root_candidate_frame_set(
         &self,
     ) -> Result<CandidateFrameSet, RecordAppendDenial> {
+        self.routing_metadata_bytes
+            .ok_or_else(frame_length_denial)?;
         let mut declarations = Vec::new();
         for (coordinate, bytes) in &self.manifests {
             push_candidate_declaration(

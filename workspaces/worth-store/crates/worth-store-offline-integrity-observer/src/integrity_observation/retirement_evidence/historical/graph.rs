@@ -258,8 +258,8 @@ pub(super) fn graph(
     observations: &mut Vec<OfflineArtifactObservation>,
 ) -> Result<Graph, Outcome> {
     let path = format!("families/records/roots/root-{generation:016x}.manifest");
-    let acquired = walk.acquire_range(&root.join(&path), 4, 0, 384)?;
-    if acquired.is_alias() || acquired.byte_length != 384 {
+    let acquired = walk.acquire(&root.join(&path), 4)?;
+    if acquired.is_alias() {
         return Err(mismatch());
     }
     if let Some(digest) = digest {

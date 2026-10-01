@@ -23,6 +23,9 @@ fn main() {
     };
     let result = match arguments {
         arguments::OperationArguments::Observe(arguments) => observation::observe(arguments),
+        arguments::OperationArguments::ObserveSelected(arguments) => {
+            observation::observe_selected(arguments)
+        }
         arguments::OperationArguments::Compare(arguments) => comparison::compare(arguments),
     };
     if let Err(message) = result {

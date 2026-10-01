@@ -81,7 +81,7 @@ fn partial_backend_read_is_denied_at_the_public_read_boundary_and_revokes_health
         .find(|binding| binding.digest() == failed.signal_binding())
         .and_then(|binding| binding.partition())
         .expect("the failing read binding is partitioned");
-    assert_eq!(partition.partition.0, "store.physical.record.root");
+    assert_eq!(partition.partition.0, "store.physical.record.frame");
     assert_eq!(failed.effect_fate(), PhysicalWorkEffectFate::ReadIncomplete);
     assert_eq!(
         failed.recovery(),
@@ -181,8 +181,8 @@ fn truncated_segment_is_structural_damage_before_range_dispatch_and_revokes_heal
             .media_counters()
             .attempts_for(MediaOperationRole::PositionedRead)
             - media_before.attempts_for(MediaOperationRole::PositionedRead),
-        2,
-        "only the two prerequisite locator reads may dispatch; the known-short segment must not"
+        0,
+        "captured-root routing needs no locator reads; the known-short segment must not dispatch a range read"
     );
     assert!(
         serving

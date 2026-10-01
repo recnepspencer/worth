@@ -10,6 +10,7 @@ use crate::physical_runtime::PhysicalMutationIdentity;
 pub(in crate::physical_runtime) enum PhysicalPublicationAdmissionDenial {
     ScopeConflict(PhysicalMutationIdentity),
     Growth(PhysicalRetentionGrowthDenial),
+    ReclaimFenced,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -24,9 +25,12 @@ struct AdmissionState {
     profile: PhysicalRetentionProfile,
     charged_bytes: u64,
     pending: HashMap<PhysicalMutationIdentity, u32>,
-    generations: BTreeMap<RecordArtifactFile, (u64, u32)>,
+    generations: BTreeMap<RecordArtifactFile, CandidateCharge>,
     garbage: BTreeMap<RetiredArtifact, RetainedGarbage>,
     sealed_publications: Vec<(u64, u64, u64)>,
+    wal_publications: BTreeMap<u64, publication_group::RetainedWalPublication>,
+    reserved_displaced_entries: u32,
+    reserved_displaced_bytes: u64,
 }
 
 struct RetainedGarbage {
@@ -34,6 +38,12 @@ struct RetainedGarbage {
     source_root: u64,
     claimed: bool,
     completed: bool,
+}
+
+struct CandidateCharge {
+    bytes: u64,
+    holders: u32,
+    sealed: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -65,6 +75,12 @@ pub(in crate::physical_runtime) struct CandidateGrowthLease {
     artifact: RecordArtifactFile,
 }
 
+pub(in crate::physical_runtime) struct DisplacedCapacityLease {
+    admission: Weak<PhysicalPublicationAdmission>,
+    entries: u32,
+    bytes: u64,
+}
+
 impl PhysicalPublicationAdmission {
     pub(in crate::physical_runtime) fn new(profile: PhysicalRetentionProfile) -> Self {
         Self {
@@ -75,6 +91,9 @@ impl PhysicalPublicationAdmission {
                 generations: BTreeMap::new(),
                 garbage: BTreeMap::new(),
                 sealed_publications: Vec::new(),
+                wal_publications: BTreeMap::new(),
+                reserved_displaced_entries: 0,
+                reserved_displaced_bytes: 0,
             }),
         }
     }
@@ -140,8 +159,8 @@ impl PhysicalPublicationAdmission {
                 remaining_entries: state.remaining_entries(),
             });
         }
-        if let Some((_, holders)) = state.generations.get_mut(&artifact) {
-            *holders = holders.saturating_add(1);
+        if let Some(charge) = state.generations.get_mut(&artifact) {
+            charge.holders = charge.holders.saturating_add(1);
             drop(state);
             return Ok(CandidateGrowthLease {
                 admission: std::sync::Arc::downgrade(self),
@@ -158,7 +177,14 @@ impl PhysicalPublicationAdmission {
             });
         }
         state.charged_bytes = state.charged_bytes.saturating_add(bytes);
-        state.generations.insert(artifact, (bytes, 1));
+        state.generations.insert(
+            artifact,
+            CandidateCharge {
+                bytes,
+                holders: 1,
+                sealed: false,
+            },
+        );
         drop(state);
         Ok(CandidateGrowthLease {
             admission: std::sync::Arc::downgrade(self),
@@ -168,6 +194,36 @@ impl PhysicalPublicationAdmission {
 
     pub(in crate::physical_runtime) fn pending_len(&self) -> usize {
         self.lock().pending.len()
+    }
+
+    /// Reserves the entire prospective reclaim displacement roster before its
+    /// first WAL effect. One extra entry is held for the active C5 publication.
+    pub(in crate::physical_runtime) fn reserve_displaced_entries(
+        self: &std::sync::Arc<Self>,
+        entries: u32,
+        bytes: u64,
+    ) -> Result<DisplacedCapacityLease, PhysicalRetentionGrowthDenial> {
+        let mut state = self.lock();
+        let occupied = (state.garbage.len() as u32)
+            .saturating_add(state.pending.len() as u32)
+            .saturating_add(state.reserved_displaced_entries);
+        let remaining = state.profile.growth_entries().saturating_sub(occupied);
+        let required = entries.saturating_add(1);
+        if entries == 0 || bytes == 0 || required > remaining || bytes > state.remaining_bytes() {
+            return Err(PhysicalRetentionGrowthDenial {
+                requested_bytes: bytes,
+                requested_entries: required,
+                remaining_bytes: state.remaining_bytes(),
+                remaining_entries: remaining,
+            });
+        }
+        state.reserved_displaced_entries += entries;
+        state.reserved_displaced_bytes += bytes;
+        Ok(DisplacedCapacityLease {
+            admission: std::sync::Arc::downgrade(self),
+            entries,
+            bytes,
+        })
     }
 
     pub(in crate::physical_runtime) fn pending_except(
@@ -193,25 +249,13 @@ impl PhysicalPublicationAdmission {
         self.lock().charged_bytes
     }
 
-    /// Restores a sealed byte charge from published page identities.
-    ///
-    /// Reopen has no in-flight leases. The charge is the pages already named by
-    /// the free-space frontier, so a new generation still reserves on top.
-    pub(in crate::physical_runtime) fn reconstruct_retained_bytes(&self, bytes: u64) {
-        if bytes == 0 {
-            return;
-        }
-        let mut state = self.lock();
-        state.charged_bytes = state.charged_bytes.saturating_add(bytes);
-    }
-
-    /// Keeps the artifact generation's byte charge after its in-flight lease ends.
-    ///
-    /// An unsettled publication keeps its candidate charged. The lease Drop
-    /// becomes a no-op once the holder entry is removed here.
+    /// Keeps the artifact generation charged after this in-flight lease ends,
+    /// without invalidating another mutation's holder of the same artifact.
     pub(in crate::physical_runtime) fn seal_candidate_charge(&self, artifact: RecordArtifactFile) {
         let mut state = self.lock();
-        state.generations.remove(&artifact);
+        if let Some(charge) = state.generations.get_mut(&artifact) {
+            charge.sealed = true;
+        }
     }
 
     pub(in crate::physical_runtime) fn replace_profile(&self, profile: PhysicalRetentionProfile) {
@@ -236,6 +280,7 @@ impl AdmissionState {
         self.profile
             .growth_bytes()
             .saturating_sub(self.charged_bytes)
+            .saturating_sub(self.reserved_displaced_bytes)
     }
 
     fn remaining_entries(&self) -> u32 {
@@ -283,14 +328,30 @@ impl Drop for CandidateGrowthLease {
             return;
         };
         let mut state = admission.lock();
-        let Some((bytes, holders)) = state.generations.get_mut(&self.artifact) else {
+        let Some(charge) = state.generations.get_mut(&self.artifact) else {
             return;
         };
-        *holders = holders.saturating_sub(1);
-        if *holders == 0 {
-            let bytes = *bytes;
+        charge.holders = charge.holders.saturating_sub(1);
+        if charge.holders == 0 && !charge.sealed {
+            let bytes = charge.bytes;
             state.generations.remove(&self.artifact);
             state.charged_bytes = state.charged_bytes.saturating_sub(bytes);
+        }
+    }
+}
+
+impl Drop for DisplacedCapacityLease {
+    fn drop(&mut self) {
+        if let Some(admission) = self.admission.upgrade() {
+            let mut state = admission.lock();
+            state.reserved_displaced_entries = state
+                .reserved_displaced_entries
+                .checked_sub(self.entries)
+                .expect("reclaim reservation is live until settlement");
+            state.reserved_displaced_bytes = state
+                .reserved_displaced_bytes
+                .checked_sub(self.bytes)
+                .expect("reclaim byte reservation is live until settlement");
         }
     }
 }
@@ -301,6 +362,10 @@ mod garbage;
 #[path = "retained_bytes.rs"]
 mod retained_bytes;
 pub(in crate::physical_runtime) use retained_bytes::RetainedByteLease;
+
+#[path = "publication_group.rs"]
+mod publication_group;
+pub(in crate::physical_runtime) use publication_group::WalPublicationReservation;
 
 #[cfg(test)]
 #[path = "admission_tests.rs"]

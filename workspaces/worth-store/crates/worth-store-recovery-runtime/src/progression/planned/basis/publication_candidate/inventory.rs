@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, FreeSpaceKey, PersistedPhysicalRecoveryRootState,
     RecordFreeSpaceManifestEntry, RecordSegmentPageManifestEntry, SegmentPageKey,
@@ -7,9 +5,14 @@ use worth_store_physical_format::{
 
 use super::CandidateBuildDenial;
 mod arenas;
+mod fold;
+#[cfg(test)]
+mod tests;
+use crate::progression::planned::PlanningResidentAllowance;
 use crate::progression::{
     RecoveryBaseImageAction, RecoverySegmentRoutingAction, RecoverySelectedSourceInventory,
 };
+use fold::{fold_free, fold_segments};
 
 pub(super) struct FinalInventory {
     pub(super) placements: Vec<CurrentPhysicalRecordPlacement>,
@@ -24,6 +27,23 @@ pub(super) struct FinalInventory {
     pub(super) last_inline_segment: Option<worth_store_physical_format::SegmentGenerationCell>,
 }
 
+impl FinalInventory {
+    pub(super) fn release(
+        self,
+        allowance: &mut PlanningResidentAllowance,
+    ) -> Result<(), CandidateBuildDenial> {
+        let bytes = PlanningResidentAllowance::vector_bytes(&self.placements)?
+            .checked_add(PlanningResidentAllowance::vector_bytes(&self.segments)?)
+            .and_then(|bytes| {
+                bytes.checked_add(PlanningResidentAllowance::vector_bytes(&self.free).ok()?)
+            })
+            .ok_or(CandidateBuildDenial::Invalid)?;
+        drop(self);
+        allowance.release(bytes);
+        Ok(())
+    }
+}
+
 pub(super) fn finalize(
     source: &RecoverySelectedSourceInventory,
     actions: &[RecoveryBaseImageAction],
@@ -32,12 +52,11 @@ pub(super) fn finalize(
     selected_capacity: u16,
     generation: u64,
     maximum_entries: u64,
+    allowance: &mut PlanningResidentAllowance,
 ) -> Result<FinalInventory, CandidateBuildDenial> {
     let capacity = common_capacity(root_states, selected_capacity)?;
-    let mut placements = actions
-        .iter()
-        .map(|action| action.placement())
-        .collect::<Vec<_>>();
+    let mut placements = allowance.reserve::<CurrentPhysicalRecordPlacement>(actions.len())?;
+    placements.extend(actions.iter().map(|action| action.placement()));
     placements.sort_unstable_by_key(|placement| placement.record());
     if placements
         .windows(2)
@@ -45,44 +64,19 @@ pub(super) fn finalize(
     {
         return Err(CandidateBuildDenial::Invalid);
     }
-    let mut segments = source
-        .segment_pages
-        .values()
-        .map(|page| (SegmentPageKey::from(page.entry), page.entry))
-        .collect::<BTreeMap<_, _>>();
-    for update in updates {
-        let entry = update.update();
-        segments.insert(SegmentPageKey::from(entry), entry);
-    }
-    let mut free = source
-        .free_entries
-        .iter()
-        .copied()
-        .map(|entry| (FreeSpaceKey::from(entry), entry))
-        .collect::<BTreeMap<_, _>>();
-    for state in root_states {
-        for allocation in state.inline_allocations() {
-            let segment = allocation.segment();
-            let key = FreeSpaceKey::inline(segment.segment_id().get())
-                .ok_or(CandidateBuildDenial::Invalid)?;
-            if allocation.used_pages() < allocation.page_capacity() {
-                let entry = RecordFreeSpaceManifestEntry::inline_frontier(
-                    segment.segment_id().get(),
-                    u64::from(allocation.used_pages() + 1),
-                    u64::from(allocation.page_capacity() - allocation.used_pages()),
-                    segment.generation().get(),
-                )
-                .ok_or(CandidateBuildDenial::Invalid)?;
-                free.insert(key, entry);
-            } else {
-                free.remove(&key);
-            }
-        }
-    }
+    let segments = fold_segments(source, updates, allowance)?;
+    let free = fold_free(source, root_states, allowance)?;
     let next_segment = next_segment(source, root_states)?;
     let next_page = next_page(source, &placements)?;
     let next_extent = next_extent(source, &placements)?;
-    let next_arena = arenas::subtract(source, actions, generation, maximum_entries, &mut free)?;
+    let (free, next_arena) = arenas::subtract(
+        source,
+        actions,
+        generation,
+        maximum_entries,
+        free,
+        allowance,
+    )?;
     let (last_inline_record, last_inline_segment) = root_states
         .iter()
         .rev()
@@ -92,8 +86,8 @@ pub(super) fn finalize(
         });
     Ok(FinalInventory {
         placements,
-        segments: segments.into_values().collect(),
-        free: free.into_values().collect(),
+        segments,
+        free,
         next_segment,
         next_page,
         next_extent,

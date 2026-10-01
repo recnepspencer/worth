@@ -84,6 +84,24 @@ pub(super) fn inspect(
             indeterminate(scope, 0, late, false)
         }
     };
+    finish(
+        ordinal,
+        scope,
+        selector_identity,
+        outcome,
+        validation_counters,
+        counters,
+    )
+}
+
+pub(super) fn finish(
+    ordinal: u64,
+    scope: PhysicalArtifactScope,
+    selector_identity: Option<worth_store_physical_format::RootSelectorIdentity>,
+    outcome: PhysicalIntegrityObservationOutcome,
+    validation_counters: PhysicalIntegrityObservationCounters,
+    counters: &mut RuntimeCounters,
+) -> PhysicalIntegrityScrubWindowObservation {
     counters.completed_windows += 1;
     let quarantine = match outcome {
         PhysicalIntegrityObservationOutcome::Intact(_) => {
@@ -118,6 +136,7 @@ pub(super) fn inspect(
         }
     };
     PhysicalIntegrityScrubWindowObservation {
+        scope,
         selector_identity,
         ordinal,
         outcome,

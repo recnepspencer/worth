@@ -15,10 +15,14 @@ use worth_store_wal::{WalArtifactStoreDenial, WalTopologyDenialKind};
 use super::super::{configuration, durability_with_wal_policy, media, success};
 use super::wal_append::prepared;
 
-const SEGMENT_BYTES: u64 = 35_268;
+// One two-member group fills the current v6 projection segment exactly.
+// Keep this aligned with the independent rotation inventory oracle.
+const SEGMENT_BYTES: u64 = 35_288;
 
 #[path = "wal_reopen/interrupted_tail.rs"]
 mod interrupted_tail;
+#[path = "wal_reopen/member_denial.rs"]
+mod member_denial;
 
 #[test]
 fn hostile_wal_inventories_fail_with_the_exact_reopen_denial() {

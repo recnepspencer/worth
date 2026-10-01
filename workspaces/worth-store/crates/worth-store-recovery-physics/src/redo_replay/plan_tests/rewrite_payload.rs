@@ -8,6 +8,7 @@ use super::{
     PhysicalRedoPlanningDenial, RecoveryOperationFate,
 };
 use crate::{admit_physical_redo_members, PhysicalRedoAdmissionLimits};
+use sha2::{Digest, Sha256};
 
 fn rewrite(length: u32) -> PhysicalRewriteRedo {
     PhysicalRewriteRedo::new(
@@ -88,5 +89,53 @@ fn rewrite_redo_is_admitted_beside_canonical_redo_and_unknown_domains_stay_rejec
             observed: 32,
             admitted: 16,
         })
+    );
+}
+
+#[test]
+fn pending_member_digest_cannot_be_substituted_after_semantic_admission() {
+    let canonical = encoded_redo();
+    let plan = plan_physical_redo(
+        vec![PhysicalRedoMemberInput::new(
+            range(),
+            [1; 32],
+            RecoveryOperationFate::Indeterminate,
+            &canonical,
+        )],
+        vec![observation(1, 9, [0; 32])],
+        64,
+    )
+    .unwrap();
+    let selected = &plan.projections()[0];
+    let digest: [u8; 32] = Sha256::digest(&canonical).into();
+    assert!(plan.admits_exact_member_redo_digest(selected, digest));
+    let mut substituted = digest;
+    substituted[0] ^= 1;
+    assert!(!plan.admits_exact_member_redo_digest(selected, substituted));
+
+    // Keep projection and target geometry byte-identical while changing only
+    // the canonical member's record payload. The original admitted plan
+    // cannot license the new digest, and semantic admission itself rejects
+    // the payload/projection mismatch before a claim can be minted.
+    let mut payload_mutant = canonical.clone();
+    let offset = payload_mutant
+        .windows(b"redo-record".len())
+        .position(|window| window == b"redo-record")
+        .expect("fixture contains one canonical record payload");
+    payload_mutant[offset] ^= 1;
+    let mutated_digest: [u8; 32] = Sha256::digest(&payload_mutant).into();
+    assert!(!plan.admits_exact_member_redo_digest(selected, mutated_digest));
+    assert_eq!(
+        plan_physical_redo(
+            vec![PhysicalRedoMemberInput::new(
+                range(),
+                [1; 32],
+                RecoveryOperationFate::Indeterminate,
+                &payload_mutant,
+            )],
+            vec![observation(1, 9, [0; 32])],
+            64,
+        ),
+        Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)
     );
 }

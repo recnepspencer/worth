@@ -19,6 +19,7 @@ impl PhysicalCurrentRootOwner {
         let digest: [u8; 32] = Sha256::digest(candidate.encode(format)).into();
         if durable.transition.source_root() != &state.current_root
             || durable.candidate.source_root() != &state.current_root
+            || candidate.tier_epoch_anchor() != state.current_root.tier_epoch_anchor()
             || release.source_generation() != state.current_root.generation()
             || release.candidate_generation() != candidate.generation()
             || release.candidate_digest() != digest

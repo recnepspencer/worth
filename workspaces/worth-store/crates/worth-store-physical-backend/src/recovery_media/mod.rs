@@ -1,4 +1,6 @@
 mod admitted;
+#[cfg(all(feature = "recovery-runtime-owner", feature = "store-runtime-owner"))]
+mod checkpoint_residue;
 #[cfg(feature = "store-runtime-owner")]
 mod cleanup;
 mod discovery;
@@ -14,6 +16,8 @@ mod reopen;
 mod staging;
 
 pub use admitted::{AdmittedRecoveryFilesystemMedia, RecoveryMediaHandleObservation};
+#[cfg(all(feature = "recovery-runtime-owner", feature = "store-runtime-owner"))]
+pub use checkpoint_residue::ObservedRecoveryCheckpointArtifact;
 #[cfg(feature = "store-runtime-owner")]
 pub use cleanup::{
     execute_recovery_cleanup_removal, BackendCompletedRecoveryCleanupRemoval,
@@ -25,7 +29,7 @@ pub use cleanup::{
 pub use discovery::{
     BoundedRecoveryFilesystemDiscovery, ObservedRecoveryArtifact, ObservedWalArtifact,
     RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryCounters,
-    RecoveryDiscoveryFailure, RecoveryWalObservationIdentity,
+    RecoveryDiscoveryFailure, RecoveryDiscoveryAllocationFailure, RecoveryWalObservationIdentity,
 };
 pub use generation::PhysicalRecoveryMediaGeneration;
 pub use profile::QualifiedPhysicalBackendProfile;

@@ -7,11 +7,12 @@ use crate::physical_runtime::{
 use super::{
     grant::StoreScopedAllocation,
     scope::{
-        BlobScope, MaintenanceScope, RecoveryScope, ScrubScope, StoreAllocationScope,
-        VerificationScope,
+        BlobScope, LayoutReadScope, MaintenanceScope, RecoveryScope, ScrubScope,
+        StoreAllocationScope, VerificationScope,
     },
-    BlobPhysicalAllocation, MaintenancePhysicalAllocation, PhysicalScopedAllocationFailure,
-    RecoveryPhysicalAllocation, ScrubPhysicalAllocation, VerificationPhysicalAllocation,
+    BlobPhysicalAllocation, LayoutPhysicalAllocation, MaintenancePhysicalAllocation,
+    PhysicalScopedAllocationFailure, RecoveryPhysicalAllocation, ScrubPhysicalAllocation,
+    VerificationPhysicalAllocation,
 };
 
 /// Store-owned admission for successor physical-operation memory.
@@ -82,6 +83,15 @@ impl<'runtime> PhysicalScopedAllocationAdmission<'runtime> {
     ) -> Result<BlobPhysicalAllocation<'runtime>, PhysicalScopedAllocationFailure> {
         self.admit::<BlobScope>(bytes)
             .map(BlobPhysicalAllocation::bind)
+    }
+
+    /// Charges decoded index-node scratch to the foreground-read envelope.
+    pub fn admit_layout_read(
+        &self,
+        bytes: NonZeroU64,
+    ) -> Result<LayoutPhysicalAllocation<'runtime>, PhysicalScopedAllocationFailure> {
+        self.admit::<LayoutReadScope>(bytes)
+            .map(LayoutPhysicalAllocation::bind)
     }
 
     fn admit<Scope: StoreAllocationScope>(

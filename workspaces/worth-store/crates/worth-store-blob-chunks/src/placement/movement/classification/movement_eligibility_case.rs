@@ -17,7 +17,7 @@ use crate::placement::movement::{
 pub(crate) enum MovementEligibilityCase {
     Admit,
     Stale,
-    MissingReadHold,
+    MissingReadPlan,
     ForegroundViolated,
     ForegroundScopeMismatch,
     ColdUnavailable,
@@ -61,8 +61,8 @@ pub(crate) fn assemble_movement_denial(
         MovementEligibilityCase::Stale => {
             BlobPlacementMovementDenial::StaleMovementPlan { counters }
         }
-        MovementEligibilityCase::MissingReadHold => {
-            BlobPlacementMovementDenial::MissingMovementReadHold {
+        MovementEligibilityCase::MissingReadPlan => {
+            BlobPlacementMovementDenial::MissingMovementReadPlan {
                 counters: counters.record_protected_denial(),
             }
         }

@@ -4,7 +4,8 @@ use worth_store::physical_runtime::{
 };
 use worth_store_physical_format::PhysicalCheckpointIdentity;
 use worth_store_physical_integrity::{
-    UntrustedPhysicalArtifact, VerifiedCheckpointStream, VerifiedCheckpointStreamAssemblyDenial,
+    PhysicalByteRange, UntrustedPhysicalArtifact, VerifiedCheckpointStream,
+    VerifiedCheckpointStreamAssemblyDenial,
 };
 
 use super::{
@@ -22,6 +23,7 @@ pub(crate) struct IntegrityAdmittedCheckpointStream<'media> {
     dirty: Vec<IntegrityAdmittedCheckpointDirtyBasis<'media>>,
     compaction: IntegrityAdmittedCheckpointBindingCompaction<'media>,
     bindings: Vec<IntegrityAdmittedCheckpointBinding<'media>>,
+    certificates: Vec<(PhysicalByteRange, &'media [u8])>,
     footer: IntegrityAdmittedCheckpointFooter<'media>,
 }
 
@@ -36,6 +38,7 @@ impl<'media> IntegrityAdmittedCheckpointStream<'media> {
         dirty: Vec<IntegrityAdmittedCheckpointDirtyBasis<'media>>,
         compaction: IntegrityAdmittedCheckpointBindingCompaction<'media>,
         bindings: Vec<IntegrityAdmittedCheckpointBinding<'media>>,
+        certificates: Vec<(PhysicalByteRange, &'media [u8])>,
         footer: IntegrityAdmittedCheckpointFooter<'media>,
     ) -> Result<Self, RecoveryIntegrityIngressRejection> {
         let observed = header.source().observed();
@@ -54,6 +57,16 @@ impl<'media> IntegrityAdmittedCheckpointStream<'media> {
         for record in &bindings {
             require_record(record.source(), observed, Some(identity), &mut next_offset)?;
         }
+        for (range, bytes) in &certificates {
+            if range.offset() != next_offset
+                || observed.bytes().and_then(|all| {
+                    all.get(range.offset() as usize..range.end_exclusive() as usize)
+                }) != Some(*bytes)
+            {
+                return Err(RecoveryIntegrityIngressRejection::ScopeMismatch);
+            }
+            next_offset = range.end_exclusive();
+        }
         require_record(footer.source(), observed, Some(identity), &mut next_offset)?;
         let observed_bytes = observed
             .bytes()
@@ -66,6 +79,7 @@ impl<'media> IntegrityAdmittedCheckpointStream<'media> {
             dirty,
             compaction,
             bindings,
+            certificates,
             footer,
         })
     }
@@ -105,12 +119,13 @@ impl<'media> IntegrityAdmittedCheckpointStream<'media> {
         for binding in &self.bindings {
             binding_rebuilder.consume(binding.validated(), binding.source().input()?);
         }
-        let verified = VerifiedCheckpointStream::assemble_from_validated_records(
+        let verified = VerifiedCheckpointStream::assemble_from_validated_records_with_certificates(
             UntrustedPhysicalArtifact::from_bounded_bytes(bytes),
             self.header.validated(),
             &dirty,
             self.compaction.validated(),
             &bindings,
+            &self.certificates,
             self.footer.validated(),
         )
         .map_err(|denial| match denial {

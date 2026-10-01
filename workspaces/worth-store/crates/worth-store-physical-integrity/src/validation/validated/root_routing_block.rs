@@ -3,6 +3,10 @@ use worth_store_physical_format::{
     PhysicalRootRoutingBlock,
 };
 
+#[path = "root_routing_block/view.rs"]
+mod view;
+pub use view::IntegrityValidatedRootRoutingBlockView;
+
 use super::super::{
     PhysicalArtifactScope, PhysicalIntegrityValidationDigest, PhysicalIntegrityValidationMechanism,
     PhysicalIntegrityValidationRecord, UntrustedPhysicalArtifact,
@@ -25,19 +29,13 @@ impl<'media> IntegrityValidatedRootRoutingBlock<'media> {
         validated_range_checksum: u32,
         inspected: UntrustedPhysicalArtifact<'media>,
     ) -> Option<Self> {
-        let expected = scope.root_routing_block_identity()?;
-        if record_format != scope.record_format()
-            || block.tree_identity() != expected.tree().get()
-            || block.reference(validated_range_checksum) != expected.reference()
-            || inspected.byte_count() != scope.byte_range().length()
-        {
-            return None;
-        }
-        let validation_record = PhysicalIntegrityValidationRecord::from_validated_scope(
+        let validation_record = validated_record(
             scope,
-            PhysicalIntegrityValidationDigest::crc32c(scope.root_routing_exact_scope_digest()),
-            PhysicalIntegrityValidationDigest::crc32c(validated_range_checksum),
-            PhysicalIntegrityValidationMechanism::Crc32cV1,
+            record_format,
+            block.tree_identity(),
+            block.reference(validated_range_checksum),
+            validated_range_checksum,
+            inspected,
         )?;
         Some(Self {
             scope,
@@ -87,4 +85,28 @@ impl<'media> IntegrityValidatedRootRoutingBlock<'media> {
     pub fn matches_input(&self, input: UntrustedPhysicalArtifact<'media>) -> bool {
         self.inspected.same_incarnation(input)
     }
+}
+
+fn validated_record(
+    scope: PhysicalArtifactScope,
+    record_format: PhysicalRecordFormatDeclaration,
+    tree_identity: u64,
+    reference: ManifestBlockReference,
+    validated_range_checksum: u32,
+    inspected: UntrustedPhysicalArtifact<'_>,
+) -> Option<PhysicalIntegrityValidationRecord> {
+    let expected = scope.root_routing_block_identity()?;
+    if record_format != scope.record_format()
+        || tree_identity != expected.tree().get()
+        || reference != expected.reference()
+        || inspected.byte_count() != scope.byte_range().length()
+    {
+        return None;
+    }
+    PhysicalIntegrityValidationRecord::from_validated_scope(
+        scope,
+        PhysicalIntegrityValidationDigest::crc32c(scope.root_routing_exact_scope_digest()),
+        PhysicalIntegrityValidationDigest::crc32c(validated_range_checksum),
+        PhysicalIntegrityValidationMechanism::Crc32cV1,
+    )
 }

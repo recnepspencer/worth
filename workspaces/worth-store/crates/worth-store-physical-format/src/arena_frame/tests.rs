@@ -65,7 +65,8 @@ fn root_routes_preserve_arena_range_and_old_store_version_is_denied() {
         .record_extent_cell(PhysicalExtentId::from_raw(7).unwrap())
         .with_extent_generation(PhysicalGeneration::from_raw(2).unwrap());
     let route =
-        DurableExtentRecordPlacement::new(record, extent, 3, range(9, 4096, 20480)).unwrap();
+        DurableExtentRecordPlacement::legacy_unknown(record, extent, 3, range(9, 4096, 20480))
+            .unwrap();
     let block = PhysicalRootRoutingBlock::leaf(
         1,
         2,
@@ -142,7 +143,8 @@ fn fully_occupied_extent_arena_root_has_no_free_tree() {
         .record_extent_cell(PhysicalExtentId::from_raw(1).unwrap())
         .with_extent_generation(PhysicalGeneration::from_raw(1).unwrap());
     let placement =
-        DurableExtentRecordPlacement::new(record, extent, 3, range(1, 0, 20480)).unwrap();
+        DurableExtentRecordPlacement::legacy_unknown(record, extent, 3, range(1, 0, 20480))
+            .unwrap();
     let routing = PhysicalRootRoutingBlock::leaf(
         1,
         1,

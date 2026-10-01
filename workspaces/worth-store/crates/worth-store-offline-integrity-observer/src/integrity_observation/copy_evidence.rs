@@ -7,7 +7,8 @@ use super::{
 
 const INTENT_DOMAIN: &[u8] = b"store.physical.extent-copy.v1";
 const FINAL_DOMAIN: &[u8] = b"store.physical.extent-copy-publication.v1";
-const PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v5";
+const V5_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v5";
+const V6_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v6";
 const BINDING_DOMAIN: &[u8] = b"store.physical.mutation-attempt-binding.v1";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -214,9 +215,14 @@ impl CopyFinalFact {
         let projection = redo.field()?;
         redo.end()?;
         let mut projection = Cursor(projection);
-        if projection.field()? != PROJECTION_DOMAIN {
+        let domain = projection.field()?;
+        let v6 = if domain == V6_PROJECTION_DOMAIN {
+            true
+        } else if domain == V5_PROJECTION_DOMAIN {
+            false
+        } else {
             return None;
-        }
+        };
         let source_root = projection.u64()?;
         if projection.field()?.is_empty() || projection.u64()? != 1 {
             return None;
@@ -229,6 +235,9 @@ impl CopyFinalFact {
         let intent = parse_embedded_intent(intent_bytes)?;
         let intent_lsn = projection.u64()?;
         let digest = projection.take(32)?;
+        if v6 && projection.field()? != [0] {
+            return None;
+        }
         if intent_lsn == 0
             || intent_lsn >= publication_lsn
             || intent.digest != digest
@@ -297,3 +306,7 @@ impl<'a> Cursor<'a> {
         self.0.is_empty().then_some(())
     }
 }
+
+#[cfg(test)]
+#[path = "copy_evidence/tests.rs"]
+mod tests;

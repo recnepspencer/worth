@@ -20,6 +20,7 @@ pub struct IntegrityValidatedFreeSpaceHeader<'media> {
     next_page: u64,
     next_extent: u64,
     next_arena: u64,
+    tier_epoch_start: Option<u64>,
     arena_capacity: u64,
     arena_alignment: u64,
     next_block: u64,
@@ -62,6 +63,7 @@ impl<'media> IntegrityValidatedFreeSpaceHeader<'media> {
             next_page: header.next_page(),
             next_extent: header.next_extent(),
             next_arena: header.next_arena(),
+            tier_epoch_start: header.tier_epoch_start(),
             arena_capacity: header.arena_capacity(),
             arena_alignment: header.arena_alignment(),
             next_block: header.next_block(),
@@ -120,6 +122,10 @@ impl<'media> IntegrityValidatedFreeSpaceHeader<'media> {
 
     pub const fn next_arena(&self) -> u64 {
         self.next_arena
+    }
+
+    pub const fn tier_epoch_start(&self) -> Option<u64> {
+        self.tier_epoch_start
     }
 
     pub const fn arena_capacity(&self) -> u64 {

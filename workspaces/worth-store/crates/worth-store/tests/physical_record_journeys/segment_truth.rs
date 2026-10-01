@@ -5,7 +5,7 @@ use worth_store::physical_runtime::{
     PhysicalMutationPreparationSuccess, PhysicalRecordInitialization, PhysicalRecordOpen,
     PhysicalRecordPlacementPolicy, PhysicalWalGroupAppendFailureCause,
     PhysicalWalGroupAppendOutcome, PhysicalWalReservationDenial, RecordAppendBatch,
-    RecordAppendDenial, RecordByteLimit, RecordReadDenial, RecordReadLimits,
+    RecordAppendDenial, RecordBootstrapDenial, RecordByteLimit, RecordReadDenial, RecordReadLimits,
     RecordServingTerminalPosture, SegmentPageCount, StalePhysicalRecordPlacement,
 };
 use worth_store_physical_backend::MediaOperationRole;
@@ -267,7 +267,7 @@ fn exercise_routing_corruption(parent: &std::path::Path, corruption: RoutingCorr
         ])
         .unwrap(),
     );
-    let record = published.settled_members()[0].record_id(0).unwrap();
+    assert_eq!(published.settled_members()[0].persisted_records().len(), 4);
     serving.close();
 
     let block_path =
@@ -318,22 +318,15 @@ fn exercise_routing_corruption(parent: &std::path::Path, corruption: RoutingCorr
         ),
         Err(expected_offline)
     );
-    let reopened = success(open_record_store!(media(&root), |durability| {
+    let outcome = open_record_store!(media(&root), |durability| {
         PhysicalRecordOpen::new(format, access, durability)
-    }));
-    let error = match reopened.records().expect("read protection admission").open(
-        record,
-        RecordReadLimits::new(RecordByteLimit::new(8).unwrap()),
-    ) {
-        Ok(_) => panic!("{corruption:?} routing block must not admit a read session"),
-        Err(error) => error,
+    })
+    .into_raw();
+    let TransitionOutcome::Denied(denial) = outcome else {
+        panic!("{corruption:?} routing block must deny Store bootstrap");
     };
-    assert_eq!(error.denial(), RecordReadDenial::ArtifactDamaged);
-    assert_eq!(error.observation().manifest_blocks(), 1);
-    assert_eq!(error.observation().manifest_bytes(), block.len() as u64);
-    assert_eq!(error.observation().touched_pages(), 0);
-    assert_eq!(error.observation().touched_extents(), 0);
-    reopened.abort();
+    assert_eq!(denial.reason(), RecordBootstrapDenial::CurrentRootDamaged);
+    denial.into_runtime().close();
 }
 
 fn reseal_frame(bytes: &mut [u8]) {

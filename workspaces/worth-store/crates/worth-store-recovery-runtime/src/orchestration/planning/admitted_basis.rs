@@ -52,6 +52,7 @@ pub(super) fn admit(
             .recoverable_frames(context.selection.wal_tail()),
         context.limits.operation_bindings,
         context.limits.redo_bytes,
+        context.limits.recovery_memory_bytes,
     ) {
         Ok(sample) => sample,
         Err(failure) => {
@@ -60,6 +61,7 @@ pub(super) fn admit(
                 failure,
                 context.limits.operation_bindings,
                 context.limits.redo_bytes,
+                context.limits.recovery_memory_bytes,
             );
             let planning_counters =
                 counters::failed_sample(failure.freshness_retained(), failure.freshness_expired());

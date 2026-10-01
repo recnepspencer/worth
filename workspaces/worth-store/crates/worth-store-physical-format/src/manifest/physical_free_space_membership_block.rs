@@ -1,6 +1,9 @@
 mod payload_projection;
 
-use crate::record_framing::{decode_durable_frame, encode_durable_frame};
+use crate::record_framing::{
+    decode_durable_frame, encode_durable_frame_in_reserved, DURABLE_FRAME_HEADER_BYTES,
+    FRAME_SCHEMA,
+};
 use crate::{DurableFrameKind, PhysicalRecordFormatDeclaration, RecordFreeSpaceManifestEntry};
 
 use super::free_space_routing::{
@@ -53,6 +56,17 @@ pub enum PhysicalFreeSpaceMembershipBlock {
 }
 
 impl PhysicalFreeSpaceMembershipBlock {
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        match self {
+            Self::Leaf { entries, .. } => u64::try_from(entries.capacity()).ok()?.checked_mul(
+                u64::try_from(std::mem::size_of::<RecordFreeSpaceManifestEntry>()).ok()?,
+            ),
+            Self::Branch { children, .. } => u64::try_from(children.capacity())
+                .ok()?
+                .checked_mul(u64::try_from(std::mem::size_of::<FreeSpaceBlockReference>()).ok()?),
+        }
+    }
+
     pub fn leaf(
         tree_identity: u64,
         generation: u64,
@@ -146,32 +160,69 @@ impl PhysicalFreeSpaceMembershipBlock {
         .expect("validated block")
     }
     pub fn encode(&self, format: PhysicalRecordFormatDeclaration) -> Vec<u8> {
+        let length = self
+            .encoded_frame_bytes()
+            .expect("admitted free block length");
+        self.encode_in_reserved(format, Vec::with_capacity(length))
+            .expect("reserved free block encoding")
+    }
+
+    pub fn encoded_frame_bytes(&self) -> Option<usize> {
+        let (count, width) = match self {
+            Self::Leaf { entries, .. } => (entries.len(), ENTRY_BYTES),
+            Self::Branch { children, .. } => (children.len(), REFERENCE_BYTES),
+        };
+        count
+            .checked_mul(width)?
+            .checked_add(BLOCK_PREFIX_BYTES)?
+            .checked_add(DURABLE_FRAME_HEADER_BYTES)
+    }
+
+    pub fn encode_in_reserved(
+        &self,
+        format: PhysicalRecordFormatDeclaration,
+        frame: Vec<u8>,
+    ) -> Option<Vec<u8>> {
         let (kind, count, width) = match self {
             Self::Leaf { entries, .. } => (1, entries.len(), ENTRY_BYTES),
             Self::Branch { children, .. } => (2, children.len(), REFERENCE_BYTES),
         };
-        let mut payload = vec![0_u8; BLOCK_PREFIX_BYTES + count * width];
-        payload[..8].copy_from_slice(&self.tree_identity().to_le_bytes());
-        payload[8..16].copy_from_slice(&self.block().to_le_bytes());
-        payload[16..18].copy_from_slice(&self.level().to_le_bytes());
-        payload[18..20].copy_from_slice(&(count as u16).to_le_bytes());
-        payload[20] = kind;
-        payload[24..32].copy_from_slice(&self.generation().to_le_bytes());
-        match self {
-            Self::Leaf { entries, .. } => entries.iter().enumerate().for_each(|(index, entry)| {
-                encode_entry(&mut payload[BLOCK_PREFIX_BYTES + index * width..], *entry);
-            }),
-            Self::Branch { children, .. } => {
-                children.iter().enumerate().for_each(|(index, child)| {
-                    encode_reference(&mut payload[BLOCK_PREFIX_BYTES + index * width..], *child);
-                })
-            }
-        }
-        encode_durable_frame(
+        let payload_bytes = self
+            .encoded_frame_bytes()?
+            .checked_sub(DURABLE_FRAME_HEADER_BYTES)?;
+        encode_durable_frame_in_reserved(
             DurableFrameKind::FreeSpaceMembershipBlock,
             format,
             self.block(),
-            &payload,
+            payload_bytes,
+            FRAME_SCHEMA,
+            frame,
+            |payload| {
+                payload[..8].copy_from_slice(&self.tree_identity().to_le_bytes());
+                payload[8..16].copy_from_slice(&self.block().to_le_bytes());
+                payload[16..18].copy_from_slice(&self.level().to_le_bytes());
+                payload[18..20].copy_from_slice(&(count as u16).to_le_bytes());
+                payload[20] = kind;
+                payload[24..32].copy_from_slice(&self.generation().to_le_bytes());
+                match self {
+                    Self::Leaf { entries, .. } => {
+                        for (index, entry) in entries.iter().enumerate() {
+                            encode_entry(
+                                &mut payload[BLOCK_PREFIX_BYTES + index * width..],
+                                *entry,
+                            );
+                        }
+                    }
+                    Self::Branch { children, .. } => {
+                        for (index, child) in children.iter().enumerate() {
+                            encode_reference(
+                                &mut payload[BLOCK_PREFIX_BYTES + index * width..],
+                                *child,
+                            );
+                        }
+                    }
+                }
+            },
         )
     }
     pub fn decode(

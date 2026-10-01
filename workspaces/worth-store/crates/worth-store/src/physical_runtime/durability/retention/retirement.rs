@@ -55,6 +55,15 @@ pub enum PhysicalRetirementDenial {
     /// Another retirement is running, or the scheduler has not started the
     /// frame. The claim stays charged.
     Waiting,
+    /// The admitted arena free-range index cannot represent another isolated
+    /// release. The displaced extent remains charged and may be retried after
+    /// allocator pressure changes; repeating without such a change cannot help.
+    ArenaIndexCapacity,
+    /// The arena has no capacity for this release independently of index size.
+    ArenaCapacity,
+    /// The range being released conflicts with the allocator's geometry or
+    /// already admitted ranges; it is not a scheduler wait.
+    ArenaReleaseInvalid,
     /// Deleting the generation or synchronizing its namespace failed.
     Delete,
     /// The successor-root checkpoint did not complete.

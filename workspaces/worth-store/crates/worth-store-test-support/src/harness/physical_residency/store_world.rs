@@ -5,7 +5,7 @@ use std::{
 
 use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
-    AbortedRuntime, AdmissionError, AdmittedPhysicalDurabilityPolicy,
+    AbortedRuntime, AdmissionError, AdmittedPhysicalDurabilityPolicy, AdmittedPhysicalRecordFormat,
     AdmittedRecordPlacementPolicy, CheckpointMemoryLimit, ClosedRuntime, FilesystemMediaAdmission,
     GroupCommitDelay, GroupCommitLimit, IdempotencyRetentionGenerations,
     LiveIdempotencyBindingLimit, MediaAdmissionInspectionCause, MediaOwnedPhysicalRuntime,
@@ -25,7 +25,8 @@ use crate::TemporaryDirectory;
 
 use super::configuration::{
     dense_recovery_planning_configuration, record_publication_configuration,
-    recovery_planning_configuration, span_rewrite_configuration,
+    recovery_planning_configuration,
+    recovery_planning_configuration_with_format_and_manifest_capacity, span_rewrite_configuration,
     PhysicalResidencyStoreConfiguration,
 };
 
@@ -67,6 +68,21 @@ impl PhysicalResidencyStoreWorld {
         Self::initialize_with_configuration(
             label,
             recovery_planning_configuration(),
+            NonZeroU64::new(16 * 1024 * 1024).unwrap(),
+        )
+    }
+
+    pub fn initialize_for_recovery_with_format_and_manifest_capacity(
+        label: &str,
+        format: AdmittedPhysicalRecordFormat,
+        manifest_capacity: u16,
+    ) -> Result<Self, PhysicalResidencyStoreWorldConstructionFailure> {
+        Self::initialize_with_configuration(
+            label,
+            recovery_planning_configuration_with_format_and_manifest_capacity(
+                format,
+                manifest_capacity,
+            ),
             NonZeroU64::new(16 * 1024 * 1024).unwrap(),
         )
     }

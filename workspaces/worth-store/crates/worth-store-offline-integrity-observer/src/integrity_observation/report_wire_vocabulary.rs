@@ -17,6 +17,28 @@ pub(crate) fn completeness(value: OfflineIntegrityReportCompleteness) -> &'stati
 pub(crate) fn family(value: OfflineArtifactFamily) -> &'static str {
     match value {
         OfflineArtifactFamily::Unrecognized => "unrecognized",
+        OfflineArtifactFamily::OriginalDropReservation => "blob_original_drop_reserved",
+        OfflineArtifactFamily::DedupeQuarantine => "blob_dedupe_quarantine",
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::BlobResumeSession) => {
+            "blob_resume_session"
+        }
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::BlobChunkFrame) => {
+            "blob_chunk_frame"
+        }
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::BlobTreeNode) => "blob_tree_node",
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::BlobGenerationPublication) => {
+            "blob_generation_publication"
+        }
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::BlobDropSetManifest) => {
+            "blob_drop_set_manifest"
+        }
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::BlobReclaimDescriptor) => {
+            "blob_reclaim_descriptor"
+        }
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::BTreeNode) => "btree_node",
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::DerivedFamilyRootDirectory) => {
+            "derived_family_root_directory"
+        }
         OfflineArtifactFamily::Declared(PhysicalArtifactFamily::NamespaceIdentity) => {
             "namespace_identity"
         }
@@ -67,6 +89,12 @@ pub(crate) fn family(value: OfflineArtifactFamily) -> &'static str {
         }
         OfflineArtifactFamily::Declared(PhysicalArtifactFamily::CheckpointBinding) => {
             "checkpoint_binding"
+        }
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::CheckpointTierCertificate) => {
+            "checkpoint_tier_certificate"
+        }
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::CheckpointReleaseCertificate) => {
+            "checkpoint_release_certificate"
         }
         OfflineArtifactFamily::Declared(PhysicalArtifactFamily::CheckpointFooter) => {
             "checkpoint_footer"
@@ -145,6 +173,7 @@ pub(crate) fn unsupported_axis(value: OfflineUnsupportedVersionAxis) -> &'static
         OfflineUnsupportedVersionAxis::WalFrame => "wal_frame",
         OfflineUnsupportedVersionAxis::CheckpointRecord => "checkpoint_record",
         OfflineUnsupportedVersionAxis::PhysicalWork => "physical_work",
+        OfflineUnsupportedVersionAxis::BTreeNode => "btree_node",
     }
 }
 

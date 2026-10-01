@@ -17,6 +17,30 @@ use allocation_authority::{publication_allocation, test_pool};
 struct PreEffectFailure;
 
 #[test]
+fn release_head_block_is_a_complete_manifest_candidate() {
+    let coordinate = CandidateFrameCoordinate::new(
+        RecordArtifactFile::ReleaseCustodyHeadBlock {
+            generation: 1,
+            block: 7,
+        },
+        0,
+    );
+    assert!(CandidateFrameRole::ManifestBlock.is_complete_artifact());
+    let declaration =
+        CandidateFrameDeclaration::new(CandidateFrameRole::ManifestBlock, coordinate, 104).unwrap();
+    let candidate = CandidateFrameSet::new(1, vec![declaration]).unwrap();
+    assert_eq!(candidate.declarations()[0].coordinate(), coordinate);
+    assert!(CandidateFrameSet::new(
+        1,
+        vec![
+            CandidateFrameDeclaration::new(CandidateFrameRole::ExtentManifest, coordinate, 104,)
+                .unwrap()
+        ]
+    )
+    .is_none());
+}
+
+#[test]
 fn arena_manifest_is_a_range_candidate_not_a_complete_artifact() {
     let coordinate =
         CandidateFrameCoordinate::new(RecordArtifactFile::ExtentArena { arena: 7 }, 8192);

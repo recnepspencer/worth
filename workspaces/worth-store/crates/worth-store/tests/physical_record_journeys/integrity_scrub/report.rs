@@ -22,6 +22,28 @@ fn capture(
 }
 
 #[test]
+fn selected_report_rejects_raw_target_without_acquiring_or_fabricating_a_path() {
+    let parent = tempfile::tempdir().unwrap();
+    let serving = super::super::serving_from_initialization(parent.path());
+    let raw = target(&serving, parent.path());
+    let mut handle = serving
+        .start_physical_integrity_scrub(request(&serving, raw))
+        .unwrap();
+    let mut output = Vec::new();
+    assert!(matches!(
+        handle.write_selected_record_observation_report(
+            Context::new("raw-denial", "selected-report").unwrap(),
+            16_384,
+            &mut output,
+        ),
+        Err(ReportDenial::SelectedScopeRequired)
+    ));
+    assert!(output.is_empty());
+    assert_eq!(handle.counters().acquired_bytes, 0);
+    serving.close();
+}
+
+#[test]
 fn runtime_report_uses_actual_source_and_effect_counters_without_mutation() {
     let parent = tempfile::tempdir().unwrap();
     let serving = super::super::serving_from_initialization(parent.path());

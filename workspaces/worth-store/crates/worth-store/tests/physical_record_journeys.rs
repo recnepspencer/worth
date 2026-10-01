@@ -75,6 +75,8 @@ mod page_packing_oracle;
 mod physical_work;
 #[path = "c5/courtrooms.rs"]
 mod production_courtrooms;
+#[path = "physical_record_journeys/maintenance_interference/publication_charge/oracle.rs"]
+mod publication_metadata_oracle;
 #[path = "physical_record_journeys/publication_reopener.rs"]
 mod publication_reopener;
 #[path = "physical_record_journeys/read_boundaries.rs"]

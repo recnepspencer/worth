@@ -126,3 +126,28 @@ fn recovered_retirement_claim_requires_exact_garbage_and_restores_removal_permit
     admission.complete_displaced(displaced.artifact);
     assert!(!admission.claim_recovered_displaced_exact(displaced));
 }
+
+#[test]
+fn reclaim_displacement_roster_is_admitted_all_or_none_before_effect() {
+    let profile = PhysicalRetentionProfile::new(100, 4, 20, 1).unwrap();
+    let admission = std::sync::Arc::new(PhysicalPublicationAdmission::new(profile));
+    let first = admission.reserve_displaced_entries(2, 40).unwrap();
+    assert_eq!(admission.lock().reserved_displaced_entries, 2);
+    assert_eq!(admission.lock().reserved_displaced_bytes, 40);
+
+    let Err(denied) = admission.reserve_displaced_entries(2, 41) else {
+        panic!("a second whole roster must not enter partial capacity");
+    };
+    // Four total entries minus one progress entry and two reserved extents
+    // leaves one, not enough for another two extents plus the active C5 head.
+    assert_eq!(denied.remaining_entries, 1);
+    assert_eq!(denied.remaining_bytes, 40);
+    assert_eq!(admission.lock().reserved_displaced_entries, 2);
+    assert_eq!(admission.lock().reserved_displaced_bytes, 40);
+
+    drop(first);
+    assert_eq!(admission.lock().reserved_displaced_entries, 0);
+    assert_eq!(admission.lock().reserved_displaced_bytes, 0);
+    let retry = admission.reserve_displaced_entries(2, 41).unwrap();
+    drop(retry);
+}

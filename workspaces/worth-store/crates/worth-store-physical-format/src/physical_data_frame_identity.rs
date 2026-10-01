@@ -82,6 +82,11 @@ fn write_artifact(artifact: RecordArtifactFile, target: &mut Vec<u8>) {
             target.extend_from_slice(&generation.to_le_bytes());
             target.extend_from_slice(&block.to_le_bytes());
         }
+        RecordArtifactFile::ReleaseCustodyHeadBlock { generation, block } => {
+            target.push(17);
+            target.extend_from_slice(&generation.to_le_bytes());
+            target.extend_from_slice(&block.to_le_bytes());
+        }
         RecordArtifactFile::Segment {
             segment,
             generation,

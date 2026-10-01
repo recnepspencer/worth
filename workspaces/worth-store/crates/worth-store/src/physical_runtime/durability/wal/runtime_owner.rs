@@ -9,7 +9,9 @@ use crate::physical_runtime::{PhysicalSignalProfileIdentity, RuntimeIdentity};
 
 use super::preparation_admission::{AdmittedWalPreparedMutation, PhysicalWalPreparationAdmission};
 use super::{
-    inventory::{PhysicalWalSegmentInventory, ReopenedPhysicalWalInventory},
+    inventory::{
+        PhysicalWalSegmentInventory, ReopenedPhysicalWalInventory, ReopenedWalPublicationGroup,
+    },
     PhysicalWalAppendDeclaration, PhysicalWalReservationDenial,
 };
 
@@ -22,6 +24,8 @@ pub(in crate::physical_runtime) struct PhysicalWalRuntimeOwner {
 
 struct PlannedMaintenanceFrame {
     payload_digest: [u8; 32],
+    frame_identity_digest: [u8; 32],
+    frame_payload_digest: [u8; 32],
     bytes: Vec<u8>,
     frontier: WalAppendFrontier,
     segment: worth_store_wal::WalSegmentId,
@@ -48,7 +52,7 @@ pub(super) struct PhysicalWalRuntimeState {
     pub(super) reclaimed_segments: u64,
     pub(super) reclaimed_bytes: u64,
     pub(super) reopened_frames: u64,
-    pub(super) reopened_publications: u64,
+    pub(super) reopened_publication_groups: Vec<ReopenedWalPublicationGroup>,
     pub(super) reopened_release_metadata: Vec<(u64, u64, u64, u64)>,
     pub(super) retained_maintenance: Vec<super::inventory::RetainedMaintenanceIntent>,
     pub(super) reopened_bytes: u64,
@@ -94,7 +98,7 @@ impl PhysicalWalRuntimeOwner {
                 reclaimed_segments: 0,
                 reclaimed_bytes: 0,
                 reopened_frames: inventory.frame_count,
-                reopened_publications: inventory.publication_frames,
+                reopened_publication_groups: inventory.publication_groups,
                 reopened_release_metadata: inventory.release_metadata,
                 retained_maintenance: inventory.retained_maintenance,
                 reopened_bytes: inventory.byte_count,
@@ -222,14 +226,11 @@ impl PhysicalWalRuntimeOwner {
     }
 
     /// Publications whose WAL frames survived reopen and so remain charged.
-    pub(in crate::physical_runtime) fn reopened_release_metadata(
+    pub(in crate::physical_runtime) fn take_reopened_release_metadata(
         &self,
     ) -> Vec<(u64, u64, u64, u64)> {
-        self.shared
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .reopened_release_metadata
-            .clone()
+        let mut state = self.shared.lock().unwrap_or_else(|e| e.into_inner());
+        std::mem::take(&mut state.reopened_release_metadata)
     }
 
     pub(in crate::physical_runtime) fn recovered_copy_obligations(
@@ -244,12 +245,33 @@ impl PhysicalWalRuntimeOwner {
             .collect()
     }
 
-    /// Ordinary publications whose WAL frames survived reopen.
-    pub(in crate::physical_runtime) fn reopened_publications(&self) -> u64 {
+    pub(in crate::physical_runtime) fn take_reopened_publication_groups(
+        &self,
+    ) -> Vec<ReopenedWalPublicationGroup> {
+        let mut state = self
+            .shared
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        std::mem::take(&mut state.reopened_publication_groups)
+    }
+
+    pub(in crate::physical_runtime) fn reopened_wal_segments(&self) -> Vec<((u64, u64), u64)> {
         self.shared
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .reopened_publications
+            .segments
+            .entries()
+            .iter()
+            .map(|entry| {
+                (
+                    (
+                        entry.identity().segment().get(),
+                        entry.identity().generation().get(),
+                    ),
+                    entry.byte_count(),
+                )
+            })
+            .collect()
     }
 
     pub(in crate::physical_runtime) fn observation(&self) -> super::PhysicalWalObservation {

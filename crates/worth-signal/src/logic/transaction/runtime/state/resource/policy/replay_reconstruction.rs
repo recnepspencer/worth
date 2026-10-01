@@ -8,6 +8,7 @@ use super::replay::{
     ResourceReplayOutputContinuityDigestEntry, ResourceReplayRetryLineageDigestBasis,
     ResourceReplayUnavailableDeniedCompletionDigestBasis,
     RESOURCE_REPLAY_RECONSTRUCTION_SCHEMA_VERSION,
+    RESOURCE_REPLAY_RECONSTRUCTION_WITH_OMISSION_SCHEMA_VERSION,
 };
 use crate::data::resource::*;
 use crate::data::telemetry::ResourceTelemetry;
@@ -26,6 +27,9 @@ struct ReplayReconstructionBasis {
     in_flight_requests: Vec<InFlightResourceRequest>,
     retained_history_availability: Vec<ResourceRetainedHistoryAvailability>,
     retained_history_unavailable_count: u32,
+    expired_lifecycle_availability: super::super::super::retention_omission::RetentionOmission,
+    expired_denied_availability: super::super::super::retention_omission::RetentionOmission,
+    expired_retry_availability: super::super::super::retention_omission::RetentionOmission,
 }
 
 struct ReplayReconstructionWidths {
@@ -56,8 +60,20 @@ impl ReplayReconstructionBasis {
             denied_completion: self.denied_completion_entries.len() as u32,
             retained_retry_lineage: self.retained_retry_lineages.len() as u32,
             in_flight: self.in_flight_requests.len() as u32,
-            denied_completion_unavailable: self.unavailable_denied_completion_entries.len() as u32,
-            retry_lineage_unavailable: self.unavailable_retry_lineages.len() as u32,
+            denied_completion_unavailable: self
+                .unavailable_denied_completion_entries
+                .len()
+                .saturating_add(
+                    usize::try_from(self.expired_denied_availability.count()).unwrap_or(usize::MAX),
+                )
+                .min(u32::MAX as usize) as u32,
+            retry_lineage_unavailable: self
+                .unavailable_retry_lineages
+                .len()
+                .saturating_add(
+                    usize::try_from(self.expired_retry_availability.count()).unwrap_or(usize::MAX),
+                )
+                .min(u32::MAX as usize) as u32,
         }
     }
 }
@@ -162,7 +178,10 @@ impl ResourceRuntimeState {
             })
             .count()
             .saturating_add(retained_history_availability.len())
-            as u32;
+            .saturating_add(
+                usize::try_from(self.expired_lifecycle_availability.count()).unwrap_or(usize::MAX),
+            )
+            .min(u32::MAX as usize) as u32;
         ReplayReconstructionBasis {
             descriptors,
             lifecycle_summaries,
@@ -175,33 +194,46 @@ impl ResourceRuntimeState {
             in_flight_requests,
             retained_history_availability,
             retained_history_unavailable_count,
+            expired_lifecycle_availability: self.expired_lifecycle_availability,
+            expired_denied_availability: self.expired_denied_availability,
+            expired_retry_availability: self.expired_retry_availability,
         }
     }
 
     fn digest_replay_reconstruction(
         basis: &ReplayReconstructionBasis,
     ) -> ReplayReconstructionDigests {
+        let schema_version = if basis.expired_lifecycle_availability.is_empty()
+            && basis.expired_denied_availability.is_empty()
+            && basis.expired_retry_availability.is_empty()
+        {
+            RESOURCE_REPLAY_RECONSTRUCTION_SCHEMA_VERSION
+        } else {
+            RESOURCE_REPLAY_RECONSTRUCTION_WITH_OMISSION_SCHEMA_VERSION
+        };
         let descriptor = canonical_digest(&ResourceReplayDescriptorDigestBasis {
-            schema_version: RESOURCE_REPLAY_RECONSTRUCTION_SCHEMA_VERSION,
+            schema_version,
             descriptors: &basis.descriptors,
         });
         let lifecycle = canonical_digest(&ResourceReplayLifecycleDigestBasis {
-            schema_version: RESOURCE_REPLAY_RECONSTRUCTION_SCHEMA_VERSION,
+            schema_version,
             lifecycle_entries: &basis.lifecycle_entries,
         });
         let output_continuity = canonical_digest(&ResourceReplayOutputContinuityDigestBasis {
-            schema_version: RESOURCE_REPLAY_RECONSTRUCTION_SCHEMA_VERSION,
+            schema_version,
             output_entries: &basis.output_entries,
         });
         let denied_completion = canonical_digest(&ResourceReplayDenialDigestBasis {
-            schema_version: RESOURCE_REPLAY_RECONSTRUCTION_SCHEMA_VERSION,
+            schema_version,
             denied_completions: &basis.denied_completion_entries,
             unavailable_denied_completions: &basis.unavailable_denied_completion_entries,
+            expired_denied_availability: basis.expired_denied_availability,
         });
         let retry_lineage = canonical_digest(&ResourceReplayRetryLineageDigestBasis {
-            schema_version: RESOURCE_REPLAY_RECONSTRUCTION_SCHEMA_VERSION,
+            schema_version,
             retained_retry_lineages: &basis.retained_retry_lineages,
             unavailable_retry_lineages: &basis.unavailable_retry_lineages,
+            expired_retry_availability: basis.expired_retry_availability,
         });
         let in_flight_entries = basis
             .in_flight_requests
@@ -209,12 +241,13 @@ impl ResourceRuntimeState {
             .map(Self::in_flight_digest_entry)
             .collect::<Vec<_>>();
         let in_flight = canonical_digest(&ResourceReplayInFlightDigestBasis {
-            schema_version: RESOURCE_REPLAY_RECONSTRUCTION_SCHEMA_VERSION,
+            schema_version,
             in_flight_requests: &in_flight_entries,
             retained_history_availability: &basis.retained_history_availability,
+            expired_lifecycle_availability: basis.expired_lifecycle_availability,
         });
         let replay = canonical_digest(&ResourceReplayDigestBasis {
-            schema_version: RESOURCE_REPLAY_RECONSTRUCTION_SCHEMA_VERSION,
+            schema_version,
             descriptor_digest: &descriptor,
             lifecycle_digest: &lifecycle,
             output_continuity_digest: &output_continuity,
@@ -222,9 +255,8 @@ impl ResourceRuntimeState {
             retry_lineage_digest: &retry_lineage,
             in_flight_digest: &in_flight,
             retained_history_unavailable_count: basis.retained_history_unavailable_count,
-            denied_completion_unavailable_count: basis.unavailable_denied_completion_entries.len()
-                as u32,
-            retry_lineage_unavailable_count: basis.unavailable_retry_lineages.len() as u32,
+            denied_completion_unavailable_count: basis.widths().denied_completion_unavailable,
+            retry_lineage_unavailable_count: basis.widths().retry_lineage_unavailable,
         });
         ReplayReconstructionDigests {
             descriptor,

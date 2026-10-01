@@ -1,14 +1,24 @@
 use worth_proof::NonEmpty;
+use worth_proof::TransitionOutcome;
+use worth_signal::facade::TemporalDuration;
 use worth_store::physical_runtime::{
-    DataSettledPhysicalMutation, PhysicalCurrentRootAdvanceOutcome, PhysicalDataSettledGroupDenial,
-    PhysicalDurabilityGroupBasis, PhysicalMutationIdempotencyMaterial,
-    PhysicalRootNamespaceDurabilityOutcome, PhysicalRootPublicationPreparationOutcome,
-    PhysicalRootReplacementOutcome, RecordAppendBatch,
+    DataSettledPhysicalMutation, PhysicalCurrentRootAdvanceOutcome, PhysicalDataDispatchOutcome,
+    PhysicalDataSettledGroupDenial, PhysicalDataSettlementOutcome, PhysicalDurabilityGroupBasis,
+    PhysicalMutationDeadline, PhysicalMutationIdempotencyMaterial,
+    PhysicalMutationPreparationSuccess, PhysicalMutationRequest,
+    PhysicalRootNamespaceDurabilityOutcome, PhysicalRootPublicationPreparationFailureCause,
+    PhysicalRootPublicationPreparationOutcome, PhysicalRootReplacementOutcome,
+    PhysicalWalGroupAppendOutcome, PhysicalWalGroupBarrierOutcome, RecordAppendBatch,
+    SettledRootProjectionMergeDenial,
 };
+use worth_store_physical_format::{BlobGenerationPublicationV1, PersistedRecordIdentity};
 
 use super::super::super::{
     configuration, durable_publication::settle_single, serving_from_initialization,
 };
+
+#[path = "root_projection_carriage/classified_blob_publications.rs"]
+mod classified_blob_publications;
 
 #[test]
 fn settled_member_carries_its_root_projection_into_the_exact_group_join() {

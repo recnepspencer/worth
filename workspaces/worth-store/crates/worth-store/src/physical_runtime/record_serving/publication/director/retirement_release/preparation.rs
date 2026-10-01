@@ -26,8 +26,7 @@ impl RecordPublicationDirector {
         );
         let pending = self
             .root_owner
-            .publication_admission()
-            .register_exclusive_pending(operation)
+            .register_pending_publication(operation)
             .map_err(|_| PhysicalRetirementDenial::Waiting)?;
         if let Some(denial) = self
             .root_owner
@@ -42,7 +41,7 @@ impl RecordPublicationDirector {
                     .lock()
                     .unwrap_or_else(|e| e.into_inner())
                     .preflight_release(range)
-                    .map_err(|_| PhysicalRetirementDenial::Waiting)?;
+                    .map_err(super::arena_release_denial)?;
             }
         }
         let (source, free) = self.root_owner.snapshot();

@@ -19,12 +19,15 @@ use crate::physical_runtime::{
 
 #[cfg(feature = "certification-test-authority")]
 mod certification;
+mod completed_witness;
+pub(in crate::physical_runtime) use completed_witness::CompletedDurableCheckpointWitness;
 
 pub(in crate::physical_runtime) struct PhysicalCheckpointRuntimeOwner {
     capture: PhysicalCheckpointCaptureOwner,
     work_runtime: Weak<crate::physical_runtime::instance::PhysicalStoreWorkRuntime>,
     lifecycle: Mutex<PhysicalCheckpointLifecycleState>,
     yieldpoints: Arc<super::PhysicalCheckpointYieldpointOwner>,
+    selected_checkpoint_sequence: u64,
 }
 
 #[derive(Clone)]
@@ -71,6 +74,7 @@ impl PhysicalCheckpointRuntimeOwner {
     ) -> Arc<Self> {
         let yieldpoints = foundation.work.yieldpoints();
         Arc::new(Self {
+            selected_checkpoint_sequence: foundation.selected_checkpoint_sequence,
             capture: PhysicalCheckpointCaptureOwner::new(foundation),
             work_runtime: Arc::downgrade(work_runtime),
             lifecycle: Mutex::new(PhysicalCheckpointLifecycleState {

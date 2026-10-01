@@ -93,6 +93,7 @@ pub use crate::workflow::{
     BackupRestoreReplayPlan, BackupRestoreReplayRequest, BackupSourceVerificationDenial,
     BackupVerificationJoinDenial, CompletedOldPrimaryRejoin, CompletedReplicaBootstrap,
     CurrentAuthorityPreservingMaintenancePlan, CurrentReplicaPromotion,
+    DerivedIndexRepairPlanDenial, DerivedIndexRepairRequest,
     CustodyQualifiedBackupBundle, DurablyFencedReplicaPromotion, EvidenceBoundBackupRestorePlan,
     EvidenceBoundPointInTimeRecoveryPlan, EvidenceBoundRepairPlan,
     EvidenceBoundReplicaBootstrapPlan, EvidenceBoundReplicaPromotionPlan,

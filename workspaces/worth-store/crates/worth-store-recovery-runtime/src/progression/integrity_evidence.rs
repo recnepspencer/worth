@@ -9,6 +9,12 @@ pub(crate) struct RecoveryIntegrityEvidence {
 }
 
 impl RecoveryIntegrityEvidence {
+    pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {
+        self.admitted_wal
+            .owned_heap_bytes()?
+            .checked_add(self.observations.owned_heap_bytes()?)
+    }
+
     pub(crate) const fn new(
         admitted_wal: AdmittedWalInventory,
         wal_observations: Vec<PhysicalRecoveryWalIntegrityObservation>,

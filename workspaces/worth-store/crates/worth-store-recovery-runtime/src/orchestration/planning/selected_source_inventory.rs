@@ -3,9 +3,10 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
 use worth_store_physical_format::{
-    DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest, PhysicalFreeSpaceMembershipBlock,
-    PhysicalRecordFormatDeclaration, PhysicalSegmentMembershipBlock, PhysicalTreeIdentity,
-    RecordArtifactFile, RecordFreeSpaceManifestEntry, SegmentManifestBlockReference,
+    DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest, FreeSpaceKey,
+    PhysicalFreeSpaceMembershipBlock, PhysicalRecordFormatDeclaration,
+    PhysicalSegmentMembershipBlock, PhysicalTreeIdentity, RecordArtifactFile,
+    RecordFreeSpaceManifestEntry, SegmentManifestBlockReference,
 };
 
 use super::manifest_entry_budget::ManifestEntryBudget;
@@ -18,6 +19,14 @@ type SelectedSegmentTopologyObservation = (
     BTreeSet<RecordArtifactFile>,
     BTreeMap<(u64, u64), PhysicalSegmentMembershipBlock>,
 );
+
+#[path = "selected_source_inventory/routes.rs"]
+mod routes;
+pub(super) use routes::observe_routes_with_budget;
+pub(super) use routes::observe_routes_with_resident_budget;
+#[path = "selected_source_inventory/resident.rs"]
+mod resident;
+pub(in crate::orchestration::planning) use resident::ResidentAllowance;
 
 #[cfg(test)]
 pub(super) fn observe(
@@ -51,10 +60,38 @@ pub(super) fn observe_with_budget(
     byte_limit: u64,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) -> Result<RecoverySelectedSourceInventory, PageObservationFailure> {
+    let mut resident = ResidentAllowance::new(u64::MAX);
+    observe_with_resident_budget(
+        discovery,
+        root,
+        format,
+        budget,
+        byte_limit,
+        integrity_trace,
+        &mut resident,
+    )
+}
+
+pub(super) fn observe_with_resident_budget(
+    discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    root: &DurablePhysicalRootManifest,
+    format: PhysicalRecordFormatDeclaration,
+    budget: &mut ManifestEntryBudget,
+    byte_limit: u64,
+    integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
+    resident: &mut ResidentAllowance,
+) -> Result<RecoverySelectedSourceInventory, PageObservationFailure> {
     budget.admit_pending_block_read()?;
     let free_space = read_free_space_header(discovery, root, format, byte_limit, integrity_trace)?;
-    let (segment_pages, segment_artifacts, segment_topology) =
-        read_segment_pages(discovery, root, format, budget, byte_limit, integrity_trace)?;
+    let (segment_pages, segment_artifacts, segment_topology) = read_segment_pages(
+        discovery,
+        root,
+        format,
+        budget,
+        byte_limit,
+        integrity_trace,
+        resident,
+    )?;
     let (free_entries, free_artifacts, free_topology) = read_free_entries(
         discovery,
         &free_space,
@@ -62,6 +99,7 @@ pub(super) fn observe_with_budget(
         budget,
         byte_limit,
         integrity_trace,
+        resident,
     )?;
     let mut source_artifacts = BTreeSet::from([RecordArtifactFile::FreeSpaceManifest {
         generation: root.generation(),
@@ -115,6 +153,7 @@ fn read_segment_pages(
     budget: &mut ManifestEntryBudget,
     byte_limit: u64,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
+    resident: &mut ResidentAllowance,
 ) -> Result<SelectedSegmentTopologyObservation, PageObservationFailure> {
     let mut pending = root.segment_root().into_iter().collect::<VecDeque<_>>();
     let mut visited = BTreeSet::new();
@@ -123,6 +162,7 @@ fn read_segment_pages(
     let mut topology = BTreeMap::new();
     while let Some(reference) = pending.pop_front() {
         budget.admit_pending_block_read()?;
+        resident.block(format)?;
         let artifact = RecordArtifactFile::SegmentMembershipBlock {
             generation: reference.generation(),
             block: reference.block(),
@@ -155,6 +195,10 @@ fn read_segment_pages(
         topology.insert((reference.generation(), reference.block()), block.clone());
         if let Some(entries) = block.entries() {
             budget.consume(entries.len())?;
+            resident.entries(
+                entries.len(),
+                std::mem::size_of::<RecoverySelectedSegmentPage>(),
+            )?;
             for entry in entries {
                 let key = (entry.page_cell().segment_id().get(), entry.page().get());
                 let page = RecoverySelectedSegmentPage {
@@ -168,6 +212,10 @@ fn read_segment_pages(
             }
         } else if let Some(children) = block.children() {
             budget.consume(children.len())?;
+            resident.entries(
+                children.len(),
+                std::mem::size_of::<SegmentManifestBlockReference>(),
+            )?;
             pending.extend(children.iter().copied());
         }
     }
@@ -181,6 +229,7 @@ fn read_free_entries(
     budget: &mut ManifestEntryBudget,
     byte_limit: u64,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
+    resident: &mut ResidentAllowance,
 ) -> Result<
     (
         Vec<RecordFreeSpaceManifestEntry>,
@@ -196,6 +245,7 @@ fn read_free_entries(
     let mut topology = BTreeMap::new();
     while let Some(reference) = pending.pop_front() {
         budget.admit_pending_block_read()?;
+        resident.block(format)?;
         let artifact = RecordArtifactFile::FreeSpaceMembershipBlock {
             generation: reference.generation(),
             block: reference.block(),
@@ -228,22 +278,44 @@ fn read_free_entries(
         topology.insert((reference.generation(), reference.block()), block.clone());
         if let Some(found) = block.entries() {
             budget.consume(found.len())?;
+            resident.entries(
+                found.len(),
+                std::mem::size_of::<RecordFreeSpaceManifestEntry>(),
+            )?;
             entries.extend_from_slice(found);
         } else if let Some(children) = block.children() {
             budget.consume(children.len())?;
+            resident.entries(
+                children.len(),
+                std::mem::size_of::<worth_store_physical_format::FreeSpaceBlockReference>(),
+            )?;
             pending.extend(children.iter().copied());
         }
     }
-    entries.sort_unstable_by_key(|entry| (entry.class() as u8, entry.owner()));
-    if entries
-        .windows(2)
-        .any(|pair| pair[0].class() == pair[1].class() && pair[0].owner() == pair[1].owner())
-    {
+    if !canonical_free_entries(&mut entries) {
         return Err(invalid(RecordArtifactFile::FreeSpaceManifest {
             generation: header.generation(),
         }));
     }
     Ok((entries, artifacts, topology))
+}
+
+/// Arena ownership is keyed by offset as well as arena id. Several disjoint
+/// free runs in one arena are legal; duplicates, overlaps and uncoalesced
+/// touching runs are not.
+fn canonical_free_entries(entries: &mut [RecordFreeSpaceManifestEntry]) -> bool {
+    entries.sort_unstable_by_key(|entry| FreeSpaceKey::from(*entry));
+    entries.windows(2).all(|pair| {
+        let left = pair[0];
+        let right = pair[1];
+        FreeSpaceKey::from(left) < FreeSpaceKey::from(right)
+            && match (left.arena_free_range(), right.arena_free_range()) {
+                (Some(left), Some(right)) if left.arena() == right.arena() => {
+                    left.end() < right.offset()
+                }
+                _ => true,
+            }
+    })
 }
 
 fn routing_identity(
@@ -293,3 +365,7 @@ fn membership_failure(
         },
     }
 }
+
+#[cfg(test)]
+#[path = "selected_source_inventory/canonical_free_entry_tests.rs"]
+mod canonical_free_entry_tests;

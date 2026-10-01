@@ -35,11 +35,12 @@ pub(in crate::physical_runtime::record_serving) fn reconstruct(
         ));
     }
     let alignment = header.arena_alignment();
-    let mut owner = ExtentArenaAllocationOwner::new(
+    let mut owner = ExtentArenaAllocationOwner::new_tiered(
         placement.arena_capacity(),
         alignment,
         maximum_ranges,
         header.next_arena(),
+        header.tier_epoch_start(),
     )
     .map_err(|_| damaged())?;
     owner.retain_capacity_charge(charge);
@@ -56,7 +57,9 @@ pub(in crate::physical_runtime::record_serving) fn reconstruct(
             Ok(())
         })
         .map_err(|failure| match restore_denial {
-            Some(super::ArenaAllocationDenial::RangeBudget) => pressure(),
+            Some(cause @ super::ArenaAllocationDenial::RangeBudget { .. }) => {
+                RecordAppendError::Denied(RecordAppendDenial::ArenaAllocationUnavailable(cause))
+            }
             Some(_) => damaged(),
             None => super::super::planning::inline_plan_failure::manifest_lookup_failure(failure),
         })?;

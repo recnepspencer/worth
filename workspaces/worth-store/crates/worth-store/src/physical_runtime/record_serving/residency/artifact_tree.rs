@@ -373,7 +373,8 @@ impl<'media> PhysicalRecordArtifactTree<'media> {
             RecordArtifactFile::CatalogCandidate { .. }
             | RecordArtifactFile::RootSelectorCandidate { .. } => &self.record_staging,
             RecordArtifactFile::RootManifest { .. }
-            | RecordArtifactFile::RootRoutingBlock { .. } => &self.root_manifests,
+            | RecordArtifactFile::RootRoutingBlock { .. }
+            | RecordArtifactFile::ReleaseCustodyHeadBlock { .. } => &self.root_manifests,
             RecordArtifactFile::Segment { .. } => &self.page_segments,
             RecordArtifactFile::SegmentManifest { .. }
             | RecordArtifactFile::SegmentMembershipBlock { .. } => &self.segment_manifests,

@@ -30,6 +30,7 @@ pub(in crate::physical_runtime::recovery_freshness) fn sample_binding<'frame>(
     wal_frames: impl IntoIterator<Item = &'frame IntegrityAdmittedRecoveryWalFrame>,
     maximum_operation_bindings: u64,
     maximum_redo_bytes: u64,
+    maximum_manifest_cleanup_sampling_bytes: u64,
 ) -> Result<StoreRecoveryBindingFreshnessSample, StoreRecoveryBindingSampleFailure> {
     super::sample_binding_from_frames(
         covered,
@@ -40,5 +41,6 @@ pub(in crate::physical_runtime::recovery_freshness) fn sample_binding<'frame>(
         wal_frames,
         maximum_operation_bindings,
         maximum_redo_bytes,
+        maximum_manifest_cleanup_sampling_bytes,
     )
 }

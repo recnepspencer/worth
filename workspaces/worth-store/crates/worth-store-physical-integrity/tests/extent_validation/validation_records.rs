@@ -85,7 +85,7 @@ fn identical_bytes_keep_byte_digest_but_bind_store_and_range() {
     let arena = fixture.arena_range();
     let shifted_arena =
         ExtentArenaRange::new(arena.arena(), arena.offset() + 65_536, arena.length()).unwrap();
-    let shifted_placement = DurableExtentRecordPlacement::new(
+    let shifted_placement = DurableExtentRecordPlacement::legacy_unknown(
         fixture.record,
         fixture.extent,
         fixture.logical_bytes,

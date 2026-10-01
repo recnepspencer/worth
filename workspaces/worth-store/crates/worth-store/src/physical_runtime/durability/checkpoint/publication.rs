@@ -1,21 +1,25 @@
 use std::sync::Arc;
 
 use worth_store_physical_format::{
-    CheckpointBindingCompactionHeader, CheckpointDirtyFrameBasis, CheckpointStreamEncoder,
-    CheckpointStreamFooter,
+    CheckpointDirtyFrameBasis, CheckpointStreamEncoder, CheckpointStreamFooter,
 };
 
 use super::capture::PhysicalCheckpointCaptureBasis;
 use super::{PhysicalCheckpointActionFailure, PhysicalCheckpointWorkPort};
+use crate::physical_runtime::durability::SelectedCheckpointCustodySnapshot;
 use crate::physical_runtime::work::{
     CompletedPhysicalCheckpointAction, PhysicalCheckpointWorkAction,
 };
+
+#[path = "publication/finish.rs"]
+mod finish;
 
 pub(in crate::physical_runtime) struct CreatedCheckpointCandidate {
     basis: PhysicalCheckpointCaptureBasis,
     encoder: CheckpointStreamEncoder,
     offset: u64,
     dirty_records: u64,
+    custody: Option<SelectedCheckpointCustodySnapshot>,
     work: PhysicalCheckpointWorkPort,
 }
 
@@ -24,6 +28,7 @@ pub(in crate::physical_runtime) struct CapturedCheckpointCandidate {
     footer: CheckpointStreamFooter,
     encoded_bytes: u64,
     dirty_records: u64,
+    custody: Option<SelectedCheckpointCustodySnapshot>,
     work: PhysicalCheckpointWorkPort,
 }
 
@@ -40,6 +45,7 @@ pub(in crate::physical_runtime) struct NamespaceDurableCheckpointPublication {
     footer: CheckpointStreamFooter,
     encoded_bytes: u64,
     dirty_records: u64,
+    custody: Option<SelectedCheckpointCustodySnapshot>,
     retained_wal_tail: Arc<super::ContiguousRetainedWalTail>,
     binding_compaction: crate::physical_runtime::PhysicalMutationBindingCompaction,
     namespace_sync: CompletedPhysicalCheckpointAction,
@@ -71,8 +77,27 @@ impl CreatedCheckpointCandidate {
     pub(in crate::physical_runtime) fn create(
         basis: PhysicalCheckpointCaptureBasis,
         work: PhysicalCheckpointWorkPort,
+        custody: Option<SelectedCheckpointCustodySnapshot>,
     ) -> Result<Self, (CheckpointCandidateCleanup, PhysicalCheckpointActionFailure)> {
-        let (encoder, header) = CheckpointStreamEncoder::begin(basis.source());
+        if custody.as_ref().is_some_and(|snapshot| {
+            snapshot.checkpoint() != basis.identity()
+                || snapshot.root().generation() != basis.source().root().generation()
+                || snapshot.root().tree_identity() != basis.source().root().tree_identity()
+        }) {
+            return Err((
+                CheckpointCandidateCleanup::new(basis, work),
+                PhysicalCheckpointActionFailure::PreEffect,
+            ));
+        }
+        let (encoder, header) = if custody
+            .as_ref()
+            .and_then(|snapshot| snapshot.certificates())
+            .is_some()
+        {
+            CheckpointStreamEncoder::begin_certified(basis.source())
+        } else {
+            CheckpointStreamEncoder::begin(basis.source())
+        };
         let byte_count = header.len() as u64;
         if let Err(failure) = work.execute(
             basis.identity(),
@@ -87,6 +112,7 @@ impl CreatedCheckpointCandidate {
             encoder,
             offset: byte_count,
             dirty_records: 0,
+            custody,
             work,
         })
     }
@@ -117,88 +143,6 @@ impl CreatedCheckpointCandidate {
             .checked_add(1)
             .expect("checkpoint record count fits u64");
         Ok(())
-    }
-
-    pub(in crate::physical_runtime) fn finish(
-        self,
-        binding_compaction: &crate::physical_runtime::durability::PhysicalMutationBindingCompactionCutover<'_>,
-    ) -> Result<
-        CapturedCheckpointCandidate,
-        (CheckpointCandidateCleanup, PhysicalCheckpointActionFailure),
-    > {
-        let header = CheckpointBindingCompactionHeader::new(
-            binding_compaction.generation().get(),
-            binding_compaction.wal_cutoff_lsn_exclusive(),
-        )
-        .expect("a prospective compaction has a nonzero generation and WAL cutoff");
-        let (mut encoder, record) = self.encoder.begin_binding_compaction(header);
-        let byte_count = record.len() as u64;
-        let mut offset = self.offset;
-        if let Err(failure) = self.work.execute(
-            self.basis.identity(),
-            PhysicalCheckpointWorkAction::AppendCandidate { offset, byte_count },
-            Some(record.into_boxed_slice()),
-            0,
-        ) {
-            return Err((
-                CheckpointCandidateCleanup::new(self.basis, self.work),
-                failure,
-            ));
-        }
-        self.work.pause_after(
-            super::yieldpoint::PhysicalCheckpointStep::CandidateBindingCompactionHeader,
-        );
-        offset = offset
-            .checked_add(byte_count)
-            .expect("checkpoint artifact bounds fit u64");
-        let stream_result = binding_compaction.for_each_record(|binding| {
-            let record = encoder
-                .encode_binding_record(binding)
-                .expect("Store compaction construction admitted every bounded record");
-            let byte_count = record.len() as u64;
-            self.work.execute(
-                self.basis.identity(),
-                PhysicalCheckpointWorkAction::AppendCandidate { offset, byte_count },
-                Some(record.into_boxed_slice()),
-                0,
-            )?;
-            self.work
-                .pause_after(super::yieldpoint::PhysicalCheckpointStep::CandidateBindingRecord);
-            offset = offset
-                .checked_add(byte_count)
-                .expect("checkpoint artifact bounds fit u64");
-            Ok(())
-        });
-        if let Err(failure) = stream_result {
-            return Err((
-                CheckpointCandidateCleanup::new(self.basis, self.work),
-                failure,
-            ));
-        }
-        let (footer, record) = encoder.finish();
-        let byte_count = record.len() as u64;
-        if let Err(failure) = self.work.execute(
-            self.basis.identity(),
-            PhysicalCheckpointWorkAction::AppendCandidate { offset, byte_count },
-            Some(record.into_boxed_slice()),
-            0,
-        ) {
-            return Err((
-                CheckpointCandidateCleanup::new(self.basis, self.work),
-                failure,
-            ));
-        }
-        self.work
-            .pause_after(super::yieldpoint::PhysicalCheckpointStep::CandidateFooter);
-        Ok(CapturedCheckpointCandidate {
-            basis: self.basis,
-            footer,
-            encoded_bytes: offset
-                .checked_add(byte_count)
-                .expect("checkpoint artifact bounds fit u64"),
-            dirty_records: self.dirty_records,
-            work: self.work,
-        })
     }
 
     pub(in crate::physical_runtime) fn remove(
@@ -309,6 +253,7 @@ impl ReplacedCheckpointCandidate {
             footer: candidate.footer,
             encoded_bytes: candidate.encoded_bytes,
             dirty_records: candidate.dirty_records,
+            custody: candidate.custody,
             retained_wal_tail,
             binding_compaction,
             namespace_sync,
@@ -319,6 +264,12 @@ impl ReplacedCheckpointCandidate {
 impl NamespaceDurableCheckpointPublication {
     pub(in crate::physical_runtime) const fn basis(&self) -> PhysicalCheckpointCaptureBasis {
         self.basis
+    }
+
+    pub(in crate::physical_runtime) fn custody(
+        &self,
+    ) -> Option<&SelectedCheckpointCustodySnapshot> {
+        self.custody.as_ref()
     }
 
     pub(in crate::physical_runtime) const fn namespace_sync(

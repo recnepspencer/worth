@@ -30,7 +30,7 @@ fn cancel_after_effect_keeps_live_resources_and_the_completed_window() {
             .residency_observation()
             .counters()
             .active_operation_bytes_for(PhysicalOperationAllocationScope::Scrub),
-        target.range().length() as u64
+        target.declared_bytes() as u64
     );
     assert!(matches!(
         second.next_window(),
@@ -40,7 +40,7 @@ fn cancel_after_effect_keeps_live_resources_and_the_completed_window() {
     gate.release();
     let (mut first, observation) = worker.join().unwrap();
     assert!(
-        matches!(observation, Progress::WindowInspected(observation) if observation.counters.completed_windows == 1 && observation.counters.acquired_bytes == target.range().length() as u64)
+        matches!(observation, Progress::WindowInspected(observation) if observation.counters.completed_windows == 1 && observation.counters.acquired_bytes == target.declared_bytes() as u64)
     );
     assert!(
         matches!(first.next_window(), Progress::Cancelled(counters) if counters.completed_windows == 1)
@@ -79,7 +79,7 @@ fn close_waits_for_in_flight_window_before_releasing_media() {
     closer.join().unwrap();
     closed_rx.recv_timeout(Duration::from_secs(5)).unwrap();
     assert!(
-        matches!(observation, Progress::WindowInspected(observation) if observation.counters.acquired_bytes == target.range().length() as u64)
+        matches!(observation, Progress::WindowInspected(observation) if observation.counters.acquired_bytes == target.declared_bytes() as u64)
     );
     assert!(
         matches!(handle.next_window(), Progress::Closed(counters) if counters.completed_windows == 1)
@@ -112,7 +112,7 @@ fn deadline_after_effect_counts_bytes_but_does_not_claim_intact() {
     let (mut handle, observation) = worker.join().unwrap();
     assert!(matches!(observation, Progress::WindowInspected(observation)
         if matches!(observation.outcome, PhysicalIntegrityObservationOutcome::Rejected(PhysicalIntegrityRejection::Indeterminate(_)))
-        && observation.counters.acquired_bytes == target.range().length() as u64
+        && observation.counters.acquired_bytes == target.declared_bytes() as u64
         && observation.validation_counters.inspected_frames() == 0));
     assert!(
         matches!(handle.next_window(), Progress::DeadlineExceeded(counters) if counters.indeterminate_windows == 1)

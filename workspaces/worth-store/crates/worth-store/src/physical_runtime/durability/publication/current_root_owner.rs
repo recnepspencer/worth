@@ -1,10 +1,26 @@
+use std::collections::HashMap;
 use std::sync::Mutex;
 
+mod advance_validation;
+use advance_validation::validate_advance;
+mod blob_claim;
 #[cfg(feature = "certification-test-authority")]
 mod capture_pause;
+mod certificate_capacity;
 mod displaced;
 mod maintenance;
+mod pending_publication;
+mod reclaim;
 mod recovered_copy;
+mod recovered_custody;
+pub(in crate::physical_runtime) use recovered_custody::PreparedRecoveredCheckpointCustody;
+pub(in crate::physical_runtime) use release_capacity::RecoveredReleaseLedgerDenial;
+mod release_capacity;
+pub use release_capacity::SelectedReleaseHeadDenial;
+mod root_basis;
+mod root_capture;
+pub(in crate::physical_runtime) use root_capture::ReleasedDropSourceCaptureDenial;
+mod tier_epoch;
 #[cfg(feature = "certification-test-authority")]
 pub use capture_pause::{CertificationReadRootCapturePauseGate, CertificationReadRootCaptureStage};
 
@@ -19,22 +35,51 @@ use super::{
     RetainedPhysicalRoot,
 };
 use crate::physical_runtime::{
-    PhysicalDurabilityGroupBasis, PhysicalRootPublicationMemberIdentity,
+    PhysicalDurabilityGroupBasis, PhysicalMutationIdentity, PhysicalRootPublicationMemberIdentity,
     RootNamespaceDurablePhysicalMutationMembers, RootPublicationPhysicalMutationMember,
+};
+pub(in crate::physical_runtime) use blob_claim::{
+    PhysicalBlobSessionClaim, PhysicalBlobSessionClaimDenial, PhysicalBlobTerminalAdmissionDenial,
+};
+pub(in crate::physical_runtime) use certificate_capacity::{
+    CheckpointCustodyDenial, CheckpointCustodyOrigin, SelectedCheckpointCertificate,
+    SelectedCheckpointCustodySnapshot,
+};
+pub(in crate::physical_runtime) use reclaim::{
+    AdmittedFailedIngestDrop, AdmittedManifestResidueRetirement, AdmittedReleasedGenerationDrop,
+    ManifestResidueDisplacement, ManifestResidueProof, PhysicalBlobReclaimAdmissionDenial,
+    PhysicalReclaimAttempt, PhysicalReconciledReclaimDescriptorFate, SelectedOriginalDropProof,
+};
+pub(in crate::physical_runtime) use release_capacity::{
+    ReleaseCertificateCapacityDenial, ReleaseCertificateCapacityLease, ReleaseHeadCapacityCharge,
+    SelectedReleaseCustodyLedger, SelectedReleaseHeadBasis,
 };
 
 pub(in crate::physical_runtime) struct PhysicalCurrentRootOwner {
+    runtime_identity: crate::physical_runtime::RuntimeIdentity,
+    recovery_allocation: crate::physical_runtime::PhysicalRecoveryAllocationAdmission,
     #[cfg(feature = "certification-test-authority")]
     capture_pause: Mutex<Option<std::sync::Arc<capture_pause::ReadRootCapturePause>>>,
     read_protection: std::sync::Arc<crate::physical_runtime::stability::RootProtectionRegistry>,
-    state: Mutex<PhysicalCurrentRootState>,
+    blob_claims: std::sync::Arc<blob_claim::BlobClaimRegistry>,
+    reclaim: std::sync::Arc<Mutex<Option<reclaim::ReclaimFenceState>>>,
+    state: std::sync::Arc<Mutex<PhysicalCurrentRootState>>,
     transition: PhysicalRootPublicationTransitionOwner,
     publication: std::sync::Arc<
         crate::physical_runtime::durability::retention::PhysicalPublicationAdmission,
     >,
-    rewrite_growth:
-        Mutex<Vec<crate::physical_runtime::durability::retention::CandidateGrowthLease>>,
-    displaced: Mutex<Option<crate::physical_runtime::durability::retention::DisplacedArtifact>>,
+    rewrite_growth: Mutex<
+        HashMap<
+            PhysicalMutationIdentity,
+            Vec<crate::physical_runtime::durability::retention::CandidateGrowthLease>,
+        >,
+    >,
+    displaced: Mutex<
+        HashMap<
+            PhysicalMutationIdentity,
+            Vec<crate::physical_runtime::durability::retention::DisplacedArtifact>,
+        >,
+    >,
 }
 
 pub(super) struct PhysicalCurrentRootState {
@@ -42,6 +87,8 @@ pub(super) struct PhysicalCurrentRootState {
     previous_root: Option<RetainedPhysicalRoot>,
     namespace_evidence: crate::physical_runtime::PhysicalRootNamespaceDurabilityEvidence,
     free_space: DurableFreeSpaceManifestHeader,
+    checkpoint_custody: certificate_capacity::CheckpointCustodyState,
+    release_ledger: release_capacity::ReleaseLedgerState,
 }
 
 pub struct CompletedPhysicalRootPublication {
@@ -70,21 +117,40 @@ pub enum PhysicalCurrentRootAdvanceFailureCause {
     CurrentRootMismatch,
     TransitionIdentityMismatch,
     CandidateGenerationMismatch,
+    PublicationRetentionMismatch,
+    ReclaimFenceMismatch,
 }
 
 impl PhysicalCurrentRootOwner {
     pub(in crate::physical_runtime) fn new(
         runtime: &std::sync::Arc<crate::physical_runtime::instance::PhysicalStoreWorkRuntime>,
+        checkpoint_custody_origin: CheckpointCustodyOrigin,
+        recovered_checkpoint_custody: Option<PreparedRecoveredCheckpointCustody>,
         current_root: DurablePhysicalRootManifest,
         previous_root: Option<DurablePhysicalRootManifest>,
         free_space: DurableFreeSpaceManifestHeader,
         read_protection: std::sync::Arc<crate::physical_runtime::stability::RootProtectionRegistry>,
+        publication: std::sync::Arc<
+            crate::physical_runtime::durability::PhysicalPublicationAdmission,
+        >,
+        recovery_allocation: crate::physical_runtime::PhysicalRecoveryAllocationAdmission,
     ) -> Self {
-        Self {
+        let blob_claim_capacity = read_protection.acquisition_capacity();
+        let checkpoint_custody = certificate_capacity::CheckpointCustodyState::from_origin(
+            checkpoint_custody_origin,
+            &current_root,
+        );
+        let owner = Self {
+            runtime_identity: runtime.submission.runtime_identity(),
+            recovery_allocation,
             #[cfg(feature = "certification-test-authority")]
             capture_pause: Mutex::new(None),
+            blob_claims: std::sync::Arc::new(blob_claim::BlobClaimRegistry::new(
+                blob_claim_capacity,
+            )),
+            reclaim: std::sync::Arc::new(Mutex::new(None)),
             read_protection,
-            state: Mutex::new(PhysicalCurrentRootState {
+            state: std::sync::Arc::new(Mutex::new(PhysicalCurrentRootState {
                 namespace_evidence:
                     crate::physical_runtime::PhysicalRootNamespaceDurabilityEvidence::ReopenedCurrentRoot {
                         root: current_root.root_cell(),
@@ -92,40 +158,25 @@ impl PhysicalCurrentRootOwner {
                 current_root,
                 previous_root: previous_root.map(RetainedPhysicalRoot::from_manifest),
                 free_space,
-            }),
-            transition: PhysicalRootPublicationTransitionOwner::new(runtime),
-            publication: std::sync::Arc::new(
-                crate::physical_runtime::durability::retention::PhysicalPublicationAdmission::new(
-                    crate::physical_runtime::durability::retention::PhysicalRetentionProfile::store_default(),
+                checkpoint_custody,
+                release_ledger: release_capacity::ReleaseLedgerState::from_origin(
+                    checkpoint_custody_origin,
                 ),
-            ),
-            rewrite_growth: Mutex::new(Vec::new()),
-            displaced: Mutex::new(None),
+            })),
+            transition: PhysicalRootPublicationTransitionOwner::new(runtime),
+            publication,
+            rewrite_growth: Mutex::new(HashMap::new()),
+            displaced: Mutex::new(HashMap::new()),
+        };
+        if let Some(recovered) = recovered_checkpoint_custody {
+            owner.install_recovered_checkpoint_custody(recovered);
         }
+        owner
     }
 
     #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn charged_growth_bytes(&self) -> u64 {
         self.publication.charged_growth_bytes()
-    }
-
-    pub(in crate::physical_runtime) fn reconstruct_retained_bytes(&self, bytes: u64) {
-        self.publication.reconstruct_retained_bytes(bytes);
-    }
-
-    pub(in crate::physical_runtime) fn restore_displaced(
-        &self,
-        source_root: u64,
-        artifact: crate::physical_runtime::durability::RetiredArtifact,
-        bytes: u64,
-    ) {
-        self.publication.retain_displaced(
-            crate::physical_runtime::durability::retention::DisplacedArtifact {
-                source_root,
-                artifact,
-                bytes,
-            },
-        );
     }
 
     pub(in crate::physical_runtime) fn publication_admission(
@@ -135,16 +186,6 @@ impl PhysicalCurrentRootOwner {
         std::sync::Arc::clone(&self.publication)
     }
 
-    pub(in crate::physical_runtime) fn register_pending_publication(
-        &self,
-        identity: crate::physical_runtime::PhysicalMutationIdentity,
-    ) -> Result<
-        crate::physical_runtime::durability::retention::PendingPublicationLease,
-        crate::physical_runtime::durability::retention::PhysicalPublicationAdmissionDenial,
-    > {
-        self.publication.register_exclusive_pending(identity)
-    }
-
     #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn pending_publication_count(&self) -> usize {
         self.publication.pending_len()
@@ -152,6 +193,7 @@ impl PhysicalCurrentRootOwner {
 
     pub(in crate::physical_runtime) fn hold_rewrite_candidate(
         &self,
+        identity: PhysicalMutationIdentity,
         artifact: RecordArtifactFile,
         bytes: u64,
     ) -> Result<(), ()> {
@@ -162,6 +204,8 @@ impl PhysicalCurrentRootOwner {
         self.rewrite_growth
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .entry(identity)
+            .or_default()
             .push(lease);
         Ok(())
     }
@@ -173,44 +217,15 @@ impl PhysicalCurrentRootOwner {
         self.publication.replace_profile(profile);
     }
 
-    pub(in crate::physical_runtime) fn snapshot(
-        &self,
-    ) -> (DurablePhysicalRootManifest, DurableFreeSpaceManifestHeader) {
-        let state = self.lock_publication_state();
-        (state.current_root.clone(), state.free_space.clone())
-    }
-
-    pub(in crate::physical_runtime) fn capture_read_root(
-        &self,
-    ) -> Result<
-        (
-            DurablePhysicalRootManifest,
-            crate::physical_runtime::stability::PhysicalRootReadLease,
-        ),
-        crate::physical_runtime::PhysicalReadProtectionDenial,
-    > {
-        #[cfg(feature = "certification-test-authority")]
-        self.pause_capture_at(CertificationReadRootCaptureStage::BeforeRootLock);
-        let state = self
-            .state
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let root = state.current_root.clone();
-        #[cfg(feature = "certification-test-authority")]
-        self.pause_capture_at(
-            CertificationReadRootCaptureStage::AfterObservationBeforeRegistration,
-        );
-        let lease = self.read_protection.capture(&root)?;
-        drop(state);
-        Ok((root, lease))
-    }
-
     pub(in crate::physical_runtime) fn begin(
         &self,
         identity: PhysicalRootPublicationIdentity,
         source_root: DurablePhysicalRootManifest,
     ) -> Result<PhysicalRootPublicationTransition, PhysicalRootPublicationTransitionDenial> {
         let state = self.lock_publication_state();
+        if self.lock_reclaim().is_some() {
+            return Err(PhysicalRootPublicationTransitionDenial::ReclaimFenced);
+        }
         self.transition
             .begin(identity, &state.current_root, source_root)
     }
@@ -220,10 +235,39 @@ impl PhysicalCurrentRootOwner {
         durable: RootNamespaceDurablePhysicalMutationMembers,
     ) -> PhysicalCurrentRootAdvanceOutcome {
         let mut state = self.lock_publication_state();
+        let mut reclaim = self.lock_reclaim();
+        let reclaim_member = if let Some(fence) = reclaim.as_ref() {
+            match durable.members() {
+                [member]
+                    if fence.expected_root == state.current_root.root_cell()
+                        && fence.accepts(member.mutation_identity()) =>
+                {
+                    Some(member.mutation_identity())
+                }
+                _ => {
+                    return PhysicalCurrentRootAdvanceOutcome::InspectionRequired(
+                        IndeterminatePhysicalCurrentRootAdvance::new(
+                            durable,
+                            PhysicalCurrentRootAdvanceFailureCause::ReclaimFenceMismatch,
+                        ),
+                    );
+                }
+            }
+        } else {
+            None
+        };
         let cause = validate_advance(&state.current_root, &durable);
         if let Some(cause) = cause {
             return PhysicalCurrentRootAdvanceOutcome::InspectionRequired(
                 IndeterminatePhysicalCurrentRootAdvance::new(durable, cause),
+            );
+        }
+        if self.publication.settle_wal_publication(&durable).is_err() {
+            return PhysicalCurrentRootAdvanceOutcome::InspectionRequired(
+                IndeterminatePhysicalCurrentRootAdvance::new(
+                    durable,
+                    PhysicalCurrentRootAdvanceFailureCause::PublicationRetentionMismatch,
+                ),
             );
         }
         let namespace_evidence =
@@ -252,6 +296,9 @@ impl PhysicalCurrentRootOwner {
         ) = candidate.into_root_parts();
         let retained_root = RetainedPhysicalRoot::from_manifest(source_root);
         state.current_root = current_root.clone();
+        if let (Some(fence), Some(mutation)) = (reclaim.as_mut(), reclaim_member) {
+            fence.advance(mutation, current_root.root_cell());
+        }
         state.previous_root = Some(retained_root.clone());
         state.namespace_evidence = namespace_evidence;
         state.free_space = successor_free_space;
@@ -266,20 +313,6 @@ impl PhysicalCurrentRootOwner {
         })
     }
 
-    pub(in crate::physical_runtime) fn into_recovery_root_basis(
-        self,
-    ) -> crate::physical_runtime::PhysicalRecoveryRootBasis {
-        let state = self
-            .state
-            .into_inner()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        crate::physical_runtime::PhysicalRecoveryRootBasis::new(
-            state.current_root,
-            state.previous_root,
-            state.namespace_evidence,
-        )
-    }
-
     fn lock_publication_state(&self) -> std::sync::MutexGuard<'_, PhysicalCurrentRootState> {
         #[cfg(feature = "certification-test-authority")]
         self.observe_publication_lock_wait();
@@ -287,32 +320,12 @@ impl PhysicalCurrentRootOwner {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
-}
 
-fn validate_advance(
-    current_root: &DurablePhysicalRootManifest,
-    durable: &RootNamespaceDurablePhysicalMutationMembers,
-) -> Option<PhysicalCurrentRootAdvanceFailureCause> {
-    if current_root != durable.source_root() {
-        return Some(PhysicalCurrentRootAdvanceFailureCause::CurrentRootMismatch);
+    fn lock_reclaim(&self) -> std::sync::MutexGuard<'_, Option<reclaim::ReclaimFenceState>> {
+        self.reclaim
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
-    if !durable.transition_matches() {
-        return Some(PhysicalCurrentRootAdvanceFailureCause::TransitionIdentityMismatch);
-    }
-    let identity = durable.identity();
-    let group = durable.group_basis();
-    if !identity.matches_group(group, durable.members().len()) {
-        return Some(PhysicalCurrentRootAdvanceFailureCause::TransitionIdentityMismatch);
-    }
-    if identity.source_generation() != current_root.generation()
-        || identity.candidate_generation() != durable.current_root_generation()
-    {
-        return Some(PhysicalCurrentRootAdvanceFailureCause::TransitionIdentityMismatch);
-    }
-    if current_root.generation().checked_add(1) != Some(durable.current_root_generation()) {
-        return Some(PhysicalCurrentRootAdvanceFailureCause::CandidateGenerationMismatch);
-    }
-    None
 }
 
 impl IndeterminatePhysicalCurrentRootAdvance {

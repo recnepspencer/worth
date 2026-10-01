@@ -3,6 +3,7 @@ use super::PhysicalCheckpointActionFailure;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PhysicalCheckpointCaptureFailureKind {
     SequenceExhausted,
+    CheckpointCustodyUnavailable,
     RuntimeUnavailable,
     NoDurableWalSource,
     SourceAuthorityMismatch,

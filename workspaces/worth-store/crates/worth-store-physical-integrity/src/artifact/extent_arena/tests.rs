@@ -18,7 +18,7 @@ fn routed_arena_geometry_and_generation_constrain_manifest_and_chunk_admission()
         .record_extent_cell(PhysicalExtentId::from_raw(3).unwrap())
         .with_extent_generation(PhysicalGeneration::from_raw(2).unwrap());
     let arena = ExtentArenaRange::new(ExtentArenaId::new(9).unwrap(), 4096, 20480).unwrap();
-    let placement = DurableExtentRecordPlacement::new(record, extent, 3, arena).unwrap();
+    let placement = DurableExtentRecordPlacement::legacy_unknown(record, extent, 3, arena).unwrap();
     let manifest = DurableExtentManifest::new(format, record, extent, 3, 16384, 1, 4096)
         .unwrap()
         .encode(format);
@@ -83,7 +83,7 @@ fn routed_arena_geometry_and_generation_constrain_manifest_and_chunk_admission()
     let stale_scope = PhysicalArtifactScope::extent_manifest(
         store,
         format,
-        DurableExtentRecordPlacement::new(record, newer, 3, arena).unwrap(),
+        DurableExtentRecordPlacement::legacy_unknown(record, newer, 3, arena).unwrap(),
         scope.byte_range(),
     );
     assert!(matches!(

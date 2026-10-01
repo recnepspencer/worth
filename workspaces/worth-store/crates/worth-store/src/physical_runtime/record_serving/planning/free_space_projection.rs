@@ -5,8 +5,12 @@ use worth_store_physical_format::{
     PersistedRecordIdentity, RecordFreeSpaceManifestEntry,
 };
 
-use super::super::planning::free_space_routing::{
-    plan_free_space_successor, FreeSpacePublicationPlan, FreeSpaceSuccessorRequest, FreeSpaceUpdate,
+use super::super::planning::{
+    free_space_routing::{
+        plan_free_space_successor, FreeSpacePublicationPlan, FreeSpaceSuccessorRequest,
+        FreeSpaceUpdate,
+    },
+    inline_plan_failure::manifest_lookup_failure,
 };
 use super::super::{
     planning::inline_segment_plan::InlineSegmentAllocation, AdmittedPhysicalRecordFormat,
@@ -116,8 +120,7 @@ pub(in crate::physical_runtime::record_serving) fn project_successor_free_space(
             next_arena: frontier.next_arena,
             updates,
         },
-    )
-    .map_err(|_| damaged())?;
+    )?;
     arena_discovery.merge(projected.discovery);
     projected.discovery = arena_discovery;
     Ok(projected)

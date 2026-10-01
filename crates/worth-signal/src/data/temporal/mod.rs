@@ -28,7 +28,7 @@ pub use previous_value::{
 pub use units::{IntervalPeriod, TemporalDuration};
 pub use wake::{
     IntervalWakeRegeneration, ReadyTemporalWake, RetiredTemporalWake, ScheduledTemporalWake,
-    TemporalWakeAdmissionSummary, TemporalWakeId, TemporalWakeOwner, TemporalWakeReschedule,
-    TemporalWakeRetirementBatch, TemporalWakeRetirementReason, TemporalWakeReuse,
-    TemporalWakeSummary, WakeOrdinal,
+    TemporalRetiredWakeCompactionReport, TemporalWakeAdmissionSummary, TemporalWakeId,
+    TemporalWakeOwner, TemporalWakeReschedule, TemporalWakeRetirementBatch,
+    TemporalWakeRetirementReason, TemporalWakeReuse, TemporalWakeSummary, WakeOrdinal,
 };

@@ -29,6 +29,7 @@ pub fn selected_wal_tail(range: WalLsnRange) -> SelectedPhysicalWalTail {
         .inspection();
     admit_physical_wal_tail(
         range.start().get(),
+        Some(range.start().get()),
         vec![PhysicalWalSegmentCandidate::from_frame_facts(
             inspection,
             None,

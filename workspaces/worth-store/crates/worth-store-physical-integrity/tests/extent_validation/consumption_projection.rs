@@ -1,14 +1,145 @@
 use worth_store_physical_format::{
-    encode_data_frame_page_lsn, DurableFrameKind, ExtentChunkCoordinate, PhysicalExtentId,
+    encode_data_frame_page_lsn, encode_extent_chunk, DurableExtentRecordPlacement,
+    DurableFrameKind, ExtentArenaId, ExtentArenaRange, ExtentChunkCoordinate, PhysicalExtentId,
     PhysicalGeneration, PhysicalGenerationAuthority, PhysicalPageLsn,
 };
 use worth_store_physical_integrity::{
     validate_extent_chunk, validate_extent_chunk_membership, ExtentChunkIntegrityValidation,
-    ExtentChunkProjectionDenial, PhysicalDamageCause, PhysicalIntegrityRejection,
-    PhysicalIntegrityRejectionClass, UntrustedPhysicalArtifact,
+    ExtentChunkProjectionDenial, PhysicalArtifactScope, PhysicalDamageCause,
+    PhysicalIntegrityRejection, PhysicalIntegrityRejectionClass, SelectedExtentPayloadBuilder,
+    UntrustedPhysicalArtifact,
 };
 
-use super::support::{chunk_scope, record, store, validated_manifest, ExtentFixture};
+use super::support::{
+    chunk_payload_capacity, chunk_scope, manifest_scope, record, store, validated_manifest,
+    ExtentFixture,
+};
+
+#[test]
+fn selected_payload_witness_requires_every_exact_validated_chunk() {
+    let fixture = ExtentFixture::new();
+    let manifest_bytes = fixture.manifest_bytes();
+    let manifest = validated_manifest(&manifest_bytes, fixture.manifest_scope());
+    let first_payload = vec![b'x'; chunk_payload_capacity(fixture.format) as usize];
+    let first =
+        encode_extent_chunk(fixture.format, fixture.chunk_coordinate(1), &first_payload).unwrap();
+    let last = fixture.tail_chunk_bytes();
+    let first_scope = chunk_scope(
+        fixture.store,
+        fixture.format,
+        fixture.chunk_coordinate(1),
+        first.len() as u64,
+    );
+    let first_input = UntrustedPhysicalArtifact::from_bounded_bytes(&first);
+    let last_input = UntrustedPhysicalArtifact::from_bounded_bytes(&last);
+    let (ExtentChunkIntegrityValidation::Intact(first_validated), _) =
+        validate_extent_chunk_membership(first_input, first_scope, manifest.membership())
+    else {
+        panic!("first extent chunk must validate")
+    };
+    let (ExtentChunkIntegrityValidation::Intact(last_validated), _) =
+        validate_extent_chunk_membership(
+            last_input,
+            fixture.tail_chunk_scope(),
+            manifest.membership(),
+        )
+    else {
+        panic!("last extent chunk must validate")
+    };
+    let foreign_manifest = validated_manifest(
+        &manifest_bytes,
+        manifest_scope(
+            store(9),
+            fixture.format,
+            fixture.placement(),
+            manifest_bytes.len() as u64,
+        ),
+    );
+    let foreign_scope = chunk_scope(
+        store(9),
+        fixture.format,
+        fixture.chunk_coordinate(1),
+        first.len() as u64,
+    );
+    let (ExtentChunkIntegrityValidation::Intact(foreign_validated), _) =
+        validate_extent_chunk(first_input, foreign_scope, &foreign_manifest)
+    else {
+        panic!("same-coordinate foreign chunk must validate under its own store")
+    };
+    let mut builder =
+        SelectedExtentPayloadBuilder::new(manifest.membership(), fixture.placement()).unwrap();
+    assert!(
+        builder.append(&foreign_validated, first_input).is_none(),
+        "another store's valid chunk cannot enter this manifest membership"
+    );
+    let other_arena = ExtentArenaRange::new(
+        ExtentArenaId::new(2).unwrap(),
+        fixture.arena_range().offset(),
+        fixture.arena_range().length(),
+    )
+    .unwrap();
+    let other_placement = DurableExtentRecordPlacement::legacy_unknown(
+        fixture.record,
+        fixture.extent,
+        fixture.logical_bytes,
+        other_arena,
+    )
+    .unwrap();
+    let other_manifest = validated_manifest(
+        &manifest_bytes,
+        manifest_scope(
+            fixture.store,
+            fixture.format,
+            other_placement,
+            manifest_bytes.len() as u64,
+        ),
+    );
+    let other_scope = PhysicalArtifactScope::extent_chunk(
+        fixture.store,
+        fixture.format,
+        fixture.chunk_coordinate(1),
+        first_scope.byte_range(),
+        other_arena,
+    );
+    let (ExtentChunkIntegrityValidation::Intact(other_validated), _) =
+        validate_extent_chunk(first_input, other_scope, &other_manifest)
+    else {
+        panic!("same-coordinate other-arena chunk must validate under its own placement")
+    };
+    assert!(
+        builder.append(&other_validated, first_input).is_none(),
+        "another arena's valid chunk cannot enter this manifest membership"
+    );
+    assert!(
+        builder.append(&last_validated, last_input).is_none(),
+        "no skipped first chunk"
+    );
+    let copied = first.clone();
+    assert!(
+        builder
+            .append(
+                &first_validated,
+                UntrustedPhysicalArtifact::from_bounded_bytes(&copied)
+            )
+            .is_none(),
+        "equal bytes from a different C.9 incarnation grant no custody"
+    );
+    builder.append(&first_validated, first_input).unwrap();
+    assert!(
+        builder.finish().is_none(),
+        "partial payload grants no custody"
+    );
+    let mut builder =
+        SelectedExtentPayloadBuilder::new(manifest.membership(), fixture.placement()).unwrap();
+    builder.append(&first_validated, first_input).unwrap();
+    builder.append(&last_validated, last_input).unwrap();
+    let witness = builder.finish().unwrap();
+    let mut complete = first_payload;
+    complete.extend_from_slice(b"tail!");
+    assert!(witness.matches_frame(&complete));
+    complete[0] ^= 1;
+    assert!(!witness.matches_frame(&complete));
+}
 
 #[test]
 fn sealed_extent_chunk_projects_exact_payload_and_page_lsn() {

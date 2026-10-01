@@ -35,12 +35,14 @@ pub(crate) struct RecordIdentity {
     pub(crate) ordinal: u64,
 }
 
-pub(super) fn parse_placement(entry: &[u8]) -> Result<Placement, String> {
+pub(super) fn parse_placement(entry: &[u8], schema: u8) -> Result<Placement, String> {
     if entry.len() != LEAF_ENTRY_BYTES
-        || entry[25..32].iter().any(|byte| *byte != 0)
         || entry[86..88].iter().any(|byte| *byte != 0)
+        || !valid_route_metadata(&entry[25..32], schema)
     {
-        return Err("parent oracle root leaf entry has invalid reserved bytes".to_owned());
+        return Err(
+            "parent oracle root leaf entry has invalid route metadata or reserved bytes".to_owned(),
+        );
     }
     let record = RecordIdentity {
         allocation_epoch: entry[..16]
@@ -78,6 +80,26 @@ pub(super) fn parse_placement(entry: &[u8]) -> Result<Placement, String> {
         }),
         2 => Err("parent oracle extent route has nonzero reserved bytes".to_owned()),
         _ => Err("parent oracle root leaf entry has an unknown placement kind".to_owned()),
+    }
+}
+
+fn valid_route_metadata(metadata: &[u8], schema: u8) -> bool {
+    match schema {
+        2 => metadata == [0; 7],
+        3 => {
+            if metadata[5..] != [0; 2] || metadata[4] > 2 {
+                return false;
+            }
+            let family = u16::from_le_bytes([metadata[2], metadata[3]]);
+            match (metadata[0], metadata[1], family) {
+                (0, 0, 0) => metadata[4] == 0,
+                (1, 0, 0) | (4, 0, 0) => true,
+                (2, 1..=16, 0) => true,
+                (3, 0, 1..) => true,
+                _ => false,
+            }
+        }
+        _ => false,
     }
 }
 

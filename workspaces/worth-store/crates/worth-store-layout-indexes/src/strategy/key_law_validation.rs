@@ -37,7 +37,7 @@ pub(super) fn admit_strategy_key_laws(
     let prefix = require_prefix_law(encoding).ok();
     let range = require_range_bound_law(comparator).ok();
     match family {
-        LayoutStrategyFamily::BaselineBTreeRange => Ok(DeclaredKeyLawPosture {
+        LayoutStrategyFamily::BTreeRange => Ok(DeclaredKeyLawPosture {
             encoding,
             comparator,
             prefix: Some(prefix.ok_or(StrategyDenial::RangeOrPrefixLawRequired)?),

@@ -44,7 +44,9 @@ pub(crate) fn read_root_routing(
     for (index, entry) in frame.body.chunks_exact(88).enumerate() {
         let start = 88 + index * 88;
         scope(
-            record_key(entry).is_some() && entry[25..32] == [0; 7] && entry[86..88] == [0; 2],
+            record_key(entry).is_some()
+                && route_class_valid(entry, bytes[9])
+                && entry[86..88] == [0; 2],
             start,
             88,
             Field::ManifestPointer,
@@ -134,4 +136,21 @@ pub(crate) fn read_root_routing(
         }
     }
     Ok(children)
+}
+
+fn route_class_valid(entry: &[u8], schema: u8) -> bool {
+    let field = &entry[25..32];
+    if schema == 2 {
+        return field == [0; 7];
+    }
+    if schema != 3 || field[5..] != [0; 2] || field[4] > 2 {
+        return false;
+    }
+    match field[0] {
+        0 => field[..4] == [0; 4] && field[4] == 0,
+        1 | 4 => field[1..4] == [0; 3],
+        2 => (1..=14).contains(&field[1]) && field[2..4] == [0; 2],
+        3 => field[1] == 0 && read_u16(field, 2) != 0,
+        _ => false,
+    }
 }

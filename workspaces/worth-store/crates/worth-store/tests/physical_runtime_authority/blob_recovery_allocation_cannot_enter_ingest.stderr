@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+  --> tests/physical_runtime_authority/blob_recovery_allocation_cannot_enter_ingest.rs:11:33
+   |
+11 |     let _ = facade.begin_ingest(recovery, placement, 1024, limits);
+   |                    ------------ ^^^^^^^^ expected `BlobIngestDeclaration`, found `RecoveryPhysicalAllocation<'_>`
+   |                    |
+   |                    arguments to this method are incorrect
+   |
+note: method defined here
+  --> src/physical_runtime/blob/facade.rs
+   |
+   |     pub fn begin_ingest(
+   |            ^^^^^^^^^^^^

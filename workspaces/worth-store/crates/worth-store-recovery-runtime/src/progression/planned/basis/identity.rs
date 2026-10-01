@@ -4,12 +4,17 @@ use worth_store_physical_format::{
     PhysicalCheckpointIdentity, RecordArtifactFile,
 };
 use worth_store_recovery_physics::{
-    ImmutablePhysicalRedoPlan, PhysicalRedoDecisionKind, PhysicalRedoDecisionPrior,
-    PhysicalRedoDecisionView, PhysicalRedoTarget, PhysicalRedoTargetIdentity,
-    PhysicalSourceSelection, ReconciledOperationFates, RecoveryOperationFate, RecoveryPageSource,
+    HistoricalConsumedOperationSet, ImmutablePhysicalRedoPlan, PhysicalRedoDecisionKind,
+    PhysicalRedoDecisionPrior, PhysicalRedoDecisionView, PhysicalRedoTarget,
+    PhysicalRedoTargetIdentity, PhysicalSourceSelection, ReconciledOperationFates,
+    RecoveryOperationFate, RecoveryPageSource,
 };
 
-use super::{RecoveryPublicationCandidateArtifact, RecoveryStagingLayoutPlan};
+use super::derivation::closeout::candidate_denial;
+use super::{
+    ExecutionBasisDenial, PlanningResidentAllowance, RecoveryPublicationCandidateArtifact,
+    RecoveryStagingLayoutPlan,
+};
 use worth_store::physical_runtime::StoreRecoveryBindingFreshnessSample;
 
 pub(super) fn plan_identity(
@@ -19,8 +24,11 @@ pub(super) fn plan_identity(
     freshness: &StoreRecoveryBindingFreshnessSample,
     fates: &ReconciledOperationFates,
     redo: &ImmutablePhysicalRedoPlan,
+    historical_consumed: &HistoricalConsumedOperationSet,
     staging: &RecoveryStagingLayoutPlan,
-) -> [u8; 32] {
+    validated_manifest_cleanup: Option<crate::orchestration::ValidatedManifestResidueCleanup>,
+    allowance: &mut PlanningResidentAllowance,
+) -> Result<[u8; 32], ExecutionBasisDenial> {
     let mut digest = Sha256::new();
     digest.update(b"worth.store.recovery.execution-plan.v2");
     digest.update(store.bytes());
@@ -30,17 +38,32 @@ pub(super) fn plan_identity(
     digest.update(selection.wal_tail().frame_count().to_le_bytes());
     digest.update(selection.wal_tail().byte_count().to_le_bytes());
     digest.update(selection.root().selected().selector().encode());
-    digest.update(
-        selection
-            .root()
-            .selected()
-            .manifest()
-            .encode(selection.root().selected().selector().format()),
-    );
+    hash_root(
+        &mut digest,
+        selection.root().selected().manifest(),
+        selection.root().selected().selector().format(),
+        allowance,
+    )?;
     digest.update(freshness.sealed_basis_identity());
     digest.update(freshness.policy_identity());
     hash_freshness(&mut digest, freshness);
     hash_fates(&mut digest, fates);
+    for operation in historical_consumed.operations() {
+        digest.update(operation);
+        digest.update(
+            historical_consumed
+                .group_for(operation)
+                .expect("consumed operation has group"),
+        );
+        digest.update(
+            historical_consumed
+                .descriptor_for(operation)
+                .expect("consumed operation has descriptor"),
+        );
+    }
+    if let Some(cleanup) = validated_manifest_cleanup {
+        digest.update(cleanup.intent().encode());
+    }
     for decision in redo.resolved_decisions() {
         hash_decision(&mut digest, decision);
     }
@@ -57,16 +80,24 @@ pub(super) fn plan_identity(
     }
     for command in &staging.commands {
         digest.update(command.ordinal.to_le_bytes());
-        digest.update(command.artifact.file_name().as_bytes());
+        digest.update(command.artifact.canonical_file_name().as_bytes());
         digest.update(command.offset.to_le_bytes());
         digest.update(command.payload_digest);
         digest.update((command.bytes.len() as u64).to_le_bytes());
     }
     for copy in &staging.source_copies {
         digest.update(b"source-copy");
-        digest.update(
-            worth_store_physical_format::PhysicalExtentCopyRecord::Intent(copy.intent()).encode(),
-        );
+        let record = worth_store_physical_format::PhysicalExtentCopyRecord::Intent(copy.intent());
+        let frame = allowance
+            .reserve::<u8>(record.encoded_bytes())
+            .map_err(|denial| candidate_denial(denial.into()))?;
+        let frame = record
+            .encode_in_reserved(frame)
+            .ok_or(ExecutionBasisDenial::Invalid)?;
+        digest.update(&frame);
+        let backing = PlanningResidentAllowance::vector_bytes(&frame)?;
+        drop(frame);
+        allowance.release(backing);
         digest.update(copy.intent_lsn().to_le_bytes());
         digest.update(copy.intent_digest());
     }
@@ -87,7 +118,7 @@ pub(super) fn plan_identity(
     }
     for action in &staging.base.manifests {
         digest.update(action.ordinal().to_le_bytes());
-        digest.update(action.artifact().file_name().as_bytes());
+        digest.update(action.artifact().canonical_file_name().as_bytes());
         digest.update(action.coordinate().offset().to_le_bytes());
         digest.update(action.coordinate().length().to_le_bytes());
     }
@@ -114,7 +145,7 @@ pub(super) fn plan_identity(
     for artifact in &staging.base.source_artifacts {
         hash_artifact(&mut digest, *artifact);
     }
-    digest.finalize().into()
+    Ok(digest.finalize().into())
 }
 
 pub(super) fn bind_publication_candidates(
@@ -123,11 +154,12 @@ pub(super) fn bind_publication_candidates(
     format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
     referenced_artifacts: &[RecordArtifactFile],
     candidates: &[RecoveryPublicationCandidateArtifact],
-) -> [u8; 32] {
+    allowance: &mut PlanningResidentAllowance,
+) -> Result<[u8; 32], ExecutionBasisDenial> {
     let mut digest = Sha256::new();
     digest.update(b"worth.store.recovery.execution-plan.publication.v1");
     digest.update(basis);
-    digest.update(root.encode(format));
+    hash_root(&mut digest, root, format, allowance)?;
     digest.update((referenced_artifacts.len() as u64).to_le_bytes());
     for artifact in referenced_artifacts {
         hash_artifact(&mut digest, *artifact);
@@ -138,7 +170,22 @@ pub(super) fn bind_publication_candidates(
         digest.update(candidate.byte_count().to_le_bytes());
         digest.update(candidate.payload_digest());
     }
-    digest.finalize().into()
+    Ok(digest.finalize().into())
+}
+
+fn hash_root(
+    digest: &mut Sha256,
+    root: &worth_store_physical_format::DurablePhysicalRootManifest,
+    format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
+    allowance: &mut PlanningResidentAllowance,
+) -> Result<(), ExecutionBasisDenial> {
+    let frame = super::publication_candidate::encoding::root_manifest(root, format, allowance)
+        .map_err(candidate_denial)?;
+    digest.update(&frame);
+    let backing = PlanningResidentAllowance::vector_bytes(&frame)?;
+    drop(frame);
+    allowance.release(backing);
+    Ok(())
 }
 
 fn hash_freshness(digest: &mut Sha256, freshness: &StoreRecoveryBindingFreshnessSample) {
@@ -175,6 +222,7 @@ fn hash_decision(digest: &mut Sha256, decision: PhysicalRedoDecisionView<'_>) {
         PhysicalRedoDecisionKind::Apply => 1,
         PhysicalRedoDecisionKind::SkipPageAlreadyAtOrBeyondLsn => 2,
         PhysicalRedoDecisionKind::SkipOperationAlreadyMaterialized => 3,
+        PhysicalRedoDecisionKind::SkipHistoricallyReleasedTarget => 4,
     };
     digest.update([tag]);
     digest.update(decision.operation());
@@ -207,9 +255,21 @@ fn hash_page_source(digest: &mut Sha256, source: RecoveryPageSource) {
             coordinate,
             causal_identity,
         } => (3, coordinate, causal_identity),
+        RecoveryPageSource::HistoricalReleasedDrop {
+            coordinate,
+            selected_root_identity,
+            descriptor_operation,
+            old_operation,
+            wal_target_digest,
+        } => {
+            digest.update(descriptor_operation);
+            digest.update(old_operation);
+            digest.update(wal_target_digest);
+            (4, coordinate, selected_root_identity)
+        }
     };
     digest.update([tag]);
-    digest.update(coordinate.artifact().file_name().as_bytes());
+    digest.update(coordinate.artifact().canonical_file_name().as_bytes());
     digest.update(coordinate.offset().to_le_bytes());
     digest.update(coordinate.length().to_le_bytes());
     digest.update(identity);
@@ -239,8 +299,8 @@ fn hash_target(digest: &mut Sha256, target: &PhysicalRedoTarget) {
 }
 
 fn hash_artifact(digest: &mut Sha256, artifact: RecordArtifactFile) {
-    let name = artifact.file_name();
-    digest.update((name.len() as u64).to_le_bytes());
+    let name = artifact.canonical_file_name();
+    digest.update((name.as_bytes().len() as u64).to_le_bytes());
     digest.update(name.as_bytes());
 }
 

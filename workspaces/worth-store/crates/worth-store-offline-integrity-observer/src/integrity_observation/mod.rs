@@ -1,4 +1,6 @@
 mod artifact_walk;
+mod blob_record;
+mod blob_walk;
 mod child_expectation;
 mod copy_evidence;
 mod counters;
@@ -26,6 +28,7 @@ mod root_protocol_identity;
 mod root_protocol_paths;
 mod root_protocol_projection;
 mod root_protocol_walk;
+mod selected_index_walk;
 mod sha256;
 mod unaddressed_record;
 mod unknown_artifact;
@@ -45,13 +48,17 @@ pub use outcome::{
 };
 pub use report::{
     OfflineArtifactDuplicateEvidence, OfflineArtifactFamily, OfflineArtifactObservation,
+    OfflineBlobReclaimSourceKind,
     OfflineIntegrityReport, OfflineIntegrityReportCompleteness,
 };
 pub use report_boundary::{
     OfflineIntegrityReportBoundaryDenial, OfflineIntegrityReportDestination,
     OfflineIntegrityReportDestinationDenial,
 };
-pub use report_output::{emit_offline_integrity_report, OfflineIntegrityReportEmissionDenial};
+pub use report_output::{
+    emit_offline_integrity_report, emit_offline_selected_integrity_report,
+    OfflineIntegrityReportEmissionDenial,
+};
 pub use report_protocol::{
     OfflineIntegrityProtocolContext, OfflineIntegrityProtocolContextDenial,
     OFFLINE_OBSERVER_ROLE_IDENTITY, PHYSICAL_INTEGRITY_OBSERVATION_COMPATIBILITY,

@@ -49,11 +49,15 @@ pub enum PhysicalWorkPressureClass {
     BackgroundCheckpoint,
     BackgroundScrub,
     BackgroundCompaction,
+    BackgroundBlobIngest,
+    BackgroundBlobMovement,
+    BackgroundBlobReclaim,
+    BackgroundRebuild,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct PhysicalWorkCounterSnapshot {
-    by_family_and_pressure: [[[u64; 7]; 9]; 9],
+    by_family_and_pressure: [[[u64; 7]; 13]; 9],
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -267,7 +271,7 @@ impl PhysicalWorkShutdownObservation {
 }
 
 impl PhysicalWorkCounterSnapshot {
-    pub(super) const fn from_counts(by_family_and_pressure: [[[u64; 7]; 9]; 9]) -> Self {
+    pub(super) const fn from_counts(by_family_and_pressure: [[[u64; 7]; 13]; 9]) -> Self {
         Self {
             by_family_and_pressure,
         }
@@ -282,7 +286,7 @@ impl PhysicalWorkCounterSnapshot {
         let stage = counter_stage_index(stage);
         let mut total = 0;
         let mut pressure = 0;
-        while pressure < 9 {
+        while pressure < self.by_family_and_pressure[family].len() {
             total += self.by_family_and_pressure[family][pressure][stage];
             pressure += 1;
         }
@@ -324,11 +328,12 @@ const fn counter_stage_index(stage: PhysicalWorkCounterStage) -> usize {
 mod tests {
     use super::{
         PhysicalWorkCounterSnapshot, PhysicalWorkCounterStage, PhysicalWorkOperationFamily,
+        PhysicalWorkPressureClass,
     };
 
     #[test]
     fn metadata_and_range_read_counters_have_distinct_family_buckets() {
-        let mut counts = [[[0_u64; 7]; 9]; 9];
+        let mut counts = [[[0_u64; 7]; 13]; 9];
         counts[0][0][6] = 2;
         counts[1][0][6] = 3;
         let snapshot = PhysicalWorkCounterSnapshot::from_counts(counts);
@@ -347,5 +352,38 @@ mod tests {
             ),
             3
         );
+    }
+
+    #[test]
+    fn latest_background_pressure_buckets_contribute_to_family_and_total_counts() {
+        let mut counts = [[[0_u64; 7]; 13]; 9];
+        counts[1][9][6] = 3;
+        counts[1][10][6] = 4;
+        let snapshot = PhysicalWorkCounterSnapshot::from_counts(counts);
+
+        assert_eq!(
+            snapshot.count(
+                PhysicalWorkOperationFamily::ArtifactRangeRead,
+                PhysicalWorkCounterStage::Terminal,
+            ),
+            7
+        );
+        assert_eq!(
+            snapshot.count_under_pressure(
+                PhysicalWorkOperationFamily::ArtifactRangeRead,
+                PhysicalWorkPressureClass::BackgroundBlobIngest,
+                PhysicalWorkCounterStage::Terminal,
+            ),
+            3
+        );
+        assert_eq!(
+            snapshot.count_under_pressure(
+                PhysicalWorkOperationFamily::ArtifactRangeRead,
+                PhysicalWorkPressureClass::BackgroundRebuild,
+                PhysicalWorkCounterStage::Terminal,
+            ),
+            4
+        );
+        assert_eq!(snapshot.total(PhysicalWorkCounterStage::Terminal), 7);
     }
 }

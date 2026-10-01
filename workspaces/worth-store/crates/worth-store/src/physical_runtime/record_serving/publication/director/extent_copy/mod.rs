@@ -25,6 +25,7 @@ use crate::physical_runtime::stability::PhysicalRootReadLease;
 pub(in crate::physical_runtime) use evidence::{
     ExtentCopySynchronization, ExtentCopyWriteEvidence,
 };
+pub(super) use session::CopyProducer;
 pub(super) use session::ExtentCopySession;
 use worth_store_physical_format::PhysicalExtentCopyIntent;
 

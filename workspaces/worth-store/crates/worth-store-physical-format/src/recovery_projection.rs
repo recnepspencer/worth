@@ -5,23 +5,75 @@ use crate::{
     ExtentArenaId, ExtentArenaRange, ExtentChunkCoordinate, PersistedPhysicalDataFrameSubject,
     PersistedRecordIdentity, PhysicalExtentId, PhysicalGeneration, PhysicalGenerationAuthority,
     PhysicalPageId, PhysicalRecordSlot, PhysicalSegmentId, RecordArtifactFile,
-    RecordFrameCoordinate, RecordSegmentPageManifestEntry,
+    RecordFrameCoordinate, RecordSegmentPageManifestEntry, ReleaseCustodyHeadMutationV1,
 };
 
+mod blob_semantic;
 mod codec;
+mod frame;
+mod head_effect;
+mod retained_storage;
 mod root_state;
 mod source_copy;
+pub use blob_semantic::{
+    PersistedBlobSemanticRecordBinding, PersistedDerivedDirectoryRecordBinding,
+    PersistedPhysicalRecoveryBlobSemantic,
+};
+pub use head_effect::PersistedReleaseCustodyHeadEffectV1;
 pub use root_state::{PersistedInlineSegmentAllocation, PersistedPhysicalRecoveryRootState};
 pub use source_copy::PersistedExtentCopyRecipe;
 
-const DOMAIN: &[u8] = b"store.physical.recovery-projection.v5";
+const V5_DOMAIN: &[u8] = b"store.physical.recovery-projection.v5";
+const V6_DOMAIN: &[u8] = b"store.physical.recovery-projection.v6";
+const V7_DOMAIN: &[u8] = b"store.physical.recovery-projection.v7";
+const V8_DOMAIN: &[u8] = b"store.physical.recovery-projection.v8";
+const V9_DOMAIN: &[u8] = b"store.physical.recovery-projection.v9";
+const V10_DOMAIN: &[u8] = b"store.physical.recovery-projection.v10";
+const V11_DOMAIN: &[u8] = b"store.physical.recovery-projection.v11";
+const V12_DOMAIN: &[u8] = b"store.physical.recovery-projection.v12";
+const V13_DOMAIN: &[u8] = b"store.physical.recovery-projection.v13";
+const V14_DOMAIN: &[u8] = b"store.physical.recovery-projection.v14";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum RecoveryProjectionVersion {
+    V5,
+    V6,
+    V7,
+    V8,
+    V9,
+    V10,
+    V11,
+    V12,
+    V13,
+    V14,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PersistedDerivedDirectoryRetirement {
+    expected_previous: Option<crate::DerivedFamilyRootDirectoryBinding>,
+    dropped_records: Box<[PersistedRecordIdentity]>,
+}
+
+impl PersistedDerivedDirectoryRetirement {
+    pub const fn expected_previous(&self) -> Option<crate::DerivedFamilyRootDirectoryBinding> {
+        self.expected_previous
+    }
+
+    pub fn dropped_records(&self) -> &[PersistedRecordIdentity] {
+        &self.dropped_records
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PersistedPhysicalRecoveryProjection {
+    version: RecoveryProjectionVersion,
     source_root_generation: u64,
     root_state: PersistedPhysicalRecoveryRootState,
     record_identities: Box<[PersistedRecordIdentity]>,
     payload: PersistedPhysicalRecoveryPayload,
+    blob_semantic: PersistedPhysicalRecoveryBlobSemantic,
+    derived_retirement: Option<PersistedDerivedDirectoryRetirement>,
+    release_head_effect: Option<PersistedReleaseCustodyHeadEffectV1>,
     placements: Box<[CurrentPhysicalRecordPlacement]>,
     segment_updates: Box<[RecordSegmentPageManifestEntry]>,
     manifests: Box<[PersistedPhysicalRecoveryManifest]>,
@@ -77,6 +129,31 @@ impl PersistedPhysicalRecoveryProjection {
         segment_updates: Vec<RecordSegmentPageManifestEntry>,
         manifests: Vec<PersistedPhysicalRecoveryManifest>,
     ) -> Option<Self> {
+        Self::new_with_blob_semantic(
+            source_root_generation,
+            root_state,
+            record_identities,
+            frames,
+            placements,
+            segment_updates,
+            manifests,
+            PersistedPhysicalRecoveryBlobSemantic::None,
+        )
+    }
+
+    pub fn new_with_blob_semantic(
+        source_root_generation: u64,
+        root_state: PersistedPhysicalRecoveryRootState,
+        record_identities: Vec<PersistedRecordIdentity>,
+        frames: Vec<PersistedPhysicalRecoveryFrame>,
+        placements: Vec<CurrentPhysicalRecordPlacement>,
+        segment_updates: Vec<RecordSegmentPageManifestEntry>,
+        manifests: Vec<PersistedPhysicalRecoveryManifest>,
+        blob_semantic: PersistedPhysicalRecoveryBlobSemantic,
+    ) -> Option<Self> {
+        let classified_routes = placements
+            .iter()
+            .any(|placement| !placement.route_metadata().is_legacy_unknown());
         (source_root_generation != 0
             && !record_identities.is_empty()
             && !frames.is_empty()
@@ -88,12 +165,44 @@ impl PersistedPhysicalRecoveryProjection {
                     .iter()
                     .map(|entry| (entry.page_cell().segment_id().get(), entry.page().get())),
             )
-            && strictly_ordered(manifests.iter().map(|manifest| manifest.coordinate)))
+            && strictly_ordered(manifests.iter().map(|manifest| manifest.coordinate))
+            && blob_semantic.admits(source_root_generation, &record_identities, &placements))
         .then_some(Self {
+            version: if classified_routes {
+                RecoveryProjectionVersion::V13
+            } else if matches!(
+                blob_semantic,
+                PersistedPhysicalRecoveryBlobSemantic::DedupeQuarantined(_)
+            ) {
+                RecoveryProjectionVersion::V11
+            } else if matches!(
+                blob_semantic,
+                PersistedPhysicalRecoveryBlobSemantic::ChunkReused(_)
+            ) {
+                RecoveryProjectionVersion::V9
+            } else if let PersistedPhysicalRecoveryBlobSemantic::DerivedDirectory(directory) =
+                blob_semantic
+            {
+                if directory.indexed_through_quarantine().is_some() {
+                    RecoveryProjectionVersion::V12
+                } else {
+                    RecoveryProjectionVersion::V8
+                }
+            } else if matches!(
+                blob_semantic,
+                PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(_)
+            ) {
+                RecoveryProjectionVersion::V7
+            } else {
+                RecoveryProjectionVersion::V6
+            },
             source_root_generation,
             root_state,
             record_identities: record_identities.into_boxed_slice(),
             payload: PersistedPhysicalRecoveryPayload::Frames(frames.into_boxed_slice()),
+            blob_semantic,
+            derived_retirement: None,
+            release_head_effect: None,
             placements: placements.into_boxed_slice(),
             segment_updates: segment_updates.into_boxed_slice(),
             manifests: manifests.into_boxed_slice(),
@@ -111,6 +220,74 @@ impl PersistedPhysicalRecoveryProjection {
     }
     pub fn payload(&self) -> &PersistedPhysicalRecoveryPayload {
         &self.payload
+    }
+    pub const fn blob_semantic(&self) -> PersistedPhysicalRecoveryBlobSemantic {
+        self.blob_semantic
+    }
+    pub fn derived_retirement(&self) -> Option<&PersistedDerivedDirectoryRetirement> {
+        self.derived_retirement.as_ref()
+    }
+    pub fn release_head_effect(&self) -> Option<&PersistedReleaseCustodyHeadEffectV1> {
+        self.release_head_effect.as_ref()
+    }
+    pub fn with_release_head_upsert(
+        mut self,
+        effect: PersistedReleaseCustodyHeadEffectV1,
+    ) -> Option<Self> {
+        let ReleaseCustodyHeadMutationV1::Upsert { next, .. } = effect.mutation() else {
+            return None;
+        };
+        if !matches!(
+            self.blob_semantic,
+            PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding)
+                if self.record_identities.as_ref() == [binding.record()]
+                    && next.descriptor_record() == binding.record()
+                    && next.source_root_generation() == self.source_root_generation
+                    && self.source_root_generation.checked_add(1)
+                        == Some(binding.candidate_root_generation())
+        ) || self.derived_retirement.is_some()
+            || self.release_head_effect.is_some()
+        {
+            return None;
+        }
+        self.version = RecoveryProjectionVersion::V14;
+        self.release_head_effect = Some(effect);
+        Some(self)
+    }
+    pub fn with_derived_retirement(
+        mut self,
+        expected_previous: Option<crate::DerivedFamilyRootDirectoryBinding>,
+        mut dropped_records: Vec<PersistedRecordIdentity>,
+    ) -> Option<Self> {
+        if !matches!(
+            self.blob_semantic,
+            PersistedPhysicalRecoveryBlobSemantic::DerivedDirectory(_)
+        ) {
+            return None;
+        }
+        dropped_records.sort_unstable();
+        if dropped_records.windows(2).any(|pair| pair[0] == pair[1])
+            || expected_previous
+                .is_some_and(|previous| !dropped_records.contains(&previous.directory_record()))
+            || dropped_records
+                .iter()
+                .any(|record| self.record_identities.contains(record))
+        {
+            return None;
+        }
+        self.version = if self.version == RecoveryProjectionVersion::V13 {
+            RecoveryProjectionVersion::V13
+        } else if matches!(self.blob_semantic, PersistedPhysicalRecoveryBlobSemantic::DerivedDirectory(directory) if directory.indexed_through_quarantine().is_some())
+        {
+            RecoveryProjectionVersion::V12
+        } else {
+            RecoveryProjectionVersion::V10
+        };
+        self.derived_retirement = Some(PersistedDerivedDirectoryRetirement {
+            expected_previous,
+            dropped_records: dropped_records.into_boxed_slice(),
+        });
+        Some(self)
     }
     pub fn frames(&self) -> Option<&[PersistedPhysicalRecoveryFrame]> {
         match &self.payload {
@@ -137,72 +314,6 @@ fn unique<T: Ord>(values: impl Iterator<Item = T>) -> bool {
 fn strictly_ordered<T: Ord>(values: impl Iterator<Item = T>) -> bool {
     let values = values.collect::<Vec<_>>();
     values.windows(2).all(|pair| pair[0] < pair[1])
-}
-
-impl PersistedPhysicalRecoveryFrame {
-    pub fn new(
-        subject: PersistedPhysicalDataFrameSubject,
-        coordinate: RecordFrameCoordinate,
-        bytes: &[u8],
-    ) -> Option<Self> {
-        (bytes.len() == coordinate.length() as usize && subject_matches(subject, coordinate))
-            .then_some(Self {
-                subject,
-                coordinate,
-                bytes: bytes.into(),
-            })
-    }
-    pub const fn subject(&self) -> PersistedPhysicalDataFrameSubject {
-        self.subject
-    }
-    pub const fn coordinate(&self) -> RecordFrameCoordinate {
-        self.coordinate
-    }
-    pub fn bytes(&self) -> &[u8] {
-        &self.bytes
-    }
-}
-
-impl PersistedPhysicalRecoveryManifest {
-    pub fn new(coordinate: RecordFrameCoordinate, bytes: &[u8]) -> Option<Self> {
-        (matches!(
-            coordinate.artifact(),
-            RecordArtifactFile::ExtentArena { .. }
-        ) && coordinate.length() as usize == bytes.len())
-        .then_some(Self {
-            coordinate,
-            bytes: bytes.into(),
-        })
-    }
-    pub const fn artifact(&self) -> RecordArtifactFile {
-        self.coordinate.artifact()
-    }
-    pub const fn coordinate(&self) -> RecordFrameCoordinate {
-        self.coordinate
-    }
-    pub fn bytes(&self) -> &[u8] {
-        &self.bytes
-    }
-}
-
-fn subject_matches(
-    subject: PersistedPhysicalDataFrameSubject,
-    coordinate: RecordFrameCoordinate,
-) -> bool {
-    match (subject, coordinate.artifact()) {
-        (
-            PersistedPhysicalDataFrameSubject::InlinePage(page),
-            RecordArtifactFile::Segment {
-                segment,
-                generation: _,
-            },
-        ) => page.segment_id().get() == segment,
-        (
-            PersistedPhysicalDataFrameSubject::ExtentChunk(_),
-            RecordArtifactFile::ExtentArena { arena },
-        ) => arena != 0,
-        _ => false,
-    }
 }
 
 #[cfg(test)]

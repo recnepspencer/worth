@@ -8,13 +8,16 @@ mod lifecycle;
 mod mutation;
 mod observation;
 mod publication;
+pub use publication::SelectedReleaseHeadDenial;
 mod retention;
 pub(in crate::physical_runtime) use retention::PendingPublicationLease;
+pub(in crate::physical_runtime) use retention::PhysicalPublicationAdmission;
 pub(in crate::physical_runtime) use retention::PhysicalPublicationAdmissionDenial;
 pub(in crate::physical_runtime) use retention::PhysicalRetentionProfile;
 pub use retention::PhysicalRetirementDenial;
 pub(in crate::physical_runtime) use retention::RetainedByteLease;
 pub use retention::RetirementReleaseProjection;
+pub(in crate::physical_runtime) use retention::WalPublicationReservation;
 #[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use retention::{decode_retirement, payload_is_retirement};
 pub(in crate::physical_runtime) use retention::{
@@ -44,9 +47,9 @@ pub(in crate::physical_runtime) use admission::{
     ReopenedPhysicalDurabilityRuntimeOwner,
 };
 pub(in crate::physical_runtime) use checkpoint::{
-    reopen_binding_compaction, NamespaceDurableCheckpointPublication,
-    PhysicalCheckpointCaptureFoundation, PhysicalCheckpointRuntimeOwner,
-    PhysicalCheckpointWorkPort, ReopenedPhysicalBindingCompaction,
+    reopen_binding_compaction, CompletedDurableCheckpointWitness,
+    NamespaceDurableCheckpointPublication, PhysicalCheckpointCaptureFoundation,
+    PhysicalCheckpointRuntimeOwner, PhysicalCheckpointWorkPort, ReopenedPhysicalBindingCompaction,
 };
 pub use checkpoint::{
     CompletedPhysicalCheckpoint, ContiguousRetainedWalTail, IndeterminatePhysicalCheckpoint,
@@ -96,6 +99,7 @@ pub use evidence_projection::{
 };
 #[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use grouping::reopened_membership_digest;
+pub(in crate::physical_runtime) use grouping::reopened_membership_digest_fields;
 pub use grouping::{
     AdmittedPhysicalDurabilityGroup, AdmittedPhysicalDurabilityGroupMember,
     DataSettledPhysicalMutationMembers, IndeterminatePhysicalWalGroupBarrier,
@@ -142,8 +146,9 @@ pub(in crate::physical_runtime) use mutation::{
     PhysicalMutationPreSealCancellationDenial, PhysicalMutationRequestScope,
     PhysicalMutationSecurityBasis, PhysicalMutationTerminalFact,
     PhysicalMutationTerminalizationDenial, PhysicalMutationUnresolvedBindingObservation,
-    RebuiltPhysicalMutationIdempotency, SettledPhysicalMutationBasis,
-    WalRangeReservedPhysicalMutationBasis,
+    PhysicalOriginalDropCompleted, PhysicalOriginalDropNoEffect,
+    PhysicalRecoveredOriginalDropNoDurableEffect, RebuiltPhysicalMutationIdempotency,
+    SettledPhysicalMutationBasis, WalRangeReservedPhysicalMutationBasis,
 };
 pub use mutation::{
     CompletedPhysicalMutation, DataDispatchedPhysicalMutation, DataSettledPhysicalMutation,
@@ -170,11 +175,22 @@ pub(in crate::physical_runtime) use observation::{
     PhysicalMutationTerminalClass,
 };
 pub(in crate::physical_runtime) use publication::{
-    publish_retirement_candidate, replace_root_candidate, synchronize_root_namespace,
-    NamespaceDurableRetirementRoot, PhysicalCurrentRootOwner, PhysicalRootPublicationIdentity,
-    PhysicalRootPublicationPreparationFailure, PhysicalRootPublicationPreparationNotStartedCause,
-    PhysicalRootPublicationTransition, PhysicalRootPublicationWorkFailure,
-    PhysicalRootPublicationWorkPort, RootCandidateSynchronizationFailure,
+    publish_manifest_residue_candidate, publish_retirement_candidate, publish_tier_epoch_candidate,
+    replace_root_candidate, synchronize_root_namespace, AdmittedFailedIngestDrop,
+    AdmittedManifestResidueRetirement, AdmittedReleasedGenerationDrop, CheckpointCustodyDenial,
+    CheckpointCustodyOrigin, ManifestResidueDisplacement, ManifestResidueProof,
+    NamespaceDurableManifestResidueRoot, NamespaceDurableRetirementRoot,
+    NamespaceDurableTierEpochRoot, PhysicalBlobReclaimAdmissionDenial, PhysicalBlobSessionClaim,
+    PhysicalBlobSessionClaimDenial, PhysicalBlobTerminalAdmissionDenial, PhysicalCurrentRootOwner,
+    PhysicalReclaimAttempt, PhysicalReconciledReclaimDescriptorFate,
+    PhysicalRootPublicationIdentity, PhysicalRootPublicationPreparationFailure,
+    PhysicalRootPublicationPreparationNotStartedCause, PhysicalRootPublicationTransition,
+    PhysicalRootPublicationWorkFailure, PhysicalRootPublicationWorkPort,
+    PreparedRecoveredCheckpointCustody, RecoveredReleaseLedgerDenial,
+    ReleaseCertificateCapacityDenial, ReleaseCertificateCapacityLease, ReleaseHeadCapacityCharge,
+    ReleasedDropSourceCaptureDenial, RootCandidateSynchronizationFailure,
+    SelectedCheckpointCertificate, SelectedCheckpointCustodySnapshot, SelectedOriginalDropProof,
+    SelectedReleaseCustodyLedger, SelectedReleaseHeadBasis,
 };
 #[cfg(feature = "certification-test-authority")]
 pub use publication::{CertificationReadRootCapturePauseGate, CertificationReadRootCaptureStage};
@@ -194,13 +210,15 @@ pub use publication::{
 pub use settlement::{
     CompletedUnobservedPhysicalMutation, IndeterminatePhysicalMutation,
     PhysicalMutationAcknowledgment, PhysicalMutationCompletedBreadth,
-    PhysicalMutationIndeterminateStage, PhysicalMutationProvenNoEffectCause,
-    ProvenNoEffectPhysicalMutation,
+    PhysicalMutationIndeterminateStage, PhysicalMutationPreSealAdmissionDetail,
+    PhysicalMutationProvenNoEffectCause, PhysicalMutationRootPreparationFailure,
+    PhysicalRootPreparationEffectPosture, ProvenNoEffectPhysicalMutation,
 };
 pub(in crate::physical_runtime) use wal::{
     reopen_wal_inventory, CompletionBoundPhysicalWalAppendSettlement, PhysicalWalAppendPort,
     PhysicalWalBindingReopenCutoff, PhysicalWalReclamationFoundation, PhysicalWalReclamationOwner,
-    PhysicalWalRuntimeOwner, ReservedPhysicalWalGroupMembers, ScheduledMaintenanceDenial,
+    PhysicalWalRuntimeOwner, ReopenedWalPublicationGroup, ReservedPhysicalWalGroupMembers,
+    ScheduledMaintenanceDenial,
 };
 pub use wal::{
     CanonicalRedoRecords, IndeterminatePhysicalWalGroupAppend, PhysicalWalAppendDeclaration,

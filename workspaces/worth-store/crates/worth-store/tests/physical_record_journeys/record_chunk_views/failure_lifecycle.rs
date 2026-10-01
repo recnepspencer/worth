@@ -22,6 +22,10 @@ fn later_extent_damage_through_a_view_revokes_health_and_releases_read_authority
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([173; 32]),
         RecordAppendBatch::try_from_iter([expected.as_slice()]).unwrap(),
     );
+    let operation_bytes_before_read = serving
+        .residency_observation()
+        .counters()
+        .active_operation_bytes();
     let record = publication.settled_members()[0].record_id(0).unwrap();
     let extent = root.join("families/records/arenas/arena-0000000000000001.data");
     let arena = std::fs::read(&extent).unwrap();
@@ -73,7 +77,10 @@ fn later_extent_damage_through_a_view_revokes_health_and_releases_read_authority
     let residency = serving.residency_observation().counters();
     assert_eq!(residency.pin_leases(), 0);
     assert_eq!(residency.pinned_frames(), 0);
-    assert_eq!(residency.active_operation_bytes(), 0);
+    assert_eq!(
+        residency.active_operation_bytes(),
+        operation_bytes_before_read
+    );
     assert!(matches!(
         durable_publication::prepare_single(
             &serving.record_submission(),
@@ -105,6 +112,10 @@ fn cancelling_after_a_view_reports_unread_bytes_and_releases_the_held_frame() {
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([173; 32]),
         RecordAppendBatch::try_from_iter([expected.as_slice()]).unwrap(),
     );
+    let operation_bytes_before_read = serving
+        .residency_observation()
+        .counters()
+        .active_operation_bytes();
     let record = publication.settled_members()[0].record_id(0).unwrap();
     let mut session = serving
         .records()
@@ -123,7 +134,7 @@ fn cancelling_after_a_view_reports_unread_bytes_and_releases_the_held_frame() {
     let residency = serving.residency_observation().counters();
     assert_eq!(residency.pin_leases(), 1);
     assert_eq!(residency.pinned_frames(), 1);
-    assert!(residency.active_operation_bytes() > 0);
+    assert!(residency.active_operation_bytes() > operation_bytes_before_read);
     let media_before_cancel = serving.media_counters();
 
     let cancellation = session.cancel();
@@ -142,7 +153,10 @@ fn cancelling_after_a_view_reports_unread_bytes_and_releases_the_held_frame() {
     let residency = serving.residency_observation().counters();
     assert_eq!(residency.pin_leases(), 0);
     assert_eq!(residency.pinned_frames(), 0);
-    assert_eq!(residency.active_operation_bytes(), 0);
+    assert_eq!(
+        residency.active_operation_bytes(),
+        operation_bytes_before_read
+    );
     fixture::assert_clean_close(serving);
 }
 

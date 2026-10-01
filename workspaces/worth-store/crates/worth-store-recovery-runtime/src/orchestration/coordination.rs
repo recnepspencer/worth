@@ -23,6 +23,7 @@ impl RecoveryCoordination {
             limits.cleanup_candidates,
             limits.cleanup_bytes,
         )
+        .and_then(|capacity| capacity.with_recovery_allocation_bytes(limits.recovery_memory_bytes))
         .expect("admitted recovery limits are nonzero and fit the platform");
         let owner = session.admit_coordination(media, capacity, yieldpoint)?;
         record_coordinator_created();

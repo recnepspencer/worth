@@ -14,6 +14,10 @@ pub struct RootNamespaceDurablePhysicalMutationMembers {
 }
 
 impl RootNamespaceDurablePhysicalMutationMembers {
+    pub(in crate::physical_runtime) fn retained_routing_metadata_bytes(&self) -> Option<u64> {
+        self.core.candidate().retained_routing_metadata_bytes()
+    }
+
     pub(in crate::physical_runtime) fn new(
         core: RootPublicationPreparedCore,
         replacement: SettledPhysicalWork,
@@ -48,6 +52,10 @@ impl RootNamespaceDurablePhysicalMutationMembers {
 
     pub fn current_root_generation(&self) -> u64 {
         self.core.candidate().successor_root().generation()
+    }
+
+    pub(in crate::physical_runtime) fn candidate_tier_epoch_anchor(&self) -> Option<[u8; 32]> {
+        self.core.candidate().successor_root().tier_epoch_anchor()
     }
 
     pub fn namespace_effect_identity(

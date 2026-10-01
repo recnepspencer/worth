@@ -25,7 +25,7 @@ pub(super) fn admit_scratch_bytes(
             sum.checked_add(record.targets().len() as u64)
         })
         .ok_or(PhysicalRedoPlanningDenial::CounterOverflow)?;
-    let observed = targets
+    let mut observed = targets
         .checked_add(
             projection
                 .frames()
@@ -36,6 +36,29 @@ pub(super) fn admit_scratch_bytes(
         .and_then(|count| count.checked_mul(4096))
         .and_then(|bytes| retained.checked_add(bytes))
         .ok_or(PhysicalRedoPlanningDenial::CounterOverflow)?;
+    if let Some(effect) = projection.release_head_effect() {
+        // The encoded WAL frame, decoded path/writes, and the pure planner's
+        // recomputed writes can coexist. Charge all three frame rosters plus
+        // conservative Vec/tree overhead before retaining this member.
+        let framed = effect
+            .framed_bytes()
+            .ok_or(PhysicalRedoPlanningDenial::CounterOverflow)?;
+        let entries = effect
+            .entry_count()
+            .ok_or(PhysicalRedoPlanningDenial::CounterOverflow)?;
+        observed = observed
+            .checked_add(
+                framed
+                    .checked_mul(3)
+                    .ok_or(PhysicalRedoPlanningDenial::CounterOverflow)?,
+            )
+            .and_then(|bytes| {
+                entries
+                    .checked_mul(4096)
+                    .and_then(|overhead| bytes.checked_add(overhead))
+            })
+            .ok_or(PhysicalRedoPlanningDenial::CounterOverflow)?;
+    }
     if observed > limit {
         return Err(PhysicalRedoPlanningDenial::RecoveryMemoryLimit {
             observed,

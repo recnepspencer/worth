@@ -9,7 +9,7 @@ mod wal_evidence;
 /// successor additionally must contain every exact regenerated destination byte.
 pub(super) fn verify(
     mut context: PlanningContext,
-    basis: &ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningBasis,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     let published_evidence = match wal_evidence::verify(&context, basis) {
         Ok(evidence) => evidence,
@@ -20,15 +20,49 @@ pub(super) fn verify(
         .source_copies()
         .iter()
         .filter(|copy| copy.fate() == RecoveryOperationFate::Indeterminate)
+        .cloned()
         .collect::<Vec<_>>();
     if copies.is_empty() {
         return Ok(context);
     }
+    let selected = context
+        .selection
+        .root()
+        .selected()
+        .selector()
+        .root_generation();
+    for copy in &copies {
+        let result = copy
+            .projection()
+            .source_root_generation()
+            .checked_add(1)
+            .expect("admitted SourceCopy successor generation");
+        if selected > result
+            && !published_evidence.contains(&(copy.operation(), copy.publication_lsn()))
+        {
+            let destination = copy.recipe().intent().destination();
+            context = super::historical_publication::observe(
+                context,
+                basis,
+                result,
+                destination.record(),
+                |_, _, route, _, _, _| {
+                    (route == Some(CurrentPhysicalRecordPlacement::Extent(destination)))
+                        .then_some(())
+                        .ok_or(super::historical_publication::HistoricalFailure::Invalid)
+                },
+            )?
+            .0;
+        }
+    }
     let budget = copies
         .iter()
+        .filter(|copy| !published_evidence.contains(&(copy.operation(), copy.publication_lsn())))
         .try_fold((0_u64, 0_u64), |(reads, bytes), copy| {
             let intent = copy.recipe().intent();
             let frames = u64::from(intent.chunk_count()).checked_add(1)?;
+            let source_root = copy.projection().source_root_generation();
+            let comparisons = if selected > source_root { 2 } else { 1 };
             let frame_bytes = intent
                 .source()
                 .payload_bytes()
@@ -40,60 +74,70 @@ pub(super) fn verify(
                 )?
                 .checked_add(104)?;
             Some((
-                reads.checked_add(frames.checked_mul(2)?)?,
-                bytes.checked_add(frame_bytes.checked_mul(2)?)?,
+                reads.checked_add(frames.checked_mul(comparisons)?)?,
+                bytes.checked_add(frame_bytes.checked_mul(comparisons)?)?,
             ))
         });
     let Some((reads, total_io_bytes)) = budget else {
         return Err(context.redo_block(basis.planning_counters(), None));
     };
-    let byte_limit = context.limits.observation_bytes;
+    let byte_limit = context
+        .limits
+        .observation_bytes
+        .saturating_sub(context.counters.bytes_observed)
+        .saturating_sub(basis.observed_pages.bytes_read)
+        .saturating_sub(basis.observed_pages.candidate_bytes_read)
+        .saturating_sub(basis.observed_pages.source_copy_bytes_read)
+        .saturating_sub(basis.observed_pages.historical_publication_bytes_read);
+    if byte_limit < total_io_bytes {
+        let admitted = context.limits.observation_bytes;
+        return Err(context.redo_block(
+            basis.planning_counters(),
+            Some(crate::entry::PhysicalRecoveryLimitFailure {
+                dimension: crate::entry::PhysicalRecoveryLimitDimension::ObservationBytes,
+                observed: admitted.saturating_add(total_io_bytes - byte_limit),
+                admitted,
+            }),
+        ));
+    }
     let format = context.authority.record_format;
     let store = context.authority.media.store_identity();
-    // The existing observation limit bounds each admitted frame. This separate
-    // exact cumulative I/O budget does not allocate an object-sized buffer.
+    // Charge bounded source/destination reads against the remaining aggregate
+    // observation budget; the frames are streamed, not retained as an object.
     let mut discovery = context
         .authority
         .media
         .bounded_discovery(reads.max(1), total_io_bytes.max(1))
         .expect("checked nonzero limits; an admitted reader cannot reject object size");
     let result = (|| {
-        for copy in copies {
+        for copy in &copies {
             let recipe = copy.recipe();
             let intent = recipe.intent();
             let source_generation = copy.projection().source_root_generation();
-            let selected = context
-                .selection
-                .root()
-                .selected()
-                .selector()
-                .root_generation();
             let resulting_generation = source_generation.checked_add(1).ok_or(())?;
             let resolved = published_evidence.contains(&(copy.operation(), copy.publication_lsn()));
-            if selected > resulting_generation {
-                // The selected chain may have advanced past the final copy root.
-                // Its exact published marker is the retained durable evidence;
-                // the source is no longer required after resolution.
-                if !resolved {
-                    return Err(());
-                }
+            let historical = selected > resulting_generation;
+            if historical && resolved {
+                // A durable Published resolution has released source custody.
                 continue;
             }
-            let published = selected == resulting_generation;
-            let expected = if selected == source_generation {
-                intent.source()
-            } else if published {
-                intent.destination()
-            } else {
-                return Err(());
-            };
-            if !context
-                .selection
-                .page_facts()
-                .placements()
-                .contains(&CurrentPhysicalRecordPlacement::Extent(expected))
-            {
-                return Err(());
+            let published = selected >= resulting_generation;
+            if !historical {
+                let expected = if selected == source_generation {
+                    intent.source()
+                } else if published {
+                    intent.destination()
+                } else {
+                    return Err(());
+                };
+                if !context
+                    .selection
+                    .page_facts()
+                    .placements()
+                    .contains(&CurrentPhysicalRecordPlacement::Extent(expected))
+                {
+                    return Err(());
+                }
             }
             if resolved {
                 if !published {
@@ -149,7 +193,27 @@ pub(super) fn verify(
         }
         Ok::<_, ()>(())
     })();
+    let counters = discovery.counters();
     context.authority.media = discovery.finish();
+    basis.observed_pages.source_copy_reads = basis
+        .observed_pages
+        .source_copy_reads
+        .saturating_add(counters.addressed_artifacts_read);
+    basis.observed_pages.source_copy_bytes_read = basis
+        .observed_pages
+        .source_copy_bytes_read
+        .saturating_add(counters.bytes_read);
+    basis.observed_pages.source_copy_peak_scratch_bytes =
+        basis.observed_pages.source_copy_peak_scratch_bytes.max(
+            copies
+                .iter()
+                .filter(|copy| {
+                    !published_evidence.contains(&(copy.operation(), copy.publication_lsn()))
+                })
+                .map(|copy| u64::from(copy.recipe().intent().maximum_frame_bytes()) * 4)
+                .max()
+                .unwrap_or(0),
+        );
     if result.is_err() {
         return Err(context.redo_block(basis.planning_counters(), None));
     }

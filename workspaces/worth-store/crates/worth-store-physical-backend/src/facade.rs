@@ -190,6 +190,7 @@ pub use crate::recovery_media::{
     BackendRecoveryArtifactExpectation, BackendRecoveryCleanupArtifactRevalidationDenial,
     BackendRecoveryCleanupArtifactRevalidationProgress, BackendRecoveryCleanupRemovalDenialCause,
     BackendRecoveryCleanupRemovalOutcome, BackendRecoveryCleanupRemovalRequest,
+    ObservedRecoveryCheckpointArtifact,
 };
 #[cfg(feature = "recovery-runtime-owner")]
 pub use crate::recovery_media::{
@@ -201,7 +202,8 @@ pub use crate::recovery_media::{
     IndeterminateScheduledRecoveryStagingWrite, ObservedRecoveryArtifact, ObservedWalArtifact,
     PhysicalRecoveryMediaGeneration, QualifiedPhysicalBackendProfile,
     QualifiedRecoveryFilesystemMedia, RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope,
-    RecoveryDiscoveryCounters, RecoveryDiscoveryFailure, RecoveryFilesystemQualificationError,
+    RecoveryDiscoveryCounters, RecoveryDiscoveryFailure, RecoveryDiscoveryAllocationFailure,
+    RecoveryFilesystemQualificationError,
     RecoveryMediaHandleObservation, RecoveryReopenReadOutcome,
     RecoveryRootProtocolPublicationDenial, RecoveryRootProtocolPublicationPlan,
     RecoveryStagingIndeterminatePhysical, RecoveryStagingSynchronizationOutcome,

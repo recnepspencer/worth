@@ -3,6 +3,7 @@ use worth_store::physical_runtime::ObservedRecoveryArtifact;
 use worth_store_physical_format::PhysicalPageLsn;
 use worth_store_physical_integrity::{
     validate_extent_chunk_membership, IntegrityValidatedExtentChunkFrame, PhysicalArtifactScope,
+    SelectedExtentPayloadBuilder,
 };
 
 use super::super::super::admission::require_observed_recovery_source;
@@ -26,6 +27,27 @@ pub(crate) fn admit_extent_chunk_projection(
     membership: worth_store_physical_integrity::IntegrityValidatedExtentMembership,
     trace: &mut super::super::super::RecoveryIntegrityIngressTrace,
 ) -> Result<ExtentChunkProjection, RecoveryIntegrityIngressRejection> {
+    admit_chunk(observed, scope, membership, trace, None)
+        .map(|projection| projection.expect("ordinary chunk projection is present"))
+}
+
+pub(crate) fn admit_extent_chunk_projection_for_selected_record(
+    observed: &ObservedRecoveryArtifact,
+    scope: PhysicalArtifactScope,
+    membership: worth_store_physical_integrity::IntegrityValidatedExtentMembership,
+    trace: &mut super::super::super::RecoveryIntegrityIngressTrace,
+    builder: &mut SelectedExtentPayloadBuilder,
+) -> Result<Option<ExtentChunkProjection>, RecoveryIntegrityIngressRejection> {
+    admit_chunk(observed, scope, membership, trace, Some(builder))
+}
+
+fn admit_chunk(
+    observed: &ObservedRecoveryArtifact,
+    scope: PhysicalArtifactScope,
+    membership: worth_store_physical_integrity::IntegrityValidatedExtentMembership,
+    trace: &mut super::super::super::RecoveryIntegrityIngressTrace,
+    mut builder: Option<&mut SelectedExtentPayloadBuilder>,
+) -> Result<Option<ExtentChunkProjection>, RecoveryIntegrityIngressRejection> {
     let input = ObservedRecoverySource::complete(observed, scope)
         .input()
         .map_err(|rejection| trace.reject(scope, rejection))?;
@@ -39,7 +61,13 @@ pub(crate) fn admit_extent_chunk_projection(
     trace.retain(attempt.observation());
     match attempt.into_outcome()? {
         super::super::super::IntegrityAdmittedRecoveryArtifact::ExtentChunk(admitted) => {
-            Ok(admitted.project(trace.counters_mut()))
+            if let Some(builder) = builder.as_mut() {
+                let input = admitted.source.input().expect("bound C.4 chunk source");
+                if builder.append(&admitted.validated, input).is_none() {
+                    return Ok(None);
+                }
+            }
+            Ok(Some(admitted.project(trace.counters_mut())))
         }
         _ => unreachable!("extent ingress returns its family-specific admitted variant"),
     }

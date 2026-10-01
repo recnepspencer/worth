@@ -18,10 +18,13 @@ mod arena_evacuation;
 mod arena_evacuation_producer;
 mod arena_retirement;
 mod artifact_scope;
+mod blob_reclaim;
+mod blob_reclaim_released;
 #[cfg(feature = "certification-test-authority")]
 mod certification_hooks;
 #[cfg(feature = "certification-test-authority")]
 mod certification_submission;
+mod checkpoint_custody;
 mod durable_data;
 mod durable_preparation;
 pub(in crate::physical_runtime) mod extent_copy;
@@ -29,21 +32,35 @@ mod extent_record_rewrite;
 mod group_wal_planning;
 mod lifecycle;
 mod managed_mutation;
+mod manifest_residue;
 mod pre_seal_cancellation;
+mod publication_retention;
+pub(in crate::physical_runtime) use publication_retention::AdmittedPublicationRetention;
 mod record_append_fingerprint;
 mod retirement;
+mod retirement_progression;
 mod retirement_release;
 pub(in crate::physical_runtime::record_serving) use arena_evacuation::ArenaEvacuationSelection;
 pub use arena_evacuation_producer::PhysicalArenaEvacuationPreparationOutcome;
+mod release_head_preparation;
+mod released_control_placement;
+mod reuse_claim;
 mod rewrite_anchor;
 mod rewrite_pages;
 mod rewrite_source_liveness;
 mod rewrite_span_selection;
 mod root_candidate_execution;
+mod root_capture;
 mod root_preparation;
 mod root_progression;
+mod selected_manifest_pins;
 mod selected_segment_rewrite;
+pub(in crate::physical_runtime) use selected_manifest_pins::{
+    SelectedBlobManifestPin, SelectedBlobManifestPinDenial, SelectedBlobManifestPins,
+};
 mod submission;
+mod tier_epoch;
+pub(in crate::physical_runtime) use tier_epoch::TierEpochActivationFailure;
 mod wal_data_planning;
 
 pub use artifact_scope::{InlineArtifactRewritePlanDenial, PlannedInlineRewriteArtifact};
@@ -52,6 +69,7 @@ pub use certification_submission::CertificationPhysicalRecordSubmission;
 pub use submission::PhysicalRecordSubmission;
 
 pub(in crate::physical_runtime) struct RecordPublicationDirector {
+    reader_factory: crate::physical_runtime::record_serving::lifecycle::record_lifecycle::RecordReaderLeaseFactory,
     runtime: Weak<PhysicalStoreWorkRuntime>,
     mutation_identity: crate::physical_runtime::PhysicalMutationSubmission,
     idempotency: crate::physical_runtime::durability::PhysicalMutationIdempotencyRuntimeAuthority,
@@ -101,6 +119,11 @@ pub(in crate::physical_runtime) struct RecordPublicationTerminalState {
 }
 
 pub(in crate::physical_runtime) struct RecordPublicationFoundation {
+    pub(in crate::physical_runtime) recovered_checkpoint_custody:
+        Option<crate::physical_runtime::durability::PreparedRecoveredCheckpointCustody>,
+    pub(in crate::physical_runtime) checkpoint_custody_origin:
+        crate::physical_runtime::durability::CheckpointCustodyOrigin,
+    pub(in crate::physical_runtime) reader_factory: crate::physical_runtime::record_serving::lifecycle::record_lifecycle::RecordReaderLeaseFactory,
     pub(in crate::physical_runtime) read_protection:
         Arc<crate::physical_runtime::stability::RootProtectionRegistry>,
     pub(in crate::physical_runtime) idempotency:
@@ -125,11 +148,13 @@ pub(in crate::physical_runtime) struct RecordPublicationFoundation {
         Vec<crate::physical_runtime::durability::DisplacedArtifact>,
     pub(in crate::physical_runtime) unresolved_retirements:
         Vec<crate::physical_runtime::durability::RetirementRecord>,
-    pub(in crate::physical_runtime) publication_overheads: Vec<(u64, u64)>,
+    pub(in crate::physical_runtime) publication_retention: AdmittedPublicationRetention,
     pub(in crate::physical_runtime) free_space: DurableFreeSpaceManifestHeader,
     pub(in crate::physical_runtime) allocation_frontier: RecordAllocationFrontier,
     pub(in crate::physical_runtime) residue: RecordPublicationResidueObservation,
     pub(in crate::physical_runtime) frame_ports: RecordFramePorts,
+    pub(in crate::physical_runtime) recovery_allocation:
+        crate::physical_runtime::PhysicalRecoveryAllocationAdmission,
     pub(in crate::physical_runtime) generation: crate::physical_runtime::LifecycleGeneration,
     pub(in crate::physical_runtime) lifecycle:
         Arc<crate::physical_runtime::lifecycle::LifecycleState>,
@@ -156,49 +181,15 @@ impl RecordPublicationDirector {
         let bootstrap_lifecycle = Arc::clone(&foundation.lifecycle);
         let root_owner = crate::physical_runtime::durability::PhysicalCurrentRootOwner::new(
             runtime,
+            foundation.checkpoint_custody_origin,
+            foundation.recovered_checkpoint_custody,
             foundation.current_root.clone(),
             foundation.previous_root,
             foundation.free_space.clone(),
             foundation.read_protection,
+            foundation.publication_retention.into_admission(),
+            foundation.recovery_allocation,
         );
-        let retained_wal_tail = foundation
-            .durability
-            .checkpoint_policy()
-            .retained_wal_tail_limit()
-            .get()
-            .get();
-        root_owner.install_retention_profile(
-            crate::physical_runtime::durability::PhysicalRetentionProfile::store_default()
-                .covering_retained_wal_tail(retained_wal_tail),
-        );
-        // Live segment and extent files are reachable payload, not excess
-        // obsolete bytes. Reopen charges unreclaimed WAL, the overhead of each
-        // publication whose WAL frame remains, and displaced generations.
-        let publications = foundation.wal.reopened_publications();
-        let release_metadata = foundation.wal.reopened_release_metadata();
-        let mut retained = foundation
-            .publication_overheads
-            .iter()
-            .rev()
-            .filter(|(generation, _)| {
-                release_metadata
-                    .binary_search_by_key(generation, |(generation, ..)| *generation)
-                    .is_err()
-            })
-            .take(usize::try_from(publications).unwrap_or(usize::MAX))
-            .fold(0_u64, |total, (_, bytes)| total.saturating_add(*bytes));
-        retained = release_metadata
-            .iter()
-            .fold(retained, |total, (_, bytes, ..)| {
-                total.saturating_add(*bytes)
-            });
-        retained = retained.saturating_add(foundation.wal.observation().reopened_bytes());
-        root_owner.reconstruct_retained_bytes(retained);
-        for (_, bytes, segment, generation) in release_metadata {
-            root_owner
-                .publication_admission()
-                .note_sealed_publication(segment, generation, bytes);
-        }
         for charge in &displaced {
             root_owner.restore_displaced(charge.source_root, charge.artifact, charge.bytes);
         }
@@ -215,6 +206,7 @@ impl RecordPublicationDirector {
             .wal
             .bind_publication_admission(root_owner.publication_admission());
         let director = Arc::new_cyclic(|director| Self {
+            reader_factory: foundation.reader_factory,
             runtime: Arc::downgrade(runtime),
             mutation_identity: runtime.submission.mutation_submission(),
             idempotency: foundation.idempotency,
@@ -293,20 +285,72 @@ impl RecordPublicationDirector {
         CertificationPhysicalRecordSubmission::new(Self::submission(director))
     }
 
-    pub(in crate::physical_runtime) fn current_root(&self) -> DurablePhysicalRootManifest {
-        self.root_owner.snapshot().0
+    pub(in crate::physical_runtime) fn checkpoint_custody_snapshot(
+        &self,
+        checkpoint: worth_store_physical_format::PhysicalCheckpointIdentity,
+    ) -> Result<
+        crate::physical_runtime::durability::SelectedCheckpointCustodySnapshot,
+        crate::physical_runtime::durability::CheckpointCustodyDenial,
+    > {
+        self.root_owner
+            .checkpoint_custody_snapshot(checkpoint, self.format.declaration())
     }
 
-    pub(in crate::physical_runtime) fn capture_read_root(
+    pub(in crate::physical_runtime) fn require_release_certificate_for_attempt(
         &self,
+        attempt: &crate::physical_runtime::durability::PhysicalReclaimAttempt,
+    ) -> Result<(), crate::physical_runtime::durability::ReleaseCertificateCapacityDenial> {
+        self.root_owner
+            .require_release_certificate_for_attempt(attempt)
+    }
+
+    pub(in crate::physical_runtime) fn reserve_release_certificate_capacity(
+        &self,
+        attempt: &crate::physical_runtime::durability::PhysicalReclaimAttempt,
+        key: worth_store_physical_format::ReleaseCustodyHeadKeyV1,
+        needed_records: u16,
+        worst_case_encoded_bytes: u32,
+        head_charge: crate::physical_runtime::durability::ReleaseHeadCapacityCharge,
     ) -> Result<
-        (
-            DurablePhysicalRootManifest,
-            crate::physical_runtime::stability::PhysicalRootReadLease,
-        ),
-        crate::physical_runtime::PhysicalReadProtectionDenial,
+        crate::physical_runtime::durability::ReleaseCertificateCapacityLease,
+        crate::physical_runtime::durability::ReleaseCertificateCapacityDenial,
     > {
-        self.root_owner.capture_read_root()
+        self.root_owner.reserve_release_certificate_capacity(
+            attempt,
+            key,
+            needed_records,
+            worst_case_encoded_bytes,
+            head_charge,
+        )
+    }
+
+    pub(in crate::physical_runtime) fn promote_blob_terminal(
+        &self,
+        claim: &mut crate::physical_runtime::durability::PhysicalBlobSessionClaim,
+    ) -> Result<(), crate::physical_runtime::durability::PhysicalBlobTerminalAdmissionDenial> {
+        self.root_owner.promote_blob_terminal(claim)
+    }
+
+    pub(in crate::physical_runtime) fn admit_blob_reclaim(
+        &self,
+        claim: &mut crate::physical_runtime::durability::PhysicalBlobSessionClaim,
+        inspector: crate::physical_runtime::PhysicalProtectedRootObservation,
+        displaced: &[crate::physical_runtime::durability::DisplacedArtifact],
+        occupied_attempts: &[[u8; 16]],
+        recovered_reservations: Vec<
+            crate::physical_runtime::durability::PhysicalRecoveredOriginalDropNoDurableEffect,
+        >,
+    ) -> Result<
+        crate::physical_runtime::durability::PhysicalReclaimAttempt,
+        crate::physical_runtime::durability::PhysicalBlobReclaimAdmissionDenial,
+    > {
+        self.root_owner.admit_blob_reclaim(
+            claim,
+            inspector,
+            displaced,
+            occupied_attempts,
+            recovered_reservations,
+        )
     }
 
     #[cfg(feature = "certification-test-authority")]
@@ -338,7 +382,7 @@ impl RecordPublicationDirector {
             }
             crate::physical_runtime::PhysicalMutationTerminalFact::ProvenNoEffect(_) => Ok(()),
             crate::physical_runtime::PhysicalMutationTerminalFact::Indeterminate(fate) => {
-                self.idempotency.record_indeterminate(*fate)
+                self.idempotency.record_indeterminate(fate.clone())
             }
         }
     }

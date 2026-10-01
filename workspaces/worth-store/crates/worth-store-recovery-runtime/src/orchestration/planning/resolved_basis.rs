@@ -18,6 +18,12 @@ pub(super) struct PageObservationResult {
     pub(super) observations: Vec<worth_store_recovery_physics::RecoveryPageObservation>,
     pub(super) artifact_reads: u64,
     pub(super) bytes_read: u64,
+    pub(super) source_copy_reads: u64,
+    pub(super) source_copy_bytes_read: u64,
+    pub(super) source_copy_peak_scratch_bytes: u64,
+    pub(super) historical_publication_reads: u64,
+    pub(super) historical_publication_bytes_read: u64,
+    pub(super) historical_publication_peak_scratch_bytes: u64,
     pub(super) candidate_artifact_reads: u64,
     pub(super) candidate_bytes_read: u64,
     pub(super) candidate_peak_materialization_bytes: u64,
@@ -26,6 +32,9 @@ pub(super) struct PageObservationResult {
     pub(super) inline_truth: Option<super::page_observation::InlineAllocationTruth>,
     pub(super) selected_source: crate::progression::RecoverySelectedSourceInventory,
     pub(super) manifest_budget: super::manifest_entry_budget::ManifestEntryBudget,
+    pub(super) tier_custody: Option<worth_store_recovery_physics::VerifiedSelectedTierEpochCustody>,
+    pub(super) historical_drops: Vec<super::page_observation::HistoricalDropEvidence>,
+    pub(super) ordered_releases: Option<Vec<super::page_observation::OrderedReleasedObservation>>,
     pub(super) integrity: crate::integrity_ingress::RecoveryIntegrityIngressCounters,
 }
 
@@ -37,6 +46,31 @@ pub(super) struct ResolvedPlanningBasis {
     pub(super) redo_bytes: u64,
     pub(super) distinct_targets: u64,
     pub(super) observed_pages: PageObservationResult,
+    pub(super) verified_drops: Vec<worth_store_physical_format::PersistedRecordIdentity>,
+    pub(super) verified_historical_release_operations: Vec<[u8; 32]>,
+    pub(super) historical_consumed:
+        Option<worth_store_recovery_physics::HistoricalConsumedOperationSet>,
+    pub(super) verified_historical_release_sources: Vec<(
+        [u8; 32],
+        worth_store_physical_format::DurablePhysicalRootManifest,
+        worth_store_physical_format::DurableFreeSpaceManifestHeader,
+    )>,
+    pub(super) verified_selected_checkpoint_custody:
+        Option<worth_store_recovery_physics::VerifiedSelectedCheckpointCustody>,
+    pub(super) verified_selected_head_custody_v2:
+        Option<worth_store_recovery_physics::VerifiedSelectedReleaseHeadCustodyV2>,
+    pub(super) verified_selected_no_release_custody:
+        Option<worth_store_recovery_physics::VerifiedSelectedNoReleaseCustody>,
+    pub(super) verified_pending_wal_release_custody:
+        Option<worth_store_recovery_physics::VerifiedPendingWalReleaseCustody>,
+    pub(super) verified_pending_release_head_replay:
+        Option<worth_store_recovery_physics::VerifiedSelectedReleaseHeadReplayV14>,
+    pub(super) verified_effective_release_heads_v14:
+        Option<worth_store_recovery_physics::VerifiedEffectiveReleaseHeadRosterV14>,
+    pub(super) verified_ordered_historical_release_custody:
+        Option<worth_store_recovery_physics::VerifiedOrderedHistoricalReleaseCustody>,
+    pub(super) validated_manifest_cleanup:
+        Option<crate::orchestration::ValidatedManifestResidueCleanup>,
 }
 
 impl ResolvedPlanningBasis {
@@ -47,10 +81,14 @@ impl ResolvedPlanningBasis {
             self.redo.counters(),
             self.observed_pages
                 .artifact_reads
-                .saturating_add(self.observed_pages.candidate_artifact_reads),
+                .saturating_add(self.observed_pages.candidate_artifact_reads)
+                .saturating_add(self.observed_pages.source_copy_reads)
+                .saturating_add(self.observed_pages.historical_publication_reads),
             self.observed_pages
                 .bytes_read
-                .saturating_add(self.observed_pages.candidate_bytes_read),
+                .saturating_add(self.observed_pages.candidate_bytes_read)
+                .saturating_add(self.observed_pages.source_copy_bytes_read)
+                .saturating_add(self.observed_pages.historical_publication_bytes_read),
         )
         .with_successor_candidate_observation(
             self.observed_pages.candidate_artifact_reads,
@@ -151,9 +189,19 @@ pub(super) fn resolve(
             PhysicalRecoveryPlanningDenial::Page(PageObservationFailure::ByteLimit.evidence()),
         ));
     }
+    let selected_wal = context
+        .integrity
+        .admitted_wal()
+        .recoverable_frames(context.selection.wal_tail());
+    let tier_evidence = page_observation::TierEvidence {
+        selection: &context.selection,
+        sample: &admitted.sample,
+        selected_wal: &selected_wal,
+    };
     let media = context.authority.media;
     let (media, attempt) = page_observation::observe_selected_pages(
         media,
+        tier_evidence,
         context.selection.root().selected().manifest(),
         context
             .selection
@@ -167,6 +215,7 @@ pub(super) fn resolve(
         context.limits.manifest_entries,
         admitted.remaining_manifest_entries,
         remaining_observation_bytes,
+        context.limits.staging_bytes,
         &mut context.integrity_trace,
     );
     context.authority.media = media;
@@ -189,6 +238,12 @@ pub(super) fn resolve(
             observations: observed.observations,
             artifact_reads: attempt.artifact_reads,
             bytes_read: attempt.bytes_read,
+            source_copy_reads: 0,
+            source_copy_bytes_read: 0,
+            source_copy_peak_scratch_bytes: 0,
+            historical_publication_reads: 0,
+            historical_publication_bytes_read: 0,
+            historical_publication_peak_scratch_bytes: observed.historical_chain_peak_scratch_bytes,
             candidate_artifact_reads: 0,
             candidate_bytes_read: 0,
             candidate_peak_materialization_bytes: 0,
@@ -197,6 +252,9 @@ pub(super) fn resolve(
             inline_truth: observed.inline_truth,
             selected_source: observed.selected_source,
             manifest_budget: observed.manifest_budget,
+            tier_custody: observed.tier_custody,
+            historical_drops: observed.historical_drops,
+            ordered_releases: observed.ordered_releases,
             integrity: attempt.integrity,
         },
         Err(denial) => {
@@ -249,6 +307,18 @@ pub(super) fn resolve(
             redo_bytes: admitted.redo_bytes,
             distinct_targets: admitted.distinct_targets,
             observed_pages,
+            verified_drops: Default::default(),
+            verified_historical_release_operations: Default::default(),
+            historical_consumed: None,
+            verified_historical_release_sources: Default::default(),
+            verified_selected_checkpoint_custody: None,
+            verified_selected_head_custody_v2: None,
+            verified_selected_no_release_custody: None,
+            verified_pending_wal_release_custody: None,
+            verified_pending_release_head_replay: None,
+            verified_effective_release_heads_v14: None,
+            verified_ordered_historical_release_custody: None,
+            validated_manifest_cleanup: None,
         },
     ))
 }

@@ -14,6 +14,10 @@ pub struct ClosedPhysicalRecoveryCleanup {
 }
 
 impl ClosedPhysicalRecoveryCleanup {
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        self.reopen.owned_heap_bytes()
+    }
+
     pub(in crate::physical_runtime) const fn new(
         reopen: CompletedPhysicalRecoveryFreshReopen,
         descriptive_plan_identity: [u8; 32],

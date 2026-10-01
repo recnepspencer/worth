@@ -225,6 +225,8 @@ pub(super) fn family(value: &str) -> Option<worth_foundational::PhysicalArtifact
         "checkpoint_dirty_basis" => CheckpointDirtyBasis,
         "checkpoint_binding_compaction" => CheckpointBindingCompaction,
         "checkpoint_binding" => CheckpointBinding,
+        "checkpoint_tier_certificate" => CheckpointTierCertificate,
+        "checkpoint_release_certificate" => CheckpointReleaseCertificate,
         "checkpoint_footer" => CheckpointFooter,
         _ => return None,
     })

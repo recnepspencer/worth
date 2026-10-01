@@ -3,7 +3,7 @@ use std::sync::{
     atomic::{AtomicU8, Ordering},
     Arc, Mutex,
 };
-use worth_store_physical_format::ExtentArenaRange;
+use worth_store_physical_format::{ExtentArenaRange, PhysicalTierClass};
 
 pub(in crate::physical_runtime::record_serving) type SharedArenaAllocationOwner =
     Arc<Mutex<ExtentArenaAllocationOwner>>;
@@ -28,22 +28,45 @@ pub(in crate::physical_runtime::record_serving) struct ArenaReservationObligatio
 }
 
 impl ArenaReservation {
-    pub(in crate::physical_runtime::record_serving) fn reserve(
+    pub(super) fn from_reserved(
         owner: &SharedArenaAllocationOwner,
-        bytes: u64,
-    ) -> Result<Self, ArenaAllocationDenial> {
-        let (token, range) = owner
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .reserve(bytes)?;
-        Ok(Self {
+        token: u64,
+        range: ExtentArenaRange,
+    ) -> Self {
+        Self {
             claim: Arc::new(ArenaReservationClaim {
                 owner: Arc::clone(owner),
                 token,
                 range,
                 state: AtomicU8::new(0),
             }),
-        })
+        }
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn reserve(
+        owner: &SharedArenaAllocationOwner,
+        bytes: u64,
+    ) -> Result<Self, ArenaAllocationDenial> {
+        Self::reserve_in_tier(owner, bytes, PhysicalTierClass::Primary)
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn reserve_in_tier(
+        owner: &SharedArenaAllocationOwner,
+        bytes: u64,
+        tier: PhysicalTierClass,
+    ) -> Result<Self, ArenaAllocationDenial> {
+        let (token, range) = owner
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .reserve_in_tier(bytes, tier)?;
+        Ok(Self::from_reserved(owner, token, range))
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn belongs_to(
+        &self,
+        owner: &SharedArenaAllocationOwner,
+    ) -> bool {
+        Arc::ptr_eq(&self.claim.owner, owner)
     }
 
     pub(in crate::physical_runtime::record_serving) fn range(&self) -> ExtentArenaRange {

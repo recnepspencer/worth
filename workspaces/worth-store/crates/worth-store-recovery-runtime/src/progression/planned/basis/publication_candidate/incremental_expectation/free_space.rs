@@ -1,52 +1,47 @@
-use std::collections::BTreeMap;
-
 use worth_store_physical_format::{
     durable_artifact_checksum, DurableFreeSpaceManifestHeader, FreeSpaceBlockReference,
     FreeSpaceKey, PhysicalFreeSpaceMembershipBlock, RecordArtifactFile,
     RecordFreeSpaceManifestEntry,
 };
 
-use super::super::{inventory, CandidateBuildDenial};
+use super::super::{encoding, inventory, CandidateBuildDenial};
 use super::CanonicalCandidateMatch;
 use crate::progression::planned::basis::{RecoveryBaseImagePlan, RecoverySelectedSourceInventory};
+use crate::progression::planned::PlanningResidentAllowance;
 
 #[derive(Clone, Copy)]
-enum Update {
+enum Change {
     Available(RecordFreeSpaceManifestEntry),
     Exhausted,
 }
+type Update = (FreeSpaceKey, Change);
 
 pub(super) fn derive(
     matcher: &mut CanonicalCandidateMatch<'_>,
     base: &RecoveryBaseImagePlan,
     source: &RecoverySelectedSourceInventory,
     final_inventory: &inventory::FinalInventory,
+    allowance: &mut PlanningResidentAllowance,
 ) -> Result<DurableFreeSpaceManifestHeader, CandidateBuildDenial> {
     let current = &source.free_space;
-    let selected = source
+    let mut selected =
+        allowance.reserve::<RecordFreeSpaceManifestEntry>(source.free_entries.len())?;
+    selected.extend_from_slice(&source.free_entries);
+    selected.sort_unstable_by_key(|entry| FreeSpaceKey::from(*entry));
+    let max_updates = source
         .free_entries
-        .iter()
-        .map(|entry| (FreeSpaceKey::from(*entry), *entry))
-        .collect::<BTreeMap<_, _>>();
-    let final_entries = final_inventory
-        .free
-        .iter()
-        .map(|entry| (FreeSpaceKey::from(*entry), *entry))
-        .collect::<BTreeMap<_, _>>();
-    let mut updates = BTreeMap::new();
-    for (key, entry) in &final_entries {
-        if selected.get(key) != Some(entry) {
-            updates.insert(*key, Update::Available(*entry));
-        }
-    }
-    for key in selected.keys() {
-        if !final_entries.contains_key(key) {
-            updates.insert(*key, Update::Exhausted);
-        }
-    }
+        .len()
+        .checked_add(final_inventory.free.len())
+        .ok_or(CandidateBuildDenial::Invalid)?;
+    let mut updates = allowance.reserve::<Update>(max_updates)?;
+    diff_entries(&selected, &final_inventory.free, &mut updates);
+    let selected_bytes = PlanningResidentAllowance::vector_bytes(&selected)?;
+    drop(selected);
+    allowance.release(selected_bytes);
     let generation = base.destination_generation();
     let mut planner = Planner {
         matcher,
+        allowance,
         topology: &source.free_topology,
         generation,
         capacity: final_inventory.capacity,
@@ -54,16 +49,29 @@ pub(super) fn derive(
         next_block: current.next_block(),
     };
     let mut roots = match current.root() {
-        Some(root) if final_inventory.capacity != current.node_capacity() => {
-            planner.rewrite_all(root, &updates)?
-        }
-        Some(root) => planner.rewrite(root, &updates)?,
-        None => planner.write_leaves(final_entries.into_values().collect())?,
+        Some(root) => planner.rewrite(
+            root,
+            &updates,
+            final_inventory.capacity != current.node_capacity(),
+        )?,
+        None => planner.write_leaves(&final_inventory.free)?,
     };
     while roots.len() > 1 {
-        roots = planner.write_branches(roots)?;
+        let next = planner.write_branches(&roots)?;
+        let bytes = PlanningResidentAllowance::vector_bytes(&roots)?;
+        drop(roots);
+        planner.allowance.release(bytes);
+        roots = next;
     }
-    DurableFreeSpaceManifestHeader::new(
+    let root = roots.pop();
+    let roots_bytes = PlanningResidentAllowance::vector_bytes(&roots)?;
+    drop(roots);
+    planner.allowance.release(roots_bytes);
+    let next_block = planner.next_block;
+    let update_bytes = PlanningResidentAllowance::vector_bytes(&updates)?;
+    drop((planner, updates));
+    allowance.release(update_bytes);
+    DurableFreeSpaceManifestHeader::new_with_tier_epoch(
         generation,
         current.tree_identity(),
         final_inventory.capacity,
@@ -73,44 +81,66 @@ pub(super) fn derive(
         final_inventory.next_page,
         final_inventory.next_extent,
         final_inventory.next_arena,
+        current.tier_epoch_start(),
         current.arena_capacity(),
         current.arena_alignment(),
-        planner.next_block,
-        roots.pop(),
+        next_block,
+        root,
     )
     .ok_or(CandidateBuildDenial::Invalid)
 }
 
-struct Planner<'matcher, 'observed, 'topology> {
-    matcher: &'matcher mut CanonicalCandidateMatch<'observed>,
-    topology: &'topology BTreeMap<(u64, u64), PhysicalFreeSpaceMembershipBlock>,
+fn diff_entries(
+    selected: &[RecordFreeSpaceManifestEntry],
+    final_entries: &[RecordFreeSpaceManifestEntry],
+    updates: &mut Vec<Update>,
+) {
+    let (mut old, mut new) = (0, 0);
+    while old < selected.len() || new < final_entries.len() {
+        match (selected.get(old), final_entries.get(new)) {
+            (Some(before), Some(after))
+                if FreeSpaceKey::from(*before) < FreeSpaceKey::from(*after) =>
+            {
+                updates.push((FreeSpaceKey::from(*before), Change::Exhausted));
+                old += 1;
+            }
+            (Some(before), Some(after))
+                if FreeSpaceKey::from(*before) == FreeSpaceKey::from(*after) =>
+            {
+                if before != after {
+                    updates.push((FreeSpaceKey::from(*after), Change::Available(*after)));
+                }
+                old += 1;
+                new += 1;
+            }
+            (_, Some(after)) => {
+                updates.push((FreeSpaceKey::from(*after), Change::Available(*after)));
+                new += 1;
+            }
+            (Some(before), None) => {
+                updates.push((FreeSpaceKey::from(*before), Change::Exhausted));
+                old += 1;
+            }
+            (None, None) => break,
+        }
+    }
+}
+
+struct Planner<'a, 'observed> {
+    matcher: &'a mut CanonicalCandidateMatch<'observed>,
+    allowance: &'a mut PlanningResidentAllowance,
+    topology: &'a std::collections::BTreeMap<(u64, u64), PhysicalFreeSpaceMembershipBlock>,
     generation: u64,
     capacity: u16,
     tree: u64,
     next_block: u64,
 }
 
-impl Planner<'_, '_, '_> {
+impl Planner<'_, '_> {
     fn rewrite(
         &mut self,
         reference: FreeSpaceBlockReference,
-        updates: &BTreeMap<FreeSpaceKey, Update>,
-    ) -> Result<Vec<FreeSpaceBlockReference>, CandidateBuildDenial> {
-        self.rewrite_inner(reference, updates, false)
-    }
-
-    fn rewrite_all(
-        &mut self,
-        reference: FreeSpaceBlockReference,
-        updates: &BTreeMap<FreeSpaceKey, Update>,
-    ) -> Result<Vec<FreeSpaceBlockReference>, CandidateBuildDenial> {
-        self.rewrite_inner(reference, updates, true)
-    }
-
-    fn rewrite_inner(
-        &mut self,
-        reference: FreeSpaceBlockReference,
-        updates: &BTreeMap<FreeSpaceKey, Update>,
+        updates: &[Update],
         rewrite_all: bool,
     ) -> Result<Vec<FreeSpaceBlockReference>, CandidateBuildDenial> {
         let block = self
@@ -118,50 +148,88 @@ impl Planner<'_, '_, '_> {
             .get(&(reference.generation(), reference.block()))
             .ok_or(CandidateBuildDenial::Invalid)?;
         if let Some(entries) = block.entries() {
-            let mut merged = entries
-                .iter()
-                .map(|entry| (FreeSpaceKey::from(*entry), *entry))
-                .collect::<BTreeMap<_, _>>();
-            apply(&mut merged, updates);
-            self.write_leaves(merged.into_values().collect())
-        } else {
-            let children = block.children().ok_or(CandidateBuildDenial::Invalid)?;
-            let assigned = assign(children, updates);
-            let mut rewritten = Vec::new();
-            for (child, child_updates) in children.iter().copied().zip(assigned) {
-                if !rewrite_all && child_updates.is_empty() {
-                    rewritten.push(child);
-                } else {
-                    rewritten.extend(self.rewrite_inner(child, &child_updates, rewrite_all)?);
-                }
-            }
-            self.write_branches(rewritten)
+            let count = entries
+                .len()
+                .checked_add(updates.len())
+                .ok_or(CandidateBuildDenial::Invalid)?;
+            let mut merged = self
+                .allowance
+                .reserve::<RecordFreeSpaceManifestEntry>(count)?;
+            merge_entries(entries, updates, &mut merged);
+            let roots = self.write_leaves(&merged)?;
+            let bytes = PlanningResidentAllowance::vector_bytes(&merged)?;
+            drop(merged);
+            self.allowance.release(bytes);
+            return Ok(roots);
         }
+        let children = block.children().ok_or(CandidateBuildDenial::Invalid)?;
+        let mut rewritten = self
+            .allowance
+            .reserve::<FreeSpaceBlockReference>(children.len())?;
+        let mut start = 0;
+        for (index, child) in children.iter().enumerate() {
+            let end = if index + 1 == children.len() {
+                updates.len()
+            } else {
+                start + updates[start..].partition_point(|(key, _)| *key <= child.last())
+            };
+            let child_updates = &updates[start..end];
+            if !rewrite_all && child_updates.is_empty() {
+                self.allowance.grow(&mut rewritten, 1)?;
+                rewritten.push(*child);
+            } else {
+                let child_roots = self.rewrite(*child, child_updates, rewrite_all)?;
+                self.allowance.grow(&mut rewritten, child_roots.len())?;
+                rewritten.extend_from_slice(&child_roots);
+                let bytes = PlanningResidentAllowance::vector_bytes(&child_roots)?;
+                drop(child_roots);
+                self.allowance.release(bytes);
+            }
+            start = end;
+        }
+        let roots = self.write_branches(&rewritten)?;
+        let bytes = PlanningResidentAllowance::vector_bytes(&rewritten)?;
+        drop(rewritten);
+        self.allowance.release(bytes);
+        Ok(roots)
     }
 
     fn write_leaves(
         &mut self,
-        entries: Vec<RecordFreeSpaceManifestEntry>,
+        entries: &[RecordFreeSpaceManifestEntry],
     ) -> Result<Vec<FreeSpaceBlockReference>, CandidateBuildDenial> {
-        let mut roots = Vec::new();
-        for chunk in entries.chunks(usize::from(self.capacity)) {
+        let chunks = entries.chunks(usize::from(self.capacity));
+        let mut roots = self
+            .allowance
+            .reserve::<FreeSpaceBlockReference>(chunks.len())?;
+        for chunk in chunks {
             let block_id = self.allocate()?;
+            let mut copied = self
+                .allowance
+                .reserve::<RecordFreeSpaceManifestEntry>(chunk.len())?;
+            copied.extend_from_slice(chunk);
             let block = PhysicalFreeSpaceMembershipBlock::leaf(
                 self.tree,
                 self.generation,
                 block_id,
-                chunk.to_vec(),
+                copied,
                 self.capacity,
             )
             .ok_or(CandidateBuildDenial::Invalid)?;
-            let bytes = block.encode(self.matcher.format);
+            let bytes = encoding::free_block(&block, self.matcher.format, self.allowance)?;
             roots.push(block.reference(durable_artifact_checksum(&bytes)));
+            let block_bytes = block
+                .owned_heap_bytes()
+                .ok_or(CandidateBuildDenial::Invalid)?;
+            drop(block);
+            self.allowance.release(block_bytes);
             self.matcher.match_artifact(
                 RecordArtifactFile::FreeSpaceMembershipBlock {
                     generation: self.generation,
                     block: block_id,
                 },
                 bytes,
+                self.allowance,
             )?;
         }
         Ok(roots)
@@ -169,31 +237,45 @@ impl Planner<'_, '_, '_> {
 
     fn write_branches(
         &mut self,
-        children: Vec<FreeSpaceBlockReference>,
+        children: &[FreeSpaceBlockReference],
     ) -> Result<Vec<FreeSpaceBlockReference>, CandidateBuildDenial> {
-        let mut roots = Vec::new();
-        for chunk in children.chunks(usize::from(self.capacity)) {
+        let chunks = children.chunks(usize::from(self.capacity));
+        let mut roots = self
+            .allowance
+            .reserve::<FreeSpaceBlockReference>(chunks.len())?;
+        for chunk in chunks {
             let block_id = self.allocate()?;
+            let level = chunk[0]
+                .level()
+                .checked_add(1)
+                .ok_or(CandidateBuildDenial::Invalid)?;
+            let mut copied = self
+                .allowance
+                .reserve::<FreeSpaceBlockReference>(chunk.len())?;
+            copied.extend_from_slice(chunk);
             let block = PhysicalFreeSpaceMembershipBlock::branch(
                 self.tree,
                 self.generation,
                 block_id,
-                chunk[0]
-                    .level()
-                    .checked_add(1)
-                    .ok_or(CandidateBuildDenial::Invalid)?,
-                chunk.to_vec(),
+                level,
+                copied,
                 self.capacity,
             )
             .ok_or(CandidateBuildDenial::Invalid)?;
-            let bytes = block.encode(self.matcher.format);
+            let bytes = encoding::free_block(&block, self.matcher.format, self.allowance)?;
             roots.push(block.reference(durable_artifact_checksum(&bytes)));
+            let block_bytes = block
+                .owned_heap_bytes()
+                .ok_or(CandidateBuildDenial::Invalid)?;
+            drop(block);
+            self.allowance.release(block_bytes);
             self.matcher.match_artifact(
                 RecordArtifactFile::FreeSpaceMembershipBlock {
                     generation: self.generation,
                     block: block_id,
                 },
                 bytes,
+                self.allowance,
             )?;
         }
         Ok(roots)
@@ -206,32 +288,36 @@ impl Planner<'_, '_, '_> {
     }
 }
 
-fn apply(
-    entries: &mut BTreeMap<FreeSpaceKey, RecordFreeSpaceManifestEntry>,
-    updates: &BTreeMap<FreeSpaceKey, Update>,
+fn merge_entries(
+    entries: &[RecordFreeSpaceManifestEntry],
+    updates: &[Update],
+    merged: &mut Vec<RecordFreeSpaceManifestEntry>,
 ) {
-    for (key, update) in updates {
-        match update {
-            Update::Available(entry) => {
-                entries.insert(*key, *entry);
+    let (mut old, mut new) = (0, 0);
+    while old < entries.len() || new < updates.len() {
+        match (entries.get(old), updates.get(new)) {
+            (Some(before), Some((key, _))) if FreeSpaceKey::from(*before) < *key => {
+                merged.push(*before);
+                old += 1;
             }
-            Update::Exhausted => {
-                entries.remove(key);
+            (Some(before), Some((key, change))) if FreeSpaceKey::from(*before) == *key => {
+                if let Change::Available(after) = change {
+                    merged.push(*after);
+                }
+                old += 1;
+                new += 1;
             }
+            (_, Some((_, change))) => {
+                if let Change::Available(after) = change {
+                    merged.push(*after);
+                }
+                new += 1;
+            }
+            (Some(before), None) => {
+                merged.push(*before);
+                old += 1;
+            }
+            (None, None) => break,
         }
     }
-}
-
-fn assign(
-    children: &[FreeSpaceBlockReference],
-    updates: &BTreeMap<FreeSpaceKey, Update>,
-) -> Vec<BTreeMap<FreeSpaceKey, Update>> {
-    let mut assigned = vec![BTreeMap::new(); children.len()];
-    for (key, update) in updates {
-        let index = children
-            .partition_point(|child| child.last() < *key)
-            .min(children.len().saturating_sub(1));
-        assigned[index].insert(*key, *update);
-    }
-    assigned
 }

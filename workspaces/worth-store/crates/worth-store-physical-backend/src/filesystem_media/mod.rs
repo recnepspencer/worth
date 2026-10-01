@@ -94,6 +94,7 @@ pub use artifact_tree::{
     ScheduledArtifactNewWriteOutcome, ScheduledArtifactRangeReadOutcome,
     ScheduledArtifactRangeWriteOutcome, ScheduledArtifactTreePublicationEffectOutcome,
 };
+pub(crate) use artifact_tree::ArtifactTreeAllocatedReadFailure;
 pub use capability_profile::{
     CapabilityProfileError, CapabilitySupport, FilesystemBackendProfile, FilesystemLocation,
     MediaCapability, MediaCapabilityObservation,

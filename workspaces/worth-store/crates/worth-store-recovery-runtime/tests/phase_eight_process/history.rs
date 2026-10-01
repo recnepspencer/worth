@@ -28,7 +28,7 @@ pub(super) use parent_oracle::{
     CleanupCandidateProof, CleanupTransitionProof,
 };
 pub(super) use persisted_fates::classify_persisted_fates;
-pub(super) use physical_history::ParentPhysicalHistory;
+pub(super) use physical_history::{ParentHistoryMismatch, ParentPhysicalHistory};
 pub(super) use process::{
     launch_killed_cleanup_writer_with_operation_count,
     launch_killed_durable_unacknowledged_writer_with_operation_count,

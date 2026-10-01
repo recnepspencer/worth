@@ -132,7 +132,7 @@ impl RecordPublicationDirector {
                     let allocator = owner.lock().unwrap_or_else(|e| e.into_inner());
                     match allocator.preflight_release(source.arena_range()) {
                         Ok(()) => {},
-                        Err(crate::physical_runtime::record_serving::arena::ArenaAllocationDenial::RangeBudget) => {
+                        Err(crate::physical_runtime::record_serving::arena::ArenaAllocationDenial::RangeBudget { .. }) => {
                             progress.after = None;
                             return Ok(ArenaEvacuationSelection::ReleasePending { arena: progress.arena });
                         },
@@ -250,7 +250,12 @@ impl RecordPublicationDirector {
                 retirement_root: None,
             });
         }
-        let result = self.begin_extent_copy(placement, request, selected);
+        let result = self.begin_extent_copy(
+            placement,
+            request,
+            selected,
+            super::extent_copy::CopyProducer::ArenaEvacuation,
+        );
         if !matches!(&result, Ok(Ok(_))) {
             self.arena_evacuation
                 .lock()

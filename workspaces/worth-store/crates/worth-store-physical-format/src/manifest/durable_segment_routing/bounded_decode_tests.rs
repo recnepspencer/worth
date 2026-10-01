@@ -77,6 +77,24 @@ fn format() -> PhysicalRecordFormatDeclaration {
     PhysicalRecordFormatDeclaration::builder().admit().unwrap()
 }
 
+#[test]
+fn reserved_segment_frame_requires_full_backing_and_roundtrips() {
+    let block = PhysicalSegmentMembershipBlock::leaf(7, 1, 1, vec![entry(1)], 2).unwrap();
+    let required = block.encoded_frame_bytes().unwrap();
+    assert!(block
+        .encode_in_reserved(format(), Vec::with_capacity(required - 1))
+        .is_none());
+    let bytes = block
+        .encode_in_reserved(format(), Vec::with_capacity(required))
+        .unwrap();
+    assert_eq!(bytes.len(), required);
+    assert_eq!(bytes[8], DurableFrameKind::SegmentMembershipBlock as u8);
+    assert_eq!(
+        PhysicalSegmentMembershipBlock::decode(&bytes, 2),
+        Ok((block, format()))
+    );
+}
+
 fn entry(page: u64) -> RecordSegmentPageManifestEntry {
     let authority = PhysicalGenerationAuthority::for_canonical_physical_format();
     let segment = PhysicalSegmentId::from_raw(1).unwrap();

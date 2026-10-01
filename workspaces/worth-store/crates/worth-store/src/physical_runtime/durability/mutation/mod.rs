@@ -45,8 +45,9 @@ pub(in crate::physical_runtime) use idempotency::{
     PhysicalMutationIdempotencyRegistryAdmissionError, PhysicalMutationIdempotencyRegistryDenial,
     PhysicalMutationIdempotencyRuntimeAuthority, PhysicalMutationIdempotencyRuntimeOwner,
     PhysicalMutationPreSealCancellationDenial, PhysicalMutationTerminalizationDenial,
-    PhysicalMutationUnresolvedBindingObservation, RebuiltPhysicalMutationIdempotency,
-    UnallocatedPhysicalMutationAttemptBinding,
+    PhysicalMutationUnresolvedBindingObservation, PhysicalOriginalDropCompleted,
+    PhysicalOriginalDropNoEffect, PhysicalRecoveredOriginalDropNoDurableEffect,
+    RebuiltPhysicalMutationIdempotency, UnallocatedPhysicalMutationAttemptBinding,
 };
 #[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use idempotency::{

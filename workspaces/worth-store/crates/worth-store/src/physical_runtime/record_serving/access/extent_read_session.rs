@@ -22,6 +22,31 @@ pub(in crate::physical_runtime::record_serving) struct ExtentReadChunk<'session>
     pub(in crate::physical_runtime::record_serving) logical_range: Range<u64>,
 }
 
+/// Only an already selected extent data frame's damaged C.5 chunk can be
+/// contained to one record. Routing, manifest, membership and work failures
+/// still require the existing Store-wide health policy.
+pub(in crate::physical_runtime::record_serving) enum ExtentReadFailure {
+    IsolatedRecordDamage(RecordStreamFailure),
+    Global(RecordStreamFailure),
+}
+
+impl ExtentReadFailure {
+    pub(in crate::physical_runtime::record_serving) const fn global_kind(
+        &self,
+    ) -> Option<RecordStreamFailureKind> {
+        match self {
+            Self::IsolatedRecordDamage(_) => None,
+            Self::Global(failure) => Some(failure.kind()),
+        }
+    }
+
+    pub(super) fn into_stream_failure(self) -> RecordStreamFailure {
+        match self {
+            Self::IsolatedRecordDamage(failure) | Self::Global(failure) => failure,
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 struct ExtentChunkReadPlan {
     completed: u64,
@@ -84,7 +109,7 @@ impl ExtentReadState {
         target: &mut [u8],
         observation: &mut RecordReadObservation,
         identity: RecordReadIdentity,
-    ) -> Result<usize, RecordStreamFailure> {
+    ) -> Result<usize, ExtentReadFailure> {
         if self.payload_offset == self.payload.len() {
             if self.logical_offset == self.manifest.logical_bytes() {
                 return Ok(0);
@@ -104,7 +129,7 @@ impl ExtentReadState {
         allocation: &worth_store_buffer_pool::OperationAllocationGrant,
         observation: &mut RecordReadObservation,
         identity: RecordReadIdentity,
-    ) -> Result<Option<ExtentReadChunk<'_>>, RecordStreamFailure> {
+    ) -> Result<Option<ExtentReadChunk<'_>>, ExtentReadFailure> {
         if self.payload_offset == self.payload.len() {
             if self.logical_offset == self.manifest.logical_bytes() {
                 return Ok(None);
@@ -130,12 +155,15 @@ impl ExtentReadState {
         allocation: &worth_store_buffer_pool::OperationAllocationGrant,
         observation: &mut RecordReadObservation,
         identity: RecordReadIdentity,
-    ) -> Result<(), RecordStreamFailure> {
+    ) -> Result<(), ExtentReadFailure> {
         let plan = self.plan_chunk_read();
         self.frame = None;
-        let frame = self.load_planned_chunk(allocation, plan, observation, identity)?;
+        let frame = self
+            .load_planned_chunk(allocation, plan, observation, identity)
+            .map_err(ExtentReadFailure::Global)?;
         let (frame, payload) = self.admit_loaded_chunk(frame, plan, observation)?;
         self.install_chunk(frame, payload, plan)
+            .map_err(ExtentReadFailure::Global)
     }
 
     fn plan_chunk_read(&self) -> ExtentChunkReadPlan {
@@ -194,7 +222,7 @@ impl ExtentReadState {
         frame: LoadedPhysicalFrame,
         plan: ExtentChunkReadPlan,
         observation: &mut RecordReadObservation,
-    ) -> Result<(LoadedPhysicalFrame, Range<usize>), RecordStreamFailure> {
+    ) -> Result<(LoadedPhysicalFrame, Range<usize>), ExtentReadFailure> {
         let coordinate = match ExtentChunkCoordinate::new(
             self.manifest.record(),
             self.manifest.extent_cell(),
@@ -205,17 +233,17 @@ impl ExtentReadState {
             Some(coordinate) => coordinate,
             None => {
                 frame.reject_projection_failure();
-                return Err(RecordStreamFailure::during_read(
+                return Err(ExtentReadFailure::Global(RecordStreamFailure::during_read(
                     RecordStreamFailureKind::ArtifactDamaged,
                     plan.completed,
-                ));
+                )));
             }
         };
         let context = self.artifacts.resident_admission_context().ok_or_else(|| {
-            RecordStreamFailure::during_read(
+            ExtentReadFailure::Global(RecordStreamFailure::during_read(
                 RecordStreamFailureKind::ArtifactDamaged,
                 plan.completed,
-            )
+            ))
         })?;
         let admitted = admit_extent_chunk(
             &frame,
@@ -232,22 +260,34 @@ impl ExtentReadState {
                 if stale {
                     observation.check_generation(false);
                 }
+                if denial == CleanExtentAdmissionDenial::FrameChecksumDamaged {
+                    // C.5 data-frame validation failed after exact selected
+                    // manifest admission. No routing authority was damaged;
+                    // retain the failure locally so disjoint records remain
+                    // readable and diagnostic scrub can still run.
+                    drop(frame);
+                    return Err(ExtentReadFailure::IsolatedRecordDamage(
+                        RecordStreamFailure::during_read(
+                            RecordStreamFailureKind::SelectedDataFrameChecksumDamaged,
+                            plan.completed,
+                        ),
+                    ));
+                }
+                let failure =
+                    RecordStreamFailure::during_read(denial.stream_failure_kind(), plan.completed);
                 if !denial.preserves_resident_bytes() {
                     frame.reject_projection_failure();
                 }
-                return Err(RecordStreamFailure::during_read(
-                    denial.stream_failure_kind(),
-                    plan.completed,
-                ));
+                return Err(ExtentReadFailure::Global(failure));
             }
         };
         observation.check_generation(true);
         if admitted.payload.len() != plan.payload_bytes {
             frame.reject_projection_failure();
-            return Err(RecordStreamFailure::during_read(
+            return Err(ExtentReadFailure::Global(RecordStreamFailure::during_read(
                 RecordStreamFailureKind::FormatMismatch,
                 plan.completed,
-            ));
+            )));
         }
         Ok((frame, admitted.payload))
     }
@@ -316,6 +356,10 @@ fn frame_load_stream_failure(
         super::super::RecordReadDenial::PhysicalWork(
             super::super::RecordReadWorkDenial::RuntimeReleased,
         ) => RecordStreamFailureKind::RuntimeReleased,
+        super::super::RecordReadDenial::PhysicalWork(
+            super::super::RecordReadWorkDenial::SchedulerReservationRejected
+            | super::super::RecordReadWorkDenial::SchedulerRejected,
+        ) => RecordStreamFailureKind::SchedulerUnavailable,
         super::super::RecordReadDenial::ResidencyUnavailable(residency) => {
             RecordStreamFailureKind::ResidencyUnavailable(residency)
         }

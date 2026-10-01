@@ -59,7 +59,7 @@ pub(crate) use cleanup_candidate::{
     CleanupTransitionProof,
 };
 pub(crate) use derivation::derive;
-pub(crate) use evidence::ParentPhysicalEvidence;
+pub(crate) use evidence::{ParentPhysicalEvidence, ParentSemanticMismatch};
 pub(super) use evidence_digest::{DigestBuilder, DigestObservation};
 pub(crate) use in_flight::classify as classify_in_flight_artifacts;
 pub(super) use in_flight::require_bound_records;

@@ -2,11 +2,11 @@ use std::path::Path;
 
 use sha2::{Digest, Sha256};
 use worth_store_blob_chunks::certification_test_authority::blob_backup_artifact_for_bytes;
-use worth_store_layout_indexes::encode_baseline_btree_leaf_record;
 use worth_store_offline_verifier::checkpoint_backup_frontier_digest;
 use worth_store_physical_backend::observe_physical_backup_artifact;
 use worth_store_physical_format::{
-    BackupBundleArtifactFormat, CheckpointBackupArtifact, CheckpointBackupArtifactInput,
+    BackupBundleArtifactFormat, BTreeNodeCellV1, BTreeNodeV1, CheckpointBackupArtifact,
+    CheckpointBackupArtifactInput,
     InMemoryPhysicalFormatModel, PageGenerationCell, PersistedExtentBytes, PersistedPageBytes,
     PhysicalGeneration, PhysicalGenerationAuthority, PhysicalReferenceAuthority,
     PlatformPhysicalRootPublicationReport, RootPublicationCell,
@@ -224,14 +224,22 @@ fn extent_artifact(source: &Path, persisted: &PersistedExtentBytes) -> BackupArt
 }
 
 fn index_artifact(source: &Path, generation: PhysicalGeneration) -> BackupArtifactReference {
-    let bytes = encode_baseline_btree_leaf_record([record_slot(20), record_slot(21)], true, false);
+    let bytes = BTreeNodeV1::leaf(
+        1,
+        vec![BTreeNodeCellV1::leaf(b"catalog-key".to_vec(), vec![1])],
+        None,
+        None,
+    )
+    .expect("backup index node")
+    .encode(4096)
+    .expect("backup index bytes");
     let reference = current_slot_reference(segment(200), page(1), record_slot(6), generation);
     observe_reference(
         source,
         FixtureArtifactMedia::new("index.media", &bytes),
         UntrustedBackupArtifactClaim {
             family: BackupArtifactFamily::Index,
-            format: BackupBundleArtifactFormat::LayoutBTreeLeafV1,
+            format: BackupBundleArtifactFormat::BTreeNodeV1,
             identity: format!("index:sha256:{}", hex(&Sha256::digest(bytes))),
             generation: reference.generation().get(),
             coverage: BackupArtifactCoverage::physical_reachability(),

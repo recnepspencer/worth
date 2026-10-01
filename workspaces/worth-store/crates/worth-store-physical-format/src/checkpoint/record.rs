@@ -3,6 +3,7 @@ use crate::record_framing::crc32c;
 const MAGIC: [u8; 8] = *b"WCP7REC\0";
 const SCHEMA: u8 = 1;
 pub(super) const MAINTENANCE_CHECKPOINT_SCHEMA: u8 = 2;
+pub(super) const CERTIFIED_CHECKPOINT_SCHEMA: u8 = 3;
 const PREFIX_BYTES: usize = 16;
 const CHECKSUM_BYTES: usize = 4;
 
@@ -11,6 +12,8 @@ pub(super) const DIRTY_BASIS_KIND: u8 = 2;
 pub(super) const BINDING_COMPACTION_HEADER_KIND: u8 = 3;
 pub(super) const BINDING_RECORD_KIND: u8 = 4;
 pub(super) const FOOTER_KIND: u8 = 5;
+pub(super) const TIER_EPOCH_CERTIFICATE_KIND: u8 = 6;
+pub(super) const RELEASE_CUSTODY_CERTIFICATE_KIND: u8 = 7;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CheckpointStreamDecodeDenial {
@@ -64,7 +67,10 @@ pub(super) fn decode_record(
     if record[..8] != MAGIC {
         return Err(CheckpointStreamDecodeDenial::WrongMagic);
     }
-    if record[8] != SCHEMA && record[8] != MAINTENANCE_CHECKPOINT_SCHEMA {
+    if record[8] != SCHEMA
+        && record[8] != MAINTENANCE_CHECKPOINT_SCHEMA
+        && record[8] != CERTIFIED_CHECKPOINT_SCHEMA
+    {
         return Err(CheckpointStreamDecodeDenial::UnsupportedSchema(record[8]));
     }
     if record[9] != expected_kind {
@@ -102,7 +108,10 @@ pub(super) fn decode_bounded_record(
     if record[..8] != MAGIC {
         return Err(CheckpointStreamDecodeDenial::WrongMagic);
     }
-    if record[8] != SCHEMA && record[8] != MAINTENANCE_CHECKPOINT_SCHEMA {
+    if record[8] != SCHEMA
+        && record[8] != MAINTENANCE_CHECKPOINT_SCHEMA
+        && record[8] != CERTIFIED_CHECKPOINT_SCHEMA
+    {
         return Err(CheckpointStreamDecodeDenial::UnsupportedSchema(record[8]));
     }
     if record[9] != expected_kind {
@@ -147,7 +156,10 @@ pub(super) fn decode_bounded_record_frame_bytes(
     if prefix[..8] != MAGIC {
         return Err(CheckpointStreamDecodeDenial::WrongMagic);
     }
-    if prefix[8] != SCHEMA && prefix[8] != MAINTENANCE_CHECKPOINT_SCHEMA {
+    if prefix[8] != SCHEMA
+        && prefix[8] != MAINTENANCE_CHECKPOINT_SCHEMA
+        && prefix[8] != CERTIFIED_CHECKPOINT_SCHEMA
+    {
         return Err(CheckpointStreamDecodeDenial::UnsupportedSchema(prefix[8]));
     }
     if prefix[9] != expected_kind {

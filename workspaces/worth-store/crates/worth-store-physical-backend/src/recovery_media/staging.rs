@@ -283,6 +283,18 @@ impl IndeterminateScheduledRecoveryStagingSynchronization {
 }
 
 impl CompletedRecoveryStagingWrite {
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        let created = self
+            .created
+            .as_ref()
+            .map_or(Some(0), |effect| effect.artifact().owned_heap_bytes())?;
+        let appended = self
+            .appended
+            .as_ref()
+            .map_or(Some(0), |effect| effect.artifact().owned_heap_bytes())?;
+        created.checked_add(appended)
+    }
+
     pub const fn artifact(&self) -> RecordArtifactFile {
         self.artifact
     }
@@ -318,6 +330,18 @@ impl CompletedRecoveryStagingWrite {
 }
 
 impl IndeterminateRecoveryStagingWrite {
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        match &self.physical {
+            RecoveryStagingIndeterminatePhysical::NewArtifact(effect) => {
+                effect.artifact().owned_heap_bytes()
+            }
+            RecoveryStagingIndeterminatePhysical::Range(_) => Some(0),
+            RecoveryStagingIndeterminatePhysical::Append { append, .. } => {
+                append.artifact().owned_heap_bytes()
+            }
+        }
+    }
+
     pub const fn artifact(&self) -> RecordArtifactFile {
         self.artifact
     }

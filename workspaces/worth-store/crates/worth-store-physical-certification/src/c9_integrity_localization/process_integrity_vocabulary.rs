@@ -106,5 +106,11 @@ pub(super) fn project_artifact_family(
         Source::ExtentManifest => Target::ExtentManifest,
         Source::FreeSpaceHeader => Target::FreeSpaceHeader,
         Source::FreeSpaceMembershipBlock => Target::FreeSpaceMembershipBlock,
+        Source::BlobResumeSession => Target::BlobResumeSession,
+        Source::BlobChunkFrame => Target::BlobChunkFrame,
+        Source::BlobTreeNode => Target::BlobTreeNode,
+        Source::BlobGenerationPublication => Target::BlobGenerationPublication,
+        Source::BlobDropSetManifest => Target::BlobDropSetManifest,
+        Source::BlobReclaimDescriptor => Target::BlobReclaimDescriptor,
     }
 }

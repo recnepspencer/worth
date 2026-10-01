@@ -15,6 +15,19 @@ pub enum RecordAppendDenial {
     BatchByteLimitExceeded,
     RecordTooLarge,
     InlinePageFull,
+    BlobRecordRequiresStoreOwner,
+    BlobMovementSourceClassMismatch,
+    BlobMovementUnsupportedTier,
+    InvalidBlobRecord,
+    ReuseSourceChanged,
+    ReuseSourceInvalid,
+    ReuseDestinationInvalid,
+    DerivedDirectoryRequiresStoreOwner,
+    InvalidDerivedDirectory,
+    DerivedDirectorySourceChanged,
+    BTreeNodeRequiresStoreOwner,
+    InvalidBTreeNode,
+    ReclaimFenceUnavailable,
     RootGenerationExhausted,
     RecordIdentityExhausted,
     PhysicalIdentityExhausted,
@@ -33,6 +46,15 @@ pub enum RecordAppendDenial {
     /// extent.
     RewriteSpanNotLive,
     PhysicalPressure,
+    /// The candidate's planner could not allocate its admitted heap backing.
+    /// This diagnostic preserves the allocator cause and grants no retry authority.
+    PlanningAllocationUnavailable {
+        requested: u64,
+        cause: std::collections::TryReserveError,
+    },
+    /// Exact extent-arena reservation denial before data or WAL effects.
+    /// This describes failed admission and grants no allocation or retry authority.
+    ArenaAllocationUnavailable(super::super::ArenaAllocationDenial),
     /// Retained-storage growth for the candidate would exceed the hard allowance
     /// left after progress headroom.
     RetentionPressure,
@@ -68,6 +90,10 @@ impl RecordAppendError {
     pub const fn pressure_denial(&self) -> Option<RecordAppendDenial> {
         match self {
             Self::PhysicalPressure { .. } => Some(RecordAppendDenial::PhysicalPressure),
+            Self::Denied(
+                RecordAppendDenial::ArenaAllocationUnavailable(_)
+                | RecordAppendDenial::PlanningAllocationUnavailable { .. },
+            ) => Some(RecordAppendDenial::PhysicalPressure),
             Self::StreamFailed(failure) if failure.pressure().is_some() => {
                 Some(RecordAppendDenial::PhysicalPressure)
             }

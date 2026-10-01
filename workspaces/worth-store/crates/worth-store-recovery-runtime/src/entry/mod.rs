@@ -27,9 +27,9 @@ pub use limits::{
     PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDenial, PhysicalRecoveryLimits,
 };
 pub use outcome::{
-    PhysicalRecoveryBlock, PhysicalRecoveryBlockEvidence, PhysicalRecoveryBlockKind,
-    PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure, PhysicalRecoveryOutcome,
-    PhysicalRecoveryPageAdmissionDenial, PhysicalRecoveryPlanningDenial,
+    HistoricalDropAdmissionStage, PhysicalRecoveryBlock, PhysicalRecoveryBlockEvidence,
+    PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure,
+    PhysicalRecoveryOutcome, PhysicalRecoveryPageAdmissionDenial, PhysicalRecoveryPlanningDenial,
     PhysicalRecoveryPublicationIndeterminate, PhysicalRecoveryRefusal, PhysicalRecoveryRefusalKind,
 };
 pub use publication::{

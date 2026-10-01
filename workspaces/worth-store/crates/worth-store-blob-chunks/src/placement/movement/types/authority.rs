@@ -4,7 +4,7 @@ pub struct BlobPlacementMovementAuthority {
 }
 
 impl BlobPlacementMovementAuthority {
-    pub const fn store_owned() -> Self {
+    pub const fn for_planning() -> Self {
         Self { _private: () }
     }
 }

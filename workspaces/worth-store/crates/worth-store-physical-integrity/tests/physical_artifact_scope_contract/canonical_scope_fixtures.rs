@@ -45,7 +45,7 @@ pub(super) fn extent_placement() -> DurableExtentRecordPlacement {
     let extent = PhysicalGenerationAuthority::for_canonical_physical_format()
         .record_extent_cell(PhysicalExtentId::from_raw(5).unwrap())
         .with_extent_generation(PhysicalGeneration::from_raw(6).unwrap());
-    DurableExtentRecordPlacement::new(record(7), extent, 1024, arena_range()).unwrap()
+    DurableExtentRecordPlacement::legacy_unknown(record(7), extent, 1024, arena_range()).unwrap()
 }
 
 pub(super) fn arena_range() -> ExtentArenaRange {

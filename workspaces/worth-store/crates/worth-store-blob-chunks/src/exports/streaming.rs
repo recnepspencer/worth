@@ -2,18 +2,16 @@
 pub use crate::streaming::{
     run_resumable_streaming_ingest, BlobChunkStreamingOperation, BlobChunkStreamingOperationKind,
     BlobChunkStreamingWindow, BlobStreamingChunkWriter, BlobStreamingContentFrontier,
-    BlobStreamingIngest, BlobStreamingIngestExecution, BlobStreamingIngestRequest,
-    BlobStreamingPressureAdmission, BlobStreamingReadAdmission, BlobStreamingReadExecution,
+    BlobStreamingIngest, BlobStreamingIngestRequest, BlobStreamingPressureAdmission,
     BlobStreamingReadRequest, BlobStreamingResumeAdmission,
 };
 // --- Outcomes (transition receipts) ---
 pub use crate::streaming::{
     BlobChunkStreamingObservation, BlobChunkStreamingResidencyProof,
-    BlobStreamingAllocationObservation, BlobStreamingCounterBackedPerformanceReceipt,
-    BlobStreamingReadCounterBackedPerformanceReceipt, BlobStreamingReadObservation,
-    BlobStreamingReadObservedChunk, BlobStreamingReadResidencyProof, BlobStreamingReadWindow,
-    BlobStreamingResidencyProof, BlobStreamingResumePosture, BlobStreamingSourceFrame,
-    BlobStreamingVerifiedRead, BlobStreamingWindow, BlobStreamingWrittenChunk,
+    BlobStreamingCounterBackedPerformanceReceipt, BlobStreamingReadCounterBackedPerformanceReceipt,
+    BlobStreamingReadObservation, BlobStreamingReadObservedChunk, BlobStreamingReadWindow,
+    BlobStreamingResumePosture, BlobStreamingSourceFrame, BlobStreamingVerifiedRead,
+    BlobStreamingWindow, BlobStreamingWrittenChunk,
 };
 // --- Denials (classified failure enums) ---
 pub use crate::streaming::{

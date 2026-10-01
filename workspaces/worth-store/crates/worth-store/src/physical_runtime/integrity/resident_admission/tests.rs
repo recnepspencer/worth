@@ -1,10 +1,13 @@
 use worth_store_buffer_pool::{PhysicalFrameAccess, PhysicalFrameKey};
 use worth_store_physical_format::{
     DurablePhysicalRootManifest, FreeSpaceBlockReference, FreeSpaceKey,
+    ReleaseCustodyHeadBlockReferenceV1, ReleaseCustodyHeadKeyV1,
 };
 
 use super::load::ResidentAdmissionContext;
-use super::root_manifest::{admit_loaded_root_manifest, admit_resident_root_manifest};
+use super::root_manifest::{
+    admit_loaded_root_manifest, admit_resident_root_manifest, project_loaded_root_manifest,
+};
 use crate::physical_runtime::{ResidentAdmissionCounterCells, RootProtocolAdmissionDenial};
 use worth_store_physical_integrity::{
     validate_root_manifest, RootManifestIntegrityValidation, UntrustedPhysicalArtifact,
@@ -15,6 +18,36 @@ mod counter_semantics;
 mod free_space_checksum_cost;
 mod support;
 use support::*;
+
+#[test]
+fn resident_owner_projection_preserves_schema_ten_head_and_maintenance() {
+    let store = store(78);
+    let format = format();
+    let key = ReleaseCustodyHeadKeyV1::new([17; 16], 2).unwrap();
+    let head = ReleaseCustodyHeadBlockReferenceV1::new(7, 3, 0, key, key, [29; 32]).unwrap();
+    let expected = DurablePhysicalRootManifest::builder(7, 11, 2, 43)
+        .release_custody_head_root(Some(head))
+        .next_release_custody_head_block(4)
+        .admit()
+        .unwrap()
+        .with_maintenance_protocol();
+    let bytes = expected.encode(format);
+    assert_eq!(bytes[9], 10);
+    let (_pool, _allocation, lease) = loaded_manifest(store, 7, &bytes);
+    let counters = ResidentAdmissionCounterCells::default();
+    let observed = project_loaded_root_manifest(
+        &lease,
+        store,
+        format,
+        7,
+        ResidentAdmissionContext::new(lifecycle().observation_state(), &counters),
+    )
+    .unwrap();
+    assert_eq!(observed, expected);
+    assert_eq!(observed.release_custody_head_root(), Some(head));
+    assert_eq!(observed.next_release_custody_head_block(), 4);
+    assert!(observed.requires_maintenance_protocol());
+}
 
 #[test]
 fn exact_same_generation_hit_reuses_record_without_fresh_validation() {

@@ -90,15 +90,26 @@ fn admit_checkpoint_covered_wal(
         dispositions: Vec::new(),
     };
     let mut candidate_bytes = 0_u64;
+    let protected_start = selection
+        .wal_tail()
+        .protected_checkpoint_covered()
+        .first()
+        .map(|artifact| artifact.identity());
+    let mut preserving_continuation = false;
     for covered in selection.wal_tail().checkpoint_covered() {
-        let kind = checkpoint_covered_disposition(CheckpointCoveredWalDecision {
-            cleanup_safe: covered.cleanup_safe(),
-            unresolved_retirement,
-            unresolved: fates.indeterminate() != 0,
-            next_count: admission.candidates.len() as u64 + 1,
-            next_bytes: candidate_bytes.checked_add(covered.byte_count()),
-            limits,
-        });
+        preserving_continuation |= protected_start == Some(covered.identity());
+        let kind = if preserving_continuation {
+            RecoveryCleanupDispositionKind::Retained
+        } else {
+            checkpoint_covered_disposition(CheckpointCoveredWalDecision {
+                cleanup_safe: covered.cleanup_safe(),
+                unresolved_retirement,
+                unresolved: fates.indeterminate() != 0,
+                next_count: admission.candidates.len() as u64 + 1,
+                next_bytes: candidate_bytes.checked_add(covered.byte_count()),
+                limits,
+            })
+        };
         if kind == RecoveryCleanupDispositionKind::Eligible {
             candidate_bytes = candidate_bytes
                 .checked_add(covered.byte_count())

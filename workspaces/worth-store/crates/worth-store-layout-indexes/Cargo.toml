@@ -35,7 +35,7 @@ worth-store-physical-format = { path = "../worth-store-physical-format" }
 worth-store-physical-isolation = { path = "../worth-store-physical-isolation" }
 worth-store-recovery-physics = { path = "../worth-store-recovery-physics" }
 worth-store-security = { path = "../worth-store-security", features = ["certification-test-authority"] }
-worth-store-test-support = { path = "../worth-store-test-support", default-features = false, features = ["physical-isolation-fixtures"] }
+worth-store-test-support = { path = "../worth-store-test-support", default-features = false }
 worth-store-wal = { path = "../worth-store-wal", features = ["certification-authority"] }
 
 [lints]

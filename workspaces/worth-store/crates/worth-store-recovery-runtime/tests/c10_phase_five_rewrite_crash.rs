@@ -2,6 +2,8 @@
 mod c10_crash_evidence;
 #[allow(dead_code)]
 mod c10_phase_five_read;
+#[path = "c10_historical_rewrite/support.rs"]
+mod historical_rewrite_support;
 #[allow(dead_code)]
 mod phase_three_support;
 
@@ -114,6 +116,30 @@ fn killed_rewrite_after_namespace_durability_is_not_repeated() {
         directory_snapshot(&root, "families/records/roots")
     );
     drop(parent);
+}
+
+#[test]
+fn inline_rewrite_result_remains_exact_after_its_root_becomes_historical() {
+    let (parent, root) = kill_child("after-wal");
+    let (_, expected_payload, _) = release_after_read(parent.path(), &root);
+    assert_eq!(expected_payload, b"phase5-rewrite-source");
+    let result_root = historical_rewrite_support::selected_catalog_generation(&root);
+    historical_rewrite_support::advance_with_ordinary_appends(&root, false);
+    let selected_before = historical_rewrite_support::selected_catalog_generation(&root);
+    assert!(
+        selected_before >= result_root + 2,
+        "the rewrite result root must be neither selected nor retained-previous"
+    );
+    let segments_before = segment_snapshot(&root);
+    let (_, payload, selected_after) = release_after_read(parent.path(), &root);
+    assert_eq!(payload, expected_payload);
+    assert_eq!(selected_after, selected_before);
+    assert_eq!(
+        historical_rewrite_support::selected_catalog_generation(&root),
+        selected_before,
+        "fresh recovery must not republish an already historical rewrite"
+    );
+    assert_eq!(segment_snapshot(&root), segments_before);
 }
 
 #[test]

@@ -18,19 +18,16 @@ mod maintenance;
 pub mod materialization;
 pub mod observation;
 mod planning;
-mod read;
-mod recovery;
 mod strategy;
 pub mod strategy_declarations;
 
 pub use access::execution::{
-    btree_lookup_readiness_cases, degraded_scan_readiness_cases, AccessPathCounterSnapshot,
-    BTreeLookupReadinessCaseId, BTreeLookupReadinessOutcome, BTreeLookupReadinessView,
-    BTreeLookupReady, CounterEnvelopeViolation, DegradedScanAdmissionDenied,
+    degraded_scan_readiness_cases, AccessPathCounterSnapshot, CounterEnvelopeViolation,
+    DegradedScanAdmissionDenied,
     DegradedScanCounterReceipt, DegradedScanExecution, DegradedScanLoweringBasis,
     DegradedScanReadinessCaseId, DegradedScanReadinessOutcome, DegradedScanReadinessView,
     DegradedScanReady, DegradedScanRebindAdmission, DegradedScanRebindTrace,
-    ExecutedLayoutOperation, LoweredBTreeLookup, LoweredDegradedExactScan,
+    ExecutedLayoutOperation, LoweredDegradedExactScan,
     PhysicalDegradedExecutionDenial, PlannedCounterObservation, StaleDegradedExactScan,
 };
 pub use access::execution::{
@@ -74,6 +71,7 @@ pub use keyspace::{
     PhysicalKeyDomainAdmissionCaseId, PhysicalKeyDomainAdmissionOutcome,
     PhysicalKeyDomainAdmissionView,
 };
+pub use keyspace::{BlobCatalogPointKey, BlobCatalogPointKeyDenial};
 pub use maintenance::{
     derived_index_parity_cases, derived_index_rebuild_admission_cases,
     derived_index_rebuild_execution_cases, layout_lsm_maintenance, layout_mutation_admission,
@@ -90,12 +88,11 @@ pub use maintenance::{
     DerivedIndexRebuildAdmissionView, DerivedIndexRebuildCounterSnapshot,
     DerivedIndexRebuildDenied, DerivedIndexRebuildExecutionCaseId, DerivedIndexRebuildOutcome,
     DerivedIndexRebuildPlan, DerivedIndexRebuildReceipt, DerivedIndexRebuildRequest,
-    DerivedIndexRebuildScope, DerivedIndexRebuildSourceInput, DerivedIndexRepairExecutionDenial,
-    DerivedIndexRepairPlan, DerivedIndexRepairReceipt, DerivedIndexRepairRequest,
+    DerivedIndexRebuildScope, DerivedIndexRebuildSourceInput,
     DerivedIndexResultIdentity, IndexLagWitness, IndexMaintenanceFailureOutcome,
     IndexMaintenanceMode, IndexPublicationProtocol, LayoutLsmMaintenance, LayoutMutationAdmission,
     LayoutMutationAdmissionCaseId, LayoutMutationAdmissionOutcome, LayoutMutationAdmissionView,
-    LayoutMutationPlan, LayoutOperationalRepairOwner, LayoutParityVerification,
+    LayoutMutationPlan, LayoutParityVerification,
     LayoutRebuildAdmission, LayoutRebuildCandidateReadmission, LayoutRebuildExecution,
     LazyMaintenanceCapability, LiveMaintenancePosture, LiveMaintenancePostureAdmission,
     LiveMaintenancePostureCaseId, LiveMaintenancePostureOutcome, LiveMaintenancePostureView,
@@ -111,9 +108,7 @@ pub use maintenance::{
 };
 pub use materialization::{
     AdmittedCoverageBasis, AdmittedLayoutMaterialization,
-    BTreeLookupMaterializationAdmissionOutcome, BTreeLookupMaterializationAdmissionView,
     BTreePublicationMaterializationAdmissionOutcome, BTreePublicationMaterializationAdmissionView,
-    BTreeReplayMaterializationAdmissionOutcome, BTreeReplayMaterializationAdmissionView,
     CatalogRootMaterializationAdmissionOutcome, CatalogRootMaterializationAdmissionView,
     CurrentLayoutMaterialization, CurrentMaterializationFrontier,
     ImportedBlobMaterializationAdmissionOutcome, ImportedBlobMaterializationAdmissionView,
@@ -124,44 +119,17 @@ pub use materialization::{
     LsmReplayMaterializationAdmissionView, MaterializationDenial, MaterializationFreshness,
     StaleLayoutMaterialization,
 };
-pub use observation::{LayoutAccessPerformanceReceipt, ObserveOwnerCase, OwnerCaseObservation};
+pub use observation::{ObserveOwnerCase, OwnerCaseObservation};
 pub use planning::{
     access_plan_selection_cases, imported_blob_read_admission_cases, AccessPlanCostClass,
     AccessPlanCostDenial, AccessPlanCostEstimate, AccessPlanIdentity, AccessPlanSelectionCaseId,
     AccessPlanSelectionDenied, AccessPlanSelectionOutcome, AccessPlanSelectionView,
     AccessPlanSelector, AdmittedPhysicalMutationRequest, AdmittedPhysicalReadRequest,
-    AdmittedPhysicalRecoveryRequest, BTreeLookupOperation, ImportedBlobReadAdmissionCaseId,
+    AdmittedPhysicalRecoveryRequest, ImportedBlobReadAdmissionCaseId,
     ImportedBlobReadAdmissionOutcome, ImportedBlobReadAdmissionView,
-    PhysicalAccessRequestAdmissionDenied, SelectedBTreeLookup, SelectedBTreeReplayRecovery,
-    SelectedDegradedExactScan, SelectedLsmCompaction, SelectedLsmLookup, SelectedLsmReplayRecovery,
+    PhysicalAccessRequestAdmissionDenied, SelectedDegradedExactScan, SelectedLsmCompaction, SelectedLsmLookup, SelectedLsmReplayRecovery,
     SelectedLsmRunPublication, SelectionCandidateAudit, SelectionCandidateOutcome,
     SelectionCandidateRejection, SelectionCandidateRejectionCase,
-};
-pub use read::{
-    layout_read_runtime, LayoutReadAdmissionDenied, LayoutReadRuntime, PageLookupRequest,
-    WalLookupRequest,
-};
-pub use recovery::{
-    btree_replay_cases, layout_btree_recovery, AdmittedBTreeReplayPhysicalSource,
-    AdmittedBTreeReplaySource, BTreeReplayCaseId, BTreeReplayDenialKind, BTreeReplayDenied,
-    BTreeReplayLocation, BTreeReplayOutcome, BTreeReplayPhysicalSource,
-    BTreeReplayPhysicalSourceIdentity, BTreeReplayRequest, BTreeReplayRootAgreement,
-    BTreeReplaySourceDenial, BTreeReplayView, LayoutBTreeRecovery,
-};
-pub use strategy::btree::execution::{
-    btree_lookup_execution_cases, btree_replay_runtime,
-    decode_leaf_record as decode_baseline_btree_leaf_record,
-    decode_root_record as decode_baseline_btree_root_record,
-    encode_leaf_record as encode_baseline_btree_leaf_record,
-    encode_root_record as encode_baseline_btree_root_record, BTreeLookupExecutionCaseId,
-    BTreeLookupExecutionOutcome, BTreeLookupExecutionView, BTreeReplayReady, BTreeReplayRuntime,
-    BTreeSeparatorPartitionDenial, BaselineBTreeCorruptionMarker, BaselineBTreeExactCounterWitness,
-    BaselineBTreeExecutionDenial, BaselineBTreeExecutionDenialKind, BaselineBTreeExecutionWitness,
-    BaselineBTreeLeafRecord, BaselineBTreeLookupAbsence, BaselineBTreeLookupAdmission,
-    BaselineBTreeLookupBranch, BaselineBTreeLookupCounterReceipt, BaselineBTreeLookupExecution,
-    BaselineBTreeReadPreflight, BaselineBTreeReadShape, BaselineBTreeReadSource,
-    BaselineBTreeReplayAdmission, BaselineBTreeReplayRecoveryExecution, BaselineBTreeRootNode,
-    StableBTreeLookupExecution,
 };
 
 #[cfg(test)]
@@ -185,7 +153,6 @@ pub(crate) use materialization::LayoutCoverageWitness;
 pub(crate) use materialization::LayoutMaterializationState;
 #[cfg(test)]
 pub(crate) use materialization::MaterializationStateClass;
-pub(crate) use strategy::btree::execution::btree_lookup_runtime;
 
 // Unit tests live beside their owners but compile as one crate. Keep this
 // convenience vocabulary crate-private and absent from production builds.

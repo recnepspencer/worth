@@ -2,74 +2,102 @@ use super::{PhysicalCurrentRootOwner, PhysicalCurrentRootState};
 use crate::physical_runtime::durability::retention::{
     DisplacedArtifact, GarbageClaim, RetiredArtifact,
 };
-use crate::physical_runtime::PhysicalRetirementDenial;
+use crate::physical_runtime::{PhysicalMutationIdentity, PhysicalRetirementDenial};
 
 impl PhysicalCurrentRootOwner {
-    pub(in crate::physical_runtime) fn note_displaced(
+    pub(in crate::physical_runtime) fn restore_displaced(
         &self,
         source_root: u64,
         artifact: RetiredArtifact,
         bytes: u64,
     ) {
-        *self
-            .displaced
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(DisplacedArtifact {
+        self.publication.retain_displaced(DisplacedArtifact {
             source_root,
             artifact,
             bytes,
         });
     }
 
-    pub(in crate::physical_runtime) fn release_rewrite_candidate(&self) {
-        self.rewrite_growth
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .clear();
+    pub(in crate::physical_runtime) fn note_displaced(
+        &self,
+        identity: PhysicalMutationIdentity,
+        source_root: u64,
+        artifact: RetiredArtifact,
+        bytes: u64,
+    ) {
         self.displaced
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .take();
+            .entry(identity)
+            .or_default()
+            .push(DisplacedArtifact {
+                source_root,
+                artifact,
+                bytes,
+            });
     }
 
-    pub(in crate::physical_runtime) fn commit_rewrite_candidate(&self) {
-        if let Some(displaced) = self
-            .displaced
+    pub(in crate::physical_runtime) fn release_rewrite_candidate(
+        &self,
+        identity: PhysicalMutationIdentity,
+    ) {
+        self.rewrite_growth
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .take()
-        {
-            self.publication.retain_displaced(displaced);
-        }
-        // The published generation is live payload. Dropping the lease releases
-        // it from the excess-obsolete budget. The displaced source, if any, was
-        // charged above and stays until reclaim.
-        drop(std::mem::take(
-            &mut *self
+            .remove(&identity);
+        self.displaced
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .remove(&identity);
+    }
+
+    pub(in crate::physical_runtime) fn settle_completed_candidate_growth(
+        &self,
+        members: &[crate::physical_runtime::RootPublicationPhysicalMutationMember],
+    ) {
+        for member in members {
+            let identity = member.mutation_identity();
+            let leases = self
                 .rewrite_growth
                 .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner()),
-        ));
+                .unwrap_or_else(|poisoned| poisoned.into_inner())
+                .remove(&identity);
+            let displaced = self
+                .displaced
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner())
+                .remove(&identity);
+            if let Some(displaced) = displaced {
+                for artifact in displaced {
+                    self.publication.retain_displaced(artifact);
+                }
+            }
+            // Charge the displaced source before refunding the now-live
+            // candidate, so another admission cannot observe a transient gap.
+            drop(leases);
+        }
     }
 
     /// Keeps a reserved candidate charged when publication did not settle.
     ///
     /// The displaced-source note is discarded: the current root did not advance,
     /// so the source is not garbage.
-    pub(in crate::physical_runtime) fn retain_unresolved_rewrite_candidate(&self) {
-        let leases = std::mem::take(
-            &mut *self
-                .rewrite_growth
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner()),
-        );
-        for lease in leases {
+    pub(in crate::physical_runtime) fn retain_unresolved_rewrite_candidate(
+        &self,
+        identity: PhysicalMutationIdentity,
+    ) {
+        let leases = self
+            .rewrite_growth
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .remove(&identity);
+        for lease in leases.into_iter().flatten() {
             self.publication.seal_candidate_charge(lease.artifact());
         }
         self.displaced
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .take();
+            .remove(&identity);
     }
 
     /// Claims the next displaced generation only while no protected root still
@@ -131,6 +159,13 @@ impl PhysicalCurrentRootOwner {
 
     pub(in crate::physical_runtime) fn complete_displaced(&self, artifact: RetiredArtifact) {
         self.publication.complete_displaced(artifact);
+    }
+
+    pub(in crate::physical_runtime) fn completed_displaced_exact(
+        &self,
+        expected: DisplacedArtifact,
+    ) -> Option<DisplacedArtifact> {
+        self.publication.completed_displaced_exact(expected)
     }
 
     pub(in crate::physical_runtime) fn removal_permit(

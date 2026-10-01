@@ -249,7 +249,7 @@ fn visit_root_block(
                 ));
             }
             for entry in payload[40..].chunks_exact(LEAF_ENTRY_BYTES) {
-                placements.push(parse_placement(entry)?);
+                placements.push(parse_placement(entry, frame.schema)?);
             }
         }
         (2, level) if level != 0 => {

@@ -79,7 +79,11 @@ impl PhysicalCheckpointSource {
     pub fn decode_stream_header_record(
         record: &[u8],
     ) -> Result<Self, CheckpointStreamDecodeDenial> {
-        let maintenance = record.get(8) == Some(&super::record::MAINTENANCE_CHECKPOINT_SCHEMA);
+        let maintenance = matches!(
+            record.get(8),
+            Some(&super::record::MAINTENANCE_CHECKPOINT_SCHEMA)
+                | Some(&super::record::CERTIFIED_CHECKPOINT_SCHEMA)
+        );
         let payload =
             super::record::decode_record(record, super::record::HEADER_KIND, HEADER_PAYLOAD_BYTES)?;
         let source = decode_header(payload)?;
@@ -164,10 +168,14 @@ impl PhysicalCheckpointSource {
     pub fn decode_c9_legacy_stream_header_record(
         record: &[u8],
     ) -> Result<Self, CheckpointStreamDecodeDenial> {
-        if record.get(8) == Some(&super::record::MAINTENANCE_CHECKPOINT_SCHEMA) {
-            return Err(CheckpointStreamDecodeDenial::UnsupportedSchema(
-                super::record::MAINTENANCE_CHECKPOINT_SCHEMA,
-            ));
+        if record.get(8).is_some_and(|schema| {
+            matches!(
+                *schema,
+                super::record::MAINTENANCE_CHECKPOINT_SCHEMA
+                    | super::record::CERTIFIED_CHECKPOINT_SCHEMA
+            )
+        }) {
+            return Err(CheckpointStreamDecodeDenial::UnsupportedSchema(record[8]));
         }
         Self::decode_stream_header_record(record)
     }

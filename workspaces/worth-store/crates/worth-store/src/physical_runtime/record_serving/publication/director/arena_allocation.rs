@@ -56,8 +56,8 @@ impl RecordPublicationDirector {
                 .restore(&owner)
                 .map_err(|denial| {
                     RecordAppendError::Denied(match denial {
-                        arena::ArenaAllocationDenial::RangeBudget => {
-                            RecordAppendDenial::PhysicalPressure
+                        cause @ arena::ArenaAllocationDenial::RangeBudget { .. } => {
+                            RecordAppendDenial::ArenaAllocationUnavailable(cause)
                         }
                         _ => RecordAppendDenial::PublishedLayoutDamaged,
                     })

@@ -100,6 +100,11 @@ impl AdmittedRecoveryFilesystemMedia {
 }
 
 impl CompletedScheduledRecoveryReopenRead {
+    /// Retained exact read bytes; other fields are inline values.
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        u64::try_from(self.bytes.len()).ok()
+    }
+
     /// Preserve backend read provenance for the recovery integrity ingress.
     pub fn observed(&self) -> super::ObservedRecoveryArtifact {
         super::ObservedRecoveryArtifact::new(

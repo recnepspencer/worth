@@ -1,6 +1,8 @@
 use worth_store_physical_format::{
+    checkpoint_certificate_frame_bytes, decode_checkpoint_certificate,
     CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES, CHECKPOINT_BINDING_RECORD_PREFIX_BYTES,
-    CHECKPOINT_DIRTY_FRAME_RECORD_BYTES, CHECKPOINT_STREAM_HEADER_RECORD_BYTES,
+    CHECKPOINT_CERTIFICATE_PREFIX_BYTES, CHECKPOINT_DIRTY_FRAME_RECORD_BYTES,
+    CHECKPOINT_STREAM_HEADER_RECORD_BYTES,
 };
 use worth_store_physical_integrity::{
     project_checkpoint_binding_frame_length, validate_checkpoint_binding,
@@ -31,6 +33,10 @@ pub(super) struct CheckpointBodyAdmission<'media> {
     dirty: Vec<IntegrityAdmittedCheckpointDirtyBasis<'media>>,
     compaction: IntegrityAdmittedCheckpointBindingCompaction<'media>,
     bindings: Vec<IntegrityAdmittedCheckpointBinding<'media>>,
+    certificates: Vec<(
+        worth_store_physical_integrity::PhysicalByteRange,
+        &'media [u8],
+    )>,
 }
 
 impl<'media> CheckpointBodyAdmission<'media> {
@@ -126,7 +132,48 @@ impl<'media> CheckpointBodyAdmission<'media> {
             )?);
             offset = range.end_exclusive() as usize;
         }
+        let mut certificates = reserve_record_evidence(envelope.footer.certificate_record_count())?;
+        for _ in 0..envelope.footer.certificate_record_count() {
+            let prefix_range = physical_range(offset, CHECKPOINT_CERTIFICATE_PREFIX_BYTES)?;
+            let prefix = envelope
+                .bytes
+                .get(offset..prefix_range.end_exclusive() as usize)
+                .ok_or_else(|| layout_rejection(&envelope, trace))?;
+            let frame_bytes = checkpoint_certificate_frame_bytes(prefix)
+                .map_err(|_| layout_rejection(&envelope, trace))?;
+            let range = physical_range(offset, frame_bytes)?;
+            if range.end_exclusive() > envelope.footer_range.offset() {
+                return Err(layout_rejection(&envelope, trace));
+            }
+            let bytes = envelope
+                .bytes
+                .get(offset..range.end_exclusive() as usize)
+                .ok_or_else(|| layout_rejection(&envelope, trace))?;
+            decode_checkpoint_certificate(bytes).map_err(|_| layout_rejection(&envelope, trace))?;
+            certificates.push((range, bytes));
+            offset = range.end_exclusive() as usize;
+        }
         if offset as u64 != envelope.footer_range.offset() {
+            return Err(layout_rejection(&envelope, trace));
+        }
+        let schema = envelope.bytes[8];
+        if dirty.iter().any(|record| {
+            record
+                .source()
+                .input()
+                .map_or(true, |input| input.bytes()[8] != schema)
+        }) || compaction
+            .source()
+            .input()
+            .map_or(true, |input| input.bytes()[8] != schema)
+            || bindings.iter().any(|binding| {
+                binding
+                    .source()
+                    .input()
+                    .map_or(true, |input| input.bytes()[8] != schema)
+            })
+            || certificates.iter().any(|(_, bytes)| bytes[8] != schema)
+        {
             return Err(layout_rejection(&envelope, trace));
         }
         Ok(Self {
@@ -134,6 +181,7 @@ impl<'media> CheckpointBodyAdmission<'media> {
             dirty,
             compaction,
             bindings,
+            certificates,
         })
     }
 
@@ -167,7 +215,8 @@ impl<'media> CheckpointBodyAdmission<'media> {
                 &dirty,
                 self.compaction.validated(),
                 &bindings,
-            ),
+            )
+            .with_certificates(&self.certificates),
         )
         .0;
         let CheckpointFooterIntegrityValidation::Intact(validated) = validation else {
@@ -192,6 +241,7 @@ impl<'media> CheckpointBodyAdmission<'media> {
             self.dirty,
             self.compaction,
             self.bindings,
+            self.certificates,
             footer,
         )
         .map_err(|rejection| {

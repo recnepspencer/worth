@@ -37,7 +37,8 @@ fn unpublished_reservations_do_not_enter_any_committed_identity_frontier() {
             )
             .with_slot_generation(generation);
         placements.push(CurrentPhysicalRecordPlacement::Inline(
-            DurableInlineRecordPlacement::new(record, segment, page, slot, 4, 16).unwrap(),
+            DurableInlineRecordPlacement::legacy_unknown(record, segment, page, slot, 4, 16)
+                .unwrap(),
         ));
         allocations.push(
             WorkingSegment {
@@ -54,7 +55,7 @@ fn unpublished_reservations_do_not_enter_any_committed_identity_frontier() {
         .record_extent_cell(publishing.allocate_extent().unwrap())
         .with_extent_generation(generation);
     placements.push(CurrentPhysicalRecordPlacement::Extent(
-        DurableExtentRecordPlacement::new(
+        DurableExtentRecordPlacement::legacy_unknown(
             PersistedRecordIdentity::new([0x31; 16], 5).unwrap(),
             extent,
             65536,
@@ -135,7 +136,7 @@ fn later_concrete_publication_preserves_gaps_left_by_abandoned_reservations() {
             PhysicalRecordSlot::from_raw(1).unwrap(),
         )
         .with_slot_generation(generation);
-    let inline = DurableInlineRecordPlacement::new(
+    let inline = DurableInlineRecordPlacement::legacy_unknown(
         PersistedRecordIdentity::new([0x31; 16], 1).unwrap(),
         segment,
         page,
@@ -144,7 +145,7 @@ fn later_concrete_publication_preserves_gaps_left_by_abandoned_reservations() {
         16,
     )
     .unwrap();
-    let extent = DurableExtentRecordPlacement::new(
+    let extent = DurableExtentRecordPlacement::legacy_unknown(
         PersistedRecordIdentity::new([0x31; 16], 2).unwrap(),
         authority
             .record_extent_cell(later.allocate_extent().unwrap())

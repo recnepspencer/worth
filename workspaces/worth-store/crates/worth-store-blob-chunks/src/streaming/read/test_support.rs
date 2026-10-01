@@ -1,24 +1,15 @@
-use worth_store::physical_runtime::stability::stable_physical_read_receipt_for_certification_test;
 use worth_store_budgets::CounterEvidenceStrength;
-use worth_store_io_scheduler::{
-    admit_background_pacing,
-    foreground_reservation::admitted_point_read_reservation_for_certification_test,
-    verification_throttled_background_capacity_for_certification_test,
-    BackgroundIdleCapacityLeaseRequest, BackgroundPacingOutcome, BackgroundResourceBudget,
-    QueueSlot,
-};
 use worth_store_security::StoreTenantScope;
 
 use crate::publication::test_support::publish_generation_with_bytes_and_chunk_size;
 use crate::test_support::{
     admitted_multichunk_sequence_for_scope, blob_scope, physical_payload_for_bytes,
-    with_blob_allocation,
 };
 use crate::{
     BlobChunkOrdinal, BlobCorruptionReferenceEdges, BlobGenerationPublished,
-    BlobQuarantineAuthority, BlobStreamingContentFrontier, BlobStreamingReadAdmission,
-    BlobStreamingReadObservation, BlobStreamingReadObservedChunk, BlobStreamingReadRequest,
-    BlobStreamingReadWindow, BlobStreamingVerifiedRead, BlobVisibleGeneration,
+    BlobQuarantineAuthority, BlobStreamingContentFrontier, BlobStreamingReadObservation,
+    BlobStreamingReadObservedChunk, BlobStreamingReadRequest, BlobStreamingReadWindow,
+    BlobStreamingVerifiedRead, BlobVisibleGeneration,
 };
 
 pub(crate) fn layout_runtime_case(
@@ -35,19 +26,13 @@ pub(crate) fn layout_runtime_case(
     let (published, visible) =
         publish_generation_with_bytes_and_chunk_size(case, bytes, chunk_size);
     let request = request(case, bytes, chunk_size, visible.clone(), &published);
-    let verified = with_blob_allocation(window_bytes, |_, allocation| {
-        BlobStreamingVerifiedRead::verify_bounded(
-            request.clone(),
-            crate::BlobStreamingReadExecution::new(
-                BlobStreamingReadWindow::bounded(window_bytes).unwrap(),
-                allocation,
-                admission(bytes.len() as u64),
-                quarantine_authority(case),
-                CounterEvidenceStrength::Exact,
-            ),
-            observations_for(bytes, chunk_size, window_bytes),
-        )
-    })
+    let verified = BlobStreamingVerifiedRead::verify_bounded_content(
+        request.clone(),
+        BlobStreamingReadWindow::bounded(window_bytes).unwrap(),
+        quarantine_authority(case),
+        CounterEvidenceStrength::Exact,
+        observations_for(bytes, chunk_size, window_bytes),
+    )
     .expect("streaming runtime case should verify through bounded production path");
     (published, visible, request, verified)
 }
@@ -108,28 +93,6 @@ fn quarantine_authority(case: &str) -> BlobQuarantineAuthority {
             "quarantine",
         ),
     )
-}
-
-fn admission(stable_read_bytes: u64) -> BlobStreamingReadAdmission {
-    BlobStreamingReadAdmission::from_stable_physical_read(
-        stable_physical_read_receipt_for_certification_test(stable_read_bytes),
-        admitted_point_read_reservation_for_certification_test(),
-        admitted_verification_pressure(),
-    )
-    .expect("stable physical read admission should bind")
-}
-
-fn admitted_verification_pressure() -> BackgroundPacingOutcome {
-    admit_background_pacing(BackgroundIdleCapacityLeaseRequest::new(
-        verification_throttled_background_capacity_for_certification_test(
-            read_pressure_budget(),
-            read_pressure_budget(),
-        ),
-    ))
-}
-
-fn read_pressure_budget() -> BackgroundResourceBudget {
-    BackgroundResourceBudget::new().with_queue_slots(QueueSlot::new(2).unwrap())
 }
 
 fn ordinal(value: u64) -> BlobChunkOrdinal {

@@ -31,8 +31,19 @@ impl RecoveredPhysicalRuntimeHandoff {
     pub const fn core(&self) -> &RecoveredPhysicalRuntimeCore {
         &self.core
     }
+
+    /// Consumes the recovery handoff so the recovered Store core can close
+    /// its discovery media before a separate Serving open consumes custody.
+    pub fn into_core(self) -> RecoveredPhysicalRuntimeCore {
+        self.core
+    }
     pub fn recovered_session_identity(&self) -> crate::entry::PhysicalRecoverySessionIdentity {
         self.evidence.session.identity()
+    }
+    /// Measured live backing carried into Store construction, excluding the
+    /// Store's subsequent independent media observations.
+    pub const fn store_rejoin_retained_bytes(&self) -> Option<u64> {
+        self.evidence.store_rejoin_retained_bytes
     }
     pub const fn operation_fates(&self) -> &RecoveryOperationFateSet {
         &self.evidence.fates

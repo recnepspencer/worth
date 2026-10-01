@@ -1,4 +1,6 @@
-use std::num::NonZeroU64;
+use std::num::{NonZeroU64, NonZeroUsize};
+
+use worth_store_buffer_pool::PhysicalResidencyPool;
 
 use self::failure_outcome::{
     pressure_basis, project_candidate_admission_failure, project_residency_failure,
@@ -54,8 +56,25 @@ impl RecordPublicationDirector {
                 };
             }
         };
-        let bytes = NonZeroU64::new(declaration.total_frame_bytes())
+        let count = NonZeroUsize::new(declaration.declarations().len())
             .expect("a WAL-bound data plan has nonempty frames");
+        let candidate_metadata = PhysicalResidencyPool::candidate_batch_operation_bytes(count)
+            .expect("bounded WAL data plan has bounded candidate metadata");
+        let bytes = match declaration
+            .total_frame_bytes()
+            .checked_add(candidate_metadata.get())
+            .and_then(NonZeroU64::new)
+        {
+            Some(bytes) => bytes,
+            None => {
+                return PhysicalDataDispatchOutcome::NotStarted {
+                    durable,
+                    cause: PhysicalDataDispatchFailureCause::CandidateAdmission(
+                        crate::physical_runtime::RecordAppendDenial::BatchByteLimitExceeded,
+                    ),
+                };
+            }
+        };
         let store_basis = PhysicalRecordPressureBasis::for_store(self.durability.store_identity());
         let allocation = match self.residency.begin_foreground_write_operation(bytes) {
             Ok(allocation) => allocation,

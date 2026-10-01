@@ -39,6 +39,8 @@ pub enum PhysicalReadProtectionDenial {
     RetainedRootLimit,
     /// Bounded metadata could not be allocated during Store admission.
     MetadataUnavailable,
+    /// A selected failed-ingest reclaim has fenced new root acquisitions.
+    ReclaimFenced,
     /// This Store incarnation has stopped issuing read authority.
     Revoked,
 }

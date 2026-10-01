@@ -1,4 +1,4 @@
-use super::cursor::RecoveryPageCursor;
+use super::cursor::{RecoveryPageCursor, RecoveryPageSource};
 use super::record::{decode_physical_redo_member, decode_physical_redo_records_with_distinct};
 use super::{
     decode_physical_redo_records, PhysicalRedoPlanningDenial, PhysicalRedoRecord,
@@ -39,7 +39,21 @@ struct AdmittedPhysicalRedoMember {
     fate: RecoveryOperationFate,
     records: Box<[PhysicalRedoRecord]>,
     projection: PersistedPhysicalRecoveryProjection,
+    canonical_redo_sha256: [u8; 32],
     inline_frames: Box<[projection_admission::AdmittedInlineFrame]>,
+}
+
+/// A borrow of one C.9 semantics-admitted member before page observations
+/// exist. Only an admitted member set can mint this view; a caller cannot
+/// describe an arbitrary root-step projection by assembling its fields.
+#[derive(Debug, Clone, Copy)]
+pub struct AdmittedRootStepMemberView<'a> {
+    lsn_range: WalLsnRange,
+    operation: [u8; 32],
+    group: PhysicalRedoGroupBinding,
+    fate: RecoveryOperationFate,
+    canonical_redo_sha256: [u8; 32],
+    materialization: &'a PersistedPhysicalRecoveryProjection,
 }
 use worth_store_wal::WalLsnRange;
 
@@ -47,9 +61,13 @@ mod accessors;
 mod admission;
 mod allocation_truth;
 mod group_admission;
+mod head_replay;
+mod historical_consumed;
+mod historical_drop;
 mod projection_admission;
 mod projection_materialization;
 mod projection_validation;
+mod retained_storage;
 mod source_copy;
 mod supersession;
 pub use source_copy::PhysicalExtentCopyAdmission;
@@ -58,6 +76,11 @@ pub use admission::{
     admit_physical_redo_members, physical_redo_observation_target_identities,
     physical_redo_observation_targets, physical_redo_target_identities,
 };
+pub use head_replay::{
+    SelectedReleaseHeadReplayDenial, VerifiedOrderedReleasedHeadReplayV14,
+    VerifiedSelectedReleaseHeadReplayV14,
+};
+pub use historical_consumed::HistoricalConsumedOperationSet;
 
 fn checked(value: u64) -> Result<u64, PhysicalRedoPlanningDenial> {
     value
@@ -110,6 +133,7 @@ pub struct PhysicalRedoProjection {
     group: PhysicalRedoGroupBinding,
     fate: RecoveryOperationFate,
     materialization: PersistedPhysicalRecoveryProjection,
+    canonical_redo_sha256: Option<[u8; 32]>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -139,6 +163,7 @@ pub enum PhysicalRedoDecisionKind {
     Apply,
     SkipPageAlreadyAtOrBeyondLsn,
     SkipOperationAlreadyMaterialized,
+    SkipHistoricallyReleasedTarget,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -147,6 +172,7 @@ pub struct PhysicalRedoPlanCounters {
     targets: u64,
     apply: u64,
     skip_page_lsn: u64,
+    skip_historical_drop: u64,
     skip_operation: u64,
 }
 
@@ -155,10 +181,8 @@ pub fn plan_physical_redo(
     observations: Vec<RecoveryPageObservation>,
     maximum_targets: u64,
     store: StableStoreIdentity,
+    format: PhysicalRecordFormatDeclaration,
 ) -> Result<ImmutablePhysicalRedoPlan, PhysicalRedoPlanningDenial> {
-    let format = PhysicalRecordFormatDeclaration::builder()
-        .admit()
-        .map_err(|_| PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
     admit_physical_redo_members(
         members,
         store,
@@ -209,6 +233,34 @@ fn decide(
         }
         RecoveryOperationFate::Indeterminate => {
             let observation = page_cursor.observe_record(target.identity(), record_lsn)?;
+            if let RecoveryPageSource::HistoricalReleasedDrop {
+                coordinate,
+                old_operation,
+                wal_target_digest,
+                ..
+            } = observation.source()
+            {
+                if observation.target() != target.identity()
+                    || old_operation != operation
+                    || wal_target_digest != target.resulting_digest()
+                    || Some(coordinate)
+                        != worth_store_physical_format::RecordFrameCoordinate::new(
+                            target.artifact(),
+                            target.artifact_offset(),
+                            target.artifact_length(),
+                        )
+                {
+                    return Err(PhysicalRedoPlanningDenial::GenerationMismatch);
+                }
+                counters.skip_historical_drop = checked(counters.skip_historical_drop)?;
+                return Ok(PhysicalRedoDecision {
+                    kind: PhysicalRedoDecisionKind::SkipHistoricallyReleasedTarget,
+                    prior: PhysicalRedoDecisionPrior::Page(observation),
+                    operation,
+                    record_index,
+                    target_index,
+                });
+            }
             let page_lsn = observation.page_lsn();
             if page_lsn == record_lsn && observation.frame_digest() != target.resulting_digest() {
                 return Err(PhysicalRedoPlanningDenial::PageDigestMismatch);

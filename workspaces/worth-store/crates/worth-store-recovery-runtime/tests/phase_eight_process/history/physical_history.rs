@@ -12,7 +12,7 @@ pub(crate) enum ParentHistoryMismatch {
     BytesRead,
     ArtifactSetDigest,
     ArtifactIdentityDigest,
-    SemanticEvidence,
+    SemanticEvidence(parent_oracle::ParentSemanticMismatch),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -167,9 +167,9 @@ impl ParentPhysicalHistory {
         if report.artifact_identity_digest() != self.artifact_identity_digest {
             return Err(ParentHistoryMismatch::ArtifactIdentityDigest);
         }
-        if !self.evidence.matches(report) {
-            return Err(ParentHistoryMismatch::SemanticEvidence);
-        }
+        self.evidence
+            .compare_report(report)
+            .map_err(ParentHistoryMismatch::SemanticEvidence)?;
         Ok(())
     }
 }

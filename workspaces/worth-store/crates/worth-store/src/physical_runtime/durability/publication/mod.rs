@@ -1,4 +1,5 @@
 mod current_root_owner;
+pub use current_root_owner::SelectedReleaseHeadDenial;
 #[cfg(feature = "certification-test-authority")]
 pub use current_root_owner::{
     CertificationReadRootCapturePauseGate, CertificationReadRootCaptureStage,
@@ -12,10 +13,23 @@ mod replacement;
 mod retained_root;
 mod work_port;
 pub(in crate::physical_runtime) use maintenance::{
-    publish_retirement_candidate, NamespaceDurableRetirementRoot,
+    publish_manifest_residue_candidate, publish_retirement_candidate, publish_tier_epoch_candidate,
+    NamespaceDurableManifestResidueRoot, NamespaceDurableRetirementRoot,
+    NamespaceDurableTierEpochRoot,
 };
 
-pub(in crate::physical_runtime) use current_root_owner::PhysicalCurrentRootOwner;
+pub(in crate::physical_runtime) use current_root_owner::{
+    AdmittedFailedIngestDrop, AdmittedManifestResidueRetirement, AdmittedReleasedGenerationDrop,
+    CheckpointCustodyDenial, CheckpointCustodyOrigin, ManifestResidueDisplacement,
+    ManifestResidueProof, PhysicalBlobReclaimAdmissionDenial, PhysicalBlobSessionClaim,
+    PhysicalBlobSessionClaimDenial, PhysicalBlobTerminalAdmissionDenial, PhysicalCurrentRootOwner,
+    PhysicalReclaimAttempt, PhysicalReconciledReclaimDescriptorFate,
+    PreparedRecoveredCheckpointCustody, RecoveredReleaseLedgerDenial,
+    ReleaseCertificateCapacityDenial, ReleaseCertificateCapacityLease, ReleaseHeadCapacityCharge,
+    ReleasedDropSourceCaptureDenial, SelectedCheckpointCertificate,
+    SelectedCheckpointCustodySnapshot, SelectedOriginalDropProof, SelectedReleaseCustodyLedger,
+    SelectedReleaseHeadBasis,
+};
 pub use current_root_owner::{
     CompletedPhysicalRootPublication, IndeterminatePhysicalCurrentRootAdvance,
     PhysicalCurrentRootAdvanceFailureCause, PhysicalCurrentRootAdvanceOutcome,

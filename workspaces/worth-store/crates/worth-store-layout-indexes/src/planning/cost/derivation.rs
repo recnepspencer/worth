@@ -14,28 +14,6 @@ pub(in crate::planning) fn derive_access_plan_cost(
     materialization: Option<crate::AdmittedLayoutMaterialization>,
 ) -> Result<AccessPlanCostEstimate, AccessPlanCostDenial> {
     let (class, counters, degraded_rows) = match operation {
-        Some(EligibleStrategyOperation::BTreeLookup(operation)) => match operation {
-            crate::planning::BTreeLookupOperation::Point => (
-                AccessPlanCostClass::BTreePointLookup,
-                envelope.lookup(),
-                None,
-            ),
-            crate::planning::BTreeLookupOperation::Range => (
-                AccessPlanCostClass::BTreeRangeLookup,
-                envelope.lookup(),
-                None,
-            ),
-            crate::planning::BTreeLookupOperation::Prefix => (
-                AccessPlanCostClass::BTreePrefixLookup,
-                envelope.lookup(),
-                None,
-            ),
-        },
-        Some(EligibleStrategyOperation::BTreeReplayRecovery) => (
-            AccessPlanCostClass::BTreeReplayRecovery,
-            envelope.recovery(),
-            None,
-        ),
         Some(EligibleStrategyOperation::LsmLookup) => {
             (AccessPlanCostClass::LsmLookup, envelope.lookup(), None)
         }

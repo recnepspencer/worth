@@ -13,6 +13,9 @@ use crate::physical_runtime::{
 use super::{residency::FrameWritebackPort, RecordFramePorts, RecordWorkAdmission};
 
 mod admission;
+mod blob_ingest;
+mod blob_movement;
+mod blob_reclaim;
 mod compaction;
 mod settlement;
 mod settlement_fact;

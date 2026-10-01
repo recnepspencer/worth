@@ -114,7 +114,15 @@ fn mutated_projection_bytes(mutation: ProjectionMutation) -> Vec<u8> {
                 )
                 .with_slot_generation(PhysicalGeneration::from_raw(1).unwrap());
             placements.push(CurrentPhysicalRecordPlacement::Inline(
-                DurableInlineRecordPlacement::new(record, segment_cell, page, slot, 2, 1).unwrap(),
+                DurableInlineRecordPlacement::legacy_unknown(
+                    record,
+                    segment_cell,
+                    page,
+                    slot,
+                    2,
+                    1,
+                )
+                .unwrap(),
             ));
         }
         ProjectionMutation::ExtraSegmentUpdate => {

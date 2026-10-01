@@ -80,16 +80,19 @@ impl RecordPublicationDirector {
             }
             ArenaEvacuationSelection::Extent { source } => source,
         };
-        self.begin_extent_copy(placement, request, source)
-            .map(|result| match result {
-                Ok(progress) => Outcome::Copying(progress),
-                Err(outcome) => Outcome::Rewrite(outcome),
-            })
-            .map_err(|error| match error {
-                crate::physical_runtime::record_serving::RecordAppendError::Denied(denial) => {
-                    denial
-                }
-                _ => RecordAppendDenial::PublishedLayoutDamaged,
-            })
+        self.begin_extent_copy(
+            placement,
+            request,
+            source,
+            super::extent_copy::CopyProducer::ArenaEvacuation,
+        )
+        .map(|result| match result {
+            Ok(progress) => Outcome::Copying(progress),
+            Err(outcome) => Outcome::Rewrite(outcome),
+        })
+        .map_err(|error| match error {
+            crate::physical_runtime::record_serving::RecordAppendError::Denied(denial) => denial,
+            _ => RecordAppendDenial::PublishedLayoutDamaged,
+        })
     }
 }

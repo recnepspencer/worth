@@ -9,9 +9,43 @@ use worth_store_physical_format::{
 use super::super::super::access::manifest_routing::{
     ManifestDiscoveryCounterSnapshot, ManifestLookupFailure,
 };
+use super::super::super::RecordAppendError;
 use super::super::super::{AdmittedPhysicalRecordFormat, AdmittedRecordAccessPolicy};
+use super::super::inline_plan_failure::manifest_lookup_failure;
 use super::reader::FreeSpaceReader;
+mod repack;
 
+#[cfg(test)]
+#[path = "successor/tests.rs"]
+mod tests;
+
+// The planner's only read dependency. Production keeps the same admitted
+// FreeSpaceReader path; the geometry tests supply canonical native blocks.
+trait FreeSpaceBlockSource {
+    fn read_block(
+        &self,
+        reference: FreeSpaceBlockReference,
+        discovery: &mut ManifestDiscoveryCounterSnapshot,
+    ) -> Result<PhysicalFreeSpaceMembershipBlock, ManifestLookupFailure>;
+}
+
+struct AdmittedFreeSpaceBlockSource<'a, 'media> {
+    allocation: &'a worth_store_buffer_pool::OperationAllocationGrant,
+    reader: &'a FreeSpaceReader<'media>,
+}
+
+impl FreeSpaceBlockSource for AdmittedFreeSpaceBlockSource<'_, '_> {
+    fn read_block(
+        &self,
+        reference: FreeSpaceBlockReference,
+        discovery: &mut ManifestDiscoveryCounterSnapshot,
+    ) -> Result<PhysicalFreeSpaceMembershipBlock, ManifestLookupFailure> {
+        self.reader
+            .read_block(self.allocation, reference, discovery)
+    }
+}
+
+#[derive(Clone, Copy)]
 pub(in crate::physical_runtime::record_serving) enum FreeSpaceUpdate {
     Available(RecordFreeSpaceManifestEntry),
     Exhausted,
@@ -48,17 +82,32 @@ pub(in crate::physical_runtime::record_serving) fn plan_free_space_successor(
     access: AdmittedRecordAccessPolicy,
     current: &DurableFreeSpaceManifestHeader,
     request: FreeSpaceSuccessorRequest,
-) -> Result<FreeSpacePublicationPlan, ManifestLookupFailure> {
+) -> Result<FreeSpacePublicationPlan, RecordAppendError> {
+    let reader = FreeSpaceReader::serving(residency, format, access, current);
+    let source = AdmittedFreeSpaceBlockSource {
+        allocation,
+        reader: &reader,
+    };
+    plan_with_source(&source, format, current, request, allocation.bytes())
+}
+
+fn plan_with_source<S: FreeSpaceBlockSource>(
+    source: &S,
+    format: AdmittedPhysicalRecordFormat,
+    current: &DurableFreeSpaceManifestHeader,
+    request: FreeSpaceSuccessorRequest,
+    local_metadata_limit: u64,
+) -> Result<FreeSpacePublicationPlan, RecordAppendError> {
     let segment_page_capacity = request.segment_page_capacity();
     if !super::super::policy_units::manifest_capacity_can_branch(request.node_capacity)
         || !super::super::policy_units::manifest_capacity_can_branch(current.node_capacity())
     {
-        return Err(ManifestLookupFailure::Damaged);
+        return Err(manifest_lookup_failure(ManifestLookupFailure::Damaged));
     }
-    let reader = FreeSpaceReader::serving(residency, format, access, current);
     let mut planner = FreeSpacePlanner {
-        allocation,
-        reader: &reader,
+        source,
+        format,
+        tree_identity: current.tree_identity(),
         generation: request.generation,
         node_capacity: request.node_capacity,
         next_block: current.next_block(),
@@ -68,25 +117,51 @@ pub(in crate::physical_runtime::record_serving) fn plan_free_space_successor(
         removed: 0,
     };
     let mut roots = match current.root() {
-        Some(root) if request.node_capacity != current.node_capacity() => {
-            planner.rewrite_all(root, &request.updates)?
-        }
-        Some(root) => planner.rewrite(root, &request.updates)?,
+        Some(root) if request.node_capacity != current.node_capacity() => planner
+            .rewrite_all(root, &request.updates)
+            .map_err(manifest_lookup_failure)?,
+        Some(root) => planner
+            .rewrite_root(root, &request.updates)
+            .map_err(manifest_lookup_failure)?,
         None => {
             let mut entries = BTreeMap::new();
             planner.apply_updates(&mut entries, &request.updates);
-            planner.write_leaves(entries.into_values().collect())?
+            planner
+                .write_leaves(entries.into_values().collect())
+                .map_err(manifest_lookup_failure)?
         }
     };
     while roots.len() > 1 {
-        roots = planner.write_branches(roots)?;
+        roots = planner
+            .write_branches(roots)
+            .map_err(manifest_lookup_failure)?;
     }
     let entry_count = current
         .entry_count()
         .checked_add(planner.inserted)
         .and_then(|count| count.checked_sub(planner.removed))
-        .ok_or(ManifestLookupFailure::Damaged)?;
-    let header = DurableFreeSpaceManifestHeader::new(
+        .ok_or(ManifestLookupFailure::Damaged)
+        .map_err(manifest_lookup_failure)?;
+    let required_level =
+        worth_store_physical_format::required_tree_level(entry_count, request.node_capacity);
+    if roots.last().map(|root| root.level()) != required_level {
+        let prior_discovery = planner.discovery;
+        let expected_changes = (planner.inserted, planner.removed);
+        // All incremental blocks are uncommitted planning output. Drop them
+        // before the source-root traversal and start from the durable frontier.
+        drop(roots);
+        drop(planner);
+        return repack::repack(
+            source,
+            format,
+            current,
+            &request,
+            prior_discovery,
+            expected_changes,
+            local_metadata_limit,
+        );
+    }
+    let header = DurableFreeSpaceManifestHeader::new_with_tier_epoch(
         request.generation,
         current.tree_identity(),
         request.node_capacity,
@@ -96,12 +171,14 @@ pub(in crate::physical_runtime::record_serving) fn plan_free_space_successor(
         request.next_page,
         request.next_extent,
         request.next_arena,
+        current.tier_epoch_start(),
         current.arena_capacity(),
         current.arena_alignment(),
         planner.next_block,
         roots.pop(),
     )
-    .ok_or(ManifestLookupFailure::Damaged)?;
+    .ok_or(ManifestLookupFailure::Damaged)
+    .map_err(manifest_lookup_failure)?;
     Ok(FreeSpacePublicationPlan {
         header,
         blocks: planner.blocks,
@@ -109,9 +186,10 @@ pub(in crate::physical_runtime::record_serving) fn plan_free_space_successor(
     })
 }
 
-struct FreeSpacePlanner<'reader> {
-    allocation: &'reader worth_store_buffer_pool::OperationAllocationGrant,
-    reader: &'reader FreeSpaceReader<'reader>,
+struct FreeSpacePlanner<'source, S: FreeSpaceBlockSource> {
+    source: &'source S,
+    format: AdmittedPhysicalRecordFormat,
+    tree_identity: u64,
     generation: u64,
     node_capacity: u16,
     next_block: u64,
@@ -121,16 +199,21 @@ struct FreeSpacePlanner<'reader> {
     removed: u64,
 }
 
-impl FreeSpacePlanner<'_> {
+impl<S: FreeSpaceBlockSource> FreeSpacePlanner<'_, S> {
+    fn rewrite_root(
+        &mut self,
+        reference: FreeSpaceBlockReference,
+        updates: &BTreeMap<FreeSpaceKey, FreeSpaceUpdate>,
+    ) -> Result<Vec<FreeSpaceBlockReference>, ManifestLookupFailure> {
+        self.rewrite_inner(reference, updates, true)
+    }
+
     fn rewrite_all(
         &mut self,
         reference: FreeSpaceBlockReference,
         updates: &BTreeMap<FreeSpaceKey, FreeSpaceUpdate>,
     ) -> Result<Vec<FreeSpaceBlockReference>, ManifestLookupFailure> {
-        match self
-            .reader
-            .read_block(self.allocation, reference, &mut self.discovery)?
-        {
+        match self.source.read_block(reference, &mut self.discovery)? {
             PhysicalFreeSpaceMembershipBlock::Leaf { entries, .. } => {
                 let mut merged = entries
                     .into_iter()
@@ -155,10 +238,16 @@ impl FreeSpacePlanner<'_> {
         reference: FreeSpaceBlockReference,
         updates: &BTreeMap<FreeSpaceKey, FreeSpaceUpdate>,
     ) -> Result<Vec<FreeSpaceBlockReference>, ManifestLookupFailure> {
-        match self
-            .reader
-            .read_block(self.allocation, reference, &mut self.discovery)?
-        {
+        self.rewrite_inner(reference, updates, false)
+    }
+
+    fn rewrite_inner(
+        &mut self,
+        reference: FreeSpaceBlockReference,
+        updates: &BTreeMap<FreeSpaceKey, FreeSpaceUpdate>,
+        at_root: bool,
+    ) -> Result<Vec<FreeSpaceBlockReference>, ManifestLookupFailure> {
+        match self.source.read_block(reference, &mut self.discovery)? {
             PhysicalFreeSpaceMembershipBlock::Leaf { entries, .. } => {
                 let mut merged = entries
                     .into_iter()
@@ -177,7 +266,11 @@ impl FreeSpacePlanner<'_> {
                         rewritten.extend(self.rewrite(child, &child_updates)?);
                     }
                 }
-                self.write_branches(rewritten)
+                if at_root && rewritten.len() == 1 {
+                    Ok(rewritten)
+                } else {
+                    self.write_branches(rewritten)
+                }
             }
         }
     }
@@ -240,7 +333,7 @@ impl FreeSpacePlanner<'_> {
             .chunks(usize::from(self.node_capacity))
             .map(|chunk| {
                 let block = PhysicalFreeSpaceMembershipBlock::leaf(
-                    self.reader.header.tree_identity(),
+                    self.tree_identity,
                     self.generation,
                     self.allocate_block()?,
                     chunk.to_vec(),
@@ -260,7 +353,7 @@ impl FreeSpacePlanner<'_> {
             .chunks(usize::from(self.node_capacity))
             .map(|chunk| {
                 let block = PhysicalFreeSpaceMembershipBlock::branch(
-                    self.reader.header.tree_identity(),
+                    self.tree_identity,
                     self.generation,
                     self.allocate_block()?,
                     chunk[0]
@@ -283,7 +376,7 @@ impl FreeSpacePlanner<'_> {
     }
 
     fn stage(&mut self, block: PhysicalFreeSpaceMembershipBlock) -> FreeSpaceBlockReference {
-        let bytes = block.encode(self.reader.format.declaration());
+        let bytes = block.encode(self.format.declaration());
         let reference = block.reference(durable_artifact_checksum(&bytes));
         self.blocks.push((
             RecordArtifactFile::FreeSpaceMembershipBlock {

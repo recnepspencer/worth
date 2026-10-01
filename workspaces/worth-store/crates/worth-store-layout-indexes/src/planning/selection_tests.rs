@@ -1,4 +1,4 @@
-use super::{DeterministicSelectionRule, PlanningCapabilityGrant, SelectionCandidateEligibility};
+use super::{DeterministicSelectionRule, SelectionCandidateEligibility};
 use crate::facade::{access_planning, deterministic_plan_selection};
 use crate::strategy::tests_support::{
     admit_persisted_lsm_scope, admit_strategy_scope, persisted_lsm_materialization,
@@ -33,7 +33,7 @@ fn wal_materialization(
 }
 
 #[test]
-fn deterministic_selection_keeps_btree_fingerprint_stable_for_exact_range_reads() {
+fn btree_planning_denies_without_store_observed_cost_basis() {
     let (lifecycle, key_domain) = admit_strategy_scope(
         DurableArtifactFamilyId::PhysicalPage,
         StoreKeyScope::PageEnvelope,
@@ -43,78 +43,42 @@ fn deterministic_selection_keeps_btree_fingerprint_stable_for_exact_range_reads(
         ),
         StoreCustodyPosture::InternalStoreCustody,
     );
-    let access_shape = access_planning().range_access();
-
-    let first = deterministic_plan_selection()
-        .select_admitted_with_budget(
-            crate::planning::AccessPlanSelector
-                .admit_read_request(
-                    lifecycle,
-                    crate::keyspace::admit_page_key(
-                        key_domain,
-                        worth_store_physical_format::PhysicalSegmentId::from_raw(1).unwrap(),
-                        worth_store_physical_format::PhysicalPageId::from_raw(1).unwrap(),
-                    )
-                    .expect("page identity must pass ordinary key admission"),
-                    root_materialization(lifecycle, 7),
-                    access_shape,
-                )
-                .expect("test request must pass ordinary admission"),
+    let page_key = || crate::keyspace::admit_page_key(
+                key_domain,
+                worth_store_physical_format::PhysicalSegmentId::from_raw(1).unwrap(),
+                worth_store_physical_format::PhysicalPageId::from_raw(1).unwrap(),
+            )
+            .expect("page identity");
+    for shape in [
+        access_planning().point_access(),
+        access_planning().range_access(),
+        access_planning().prefix_access(),
+    ] {
+        let request = crate::planning::AccessPlanSelector
+            .admit_read_request(lifecycle, page_key(), root_materialization(lifecycle, 7), shape)
+            .expect("read request");
+        let result = deterministic_plan_selection().select_admitted_with_budget(
+            request,
             PreExecutionBudgetEnvelope::foreground_default(),
+        );
+        assert_eq!(result.unwrap_err(), AccessPlanSelectionDenied::NoEligibleAlternative);
+    }
+    let recovery = crate::planning::AccessPlanSelector
+        .admit_recovery_request(
+            lifecycle,
+            page_key(),
+            root_materialization(lifecycle, 7),
+            access_planning()
+                .rebuild_access(crate::AccessLaneClassification::Maintenance)
+                .expect("rebuild shape"),
         )
-        .into_btree_lookup()
-        .expect("range request must issue B-tree lookup authority");
-    let replayed = deterministic_plan_selection()
-        .select_admitted_with_budget(
-            crate::planning::AccessPlanSelector
-                .admit_read_request(
-                    lifecycle,
-                    crate::keyspace::admit_page_key(
-                        key_domain,
-                        worth_store_physical_format::PhysicalSegmentId::from_raw(1).unwrap(),
-                        worth_store_physical_format::PhysicalPageId::from_raw(1).unwrap(),
-                    )
-                    .expect("page identity must pass ordinary key admission"),
-                    root_materialization(lifecycle, 7),
-                    access_shape,
-                )
-                .expect("test request must pass ordinary admission"),
-            PreExecutionBudgetEnvelope::foreground_default(),
-        )
-        .into_btree_lookup()
-        .expect("replayed range request must issue B-tree lookup authority");
-
-    assert_eq!(first.fingerprint(), replayed.fingerprint());
-    assert_eq!(
-        first.selected_family(),
-        LayoutStrategyFamily::BaselineBTreeRange
+        .expect("recovery request");
+    let result = deterministic_plan_selection().select_admitted_with_budget(
+        recovery,
+        PreExecutionBudgetEnvelope::maintenance_default(),
     );
-    assert_eq!(
-        first.selection_rule(),
-        DeterministicSelectionRule::SoleEligibleCandidate
-    );
-    assert_eq!(
-        first.primary_candidate().outcome(),
-        &SelectionCandidateOutcome::Eligible(SelectionCandidateEligibility::RegistryAdmitted {
-            granted_capability: PlanningCapabilityGrant::OrderedRange,
-            planned_counter_envelope: first.planned_counter_envelope(),
-        })
-    );
-    let admission = first.strategy_admission();
-    assert_eq!(
-        admission.request().exact_coverage(),
-        Some(first.materialization().coverage())
-    );
-    assert_eq!(
-        admission.request().requested_capability(),
-        crate::strategy::registry::LayoutRequestedCapability::OrderedRange,
-    );
-    assert_eq!(
-        admission.granted_capability(),
-        crate::strategy::registry::LayoutStrategyCapability::OrderedRange,
-    );
+    assert_eq!(result.unwrap_err(), AccessPlanSelectionDenied::NoEligibleAlternative);
 }
-
 #[test]
 fn deterministic_selection_selects_lsm_for_exact_wal_point_paths() {
     let (lifecycle, key_domain) = admit_persisted_lsm_scope();
@@ -235,114 +199,6 @@ fn degraded_exact_scan_uses_explicit_rule_and_plan_bound_budget_receipt() {
             },
         )
     );
-}
-
-#[test]
-fn btree_lookup_selection_issues_the_exact_operation_capability() {
-    let (lifecycle, key_domain) = admit_strategy_scope(
-        DurableArtifactFamilyId::PhysicalPage,
-        StoreKeyScope::PageEnvelope,
-        StoreTenantScope::TenantPhysicalBoundary,
-        StoreAuthenticityRequirement::required(
-            StoreAuthenticityRequirementClass::AuthenticatedFrame,
-        ),
-        StoreCustodyPosture::InternalStoreCustody,
-    );
-    let outcome = deterministic_plan_selection().select_admitted_with_budget(
-        crate::planning::AccessPlanSelector
-            .admit_read_request(
-                lifecycle,
-                crate::keyspace::admit_page_key(
-                    key_domain,
-                    worth_store_physical_format::PhysicalSegmentId::from_raw(1).unwrap(),
-                    worth_store_physical_format::PhysicalPageId::from_raw(1).unwrap(),
-                )
-                .expect("page identity must pass ordinary key admission"),
-                root_materialization(lifecycle, 29),
-                access_planning().point_access(),
-            )
-            .expect("test request must pass ordinary admission"),
-        PreExecutionBudgetEnvelope::foreground_default(),
-    );
-    let selected = outcome
-        .into_btree_lookup()
-        .expect("B-tree point lookup must issue exact B-tree lookup authority");
-    assert_eq!(
-        selected.selected_family(),
-        LayoutStrategyFamily::BaselineBTreeRange
-    );
-    assert_eq!(selected.operation(), crate::BTreeLookupOperation::Point);
-    assert_eq!(
-        selected.intent().shape(),
-        crate::observation::AccessShape::PointLookup
-    );
-}
-
-#[test]
-fn fingerprint_changes_when_selected_plan_basis_changes_within_same_family() {
-    let (lifecycle, key_domain) = admit_strategy_scope(
-        DurableArtifactFamilyId::PhysicalPage,
-        StoreKeyScope::PageEnvelope,
-        StoreTenantScope::TenantPhysicalBoundary,
-        StoreAuthenticityRequirement::required(
-            StoreAuthenticityRequirementClass::AuthenticatedFrame,
-        ),
-        StoreCustodyPosture::InternalStoreCustody,
-    );
-    let point = access_planning().point_access();
-    let range = access_planning().range_access();
-
-    let point_plan = deterministic_plan_selection()
-        .select_admitted_with_budget(
-            crate::planning::AccessPlanSelector
-                .admit_read_request(
-                    lifecycle,
-                    crate::keyspace::admit_page_key(
-                        key_domain,
-                        worth_store_physical_format::PhysicalSegmentId::from_raw(1).unwrap(),
-                        worth_store_physical_format::PhysicalPageId::from_raw(1).unwrap(),
-                    )
-                    .expect("page identity must pass ordinary key admission"),
-                    root_materialization(lifecycle, 13),
-                    point,
-                )
-                .expect("test request must pass ordinary admission"),
-            PreExecutionBudgetEnvelope::foreground_default(),
-        )
-        .into_btree_lookup()
-        .expect("point request must issue B-tree lookup authority");
-    let range_plan = deterministic_plan_selection()
-        .select_admitted_with_budget(
-            crate::planning::AccessPlanSelector
-                .admit_read_request(
-                    lifecycle,
-                    crate::keyspace::admit_page_key(
-                        key_domain,
-                        worth_store_physical_format::PhysicalSegmentId::from_raw(1).unwrap(),
-                        worth_store_physical_format::PhysicalPageId::from_raw(1).unwrap(),
-                    )
-                    .expect("page identity must pass ordinary key admission"),
-                    root_materialization(lifecycle, 13),
-                    range,
-                )
-                .expect("test request must pass ordinary admission"),
-            PreExecutionBudgetEnvelope::foreground_default(),
-        )
-        .into_btree_lookup()
-        .expect("range request must issue B-tree lookup authority");
-
-    assert_eq!(
-        point_plan.selected_family(),
-        LayoutStrategyFamily::BaselineBTreeRange
-    );
-    assert_eq!(
-        range_plan.selected_family(),
-        LayoutStrategyFamily::BaselineBTreeRange
-    );
-    assert_ne!(point_plan.fingerprint(), range_plan.fingerprint());
-    assert_ne!(point_plan.fingerprint(), range_plan.fingerprint());
-    assert_eq!(point_plan.operation(), crate::BTreeLookupOperation::Point);
-    assert_eq!(range_plan.operation(), crate::BTreeLookupOperation::Range);
 }
 
 #[test]

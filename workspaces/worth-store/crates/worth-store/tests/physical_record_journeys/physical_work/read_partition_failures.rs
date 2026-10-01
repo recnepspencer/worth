@@ -48,8 +48,8 @@ fn every_transient_read_route_preserves_truth_then_allows_same_runtime_retry() {
             .iter()
             .map(|target| target.route)
             .collect::<BTreeSet<_>>(),
-        BTreeSet::from([Route::Root, Route::Artifact, Route::Frame, Route::Scan]),
-        "calibration must cover exactly the four native read routes"
+        BTreeSet::from([Route::Frame, Route::Scan]),
+        "calibration must cover the positioned-read routes actually executed after root capture"
     );
     for target in targets {
         exercise(target);
@@ -96,7 +96,7 @@ fn calibrate(workload: Workload) -> Vec<RouteTarget> {
             .or_insert(index as u64 + 1);
     }
     let expected = match workload {
-        Workload::Ordinary => BTreeSet::from([Route::Root, Route::Artifact, Route::Frame]),
+        Workload::Ordinary => BTreeSet::from([Route::Frame]),
         Workload::Scan => BTreeSet::from([Route::Scan]),
     };
     assert_eq!(

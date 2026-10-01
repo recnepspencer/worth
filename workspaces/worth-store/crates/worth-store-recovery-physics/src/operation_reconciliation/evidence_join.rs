@@ -11,6 +11,14 @@ pub struct ReconciledOperationFates {
     counts: [u64; 4],
 }
 
+impl ReconciledOperationFates {
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        u64::try_from(self.operations.len())
+            .ok()?
+            .checked_mul(u64::try_from(std::mem::size_of::<ReconciledOperationFate>()).ok()?)
+    }
+}
+
 pub fn reconcile_operation_fates(
     selected_checkpoint_generation: u64,
     mut inputs: Vec<RecoveryOperationEvidenceInput>,

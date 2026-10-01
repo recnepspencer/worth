@@ -113,7 +113,7 @@ fn apply_operator(fixture: &crate::support::StoreFixture, target: Target, operat
                     bytes.pop();
                 }
                 Operator::USchema => {
-                    bytes[9] = if target == Target::Root { 4 } else { 3 };
+                    bytes[9] = if target == Target::Root { 8 } else { 3 };
                     refresh_crc32c(&mut bytes);
                 }
                 Operator::UFormat => {
@@ -188,7 +188,7 @@ fn assert_localization(artifact: &OfflineArtifactObservation, target: Target, op
         Operator::USchema => assert_unsupported(
             artifact,
             OfflineUnsupportedVersionAxis::EnvelopeSchema,
-            if target == Target::Root { 4 } else { 3 },
+            if target == Target::Root { 8 } else { 3 },
             (9, 1),
         ),
         Operator::UFormat => assert_unsupported(

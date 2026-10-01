@@ -16,8 +16,12 @@ use super::work_runtime::InstalledPhysicalWorkRuntime;
 
 pub(super) struct PhysicalRecordServingAssembly {
     state: RecordServingState,
+    recovered_checkpoint_custody:
+        Option<crate::physical_runtime::durability::PreparedRecoveredCheckpointCustody>,
+    checkpoint_custody_origin: crate::physical_runtime::durability::CheckpointCustodyOrigin,
     allocation: RecordAllocationFrontier,
     frame_ports: crate::physical_runtime::record_serving::RecordFramePorts,
+    recovery_allocation: crate::physical_runtime::PhysicalRecoveryAllocationAdmission,
     generation: LifecycleGeneration,
     signal_profile: PhysicalSignalProfileIdentity,
     lifecycle: Arc<crate::physical_runtime::lifecycle::LifecycleState>,
@@ -34,16 +38,24 @@ pub(super) struct InstalledPhysicalRecordServing {
 impl PhysicalRecordServingAssembly {
     pub(super) fn new(
         state: RecordServingState,
+        checkpoint_custody_origin: crate::physical_runtime::durability::CheckpointCustodyOrigin,
+        recovered_checkpoint_custody: Option<
+            crate::physical_runtime::durability::PreparedRecoveredCheckpointCustody,
+        >,
         allocation: RecordAllocationFrontier,
         frame_ports: crate::physical_runtime::record_serving::RecordFramePorts,
+        recovery_allocation: crate::physical_runtime::PhysicalRecoveryAllocationAdmission,
         generation: LifecycleGeneration,
         signal_profile: PhysicalSignalProfileIdentity,
         lifecycle: Arc<crate::physical_runtime::lifecycle::LifecycleState>,
     ) -> Self {
         Self {
             state,
+            recovered_checkpoint_custody,
+            checkpoint_custody_origin,
             allocation,
             frame_ports,
+            recovery_allocation,
             generation,
             signal_profile,
             lifecycle,
@@ -54,7 +66,9 @@ impl PhysicalRecordServingAssembly {
         self,
         work: &InstalledPhysicalWorkRuntime,
         durability: &ReopenedPhysicalDurabilityOwners,
+        record_owner: &crate::physical_runtime::record_serving::RecordServingOwner,
         read_protection: Arc<crate::physical_runtime::stability::RootProtectionRegistry>,
+        publication_retention: crate::physical_runtime::record_serving::AdmittedPublicationRetention,
     ) -> InstalledPhysicalRecordServing {
         let read = CanonicalRecordReadPort::new(
             &work.runtime,
@@ -117,6 +131,9 @@ impl PhysicalRecordServingAssembly {
             read,
             mutation,
             RecordPublicationFoundation {
+                recovered_checkpoint_custody: self.recovered_checkpoint_custody,
+                checkpoint_custody_origin: self.checkpoint_custody_origin,
+                reader_factory: record_owner.reader_factory(),
                 read_protection,
                 idempotency: durability.durability.idempotency_authority(),
                 durability: durability.durability.observation(),
@@ -137,11 +154,12 @@ impl PhysicalRecordServingAssembly {
                 previous_root: self.state.previous_root,
                 displaced_artifacts: self.state.displaced_artifacts,
                 unresolved_retirements: durability.unresolved_retirements.clone(),
-                publication_overheads: self.state.publication_overheads,
+                publication_retention,
                 free_space: self.state.free_space,
                 allocation_frontier: self.allocation,
                 residue: self.state.publication_residue,
                 frame_ports: self.frame_ports.clone(),
+                recovery_allocation: self.recovery_allocation,
                 generation: self.generation,
                 lifecycle: self.lifecycle,
             },
@@ -155,6 +173,7 @@ impl PhysicalRecordServingAssembly {
                 work: checkpoint_work,
                 durability: durability.durability.observation(),
                 reclamation,
+                selected_checkpoint_sequence: durability.selected_checkpoint_sequence,
             },
             &work.runtime,
         );

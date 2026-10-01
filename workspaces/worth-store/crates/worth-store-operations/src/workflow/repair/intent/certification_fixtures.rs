@@ -4,7 +4,7 @@ use super::super::integrity_classification::{
 };
 use sha2::{Digest, Sha256};
 use worth_store_authority::StoreCurrentAuthorityIdentity;
-use worth_store_layout_indexes::DerivedIndexRepairRequest;
+use super::super::DerivedIndexRepairRequest;
 use worth_store_physical_format::BackupBundleArtifactFamily;
 
 use crate::{

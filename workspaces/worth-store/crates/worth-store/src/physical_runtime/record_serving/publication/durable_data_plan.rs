@@ -58,16 +58,21 @@ pub(in crate::physical_runtime::record_serving) fn materialize_durable_data(
     let requires_maintenance_protocol = payload.source_root.requires_maintenance_protocol();
     let inserted_records = payload.records.len() as u64;
     let root = PreparedPhysicalRootProjection {
+        derived_updates: payload.derived_updates,
+        release_head_effect: payload.release_head_effect,
         arena_reservations: payload.arena_reservations,
         root_publication_allocation_bytes,
         source_root: payload.source_root,
+        blob_reuse_source_fence: payload.blob_reuse_source_fence,
         requires_maintenance_protocol,
         manifest_capacity_transition,
         placement: payload.placement,
         records: payload.records,
+        drop_records: payload.drop_records,
         inserted_records,
         payload_manifests: payload.payload_manifests,
         placements: payload.placements,
+        retired_inline_witnesses: BTreeMap::new(),
         segment_updates: payload.segment_updates,
         inline_allocations: payload.inline_allocations,
         last_inline_record: payload.last_inline_record,

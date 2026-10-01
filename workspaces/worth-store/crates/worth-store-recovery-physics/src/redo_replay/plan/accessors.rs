@@ -1,6 +1,45 @@
 use super::*;
 
+impl<'a> AdmittedRootStepMemberView<'a> {
+    pub const fn lsn_range(self) -> WalLsnRange {
+        self.lsn_range
+    }
+    pub const fn operation(self) -> [u8; 32] {
+        self.operation
+    }
+    pub const fn group(self) -> PhysicalRedoGroupBinding {
+        self.group
+    }
+    pub const fn fate(self) -> RecoveryOperationFate {
+        self.fate
+    }
+    pub const fn canonical_redo_sha256(self) -> [u8; 32] {
+        self.canonical_redo_sha256
+    }
+    pub const fn materialization(self) -> &'a PersistedPhysicalRecoveryProjection {
+        self.materialization
+    }
+}
+
 impl ImmutablePhysicalRedoPlan {
+    /// The digest is authority only when it belongs to this exact unique
+    /// semantics-admitted member, not a caller-described WAL byte stream.
+    pub(crate) fn admits_exact_member_redo_digest(
+        &self,
+        projection: &PhysicalRedoProjection,
+        digest: [u8; 32],
+    ) -> bool {
+        let mut members = self
+            .projections
+            .iter()
+            .filter(|member| member.operation() == projection.operation());
+        members.next().is_some_and(|member| {
+            std::ptr::eq(member, projection)
+                && member.group() == projection.group()
+                && member.semantics_admitted_redo_sha256() == Some(digest)
+        }) && members.next().is_none()
+    }
+
     /// Conservative peak charge for retained descriptors and historical-skip planning.
     pub const fn supersession_scratch_bytes(&self) -> u64 {
         self.scratch_bytes
@@ -51,6 +90,7 @@ impl PhysicalRedoProjection {
             group,
             fate,
             materialization,
+            canonical_redo_sha256: None,
         }
     }
 }
@@ -156,6 +196,22 @@ impl ImmutablePhysicalRedoPlan {
     pub fn projections(&self) -> &[PhysicalRedoProjection] {
         &self.projections
     }
+    /// The already-admitted canonical record for a single-record blob semantic
+    /// member. Multiple target decisions may name the same record.
+    pub fn blob_semantic_record_bytes(&self, operation: [u8; 32]) -> Option<&[u8]> {
+        let mut records = self
+            .decisions
+            .iter()
+            .filter(|decision| decision.operation == operation)
+            .map(|decision| decision.record_index);
+        let first = records.next()?;
+        if records.any(|index| index != first) {
+            return None;
+        }
+        self.records
+            .get(first as usize)
+            .map(PhysicalRedoRecord::bytes)
+    }
     pub const fn recovery_root_allocation_bytes(&self) -> u64 {
         self.recovery_root_allocation_bytes
     }
@@ -185,14 +241,21 @@ impl ImmutablePhysicalRedoPlan {
                     .filter(|decision| decision.operation == member.operation)
                     .collect::<Vec<_>>();
                 !decisions.is_empty()
-                    && decisions
-                        .iter()
-                        .all(|decision| decision.kind != PhysicalRedoDecisionKind::Apply)
+                    && decisions.iter().all(|decision| {
+                        matches!(
+                            decision.kind,
+                            PhysicalRedoDecisionKind::SkipPageAlreadyAtOrBeyondLsn
+                                | PhysicalRedoDecisionKind::SkipOperationAlreadyMaterialized
+                        )
+                    })
             })
     }
 }
 
 impl PhysicalRedoProjection {
+    pub const fn semantics_admitted_redo_sha256(&self) -> Option<[u8; 32]> {
+        self.canonical_redo_sha256
+    }
     pub const fn operation(&self) -> [u8; 32] {
         self.operation
     }
@@ -261,6 +324,9 @@ impl PhysicalRedoPlanCounters {
     }
     pub const fn skip_page_lsn(self) -> u64 {
         self.skip_page_lsn
+    }
+    pub const fn skip_historical_drop(self) -> u64 {
+        self.skip_historical_drop
     }
     pub const fn skip_operation(self) -> u64 {
         self.skip_operation

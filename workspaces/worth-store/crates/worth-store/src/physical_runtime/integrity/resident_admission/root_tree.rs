@@ -146,6 +146,7 @@ impl IntegrityAdmittedResidentRootRoutingView<'_> {
                 leaf_entries: u64::from(capacity),
                 branch_children: u64::from(capacity),
             },
+            self.lease[9],
         )
     }
 }

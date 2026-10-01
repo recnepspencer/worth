@@ -32,6 +32,16 @@ const _: () =
     assert!(std::mem::size_of::<PhysicalResidencyWorkPort>() <= std::mem::size_of::<usize>() * 4);
 
 impl PhysicalResidencyWorkPort {
+    pub(in crate::physical_runtime::record_serving) fn checkpoint_pin_allocation(
+        &self,
+        bytes: NonZeroU64,
+    ) -> Result<
+        worth_store_buffer_pool::MaintenanceAllocationGrant,
+        worth_store_buffer_pool::PhysicalResidencyDenial,
+    > {
+        self.access.frame_ports.checkpoint_capture_allocation(bytes)
+    }
+
     pub(in crate::physical_runtime::record_serving) fn read_fresh_exact(
         &self,
         coordinate: RecordFrameCoordinate,
@@ -91,6 +101,27 @@ impl PhysicalResidencyWorkPort {
     pub(in crate::physical_runtime::record_serving) fn for_scan(mut self) -> Self {
         self.source = self.source.for_scan();
         self
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn for_rebuild(mut self) -> Self {
+        self.source = self.source.for_rebuild();
+        self
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn for_diagnostic_scrub(mut self) -> Self {
+        self.source = self.source.for_diagnostic_scrub();
+        self
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn for_ordinary(mut self) -> Self {
+        self.source = self.source.for_ordinary();
+        self
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn read_allocation_scope(
+        &self,
+    ) -> worth_store_buffer_pool::PhysicalOperationAllocationScope {
+        self.source.allocation_scope()
     }
 
     pub(in crate::physical_runtime::record_serving) fn begin_operation(

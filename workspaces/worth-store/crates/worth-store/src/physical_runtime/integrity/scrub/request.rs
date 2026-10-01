@@ -17,6 +17,8 @@ pub enum PhysicalIntegrityScrubRequestDenial {
     RuntimeScopeMismatch,
     ActiveHandleLimitExceeded,
     RuntimeClosed,
+    RootProtection(crate::physical_runtime::PhysicalReadProtectionDenial),
+    SelectedRootChanged,
 }
 
 /// Bounded diagnostic intent. Completion covers exactly these targets, never
@@ -52,16 +54,16 @@ impl ManagedPhysicalIntegrityScrubRequest {
             if target.scope().store_identity() != store {
                 return Err(Denial::RuntimeScopeMismatch);
             }
-            if target.range().length() > maximum_window_bytes {
+            if target.declared_bytes() > maximum_window_bytes {
                 return Err(Denial::WindowBoundExceeded);
             }
             bytes = bytes
-                .checked_add(target.range().length() as u64)
+                .checked_add(target.declared_bytes() as u64)
                 .filter(|total| *total <= maximum_total_bytes)
                 .ok_or(Denial::TotalByteBoundExceeded)?;
             if exact
                 .iter()
-                .any(|prior: &PhysicalIntegrityScrubTarget| prior.range().overlaps(target.range()))
+                .any(|prior: &PhysicalIntegrityScrubTarget| prior.overlaps(target))
             {
                 return Err(Denial::DuplicateOrOverlappingTarget);
             }

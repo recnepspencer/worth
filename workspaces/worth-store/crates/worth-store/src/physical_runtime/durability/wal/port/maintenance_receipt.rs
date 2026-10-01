@@ -3,6 +3,7 @@
 pub(in crate::physical_runtime) struct DurableMaintenanceReceipt {
     payload_digest: [u8; 32],
     interval: (u64, u64, u64, u64, u64, u64),
+    frame_digests: Option<([u8; 32], [u8; 32])>,
     synchronization: crate::physical_runtime::CompletedPhysicalWalBarrier,
 }
 
@@ -10,11 +11,13 @@ impl DurableMaintenanceReceipt {
     pub(super) fn completed(
         payload_digest: [u8; 32],
         interval: (u64, u64, u64, u64, u64, u64),
+        frame_digests: Option<([u8; 32], [u8; 32])>,
         synchronization: crate::physical_runtime::CompletedPhysicalWalBarrier,
     ) -> Self {
         Self {
             payload_digest,
             interval,
+            frame_digests,
             synchronization,
         }
     }
@@ -24,6 +27,10 @@ impl DurableMaintenanceReceipt {
     /// Segment, generation, LSN start/end, append offset, append byte count.
     pub(in crate::physical_runtime) const fn interval(&self) -> (u64, u64, u64, u64, u64, u64) {
         self.interval
+    }
+    /// Exact encoded C9 header identity and payload digests after synchronization.
+    pub(in crate::physical_runtime) const fn frame_digests(&self) -> Option<([u8; 32], [u8; 32])> {
+        self.frame_digests
     }
     pub(in crate::physical_runtime) const fn synchronization(
         &self,

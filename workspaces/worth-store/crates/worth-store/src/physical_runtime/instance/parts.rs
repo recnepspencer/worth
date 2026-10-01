@@ -1,4 +1,5 @@
 use crate::physical_runtime::{
+    artifact_family::PhysicalArtifactFamilyRegistry,
     lifecycle::LifecycleTerminationGuard,
     record_serving::{
         AdmittedPhysicalRecordFormat, AdmittedRecordAccessPolicy, RecordPublicationDirector,
@@ -23,6 +24,7 @@ pub(in crate::physical_runtime) struct PhysicalStoreInstanceParts {
     pub(in crate::physical_runtime) work_runtime: std::sync::Arc<PhysicalStoreWorkRuntime>,
     pub(in crate::physical_runtime) scheduler_admission: PhysicalSchedulerAdmissionOwner,
     pub(in crate::physical_runtime) record_owner: RecordServingOwner,
+    pub(in crate::physical_runtime) artifact_families: PhysicalArtifactFamilyRegistry,
     pub(in crate::physical_runtime) record_work: std::sync::Arc<RecordWorkAdmission>,
     pub(in crate::physical_runtime) core: PhysicalRuntimeCore,
     pub(in crate::physical_runtime) format: AdmittedPhysicalRecordFormat,

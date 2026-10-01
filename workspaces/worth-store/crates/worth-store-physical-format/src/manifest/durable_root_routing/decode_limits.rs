@@ -11,6 +11,7 @@ pub enum BoundedRootRoutingBlockDecodeDenial {
     Format(RootRoutingBlockDenial),
     LeafEntries { observed: u64, admitted: u64 },
     BranchChildren { observed: u64, admitted: u64 },
+    CoordinateScratchInsufficient { required: usize, provided: usize },
 }
 
 impl From<RootRoutingBlockDenial> for BoundedRootRoutingBlockDecodeDenial {

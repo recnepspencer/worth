@@ -8,7 +8,7 @@ use worth_store_physical_format::{
 };
 
 use super::super::{
-    arena::{ArenaReservation, SharedArenaAllocationOwner},
+    arena::{ArenaReservation, ReleasedControlArenaPlacement, SharedArenaAllocationOwner},
     planning::batch_placement::ExtentInput,
     publication::extent_publication::ExtentDataPlan,
     publication::CandidateDataArtifact,
@@ -20,21 +20,30 @@ pub(in crate::physical_runtime::record_serving) fn lower_extents(
     frontier: &mut RecordAllocationFrontier,
     arena_owner: &SharedArenaAllocationOwner,
     extents: Vec<ExtentInput>,
+    released_control_placement: Option<&ReleasedControlArenaPlacement>,
     data: &mut Vec<CandidateDataArtifact>,
     manifests: &mut Vec<(RecordFrameCoordinate, Vec<u8>)>,
     placements: &mut BTreeMap<PersistedRecordIdentity, CurrentPhysicalRecordPlacement>,
 ) -> Result<Vec<ArenaReservation>, RecordAppendError> {
+    if released_control_placement.is_some() && extents.len() != 1 {
+        return Err(RecordAppendError::Denied(
+            RecordAppendDenial::ReclaimFenceUnavailable,
+        ));
+    }
     let mut reservations = Vec::new();
     for extent in extents {
-        reservations.push(lower_extent(
+        if let Some(reservation) = lower_extent(
             format,
             frontier,
             arena_owner,
             extent,
+            released_control_placement,
             data,
             manifests,
             placements,
-        )?);
+        )? {
+            reservations.push(reservation);
+        }
     }
     Ok(reservations)
 }
@@ -44,10 +53,11 @@ fn lower_extent(
     frontier: &mut RecordAllocationFrontier,
     arena_owner: &SharedArenaAllocationOwner,
     extent: ExtentInput,
+    released_control_placement: Option<&ReleasedControlArenaPlacement>,
     data: &mut Vec<CandidateDataArtifact>,
     manifests: &mut Vec<(RecordFrameCoordinate, Vec<u8>)>,
     placements: &mut BTreeMap<PersistedRecordIdentity, CurrentPhysicalRecordPlacement>,
-) -> Result<ArenaReservation, RecordAppendError> {
+) -> Result<Option<ArenaReservation>, RecordAppendError> {
     let extent_id = frontier.allocate_extent().ok_or(RecordAppendError::Denied(
         RecordAppendDenial::PhysicalIdentityExhausted,
     ))?;
@@ -76,9 +86,25 @@ fn lower_extent(
         .ok_or(RecordAppendError::Denied(
             RecordAppendDenial::RecordTooLarge,
         ))?;
-    let reservation = ArenaReservation::reserve(arena_owner, bytes)
-        .map_err(|_| RecordAppendError::Denied(RecordAppendDenial::PhysicalPressure))?;
-    let range = reservation.range();
+    let (reservation, range) = if let Some(prepared) = released_control_placement {
+        let claim = prepared.reservation();
+        if !claim.belongs_to(arena_owner)
+            || !claim.is_live()
+            || prepared.encoded_bytes() != extent.length
+            || claim.range().length() != bytes
+        {
+            return Err(RecordAppendError::Denied(
+                RecordAppendDenial::ReclaimFenceUnavailable,
+            ));
+        }
+        (None, claim.range())
+    } else {
+        let claim = ArenaReservation::reserve(arena_owner, bytes).map_err(|cause| {
+            RecordAppendError::Denied(RecordAppendDenial::ArenaAllocationUnavailable(cause))
+        })?;
+        let range = claim.range();
+        (Some(claim), range)
+    };
     let manifest = DurableExtentManifest::new(
         format.declaration(),
         extent.record,
@@ -110,11 +136,12 @@ fn lower_extent(
     placements.insert(
         extent.record,
         CurrentPhysicalRecordPlacement::Extent(
-            DurableExtentRecordPlacement::new(
+            DurableExtentRecordPlacement::new_selected(
                 extent.record,
                 extent_generation,
                 extent.length,
                 range,
+                extent.route_metadata,
             )
             .ok_or(RecordAppendError::Denied(
                 RecordAppendDenial::RecordTooLarge,

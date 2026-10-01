@@ -59,6 +59,7 @@ impl PhysicalWalAppendPort {
         Ok(DurableMaintenanceReceipt::completed(
             digest,
             interval,
+            None,
             synchronization,
         ))
     }

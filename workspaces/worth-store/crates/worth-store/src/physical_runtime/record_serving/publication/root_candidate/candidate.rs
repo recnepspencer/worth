@@ -12,6 +12,10 @@ pub(in crate::physical_runtime) struct PreparedPhysicalRootCandidate {
 }
 
 impl PreparedPhysicalRootCandidate {
+    pub(in crate::physical_runtime) const fn retained_routing_metadata_bytes(&self) -> Option<u64> {
+        self.plan.routing_metadata_bytes
+    }
+
     pub(in crate::physical_runtime::record_serving) fn new(
         source_root: DurablePhysicalRootManifest,
         successor_free_space: DurableFreeSpaceManifestHeader,

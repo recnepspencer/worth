@@ -160,6 +160,41 @@ impl RecoveryCleanupEvidence {
 }
 
 impl RecoveryCleanupPosture {
+    /// Exact owned slice backing, nested residue names and framed freshness
+    /// reads. The posture/evidence value itself remains inline in the caller.
+    pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {
+        let evidence = self.evidence();
+        let mut bytes = [
+            std::mem::size_of_val(&*evidence.dispositions),
+            std::mem::size_of_val(&*evidence.freshness),
+            std::mem::size_of_val(&*evidence.performed),
+            std::mem::size_of_val(&*evidence.deferrals),
+        ]
+        .into_iter()
+        .try_fold(0_u64, |sum, size| {
+            sum.checked_add(u64::try_from(size).ok()?)
+        })?;
+        for disposition in &evidence.dispositions {
+            bytes = bytes.checked_add(target_heap_bytes(disposition.target())?)?;
+        }
+        for sample in &evidence.freshness {
+            bytes = bytes.checked_add(u64::try_from(sample.selector_read().bytes().len()).ok()?)?;
+        }
+        for deferral in &evidence.deferrals {
+            bytes = bytes.checked_add(target_heap_bytes(deferral.target())?)?;
+            if let RecoveryCleanupDeferralEvidence::Freshness { failure, .. } = deferral {
+                if let Some(sample) = failure.sample() {
+                    bytes = bytes
+                        .checked_add(u64::try_from(sample.selector_read().bytes().len()).ok()?)?;
+                }
+                if let Some(read) = failure.read().and_then(|read| read.completed()) {
+                    bytes = bytes.checked_add(u64::try_from(read.bytes().len()).ok()?)?;
+                }
+            }
+        }
+        Some(bytes)
+    }
+
     pub(crate) fn from_evidence(evidence: RecoveryCleanupEvidence) -> Self {
         if evidence.counters.actions_deferred == 0 {
             Self::Complete(evidence)
@@ -176,6 +211,15 @@ impl RecoveryCleanupPosture {
 
     pub const fn is_deferred(&self) -> bool {
         matches!(self, Self::Deferred(_))
+    }
+}
+
+fn target_heap_bytes(target: &RecoveryCleanupTarget) -> Option<u64> {
+    match target {
+        RecoveryCleanupTarget::Residue { name, .. } => u64::try_from(name.len()).ok(),
+        RecoveryCleanupTarget::Record(_)
+        | RecoveryCleanupTarget::Checkpoint(_)
+        | RecoveryCleanupTarget::Wal(_) => Some(0),
     }
 }
 

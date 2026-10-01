@@ -41,8 +41,7 @@ impl RecordPublicationDirector {
         );
         let pending = self
             .root_owner
-            .publication_admission()
-            .register_exclusive_pending(operation)
+            .register_pending_publication(operation)
             .map_err(|_| PhysicalRetirementDenial::Waiting)?;
         let displaced = DisplacedArtifact {
             source_root: record.source_root,

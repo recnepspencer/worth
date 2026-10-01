@@ -148,7 +148,7 @@ pub(super) fn projection_with_page_allocation(
     let segment_cell = authority
         .segment_cell(segment)
         .with_segment_generation(PhysicalGeneration::from_raw(artifact_generation).unwrap());
-    let placement = DurableInlineRecordPlacement::new(
+    let placement = DurableInlineRecordPlacement::legacy_unknown(
         record,
         segment_cell,
         page,

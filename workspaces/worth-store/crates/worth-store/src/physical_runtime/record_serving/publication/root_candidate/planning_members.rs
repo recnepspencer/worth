@@ -60,6 +60,7 @@ impl RootPublicationPlanningMembers {
             members.push(RootPublicationPhysicalMutationMember::new(
                 settled_basis,
                 completion,
+                projection.recovery_release_head_effect().cloned(),
             ));
             projections.push(projection);
         }

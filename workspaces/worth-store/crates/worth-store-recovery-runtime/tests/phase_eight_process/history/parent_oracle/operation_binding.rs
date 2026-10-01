@@ -8,9 +8,6 @@ use super::super::{artifacts, schedule};
 use super::{select_recovery_basis, ExpectedCanonicalRecord};
 
 const CHECKPOINT_MAGIC: &[u8] = b"WCP7REC\0";
-const CHECKPOINT_PREFIX_BYTES: usize = 16;
-const CHECKPOINT_CRC_BYTES: usize = 4;
-const BINDING_RECORD_KIND: u8 = 4;
 const TERMINAL_STATE: u8 = 3;
 const PROVEN_NO_EFFECT_CLASS: u8 = 1;
 const COMPLETED_CLASS: u8 = 2;
@@ -60,7 +57,13 @@ pub(crate) fn bind(
         .iter()
         .find(|(_, bytes)| bytes.starts_with(CHECKPOINT_MAGIC))
         .ok_or_else(|| "submitted-operation oracle found no selected checkpoint".to_owned())?;
-    let terminal_records = binding_records(&checkpoint.1, &checkpoint.0)?;
+    let terminal_records = super::wire::validated_checkpoint_binding_payloads(&checkpoint.1)
+        .ok_or_else(|| {
+            format!(
+                "submitted-operation oracle rejected checkpoint: {}",
+                checkpoint.0
+            )
+        })?;
 
     let expected_payloads = payloads
         .iter()
@@ -274,56 +277,6 @@ fn key_identity(lease: LeaseBasis, material: [u8; 32]) -> [u8; 32] {
     digest.update(lease.expiry.to_le_bytes());
     digest.update(material);
     digest.finalize().into()
-}
-
-fn binding_records<'bytes>(bytes: &'bytes [u8], path: &str) -> Result<Vec<&'bytes [u8]>, String> {
-    let mut offset = 0;
-    let mut records = Vec::new();
-    while offset < bytes.len() {
-        let prefix = bytes
-            .get(offset..offset + CHECKPOINT_PREFIX_BYTES)
-            .ok_or_else(|| {
-                format!("submitted-operation oracle found a truncated prefix: {path}")
-            })?;
-        if &prefix[..8] != CHECKPOINT_MAGIC || prefix[8] != 1 {
-            return Err(format!(
-                "submitted-operation oracle found an invalid record: {path}"
-            ));
-        }
-        let payload_bytes = usize::try_from(u32::from_le_bytes(prefix[12..16].try_into().unwrap()))
-            .map_err(|_| "checkpoint payload length overflowed".to_owned())?;
-        let total = CHECKPOINT_PREFIX_BYTES
-            .checked_add(payload_bytes)
-            .and_then(|value| value.checked_add(CHECKPOINT_CRC_BYTES))
-            .ok_or_else(|| "checkpoint record length overflowed".to_owned())?;
-        let record = bytes.get(offset..offset + total).ok_or_else(|| {
-            format!("submitted-operation oracle found a truncated record: {path}")
-        })?;
-        let checksum_offset = CHECKPOINT_PREFIX_BYTES + payload_bytes;
-        let expected = u32::from_le_bytes(record[checksum_offset..].try_into().unwrap());
-        if crc32c(&record[..checksum_offset]) != expected {
-            return Err(format!(
-                "submitted-operation oracle rejected a checksum: {path}"
-            ));
-        }
-        if prefix[9] == BINDING_RECORD_KIND {
-            records.push(&record[CHECKPOINT_PREFIX_BYTES..checksum_offset]);
-        }
-        offset += total;
-    }
-    Ok(records)
-}
-
-fn crc32c(bytes: &[u8]) -> u32 {
-    let mut value = !0_u32;
-    for byte in bytes {
-        value ^= u32::from(*byte);
-        for _ in 0..8 {
-            let mask = 0_u32.wrapping_sub(value & 1);
-            value = (value >> 1) ^ (0x82f6_3b78 & mask);
-        }
-    }
-    !value
 }
 
 struct Cursor<'bytes> {

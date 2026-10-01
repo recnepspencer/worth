@@ -29,11 +29,16 @@ use crate::physical_runtime::{
 };
 
 impl RecordPublicationDirector {
+    pub(in crate::physical_runtime) fn completed_displaced_exact(
+        &self,
+        expected: DisplacedArtifact,
+    ) -> Option<DisplacedArtifact> {
+        self.root_owner.completed_displaced_exact(expected)
+    }
+
     /// One in-flight retirement owns the claim. A concurrent caller must not
     /// append its own intent after this attempt has completed.
-    pub(in crate::physical_runtime) fn try_begin_retirement(
-        &self,
-    ) -> Option<std::sync::MutexGuard<'_, ()>> {
+    pub(super) fn try_begin_retirement(&self) -> Option<std::sync::MutexGuard<'_, ()>> {
         match self.retirement_owner.try_lock() {
             Ok(guard) => Some(guard),
             Err(std::sync::TryLockError::WouldBlock) => None,
@@ -41,7 +46,7 @@ impl RecordPublicationDirector {
         }
     }
 
-    pub(in crate::physical_runtime) fn commit_retirement_intent(
+    pub(super) fn commit_retirement_intent(
         &self,
     ) -> Result<Option<DisplacedArtifact>, PhysicalRetirementDenial> {
         if self.has_pending_extent_release() {
@@ -78,11 +83,11 @@ impl RecordPublicationDirector {
         Ok(Some(displaced))
     }
 
-    pub(in crate::physical_runtime) fn revert_retirement_claim(&self, artifact: RetiredArtifact) {
+    pub(super) fn revert_retirement_claim(&self, artifact: RetiredArtifact) {
         self.root_owner.revert_displaced_claim(artifact);
     }
 
-    pub(in crate::physical_runtime) fn finish_retirement(
+    pub(super) fn finish_retirement(
         &self,
         displaced: DisplacedArtifact,
         checkpoint: &crate::physical_runtime::CompletedPhysicalCheckpoint,

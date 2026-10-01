@@ -61,7 +61,7 @@ fn held_reader_prevents_reuse_and_reused_frame_rejects_forged_old_route() {
         let cell = PhysicalGenerationAuthority::for_canonical_physical_format()
             .record_extent_cell(PhysicalExtentId::from_raw(route.extent).unwrap())
             .with_extent_generation(PhysicalGeneration::from_raw(route.generation).unwrap());
-        DurableExtentRecordPlacement::new(record, cell, EXTENT_PAYLOAD_BYTES as u64, arena).unwrap()
+        DurableExtentRecordPlacement::legacy_unknown(record, cell, EXTENT_PAYLOAD_BYTES as u64, arena).unwrap()
     };
     let new_scope = PhysicalArtifactScope::extent_manifest(
         store,

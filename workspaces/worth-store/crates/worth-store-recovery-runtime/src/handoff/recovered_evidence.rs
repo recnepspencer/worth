@@ -14,6 +14,9 @@ use crate::progression::{
 use super::{RecoveryCleanupPosture, RecoveryOperationFateSet};
 
 pub(crate) struct RecoveredPhysicalRuntimeHandoffEvidence {
+    /// Measured live Runtime and cleanup backing at the Store construction
+    /// boundary, before any independent Store rejoin allocation.
+    pub(crate) store_rejoin_retained_bytes: Option<u64>,
     pub(crate) session: RecoveredRecoverySessionReceipt,
     pub(crate) selection: PhysicalSourceSelection,
     pub(crate) discovery: PhysicalRecoveryDiscoveryCounters,

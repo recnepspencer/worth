@@ -209,6 +209,9 @@ fn artifact_to_format(artifact: RecordArtifactFile) -> PhysicalWorkArtifactCode 
         RecordArtifactFile::RootRoutingBlock { generation, block } => {
             PhysicalWorkArtifactCode::RootRoutingBlock { generation, block }
         }
+        RecordArtifactFile::ReleaseCustodyHeadBlock { generation, block } => {
+            PhysicalWorkArtifactCode::ReleaseCustodyHeadBlock { generation, block }
+        }
         RecordArtifactFile::Segment {
             segment,
             generation,
@@ -261,6 +264,9 @@ fn artifact_from_format(artifact: PhysicalWorkArtifactCode) -> Option<RecordArti
         }
         PhysicalWorkArtifactCode::RootRoutingBlock { generation, block } => {
             RecordArtifactFile::RootRoutingBlock { generation, block }
+        }
+        PhysicalWorkArtifactCode::ReleaseCustodyHeadBlock { generation, block } => {
+            RecordArtifactFile::ReleaseCustodyHeadBlock { generation, block }
         }
         PhysicalWorkArtifactCode::Segment {
             segment,

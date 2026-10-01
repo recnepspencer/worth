@@ -85,6 +85,12 @@ impl DataSettledPhysicalMutation {
 }
 
 impl SettledPhysicalMutationBasis {
+    pub(in crate::physical_runtime) fn encoded_frame_header_witness(
+        &self,
+    ) -> Option<(u64, u64, [u8; 32], [u8; 32])> {
+        self.reserved.encoded_frame_header_witness()
+    }
+
     pub(in crate::physical_runtime) fn source_copy_evidence(
         &self,
     ) -> Option<crate::physical_runtime::PhysicalExtentCopySettlementObservation> {

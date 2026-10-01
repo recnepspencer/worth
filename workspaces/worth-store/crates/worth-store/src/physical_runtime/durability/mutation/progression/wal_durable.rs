@@ -45,6 +45,12 @@ impl WalDurablePhysicalMutation {
         &self.appended
     }
 
+    pub(in crate::physical_runtime) const fn blob_record_kind(
+        &self,
+    ) -> Option<worth_store_physical_format::BlobRecordKind> {
+        self.appended.reserved().blob_record_kind()
+    }
+
     pub(in crate::physical_runtime) fn data_frames(
         &self,
     ) -> Option<&[crate::physical_runtime::durability::WalBoundPhysicalDataFrame]> {

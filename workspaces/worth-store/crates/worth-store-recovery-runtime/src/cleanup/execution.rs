@@ -14,6 +14,14 @@ pub(crate) fn execute(
     mut reopened: ReopenedPhysicalRecovery,
     cancellation: Option<PhysicalRecoveryCleanupCancellation>,
 ) -> crate::entry::PhysicalRecoveryOutcome {
+    let residue = super::checkpoint_residue::prepare(&reopened);
+    if matches!(
+        residue,
+        worth_store::physical_runtime::RecoveryCheckpointResidueOutcome::DeniedBeforeEffect(_)
+            | worth_store::physical_runtime::RecoveryCheckpointResidueOutcome::Indeterminate
+    ) {
+        return super::checkpoint_residue::failure(reopened, residue);
+    }
     let limits = reopened.state.authority.limits.declaration();
     let mut plan = build_plan(RecoveryCleanupPlanBasis {
         selection: &reopened.state.selection,

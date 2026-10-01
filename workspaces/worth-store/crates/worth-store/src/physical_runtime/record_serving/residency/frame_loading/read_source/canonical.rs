@@ -35,6 +35,34 @@ impl CanonicalFrameReadSource {
         self
     }
 
+    pub(in crate::physical_runtime::record_serving) fn for_rebuild(mut self) -> Self {
+        self.port = std::sync::Arc::new(
+            (*self.port)
+                .clone()
+                .for_rebuild(crate::physical_runtime::record_serving::RebuildReadShape::admit()),
+        );
+        self.context = CanonicalReadContext::Scan;
+        self
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn for_diagnostic_scrub(mut self) -> Self {
+        self.port = std::sync::Arc::new((*self.port).clone().for_diagnostic_scrub());
+        self.context = CanonicalReadContext::Ordinary;
+        self
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn for_ordinary(mut self) -> Self {
+        self.port = std::sync::Arc::new((*self.port).clone().for_ordinary());
+        self.context = CanonicalReadContext::Ordinary;
+        self
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn allocation_scope(
+        &self,
+    ) -> worth_store_buffer_pool::PhysicalOperationAllocationScope {
+        self.port.read_allocation_scope()
+    }
+
     /// A publication candidate must be read from media after its sync. Pool
     /// hits cannot establish which bytes the new root would expose.
     pub(in crate::physical_runtime::record_serving) fn read_fresh_exact(

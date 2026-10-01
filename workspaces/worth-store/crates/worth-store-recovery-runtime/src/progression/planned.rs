@@ -16,6 +16,20 @@ pub struct PlannedPhysicalRecovery {
     authority: AdmittedPlatformAuthority,
     coordination: RecoveryCoordination,
     selection: PhysicalSourceSelection,
+    verified_selected_checkpoint_custody:
+        Option<worth_store_recovery_physics::VerifiedSelectedCheckpointCustody>,
+    verified_selected_head_custody_v2:
+        Option<worth_store_recovery_physics::VerifiedSelectedReleaseHeadCustodyV2>,
+    verified_selected_no_release_custody:
+        Option<worth_store_recovery_physics::VerifiedSelectedNoReleaseCustody>,
+    verified_pending_wal_release_custody:
+        Option<worth_store_recovery_physics::VerifiedPendingWalReleaseCustody>,
+    verified_ordered_historical_release_custody:
+        Option<worth_store_recovery_physics::VerifiedOrderedHistoricalReleaseCustody>,
+    verified_effective_release_heads_v14:
+        Option<worth_store_recovery_physics::VerifiedEffectiveReleaseHeadRosterV14>,
+    verified_selected_tier_custody:
+        Option<worth_store_recovery_physics::VerifiedSelectedTierEpochCustody>,
     discovery_counters: PhysicalRecoveryDiscoveryCounters,
     root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
     integrity: RecoveryIntegrityEvidence,
@@ -39,6 +53,27 @@ impl PlannedPhysicalRecovery {
         authority: AdmittedPlatformAuthority,
         coordination: RecoveryCoordination,
         selection: PhysicalSourceSelection,
+        verified_selected_checkpoint_custody: Option<
+            worth_store_recovery_physics::VerifiedSelectedCheckpointCustody,
+        >,
+        verified_selected_head_custody_v2: Option<
+            worth_store_recovery_physics::VerifiedSelectedReleaseHeadCustodyV2,
+        >,
+        verified_selected_no_release_custody: Option<
+            worth_store_recovery_physics::VerifiedSelectedNoReleaseCustody,
+        >,
+        verified_pending_wal_release_custody: Option<
+            worth_store_recovery_physics::VerifiedPendingWalReleaseCustody,
+        >,
+        verified_ordered_historical_release_custody: Option<
+            worth_store_recovery_physics::VerifiedOrderedHistoricalReleaseCustody,
+        >,
+        verified_effective_release_heads_v14: Option<
+            worth_store_recovery_physics::VerifiedEffectiveReleaseHeadRosterV14,
+        >,
+        verified_selected_tier_custody: Option<
+            worth_store_recovery_physics::VerifiedSelectedTierEpochCustody,
+        >,
         discovery_counters: PhysicalRecoveryDiscoveryCounters,
         root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
         integrity: RecoveryIntegrityEvidence,
@@ -57,6 +92,13 @@ impl PlannedPhysicalRecovery {
             authority,
             coordination,
             selection,
+            verified_selected_checkpoint_custody,
+            verified_selected_head_custody_v2,
+            verified_selected_no_release_custody,
+            verified_pending_wal_release_custody,
+            verified_ordered_historical_release_custody,
+            verified_effective_release_heads_v14,
+            verified_selected_tier_custody,
             discovery_counters,
             root_protocol_denials,
             integrity,
@@ -207,6 +249,13 @@ impl PlannedPhysicalRecovery {
             authority,
             coordination,
             selection,
+            verified_selected_checkpoint_custody,
+            verified_selected_head_custody_v2,
+            verified_selected_no_release_custody,
+            verified_pending_wal_release_custody,
+            verified_ordered_historical_release_custody,
+            verified_effective_release_heads_v14,
+            verified_selected_tier_custody,
             discovery_counters,
             freshness,
             fates,
@@ -225,6 +274,13 @@ impl PlannedPhysicalRecovery {
             authority,
             coordination,
             selection,
+            verified_selected_checkpoint_custody,
+            verified_selected_head_custody_v2,
+            verified_selected_no_release_custody,
+            verified_pending_wal_release_custody,
+            verified_ordered_historical_release_custody,
+            verified_effective_release_heads_v14,
+            verified_selected_tier_custody,
             discovery_counters,
             root_protocol_denials,
             integrity,
@@ -241,11 +297,14 @@ impl PlannedPhysicalRecovery {
     }
 }
 mod basis;
+mod resident_memory;
+pub(crate) use resident_memory::{PlanningMemoryDenial, PlanningResidentAllowance};
 
 pub(crate) use basis::{
-    derive_execution_basis, requires_successor_candidate, CandidateMaterializationCost,
-    ExecutionBasisDenial, RecoveryObservedCandidateArtifact, RecoveryObservedSuccessorCandidate,
-    RecoverySelectedSegmentPage, RecoverySelectedSourceInventory,
+    derive_execution_basis, requires_successor_candidate, verified_historical_release_transition,
+    CandidateMaterializationCost, ExecutionBasisDenial, RecoveryObservedCandidateArtifact,
+    RecoveryObservedSuccessorCandidate, RecoverySelectedSegmentPage,
+    RecoverySelectedSourceInventory,
 };
 pub use basis::{
     RecoveryBaseImageAction, RecoveryBaseImagePlan, RecoveryPayloadManifestAction,

@@ -1,4 +1,5 @@
 mod comparison_protocol;
+mod selected_comparison_protocol;
 mod documented_commands;
 mod hostile_process;
 mod journal_coverage;

@@ -111,7 +111,7 @@ const fn admits_owned_maintenance_traversal(
         request.requested_lane(),
         ArtifactFamilyAccessLane::MaintenancePath
     ) && match admitted.family() {
-        LayoutStrategyFamily::BaselineBTreeRange => matches!(
+        LayoutStrategyFamily::BTreeRange => matches!(
             request.maintenance_mode(),
             IndexMaintenanceMode::RebuildOnly
         ),
@@ -181,7 +181,7 @@ pub(super) const fn mutation_shape_is_compatible(
         (family, mutation_shape),
         (_, PhysicalMutationShape::ObservationOnly)
             | (
-                LayoutStrategyFamily::BaselineBTreeRange,
+                LayoutStrategyFamily::BTreeRange,
                 PhysicalMutationShape::PointRewrite
             )
             | (

@@ -1,7 +1,6 @@
 use super::selection_issuance::{IssuedSelection, SelectionIssuedPayload};
 use super::{
-    AccessPlanSelectionDenied, SelectedBTreeLookup, SelectedBTreeReplayRecovery,
-    SelectedDegradedExactScan, SelectedLsmCompaction, SelectedLsmLookup, SelectedLsmReplayRecovery,
+    AccessPlanSelectionDenied, SelectedDegradedExactScan, SelectedLsmCompaction, SelectedLsmLookup, SelectedLsmReplayRecovery,
     SelectedLsmRunPublication,
 };
 
@@ -12,8 +11,6 @@ pub struct AccessPlanSelectionOutcome {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AccessPlanSelectionView<'a> {
-    BTreeLookup(&'a SelectedBTreeLookup),
-    BTreeReplayRecovery(&'a SelectedBTreeReplayRecovery),
     LsmLookup(&'a SelectedLsmLookup),
     LsmRunPublication(&'a SelectedLsmRunPublication),
     LsmReplayRecovery(&'a SelectedLsmReplayRecovery),
@@ -29,10 +26,6 @@ impl AccessPlanSelectionOutcome {
 
     pub fn view(&self) -> AccessPlanSelectionView<'_> {
         match self.issued.payload() {
-            SelectionIssuedPayload::BTreeLookup(plan) => AccessPlanSelectionView::BTreeLookup(plan),
-            SelectionIssuedPayload::BTreeReplayRecovery(plan) => {
-                AccessPlanSelectionView::BTreeReplayRecovery(plan)
-            }
             SelectionIssuedPayload::LsmLookup(plan) => AccessPlanSelectionView::LsmLookup(plan),
             SelectionIssuedPayload::LsmRunPublication(plan) => {
                 AccessPlanSelectionView::LsmRunPublication(plan)
@@ -52,12 +45,6 @@ impl AccessPlanSelectionOutcome {
         use super::decision::AccessPlanSelectionCaseId as CaseId;
 
         match self.view() {
-            AccessPlanSelectionView::BTreeLookup(plan) => match plan.operation() {
-                super::BTreeLookupOperation::Point => CaseId::BTreePointLookup,
-                super::BTreeLookupOperation::Range => CaseId::BTreeRangeLookup,
-                super::BTreeLookupOperation::Prefix => CaseId::BTreePrefixLookup,
-            },
-            AccessPlanSelectionView::BTreeReplayRecovery(_) => CaseId::BTreeReplayRecovery,
             AccessPlanSelectionView::LsmLookup(_) => CaseId::LsmLookup,
             AccessPlanSelectionView::LsmRunPublication(_) => CaseId::LsmRunPublication,
             AccessPlanSelectionView::LsmReplayRecovery(_) => CaseId::LsmReplayRecovery,
@@ -79,40 +66,13 @@ impl AccessPlanSelectionOutcome {
     pub fn unwrap_err(self) -> AccessPlanSelectionDenied {
         match self.issued.into_payload() {
             SelectionIssuedPayload::Denied(denial) => denial,
-            SelectionIssuedPayload::BTreeLookup(_)
-            | SelectionIssuedPayload::BTreeReplayRecovery(_)
-            | SelectionIssuedPayload::LsmLookup(_)
+            SelectionIssuedPayload::LsmLookup(_)
             | SelectionIssuedPayload::LsmRunPublication(_)
             | SelectionIssuedPayload::LsmReplayRecovery(_)
             | SelectionIssuedPayload::LsmCompaction(_)
             | SelectionIssuedPayload::Degraded(_) => {
                 panic!("selection unexpectedly succeeded")
             }
-        }
-    }
-
-    pub fn into_btree_lookup(self) -> Result<SelectedBTreeLookup, Self> {
-        match self.issued.payload() {
-            SelectionIssuedPayload::BTreeLookup(_) => {
-                let SelectionIssuedPayload::BTreeLookup(plan) = self.issued.into_payload() else {
-                    unreachable!()
-                };
-                Ok(plan)
-            }
-            _ => Err(self),
-        }
-    }
-
-    pub fn into_btree_replay_recovery(self) -> Result<SelectedBTreeReplayRecovery, Self> {
-        match self.issued.payload() {
-            SelectionIssuedPayload::BTreeReplayRecovery(_) => {
-                let SelectionIssuedPayload::BTreeReplayRecovery(plan) = self.issued.into_payload()
-                else {
-                    unreachable!()
-                };
-                Ok(plan)
-            }
-            _ => Err(self),
         }
     }
 

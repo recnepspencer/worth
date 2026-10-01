@@ -8,7 +8,7 @@ pub enum BlobPlacementMovementDenial {
     StaleMovementPlan {
         counters: BlobPlacementMovementCounterSnapshot,
     },
-    MissingMovementReadHold {
+    MissingMovementReadPlan {
         counters: BlobPlacementMovementCounterSnapshot,
     },
     LifecycleSourcePlacementBasisMismatch {
@@ -26,12 +26,6 @@ pub enum BlobPlacementMovementDenial {
     },
     ColdPlacementUnavailable {
         state: ColdPlacementState,
-        counters: BlobPlacementMovementCounterSnapshot,
-    },
-    MovementExecutionReceiptMismatch {
-        counters: BlobPlacementMovementCounterSnapshot,
-    },
-    VerifiedReadBasisMismatch {
         counters: BlobPlacementMovementCounterSnapshot,
     },
 }

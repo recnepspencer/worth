@@ -1,4 +1,5 @@
 use worth_store_physical_backend::ArtifactTreeFile;
+use worth_store_physical_format::{BlobRecordKind, SelectedRecordContentClass};
 use worth_store_wal::{PlannedWalFrameAppend, WalAppendFrontier};
 
 use crate::physical_runtime::{
@@ -32,6 +33,10 @@ pub(in crate::physical_runtime) struct WalRangeReservedPhysicalMutationBasis {
     durability_policy_basis: PhysicalWorkSemanticBasis,
     resources: PhysicalMutationResourceShape,
     start: crate::physical_runtime::PhysicalMutationStartPort,
+    blob_record_kind: Option<BlobRecordKind>,
+    selected_content_class: SelectedRecordContentClass,
+    inline_only: bool,
+    derived_directory_basis: Option<crate::physical_runtime::PreparedDerivedDirectoryBasis>,
 }
 
 impl WalRangeReservedPhysicalMutation {
@@ -51,6 +56,10 @@ impl WalRangeReservedPhysicalMutation {
         durability_policy_basis: PhysicalWorkSemanticBasis,
         resources: PhysicalMutationResourceShape,
         start: crate::physical_runtime::PhysicalMutationStartPort,
+        blob_record_kind: Option<BlobRecordKind>,
+        selected_content_class: SelectedRecordContentClass,
+        inline_only: bool,
+        derived_directory_basis: Option<crate::physical_runtime::PreparedDerivedDirectoryBasis>,
     ) -> Self {
         Self {
             basis: WalRangeReservedPhysicalMutationBasis {
@@ -68,6 +77,10 @@ impl WalRangeReservedPhysicalMutation {
                 durability_policy_basis,
                 resources,
                 start,
+                blob_record_kind,
+                selected_content_class,
+                inline_only,
+                derived_directory_basis,
             },
             root,
         }
@@ -137,6 +150,10 @@ impl WalRangeReservedPhysicalMutation {
         self.basis.placement
     }
 
+    pub(in crate::physical_runtime) const fn blob_record_kind(&self) -> Option<BlobRecordKind> {
+        self.basis.blob_record_kind
+    }
+
     pub const fn deadline(&self) -> PhysicalMutationDeadline {
         self.basis.deadline
     }
@@ -191,6 +208,11 @@ impl WalRangeReservedPhysicalMutation {
                 rewrite_pages: 0,
                 source_root_generation: 0,
                 rewrite_anchor: None,
+                blob_record_kind: self.basis.blob_record_kind,
+                selected_content_class: self.basis.selected_content_class,
+                inline_only: self.basis.inline_only,
+                derived_directory_basis: self.basis.derived_directory_basis,
+                reuse_declaration_basis: None,
             },
         })
     }
@@ -206,6 +228,27 @@ impl WalRangeReservedPhysicalMutation {
 }
 
 impl WalRangeReservedPhysicalMutationBasis {
+    pub(in crate::physical_runtime) fn encoded_frame_header_witness(
+        &self,
+    ) -> Option<(u64, u64, [u8; 32], [u8; 32])> {
+        let frame = worth_store_physical_format::wal_frame::decode_bounded_wal_frame_v1(
+            self.frame.frame().encoded_frame(),
+        )
+        .ok()?;
+        let header = frame.header();
+        let range = self.member.lsn_range();
+        (header.lsn_start() == range.start().get()
+            && header.lsn_end() == range.end_exclusive().get()
+            && header.segment_id() == self.frame.resulting_frontier().segment().get()
+            && header.generation() == self.frame.resulting_frontier().generation().get())
+        .then_some((
+            header.lsn_start(),
+            header.lsn_end(),
+            header.identity_digest(),
+            header.payload_digest(),
+        ))
+    }
+
     pub(in crate::physical_runtime) fn source_copy_evidence(
         &self,
     ) -> Option<crate::physical_runtime::PhysicalExtentCopySettlementObservation> {

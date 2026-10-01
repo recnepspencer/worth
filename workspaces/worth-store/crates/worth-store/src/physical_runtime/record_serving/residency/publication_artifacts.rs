@@ -46,6 +46,58 @@ impl<'port> PublicationRecordArtifacts<'port> {
         })
     }
 
+    /// Writes one WAL-authorized blob chunk or tree-node arena frame through
+    /// the Store's bounded ingest-pressure attempt.
+    pub(in crate::physical_runtime::record_serving) fn write_blob_ingest_candidate(
+        &self,
+        residency: &mut StoreCandidateFramePublicationSession<'_>,
+        frame: CandidateFrame,
+        after_admission_before_effect: &mut dyn FnMut(),
+    ) -> Result<
+        CandidateFrameWriteCompletion,
+        CandidateFrameWriteFailure<super::super::CanonicalRecordMutationFailure>,
+    > {
+        let target = frame.coordinate();
+        residency.write_frame(frame, &mut |bytes| {
+            let length = u32::try_from(bytes.len()).expect("candidate frame length is bounded");
+            let coordinate = RecordFrameCoordinate::new(target.artifact(), target.offset(), length)
+                .expect("candidate frames are nonempty and offset-bounded");
+            let prepared = self.mutation.prepare_blob_ingest_artifact(
+                super::super::RecordPublicationStage::CandidateDataWrite,
+                coordinate,
+                bytes,
+            )?;
+            after_admission_before_effect();
+            Ok(prepared.execute()?.into_physical())
+        })
+    }
+
+    /// Spend reclaim background capacity on the actual WAL-authorized
+    /// control-frame write, including publication-only drop batches.
+    pub(in crate::physical_runtime::record_serving) fn write_blob_reclaim_candidate(
+        &self,
+        residency: &mut StoreCandidateFramePublicationSession<'_>,
+        frame: CandidateFrame,
+        after_admission_before_effect: &mut dyn FnMut(),
+    ) -> Result<
+        CandidateFrameWriteCompletion,
+        CandidateFrameWriteFailure<super::super::CanonicalRecordMutationFailure>,
+    > {
+        let target = frame.coordinate();
+        residency.write_frame(frame, &mut |bytes| {
+            let length = u32::try_from(bytes.len()).expect("candidate frame length is bounded");
+            let coordinate = RecordFrameCoordinate::new(target.artifact(), target.offset(), length)
+                .expect("candidate frames are nonempty and offset-bounded");
+            let prepared = self.mutation.prepare_blob_reclaim_artifact(
+                super::super::RecordPublicationStage::CandidateDataWrite,
+                coordinate,
+                bytes,
+            )?;
+            after_admission_before_effect();
+            Ok(prepared.execute()?.into_physical())
+        })
+    }
+
     pub(in crate::physical_runtime::record_serving) fn write_new_candidate_recoverable(
         &self,
         stage: super::super::RecordPublicationStage,

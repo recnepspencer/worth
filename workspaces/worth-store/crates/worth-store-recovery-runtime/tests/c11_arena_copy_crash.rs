@@ -24,6 +24,12 @@ use worth_store_recovery_runtime::{
 #[path = "c11_arena_copy_crash/observation.rs"]
 mod observation;
 use observation::observe_copy_media;
+#[path = "c11_arena_copy_crash/historical_displacement.rs"]
+mod historical_displacement;
+#[path = "c11_arena_copy_crash/mixed_history/legacy_copy_frame.rs"]
+mod legacy_copy_frame;
+#[path = "c11_arena_copy_crash/mixed_history.rs"]
+mod mixed_history;
 #[path = "c11_arena_copy_crash/pre_final.rs"]
 mod pre_final;
 

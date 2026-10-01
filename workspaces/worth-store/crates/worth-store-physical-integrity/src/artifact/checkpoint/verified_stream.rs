@@ -20,6 +20,18 @@ pub struct VerifiedCheckpointStream {
     encoded_bytes: u64,
     encoded_digest: [u8; 32],
     compaction_cutover: VerifiedCheckpointCompactionCutover,
+    certificate_records: Box<[Box<[u8]>]>,
+}
+
+impl VerifiedCheckpointStream {
+    /// Certificate backing only. A caller sharing this stream counts it once,
+    /// plus the stream and Arc header; cumulative encoded bytes are not resident.
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        self.certificate_records.iter().try_fold(
+            u64::try_from(std::mem::size_of_val(&*self.certificate_records)).ok()?,
+            |bytes, frame| bytes.checked_add(u64::try_from(frame.len()).ok()?),
+        )
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -46,6 +58,26 @@ impl VerifiedCheckpointStream {
         dirty: &'records [&'records IntegrityValidatedCheckpointDirtyBasis<'media>],
         compaction: &'records IntegrityValidatedCheckpointBindingCompaction<'media>,
         bindings: &'records [&'records IntegrityValidatedCheckpointBinding<'media>],
+        footer: &'records IntegrityValidatedCheckpointFooter<'media>,
+    ) -> Result<Self, VerifiedCheckpointStreamAssemblyDenial> {
+        Self::assemble_from_validated_records_with_certificates(
+            complete_stream,
+            header,
+            dirty,
+            compaction,
+            bindings,
+            &[],
+            footer,
+        )
+    }
+
+    pub fn assemble_from_validated_records_with_certificates<'records, 'media>(
+        complete_stream: UntrustedPhysicalArtifact<'media>,
+        header: &'records IntegrityValidatedCheckpointStreamHeader<'media>,
+        dirty: &'records [&'records IntegrityValidatedCheckpointDirtyBasis<'media>],
+        compaction: &'records IntegrityValidatedCheckpointBindingCompaction<'media>,
+        bindings: &'records [&'records IntegrityValidatedCheckpointBinding<'media>],
+        certificates: &'records [(PhysicalByteRange, &'media [u8])],
         footer: &'records IntegrityValidatedCheckpointFooter<'media>,
     ) -> Result<Self, VerifiedCheckpointStreamAssemblyDenial> {
         let source = header.source();
@@ -77,6 +109,13 @@ impl VerifiedCheckpointStream {
                 record.matches_input(input)
             })?;
         }
+        let mut retained_certificates = Vec::with_capacity(certificates.len());
+        for &(range, bytes) in certificates {
+            next_offset = require_record(complete_stream, range, next_offset, |input| {
+                input.bytes() == bytes
+            })?;
+            retained_certificates.push(bytes.to_vec().into_boxed_slice());
+        }
         let footer_range = footer.scope().byte_range();
         next_offset = require_record(complete_stream, footer_range, next_offset, |input| {
             footer.matches_input(input)
@@ -87,7 +126,8 @@ impl VerifiedCheckpointStream {
         let footer_input = bounded(complete_stream, footer_range)?;
         let basis = CheckpointFooterValidationBasis::from_record_references(
             header, dirty, compaction, bindings,
-        );
+        )
+        .with_certificates(certificates);
         if let CheckpointFooterIntegrityValidation::Rejected(rejection) =
             validate_checkpoint_footer(footer_input, footer.scope(), basis).0
         {
@@ -110,6 +150,7 @@ impl VerifiedCheckpointStream {
                 complete_stream.bytes(),
             ),
             compaction_cutover,
+            certificate_records: retained_certificates.into_boxed_slice(),
         })
     }
 
@@ -131,6 +172,10 @@ impl VerifiedCheckpointStream {
 
     pub const fn compaction_cutover(&self) -> VerifiedCheckpointCompactionCutover {
         self.compaction_cutover
+    }
+
+    pub fn certificate_records(&self) -> &[Box<[u8]>] {
+        &self.certificate_records
     }
 }
 

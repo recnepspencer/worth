@@ -318,7 +318,7 @@ fn root_block_version_axes_remain_unsupported_not_corrupt() {
     let block = root_leaf();
     let clean = block.encode(format());
     for (offset, width, axis, observed) in [
-        (9, 1, PhysicalIntegrityVersionAxis::EnvelopeSchema, 3),
+        (9, 1, PhysicalIntegrityVersionAxis::EnvelopeSchema, 4),
         (10, 2, PhysicalIntegrityVersionAxis::PhysicalFormat, 3),
     ] {
         let mut bytes = clean.clone();

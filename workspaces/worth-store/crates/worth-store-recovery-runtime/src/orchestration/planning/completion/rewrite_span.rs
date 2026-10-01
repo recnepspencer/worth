@@ -17,6 +17,13 @@ use pages::{
     admit_span, flatten, read_span, restamp_pages, segment_page_count, span_entries, stage,
 };
 
+pub(super) fn historical_page_count(
+    rewrite: worth_store_physical_format::PhysicalRewriteRedo,
+    format: PhysicalRecordFormatDeclaration,
+) -> Result<u32, ()> {
+    admit_span(rewrite, format).map_err(|_| ())
+}
+
 pub(super) fn prove(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     selection: &worth_store_recovery_physics::PhysicalSourceSelection,
@@ -202,13 +209,14 @@ pub(super) fn project(
             continue;
         };
         rebound.push(
-            DurableInlineRecordPlacement::new(
+            DurableInlineRecordPlacement::new_selected(
                 existing.record(),
                 destination_segment,
                 destination,
                 existing.slot_cell(),
                 existing.segment_page_capacity(),
                 existing.payload_bytes(),
+                existing.route_metadata(),
             )
             .ok_or(())?,
         );

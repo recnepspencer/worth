@@ -9,6 +9,7 @@ pub(super) const HELP: &str = "\
 Independent read-only C.9 physical-integrity observer\n\n\
 Usage:\n  physical_store_integrity_observer observe \\\n    --store-root <closed-or-isolated-store-root> \\\n    --report <path-outside-store-root|-> \\\n    --max-entries <n> --max-bytes <n> --max-open-files <n> \\\n    --max-depth <n> --max-symlinks <n> --max-elapsed-ms <n> \\\n    --max-report-bytes <n>\n\n\
 The observer inspects every current family through independent bounded readers.\n\
+Selected v2: use observe-selected with the same observe flags to emit a separate selected-record report.\n\
 Compare: physical_store_integrity_observer compare --runtime-observation <path> --offline-observation <path> --report <external-path|->\n\
 Optional --run and --scenario values bind a caller-declared observation context.\n\
 It never repairs, recovers, quarantines, deletes, or accepts damaged bytes.\n";
@@ -28,6 +29,7 @@ pub(super) enum ArgumentOutcome {
 
 pub(super) enum OperationArguments {
     Observe(ObserveArguments),
+    ObserveSelected(ObserveArguments),
     Compare(super::comparison::CompareArguments),
 }
 
@@ -44,9 +46,9 @@ pub(super) fn parse(
     if operation == "compare" {
         return super::comparison::parse(arguments).map(OperationArguments::Compare);
     }
-    if operation != "observe" {
+    if operation != "observe" && operation != "observe-selected" {
         return Err(ArgumentOutcome::Denied(
-            "expected observe or compare".into(),
+            "expected observe, observe-selected, or compare".into(),
         ));
     }
     let mut values = ArgumentValues::default();
@@ -59,7 +61,13 @@ pub(super) fn parse(
         })?;
         values.assign(&flag.to_string_lossy(), value)?;
     }
-    values.finish().map(OperationArguments::Observe)
+    values.finish().map(|arguments| {
+        if operation == "observe-selected" {
+            OperationArguments::ObserveSelected(arguments)
+        } else {
+            OperationArguments::Observe(arguments)
+        }
+    })
 }
 
 #[derive(Default)]

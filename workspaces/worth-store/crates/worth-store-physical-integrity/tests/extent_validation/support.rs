@@ -42,7 +42,7 @@ impl ExtentFixture {
     }
 
     pub fn placement(self) -> DurableExtentRecordPlacement {
-        DurableExtentRecordPlacement::new(
+        DurableExtentRecordPlacement::legacy_unknown(
             self.record,
             self.extent,
             self.logical_bytes,

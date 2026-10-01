@@ -14,6 +14,7 @@ pub(in crate::physical_runtime) struct PhysicalDurabilityReopenBasis {
     rebuilt: crate::physical_runtime::durability::RebuiltPhysicalMutationIdempotency,
     wal: PhysicalWalRuntimeOwner,
     unresolved_retirements: Vec<crate::physical_runtime::durability::RetirementRecord>,
+    selected_checkpoint_sequence: u64,
 }
 
 pub(in crate::physical_runtime) struct ReopenedPhysicalDurabilityOwners {
@@ -21,10 +22,12 @@ pub(in crate::physical_runtime) struct ReopenedPhysicalDurabilityOwners {
     pub(in crate::physical_runtime) wal: PhysicalWalRuntimeOwner,
     pub(in crate::physical_runtime) unresolved_retirements:
         Vec<crate::physical_runtime::durability::RetirementRecord>,
+    pub(in crate::physical_runtime) selected_checkpoint_sequence: u64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PhysicalDurabilityStateReopenFailure {
+    PublicationRetentionRejected,
     Checkpoint(PhysicalBindingCompactionReopenFailure),
     Wal(PhysicalWalOpenFailure),
     Idempotency(PhysicalIdempotencyReopenFailure),
@@ -36,10 +39,18 @@ pub(in crate::physical_runtime) fn reopen_durability_basis(
     signal_profile: PhysicalSignalProfileIdentity,
     durability: &PhysicalDurabilityRuntimeOwner,
     record_format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
+    reopen_grant: &worth_store_buffer_pool::OperationAllocationGrant,
+    pending_release: Option<&worth_store_recovery_physics::VerifiedPendingWalReleaseCustody>,
 ) -> Result<PhysicalDurabilityReopenBasis, PhysicalDurabilityStateReopenFailure> {
     let observation = durability.observation();
     let checkpoint = reopen_binding_compaction(media)
         .map_err(PhysicalDurabilityStateReopenFailure::Checkpoint)?;
+    let selected_checkpoint_sequence = match &checkpoint {
+        ReopenedPhysicalBindingCompaction::GenerationZero => 0,
+        ReopenedPhysicalBindingCompaction::NamespaceDurable(reopened) => {
+            reopened.rebuild_basis().checkpoint().sequence().get()
+        }
+    };
     let cutoff = match checkpoint {
         ReopenedPhysicalBindingCompaction::GenerationZero => {
             PhysicalWalBindingReopenCutoff::GenerationZero
@@ -59,6 +70,7 @@ pub(in crate::physical_runtime) fn reopen_durability_basis(
         cutoff,
         record_format,
         binding_context,
+        reopen_grant,
     )
     .map_err(PhysicalDurabilityStateReopenFailure::Wal)?;
     let members = inventory.take_members();
@@ -85,6 +97,11 @@ pub(in crate::physical_runtime) fn reopen_durability_basis(
         retirement_spans,
     )
     .map_err(PhysicalDurabilityStateReopenFailure::Idempotency)?;
+    if let Some(pending) = pending_release {
+        rebuilt
+            .reconcile_verified_pending_release(pending)
+            .map_err(PhysicalDurabilityStateReopenFailure::Idempotency)?;
+    }
     let wal = PhysicalWalRuntimeOwner::from_reopened(
         media,
         runtime,
@@ -97,10 +114,15 @@ pub(in crate::physical_runtime) fn reopen_durability_basis(
         rebuilt,
         wal,
         unresolved_retirements,
+        selected_checkpoint_sequence,
     })
 }
 
 impl PhysicalDurabilityReopenBasis {
+    pub(in crate::physical_runtime) fn wal(&self) -> &PhysicalWalRuntimeOwner {
+        &self.wal
+    }
+
     pub(in crate::physical_runtime) fn install(
         self,
         durability: PhysicalDurabilityRuntimeOwner,
@@ -109,6 +131,7 @@ impl PhysicalDurabilityReopenBasis {
             durability: durability.install_rebuilt_idempotency(self.rebuilt),
             wal: self.wal,
             unresolved_retirements: self.unresolved_retirements,
+            selected_checkpoint_sequence: self.selected_checkpoint_sequence,
         }
     }
 }

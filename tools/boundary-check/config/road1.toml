@@ -1,6 +1,32 @@
 root_manifest = "Cargo.toml"
 forbidden_root_prefixes = ["workspaces/"]
 
+# C.11 Phase 2 records the post-inversion Store mechanism subgraph in the
+# same exact DAG snapshot as the Road 1 and Query package surfaces.
+[[snapshot_dependency_packages]]
+workspace_manifest = "workspaces/worth-store/Cargo.toml"
+packages = [
+  "worth-store",
+  "worth-store-blob-chunks",
+  "worth-store-layout-indexes",
+  "worth-store-lsm-authority",
+]
+required_edges = [
+  { source = "worth-store", target = "worth-store-blob-chunks" },
+  { source = "worth-store", target = "worth-store-layout-indexes" },
+  { source = "worth-store", target = "worth-store-lsm-authority" },
+]
+
+[[dependency_denials]]
+workspace_manifest = "workspaces/worth-store/Cargo.toml"
+sources = [
+  "worth-store-blob-chunks",
+  "worth-store-layout-indexes",
+  "worth-store-lsm-authority",
+]
+forbidden_targets = ["worth-store"]
+guidance = "C.11 mechanism crates depend downward; only Store composes Blob, Layout, and LSM owners"
+
 [[dependency_denials]]
 workspace_manifest = "workspaces/worth-store/Cargo.toml"
 sources = ["worth-store-physical-isolation"]
@@ -47,6 +73,7 @@ exclude_paths = [
   "workspaces/worth-store/crates/worth-store/src/physical_runtime/instance/construction/record_serving.rs",
   "workspaces/worth-store/crates/worth-store/src/physical_runtime/record_serving/publication/director",
   "workspaces/worth-store/crates/worth-store/src/physical_runtime/record_serving/lifecycle/serving_runtime.rs",
+  "workspaces/worth-store/crates/worth-store/src/physical_runtime/record_serving/lifecycle/serving_runtime/record_reader.rs",
 ]
 forbidden_identifiers = [
   "RootProtectionRegistry",

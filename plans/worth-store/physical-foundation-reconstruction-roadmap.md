@@ -1528,6 +1528,25 @@ inversion of the S.7/S.8 mechanism crates, the artifact-family registry, the
 proof-consuming reclaim protocol, the crash-seam matrix, and the phase plan
 that reaches a native blob above the residency window before any registry,
 dedupe, LSM or reclaim machinery exists.
+Phase 6 release custody includes a versioned, selected-root-referenced
+per-object head tree committed by the current checkpoint accumulator. It preserves a
+nonterminal object's successor authority across unrelated releases,
+checkpoint replacement and lawful old-WAL pruning; the Store-wide tip never
+substitutes for that object's head. C.8 and Store independently rejoin the
+current selected custody before Serving. V1 NoRelease may seed a genuine first
+V3 and head-bearing successor checkpoint; headless V1 released checkpoints
+remain unavailable and are not upgraded from retained controls.
+Phase 6 executes as six gated submilestones: bounded ordinary publication and
+typed diagnostics; atomic one-object release with surviving catalog visibility;
+independent recovered custody and pruned multi-object continuation; lawful
+custody retirement and admitted population; genuine tier movement and scheduled
+interference; then integrated crash and closure evidence. The C.11 specification
+maps the architectural laws to concrete owners and adversarial checks at each
+boundary. Live aggregate resource ownership and pre-effect checkpoint/recovery
+capacity apply throughout, not only at final closure. These delivery boundaries
+retain every Phase 6 requirement and introduce no weaker runtime mode. A source
+checkpoint commit, including known failing tests, is not a phase PASS; independent
+slice review and the mandatory final gates still govern acceptance.
 The first chunk is preceded by a durable root-published session declaration;
 authenticated per-record occurrence claims preserve prepublication custody
 after WAL truncation. Phase 3 adds frontier-based resume and independent

@@ -1,10 +1,14 @@
-use std::ffi::{OsStr, OsString};
+use std::{
+    convert::Infallible,
+    ffi::{OsStr, OsString},
+};
 
 use worth_store_physical_format::store_namespace::{NamespaceEntryType, StableStoreIdentity};
 
 use super::{
     map_media, ArtifactTreeDirectory, BoundedRecoveryFilesystemDiscovery,
-    RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryFailure,
+    RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope,
+    RecoveryDiscoveryFailure,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -30,6 +34,29 @@ impl BoundedRecoveryFilesystemDiscovery {
         maximum_segments: u64,
         byte_limit: u64,
     ) -> Result<Vec<ObservedWalArtifact>, RecoveryDiscoveryFailure> {
+        self.read_wal_artifacts_with_payload_allocator(
+            maximum_segments,
+            byte_limit,
+            |length| -> Result<Vec<u8>, Infallible> { Ok(vec![0; length]) },
+        )
+        .map_err(|denial| match denial {
+            RecoveryDiscoveryAllocationFailure::Discovery(denial) => denial,
+            RecoveryDiscoveryAllocationFailure::Allocation { cause, .. } => match cause {},
+            RecoveryDiscoveryAllocationFailure::BufferLengthMismatch { .. } => {
+                unreachable!("the legacy WAL allocator always returns the exact requested length")
+            }
+        })
+    }
+
+    /// Allocate each WAL payload after the admitted file length is known and
+    /// before reading its bytes. Directory names and the result roster remain
+    /// outside this payload-only allocator boundary.
+    pub fn read_wal_artifacts_with_payload_allocator<E>(
+        &mut self,
+        maximum_segments: u64,
+        byte_limit: u64,
+        mut allocate: impl FnMut(usize) -> Result<Vec<u8>, E>,
+    ) -> Result<Vec<ObservedWalArtifact>, RecoveryDiscoveryAllocationFailure<E>> {
         let maximum_segments = admitted_segment_limit(maximum_segments)?;
         let directory_context = RecoveryDiscoveryArtifact::WalDirectory;
         let directory = ArtifactTreeDirectory::families()
@@ -61,8 +88,13 @@ impl BoundedRecoveryFilesystemDiscovery {
                             .ok_or_else(|| RecoveryDiscoveryFailure::invalid(context.clone()))?,
                     )
                     .map_err(|_| RecoveryDiscoveryFailure::invalid(context.clone()))?;
-                let bytes =
-                    self.read_wal_artifact(file, context, remaining_wal_bytes, byte_limit)?;
+                let bytes = self.read_wal_artifact_with_payload_allocator(
+                    file,
+                    context,
+                    remaining_wal_bytes,
+                    byte_limit,
+                    &mut allocate,
+                )?;
                 remaining_wal_bytes = remaining_wal_bytes.checked_sub(byte_count(&bytes)).ok_or(
                     RecoveryDiscoveryFailure::ByteLimitExceeded {
                         observed: byte_limit,
@@ -94,26 +126,30 @@ impl BoundedRecoveryFilesystemDiscovery {
         Ok(observed)
     }
 
-    fn read_wal_artifact(
+    fn read_wal_artifact_with_payload_allocator<E>(
         &mut self,
         file: crate::filesystem_media::ArtifactTreeFile,
         context: RecoveryDiscoveryArtifact,
         remaining_wal_bytes: u64,
         byte_limit: u64,
-    ) -> Result<Option<Vec<u8>>, RecoveryDiscoveryFailure> {
-        match self.read_artifact(file, context, remaining_wal_bytes, false) {
+        allocate: &mut impl FnMut(usize) -> Result<Vec<u8>, E>,
+    ) -> Result<Option<Vec<u8>>, RecoveryDiscoveryAllocationFailure<E>> {
+        match self.read_whole(file, context, remaining_wal_bytes, false, allocate) {
             Ok(artifact) => Ok(artifact.into_bytes()),
-            Err(RecoveryDiscoveryFailure::ByteLimitExceeded {
-                observed,
-                admitted: _,
-                scope: RecoveryDiscoveryByteLimitScope::Requested,
-            }) => Err(RecoveryDiscoveryFailure::ByteLimitExceeded {
+            Err(RecoveryDiscoveryAllocationFailure::Discovery(
+                RecoveryDiscoveryFailure::ByteLimitExceeded {
+                    observed,
+                    admitted: _,
+                    scope: RecoveryDiscoveryByteLimitScope::Requested,
+                },
+            )) => Err(RecoveryDiscoveryFailure::ByteLimitExceeded {
                 observed: byte_limit
                     .saturating_sub(remaining_wal_bytes)
                     .saturating_add(observed),
                 admitted: byte_limit,
                 scope: RecoveryDiscoveryByteLimitScope::Requested,
-            }),
+            }
+            .into()),
             Err(failure) => Err(failure),
         }
     }

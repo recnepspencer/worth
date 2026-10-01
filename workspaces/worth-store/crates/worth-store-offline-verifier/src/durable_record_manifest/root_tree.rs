@@ -7,6 +7,9 @@ use super::independent_frame::{artifact_checksum, decode_frame};
 use super::observation::{OfflineRecordIdentity, OfflineRecordPlacement};
 use super::{read_artifact, OfflineDurableManifestDenial};
 
+mod placement;
+use placement::decode_placement;
+
 const ROOT_PAYLOAD_BYTES: usize = 336;
 const BLOCK_PREFIX_BYTES: usize = 40;
 const REFERENCE_BYTES: usize = 72;
@@ -216,6 +219,14 @@ fn decode_block(
     let level = read_u16(payload, 16);
     let count = read_u16(payload, 18);
     let generation = read_u64(payload, 24);
+    if frame.schema == 3
+        && (level != 0
+            || !payload[BLOCK_PREFIX_BYTES..]
+                .chunks_exact(PLACEMENT_BYTES)
+                .any(|entry| entry[25..32] != [0; 7]))
+    {
+        return Err(OfflineDurableManifestDenial::MalformedBlock);
+    }
     if read_u64(payload, 0) != header.tree_identity
         || block != frame.identity
         || block != expected.block
@@ -231,7 +242,7 @@ fn decode_block(
         1 if level == 0 => {
             let entries = payload[BLOCK_PREFIX_BYTES..]
                 .chunks_exact(PLACEMENT_BYTES)
-                .map(decode_placement)
+                .map(|entry| decode_placement(entry, frame.schema))
                 .collect::<Result<Vec<_>, _>>()?;
             (PLACEMENT_BYTES, DecodedRecordBlock::Leaf(entries))
         }
@@ -301,38 +312,6 @@ fn decode_reference(bytes: &[u8]) -> Result<RecordBlockReference, OfflineDurable
     Ok(reference)
 }
 
-fn decode_placement(bytes: &[u8]) -> Result<OfflineRecordPlacement, OfflineDurableManifestDenial> {
-    if bytes[25..32] != [0; 7] || bytes[86..88] != [0; 2] {
-        return Err(OfflineDurableManifestDenial::MalformedPlacement);
-    }
-    let record = OfflineRecordIdentity::decode(&bytes[..24])
-        .ok_or(OfflineDurableManifestDenial::MalformedPlacement)?;
-    let placement = match bytes[24] {
-        1 => OfflineRecordPlacement::Inline {
-            record,
-            segment: read_nonzero_u64(bytes, 32)?,
-            page: read_nonzero_u64(bytes, 40)?,
-            segment_generation: read_nonzero_u64(bytes, 48)?,
-            page_generation: read_nonzero_u64(bytes, 56)?,
-            slot_generation: read_nonzero_u64(bytes, 64)?,
-            payload_bytes: read_u64(bytes, 72),
-            segment_page_capacity: read_nonzero_u32(bytes, 80)?,
-            slot: read_nonzero_u16(bytes, 84)?,
-        },
-        2 if bytes[80..86] == [0; 6] => OfflineRecordPlacement::Extent {
-            record,
-            extent: read_nonzero_u64(bytes, 40)?,
-            generation: read_nonzero_u64(bytes, 48)?,
-            payload_bytes: read_nonzero_u64(bytes, 72)?,
-            arena: read_nonzero_u64(bytes, 32)?,
-            arena_offset: read_u64(bytes, 56),
-            arena_length: read_nonzero_u64(bytes, 64)?,
-        },
-        _ => return Err(OfflineDurableManifestDenial::MalformedPlacement),
-    };
-    Ok(placement)
-}
-
 fn placements_have_unique_coordinates(placements: &[OfflineRecordPlacement]) -> bool {
     let mut coordinates = BTreeSet::new();
     placements.iter().all(|placement| {
@@ -346,27 +325,6 @@ fn placements_have_unique_coordinates(placements: &[OfflineRecordPlacement]) -> 
             OfflineRecordPlacement::Extent { extent, .. } => (2, 0, *extent, 0),
         })
     })
-}
-
-fn read_nonzero_u64(bytes: &[u8], offset: usize) -> Result<u64, OfflineDurableManifestDenial> {
-    let value = read_u64(bytes, offset);
-    (value != 0)
-        .then_some(value)
-        .ok_or(OfflineDurableManifestDenial::MalformedPlacement)
-}
-
-fn read_nonzero_u32(bytes: &[u8], offset: usize) -> Result<u32, OfflineDurableManifestDenial> {
-    let value = read_u32(bytes, offset);
-    (value != 0)
-        .then_some(value)
-        .ok_or(OfflineDurableManifestDenial::MalformedPlacement)
-}
-
-fn read_nonzero_u16(bytes: &[u8], offset: usize) -> Result<u16, OfflineDurableManifestDenial> {
-    let value = read_u16(bytes, offset);
-    (value != 0)
-        .then_some(value)
-        .ok_or(OfflineDurableManifestDenial::MalformedPlacement)
 }
 
 pub(super) fn read_u64(bytes: &[u8], offset: usize) -> u64 {

@@ -90,7 +90,7 @@ impl RecordPublicationDirector {
                 {
                     let digest = session.digest.clone().finalize().into();
                     session.intent = Some(
-                        PhysicalExtentCopyIntent::new(
+                        PhysicalExtentCopyIntent::new_with_target_tier(
                             self.format.declaration(),
                             session.operation,
                             session.source_root,
@@ -98,6 +98,7 @@ impl RecordPublicationDirector {
                             session.reservation.range(),
                             session.cursor.manifest().alignment(),
                             digest,
+                            session.target_tier,
                         )
                         .ok_or_else(damaged)?,
                     );

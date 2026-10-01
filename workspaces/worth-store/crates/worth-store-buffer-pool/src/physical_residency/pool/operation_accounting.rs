@@ -20,7 +20,7 @@ impl PoolInner {
         self.lock().accounting.record_speculative_denial(kind);
     }
 
-    pub(super) fn reserve_operation(
+    pub(in crate::physical_residency) fn reserve_operation(
         self: &Arc<Self>,
         scope: PhysicalOperationAllocationScope,
         bytes: std::num::NonZeroU64,
@@ -47,8 +47,10 @@ impl PoolInner {
         let scope_limit = self
             .limits
             .usable_bytes(scope, self.limits.scope_bytes(scope));
-        let scope_next = scope_current.saturating_add(requested);
-        if scope_next > scope_limit {
+        let Some(scope_next) = scope_current
+            .checked_add(requested)
+            .filter(|next| *next <= scope_limit)
+        else {
             return Err(self.pressure(
                 state,
                 PhysicalResidencyPressureDemand {
@@ -59,7 +61,7 @@ impl PoolInner {
                     limit: scope_limit,
                 },
             ));
-        }
+        };
         Ok(scope_next)
     }
 
@@ -73,8 +75,10 @@ impl PoolInner {
         let operation_limit = self
             .limits
             .usable_bytes(scope, self.limits.operation_bytes());
-        let operation_next = operation_current.saturating_add(requested);
-        if operation_next > operation_limit {
+        let Some(operation_next) = operation_current
+            .checked_add(requested)
+            .filter(|next| *next <= operation_limit)
+        else {
             return Err(self.pressure(
                 state,
                 PhysicalResidencyPressureDemand {
@@ -85,7 +89,7 @@ impl PoolInner {
                     limit: operation_limit,
                 },
             ));
-        }
+        };
         Ok(operation_next)
     }
 
@@ -97,8 +101,11 @@ impl PoolInner {
     ) -> Result<(), PhysicalResidencyDenial> {
         let total_current = self.current_admitted_bytes(state);
         let total_limit = self.limits.usable_bytes(scope, self.limits.total_bytes());
-        let total_next = total_current.saturating_add(requested);
-        if total_next > total_limit {
+        if total_current
+            .checked_add(requested)
+            .filter(|next| *next <= total_limit)
+            .is_none()
+        {
             return Err(self.pressure(
                 state,
                 PhysicalResidencyPressureDemand {

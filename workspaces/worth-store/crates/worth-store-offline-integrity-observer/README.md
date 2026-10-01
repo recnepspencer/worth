@@ -157,6 +157,35 @@ consensus, repair policy, or admission result. Comparison never opens a Store;
 the operator owns excluding the Store root from its output. The command rejects
 an input as output and uses create-new semantics, including hard-link aliases.
 
+### Selected-record comparison (version 2)
+
+`physical_store_integrity_observer observe-selected` accepts the same bounded
+flags as `observe`, including `--store-root`, an external create-new `--report`,
+`--run`, and `--scenario`. It runs the independent walk in its own process and
+emits the selected-record report; it does not modify the version-1 report.
+
+`encode_offline_selected_integrity_observation(&report, limits)` projects a
+separate `store.physical.selected-integrity-observation` version-2 report from
+the observer's admitted canonical current selector/root and selected C.5 blob
+and B-tree walks. It does not infer selection from placement generation: a
+still-selected chunk can have an older physical placement than the current
+root. Its physical path is retained as offline evidence but is not a join key.
+If the selected root or complete bounded walk cannot be established, encoding
+is denied. The version-1 report and `compare` command remain unchanged.
+
+`compare_selected_integrity_observations(runtime_v2, offline_v2, limits)`
+requires matching Store, scenario, and exact selected root generation/reference,
+distinct runtime/offline producers, a complete declared target set, and
+canonical lowercase 48-hex RecordIds. It joins each runtime-declared target
+against the independently selected offline record. A missing offline target,
+different C.11 family, disposition, or localization is an explicit difference;
+other selected offline records are reported as `offline_unobserved`, not counted
+as disagreements or as inspected runtime targets. Output protocol
+`store.physical.integrity-comparison` version `2` preserves both inputs and
+never chooses a winner. The version-1 `compare` CLI remains version-1 only;
+the selected comparison is currently a library API, not a whole-Store scrub
+claim.
+
 Page and chunk observations describe embedded ranges, not invented standalone
 files. Missing expected child containers remain damage at the expected child
 scope. Unaddressed historical roots and unreachable residue remain Unknown:

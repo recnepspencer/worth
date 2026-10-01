@@ -72,6 +72,7 @@ impl ExtentRewriteCursor {
     ) -> Result<Option<&[u8]>, crate::physical_runtime::record_serving::RecordStreamFailure> {
         self.state
             .next_chunk(allocation, &mut self.observation, self.identity)
+            .map_err(|failure| failure.into_stream_failure())
             .map(|chunk| chunk.map(|chunk| chunk.bytes))
     }
 }

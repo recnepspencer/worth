@@ -9,6 +9,15 @@ pub(crate) struct AdmittedWalInventory {
 }
 
 impl AdmittedWalInventory {
+    pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {
+        self.segments.iter().try_fold(
+            u64::try_from(self.segments.capacity())
+                .ok()?
+                .checked_mul(std::mem::size_of::<IntegrityAdmittedRecoveryWalSegment>() as u64)?,
+            |bytes, segment| bytes.checked_add(segment.owned_heap_bytes()?),
+        )
+    }
+
     pub(super) fn push(&mut self, segment: IntegrityAdmittedRecoveryWalSegment) {
         self.segments.push(segment);
     }
@@ -21,22 +30,27 @@ impl AdmittedWalInventory {
         &'a self,
         selected: &'a worth_store_recovery_physics::SelectedPhysicalWalTail,
     ) -> Vec<&'a IntegrityAdmittedRecoveryWalFrame> {
-        let mut frames = Vec::new();
-        for segment in &self.segments {
-            let identity = segment.inspection().identity();
-            let named = selected
-                .segments()
-                .iter()
-                .any(|candidate| candidate.identity() == identity)
-                || selected
-                    .checkpoint_covered()
+        self.recoverable_frame_iter(selected).collect()
+    }
+
+    pub(crate) fn recoverable_frame_iter<'a>(
+        &'a self,
+        selected: &'a worth_store_recovery_physics::SelectedPhysicalWalTail,
+    ) -> impl Iterator<Item = &'a IntegrityAdmittedRecoveryWalFrame> + 'a {
+        self.segments
+            .iter()
+            .filter(move |segment| {
+                let identity = segment.inspection().identity();
+                selected
+                    .segments()
                     .iter()
-                    .any(|covered| covered.identity() == identity);
-            if named {
-                frames.extend(segment.frames());
-            }
-        }
-        frames
+                    .any(|candidate| candidate.identity() == identity)
+                    || selected
+                        .checkpoint_covered()
+                        .iter()
+                        .any(|covered| covered.identity() == identity)
+            })
+            .flat_map(|segment| segment.frames().iter())
     }
 
     pub(crate) fn cleanup_segments(

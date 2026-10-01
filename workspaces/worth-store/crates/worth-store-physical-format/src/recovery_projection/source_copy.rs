@@ -1,6 +1,7 @@
 use super::{
-    PersistedPhysicalRecoveryPayload, PersistedPhysicalRecoveryProjection,
-    PersistedPhysicalRecoveryRootState,
+    PersistedPhysicalRecoveryBlobSemantic, PersistedPhysicalRecoveryPayload,
+    PersistedPhysicalRecoveryProjection, PersistedPhysicalRecoveryRootState,
+    RecoveryProjectionVersion,
 };
 use crate::{CurrentPhysicalRecordPlacement, PhysicalExtentCopyIntent, PhysicalExtentCopyRecord};
 use sha2::{Digest, Sha256};
@@ -46,10 +47,23 @@ impl PersistedPhysicalRecoveryProjection {
         recipe: PersistedExtentCopyRecipe,
     ) -> Option<Self> {
         (source_root_generation >= recipe.intent().source_root()).then_some(Self {
+            version: if recipe
+                .intent()
+                .source()
+                .route_metadata()
+                .is_legacy_unknown()
+            {
+                RecoveryProjectionVersion::V6
+            } else {
+                RecoveryProjectionVersion::V13
+            },
             source_root_generation,
             root_state,
             record_identities: vec![recipe.intent().source().record()].into_boxed_slice(),
             payload: PersistedPhysicalRecoveryPayload::SourceCopy(recipe),
+            blob_semantic: PersistedPhysicalRecoveryBlobSemantic::None,
+            derived_retirement: None,
+            release_head_effect: None,
             placements: vec![CurrentPhysicalRecordPlacement::Extent(
                 recipe.intent().destination(),
             )]

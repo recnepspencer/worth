@@ -101,7 +101,7 @@ fn runtime_validators_consume_the_independent_literal_extent_vectors() {
     let record = record(0x22, 7);
     let extent = extent_cell(4, 5);
     let arena_range = super::support::literal_arena_range(format);
-    let placement = DurableExtentRecordPlacement::new(record, extent, 6, arena_range).unwrap();
+    let placement = DurableExtentRecordPlacement::legacy_unknown(record, extent, 6, arena_range).unwrap();
     let manifest_scope = manifest_scope(store, format, placement, MANIFEST_VECTOR.len() as u64);
     let (ExtentManifestIntegrityValidation::Intact(manifest), _) = validate_extent_manifest(
         UntrustedPhysicalArtifact::from_bounded_bytes(&MANIFEST_VECTOR),

@@ -4,6 +4,7 @@ mod bootstrap;
 mod fate;
 mod key;
 mod lease;
+mod original_drop_no_effect;
 mod persisted_binding;
 mod registry;
 mod runtime_owner;
@@ -27,6 +28,10 @@ pub use key::{
     PhysicalMutationIdempotencyMaterial,
 };
 pub use lease::{PhysicalMutationIdempotencyLease, PhysicalNamespaceDurableCheckpointGeneration};
+pub(in crate::physical_runtime) use original_drop_no_effect::{
+    PhysicalOriginalDropCompleted, PhysicalOriginalDropNoEffect,
+    PhysicalRecoveredOriginalDropNoDurableEffect,
+};
 pub(in crate::physical_runtime) use persisted_binding::PersistedPhysicalMutationAttemptBinding;
 pub(in crate::physical_runtime) use persisted_binding::PhysicalBindingDecodingContext;
 pub(in crate::physical_runtime::durability) use registry::PhysicalMutationIdempotencyRegistry;

@@ -7,6 +7,7 @@ use super::SelectedPhysicalRoot;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PhysicalCheckpointBase {
     checkpoint: Arc<VerifiedCheckpointStream>,
+    source_root_frame_sha256: [u8; 32],
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -34,11 +35,16 @@ impl PhysicalCheckpointBase {
         }
         Ok(Self {
             checkpoint: Arc::new(checkpoint),
+            source_root_frame_sha256: source_root.frame_sha256(),
         })
     }
 
     pub fn checkpoint(&self) -> &VerifiedCheckpointStream {
         self.checkpoint.as_ref()
+    }
+
+    pub const fn source_root_frame_sha256(&self) -> [u8; 32] {
+        self.source_root_frame_sha256
     }
 
     /// Shares the admitted checkpoint with a later recovery owner that must

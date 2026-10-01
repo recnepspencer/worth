@@ -5,6 +5,7 @@ use crate::entry::{
     PhysicalRecoverySuccessorCandidateDenial, PhysicalRecoverySuccessorCandidateMismatch,
 };
 use crate::progression::planned::basis::RecoveryObservedCandidateArtifact;
+use crate::progression::planned::PlanningResidentAllowance;
 
 pub(super) struct CanonicalCandidateMatch<'observed> {
     pub(super) format: PhysicalRecordFormatDeclaration,
@@ -39,6 +40,19 @@ impl<'observed> CanonicalCandidateMatch<'observed> {
         &mut self,
         artifact: RecordArtifactFile,
         expected: Vec<u8>,
+        allowance: &mut PlanningResidentAllowance,
+    ) -> Result<(), CandidateBuildDenial> {
+        let backing_bytes = PlanningResidentAllowance::vector_bytes(&expected)?;
+        let compared = self.compare_artifact(artifact, &expected);
+        drop(expected);
+        allowance.release(backing_bytes);
+        compared
+    }
+
+    fn compare_artifact(
+        &mut self,
+        artifact: RecordArtifactFile,
+        expected: &[u8],
     ) -> Result<(), CandidateBuildDenial> {
         if expected.is_empty() {
             return Err(CandidateBuildDenial::Invalid);
@@ -58,7 +72,7 @@ impl<'observed> CanonicalCandidateMatch<'observed> {
                 PhysicalRecoverySuccessorCandidateMismatch::SuccessorArtifactInventory,
             ));
         };
-        if self.observed[index].bytes.as_ref() != expected.as_slice() {
+        if self.observed[index].bytes.as_ref() != expected {
             return Err(self.conflict(
                 artifact,
                 PhysicalRecoverySuccessorCandidateMismatch::SuccessorArtifactBytes,

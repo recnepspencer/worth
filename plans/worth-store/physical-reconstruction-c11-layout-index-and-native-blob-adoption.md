@@ -81,7 +81,7 @@ The code provides real mechanisms with specific integration gaps:
 | `worth-store-layout-indexes` reads B-tree pages through `InMemoryPhysicalFormatModel`; `BaselineBTreeExecutionWitness::lookup_counters()` returns constants (`page_touches: 2`, `bytes_read: 8_192`); `LayoutReadRuntime` and degraded scan take `&mut InMemoryPhysicalFormatModel`; `maintenance/operational_repair.rs` renames files with `std::fs`; `read_plan_completion()` is not a Store root lease. | Access execution takes a Store-owned protected page port derived from `records()`; counters come from executed `RecordReadSession` observations; repair goes through `PhysicalRecordSubmission`. The in-memory model stays a format-owner test model, never a runtime. |
 | `worth-store-lsm-authority` opens `WalArtifactInventory` and verifies persisted ranges with `std::fs::File::open`; records carry `persisted_path: PathBuf`; nothing writes membership bytes. | Membership records are persisted through the Store WAL payload producer and re-read through the Store's WAL member port. Path fields are replaced by `PhysicalWalMemberIdentity`. |
 | `ServingPhysicalRuntime::physical_allocations().admit_blob()` grants a `BlobPhysicalAllocation` memory charge (default scope 256 MiB); `PhysicalCapability::Blob` and `Layout` report `Absent`; no `blob()` or `layout()` accessor exists. | Keep the allocation as the only temporary-byte budget for blob work. Add fallible `blobs()` and `layouts()` capability accessors on `ServingPhysicalRuntime` that acquire protection and allocation through the existing owners. |
-| C.10 scheduler vocabulary has `BackgroundPressureKind::{BlobIngestPressure, BlobMigrationPressure, CompactionRewrite, RepairScan}` and `BackgroundDebtKind::BlobContention` with no Store producer; `RetainedBackgroundHeads` retains only checkpoint and reclamation heads. | Add ingest, blob reclaim, index rebuild and LSM compaction producers to `instance/scheduler_admission/`. Extend the retained-head set rather than adding a second dispatcher. |
+| C.10 scheduler vocabulary has `BackgroundPressureKind::{BlobIngestPressure, BlobMigrationPressure, CompactionRewrite, RepairScan}` and `BackgroundDebtKind::BlobContention` with no Store producer; `RetainedBackgroundHeads` retains only checkpoint and reclamation heads. | Add ingest, blob reclaim, index rebuild and LSM compaction producers to `instance/scheduler_admission/`. Extend the retained-head set for retry-owned compaction, while synchronous per-frame ingest and reclaim release their dispatch attempts on denial. |
 | `PhysicalRecordSubmission` supports append and record-preserving rewrite (`rewrite_selected_inline_segment`, `rewrite_selected_inline_pages`, `rewrite_selected_extent_record`, capped by `MAXIMUM_EXTENT_REWRITE_BYTES` = 256 KiB); every rewrite preserves every record. `retire_displaced_segment()` retires a generation displaced by rewrite, and `PhysicalCurrentRootOwner` holds exactly one `displaced` slot, so one displaced generation may be outstanding at a time. | Add one record-dropping publication, `drop_reclaimed_records`, whose WAL payload names each dropped record and whose published root unroutes them; dropped extents become displaced and flow into the existing retirement path. The displaced slot becomes a bounded queue (`DisplacedArtifactQueue`, new) with the same claim/complete protocol, because one reclaim batch displaces many extents. No blob-specific deleter. |
 | `PhysicalIntegrityArtifactFamily` and `worth-store-physical-integrity::artifact` cover page, extent, WAL, checkpoint, root and free-space families; C.9 reserved additive index/blob siblings. | Add `BlobChunkFrame`, `BlobTreeNode`, `BlobGenerationPublication`, `BlobResumeSession`, `BTreeNode`, `LsmRun` declarations, validators, and offline observer families. |
 | `worth-store-contracts::DurableArtifactFamilyId` already names `BlobChunk`, `BlobManifest`, `BlobStream`, `ChunkTreeRoot`, `DedupeIndex`, `ReachabilityEdge`, `RetentionHold`, `ReclaimReceipt`; `worth-store-layout-indexes::artifact_family` has static inventory rows and a crate-private declaration registry. | The Store-owned artifact-family registry is a live instance constructed in `instance/parts.rs`; it consumes the mechanism crate's declaration law and binds each admitted family to its real format, validator, access operations, rebuild basis and retention mechanics. Static rows without an executable owner are removed. |
@@ -117,11 +117,19 @@ Phase 2. Fifteen files import `worth_store::`:
 | --- | --- | --- |
 | `src/streaming/allocation.rs` | `BlobPhysicalAllocation`, allocation scope | M to `worth-store/.../blob/allocation.rs` |
 | `src/streaming/read/{admission,denial,counters}.rs` | `stability::{StablePhysicalReadReceipt, PhysicalReadExecutionDenial, StablePhysicalReadExecutionCounters}` | M to `blob/read_admission.rs`, split by responsibility if it passes 400 lines |
-| `src/placement/movement/types/read_hold.rs` | `StablePhysicalReadReceipt` | M to `blob/placement/read_hold.rs` |
+| `src/placement/movement/types/read_hold.rs` | `StablePhysicalReadReceipt` | D in Phase 2 with the obsolete mechanism-owned execution/read-hold lane. Phase 6 introduces the real Store-owned hold under `blob/placement/` when movement executes through the runtime. |
 | `src/streaming/ingest/orchestration/bounded_ingest.rs` | `BlobPhysicalAllocation` | M to `blob/ingest/session.rs`; the pure frame-sequence and frontier law it calls stays in the mechanism crate |
 | `src/streaming/read/orchestration/verify_bounded.rs` | `BlobPhysicalAllocation` | M to `blob/read/verify.rs`; digest-comparison law stays |
 | `src/streaming/read/{tests,test_support,pressure_tests}.rs`, `src/streaming/ingest/ingest_tests.rs`, `src/placement/movement/test_support.rs`, `src/test_support/allocation.rs` | certification-only receipts and allocation scopes | Cases that exercise the Store join move to `worth-store/tests/physical_blob_journeys/`; cases that test pure mechanism law are rewritten against mechanism-owned inputs; none keeps a Store-minted certification receipt |
-| `src/compile_fail/{placement_movement,construction_boundaries}.rs` (Store-type cases only) | `StablePhysicalReadReceipt`, `RecoveryPhysicalAllocation`, `BlobPhysicalAllocation`, `ServingPhysicalRuntime` | M to `worth-store/tests/physical_runtime_authority/` under the existing `physical_runtime_authority_ui` target |
+| `src/compile_fail/construction_boundaries.rs` (Store ingest-type cases only) | `RecoveryPhysicalAllocation`, `BlobPhysicalAllocation`, `ServingPhysicalRuntime` | M to `worth-store/tests/physical_runtime_authority/` under the existing `physical_runtime_authority_ui` target, with a valid ingest counterpart and intended allocation/lifetime failures. |
+| `src/compile_fail/placement_movement.rs` (Store-type cases only) | `StablePhysicalReadReceipt` as a substitute for movement execution or a movement read hold | D in Phase 2 with the obsolete target types and execution adapters; retain pure planning-law tests. Phase 6 must prove these non-substitution boundaries against its actual Store-owned movement and hold types in `physical_runtime_authority_ui`. |
+
+Movement planning remains a downward mechanism in Phase 2, not a public
+execution shell. A completed lower read plan plus a migration interlock may
+support planning, but cannot execute or publish movement. Tests against removed
+execution types do not migrate as missing-type or nonexistent-method failures:
+those would prove no live authority boundary. The Phase 6 Store join owns their
+replacement compiler evidence; this disposition does not remove that obligation.
 
 `cargo tree -i worth-store -e normal` shows that this is the only edge:
 `worth-store-layout-indexes` reaches the Store only through
@@ -415,6 +423,19 @@ blob digest alone cannot establish selected-record custody.
   abandonment only if no publication and no protected hold wins under the
   same root owner; process-local time and wall-clock jumps never do. With no
   advancing checkpoint or abort, unfinished bytes remain retained.
+  For this append-only terminal transition, a protected hold means the
+  Store-owned same-session ingest/resume/publication claim: an inspecting or
+  live claimant defeats a competing abandonment attempt. Terminal admission
+  captures its claim and selected-root protection under the root owner,
+  authenticates the declaration and absence of a selected publication or
+  terminal, and retains exclusivity through C.5 root resolution. Uncertain
+  effects require C.8 reconciliation before another session operation may
+  proceed. A generic C.10 snapshot lease protects the selected bytes, not a
+  right to resume or publish the unfinished session; it need not veto the
+  append-only `Abandoned` record. That record leaves all routes and bytes
+  retained. Every C.10 reader/recovery pin and admitted semantic hold remains
+  binding at subsequent drop/reclaim and physical retirement; terminal status
+  alone never authorizes deletion.
 - `BlobExportManifest` (authoritative for one export): Store-local physical
   root digest, portable `LogicalContentDigest`, chunk count and export
   custody identity. Import verifies the portable digest and bytes, then
@@ -589,13 +610,20 @@ nodes.
 
 ### Scheduler service and interference
 
-New producers in `instance/scheduler_admission/`: `blob_ingest.rs`
-(`BlobIngestPressure`), `blob_reclaim.rs` (existing reclamation head),
-`index_rebuild.rs` (`RepairScan` class as the rebuild lane),
-`lsm_compaction.rs` (`CompactionRewrite`). `RetainedBackgroundHeads` gains
-ingest and compaction heads. Every producer lowers an exact effect footprint
-(record ranges, extents, index pages, root) through the C.10 algebra and is
-subject to the same foreground floor and owed-background-turn bound.
+Producers in `instance/scheduler_admission/`: `blob_ingest.rs`
+(`IngestPressure`), `blob_reclaim.rs` (`BlobReclaimPressure`),
+`rebuild.rs` (`RepairScan` class as the rebuild lane), and
+`compaction.rs` (`CompactionRewrite`). `RetainedBackgroundHeads` gains a
+compaction head. Checkpoint, reclamation, and compaction retain heads only while
+a producer owns a retryable quantum. Blob ingest and reclaim are synchronous
+one-frame attempts: a denied attempt releases its dispatch head because no
+retry owner remains. Admission precedes each producer frame write, but a
+managed mutation may already have durably attempted its C.10 WAL prelude;
+scheduler denial then remains `Indeterminate` until C.8 reconciliation, not
+`ProvenNoEffect`. The denied frame performs no data effect. Every producer
+lowers an exact effect footprint (record ranges, extents, index pages, root)
+through the C.10 algebra and is subject to
+the same foreground floor and owed-background-turn bound.
 
 ### Lifecycle and outcome topology
 
@@ -773,6 +801,17 @@ worth-store/src/physical_runtime/
   recovery_freshness/binding/
     blob_generation_obligation.rs               N redo obligation for publication payloads
     blob_reclaim_obligation.rs                  N redo obligation for drop payloads
+  recovery_construction/
+    port.rs, handoff.rs                          E sole Store construction and one-shot custody handoff; pending claim exclusive of checkpoint NoRelease/release
+    selected_rejoin/pending_wal_release.rs       N Store-owned same-media C.9 WAL/control/source/post-redo-root rejoin
+    selected_rejoin/release_heads/               N independent selected-head roster and per-object predecessor rejoin (Phase 6)
+  durability/publication/current_root_owner/release_capacity/
+    heads.rs, checkpoint_heads.rs                N Store-owned selected per-object head ledger, pre-effect capacity and checkpoint fold (Phase 6)
+  record_serving/planning/rebased_root/
+    release_heads.rs                            N V3-admitted copy-on-write head-tree projection inside the one result-root publication (Phase 6)
+  record_serving/publication/director/
+    release_head_preparation.rs                 N pre-WAL descriptor identity and head-tree effect reservation (Phase 6)
+  record_serving/admission/recovered_custody.rs  E Serving revalidates pending claim's selected-media fingerprint
   stability/byte_guard/                         E guard from blob chunk and index page views
 
 worth-store/tests/
@@ -786,6 +825,11 @@ worth-store-physical-format/src/
   manifest/physical_free_space_membership_block/, binary_format/free_space_policy.rs  E free-range runs
   integrity_declarations/families/extent_*.rs   E extent frames declared inside arenas
   blob_record/                                  N chunk_frame.rs, tree_node.rs, generation.rs, resume_session.rs, export_manifest.rs
+  manifest/durable_root/release_head_reference.rs  N versioned root anchor for the authoritative head tree (Phase 6)
+  manifest/release_head_routing/                 N bounded keyed head entries and copy-on-write tree blocks (Phase 6)
+  recovery_projection/release_head_effect.rs   N exact C.9 metadata-effect envelope; one V3 descriptor data record remains (Phase 6)
+  recovery_projection/release_head_retirement.rs N distinct owner-proof-backed terminal-head retirement, never a synthetic V3 (Phase 6)
+  checkpoint/release_certificate/heads.rs       N versioned accumulator head-tree commitment; V1 remains fail-closed where insufficient (Phase 6)
   btree_node/                                   N slotted.rs, separator.rs, sibling.rs
   lsm_run/                                      N header.rs, entries.rs, membership.rs
   integrity_declarations/families/              E blob_*, btree_node, lsm_run declarations
@@ -796,13 +840,20 @@ worth-store-physical-integrity/src/artifact/
   extent_arena/                                 N arena frame validator (Phase 1)
   free_space/                                   E free-range run validation
   blob_chunk/, blob_tree_node/, blob_generation/, btree_node/, lsm_run/  N validators and validated views
+  release_custody_head/                         N head-tree block and selected commitment validation (Phase 6)
 
 worth-store-offline-integrity-observer/src/integrity_observation/families/
   extent_arena/                                 N overlap, routed-but-free and unaccounted-byte checks
   blob/, index/                                 N independent offline families
+  release_custody_heads/                        N selected roster versus rooted head observation (Phase 6)
 
 worth-store-recovery-physics/src/redo_replay/    E blob/index payload kinds in record.rs and plan/admission.rs typed arms
+worth-store-recovery-physics/src/redo_replay/release_head_effect/  N C.9 source/result/node/free-space transition admission (Phase 6)
+worth-store-recovery-physics/src/source_precedence/pending_wal_release_custody.rs  N private C.8 pending-WAL release proof, distinct from tag-7 custody
+worth-store-recovery-physics/src/source_precedence/release_custody/heads/  N selected head-tree membership and pending V3 metadata-transition proof (Phase 6)
 worth-store-recovery-runtime/src/               E blob/index reconciliation and orphan fate
+  orchestration/planning/completion/blob_reclaim/selected_release_gate/pending_wal.rs  N C.8 admitted-redo/fate join before handoff
+  orchestration/{planning,publication,reopen,handoff}.rs  E carry the pending claim across completed publication and fresh reopen
 
 worth-store-blob-chunks/
   Cargo.toml, src/lib.rs                        E worth-store dependency removed; README corrected
@@ -871,7 +922,7 @@ contract and proof before admitting it.
 | Dedupe hit | 1 B-tree probe plus 1 bounded byte comparison on first reuse | No whole-object comparison; comparison window = chunk size |
 | Publication | 1 typed semantic WAL member + root member, with physical frame bytes separately bounded | Semantic descriptor <= 1 KiB; do not apply this cap to the whole canonical redo |
 | Catalog/dedupe rebuild | Bounded traversal of selected publications, sessions, occurrence claims, verified tree edges and admitted holds | Record/node visits and pages touched measured from the full authority closure; resident <= rebuild allocation |
-| B-tree point | Height page touches | Height <= 4 for 2^32 entries at fanout >= 256 |
+| B-tree point | Height page touches | Height <= 4 for 2^32 entries **only when** the admitted layout achieves fanout >= 256 (for example, a 64 KiB page with the registered DedupeIndex key64/value56 shape). The default 16 KiB page has lower DedupeIndex fanout and may require height 5 at that scale; no 2^32-entry empirical run is claimed. |
 | B-tree range | Height + leaves spanned | Budgeted by caller; envelope violation is denial |
 | LSM point | Memtable probe + 1 probe per run in membership | Runs per level bounded by compaction policy |
 | Reclaim | 1 drop publication per batch + retirement per displaced extent | Batch <= 1024 records; retained bytes fall by dropped bytes after retirement |
@@ -1009,11 +1060,384 @@ classification, reader/recovery-pin deferral, batched drop publications,
 placement movement as rewrite, and the reclaim and ingest scheduler
 producers' interference evidence.
 
+Checkpoint release custody is positive, never inferred from a missing drop
+record or a digest alone. The versioned tag-7 stream carries bounded
+released-drop Batch/Accumulator custody after a proven drop, or a distinct
+`NoRelease` marker bound to the selected checkpoint and source root. Store may
+mint the first zero-predecessor marker only from its trusted fresh-genesis
+zero-release ledger; a successor names the exact prior selected marker and
+its payload digest. The current C.7/C.10 namespace has one durable
+`checkpoint.current` and an exact WAL suffix: publication atomically replaces
+that checkpoint, and candidate files are residue, not retained predecessors.
+C.8 validates the selected current marker. Its prior fields are Store-attested
+custody from the exact previously selected ledger, not independently replayed
+history; a future governed retained-checkpoint role would additionally require
+C.8 to validate any selected predecessor it retains. Reopen without either valid custody form remains
+unavailable, including old unmarked checkpoints. C.8 validates the selected
+certificate, root and typed route/WAL evidence, while Store independently
+rejoins the same selected media before issuing a one-shot Serving seal.
+
+A released-drop WAL member may become durable after a selected checkpoint and
+before the next checkpoint. Its `NoRelease` marker, if present, attests only
+that checkpoint's source root; a selected Batch/Accumulator instead supplies
+the certified Store-wide cumulative starting point. Neither form alone
+authorizes a post-checkpoint released root. Distinct released objects can
+produce multiple V3 WAL batches before a successor checkpoint, so C.8's
+private-field pending-WAL claim must carry the complete ordered sequence,
+not only its tip. For each batch C.8 joins the exact unique C.9-admitted
+`RecordsDropped` member and honestly classified C.9 operation fate
+(`Indeterminate` before root materialization, or a genuinely completed fate),
+V3 descriptor, reservation, manifest, authenticated source closure, and exact
+published root and free-space topology. It proves the source/result chain
+through every intervening canonical non-release publication; no descriptor
+alone authenticates a missing historical link. V3 predecessor and cumulative
+fields are per released object, whereas Batch/Accumulator cumulative evidence
+and pending-batch order are Store-wide; an unrelated object's descriptor need
+not name the global tip. A first drop must name its publication in the drop
+set; a successor may instead drop the next payload only after its exact
+predecessor is authenticated against the selected per-object chain. Store's
+same-media rejoin also resolves that predecessor's exact selected descriptor
+and manifest, compares their released-object source basis to the successor,
+and checks nonterminal cumulative progression; a different object's valid
+Batch is not a substitute. A selected
+TierEpoch+NoRelease checkpoint has two distinct certificates, not an invalid
+extra tag: C.8 and Store bind the exact tier intent/completion, tier-anchored
+root/free header, NoRelease source marker, and complete WAL inventory before
+Serving. Store independently rereads the selected checkpoint
+and its source, every required pre-redo source, the final root/free/routes,
+complete retained WAL and unique member fates, and all routed controls before
+folding the ordered batches into its release ledger and issuing a one-shot
+Serving seal. The pending claim remains distinct from the selected checkpoint
+certificate: it neither rewrites nor synthesizes tag-7. The next checkpoint
+must fold genuine Batch/Accumulator custody from the selected base and every
+pending batch. A stale checkpoint-only claim, missing or reordered batch,
+substituted control frame, altered WAL member, mismatched fate, or wrong
+post-redo topology must deny Serving. If a fresh C.8 sees a prior V3 result
+already selected, it may treat the old WAL group as historically consumed only
+after proving the exact old member/target/digest/coordinate and complete
+source-to-result route and free-space transition; this does not change that
+member's C.9 fate or pretend to execute its drop again.
+
+#### Per-object custody across checkpoint replacement
+
+The Store-wide accumulator tip is not a per-object predecessor. An unfinished
+A release, then B's release and successor checkpoint, must still permit A's
+lawful next release after A's old WAL and checkpoint are pruned. The governing
+representation is a versioned, copy-on-write `ReleaseCustodyHead` tree bound by
+one fixed reference in the selected root manifest. It has one keyed entry per
+released object/generation that may still continue. Its canonical leaf entry
+names the latest V3 descriptor,
+manifest and reservation identities and frame digests, the released-object
+source basis, exact predecessor, per-object cumulative progress and
+terminality. Neither the descriptor nor head entry contains the digest of the
+resulting head tree/root or its containing checkpoint, which would make
+publication circular. The root's head-tree reference authenticates the
+bounded, ordered leaves; a fixed root field alone never substitutes for the
+per-object entries. Old selected V3 controls are evidence to rejoin, but a
+control without current head-tree membership is not release authority.
+
+Every completed V3 drop replaces only its own head-tree entry in the same
+WAL-backed root publication as the drop result; unselected copy-on-write
+blocks are residue.
+The first head requires the exact first-drop publication in the drop set. A
+replacement requires the authenticated prior head for the same key, a
+nonterminal predecessor, identical source basis and exact next-payload
+cumulative advance. A different object's head or global Batch tip cannot
+authorize it. Store constructs this transition from its selected release
+ledger and admitted V3 proof, never from routed descriptor bytes. The V3 WAL
+member still owns exactly one descriptor data record; its versioned metadata
+effect also commits the exact keyed head-tree transition, source reference,
+copy-on-write node identities/addresses, resulting reference and allocation
+effects. C.9 validates this metadata effect with the same member and root:
+an extra, missing, substituted or wrong-generation node, wrong descriptor
+identity, unrelated-key change or unexpected free-space effect denies. C.8
+redo reproduces that exact transition, not an allocation chosen from the
+replay-time free map. C.7 may not improvise a head mutation merely because
+WAL became durable. The dependency is source root, admitted descriptor and
+controls, head entry, new tree reference, result root, then checkpoint;
+descriptor identity comes from the admitted WAL binding. Before any effect,
+Store reserves worst-case copy-on-write path/split blocks, node storage,
+replacement or retirement work, checkpoint-roster work and C.8/Store
+recovery-resident charge. Exhaustion is a typed pre-effect denial; a completed
+drop may not become uncheckpointable.
+
+The next versioned tag-7 Accumulator binds, alongside the existing ordered
+Batch and Store-wide cumulative ratchet, the complete **checkpoint-source**
+head roster:
+unique canonical object/generation order, count, and domain-separated digest
+of each keyed entry and the exact root-referenced tree identity/checksum. It carries the
+prior selected roster count/digest as Store-attested custody. Current Batches
+fold in order per object; the final selected tree entry for each updated key
+must match its latest Batch, and intermediate entries need not remain selected. Store
+proves unchanged heads carry byte-exactly when it constructs the successor
+checkpoint from its selected ledger. C.8 cannot replay that carryforward from
+a superseded checkpoint that no longer exists. The roster scales with
+selected release state rather than the
+64-record, 64-KiB certificate section: the accumulator commits a bounded,
+streamed rooted roster, not one tag-7 certificate per historical object.
+The checkpoint-source root's head-tree reference, authenticated tree walk and
+accumulator must enumerate the same heads; duplicate keys, unreferenced or
+extra selected nodes, omitted entries, unknown versions and noncanonical
+order deny. A block outside the selected tree is residue, not a head. An
+entry without selected-checkpoint tree membership is not independently
+authoritative.
+
+C.8 validates the current checkpoint's roster commitment, exact selected
+head-tree blocks and routed descriptor/manifest/reservation controls, current
+Batch-to-head updates, root/free/WAL
+topology and still-retained genuine C.9 fates. Store separately rereads the
+same selected bytes and rederives the per-object map before its one-shot
+Serving handoff. A carried head after old WAL pruning is current
+Store-attested checkpoint custody, not a claim that C.8 replayed a deleted
+historical Batch or C.9 result. As with the existing NoRelease prior ratchet,
+a self-consistent rewrite of the whole trusted namespace is outside this
+integrity boundary; a digest by itself never grants release authority. Fresh
+pending V3 groups remain independently joined from exact WAL/source/result
+and head-transition evidence until selected into the next checkpoint. They
+advance the checkpoint-source roster to an **effective post-WAL roster**;
+neither C.8 nor Store compares that effective roster with the old accumulator
+as if it were still the checkpoint source. The Serving seal binds its final
+root and effective roster, and the next checkpoint commits that roster. A V1
+NoRelease marker may provide the zero-release source for a first V3 and its
+head-bearing successor checkpoint. A V1 released Batch/Accumulator checkpoint
+without heads is not migrated by blessing selected controls or replaying old
+drops: it remains unavailable after this cutover. There is no permissive
+legacy fallback.
+
+Terminal heads stay as tombstones until Store consumes owner-issued exclusion
+of the exact object's publication, reader/recovery holds and retry/idempotency
+claims, plus durable non-reissue of its identity. A checkpoint alone proves
+none of those exclusions. Retirement is a separately typed, WAL-admitted
+head-tree/root transition included in the next roster ratchet, not silent
+omission or a false repeated V3 drop. Ordinary root publications preserve the
+head-tree reference unless they consume an explicitly admitted head update
+or retirement. A replaced head and
+its older descriptor/manifest/reservation chain may be physically retired
+only after the successor head is checkpoint-attested, no protected reader,
+recovery pin or retry requires the older controls, and no Batch in the
+**currently selected** checkpoint or pending WAL claim still needs them for
+its ordered fold, per-object identity or source/result rejoin. Checkpoint
+replacement or explicit discharge must remove those dependencies before
+retirement. The current head and its exact control closure remain retained.
+The pre-effect charge covers that
+whole retained closure, WAL/root publication, checkpoint and C.8/Store
+recovery work, not just head count. An explicit admitted head-population bound
+`H` is derived from these charged budgets; a first release for a new distinct
+key at `H + 1` defers before WAL or root effects. This bounds current selected
+custody, not the number of releases over the Store's lifetime.
+
+The decisive process courtroom starts with genuine A partial drop and
+checkpoint, then B drop and checkpoint; the production retention owner prunes
+A's old WAL and superseded checkpoint. A fresh process must admit A's
+successor, complete C.8 and independent Store rejoin, seal Serving, checkpoint
+again and reopen with exact A/B per-object and Store-wide cumulative values.
+The same world must deny a substituted unchanged entry, missing or duplicate
+entry, wrong key, wrong A predecessor/progress/terminality, B-tip substitution,
+an extra selected tree node or roster omission before any new effect.
+The selected checkpoint-source roster must stay valid while a genuine
+postcheckpoint V3 changes only the effective WAL-derived roster; a stale seal
+or post-seal head mutation must deny. A headless V1 release checkpoint with
+only routed controls must remain unavailable, while V1 NoRelease may advance
+through a genuine first V3 into a head-bearing checkpoint. Terminal-head
+retirement without the owner-issued hold/retry/non-reissue exclusion must deny.
+Kill at V3 WAL durability, head-tree node materialization, result root
+publication, checkpoint file
+replacement and namespace sync: no candidate head may be adopted and no
+completed drop may lose its continuation. Run at admitted `H` and `H + 1`,
+measuring charged resident bytes and pre-effect capacity denial; mutating the
+roster-membership check or C.9 head-effect validation must turn this red.
+
 Closeout gate: reclaim of a held generation defers with a typed reason and
 completes after release with exact effects; reclaim without proof is denied
 regardless of references or age; a second reclaim is proven no effect; tier
 movement never exposes a half-moved chunk; the crash seams for drop and
-retirement reopen to their required fates.
+retirement reopen to their required fates. The existing
+`physical_runtime_authority_ui` target must compile a valid Store movement
+journey and reject `StablePhysicalReadReceipt` alone as movement-execution or
+movement-read-hold authority, using the real types introduced by this phase.
+
+#### Phase 6 execution boundaries
+
+Phase 6 remains one required contract, but implementation proceeds through the
+six dependency-ordered submilestones below. These are delivery and review
+boundaries, not independently deployable weaker modes. All requirements above
+remain mandatory; none moves to Phase 7, Phase 8 or a successor. A checkpoint
+commit can preserve unfinished work, including failing tests, but grants no
+runtime authority and is not a submilestone or Phase 6 PASS.
+
+The integration checkpoint is one real journey: genuine A partial drop,
+checkpoint, B drop, checkpoint, lawful production pruning of A's old WAL and
+superseded checkpoint, fresh process, lawful A successor, C.8 recovery and
+independent Store rejoin, Serving, checkpoint and reopen with exact A/B and
+Store-wide progress. First make ordinary publication and the first real drop
+work under their declared budgets. Expand that same journey; do not build
+parallel proof machinery while its prerequisite is red. Preserve accepted
+evidence unless an edited seam invalidates it.
+
+#### Architecture-law enforcement at every submilestone
+
+The governing [architectural laws](../../docs/coding-guidelines/arch_laws.md),
+[performance laws](../../docs/coding-guidelines/perf_laws.md),
+[composition laws](../../docs/coding-guidelines/composition_laws.md) and
+[domain structure laws](../../docs/coding-guidelines/domain_structure_laws.md)
+are implementation constraints, not a final documentation exercise. The
+following obligations identify their concrete Phase 6 enforcement boundaries.
+
+| Laws | Required owner behavior | Evidence that must distinguish a violation |
+| --- | --- | --- |
+| Architecture 1, 3, 4, 16 | Store consumes admitted semantic release proof and lowers exact selected-source, head, control, allocation and root effects before execution. C.7 publishes; C.9 validates exact redo; C.8 reconstructs; Store independently rejoins before its one-shot Serving transition. Observation, routed bytes, digests and generic completion grant no authority. | Public compiler boundaries reject forged/skipped progression; no-proof, wrong-object and stale-source twins deny before new effects; exact WAL/media observation distinguishes admitted from performed work. |
+| Architecture 5, 7, 14, 22 | Root preparation and every failure translation preserve the typed underlying cause, responsible boundary, proven/maybe-started effect posture, retained authority and recovery disposition. Cancellation never erases durable work. | Inject preparation, resource, WAL, root and namespace failures; assert exact cause and fate, selected artifacts and recovery result, not merely `is_err()`. A published generation with pending indexing must remain a typed partial outcome, not fixture success or rollback. |
+| Architecture 9, 11, 19, 22; performance allocation and memory laws | One owner-carried aggregate admission accounts for simultaneously live planning state, retained custody, scratch, decoded controls, roster storage and replay copies. Acquire capacity before allocation/growth and before irreversible effects; carry or lawfully transfer the live charge across C.8, Store rejoin, Serving, mutation and disposal. A numeric ceiling or a post-allocation aggregate check is not a live reservation. | Exercise the actual bounded production world and overlapping grants; measure peak and retained charges through handoff and mutable growth. Denial leaves no new forbidden allocation/effect; disposal releases the exact charge. Reconcile `canonical_store_metadata_envelope` against actual retained metadata rather than raising its budget to conceal overhead. |
+| Architecture 8, 10, 17, 18 | Selected checkpoint custody, pending-WAL claims, checkpoint-source roster, effective post-WAL roster and per-object predecessor are distinct owner facts. Ordinary visibility still comes from selected C.5 routes, never a retained catalog cell or the global release tip. | Pruned A/B continuation, post-checkpoint updates, unchanged-entry and stale-seal twins; ordinary surviving-object reads and independent offline observation. No old checkpoint, heap ledger or writer state crosses the fresh-process boundary. |
+| Architecture 21 | Durable head, root, metadata effect and checkpoint changes use declared versions and compatibility windows. Never reinterpret old bytes or bless headless release controls as migration. | V1 NoRelease advances through a genuine first V3; headless V1 release and unsupported versions deny; C.9/C.8 reject incompatible or altered metadata before promotion. |
+| Architecture 6, 13, 15, 23 | Effects remain in the existing Store work/scheduler/executor/publication path. Physical reachability cannot issue semantic liveness, holds or non-reissue proof. Admission and recovery guarantees cannot be traded for throughput or easier review. | Real held-reader, retirement, movement and interference journeys; compile-fail movement substitutes; media observations expose executor bypass or half-publication. |
+| Composition 1-9, 13-15; domain structure 1-3, 7-11, 17 | Keep proof decisions, execution, replay, diagnostic translation and independent rejoin in their existing semantic owners. Facades export contracts only. Orchestration names proof-building steps; line-count extraction cannot substitute for responsibility boundaries. | Bounded independent structural review, dependency/visibility checks, scoped 400-line guard and judgment of function advisories. New growth enters the destination tree below without phase-named buckets or a second authority lane. |
+
+Resource admission is a cross-cutting spine, not a later cleanup milestone.
+Submilestone 6.1 repairs the immediate publication blocker; each later
+submilestone must establish continuously owned charges for the actual paths
+it introduces or changes before admitting their effects. No blanket resource
+PASS may precede those paths. The complete retained closure and checkpoint/
+recovery capacity are prerequisites of the first admitted drop, even though
+6.4 completes the population and retirement campaign.
+
+#### 6.1: Bounded ordinary publication and diagnostic foundation
+
+Consume the existing protected selected-root reader and Maintenance admission;
+make strict native blob publication and derived-index completion work in the
+existing 32 MiB operation profile. Retirement admission must bound the actual
+closure and all coexisting storage before construction, enforce that bound
+while collecting/copying it, and retain the grant for the funded lifetime.
+Do not reserve the entire global maximum independently for nested tiny
+closures, remove a required reservation, or enlarge the profile to pass.
+
+First acceptance feedback comes from the strict publication setup of
+`release_reopen::shared_reuse_custody::source_first_reuse_continues_only_with_fresh_c8_custody`
+in the existing Recovery Runtime `production_entry` target, plus focused
+retirement-admission and root-preparation failure tests. Setup must not swallow
+`PublishedIndexPending`. A too-small profile must report the responsible typed
+denial before that newly admitted work's effects while preserving any earlier
+durable partial publication. Passing setup enables 6.2; it does not certify the
+rest of the recovered journey or Phase 6.
+
+#### 6.2: Atomic one-object release and surviving ordinary visibility
+
+Consume admitted release proof, current per-object source/head and live reader/
+recovery protection. Establish one WAL-backed drop/head/control/root transition
+with pre-effect capacity for its replacement, retirement, checkpoint roster
+and C.8/Store recovery closure. Checkpointability is an admission invariant,
+not a check performed after completing the drop.
+
+If a released publication invalidates a derived directory's immutable
+watermark, publish a new lawful directory binding in the same atomic
+transition, retaining surviving family roots and their actual truth status.
+Its metadata effect must be versioned and validated/replayed by C.9/C.8;
+never keep an invalid old binding, reinterpret prior metadata bytes, or make
+ordinary catalog reads fall back to a broad authoritative scan. Retained
+derived cells cannot resurrect an unrouted publication.
+
+Acceptance is a genuine partial drop followed by checkpoint and ordinary reads
+of surviving shared content. Include source-first and destination-first reuse,
+held-reader deferral followed by exact completion, no-proof denial, repeat
+proven-no-effect, exact drop/head/free-space effects and this transition's
+failure/crash fates. Only this accepted production boundary may support 6.3.
+
+#### 6.3: Independent recovered custody and multi-object continuation
+
+Consume the real checkpoint, exact retained WAL/member fates and selected
+head/control closure. C.8 and Store independently derive their respective
+facts from the same media; the Store-issued one-shot seal binds final root and
+effective post-WAL roster before Serving. Keep selected checkpoint certificates
+distinct from pending claims and checkpoint-source rosters distinct from
+effective rosters. Carry continuously owned recovery/rejoin residency into
+Serving and any admitted growth; handoff cannot release a grant while funded
+state remains live.
+
+Decompose `selected_release_gate/pending_wal.rs::admit` by semantic proof steps:
+ordered member/fate selection, authenticated media/source/result joins,
+reservation and head-transition validation, exact replay admission, live
+aggregate cost admission, then private claim construction. These steps carry
+named owner facts; downstream code may not reselect raw evidence or construct
+the final claim without the preceding proofs. This is not arbitrary file
+fragmentation or a new generic proof framework.
+
+Acceptance completes the decisive pruned A/B process journey above and the
+same-world hostile variants already required by Phase 6. Include genuine
+post-checkpoint head change without invalidating the old checkpoint-source
+roster, stale/post-mutation seal denial, V1 NoRelease progression and headless
+V1 release refusal. A passing unsealed-open denial is negative evidence only;
+it never replaces positive fresh-process recovered continuation.
+
+#### 6.4: Lawful custody retirement and admitted population
+
+Consume checkpoint-attested successor custody plus owner-issued exact
+publication/hold/retry/non-reissue exclusion. Use the separately typed
+WAL-admitted head retirement and roster ratchet; retain current controls and
+every older control still needed by selected checkpoint or pending folds.
+No checkpoint age, missing route or terminal flag alone permits deletion.
+
+Acceptance proves denial with each material dependency still live, exact
+retirement after lawful exclusion, continued reopen after production pruning,
+and populations at admitted H and H+1. Measure the whole live retained closure
+and transient work; H+1 denies before WAL/root effects. These measurements
+complete, not introduce, the pre-effect capacity contract used by 6.2/6.3.
+
+#### 6.5: Genuine tier movement and scheduled interference
+
+Consume real movement execution/read-hold authority through C.10 rewrite,
+protection, scheduler and executor contracts. Preserve TierEpoch+NoRelease's
+distinct certificates and their recovery binding; release proof does not
+implicitly authorize movement.
+
+Acceptance observes real chunk movement without half-moved visibility,
+protected old-reader survival, exact interference with reclaim and foreground
+ingest, and fresh recovery of interrupted movement. The existing authority UI
+target accepts the real Store movement path and rejects a
+`StablePhysicalReadReceipt` as either required movement authority.
+
+#### 6.6: Integrated Phase 6 closure
+
+Integrate the accepted paths at V3 WAL durability, head-node materialization,
+result-root publication, checkpoint replacement and namespace synchronization.
+Each earlier effect-bearing submilestone already owns its relevant interrupted
+fate; this campaign must not be the first consideration of crash or cleanup.
+Use the independent observer for persisted identity, topology and progress,
+not writer-returned truth. Complete all remaining Phase 6 requirements above,
+including mutation-sensitive roster membership and C.9 head-effect checks.
+
+Before Phase 6 PASS, run focused owners and affected production/UI journeys,
+formatting, the scoped dirty Rust line-cap guard, function advisories with
+causal-scope judgment, and the mandated boundary and generated-context checks:
+
+```text
+cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .
+cargo run --manifest-path tools/agent-context/Cargo.toml -- check
+```
+
+Revise the existing durability, recovery and integrity guides named in this
+specification against the actual facades, compatibility and operator recovery
+behavior. Independent `qa-loop`, `qa-tests` and `code-quality-qa` clearance at
+bounded slice gates remains mandatory; final phase certification uses the
+selected independent reviewer arrangement. Missing review or required evidence
+is an unmet gate, never primary-agent self-certification.
+
+#### Execution ownership and stopping rules
+
+Keep one integration owner and one coordinated Cargo lane. Assign narrowly
+owned production changes, independent fixture/test analysis and independent
+review; stabilize shared contracts before concurrent edits. Workers may not
+edit shared contracts concurrently or run contending Cargo builds. Review the
+bounded delta once, then only corrections and invalidated seams; do not repeat
+whole-dirty-tree certification, generate evidence registries or test tests.
+
+Before each slice, identify its first real failing boundary, verified facts,
+remaining hypotheses, owner interfaces and concrete acceptance commands. A
+failure that invalidates those facts triggers a boundary/plan correction before
+more edits. More than a day on the same unresolved slice warrants a focused
+rebaseline of that seam and dependencies, not parallel patch accumulation;
+elapsed time is neither proof nor permission to weaken the contract. Preserve
+settled design and accepted evidence unless concrete invalidating evidence
+requires reopening them.
 
 ### Phase 7: LSM strategy, compaction, and export/import
 
@@ -1087,13 +1511,21 @@ Implementation revises these against real APIs, compiling every example:
   allocation consumers; record-read chunk versus blob chunk vocabulary.
 - `physical-durability-and-checkpoints.md`: extent arenas, free-range truth,
   range release and arena evacuation; record-dropping publication, blob and
-  LSM payloads, retained-storage effects of reclaim.
+  LSM payloads, retained-storage effects of reclaim. For the Store operator,
+  explain the selected per-object head roster, checkpoint replacement and
+  pruning rule, pre-effect capacity denial and terminal-head retirement.
 - The C.5 record-path spec and `bounded-physical-record-access.md`: extent
   placement is an arena range; per-extent files are gone.
 - `physical-recovery-and-reopen.md`: blob generation, resume, drop and
-  membership redo; residue fates.
+  membership redo; residue fates. For recovery implementers, distinguish
+  current checkpoint-attested heads from independently replayed pending WAL,
+  and state why selected controls or the global tip cannot replace a missing
+  per-object head.
 - `physical-integrity-and-offline-verification.md`: new families, derived
-  rebuild disposition, offline blob/index walk.
+  rebuild disposition, offline blob/index walk. For offline operators, name
+  the head-tree block/roster family, unselected-node residue and mismatch
+  findings, and the limit
+  of whole-namespace self-consistent rewrite detection.
 - READMEs of `worth-store-blob-chunks`, `worth-store-layout-indexes`,
   `worth-store-lsm-authority`: downward mechanism posture; corrected claims.
 - This roadmap's C.11 entry: current contract links and the exact C.12/C.13

@@ -2,6 +2,12 @@ use crate::physical_runtime::{
     PhysicalMutationIdempotencyKeyIdentity, PhysicalMutationIdentity,
     PhysicalMutationRequestFingerprint,
 };
+use std::sync::Arc;
+
+mod root_preparation;
+pub use root_preparation::{
+    PhysicalMutationRootPreparationFailure, PhysicalRootPreparationEffectPosture,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PhysicalMutationIndeterminateStage {
@@ -50,13 +56,14 @@ impl PhysicalMutationIndeterminateStage {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IndeterminatePhysicalMutation {
     mutation: PhysicalMutationIdentity,
     idempotency: PhysicalMutationIdempotencyKeyIdentity,
     fingerprint: PhysicalMutationRequestFingerprint,
     stage: PhysicalMutationIndeterminateStage,
     completed_effects: u32,
+    root_preparation_failure: Option<Arc<PhysicalMutationRootPreparationFailure>>,
 }
 
 impl IndeterminatePhysicalMutation {
@@ -74,32 +81,54 @@ impl IndeterminatePhysicalMutation {
             stage,
             completed_effects: u32::try_from(completed_effects)
                 .expect("bounded physical effect count fits u32"),
+            root_preparation_failure: None,
         }
     }
 
-    pub const fn mutation_identity(self) -> PhysicalMutationIdentity {
+    pub const fn mutation_identity(&self) -> PhysicalMutationIdentity {
         self.mutation
     }
 
-    pub const fn idempotency_identity(self) -> PhysicalMutationIdempotencyKeyIdentity {
+    pub const fn idempotency_identity(&self) -> PhysicalMutationIdempotencyKeyIdentity {
         self.idempotency
     }
 
-    pub const fn request_fingerprint(self) -> PhysicalMutationRequestFingerprint {
+    pub const fn request_fingerprint(&self) -> PhysicalMutationRequestFingerprint {
         self.fingerprint
     }
 
-    pub const fn stage(self) -> PhysicalMutationIndeterminateStage {
+    pub const fn stage(&self) -> PhysicalMutationIndeterminateStage {
         self.stage
     }
 
-    pub const fn completed_effect_count(self) -> u32 {
+    pub const fn completed_effect_count(&self) -> u32 {
         self.completed_effects
     }
 
-    pub const fn diagnostic_evidence(
-        self,
+    pub fn diagnostic_evidence(
+        &self,
     ) -> crate::physical_runtime::IndeterminatePhysicalMutationEvidence {
         crate::physical_runtime::IndeterminatePhysicalMutationEvidence::from_fate(self)
+    }
+
+    pub(in crate::physical_runtime) fn with_root_preparation_failure(
+        mut self,
+        cause: crate::physical_runtime::PhysicalRootPublicationPreparationFailureCause,
+        posture: PhysicalRootPreparationEffectPosture,
+    ) -> Self {
+        assert_eq!(
+            self.stage,
+            PhysicalMutationIndeterminateStage::RootPreparation
+        );
+        self.root_preparation_failure = Some(Arc::new(
+            PhysicalMutationRootPreparationFailure::new(cause, posture),
+        ));
+        self
+    }
+
+    /// Present for a live managed root-preparation failure. Legacy persisted
+    /// fates retain recovery identity and stage, but do not store this detail.
+    pub fn root_preparation_failure(&self) -> Option<&PhysicalMutationRootPreparationFailure> {
+        self.root_preparation_failure.as_deref()
     }
 }

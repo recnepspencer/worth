@@ -18,7 +18,7 @@ use worth_store_test_support::harness::physical_residency::{
     canonical_physical_mutation_acknowledgment, PhysicalResidencyStoreWorld,
 };
 
-use super::{allocation_sequence_above, reusable_capacity};
+use super::{first_invalid_extent, reusable_capacity};
 use crate::entry::{
     AdmittedPlatformAuthority, PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimits,
     PhysicalRecoveryOpenRequest, PhysicalRecoveryPlatformAuthority,
@@ -30,12 +30,12 @@ mod capacity_tests;
 
 #[test]
 fn committed_frontiers_allow_reserved_gaps_but_not_reused_or_unordered_ids() {
-    assert!(allocation_sequence_above([7, 8, 9], 7));
-    assert!(allocation_sequence_above([7, 9], 7));
-    assert!(allocation_sequence_above([8], 7));
-    assert!(!allocation_sequence_above([6], 7));
-    assert!(!allocation_sequence_above([7, 7], 7));
-    assert!(!allocation_sequence_above([9, 8], 7));
+    assert_eq!(first_invalid_extent([7, 8, 9], 7), None);
+    assert_eq!(first_invalid_extent([7, 9], 7), None);
+    assert_eq!(first_invalid_extent([8], 7), None);
+    assert_eq!(first_invalid_extent([6], 7), Some(6));
+    assert_eq!(first_invalid_extent([7, 7], 7), Some(7));
+    assert_eq!(first_invalid_extent([9, 8], 7), Some(8));
 }
 
 #[test]
@@ -331,7 +331,8 @@ fn target(
         .segment_cell(PhysicalSegmentId::from_raw(artifact_segment).unwrap())
         .with_segment_generation(PhysicalGeneration::from_raw(artifact_generation).unwrap());
     let placement =
-        DurableInlineRecordPlacement::new(record, artifact_cell, page_cell, slot, 4, 4).unwrap();
+        DurableInlineRecordPlacement::legacy_unknown(record, artifact_cell, page_cell, slot, 4, 4)
+            .unwrap();
     let routing = RecordSegmentPageManifestEntry::new(page_cell, artifact_cell, 1, 0).unwrap();
     let projection = PersistedPhysicalRecoveryProjection::new(
         1,
@@ -376,6 +377,9 @@ fn target(
         &encoded,
         WalLsnRange::new(LogSequenceNumber::new(10), LogSequenceNumber::new(11)).unwrap(),
         1,
+        worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
+            .admit()
+            .unwrap(),
     )
     .unwrap()[0]
         .targets()[0]

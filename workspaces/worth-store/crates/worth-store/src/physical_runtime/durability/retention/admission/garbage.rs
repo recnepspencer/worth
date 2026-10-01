@@ -62,6 +62,20 @@ impl PhysicalPublicationAdmission {
         })
     }
 
+    /// Returns only this admission owner's completed retirement fact for the
+    /// exact displaced generation and charge. Queue absence is not evidence.
+    pub(in crate::physical_runtime) fn completed_displaced_exact(
+        &self,
+        expected: DisplacedArtifact,
+    ) -> Option<DisplacedArtifact> {
+        let state = self.lock();
+        let garbage = state.garbage.get(&expected.artifact)?;
+        (garbage.completed
+            && garbage.source_root == expected.source_root
+            && garbage.bytes == expected.bytes)
+            .then_some(expected)
+    }
+
     pub(in crate::physical_runtime) fn claim_displaced(
         &self,
         artifact: RetiredArtifact,

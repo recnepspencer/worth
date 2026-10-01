@@ -5,7 +5,7 @@ use worth_store::physical_runtime::{
     RecordAppendDenial,
 };
 #[path = "../../../worth-store/tests/physical_record_journeys/durability_admission/independent_wal_oracle/copy_intent.rs"]
-mod independent_copy_intent;
+pub(super) mod independent_copy_intent;
 
 const CHILD: &str = "pre_final::ready_copy_before_final_child";
 const MARKER: &str = "C11_READY_COPY_CRASH_MARKER";

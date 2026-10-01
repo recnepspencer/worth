@@ -4,6 +4,7 @@ use std::num::NonZeroU64;
 use sha2::{Digest, Sha256};
 use worth_store_physical_backend::AdmittedRecoveryFilesystemMedia;
 use worth_store_physical_format::store_namespace::StableStoreIdentity;
+use worth_store_physical_format::BlobManifestResidueCleanup;
 use worth_store_physical_integrity::VerifiedCheckpointStream;
 use worth_store_wal::WalLsnRange;
 
@@ -19,9 +20,11 @@ mod accessors;
 mod checkpoint_basis;
 mod evidence;
 mod failure;
+mod manifest_cleanup;
 #[cfg(test)]
 mod merge_tests;
 mod retirement_obligation;
+mod tier_epoch;
 mod wal_frame_input;
 mod wal_payload;
 
@@ -32,6 +35,7 @@ pub use failure::StoreRecoveryBindingSampleFailure;
 use failure::{empty_failure, sample_failure};
 use retirement_obligation::retirement_obligations;
 pub use retirement_obligation::{StoreRecoveryRetiredArtifact, StoreRecoveryRetirementObligation};
+pub use tier_epoch::StoreTierEpochActivationObservation;
 pub(super) use wal_frame_input::sample_binding;
 use wal_frame_input::RecoveryWalFrameInput;
 use wal_payload::ClassifiedWalPayload;
@@ -46,6 +50,9 @@ pub struct StoreRecoveryBindingFreshnessSample {
     wal_members: Box<[StoreRecoveryWalMember]>,
     retirements: Box<[StoreRecoveryRetirementObligation]>,
     extent_copy_frames: Box<[(WalLsnRange, Box<[u8]>)]>,
+    blob_manifest_residue_cleanups: Box<[(WalLsnRange, BlobManifestResidueCleanup, bool)]>,
+    tier_epoch_activation: Option<StoreTierEpochActivationObservation>,
+    manifest_cleanup_sampling_peak_bytes: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -97,6 +104,7 @@ pub enum StoreRecoveryBindingSampleDenial {
     ConflictingOperationEvidence,
     OperationBindingLimit,
     RedoByteLimit,
+    RecoveryMemoryLimit,
 }
 
 /// Which WAL members the checkpoint already covers are sampled.
@@ -118,6 +126,7 @@ fn sample_binding_from_frames<'frame, Frame: RecoveryWalFrameInput + 'frame>(
     wal_frames: impl IntoIterator<Item = &'frame Frame>,
     maximum_operation_bindings: u64,
     maximum_redo_bytes: u64,
+    maximum_manifest_cleanup_sampling_bytes: u64,
 ) -> Result<StoreRecoveryBindingFreshnessSample, StoreRecoveryBindingSampleFailure> {
     freshness.record_binding_sample();
     if !freshness.matches_media_generation(media.media_generation()) {
@@ -152,6 +161,9 @@ fn sample_binding_from_frames<'frame, Frame: RecoveryWalFrameInput + 'frame>(
     let mut wal_group_bindings = Vec::new();
     let mut retirement_records = Vec::new();
     let mut extent_copy_frames = Vec::new();
+    let mut manifest_cleanups =
+        manifest_cleanup::ManifestCleanupObservations::new(maximum_manifest_cleanup_sampling_bytes);
+    let mut tier_epoch = tier_epoch::TierEpochObservations::default();
     let mut redo_bytes = 0_u64;
     for frame in wal_frames {
         let classified = wal_payload::classify_wal_payload(frame.recovery_payload())
@@ -174,6 +186,25 @@ fn sample_binding_from_frames<'frame, Frame: RecoveryWalFrameInput + 'frame>(
                     ));
                 }
                 extent_copy_frames.push((frame.recovery_lsn_range(), payload.into()));
+            }
+            if let ClassifiedWalPayload::BlobManifestResidueCleanup(cleanup) = classified {
+                manifest_cleanups
+                    .observe(
+                        frame.recovery_lsn_range(),
+                        cleanup,
+                        store.bytes(),
+                        maximum_operation_bindings,
+                    )
+                    .map_err(|denial| {
+                        sample_failure(denial, &operations, wal_members.len(), redo_bytes)
+                    })?;
+            }
+            if let ClassifiedWalPayload::TierEpochActivation(record) = classified {
+                tier_epoch
+                    .observe(frame.recovery_lsn_range(), record, store.bytes())
+                    .map_err(|denial| {
+                        sample_failure(denial, &operations, wal_members.len(), redo_bytes)
+                    })?;
             }
             continue;
         };
@@ -282,6 +313,9 @@ fn sample_binding_from_frames<'frame, Frame: RecoveryWalFrameInput + 'frame>(
             ));
         }
     }
+    let (blob_manifest_residue_cleanups, manifest_cleanup_sampling_peak_bytes) = manifest_cleanups
+        .finish()
+        .map_err(|denial| sample_failure(denial, &operations, wal_members.len(), redo_bytes))?;
     Ok(StoreRecoveryBindingFreshnessSample {
         store,
         selected_checkpoint_generation: selected_generation,
@@ -294,6 +328,9 @@ fn sample_binding_from_frames<'frame, Frame: RecoveryWalFrameInput + 'frame>(
         wal_members: wal_members.into_boxed_slice(),
         retirements: retirement_obligations(retirement_records),
         extent_copy_frames: extent_copy_frames.into_boxed_slice(),
+        blob_manifest_residue_cleanups,
+        tier_epoch_activation: tier_epoch.finish(),
+        manifest_cleanup_sampling_peak_bytes,
     })
 }
 

@@ -5,6 +5,18 @@ use super::PhysicalRecoveryRootProtocolDenial;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PhysicalRecoverySuccessorCandidateDenial {
+    RecoveryMemoryBytes {
+        artifact: RecordArtifactFile,
+        generation: u64,
+        observed: u64,
+        admitted: u64,
+    },
+    Allocation {
+        artifact: RecordArtifactFile,
+        generation: u64,
+        requested_bytes: u64,
+        cause: std::collections::TryReserveError,
+    },
     Discovery {
         artifact: RecordArtifactFile,
         generation: u64,
@@ -39,7 +51,9 @@ pub enum PhysicalRecoverySuccessorCandidateDenial {
 impl PhysicalRecoverySuccessorCandidateDenial {
     pub(crate) const fn artifact(&self) -> RecordArtifactFile {
         match self {
-            Self::Discovery { artifact, .. }
+            Self::RecoveryMemoryBytes { artifact, .. }
+            | Self::Allocation { artifact, .. }
+            | Self::Discovery { artifact, .. }
             | Self::MissingArtifact { artifact, .. }
             | Self::InvalidArtifact { artifact, .. }
             | Self::RootProtocol { artifact, .. }

@@ -17,7 +17,7 @@ fn registry_admits_supported_requests_to_stable_owner_snapshots() {
     let request = LayoutAdmissionRequest::from_admitted(
         lifecycle,
         domain,
-        LayoutStrategyFamily::BaselineBTreeRange,
+        LayoutStrategyFamily::BTreeRange,
         LayoutRequestedCapability::point_lookup(),
         ArtifactFamilyAccessLane::HotPath,
     );
@@ -34,7 +34,7 @@ fn registry_admits_supported_requests_to_stable_owner_snapshots() {
     assert_eq!(first, second);
     assert_eq!(
         first.admitted_strategy().family(),
-        LayoutStrategyFamily::BaselineBTreeRange
+        LayoutStrategyFamily::BTreeRange
     );
     assert_eq!(
         first.granted_capability(),
@@ -49,14 +49,14 @@ fn registry_denies_unsupported_capability_and_scope_mismatch() {
     let unsupported = LayoutAdmissionRequest::from_admitted(
         lifecycle,
         domain,
-        LayoutStrategyFamily::BaselineBTreeRange,
+        LayoutStrategyFamily::BTreeRange,
         LayoutRequestedCapability::blob_streaming(),
         ArtifactFamilyAccessLane::HotPath,
     );
     let scope_mismatch = LayoutAdmissionRequest::from_admitted(
         lifecycle,
         domain,
-        LayoutStrategyFamily::BaselineBTreeRange,
+        LayoutStrategyFamily::BTreeRange,
         LayoutRequestedCapability::point_lookup(),
         ArtifactFamilyAccessLane::HotPath,
     )
@@ -80,7 +80,7 @@ fn registry_denies_mode_and_mutation_mismatches() {
     let verifier = LayoutAdmissionRequest::from_admitted(
         page_lifecycle,
         page_domain,
-        LayoutStrategyFamily::BaselineBTreeRange,
+        LayoutStrategyFamily::BTreeRange,
         LayoutRequestedCapability::point_lookup(),
         ArtifactFamilyAccessLane::HotPath,
     )
@@ -111,7 +111,7 @@ fn registry_requires_real_coverage_when_exact_materialization_is_requested() {
     let request = LayoutAdmissionRequest::from_admitted(
         lifecycle,
         domain,
-        LayoutStrategyFamily::BaselineBTreeRange,
+        LayoutStrategyFamily::BTreeRange,
         LayoutRequestedCapability::point_lookup(),
         ArtifactFamilyAccessLane::HotPath,
     )

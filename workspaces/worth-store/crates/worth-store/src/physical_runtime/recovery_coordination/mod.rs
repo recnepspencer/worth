@@ -1,4 +1,5 @@
 mod capacity;
+mod checkpoint_residue;
 mod cleanup;
 mod effect;
 mod owner;
@@ -12,6 +13,7 @@ mod staging;
 mod wal_admission;
 
 pub use capacity::PhysicalRecoveryCoordinationCapacity;
+pub use checkpoint_residue::{RecoveryCheckpointResidueDenial, RecoveryCheckpointResidueOutcome};
 pub(in crate::physical_runtime) use cleanup::PhysicalRecoveryCleanupRemovalCommand;
 pub use cleanup::{
     ClosedPhysicalRecoveryCleanup, CompletedPhysicalRecoveryCleanupFreshnessRead,
@@ -38,7 +40,7 @@ pub(in crate::physical_runtime::recovery_coordination) use effect::{
 };
 pub use owner::{
     PhysicalRecoveryCoordination, PhysicalRecoveryCoordinationAdmissionError,
-    PhysicalRecoveryQuiescenceObservation,
+    PhysicalRecoveryQuiescenceObservation, PhysicalRecoveryRejoinResidentAdmissionDenial,
 };
 pub use publication::{
     CompletedPhysicalRecoveryPublicationCandidate, CompletedPhysicalRecoveryPublicationCommand,

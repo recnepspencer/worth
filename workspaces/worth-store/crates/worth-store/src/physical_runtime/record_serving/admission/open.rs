@@ -139,8 +139,8 @@ pub(in crate::physical_runtime::record_serving) fn load_current_root(
         counters,
         resident_integrity_counters,
     };
-    let current_root = load_root_manifest(&admission, true)?;
-    let previous_root = if generation == 1 {
+    let (current_root, current_root_bytes) = load_root_manifest(&admission, true)?;
+    let previous = if generation == 1 {
         None
     } else {
         let previous = CurrentRootAdmission {
@@ -150,8 +150,10 @@ pub(in crate::physical_runtime::record_serving) fn load_current_root(
         };
         Some(load_root_manifest(&previous, true)?)
     };
+    let previous_root = previous.as_ref().map(|(root, _)| root.clone());
     let artifacts = ServingRecordArtifacts::new(media, loader);
-    let prior_roots = publication_roots(&admission, &current_root, previous_root.as_ref())?;
+    let (prior_roots, mut root_lengths) =
+        publication_roots(&admission, &current_root, previous.as_ref())?;
     let displaced_artifacts = if current_root.requires_maintenance_protocol() {
         let membership =
             super::super::access::segment_membership::SegmentMembershipReader::with_loader(
@@ -200,9 +202,14 @@ pub(in crate::physical_runtime::record_serving) fn load_current_root(
     } else {
         Vec::new()
     };
+    root_lengths.push(current_root_bytes);
     let publication_overheads = super::publication_charge::publication_overheads(
+        &admission,
+        bootstrap.format,
+        bootstrap.access,
         &[prior_roots.as_slice(), std::slice::from_ref(&current_root)].concat(),
-    );
+        &root_lengths,
+    )?;
     let free_space =
         super::current_free_space::load_free_space_manifest(&admission, &current_root)?;
     let publication_residue = observe_publication_residue(
@@ -228,12 +235,13 @@ pub(in crate::physical_runtime::record_serving) fn load_current_root(
 fn publication_roots(
     admission: &CurrentRootAdmission<'_>,
     current_root: &DurablePhysicalRootManifest,
-    previous_root: Option<&DurablePhysicalRootManifest>,
-) -> Result<Vec<DurablePhysicalRootManifest>, BootstrapTransitionFailure> {
+    previous_root: Option<&(DurablePhysicalRootManifest, u64)>,
+) -> Result<(Vec<DurablePhysicalRootManifest>, Vec<u64>), BootstrapTransitionFailure> {
     let mut prior = Vec::new();
+    let mut root_lengths = Vec::new();
     for generation in 1..current_root.generation() {
-        let root = match previous_root {
-            Some(root) if root.generation() == generation => root.clone(),
+        let (root, length) = match previous_root {
+            Some((root, length)) if root.generation() == generation => (root.clone(), *length),
             _ => {
                 let older = CurrentRootAdmission {
                     generation,
@@ -244,14 +252,15 @@ fn publication_roots(
             }
         };
         prior.push(root);
+        root_lengths.push(length);
     }
-    Ok(prior)
+    Ok((prior, root_lengths))
 }
 
 fn load_root_manifest(
     admission: &CurrentRootAdmission<'_>,
     record_route: bool,
-) -> Result<DurablePhysicalRootManifest, BootstrapTransitionFailure> {
+) -> Result<(DurablePhysicalRootManifest, u64), BootstrapTransitionFailure> {
     let root_frame = ServingRecordArtifacts::new(admission.media, admission.loader)
         .load_bounded(
             admission.allocation,
@@ -308,5 +317,5 @@ fn load_root_manifest(
             RecordServingStaleReason::CatalogSelectedRootGenerationMismatch,
         ));
     }
-    Ok(current_root)
+    Ok((current_root, root_frame.len() as u64))
 }

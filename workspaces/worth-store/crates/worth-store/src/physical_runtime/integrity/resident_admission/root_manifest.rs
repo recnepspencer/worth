@@ -75,6 +75,14 @@ struct AdmittedRootManifestProjection {
     routing_root: Option<worth_store_physical_format::ManifestBlockReference>,
     segment_root: Option<worth_store_physical_format::SegmentManifestBlockReference>,
     free_space_root: Option<worth_store_physical_format::FreeSpaceBlockReference>,
+    release_custody_head_root:
+        Option<worth_store_physical_format::ReleaseCustodyHeadBlockReferenceV1>,
+    next_release_custody_head_block: u64,
+    latest_blob_publication: Option<worth_store_physical_format::IndexedThroughBlobPublication>,
+    latest_blob_quarantine: Option<worth_store_physical_format::PersistedRecordIdentity>,
+    tier_epoch_anchor: Option<[u8; 32]>,
+    derived_family_directory:
+        Option<worth_store_physical_format::DerivedFamilyRootDirectoryBinding>,
     last_inline_record: Option<worth_store_physical_format::PersistedRecordIdentity>,
     last_inline_segment: Option<worth_store_physical_format::SegmentGenerationCell>,
     requires_maintenance_protocol: bool,
@@ -243,6 +251,12 @@ impl AdmittedRootManifestProjection {
             routing_root: validated.routing_root(),
             segment_root: validated.segment_root(),
             free_space_root: validated.free_space_root(),
+            release_custody_head_root: validated.release_custody_head_root(),
+            next_release_custody_head_block: validated.next_release_custody_head_block(),
+            latest_blob_publication: validated.latest_blob_publication(),
+            latest_blob_quarantine: validated.latest_blob_quarantine(),
+            tier_epoch_anchor: validated.tier_epoch_anchor(),
+            derived_family_directory: validated.derived_family_directory(),
             last_inline_record: validated.last_inline_record(),
             last_inline_segment: validated.last_inline_segment(),
             requires_maintenance_protocol: validated.requires_maintenance_protocol(),
@@ -262,6 +276,12 @@ impl AdmittedRootManifestProjection {
         .routing_root(self.routing_root)
         .segment_root(self.segment_root)
         .free_space_root(self.free_space_root)
+        .release_custody_head_root(self.release_custody_head_root)
+        .next_release_custody_head_block(self.next_release_custody_head_block)
+        .latest_blob_publication(self.latest_blob_publication)
+        .latest_blob_quarantine(self.latest_blob_quarantine)
+        .tier_epoch_anchor(self.tier_epoch_anchor)
+        .derived_family_directory(self.derived_family_directory)
         .last_inline_record(self.last_inline_record)
         .last_inline_segment(self.last_inline_segment)
         .admit()

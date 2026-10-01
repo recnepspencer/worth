@@ -187,16 +187,28 @@ impl RedoRecord {
 }
 
 fn encode(records: &[RedoRecord], projection: &PersistedPhysicalRecoveryProjection) -> Vec<u8> {
-    let payload_bytes = records.iter().fold(0_usize, |total, record| {
-        total
-            .saturating_add(4)
-            .saturating_add(8)
-            .saturating_add(8)
-            .saturating_add(record.targets.as_slice().len().saturating_mul(64))
-            .saturating_add(8)
-            .saturating_add(record.bytes.len())
-    });
-    let mut encoded = Vec::with_capacity(REDO_DOMAIN.len() + 16 + payload_bytes);
+    let projection_bytes = projection.encode();
+    let mut capacity = field_len(REDO_DOMAIN.len())
+        .and_then(|length| length.checked_add(8))
+        .expect("admitted redo domain and record count fit an addressable buffer");
+    for record in records {
+        capacity = capacity
+            .checked_add(4 + 8 + 8)
+            .and_then(|length| length.checked_add(field_len(record.bytes.len())?))
+            .expect("admitted redo record bytes fit an addressable buffer");
+        for claim in record.targets.as_slice() {
+            let mut target = Vec::with_capacity(96);
+            claim.target().write_canonical(&mut target);
+            capacity = capacity
+                .checked_add(field_len(target.len()).expect("canonical target length fits"))
+                .and_then(|length| length.checked_add(32))
+                .expect("admitted redo target bytes fit an addressable buffer");
+        }
+    }
+    capacity = capacity
+        .checked_add(field_len(projection_bytes.len()).expect("projection length fits"))
+        .expect("admitted recovery projection fits an addressable buffer");
+    let mut encoded = Vec::with_capacity(capacity);
     write_field(&mut encoded, REDO_DOMAIN);
     encoded.extend_from_slice(&(records.len() as u64).to_le_bytes());
     for record in records {
@@ -211,11 +223,109 @@ fn encode(records: &[RedoRecord], projection: &PersistedPhysicalRecoveryProjecti
         }
         write_field(&mut encoded, &record.bytes);
     }
-    write_field(&mut encoded, &projection.encode());
+    write_field(&mut encoded, &projection_bytes);
+    debug_assert_eq!(encoded.len(), capacity);
     encoded
+}
+
+fn field_len(payload_len: usize) -> Option<usize> {
+    8_usize.checked_add(payload_len)
 }
 
 fn write_field(target: &mut Vec<u8>, bytes: &[u8]) {
     target.extend_from_slice(&(bytes.len() as u64).to_le_bytes());
     target.extend_from_slice(bytes);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{encode, field_len, write_field, RedoRecord, REDO_DOMAIN};
+    use crate::physical_runtime::durability::{PhysicalDataFrameIdentity, PhysicalRedoTargetClaim};
+    use worth_proof::CanonicalVec;
+    use worth_store_physical_format::{
+        CurrentPhysicalRecordPlacement, DurableExtentRecordPlacement, ExtentArenaId,
+        ExtentArenaRange, ExtentChunkCoordinate, PersistedPhysicalDataFrameSubject,
+        PersistedPhysicalRecoveryFrame, PersistedPhysicalRecoveryProjection,
+        PersistedPhysicalRecoveryRootState, PersistedRecordIdentity, PhysicalExtentId,
+        PhysicalGeneration, PhysicalGenerationAuthority, RecordArtifactFile, RecordFrameCoordinate,
+    };
+    use worth_store_wal::LogSequenceNumber;
+
+    #[test]
+    fn exact_reserved_redo_matches_previous_wire_bytes_with_target_and_large_frame() {
+        let record = PersistedRecordIdentity::new([7; 16], 9).unwrap();
+        let extent = PhysicalGenerationAuthority::for_canonical_physical_format()
+            .record_extent_cell(PhysicalExtentId::from_raw(3).unwrap())
+            .with_extent_generation(PhysicalGeneration::from_raw(4).unwrap());
+        let range = ExtentArenaRange::new(ExtentArenaId::new(2).unwrap(), 0, 53_248).unwrap();
+        let placement =
+            DurableExtentRecordPlacement::legacy_unknown(record, extent, 1, range).unwrap();
+        let coordinate =
+            RecordFrameCoordinate::new(RecordArtifactFile::ExtentArena { arena: 2 }, 0, 1).unwrap();
+        let chunk = ExtentChunkCoordinate::new(record, extent, 1, 0, 1).unwrap();
+        let subject = PersistedPhysicalDataFrameSubject::ExtentChunk(chunk);
+        let root =
+            PersistedPhysicalRecoveryRootState::new(4096, 1, 32, vec![], None, None).unwrap();
+        let projection = PersistedPhysicalRecoveryProjection::new(
+            11,
+            root,
+            vec![record],
+            vec![PersistedPhysicalRecoveryFrame::new(subject, coordinate, &[3]).unwrap()],
+            vec![CurrentPhysicalRecordPlacement::Extent(placement)],
+            vec![],
+            vec![],
+        )
+        .unwrap();
+        let target = PhysicalDataFrameIdentity::extent_chunk(
+            chunk,
+            RecordArtifactFile::ExtentArena { arena: 2 },
+            0,
+            1,
+            range,
+        )
+        .unwrap();
+        let claim = PhysicalRedoTargetClaim::new(target, [5; 32]);
+        let records = [
+            RedoRecord {
+                ordinal: 0,
+                lsn: LogSequenceNumber::new(41),
+                targets: CanonicalVec::try_from_sorted(vec![claim]).unwrap(),
+                bytes: vec![0xA5; 256 * 1024],
+                source_copy: None,
+            },
+            RedoRecord {
+                ordinal: 1,
+                lsn: LogSequenceNumber::new(42),
+                targets: CanonicalVec::try_from_sorted(Vec::new()).unwrap(),
+                bytes: vec![0x5A; 256 * 1024],
+                source_copy: None,
+            },
+        ];
+
+        let encoded = encode(&records, &projection);
+        let mut previous = Vec::new();
+        write_field(&mut previous, REDO_DOMAIN);
+        previous.extend_from_slice(&(records.len() as u64).to_le_bytes());
+        for record in &records {
+            previous.extend_from_slice(&record.ordinal.to_le_bytes());
+            previous.extend_from_slice(&record.lsn.get().to_le_bytes());
+            previous.extend_from_slice(&(record.targets.as_slice().len() as u64).to_le_bytes());
+            for claim in record.targets.as_slice() {
+                let mut canonical_target = Vec::new();
+                claim.target().write_canonical(&mut canonical_target);
+                write_field(&mut previous, &canonical_target);
+                previous.extend_from_slice(&claim.resulting_payload_digest());
+            }
+            write_field(&mut previous, &record.bytes);
+        }
+        write_field(&mut previous, &projection.encode());
+        assert_eq!(encoded, previous);
+        assert_eq!(encoded.capacity(), encoded.len());
+    }
+
+    #[test]
+    fn field_length_rejects_address_space_overflow() {
+        assert_eq!(field_len(0), Some(8));
+        assert_eq!(field_len(usize::MAX), None);
+    }
 }

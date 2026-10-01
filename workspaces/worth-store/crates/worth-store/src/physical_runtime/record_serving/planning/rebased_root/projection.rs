@@ -1,9 +1,10 @@
 use std::collections::BTreeMap;
 
 use worth_store_physical_format::{
-    durable_artifact_checksum, CurrentPhysicalRecordPlacement, DurableFreeSpaceManifestHeader,
-    DurablePhysicalRootManifest, PersistedRecordIdentity, RecordArtifactFile,
-    RecordSegmentPageManifestEntry, SegmentGenerationCell, SegmentPageKey,
+    durable_artifact_checksum, CurrentPhysicalRecordPlacement, DerivedFamilyRootDirectoryBinding,
+    DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest, IndexedThroughBlobPublication,
+    PersistedRecordIdentity, RecordArtifactFile, RecordSegmentPageManifestEntry,
+    SegmentGenerationCell, SegmentPageKey,
 };
 
 use super::{damaged, RootRebaseContext};
@@ -21,6 +22,7 @@ use crate::physical_runtime::record_serving::{
     planning::{
         free_space_projection::{project_successor_free_space, FreeSpaceProjectionContext},
         free_space_routing::FreeSpacePublicationPlan,
+        inline_plan_failure::manifest_lookup_failure,
         prepared_payload::PreparedRecordPayloadPlan,
     },
     publication::append_observation::PublicationObservation,
@@ -41,11 +43,15 @@ struct ProjectedRecordManifest {
 }
 
 struct RootManifestProjection<'projection> {
+    derived_updates: crate::physical_runtime::record_serving::planning::prepared_root_projection::DerivedRootUpdates,
+    release_head_effect:
+        Option<&'projection worth_store_physical_format::PersistedReleaseCustodyHeadEffectV1>,
     generation: u64,
     free_space: &'projection DurableFreeSpaceManifestHeader,
     free_space_bytes: &'projection [u8],
     segment: &'projection SegmentMembershipPublicationPlan,
     placements: &'projection BTreeMap<PersistedRecordIdentity, CurrentPhysicalRecordPlacement>,
+    drops: &'projection std::collections::BTreeSet<PersistedRecordIdentity>,
     last_inline_record: Option<PersistedRecordIdentity>,
     last_inline_segment: Option<SegmentGenerationCell>,
 }
@@ -55,6 +61,29 @@ pub(super) fn project_successor_root(
     prepared: &PreparedRecordPayloadPlan,
     generation: u64,
 ) -> Result<ProjectedSuccessorRoot, RecordAppendError> {
+    if prepared.blob_reuse_source_fence
+        && context.current_root.generation() != prepared.source_root.generation()
+    {
+        return Err(damaged());
+    }
+    if let Some(expected_previous) = prepared.derived_updates.expected_previous_directory {
+        let Some(directory) = prepared.derived_updates.directory else {
+            return Err(damaged());
+        };
+        if !directory_rebase_matches(
+            context.current_root.latest_blob_publication(),
+            context.current_root.derived_family_directory(),
+            directory.indexed_through_blob_publication(),
+            expected_previous,
+            prepared
+                .derived_updates
+                .indexed_through_quarantine
+                .flatten(),
+            context.current_root.latest_blob_quarantine(),
+        ) {
+            return Err(damaged());
+        }
+    }
     let free_space = project_free_space(context, prepared, generation)?;
     let FreeSpacePublicationPlan {
         header: free_space_header,
@@ -71,11 +100,14 @@ pub(super) fn project_successor_root(
     let routed = project_record_manifest(
         context,
         RootManifestProjection {
+            derived_updates: prepared.derived_updates,
+            release_head_effect: prepared.release_head_effect.as_ref(),
             generation,
             free_space: &free_space_header,
             free_space_bytes: &free_space_bytes,
             segment: &segment,
             placements: &prepared.placements,
+            drops: &prepared.drop_records,
             last_inline_record,
             last_inline_segment,
         },
@@ -87,12 +119,75 @@ pub(super) fn project_successor_root(
     ));
     manifests.extend(segment.blocks);
     manifests.extend(routed.blocks);
+    if let Some(transition) = prepared.release_head_effect.as_ref() {
+        manifests.extend(transition.node_writes().iter().map(|write| {
+            let reference = write.reference();
+            (
+                RecordArtifactFile::ReleaseCustodyHeadBlock {
+                    generation: reference.generation(),
+                    block: reference.block(),
+                },
+                write.frame().to_vec(),
+            )
+        }));
+    }
     Ok(ProjectedSuccessorRoot {
         free_space: free_space_header,
         manifests,
         root: routed.root,
         discoveries: [free_space_discovery, segment.discovery, routed.discovery],
     })
+}
+
+fn directory_rebase_matches(
+    current_blob_publication: Option<IndexedThroughBlobPublication>,
+    current_directory: Option<DerivedFamilyRootDirectoryBinding>,
+    proposed_indexed_through: Option<IndexedThroughBlobPublication>,
+    expected_previous: Option<DerivedFamilyRootDirectoryBinding>,
+    proposed_quarantine: Option<PersistedRecordIdentity>,
+    current_quarantine: Option<PersistedRecordIdentity>,
+) -> bool {
+    current_blob_publication == proposed_indexed_through
+        && current_directory == expected_previous
+        && current_quarantine == proposed_quarantine
+}
+
+#[cfg(test)]
+mod directory_rebase_tests {
+    use super::*;
+
+    #[test]
+    fn competing_directory_with_same_watermark_cannot_overwrite_selected_root() {
+        let record = |ordinal| PersistedRecordIdentity::new([7; 16], ordinal).unwrap();
+        let watermark = IndexedThroughBlobPublication::new(4, record(1), [8; 32]).unwrap();
+        let originally_selected =
+            DerivedFamilyRootDirectoryBinding::new(record(2), Some(watermark));
+        let competing_selected = DerivedFamilyRootDirectoryBinding::new(record(3), Some(watermark));
+        assert!(directory_rebase_matches(
+            Some(watermark),
+            Some(originally_selected),
+            Some(watermark),
+            Some(originally_selected),
+            None,
+            None,
+        ));
+        assert!(!directory_rebase_matches(
+            Some(watermark),
+            Some(competing_selected),
+            Some(watermark),
+            Some(originally_selected),
+            None,
+            None,
+        ));
+        assert!(!directory_rebase_matches(
+            Some(watermark),
+            Some(originally_selected),
+            Some(watermark),
+            Some(originally_selected),
+            Some(record(4)),
+            Some(record(5)),
+        ));
+    }
 }
 
 impl ProjectedSuccessorRoot {
@@ -149,7 +244,7 @@ fn project_segment_membership(
         },
         updates,
     )
-    .map_err(|_| damaged())
+    .map_err(manifest_lookup_failure)
 }
 
 fn project_record_manifest(
@@ -167,6 +262,8 @@ fn project_record_manifest(
         context.allocation,
         context.current_root,
         RootManifestUpdateRequest {
+            derived_updates: projection.derived_updates,
+            release_head_effect: projection.release_head_effect,
             successor_generation: projection.generation,
             successor_capacity: context.placement.manifest_capacity().get(),
             free_space_checksum: durable_artifact_checksum(projection.free_space_bytes),
@@ -174,11 +271,12 @@ fn project_record_manifest(
             segment_root: projection.segment.root,
             next_segment_block: projection.segment.next_block,
             placements: projection.placements,
+            drops: projection.drops,
             last_inline_record: projection.last_inline_record,
             last_inline_segment: projection.last_inline_segment,
         },
     )
-    .map_err(|_| damaged())?;
+    .map_err(manifest_lookup_failure)?;
     Ok(ProjectedRecordManifest {
         root: projected.root,
         blocks: projected.blocks,

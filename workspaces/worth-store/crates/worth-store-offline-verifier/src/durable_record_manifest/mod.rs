@@ -5,6 +5,7 @@ mod observation;
 mod payload_validation;
 mod root_tree;
 mod segment_tree;
+mod selected_route;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::{Read, Seek, SeekFrom};

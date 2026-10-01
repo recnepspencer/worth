@@ -7,17 +7,12 @@ pub use admission::{
     BlobPlacementClass, BlobPlacementCounterSnapshot, BlobPlacementIntent, BlobPlacementNonClaim,
 };
 pub use movement::{
-    AdmittedBlobPlacementMovementPlan, BlobMovementReadPhase, BlobMovementVerifiedReadEvidence,
-    BlobPlacementMovementAuthority, BlobPlacementMovementColdCapsuleOutcome,
-    BlobPlacementMovementColdExportOutcome, BlobPlacementMovementColdMaterializationOutcome,
-    BlobPlacementMovementColdOutcome, BlobPlacementMovementColdReadOutcome,
-    BlobPlacementMovementCounterBackedPerformanceReceipt, BlobPlacementMovementCounterSnapshot,
+    AdmittedBlobPlacementMovementPlan, BlobPlacementMovementAuthority,
+    BlobPlacementMovementColdCapsuleOutcome, BlobPlacementMovementColdExportOutcome,
+    BlobPlacementMovementColdMaterializationOutcome, BlobPlacementMovementColdOutcome,
+    BlobPlacementMovementColdReadOutcome, BlobPlacementMovementCounterSnapshot,
     BlobPlacementMovementDenial, BlobPlacementMovementForegroundReservation,
-    BlobPlacementMovementFreshness, BlobPlacementMovementPhysicalExecutionIntent,
-    BlobPlacementMovementReadHold, BlobPlacementMovementRequest, BlobPlacementMovementResidue,
-    BlobPlacementMovementRestartOutcome, BlobReadDuringPlacementMove,
-    BlobReadDuringPlacementMoveReceipt, ExecutedBlobPlacementMovementReceipt,
-    PublishedBlobPlacementObservation, StoreOwnedPlacementMovementExecution,
-    StoreOwnedPlacementMovementExecutionReceipt, StoreOwnedPlacementMovementPublication,
+    BlobPlacementMovementFreshness, BlobPlacementMovementReadPlanBasis,
+    BlobPlacementMovementRequest,
 };
 pub use proof::BlobPlacementProof;

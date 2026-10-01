@@ -8,10 +8,12 @@ mod addressed_payload;
 mod addressed_range;
 mod artifact;
 mod observed_artifact;
+mod resident_read;
 mod wal_artifacts;
 pub(crate) use artifact::record_artifact;
 pub use artifact::RecoveryDiscoveryArtifact;
 pub use observed_artifact::ObservedRecoveryArtifact;
+pub use resident_read::RecoveryDiscoveryAllocationFailure;
 pub use wal_artifacts::{ObservedWalArtifact, RecoveryWalObservationIdentity};
 
 pub struct BoundedRecoveryFilesystemDiscovery {

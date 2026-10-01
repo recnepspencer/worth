@@ -1,6 +1,8 @@
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::PhysicalCheckpointIdentity;
 
+use crate::physical_runtime::record_serving::SelectedBlobManifestPins;
+
 use super::lease::PhysicalNamespaceDurableCheckpointGeneration;
 use super::registry::{
     PhysicalMutationIdempotencyBindingState, PhysicalMutationIdempotencyRegistry,
@@ -9,11 +11,13 @@ use super::registry::{
 
 mod decoding;
 mod encoding;
+mod manifest_pin;
 #[cfg(test)]
 #[path = "binding_compaction/tests.rs"]
 mod tests;
 pub(in crate::physical_runtime) use decoding::DecodedPhysicalMutationBindingRecord;
 use encoding::{encode_group_sealed, encode_terminal, encode_unsealed, encode_wal_bound};
+pub(in crate::physical_runtime::durability::mutation::idempotency) use manifest_pin::drop_material;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PhysicalMutationBindingCompaction {
@@ -29,6 +33,8 @@ pub struct PhysicalMutationBindingCompaction {
 pub(in crate::physical_runtime) struct PendingPhysicalMutationBindingCompaction {
     authority: PhysicalMutationBindingCompaction,
     prior_generation: PhysicalNamespaceDurableCheckpointGeneration,
+    retained_drop_materials: Vec<[u8; 32]>,
+    _selected_pin_custody: SelectedBlobManifestPins,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -38,6 +44,7 @@ pub(in crate::physical_runtime) enum PhysicalMutationBindingCompactionDenial {
     RecordTooLarge,
     RegistryChanged,
     NamespaceSyncMismatch,
+    BindingBytesExceeded,
 }
 
 impl PhysicalMutationIdempotencyRegistry {
@@ -45,6 +52,8 @@ impl PhysicalMutationIdempotencyRegistry {
         &self,
         checkpoint: PhysicalCheckpointIdentity,
         wal_cutoff_lsn_exclusive: u64,
+        pins: SelectedBlobManifestPins,
+        maximum_binding_bytes: u64,
     ) -> Result<PendingPhysicalMutationBindingCompaction, PhysicalMutationBindingCompactionDenial>
     {
         let generation = self
@@ -53,10 +62,13 @@ impl PhysicalMutationIdempotencyRegistry {
             .ok_or(PhysicalMutationBindingCompactionDenial::GenerationExhausted)?;
         let mut unresolved_binding_count = 0_u64;
         let mut terminal_binding_count = 0_u64;
+        let mut binding_bytes = 0_u64;
         let mut digest = Sha256::new();
+        let retained_drop_materials = manifest_pin::drop_materials(&pins)?;
 
         for state in self.bindings.values() {
-            let Some(encoded) = encode_retained_record(state, generation) else {
+            let Some(encoded) = encode_retained_record(state, generation, &retained_drop_materials)
+            else {
                 continue;
             };
             match state {
@@ -79,6 +91,12 @@ impl PhysicalMutationIdempotencyRegistry {
             if encoded.len() > worth_store_physical_format::MAX_CHECKPOINT_BINDING_RECORD_BYTES {
                 return Err(PhysicalMutationBindingCompactionDenial::RecordTooLarge);
             }
+            binding_bytes = binding_bytes
+                .checked_add(encoded.len() as u64)
+                .ok_or(PhysicalMutationBindingCompactionDenial::BindingCountOverflow)?;
+            if binding_bytes > maximum_binding_bytes {
+                return Err(PhysicalMutationBindingCompactionDenial::BindingBytesExceeded);
+            }
             digest.update((encoded.len() as u64).to_le_bytes());
             digest.update(&encoded);
         }
@@ -96,6 +114,8 @@ impl PhysicalMutationIdempotencyRegistry {
                 records_digest: digest.finalize().into(),
             },
             prior_generation: self.generation,
+            retained_drop_materials,
+            _selected_pin_custody: pins,
         })
     }
 }
@@ -123,7 +143,11 @@ impl PendingPhysicalMutationBindingCompaction {
         mut consume: impl FnMut(&[u8]) -> Result<(), E>,
     ) -> Result<(), E> {
         for state in registry.bindings.values() {
-            if let Some(encoded) = encode_retained_record(state, self.authority.generation) {
+            if let Some(encoded) = encode_retained_record(
+                state,
+                self.authority.generation,
+                &self.retained_drop_materials,
+            ) {
                 consume(&encoded)?;
             }
         }
@@ -159,7 +183,8 @@ impl PendingPhysicalMutationBindingCompaction {
                 basis.key().lease(),
                 self.authority.generation,
                 *last_compacted,
-            ) {
+            ) && !manifest_pin::pins_terminal_fate(basis, &self.retained_drop_materials)
+            {
                 return false;
             }
             *last_compacted = Some(self.authority.generation);
@@ -173,6 +198,7 @@ impl PendingPhysicalMutationBindingCompaction {
 fn encode_retained_record(
     state: &PhysicalMutationIdempotencyBindingState,
     generation: PhysicalNamespaceDurableCheckpointGeneration,
+    retained_drop_materials: &[[u8; 32]],
 ) -> Option<Vec<u8>> {
     match state {
         PhysicalMutationIdempotencyBindingState::Unsealed(basis) => Some(encode_unsealed(basis)),
@@ -194,9 +220,9 @@ fn encode_retained_record(
             basis,
             fate,
             last_compacted,
-        } => fate
-            .requires_compaction_at(basis.key().lease(), generation, *last_compacted)
-            .then(|| encode_terminal(basis, fate)),
+        } => (fate.requires_compaction_at(basis.key().lease(), generation, *last_compacted)
+            || manifest_pin::pins_terminal_fate(basis, retained_drop_materials))
+        .then(|| encode_terminal(basis, fate)),
     }
 }
 

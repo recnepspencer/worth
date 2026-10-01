@@ -1293,15 +1293,19 @@ dependencies = [
  "worth-signal",
  "worth-store-aspect-native",
  "worth-store-authority",
+ "worth-store-blob-chunks",
  "worth-store-buffer-pool",
  "worth-store-contracts",
  "worth-store-io-scheduler",
+ "worth-store-layout-indexes",
+ "worth-store-lsm-authority",
  "worth-store-offline-integrity-observer",
  "worth-store-offline-verifier",
  "worth-store-physical-backend",
  "worth-store-physical-format",
  "worth-store-physical-integrity",
  "worth-store-physical-isolation",
+ "worth-store-recovery-physics",
  "worth-store-security",
  "worth-store-wal",
 ]
@@ -1344,7 +1348,6 @@ dependencies = [
  "tempfile",
  "worth-foundational",
  "worth-proof",
- "worth-store",
  "worth-store-aspect-native",
  "worth-store-authority",
  "worth-store-budgets",
@@ -1357,7 +1360,6 @@ dependencies = [
  "worth-store-reclaim-policy",
  "worth-store-retention",
  "worth-store-security",
- "worth-store-test-support",
  "worth-store-tiering",
  "worth-store-wal",
 ]
@@ -1713,6 +1715,7 @@ dependencies = [
 name = "worth-store-physical-integrity"
 version = "0.1.0"
 dependencies = [
+ "sha2",
  "trybuild",
  "worth-foundational",
  "worth-store-physical-format",
@@ -1785,11 +1788,13 @@ dependencies = [
  "worth-proof",
  "worth-store",
  "worth-store-authority",
+ "worth-store-blob-chunks",
  "worth-store-offline-integrity-observer",
  "worth-store-offline-verifier",
  "worth-store-physical-format",
  "worth-store-physical-integrity",
  "worth-store-recovery-physics",
+ "worth-store-security",
  "worth-store-test-support",
 ]
 

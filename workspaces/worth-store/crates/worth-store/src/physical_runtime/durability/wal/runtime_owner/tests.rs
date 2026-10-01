@@ -91,7 +91,7 @@ fn wal_state(lsn_start: u64, lsn_end: u64) -> PhysicalWalRuntimeState {
         reclaimed_segments: 0,
         reclaimed_bytes: 0,
         reopened_frames: 0,
-        reopened_publications: 0,
+        reopened_publication_groups: Vec::new(),
         reopened_release_metadata: Vec::new(),
         maintenance: None,
         awaiting_barrier: false,

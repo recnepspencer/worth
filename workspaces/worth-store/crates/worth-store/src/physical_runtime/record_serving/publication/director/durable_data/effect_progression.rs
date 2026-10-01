@@ -1,4 +1,5 @@
 use worth_store_physical_backend::QualifiedFilesystemMedia;
+use worth_store_physical_format::BlobRecordKind;
 
 use super::super::RecordPublicationDirector;
 use super::failure_outcome::{
@@ -43,6 +44,7 @@ impl<'director, 'media> DurableFrameDispatch<'director, 'media> {
         let mut effects = durable.take_completed_data_prefix();
         let completed = effects.len();
         let artifacts = PublicationRecordArtifacts::new(&self.director.mutation);
+        let blob_record_kind = durable.blob_record_kind();
         let mut completed_writebacks = 0_u64;
         let mut completed_arena_frames = durable
             .data_frames()
@@ -66,6 +68,7 @@ impl<'director, 'media> DurableFrameDispatch<'director, 'media> {
                 &artifacts,
                 &mut residency,
                 frame,
+                blob_record_kind,
                 &mut completed_writebacks,
                 &mut completed_arena_frames,
             ) {
@@ -118,6 +121,7 @@ impl<'director, 'media> DurableFrameDispatch<'director, 'media> {
         artifacts: &PublicationRecordArtifacts<'_>,
         residency: &mut StoreCandidateFramePublicationSession<'_>,
         frame: &crate::physical_runtime::durability::WalBoundPhysicalDataFrame,
+        blob_record_kind: Option<BlobRecordKind>,
         completed_writebacks: &mut u64,
         completed_arena_frames: &mut u64,
     ) -> Result<PhysicalDataEffectSettlement, DispatchFailure> {
@@ -167,6 +171,7 @@ impl<'director, 'media> DurableFrameDispatch<'director, 'media> {
                 candidate,
                 coordinate,
                 pressure_basis,
+                blob_record_kind,
                 &mut after_admission_before_effect,
             )?
         };
@@ -189,9 +194,42 @@ impl<'director, 'media> DurableFrameDispatch<'director, 'media> {
         candidate: CandidateFrame,
         coordinate: worth_store_physical_format::RecordFrameCoordinate,
         pressure_basis: PhysicalRecordPressureBasis,
+        blob_record_kind: Option<BlobRecordKind>,
         after_admission_before_effect: &mut dyn FnMut(),
     ) -> Result<CandidateFrameWriteCompletion, DispatchFailure> {
-        if coordinate.offset() == 0
+        if matches!(
+            blob_record_kind,
+            Some(
+                BlobRecordKind::DropSetManifest
+                    | BlobRecordKind::DropSetManifestV2
+                    | BlobRecordKind::DropSetManifestV3
+                    | BlobRecordKind::OriginalDropReserved
+                    | BlobRecordKind::ReclaimDescriptor
+                    | BlobRecordKind::ReclaimDescriptorV2
+                    | BlobRecordKind::ReclaimDescriptorV3
+            )
+        ) && matches!(
+            coordinate.artifact(),
+            worth_store_physical_format::RecordArtifactFile::ExtentArena { .. }
+        ) {
+            artifacts
+                .write_blob_reclaim_candidate(residency, candidate, after_admission_before_effect)
+                .map_err(|failure| {
+                    map_canonical_failure(failure, self.director.generation, pressure_basis)
+                })
+        } else if matches!(
+            blob_record_kind,
+            Some(BlobRecordKind::Chunk | BlobRecordKind::TreeNode)
+        ) && matches!(
+            coordinate.artifact(),
+            worth_store_physical_format::RecordArtifactFile::ExtentArena { .. }
+        ) {
+            artifacts
+                .write_blob_ingest_candidate(residency, candidate, after_admission_before_effect)
+                .map_err(|failure| {
+                    map_canonical_failure(failure, self.director.generation, pressure_basis)
+                })
+        } else if coordinate.offset() == 0
             || matches!(
                 coordinate.artifact(),
                 worth_store_physical_format::RecordArtifactFile::ExtentArena { .. }

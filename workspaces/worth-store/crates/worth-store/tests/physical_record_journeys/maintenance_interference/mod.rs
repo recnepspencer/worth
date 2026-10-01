@@ -1,9 +1,11 @@
 mod artifact_scope;
 mod axes;
 mod canonical;
+mod checkpoint_pin_budget;
 mod held;
 mod interleave;
 mod page_variant;
+mod publication_charge;
 mod qos;
 mod ready;
 mod reopen;

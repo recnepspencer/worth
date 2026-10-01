@@ -8,6 +8,8 @@ use super::super::{
 pub(in crate::physical_runtime::record_serving) struct PlacementPlanningContext<'plan> {
     pub(in crate::physical_runtime::record_serving) arena_owner:
         super::super::arena::SharedArenaAllocationOwner,
+    pub(in crate::physical_runtime::record_serving) released_control_placement:
+        Option<&'plan super::super::arena::ReleasedControlArenaPlacement>,
     pub(in crate::physical_runtime::record_serving) allocation:
         &'plan worth_store_buffer_pool::OperationAllocationGrant,
     pub(in crate::physical_runtime::record_serving) media: &'plan QualifiedFilesystemMedia,

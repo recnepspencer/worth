@@ -152,6 +152,14 @@ fn render(report: &OfflineIntegrityReport) -> RenderedWire {
         } else {
             wire.push_str(",\"range\":null");
         }
+        if let Some(touches) = artifact.expected_point_page_touches() {
+            number_field(&mut wire, "expected_point_page_touches", touches);
+            string_field(
+                &mut wire,
+                "index_family",
+                artifact.index_family().expect("cost names family"),
+            );
+        }
         duplicate_evidence(&mut wire, artifact.duplicates());
         outcome(&mut wire, artifact.outcome());
         wire.push('}');

@@ -1,5 +1,6 @@
 mod admission;
 mod admission_operation;
+mod blob_catalog;
 mod blob_identity;
 #[cfg(test)]
 mod blob_replay_tests;
@@ -51,6 +52,7 @@ pub use admission::{
     PhysicalKeyDomainAdmissionView,
 };
 pub use admission_operation::key_domain_law;
+pub use blob_catalog::{BlobCatalogPointKey, BlobCatalogPointKeyDenial};
 pub use comparator::{ComparatorBehavior, ComparatorLaw};
 pub use composite::{CompositeKeyField, CompositeKeyOrderingLaw};
 pub use declaration::{PhysicalKeyDomain, PhysicalKeyDomainWitness};

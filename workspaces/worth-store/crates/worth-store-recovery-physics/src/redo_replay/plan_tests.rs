@@ -7,12 +7,14 @@ use crate::{
 use worth_store_physical_format::store_namespace::{
     ProposedStoreIdentity, StableStoreIdentity, StoreNamespaceIdentityRecord, StoreNamespaceVersion,
 };
-use worth_store_physical_format::RecordArtifactFile;
+use worth_store_physical_format::{PhysicalRecordFormatDeclaration, RecordArtifactFile};
 
 #[path = "plan_tests/fixtures.rs"]
 mod fixtures;
 #[path = "plan_tests/group_atomic.rs"]
 mod group_atomic;
+#[path = "plan_tests/historical_consumed.rs"]
+mod historical_consumed;
 #[path = "plan_tests/observation_membership.rs"]
 mod observation_membership;
 #[path = "plan_tests/projection_mutants.rs"]
@@ -29,7 +31,17 @@ fn plan_physical_redo(
     observations: Vec<RecoveryPageObservation>,
     maximum_targets: u64,
 ) -> Result<ImmutablePhysicalRedoPlan, PhysicalRedoPlanningDenial> {
-    super::plan_physical_redo(members, observations, maximum_targets, test_store())
+    super::plan_physical_redo(
+        members,
+        observations,
+        maximum_targets,
+        test_store(),
+        test_format(),
+    )
+}
+
+fn test_format() -> PhysicalRecordFormatDeclaration {
+    PhysicalRecordFormatDeclaration::builder().admit().unwrap()
 }
 
 fn test_store() -> StableStoreIdentity {
@@ -167,7 +179,7 @@ fn legacy_redo_domains_cannot_masquerade_as_the_v3_projection_grammar() {
 }
 
 #[test]
-fn legacy_projection_domains_cannot_masquerade_as_the_v5_grammar() {
+fn legacy_projection_domains_cannot_masquerade_as_the_current_v6_grammar() {
     let target = canonical_target_bytes_with_generations(1, 2);
     for legacy in [
         b"store.physical.recovery-projection.v1".as_slice(),
@@ -178,7 +190,7 @@ fn legacy_projection_domains_cannot_masquerade_as_the_v5_grammar() {
         let mut projection = projection_with_generations(1, 1, 2).encode();
         replace_first(
             &mut projection,
-            b"store.physical.recovery-projection.v5",
+            b"store.physical.recovery-projection.v6",
             legacy,
         );
         let member = PhysicalRedoMemberInput::new(
@@ -213,7 +225,8 @@ fn inline_page_and_segment_artifact_generations_remain_independent() {
         RecoveryOperationFate::Indeterminate,
         &redo,
     );
-    let observed = physical_redo_observation_targets(std::slice::from_ref(&member), 1).unwrap();
+    let observed =
+        physical_redo_observation_targets(std::slice::from_ref(&member), 1, test_format()).unwrap();
     assert_eq!(
         observed[0].artifact(),
         RecordArtifactFile::Segment {

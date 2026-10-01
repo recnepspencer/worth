@@ -82,6 +82,24 @@ pub enum PhysicalRecoverySourceDenial {
     FinalSelection(PhysicalSourceSelectionDenial),
 }
 
+impl PhysicalRecoverySourceDenial {
+    pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {
+        match self {
+            Self::WalIntegrity(denial) => u64::try_from(denial.artifact.capacity()).ok(),
+            Self::MediaObservation { .. }
+            | Self::RootSlot { .. }
+            | Self::RootProtocol { .. }
+            | Self::RootSelection(_)
+            | Self::ManifestObservation(_)
+            | Self::ManifestFacts(_)
+            | Self::CheckpointIntegrity(_)
+            | Self::CheckpointBinding(_)
+            | Self::WalTail(_)
+            | Self::FinalSelection(_) => Some(0),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PhysicalRecoveryWalIntegrityDenial {
     artifact: String,

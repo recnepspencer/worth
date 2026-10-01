@@ -5,10 +5,13 @@ error: cannot construct `DataDispatchedPhysicalMutation` with struct literal syn
    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: private fields `durable` and `effects` that were not provided
-help: you might have meant to use the `new` associated function
+help: you might have meant to use an associated function to build this type
    |
 10 -     let _ = DataDispatchedPhysicalMutation {};
 10 +     let _ = DataDispatchedPhysicalMutation::new(_, _);
+   |
+10 -     let _ = DataDispatchedPhysicalMutation {};
+10 +     let _ = DataDispatchedPhysicalMutation::from_source_copy(_);
    |
 
 error: cannot construct `DataSettledPhysicalMutation` with struct literal syntax due to private fields

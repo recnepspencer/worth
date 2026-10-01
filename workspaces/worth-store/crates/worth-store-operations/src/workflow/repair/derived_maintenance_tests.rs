@@ -3,7 +3,7 @@ use super::integrity_classification::{
     IntegrityRepairRegionClass,
 };
 use sha2::{Digest, Sha256};
-use worth_store_layout_indexes::DerivedIndexRepairRequest;
+use super::DerivedIndexRepairRequest;
 
 use super::intent::physical_target_identity;
 use super::{RepairCandidateSet, RepairResolutionDenial};
@@ -68,7 +68,7 @@ fn equal_content_cannot_substitute_a_different_repair_target() {
 }
 
 #[test]
-fn closed_owner_receipts_are_the_only_repair_execution_projection_source() {
+fn derived_index_rebuild_must_enter_the_store_owner() {
     let directory = tempfile::tempdir().expect("repair directory");
     let target = directory.path().join("layout.index");
     let replacement = directory.path().join("layout.rebuilt");
@@ -125,7 +125,7 @@ fn closed_owner_receipts_are_the_only_repair_execution_projection_source() {
         .expect("repair authorization");
     let control_scenario = BackupScenario::new("repair-projection-control");
     let control = control_scenario.control_store();
-    let executed = authorized
+    let denial = authorized
         .ready(
             &control,
             OperationalTransitionId::new("repair-projection-consumption").expect("transition"),
@@ -133,25 +133,16 @@ fn closed_owner_receipts_are_the_only_repair_execution_projection_source() {
             21,
             AuthorizationRevocationObservation::NotRevoked { observed_at: 21 },
         )
-        .expect("repair readiness")
-        .execute()
-        .expect("repair execution");
+        .err()
+        .expect("Operations cannot publish a derived index");
 
     assert_eq!(
-        std::fs::read(&target).expect("repaired target"),
-        b"rebuilt layout"
+        std::fs::read(&target).expect("original target"),
+        b"damaged layout"
     );
-    let projection = executed
-        .project_execution_boundary(&authority)
-        .expect("downstream boundary projection");
-    assert_eq!(projection.owner_receipt_count(), 2);
-    assert_eq!(
-        projection.evidence().receipt().execution_posture(),
-        worth_foundational::FoundationalBoundaryEvidenceExecutionPosture::Executed
-    );
-    assert_eq!(
-        projection.plan_fingerprint(),
-        executed.authorization().plan_fingerprint()
+    assert!(matches!(
+        denial,
+        super::RepairReadinessDenial::StoreDerivedIndexRebuildRequired
     );
 }
 

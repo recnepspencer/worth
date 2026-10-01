@@ -3,7 +3,7 @@ use worth_store_physical_format::*;
 
 fn intent() -> PhysicalExtentCopyIntent {
     let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
-    let source = DurableExtentRecordPlacement::new(
+    let source = DurableExtentRecordPlacement::legacy_unknown(
         PersistedRecordIdentity::new([7; 16], 9).unwrap(),
         PhysicalGenerationAuthority::for_canonical_physical_format()
             .record_extent_cell(PhysicalExtentId::from_raw(3).unwrap())

@@ -112,6 +112,7 @@ mod tests {
             artifacts: Box::new([artifact]),
             materialization_cost: Default::default(),
             staged_current_selector: selector,
+            release_topology: None,
         };
 
         let Err(ExecutionBasisDenial::RootProtocol {

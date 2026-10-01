@@ -1,17 +1,17 @@
-use std::collections::{BTreeSet, VecDeque};
-
 use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
 use worth_store_physical_format::{
     DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration,
     PhysicalTreeIdentity, RecordArtifactFile, RecordFreeSpaceManifestEntry,
 };
 
-use super::artifact_read::{observed, required_source, retain_successor};
+use super::artifact_read::{observed, read as read_artifact, retain_successor};
 use super::denial::{admit_successor_read, consume_successor, invalid, membership_failure};
 use super::materialization::CandidateMaterialization;
+use super::resident::{memory_failure, trace_slots};
+use super::tree_walk_resident::{free_projection_scratch, VisitedNodes};
 use crate::entry::PhysicalRecoverySuccessorCandidateDenial;
 use crate::orchestration::planning::manifest_entry_budget::ManifestEntryBudget;
-use crate::progression::RecoveryObservedCandidateArtifact;
+use crate::progression::{PlanningResidentAllowance, RecoveryObservedCandidateArtifact};
 
 pub(super) fn read(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
@@ -23,6 +23,7 @@ pub(super) fn read(
     referenced_artifacts: &mut Vec<RecordArtifactFile>,
     materialization: &mut CandidateMaterialization,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
+    allowance: &mut PlanningResidentAllowance,
 ) -> Result<
     (
         DurableFreeSpaceManifestHeader,
@@ -33,10 +34,8 @@ pub(super) fn read(
     let header_artifact = RecordArtifactFile::FreeSpaceManifest {
         generation: root.generation(),
     };
-    let header_source = required_source(
-        discovery.read_free_space_manifest(root.generation(), byte_limit),
-        header_artifact,
-    )?;
+    trace_slots(header_artifact, integrity_trace, allowance)?;
+    let header_source = read_artifact(discovery, header_artifact, byte_limit, allowance)?;
     let header = crate::integrity_ingress::projection::free_space_header(
         &header_source,
         discovery.store_identity(),
@@ -55,31 +54,54 @@ pub(super) fn read(
         .into_bytes()
         .expect("source-bound free-space-header admission retained present bytes");
     materialization.retain_free_space_header(header_bytes.len());
-    artifacts.push(observed(header_artifact, header_bytes));
+    allowance
+        .grow(artifacts, 1)
+        .map_err(|failure| memory_failure(header_artifact, allowance, failure))?;
+    artifacts.push(observed(header_artifact, header_bytes, allowance)?);
+    allowance
+        .grow(referenced_artifacts, 1)
+        .map_err(|failure| memory_failure(header_artifact, allowance, failure))?;
     referenced_artifacts.push(header_artifact);
     materialization.retain_reference();
-    let mut pending = header.root().into_iter().collect::<VecDeque<_>>();
-    let mut visited = BTreeSet::new();
-    let mut entries = Vec::new();
-    while let Some(reference) = pending.pop_front() {
+    let mut pending = Vec::new();
+    if let Some(reference) = header.root() {
         let artifact = RecordArtifactFile::FreeSpaceMembershipBlock {
             generation: reference.generation(),
             block: reference.block(),
         };
+        allowance
+            .grow(&mut pending, 1)
+            .map_err(|failure| memory_failure(artifact, allowance, failure))?;
+        pending.push(reference);
+    }
+    let mut visited = VisitedNodes::new();
+    let mut entries = Vec::new();
+    let mut cursor = 0;
+    while let Some(&reference) = pending.get(cursor) {
+        cursor += 1;
+        let artifact = RecordArtifactFile::FreeSpaceMembershipBlock {
+            generation: reference.generation(),
+            block: reference.block(),
+        };
+        allowance
+            .grow(referenced_artifacts, 1)
+            .map_err(|failure| memory_failure(artifact, allowance, failure))?;
         referenced_artifacts.push(artifact);
         materialization.retain_reference();
         admit_successor_read(budget, artifact)?;
-        if !visited.insert((reference.generation(), reference.block())) {
+        if !visited
+            .insert((reference.generation(), reference.block()), allowance)
+            .map_err(|failure| memory_failure(artifact, allowance, failure))?
+        {
             return Err(invalid(artifact));
         }
-        let source = required_source(
-            discovery.read_free_space_membership_block(
-                reference.generation(),
-                reference.block(),
-                byte_limit,
-            ),
-            artifact,
-        )?;
+        let scratch = free_projection_scratch(format)
+            .map_err(|failure| memory_failure(artifact, allowance, failure))?;
+        allowance
+            .retain(scratch)
+            .map_err(|failure| memory_failure(artifact, allowance, failure))?;
+        trace_slots(artifact, integrity_trace, allowance)?;
+        let source = read_artifact(discovery, artifact, byte_limit, allowance)?;
         let tree =
             PhysicalTreeIdentity::new(header.tree_identity()).ok_or_else(|| invalid(artifact))?;
         let block = crate::integrity_ingress::projection::free_space_membership_block(
@@ -96,19 +118,34 @@ pub(super) fn read(
         if let Some(found) = block.entries() {
             consume_successor(budget, found.len(), artifact)?;
             materialization.retain_free_entries(found.len());
+            allowance
+                .grow(&mut entries, found.len())
+                .map_err(|failure| memory_failure(artifact, allowance, failure))?;
             entries.extend_from_slice(found);
         } else if let Some(children) = block.children() {
             consume_successor(budget, children.len(), artifact)?;
+            allowance
+                .grow(&mut pending, children.len())
+                .map_err(|failure| memory_failure(artifact, allowance, failure))?;
             pending.extend(children.iter().copied());
         }
+        drop(block);
+        allowance.release(scratch);
         let bytes = source
             .into_bytes()
             .expect("source-bound free-space-membership admission retained present bytes");
         let retained_bytes = bytes.len();
-        if retain_successor(root.generation(), artifact, bytes, artifacts) {
+        if retain_successor(root.generation(), artifact, bytes, artifacts, allowance)? {
             materialization.retain_artifact(retained_bytes);
         }
     }
-    entries.sort_unstable_by_key(|entry| (entry.class() as u8, entry.owner()));
+    let pending_bytes = PlanningResidentAllowance::vector_bytes(&pending)
+        .map_err(|failure| memory_failure(header_artifact, allowance, failure))?;
+    drop(pending);
+    allowance.release(pending_bytes);
+    visited
+        .release(allowance)
+        .map_err(|failure| memory_failure(header_artifact, allowance, failure))?;
+    entries.sort_unstable_by_key(|entry| worth_store_physical_format::FreeSpaceKey::from(*entry));
     Ok((header, entries))
 }

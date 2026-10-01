@@ -165,6 +165,26 @@ fn wal_append_scope_and_demand_do_not_claim_a_durability_barrier() {
 }
 
 #[test]
+fn wal_append_scope_rejects_create_for_a_nonempty_segment() {
+    assert!(PhysicalWalAppendScope::new(
+        1,
+        1,
+        128,
+        64,
+        PhysicalWalFrameWriteDisposition::CreateSegment,
+    )
+    .is_none());
+    assert!(PhysicalWalAppendScope::new(
+        1,
+        1,
+        128,
+        64,
+        PhysicalWalFrameWriteDisposition::AppendExistingSegment,
+    )
+    .is_some());
+}
+
+#[test]
 fn effect_contracts_reject_read_write_category_substitution() {
     assert!(require_effect_contract(
         PhysicalWorkOperationFamily::ArtifactRangeRead,

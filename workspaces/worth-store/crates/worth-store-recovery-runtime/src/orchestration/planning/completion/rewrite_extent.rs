@@ -100,11 +100,12 @@ pub(super) fn project(
     }
     let (_, payload) = read_generation(discovery, format, byte_limit, rewrite, source)?;
     let (frames, manifest) = encode_successor(format, rewrite, source, &payload)?;
-    let destination = DurableExtentRecordPlacement::new(
+    let destination = DurableExtentRecordPlacement::new_selected(
         source.record(),
         manifest.extent_cell(),
         source.payload_bytes(),
         arena.destination(),
+        source.route_metadata(),
     )
     .ok_or(())?;
     let artifact = RecordArtifactFile::ExtentArena {

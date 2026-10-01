@@ -225,6 +225,7 @@ pub(super) fn sample_limit(
     failure: worth_store::physical_runtime::StoreRecoveryBindingSampleFailure,
     operation_bindings: u64,
     redo_bytes: u64,
+    recovery_memory_bytes: u64,
 ) -> Option<PhysicalRecoveryLimitFailure> {
     match failure.denial() {
         StoreRecoveryBindingSampleDenial::OperationBindingLimit => {
@@ -239,6 +240,13 @@ pub(super) fn sample_limit(
             observed: failure.redo_bytes_observed(),
             admitted: redo_bytes,
         }),
+        StoreRecoveryBindingSampleDenial::RecoveryMemoryLimit => {
+            Some(PhysicalRecoveryLimitFailure {
+                dimension: PhysicalRecoveryLimitDimension::RecoveryMemoryBytes,
+                observed: recovery_memory_bytes.saturating_add(1),
+                admitted: recovery_memory_bytes,
+            })
+        }
         _ => None,
     }
 }

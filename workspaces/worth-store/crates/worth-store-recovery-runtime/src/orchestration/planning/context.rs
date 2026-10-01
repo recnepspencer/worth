@@ -64,7 +64,7 @@ impl PlanningContext {
         artifact: &str,
         limit: Option<PhysicalRecoveryLimitFailure>,
     ) -> PhysicalRecoveryOutcome {
-        let integrity_trace = self.integrity_trace.clone();
+        let integrity_trace = self.integrity_trace;
         block(
             self.authority,
             self.coordination,
@@ -87,7 +87,7 @@ impl PlanningContext {
         limit: Option<PhysicalRecoveryLimitFailure>,
         denial: PhysicalRecoveryPlanningDenial,
     ) -> PhysicalRecoveryOutcome {
-        let integrity_trace = self.integrity_trace.clone();
+        let integrity_trace = self.integrity_trace;
         block_with_planning_attempt_denial(
             self.authority,
             self.coordination,
@@ -110,7 +110,7 @@ impl PlanningContext {
         artifact: PhysicalRecoveryRootProtocolArtifact,
         denial: PhysicalRecoveryRootProtocolDenial,
     ) -> PhysicalRecoveryOutcome {
-        let integrity_trace = self.integrity_trace.clone();
+        let integrity_trace = self.integrity_trace;
         self.root_protocol_denials
             .push(PhysicalRecoverySourceDenial::RootProtocol { artifact, denial });
         super::denial::block_with_root_protocol_counters(
@@ -136,7 +136,7 @@ impl PlanningContext {
         limit: Option<PhysicalRecoveryLimitFailure>,
         denial: crate::entry::PhysicalRecoverySuccessorCandidateDenial,
     ) -> PhysicalRecoveryOutcome {
-        let integrity_trace = self.integrity_trace.clone();
+        let integrity_trace = self.integrity_trace;
         super::denial::block_with_root_protocol_counters(
             self.authority,
             self.coordination,
@@ -158,7 +158,7 @@ impl PlanningContext {
         planning_counters: RecoveryPlanningCounters,
         limit: Option<PhysicalRecoveryLimitFailure>,
     ) -> PhysicalRecoveryOutcome {
-        let integrity_trace = self.integrity_trace.clone();
+        let integrity_trace = self.integrity_trace;
         redo_block(
             self.authority,
             self.coordination,
@@ -178,7 +178,7 @@ impl PlanningContext {
         limit: Option<PhysicalRecoveryLimitFailure>,
         denial: PhysicalRedoPlanningDenial,
     ) -> PhysicalRecoveryOutcome {
-        let integrity_trace = self.integrity_trace.clone();
+        let integrity_trace = self.integrity_trace;
         redo_denial_block(
             self.authority,
             self.coordination,
@@ -199,7 +199,7 @@ impl PlanningContext {
         denial: RecoveryPlanCostDenial,
         limit: PhysicalRecoveryLimitFailure,
     ) -> PhysicalRecoveryOutcome {
-        let integrity_trace = self.integrity_trace.clone();
+        let integrity_trace = self.integrity_trace;
         cost_denial_block(
             self.authority,
             self.coordination,

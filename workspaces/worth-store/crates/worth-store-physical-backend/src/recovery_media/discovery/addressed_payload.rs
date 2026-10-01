@@ -5,6 +5,18 @@ use super::{
 };
 
 impl BoundedRecoveryFilesystemDiscovery {
+    pub fn read_release_custody_head_block(
+        &mut self,
+        generation: u64,
+        block: u64,
+        byte_limit: u64,
+    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryFailure> {
+        self.read_addressed(
+            RecordArtifactFile::ReleaseCustodyHeadBlock { generation, block },
+            byte_limit,
+        )
+    }
+
     pub fn read_free_space_manifest(
         &mut self,
         generation: u64,

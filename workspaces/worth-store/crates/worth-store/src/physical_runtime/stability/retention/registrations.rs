@@ -11,6 +11,9 @@ use crate::physical_runtime::{
     RuntimeIdentity,
 };
 
+mod reclaim_guard;
+mod retained_snapshot;
+
 pub(in crate::physical_runtime) struct RootProtectionRegistry {
     runtime: RuntimeIdentity,
     lifecycle: Arc<LifecycleState>,
@@ -43,6 +46,10 @@ struct ProtectedRoot {
 }
 
 impl RootProtectionRegistry {
+    pub(in crate::physical_runtime) fn acquisition_capacity(&self) -> usize {
+        self.policy.acquisitions().get() as usize
+    }
+
     pub(in crate::physical_runtime::stability) fn admit(
         policy: PhysicalReadProtectionPolicy,
         runtime: RuntimeIdentity,
@@ -355,6 +362,14 @@ mod counted {
         pub(super) fn any_key(&self, matches: impl Fn(&K) -> bool) -> (u64, bool) {
             let visited = self.entries.len() as u64;
             (visited, self.entries.keys().any(matches))
+        }
+
+        pub(super) fn any_entry(&self, mut matches: impl FnMut(&K, &V) -> bool) -> (u64, bool) {
+            let visited = self.entries.len() as u64;
+            (
+                visited,
+                self.entries.iter().any(|(key, value)| matches(key, value)),
+            )
         }
 
         pub(super) fn len(&self) -> usize {

@@ -1,4 +1,8 @@
 use worth_store_physical_format::integrity_declarations::families::{
+    blob::{
+        BLOB_CHUNK_FRAME_INTEGRITY_DECLARATION, BLOB_GENERATION_PUBLICATION_INTEGRITY_DECLARATION,
+        BLOB_RESUME_SESSION_INTEGRITY_DECLARATION, BLOB_TREE_NODE_INTEGRITY_DECLARATION,
+    },
     checkpoint::{
         CHECKPOINT_BINDING_COMPACTION_INTEGRITY_DECLARATION,
         CHECKPOINT_BINDING_INTEGRITY_DECLARATION, CHECKPOINT_DIRTY_BASIS_INTEGRITY_DECLARATION,
@@ -12,9 +16,10 @@ use worth_store_physical_format::integrity_declarations::families::{
         PREVIOUS_SELECTOR_INTEGRITY_DECLARATION, ROOT_MANIFEST_INTEGRITY_DECLARATION,
         ROOT_ROUTING_BLOCK_INTEGRITY_DECLARATION,
     },
-    EXTENT_CHUNK_INTEGRITY_DECLARATION, EXTENT_MANIFEST_INTEGRITY_DECLARATION,
-    PAGE_FRAME_INTEGRITY_DECLARATION, PHYSICAL_WORK_OBLIGATION_INTEGRITY_DECLARATION,
-    SEGMENT_MEMBERSHIP_INTEGRITY_DECLARATION, WAL_FRAME_INTEGRITY_DECLARATION,
+    BTREE_NODE_INTEGRITY_DECLARATION, EXTENT_CHUNK_INTEGRITY_DECLARATION,
+    EXTENT_MANIFEST_INTEGRITY_DECLARATION, PAGE_FRAME_INTEGRITY_DECLARATION,
+    PHYSICAL_WORK_OBLIGATION_INTEGRITY_DECLARATION, SEGMENT_MEMBERSHIP_INTEGRITY_DECLARATION,
+    WAL_FRAME_INTEGRITY_DECLARATION,
 };
 use worth_store_physical_format::integrity_declarations::PhysicalIntegrityFormatDeclaration;
 
@@ -23,7 +28,32 @@ use super::{artifact_version_axis, PhysicalIntegrityVersionAxis};
 pub(super) fn assert_current_family_version_matrix() {
     use PhysicalIntegrityVersionAxis as Axis;
 
-    let declarations: [(PhysicalIntegrityFormatDeclaration, Axis, u32, Option<u32>); 18] = [
+    let declarations: [(PhysicalIntegrityFormatDeclaration, Axis, u32, Option<u32>); 23] = [
+        (BTREE_NODE_INTEGRITY_DECLARATION, Axis::BTreeNode, 1, None),
+        (
+            BLOB_RESUME_SESSION_INTEGRITY_DECLARATION,
+            Axis::BlobRecord,
+            1,
+            Some(1),
+        ),
+        (
+            BLOB_CHUNK_FRAME_INTEGRITY_DECLARATION,
+            Axis::BlobRecord,
+            1,
+            Some(1),
+        ),
+        (
+            BLOB_TREE_NODE_INTEGRITY_DECLARATION,
+            Axis::BlobRecord,
+            1,
+            Some(1),
+        ),
+        (
+            BLOB_GENERATION_PUBLICATION_INTEGRITY_DECLARATION,
+            Axis::BlobRecord,
+            1,
+            Some(1),
+        ),
         (
             PHYSICAL_WORK_OBLIGATION_INTEGRITY_DECLARATION,
             Axis::PhysicalWorkObligation,

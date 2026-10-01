@@ -59,9 +59,9 @@ pub use residency_observation::{
     PhysicalWritebackCounterSnapshot,
 };
 pub use scoped_allocation::{
-    BlobPhysicalAllocation, MaintenancePhysicalAllocation, PhysicalScopedAllocationAdmission,
-    PhysicalScopedAllocationFailure, RecoveryPhysicalAllocation, ScrubPhysicalAllocation,
-    VerificationPhysicalAllocation,
+    BlobPhysicalAllocation, LayoutPhysicalAllocation, MaintenancePhysicalAllocation,
+    PhysicalScopedAllocationAdmission, PhysicalScopedAllocationFailure, RecoveryPhysicalAllocation,
+    ScrubPhysicalAllocation, VerificationPhysicalAllocation,
 };
 pub use speculation::{
     PhysicalPrefetchIntent, PhysicalPrefetchOutcome, PhysicalReadAheadBatch,

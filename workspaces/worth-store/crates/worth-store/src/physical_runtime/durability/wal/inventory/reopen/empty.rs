@@ -1,4 +1,5 @@
 use super::*;
+use worth_store_physical_backend::ArtifactTreeDirectory;
 use worth_store_wal::{WalSegmentGeneration, WalSegmentId};
 
 pub(super) fn empty_inventory(
@@ -22,7 +23,7 @@ pub(super) fn empty_inventory(
         ),
         segment_count: 0,
         frame_count: 0,
-        publication_frames: 0,
+        publication_groups: Vec::new(),
         release_metadata: Vec::new(),
         byte_count: 0,
         peak_buffer_bytes: 0,

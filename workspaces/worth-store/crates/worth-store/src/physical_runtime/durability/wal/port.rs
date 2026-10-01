@@ -150,16 +150,6 @@ impl PhysicalWalAppendPort {
         self.owner.observation()
     }
 
-    pub(in crate::physical_runtime) fn reopened_publications(&self) -> u64 {
-        self.owner.reopened_publications()
-    }
-
-    pub(in crate::physical_runtime) fn reopened_release_metadata(
-        &self,
-    ) -> Vec<(u64, u64, u64, u64)> {
-        self.owner.reopened_release_metadata()
-    }
-
     pub(in crate::physical_runtime) fn plan_maintenance_frame(
         &self,
         payload: &[u8],

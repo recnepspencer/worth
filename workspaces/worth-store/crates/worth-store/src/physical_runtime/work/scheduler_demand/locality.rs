@@ -139,6 +139,9 @@ fn update_artifact(digest: &mut Sha256, artifact: RecordArtifactFile) {
         RecordArtifactFile::CatalogCandidate { publication } => (2, publication, 0),
         RecordArtifactFile::RootManifest { generation } => (3, generation, 0),
         RecordArtifactFile::RootRoutingBlock { generation, block } => (4, generation, block),
+        RecordArtifactFile::ReleaseCustodyHeadBlock { generation, block } => {
+            (17, generation, block)
+        }
         RecordArtifactFile::Segment {
             segment,
             generation,

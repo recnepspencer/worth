@@ -111,6 +111,7 @@ fn admit_terminal_bindings(
         wal_frames,
         maximum_operations,
         admitted_bytes,
+        admitted_bytes,
     );
     let terminal_binding_evaluations = context
         .coordination

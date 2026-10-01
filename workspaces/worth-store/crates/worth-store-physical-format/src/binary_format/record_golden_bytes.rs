@@ -59,7 +59,7 @@ fn inline_placement(
     payload_bytes: u64,
 ) -> CurrentPhysicalRecordPlacement {
     CurrentPhysicalRecordPlacement::Inline(
-        DurableInlineRecordPlacement::new(
+        DurableInlineRecordPlacement::legacy_unknown(
             record,
             PhysicalGenerationAuthority::for_canonical_physical_format()
                 .segment_cell(PhysicalSegmentId::from_raw(1).unwrap())
@@ -322,7 +322,7 @@ fn extent_coordinate_rejects_an_invalid_generation() {
 #[test]
 fn record_placements_reject_lengths_outside_the_c5_record_width() {
     let record = PersistedRecordIdentity::new([7; 16], 1).unwrap();
-    assert!(DurableInlineRecordPlacement::new(
+    assert!(DurableInlineRecordPlacement::legacy_unknown(
         record,
         segment_cell(1, 1),
         page_cell(1, 1),
@@ -331,7 +331,7 @@ fn record_placements_reject_lengths_outside_the_c5_record_width() {
         u64::from(u32::MAX) + 1,
     )
     .is_none());
-    assert!(DurableExtentRecordPlacement::new(
+    assert!(DurableExtentRecordPlacement::legacy_unknown(
         record,
         extent_cell(1, 1),
         u64::from(u32::MAX) + 1,

@@ -6,6 +6,7 @@ pub enum PhysicalIntegrityArtifactFamily {
     NamespaceIdentity,
     PhysicalWorkObligation,
     PageFrame,
+    BTreeNode,
     ExtentChunk,
     ExtentArenaFrame,
     WalFrame,
@@ -23,6 +24,12 @@ pub enum PhysicalIntegrityArtifactFamily {
     ExtentManifest,
     FreeSpaceHeader,
     FreeSpaceMembershipBlock,
+    BlobResumeSession,
+    BlobChunkFrame,
+    BlobTreeNode,
+    BlobGenerationPublication,
+    BlobDropSetManifest,
+    BlobReclaimDescriptor,
 }
 
 /// Complete descriptive checksum declaration for one current artifact family.

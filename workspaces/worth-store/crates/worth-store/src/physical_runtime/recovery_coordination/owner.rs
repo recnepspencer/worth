@@ -4,6 +4,10 @@ use std::num::NonZeroU64;
 mod certification;
 #[cfg(feature = "certification-test-authority")]
 mod certification_faults;
+mod resident_admission;
+mod signal_binding;
+pub use resident_admission::PhysicalRecoveryRejoinResidentAdmissionDenial;
+use resident_admission::RecoveryRejoinResidentState;
 
 #[cfg(feature = "certification-test-authority")]
 use certification_faults::RecoveryCoordinationCertificationFaults;
@@ -14,9 +18,7 @@ use crate::physical_runtime::work::{
 use crate::physical_runtime::{
     instance::{PhysicalSchedulerAdmissionOwner, PhysicalWorkSignalOwner},
     AdmittedRecoveryFilesystemMedia, LifecycleGeneration,
-    PhysicalRecoveryRegisteredSessionAuthority, PhysicalSignalAspectRole,
-    PhysicalSignalShutdownOutcome, PhysicalWorkSignalFamily, PhysicalWorkSignalFamilySet,
-    RuntimeIdentity,
+    PhysicalRecoveryRegisteredSessionAuthority, PhysicalSignalShutdownOutcome, RuntimeIdentity,
 };
 
 use super::{semantics, PhysicalRecoveryCoordinationCapacity};
@@ -41,9 +43,11 @@ pub struct PhysicalRecoveryCoordination {
     pub(super) scheduler: PhysicalSchedulerAdmissionOwner,
     pub(super) scheduler_security: worth_store_io_scheduler::IoSchedulerSecurityScopeAdmission,
     pub(super) work_security: worth_store_security::StoreAuthorityBoundSecurityScopeReceipt,
-    pub(super) bases: [crate::physical_runtime::PhysicalWorkSemanticBasis; 4],
+    pub(super) bases: [crate::physical_runtime::PhysicalWorkSemanticBasis; 5],
     pub(super) construction: crate::physical_runtime::PhysicalRecoveryConstructionAuthority,
     pub(super) cleanup_capacity: PhysicalRecoveryCoordinationCapacity,
+    recovery_allocation: Option<crate::physical_runtime::PhysicalRecoveryAllocationAdmission>,
+    rejoin_resident: RecoveryRejoinResidentState,
     pub(super) root_protocol_counters: crate::physical_runtime::RootProtocolRouteCounterCells,
     checkpoint_binding_basis: Option<crate::physical_runtime::StoreRecoveryCheckpointBindingBasis>,
     runtime: RuntimeIdentity,
@@ -62,6 +66,14 @@ pub struct PhysicalRecoveryQuiescenceObservation {
 }
 
 impl PhysicalRecoveryCoordination {
+    /// Retained recovery-data backing; platform coordination has its own admission.
+    pub fn owned_recovery_heap_bytes(&self) -> Option<u64> {
+        match &self.checkpoint_binding_basis {
+            Some(basis) => basis.owned_heap_bytes(),
+            None => Some(0),
+        }
+    }
+
     pub(super) fn admit(
         media: &AdmittedRecoveryFilesystemMedia,
         session: PhysicalRecoveryRegisteredSessionAuthority,
@@ -73,6 +85,12 @@ impl PhysicalRecoveryCoordination {
             return Err(PhysicalRecoveryCoordinationAdmissionError::FreshnessMediaMismatch);
         }
         let cleanup_capacity = capacity;
+        let recovery_allocation = capacity.recovery_allocation_bytes().map(|bytes| {
+            crate::physical_runtime::PhysicalRecoveryAllocationAdmission::new(
+                media.store_identity(),
+                bytes,
+            )
+        });
         let capacity = capacity.work_capacity();
         let semantics = semantics::install(
             media.store_identity(),
@@ -89,7 +107,7 @@ impl PhysicalRecoveryCoordination {
             .ok_or(PhysicalRecoveryCoordinationAdmissionError::RuntimeIdentityUnavailable)?;
         let signal = PhysicalWorkSignalOwner::build_foundation(lifecycle, semantics.profile)
             .map_err(|_| PhysicalRecoveryCoordinationAdmissionError::SignalUnavailable)?;
-        if !bindings_match(
+        if !signal_binding::bindings_match(
             &signal,
             media.store_identity(),
             session.session_identity_bytes(),
@@ -130,6 +148,8 @@ impl PhysicalRecoveryCoordination {
             bases: semantics.bases,
             construction,
             cleanup_capacity,
+            recovery_allocation,
+            rejoin_resident: RecoveryRejoinResidentState::Unadmitted,
             root_protocol_counters: crate::physical_runtime::RootProtocolRouteCounterCells::default(
             ),
             checkpoint_binding_basis: None,
@@ -159,6 +179,13 @@ impl PhysicalRecoveryCoordination {
         &self,
     ) -> PhysicalRecoveryCoordinationCapacity {
         self.cleanup_capacity
+    }
+
+    /// The immutable recovery resource admission bound to this coordination owner.
+    pub const fn recovery_allocation_admission(
+        &self,
+    ) -> Option<crate::physical_runtime::PhysicalRecoveryAllocationAdmission> {
+        self.recovery_allocation
     }
 
     pub fn root_protocol_counters(&self) -> crate::physical_runtime::RootProtocolRouteCounters {
@@ -297,69 +324,6 @@ impl PhysicalRecoveryQuiescenceObservation {
     pub const fn signal_available(self) -> bool {
         self.signal_available
     }
-}
-
-fn bindings_match(
-    signal: &PhysicalWorkSignalOwner,
-    store: worth_store_physical_format::store_namespace::StableStoreIdentity,
-    session: [u8; 16],
-) -> bool {
-    let observations = signal.binding_observations();
-    let expected = [
-        (
-            "store.physical.recovery.discovery-basis",
-            PhysicalSignalAspectRole::Dependency,
-            PhysicalWorkSignalFamilySet::only(PhysicalWorkSignalFamily::ReadFault),
-            expected_partition(store, session, "discovery"),
-        ),
-        (
-            "store.physical.recovery.redo-basis",
-            PhysicalSignalAspectRole::DependencyAndOutput,
-            PhysicalWorkSignalFamilySet::only(PhysicalWorkSignalFamily::ExactWriteback)
-                .with(PhysicalWorkSignalFamily::Publication),
-            expected_partition(store, session, "redo"),
-        ),
-        (
-            "store.physical.recovery.publication-basis",
-            PhysicalSignalAspectRole::DependencyAndOutput,
-            PhysicalWorkSignalFamilySet::only(PhysicalWorkSignalFamily::RootPublication),
-            expected_partition(store, session, "publication"),
-        ),
-        (
-            "store.physical.recovery.cleanup-basis",
-            PhysicalSignalAspectRole::DependencyAndOutput,
-            PhysicalWorkSignalFamilySet::only(PhysicalWorkSignalFamily::WalReclamation),
-            expected_partition(store, session, "cleanup"),
-        ),
-    ];
-    observations.len() == expected.len()
-        && expected.iter().all(|(key, role, families, partition)| {
-            observations.iter().any(|observation| {
-                observation.identity().aspect_key().as_str() == *key
-                    && observation.role() == *role
-                    && observation.families() == *families
-                    && observation.partition().is_some_and(|actual| {
-                        actual.partition.0 == *partition && actual.detail.is_none()
-                    })
-            })
-        })
-}
-
-fn expected_partition(
-    store: worth_store_physical_format::store_namespace::StableStoreIdentity,
-    session: [u8; 16],
-    stage: &str,
-) -> String {
-    let store = store
-        .bytes()
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect::<String>();
-    let session = session
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect::<String>();
-    format!("store.physical.recovery/{store}/{session}/{stage}")
 }
 
 impl PhysicalRecoveryRegisteredSessionAuthority {

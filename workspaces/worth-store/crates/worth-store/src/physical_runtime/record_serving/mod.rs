@@ -2,6 +2,9 @@ mod access;
 mod access_policy;
 mod admission;
 mod arena;
+pub(in crate::physical_runtime) use arena::{
+    ReleasedControlArenaPlacement, ReleasedControlArenaReservations,
+};
 mod canonical_read_execution;
 mod evidence;
 mod identity;
@@ -12,7 +15,9 @@ mod publication;
 mod retirement_retry;
 pub(in crate::physical_runtime) use retirement_retry::RetirementCandidateRetryScope;
 mod read_work_port;
+mod rebuild;
 mod record_queue_policy;
+pub(in crate::physical_runtime) use rebuild::RebuildReadShape;
 pub(in crate::physical_runtime) mod residency;
 pub(in crate::physical_runtime) mod work_semantics;
 
@@ -60,7 +65,11 @@ pub use admission::residency_policy::{
     PhysicalRecordResidencyPolicyDenial, PhysicalRecordResidencyPolicyOutcome,
     PhysicalResidencyDimension, PhysicalSpeculativeWorkKind,
 };
-pub use arena::{ArenaEvacuationThreshold, ExtentArenaCapacity, ExtentArenaPolicyDenial};
+pub use admission::RecoveredPhysicalCheckpointCustody;
+pub(in crate::physical_runtime) use admission::VerifiedRecoveredCheckpointCustody;
+pub use arena::{
+    ArenaAllocationDenial, ArenaEvacuationThreshold, ExtentArenaCapacity, ExtentArenaPolicyDenial,
+};
 use canonical_read_execution::PreparedCanonicalMetadataRead;
 pub(in crate::physical_runtime) use canonical_read_execution::PreparedCanonicalRecordRead;
 #[cfg(feature = "certification-test-authority")]
@@ -114,9 +123,11 @@ pub use publication::streaming::{
 pub use publication::CertificationPhysicalRecordSubmission;
 pub use publication::RecordPublicationStage;
 pub(in crate::physical_runtime) use publication::{
-    AdoptedExtentCopy, CompletedExtentCopy, ExtentCopySynchronization, ExtentCopyWriteEvidence,
-    PlannedPhysicalMutationParts, PreparedPhysicalMutationContext, PreparedPhysicalRootCandidate,
+    AdmittedPublicationRetention, AdoptedExtentCopy, CompletedExtentCopy,
+    ExtentCopySynchronization, ExtentCopyWriteEvidence, PlannedPhysicalMutationParts,
+    PreparedDerivedDirectoryBasis, PreparedPhysicalMutationContext, PreparedPhysicalRootCandidate,
     PreparedRecordCompletionProjection, RecordPublicationDirector, RecordPublicationFoundation,
+    SelectedBlobManifestPin, SelectedBlobManifestPinDenial, SelectedBlobManifestPins,
     WrittenRootPublicationCandidate,
 };
 pub use publication::{
@@ -140,8 +151,10 @@ pub(in crate::physical_runtime) use read_work_port::{
     CanonicalRecordReadFailure, CanonicalRecordReadPort,
 };
 pub(in crate::physical_runtime) use record_queue_policy::{
-    admit_checkpoint_background_policy, admit_compaction_background_policy,
-    admit_record_queue_policy, admit_wal_reclamation_background_policy,
+    admit_blob_ingest_background_policy, admit_blob_movement_background_policy,
+    admit_blob_reclaim_background_policy, admit_checkpoint_background_policy,
+    admit_compaction_background_policy, admit_rebuild_background_policy, admit_record_queue_policy,
+    admit_wal_reclamation_background_policy,
 };
 pub use residency::candidate_frame_residency::CandidateFrameContractViolation;
 pub(in crate::physical_runtime) use residency::candidate_frame_residency::{
@@ -162,19 +175,19 @@ pub use residency::{
     RetryablePhysicalWriteback,
 };
 pub use residency::{
-    BlobPhysicalAllocation, MaintenancePhysicalAllocation, PhysicalFrameFaultCause,
-    PhysicalFrameReadFailure, PhysicalFrameWorkFailure, PhysicalPrefetchIntent,
-    PhysicalPrefetchOutcome, PhysicalReadAheadBatch, PhysicalReadAheadFrameOutcome,
-    PhysicalReadAheadIntent, PhysicalReadAheadIntentDenial, PhysicalReadAheadOutcome,
-    PhysicalRecordPressureBasis, PhysicalRecordPressureEvidence, PhysicalRecordResidencyFailure,
-    PhysicalRecordResidencyFailureKind, PhysicalRecordResidencyFailureReason,
-    PhysicalRecordWritebackFailureCause, PhysicalRecordWritebackFailureEvidence,
-    PhysicalResidencyAllocationEventSnapshot, PhysicalResidencyAllocationSnapshot,
-    PhysicalResidencyCounterSnapshot, PhysicalResidencyObservation, PhysicalResidencyRetryPosture,
-    PhysicalScopedAllocationAdmission, PhysicalScopedAllocationFailure,
-    PhysicalSpeculativeReadDrop, PhysicalSpeculativeReadFailure, PhysicalWritebackCounterSnapshot,
-    PhysicalWritebackFailureCause, RecoveryPhysicalAllocation, ScrubPhysicalAllocation,
-    VerificationPhysicalAllocation,
+    BlobPhysicalAllocation, LayoutPhysicalAllocation, MaintenancePhysicalAllocation,
+    PhysicalFrameFaultCause, PhysicalFrameReadFailure, PhysicalFrameWorkFailure,
+    PhysicalPrefetchIntent, PhysicalPrefetchOutcome, PhysicalReadAheadBatch,
+    PhysicalReadAheadFrameOutcome, PhysicalReadAheadIntent, PhysicalReadAheadIntentDenial,
+    PhysicalReadAheadOutcome, PhysicalRecordPressureBasis, PhysicalRecordPressureEvidence,
+    PhysicalRecordResidencyFailure, PhysicalRecordResidencyFailureKind,
+    PhysicalRecordResidencyFailureReason, PhysicalRecordWritebackFailureCause,
+    PhysicalRecordWritebackFailureEvidence, PhysicalResidencyAllocationEventSnapshot,
+    PhysicalResidencyAllocationSnapshot, PhysicalResidencyCounterSnapshot,
+    PhysicalResidencyObservation, PhysicalResidencyRetryPosture, PhysicalScopedAllocationAdmission,
+    PhysicalScopedAllocationFailure, PhysicalSpeculativeReadDrop, PhysicalSpeculativeReadFailure,
+    PhysicalWritebackCounterSnapshot, PhysicalWritebackFailureCause, RecoveryPhysicalAllocation,
+    ScrubPhysicalAllocation, VerificationPhysicalAllocation,
 };
 #[cfg(feature = "certification-test-authority")]
 pub use residency::{

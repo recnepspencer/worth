@@ -5,14 +5,17 @@ mod comparison;
 mod integrity_observation;
 
 pub use comparison::{
-    compare_integrity_observations, PhysicalIntegrityComparison,
+    compare_integrity_observations, compare_selected_integrity_observations,
+    encode_offline_selected_integrity_observation, PhysicalIntegrityComparison,
     PhysicalIntegrityComparisonCounters, PhysicalIntegrityComparisonDenial,
     PhysicalIntegrityComparisonLimits, PhysicalIntegrityComparisonLimitsDenial,
 };
 
 pub use integrity_observation::{
-    emit_offline_integrity_report, encode_offline_integrity_report, observe_store,
+    emit_offline_integrity_report, emit_offline_selected_integrity_report,
+    encode_offline_integrity_report, observe_store,
     OfflineArtifactDuplicateEvidence, OfflineArtifactFamily, OfflineArtifactObservation,
+    OfflineBlobReclaimSourceKind,
     OfflineIndeterminatePhysicalReason, OfflineIntegrityObservationCounters,
     OfflineIntegrityObservationDenial, OfflineIntegrityObservationLimits,
     OfflineIntegrityObservationLimitsDenial, OfflineIntegrityObservationRequest,

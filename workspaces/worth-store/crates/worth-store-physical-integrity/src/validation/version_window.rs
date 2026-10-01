@@ -124,6 +124,14 @@ const fn artifact_version_axis(
     use PhysicalIntegrityArtifactFamily as Family;
     match family {
         Family::PhysicalWorkObligation => PhysicalIntegrityVersionAxis::PhysicalWorkObligation,
+        Family::BlobResumeSession
+        | Family::BlobChunkFrame
+        | Family::BlobTreeNode
+        | Family::BlobGenerationPublication => PhysicalIntegrityVersionAxis::BlobRecord,
+        Family::BlobDropSetManifest | Family::BlobReclaimDescriptor => {
+            PhysicalIntegrityVersionAxis::BlobRecord
+        }
+        Family::BTreeNode => PhysicalIntegrityVersionAxis::BTreeNode,
         Family::WalFrame => PhysicalIntegrityVersionAxis::WalFrame,
         Family::CheckpointStreamHeader
         | Family::CheckpointDirtyBasis

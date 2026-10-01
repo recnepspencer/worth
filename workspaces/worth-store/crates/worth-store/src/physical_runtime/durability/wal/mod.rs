@@ -20,7 +20,7 @@ pub(in crate::physical_runtime::durability) use checkpoint_cutover::PhysicalWalC
 pub(in crate::physical_runtime) use group_reservation::ReservedPhysicalWalGroupMembers;
 pub use inventory::PhysicalWalOpenFailure;
 pub(in crate::physical_runtime) use inventory::{
-    reopen_wal_inventory, PhysicalWalBindingReopenCutoff,
+    reopen_wal_inventory, PhysicalWalBindingReopenCutoff, ReopenedWalPublicationGroup,
 };
 pub use member_basis::{PhysicalWalMemberBasis, PhysicalWalMemberIdentity};
 pub use observation::PhysicalWalObservation;

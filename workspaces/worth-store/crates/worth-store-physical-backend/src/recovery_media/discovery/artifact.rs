@@ -31,7 +31,8 @@ pub(crate) fn record_artifact(
                 .child("records")
                 .map_err(|_| RecoveryDiscoveryFailure::invalid(context.clone()))?,
             RecordArtifactFile::RootManifest { .. }
-            | RecordArtifactFile::RootRoutingBlock { .. } => records
+            | RecordArtifactFile::RootRoutingBlock { .. }
+            | RecordArtifactFile::ReleaseCustodyHeadBlock { .. } => records
                 .child("roots")
                 .map_err(|_| RecoveryDiscoveryFailure::invalid(context.clone()))?,
             RecordArtifactFile::Segment { .. } => records

@@ -1,4 +1,4 @@
-use super::{damaged, FreeSpaceUpdate};
+use super::{damaged, manifest_lookup_failure, FreeSpaceUpdate};
 use crate::physical_runtime::record_serving::{
     access::manifest_routing::ManifestDiscoveryCounterSnapshot, arena::ExtentArenaCapacity,
     planning::free_space_routing::FreeSpaceReader, RecordAppendError,
@@ -53,7 +53,7 @@ pub(super) fn subtract_allocations(
             None => {
                 let entry = reader
                     .floor(allocation, key, counters)
-                    .map_err(|_| damaged())?
+                    .map_err(manifest_lookup_failure)?
                     .ok_or_else(damaged)?;
                 if updates.contains_key(&FreeSpaceKey::from(entry)) {
                     return Err(damaged());

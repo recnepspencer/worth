@@ -31,6 +31,17 @@ pub(crate) fn read_free_space_header(
         unreachable!()
     };
     let payload = frame.payload;
+    let tier_epoch_start = match payload.len() {
+        168 => None,
+        176 => Some(read_u64(payload, 168)),
+        _ => unreachable!("durable frame length admitted above"),
+    };
+    scope(
+        tier_epoch_start.is_none_or(|epoch| epoch != 0 && epoch <= read_u64(payload, 144)),
+        216,
+        8,
+        Field::ManifestPointer,
+    )?;
     let arena_capacity = read_u64(payload, 152);
     let arena_alignment = read_u64(payload, 160);
     scope(

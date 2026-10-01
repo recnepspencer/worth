@@ -205,6 +205,10 @@ fn dropping_a_partially_consumed_extent_releases_its_session_frame_and_allocatio
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([172; 32]),
         RecordAppendBatch::try_from_iter([expected.as_slice()]).unwrap(),
     );
+    let operation_bytes_before_read = serving
+        .residency_observation()
+        .counters()
+        .active_operation_bytes();
     let mut session = serving
         .records()
         .expect("read protection admission")
@@ -225,7 +229,7 @@ fn dropping_a_partially_consumed_extent_releases_its_session_frame_and_allocatio
     let residency = serving.residency_observation().counters();
     assert_eq!(residency.pin_leases(), 1);
     assert_eq!(residency.pinned_frames(), 1);
-    assert!(residency.active_operation_bytes() > 0);
+    assert!(residency.active_operation_bytes() > operation_bytes_before_read);
 
     drop(session);
 
@@ -233,6 +237,9 @@ fn dropping_a_partially_consumed_extent_releases_its_session_frame_and_allocatio
     let residency = serving.residency_observation().counters();
     assert_eq!(residency.pin_leases(), 0);
     assert_eq!(residency.pinned_frames(), 0);
-    assert_eq!(residency.active_operation_bytes(), 0);
+    assert_eq!(
+        residency.active_operation_bytes(),
+        operation_bytes_before_read
+    );
     fixture::assert_clean_close(serving);
 }

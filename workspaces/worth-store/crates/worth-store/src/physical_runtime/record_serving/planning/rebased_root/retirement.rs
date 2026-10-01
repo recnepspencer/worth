@@ -8,6 +8,7 @@ use crate::physical_runtime::record_serving::{
     planning::free_space_routing::{
         plan_free_space_successor, FreeSpaceReader, FreeSpaceSuccessorRequest, FreeSpaceUpdate,
     },
+    planning::inline_plan_failure::manifest_lookup_failure,
     publication::{append_observation::PublicationObservation, PublicationPlan},
     residency::PhysicalResidencyWorkPort,
     AdmittedPhysicalRecordFormat, AdmittedRecordAccessPolicy, RecordAppendError,
@@ -75,7 +76,7 @@ fn plan_retirement_change(
             let key = FreeSpaceKey::arena(arena, 0);
             let range = reader
                 .locate(context.allocation, key, &mut counters)
-                .map_err(|_| damaged())?
+                .map_err(manifest_lookup_failure)?
                 .and_then(|entry| entry.arena_free_range())
                 .ok_or_else(damaged)?;
             if range.length() != context.current_free.arena_capacity()
@@ -103,8 +104,7 @@ fn plan_retirement_change(
             next_arena: free.next_arena(),
             updates,
         },
-    )
-    .map_err(|_| damaged())?;
+    )?;
     counters.merge(projected.discovery);
     let bytes = projected.header.encode(context.format.declaration());
     let root = DurablePhysicalRootManifest::builder(
@@ -116,9 +116,15 @@ fn plan_retirement_change(
     .record_count(current.record_count())
     .next_block(current.next_block())
     .next_segment_block(current.next_segment_block())
+    .next_release_custody_head_block(current.next_release_custody_head_block())
     .routing_root(current.routing_root())
+    .release_custody_head_root(current.release_custody_head_root())
     .segment_root(current.segment_root())
     .free_space_root(projected.header.root())
+    .tier_epoch_anchor(current.tier_epoch_anchor())
+    .latest_blob_publication(current.latest_blob_publication())
+    .latest_blob_quarantine(current.latest_blob_quarantine())
+    .derived_family_directory(current.derived_family_directory())
     .last_inline_record(current.last_inline_record())
     .last_inline_segment(current.last_inline_segment())
     .admit()
@@ -131,6 +137,7 @@ fn plan_retirement_change(
         return Err(damaged());
     };
     let plan = PublicationPlan {
+        routing_metadata_bytes: None,
         arena_reservations: Vec::new(),
         generation,
         manifests: Vec::new(),
@@ -188,7 +195,7 @@ fn release_updates(
             FreeSpaceKey::arena(range.arena(), range.end() - 1),
             counters,
         )
-        .map_err(|_| damaged())?
+        .map_err(manifest_lookup_failure)?
         .and_then(|entry| entry.arena_free_range());
     if let Some(left) = left.filter(|left| left.arena() == range.arena()) {
         if left.end() > range.offset() {
@@ -208,7 +215,7 @@ fn release_updates(
             FreeSpaceKey::arena(range.arena(), range.end()),
             counters,
         )
-        .map_err(|_| damaged())?
+        .map_err(manifest_lookup_failure)?
         .and_then(|entry| entry.arena_free_range());
     if let Some(right) = right {
         end = right.end();

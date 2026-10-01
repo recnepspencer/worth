@@ -6,6 +6,8 @@ use worth_store_physical_format::{
 
 use super::PhysicalRootSourceCandidate;
 
+mod retained_storage;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PhysicalManifestBlockProjection {
     reference: ManifestBlockReference,
@@ -359,7 +361,7 @@ mod tests {
             .record_extent_cell(PhysicalExtentId::from_raw(ordinal).unwrap())
             .with_extent_generation(PhysicalGeneration::from_raw(1).unwrap());
         CurrentPhysicalRecordPlacement::Extent(
-            DurableExtentRecordPlacement::new(
+            DurableExtentRecordPlacement::legacy_unknown(
                 record,
                 extent,
                 23,

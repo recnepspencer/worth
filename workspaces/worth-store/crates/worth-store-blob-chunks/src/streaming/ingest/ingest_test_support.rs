@@ -5,7 +5,7 @@ use worth_store_io_scheduler::{
 use worth_store_physical_backend::BlobBackendChunkWriteSession;
 use worth_store_security::StoreTenantScope;
 
-use crate::test_support::{blob_scope, physical_payload_for_bytes, with_blob_allocation};
+use crate::test_support::{blob_scope, physical_payload_for_bytes};
 use crate::{
     BlobChunkOrdinal, BlobChunkSize, BlobChunkingRuleAdmission, BlobStreamingChunkWriter,
     BlobStreamingIngest, BlobStreamingIngestDenial, BlobStreamingIngestRequest,
@@ -17,69 +17,42 @@ pub(super) fn run_ingest(
     frames: Vec<BlobStreamingSourceFrame>,
     window_bytes: u64,
 ) -> Result<BlobStreamingIngest, BlobStreamingIngestDenial> {
-    run_ingest_with_window_and_allocation(
-        frames,
-        window_bytes,
-        window_bytes,
-        CounterEvidenceStrength::Exact,
-    )
+    run_ingest_with_window(frames, window_bytes, CounterEvidenceStrength::Exact)
 }
 
 pub(super) fn run_ingest_with_counter_strength(
     strength: CounterEvidenceStrength,
 ) -> Result<BlobStreamingIngest, BlobStreamingIngestDenial> {
-    run_ingest_with_window_and_allocation(source_frames(3, 4), 4, 4, strength)
+    run_ingest_with_window(source_frames(3, 4), 4, strength)
 }
 
-pub(super) fn run_ingest_with_allocation(
-    allocation_bytes: u64,
-) -> Result<BlobStreamingIngest, BlobStreamingIngestDenial> {
-    run_ingest_with_window_and_allocation(
-        source_frames(3, 4),
-        4,
-        allocation_bytes,
-        CounterEvidenceStrength::Exact,
-    )
-}
-
-fn run_ingest_with_window_and_allocation(
+fn run_ingest_with_window(
     frames: Vec<BlobStreamingSourceFrame>,
     window_bytes: u64,
-    allocation_bytes: u64,
     strength: CounterEvidenceStrength,
 ) -> Result<BlobStreamingIngest, BlobStreamingIngestDenial> {
     let window = BlobStreamingWindow::bounded(window_bytes)?;
-    with_blob_allocation(allocation_bytes, |_, allocation| {
-        BlobStreamingIngest::run_bounded(
-            request(),
-            crate::BlobStreamingIngestExecution::new(
-                window,
-                allocation,
-                pressure_admission(),
-                strength,
-            ),
-            frames,
-            &mut TestChunkWriter::new(),
-        )
-    })
+    BlobStreamingIngest::verify_bounded_content(
+        request(),
+        window,
+        pressure_admission(),
+        strength,
+        frames,
+        &mut TestChunkWriter::new(),
+    )
 }
 
 pub(super) fn run_ingest_with_pressure(
     pressure: BlobStreamingPressureAdmission,
 ) -> Result<BlobStreamingIngest, BlobStreamingIngestDenial> {
-    with_blob_allocation(4, |_, allocation| {
-        BlobStreamingIngest::run_bounded(
-            request(),
-            crate::BlobStreamingIngestExecution::new(
-                BlobStreamingWindow::bounded(4).unwrap(),
-                allocation,
-                pressure,
-                CounterEvidenceStrength::Exact,
-            ),
-            source_frames(3, 4),
-            &mut TestChunkWriter::new(),
-        )
-    })
+    BlobStreamingIngest::verify_bounded_content(
+        request(),
+        BlobStreamingWindow::bounded(4).unwrap(),
+        pressure,
+        CounterEvidenceStrength::Exact,
+        source_frames(3, 4),
+        &mut TestChunkWriter::new(),
+    )
 }
 
 pub(super) fn request() -> BlobStreamingIngestRequest {

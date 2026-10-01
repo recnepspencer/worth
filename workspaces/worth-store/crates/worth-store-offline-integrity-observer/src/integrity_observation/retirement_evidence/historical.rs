@@ -9,7 +9,7 @@ use crate::integrity_observation::{
         extent_arena::ArenaAccounting,
         root_manifest::{read_root_manifest, OfflineRootManifestFacts},
     },
-    record_walk::{damage, inspect_expected, project, root_children},
+    record_walk::{damage, inspect_expected, project, root_children, TraversalOrigin},
     BoundedMediaWalk, OfflineArtifactObservation, OfflineIntegrityOutcome as Outcome,
     OfflinePhysicalBlastRadius as Blast, OfflinePhysicalDamageCause as Cause,
 };
@@ -36,7 +36,7 @@ impl RetirementEvidence {
         roots: &[OfflineRootManifestFacts],
         current: Option<u64>,
         arenas: &mut ArenaAccounting,
-        queue: &mut VecDeque<(u64, ChildExpectation)>,
+        queue: &mut VecDeque<(u64, ChildExpectation, TraversalOrigin)>,
         walk: &mut BoundedMediaWalk,
     ) -> Vec<OfflineArtifactObservation> {
         let mut observations = Vec::new();
@@ -75,7 +75,7 @@ impl RetirementEvidence {
                         rewrite.source_root,
                         current.generation.saturating_add(1),
                     );
-                    queue.push_back((current.generation, held));
+                    queue.push_back((current.generation, held, TraversalOrigin::RetirementProof));
                 }
                 Ok(None) => {
                     if let Some(released) = released {
@@ -119,7 +119,9 @@ impl RetirementEvidence {
                 }
             }
             match result {
-                Ok(Some(held)) => queue.push_back((current.generation, held)),
+                Ok(Some(held)) => {
+                    queue.push_back((current.generation, held, TraversalOrigin::RetirementProof))
+                }
                 Ok(None) if intent.arena_only => {
                     let path = format!("families/records/arenas/arena-{:016x}.data", intent.id);
                     // The candidate proves namespace ownership was forgotten. The
@@ -167,7 +169,7 @@ impl RetirementEvidence {
         roots: &[OfflineRootManifestFacts],
         current: &OfflineRootManifestFacts,
         arenas: &mut ArenaAccounting,
-        queue: &mut VecDeque<(u64, ChildExpectation)>,
+        queue: &mut VecDeque<(u64, ChildExpectation, TraversalOrigin)>,
         walk: &mut BoundedMediaWalk,
     ) -> Vec<OfflineArtifactObservation> {
         let mut observations = Vec::new();
@@ -251,7 +253,11 @@ impl RetirementEvidence {
                 );
                 if validated_release.is_none() {
                     match copy_source(root, current, &intent, walk, &mut observations) {
-                        Ok(held) => queue.push_back((current.generation, held)),
+                        Ok(held) => queue.push_back((
+                            current.generation,
+                            held,
+                            TraversalOrigin::RetirementProof,
+                        )),
                         Err(outcome) => {
                             walk.record_outcome(&outcome);
                             observations.push(copy_observation(intent, outcome));
@@ -271,7 +277,7 @@ impl RetirementEvidence {
                         intent.source_root,
                         current.generation.saturating_add(1),
                     );
-                    queue.push_back((current.generation, held));
+                    queue.push_back((current.generation, held, TraversalOrigin::RetirementProof));
                     observe_copy_destination_staging(
                         root,
                         &intent,

@@ -45,6 +45,14 @@ pub enum RecoveryWalIntegrityAdmissionDenial {
 }
 
 impl IntegrityAdmittedRecoveryWalFrame {
+    /// Retained frame and source-name storage; payload is a view into encoded.
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        let name = u64::try_from(self.source_name.capacity())
+            .ok()?
+            .checked_mul(if cfg!(windows) { 2 } else { 1 })?;
+        u64::try_from(self.encoded.len()).ok()?.checked_add(name)
+    }
+
     pub(in crate::physical_runtime) fn bind(
         observed: &ObservedWalArtifact,
         expected_scope: PhysicalArtifactScope,
@@ -134,6 +142,13 @@ impl IntegrityAdmittedRecoveryWalFrame {
 }
 
 impl IntegrityAdmittedRecoveryWalSegment {
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        self.frames.iter().try_fold(
+            u64::try_from(std::mem::size_of_val(&*self.frames)).ok()?,
+            |bytes, frame| bytes.checked_add(frame.owned_heap_bytes()?),
+        )
+    }
+
     pub(in crate::physical_runtime) fn from_complete_frames(
         observed: &ObservedWalArtifact,
         identity: worth_store_wal::WalSegmentArtifactIdentity,

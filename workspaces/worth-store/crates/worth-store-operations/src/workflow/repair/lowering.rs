@@ -3,9 +3,7 @@ use super::integrity_classification::{
     IntegrityRepairClassificationPlan,
 };
 use sha2::{Digest, Sha256};
-use worth_store_layout_indexes::{
-    DerivedIndexRepairExecutionDenial, DerivedIndexRepairPlan, LayoutOperationalRepairOwner,
-};
+use super::{DerivedIndexRepairPlan, DerivedIndexRepairPlanDenial};
 
 use crate::authorization::{
     authorize_lowered_plan, AuthorizationReplayPolicy, AuthorizedOperationalPlan,
@@ -28,7 +26,7 @@ use super::{
 #[derive(Debug)]
 pub enum RepairLoweringDenial {
     Integrity(IntegrityRepairClassificationDenial),
-    Layout(DerivedIndexRepairExecutionDenial),
+    Layout(DerivedIndexRepairPlanDenial),
     DuplicateOwnerTarget,
     OwnerDag(crate::OwnerPlanDagDenial),
     CounterOverflow,
@@ -107,7 +105,7 @@ fn lower_derived(
         .map_err(|_| RepairLoweringDenial::CounterOverflow)?;
     for request in plan.requests {
         layout_plans.push(
-            LayoutOperationalRepairOwner::lower(request).map_err(RepairLoweringDenial::Layout)?,
+            request.lower().map_err(RepairLoweringDenial::Layout)?,
         );
     }
     layout_plans.sort_by_key(DerivedIndexRepairPlan::fingerprint);

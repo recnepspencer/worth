@@ -1,6 +1,7 @@
 mod accounting;
 mod attempt;
 mod cancellation;
+mod checkpoint_residue;
 mod command_basis;
 mod disposition;
 mod eligibility;

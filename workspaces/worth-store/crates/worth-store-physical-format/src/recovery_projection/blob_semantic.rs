@@ -1,0 +1,187 @@
+use crate::{
+    CurrentPhysicalRecordPlacement, IndexedThroughBlobPublication, PersistedRecordIdentity,
+};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PersistedDerivedDirectoryRecordBinding {
+    record: PersistedBlobSemanticRecordBinding,
+    indexed_through: Option<IndexedThroughBlobPublication>,
+    indexed_through_quarantine: Option<Option<PersistedRecordIdentity>>,
+}
+
+impl PersistedDerivedDirectoryRecordBinding {
+    pub const fn new(
+        record: PersistedBlobSemanticRecordBinding,
+        indexed_through: Option<IndexedThroughBlobPublication>,
+    ) -> Self {
+        Self {
+            record,
+            indexed_through,
+            indexed_through_quarantine: None,
+        }
+    }
+
+    pub const fn new_with_quarantine(
+        record: PersistedBlobSemanticRecordBinding,
+        indexed_through: Option<IndexedThroughBlobPublication>,
+        indexed_through_quarantine: Option<PersistedRecordIdentity>,
+    ) -> Self {
+        Self {
+            record,
+            indexed_through,
+            indexed_through_quarantine: Some(indexed_through_quarantine),
+        }
+    }
+
+    pub const fn record(self) -> PersistedBlobSemanticRecordBinding {
+        self.record
+    }
+    pub const fn indexed_through(self) -> Option<IndexedThroughBlobPublication> {
+        self.indexed_through
+    }
+    pub const fn indexed_through_quarantine(self) -> Option<Option<PersistedRecordIdentity>> {
+        self.indexed_through_quarantine
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PersistedBlobSemanticRecordBinding {
+    record: PersistedRecordIdentity,
+    record_payload_sha256: [u8; 32],
+    candidate_root_generation: u64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PersistedPhysicalRecoveryBlobSemantic {
+    None,
+    SessionDeclared(PersistedBlobSemanticRecordBinding),
+    GenerationPublished(PersistedBlobSemanticRecordBinding),
+    SessionFrontier(PersistedBlobSemanticRecordBinding),
+    SessionAbandoned(PersistedBlobSemanticRecordBinding),
+    RecordsDropped(PersistedBlobSemanticRecordBinding),
+    DerivedDirectory(PersistedDerivedDirectoryRecordBinding),
+    ChunkReused(PersistedBlobSemanticRecordBinding),
+    DedupeQuarantined(PersistedBlobSemanticRecordBinding),
+}
+
+impl PersistedBlobSemanticRecordBinding {
+    pub fn new(
+        record: PersistedRecordIdentity,
+        record_payload_sha256: [u8; 32],
+        candidate_root_generation: u64,
+    ) -> Option<Self> {
+        (candidate_root_generation != 0).then_some(Self {
+            record,
+            record_payload_sha256,
+            candidate_root_generation,
+        })
+    }
+
+    pub const fn record(self) -> PersistedRecordIdentity {
+        self.record
+    }
+
+    pub const fn record_payload_sha256(self) -> [u8; 32] {
+        self.record_payload_sha256
+    }
+
+    pub const fn candidate_root_generation(self) -> u64 {
+        self.candidate_root_generation
+    }
+}
+
+impl PersistedPhysicalRecoveryBlobSemantic {
+    pub(super) fn admits(
+        self,
+        source_root_generation: u64,
+        records: &[PersistedRecordIdentity],
+        placements: &[CurrentPhysicalRecordPlacement],
+    ) -> bool {
+        let binding = match self {
+            Self::None => return true,
+            Self::DerivedDirectory(directory) => {
+                let binding = directory.record();
+                return admits_classified_append(
+                    binding,
+                    source_root_generation,
+                    records,
+                    placements,
+                );
+            }
+            Self::ChunkReused(binding) | Self::DedupeQuarantined(binding) => {
+                return admits_classified_append(
+                    binding,
+                    source_root_generation,
+                    records,
+                    placements,
+                );
+            }
+            Self::SessionDeclared(binding)
+            | Self::GenerationPublished(binding)
+            | Self::SessionFrontier(binding)
+            | Self::SessionAbandoned(binding) => binding,
+            Self::RecordsDropped(binding) => binding,
+        };
+        records == [binding.record()]
+            && matches!(
+                placements,
+                [CurrentPhysicalRecordPlacement::Extent(extent)]
+                    if extent.record() == binding.record()
+            )
+            && source_root_generation.checked_add(1) == Some(binding.candidate_root_generation())
+    }
+}
+
+fn admits_classified_append(
+    binding: PersistedBlobSemanticRecordBinding,
+    source_root_generation: u64,
+    records: &[PersistedRecordIdentity],
+    placements: &[CurrentPhysicalRecordPlacement],
+) -> bool {
+    records == [binding.record()]
+        && placements
+            .iter()
+            .any(|placement| placement.record() == binding.record())
+        && source_root_generation.checked_add(1) == Some(binding.candidate_root_generation())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        DurableInlineRecordPlacement, PhysicalGeneration, PhysicalGenerationAuthority,
+        PhysicalPageId, PhysicalRecordSlot, PhysicalSegmentId,
+    };
+
+    #[test]
+    fn reused_chunk_claim_admits_inline_placement_and_requires_selected_target() {
+        let record = PersistedRecordIdentity::new([1; 16], 2).unwrap();
+        let other = PersistedRecordIdentity::new([1; 16], 3).unwrap();
+        let binding = PersistedBlobSemanticRecordBinding::new(record, [4; 32], 11).unwrap();
+        let authority = PhysicalGenerationAuthority::for_canonical_physical_format();
+        let segment = authority
+            .segment_cell(PhysicalSegmentId::from_raw(1).unwrap())
+            .with_segment_generation(PhysicalGeneration::from_raw(10).unwrap());
+        let page = authority
+            .page_cell(
+                PhysicalSegmentId::from_raw(1).unwrap(),
+                PhysicalPageId::from_raw(1).unwrap(),
+            )
+            .with_page_generation(PhysicalGeneration::from_raw(10).unwrap());
+        let slot = authority
+            .slot_cell(
+                PhysicalSegmentId::from_raw(1).unwrap(),
+                PhysicalPageId::from_raw(1).unwrap(),
+                PhysicalRecordSlot::from_raw(1).unwrap(),
+            )
+            .with_slot_generation(PhysicalGeneration::from_raw(10).unwrap());
+        let placement = CurrentPhysicalRecordPlacement::Inline(
+            DurableInlineRecordPlacement::legacy_unknown(record, segment, page, slot, 4096, 216)
+                .unwrap(),
+        );
+        let semantic = PersistedPhysicalRecoveryBlobSemantic::ChunkReused(binding);
+        assert!(semantic.admits(10, &[record], &[placement]));
+        assert!(!semantic.admits(10, &[other], &[placement]));
+        assert!(!semantic.admits(9, &[record], &[placement]));
+    }
+}

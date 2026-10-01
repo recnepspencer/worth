@@ -1,4 +1,7 @@
 use worth_store_wal::{WalLsnRange, WalSegmentArtifactIdentity, WalSegmentInspection};
+
+mod continuation;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PhysicalWalSegmentCandidate {
     inspection: WalSegmentInspection,
@@ -22,6 +25,9 @@ pub struct PhysicalWalInterruptionFacts {
 pub struct SelectedPhysicalWalTail {
     segments: Vec<PhysicalWalSegmentCandidate>,
     checkpoint_covered: Vec<super::CheckpointCoveredWalArtifact>,
+    protected_covered_start: usize,
+    admitted_frontier: u64,
+    admitted_cutoff: Option<u64>,
     frame_count: u64,
     byte_count: u64,
 }
@@ -32,10 +38,20 @@ pub enum SelectedPhysicalWalTailDenial {
     SegmentGap,
     LsnGap,
     CheckpointFrontierMismatch,
+    CheckpointContinuationMissing,
+    CheckpointContinuationAmbiguous,
+    CheckpointContinuationInterrupted,
+    CheckpointContinuationDiscontinuous,
     InterruptedMiddleSegment,
     CounterOverflow,
 }
 impl PhysicalWalSegmentCandidate {
+    fn owned_heap_bytes(&self) -> Option<u64> {
+        u64::try_from(self.frame_facts.len())
+            .ok()?
+            .checked_mul(u64::try_from(std::mem::size_of::<PhysicalWalFrameFacts>()).ok()?)
+    }
+
     pub fn from_frame_facts(
         inspection: WalSegmentInspection,
         interrupted_tail: Option<PhysicalWalInterruptionFacts>,
@@ -142,6 +158,7 @@ impl PhysicalWalSegmentCandidate {
 
 pub fn admit_physical_wal_tail(
     checkpoint_frontier: u64,
+    checkpoint_cutoff: Option<u64>,
     mut candidates: Vec<PhysicalWalSegmentCandidate>,
 ) -> Result<SelectedPhysicalWalTail, SelectedPhysicalWalTailDenial> {
     candidates.sort_unstable_by_key(|candidate| candidate.identity());
@@ -201,6 +218,12 @@ pub fn admit_physical_wal_tail(
             .map(PhysicalWalSegmentCandidate::selected_range),
     )
     .map_err(map_prefix_denial)?;
+    let protected_covered_start = continuation::protected_covered_start(
+        checkpoint_frontier,
+        checkpoint_cutoff,
+        &mut checkpoint_covered,
+        &candidates,
+    )?;
     let facts = crate::wal_prefix::WalValidPrefixFacts {
         frame_count,
         byte_count,
@@ -208,6 +231,9 @@ pub fn admit_physical_wal_tail(
     Ok(SelectedPhysicalWalTail {
         segments: candidates,
         checkpoint_covered,
+        protected_covered_start,
+        admitted_frontier: checkpoint_frontier,
+        admitted_cutoff: checkpoint_cutoff,
         frame_count: facts.frame_count,
         byte_count: facts.byte_count,
     })
@@ -228,12 +254,38 @@ fn map_prefix_denial(
 }
 
 impl SelectedPhysicalWalTail {
+    pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {
+        let segments = u64::try_from(self.segments.capacity())
+            .ok()?
+            .checked_mul(u64::try_from(std::mem::size_of::<PhysicalWalSegmentCandidate>()).ok()?)?;
+        let covered = u64::try_from(self.checkpoint_covered.capacity())
+            .ok()?
+            .checked_mul(
+                u64::try_from(std::mem::size_of::<super::CheckpointCoveredWalArtifact>()).ok()?,
+            )?;
+        self.segments
+            .iter()
+            .try_fold(segments.checked_add(covered)?, |sum, segment| {
+                sum.checked_add(segment.owned_heap_bytes()?)
+            })
+    }
+
+    pub(super) const fn admitted_checkpoint_basis(&self) -> (u64, Option<u64>) {
+        (self.admitted_frontier, self.admitted_cutoff)
+    }
+
     pub fn segments(&self) -> &[PhysicalWalSegmentCandidate] {
         &self.segments
     }
 
     pub fn checkpoint_covered(&self) -> &[super::CheckpointCoveredWalArtifact] {
         &self.checkpoint_covered
+    }
+
+    /// Authenticated physical WAL suffix that cleanup must preserve so an
+    /// ordinary reopen can continue from the selected checkpoint cutoff.
+    pub fn protected_checkpoint_covered(&self) -> &[super::CheckpointCoveredWalArtifact] {
+        &self.checkpoint_covered[self.protected_covered_start..]
     }
 
     pub const fn frame_count(&self) -> u64 {

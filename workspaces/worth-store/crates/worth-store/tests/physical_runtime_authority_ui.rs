@@ -139,6 +139,26 @@ fn phase_eight_ordinary_mutation_outcomes_are_compile_bound() {
     );
 }
 
+#[test]
+fn c11_blob_ingest_keeps_store_allocation_and_runtime_authority_bound() {
+    let cases = trybuild::TestCases::new();
+    cases.pass("tests/physical_runtime_authority/blob_ingest_supported.rs");
+    cases.compile_fail(
+        "tests/physical_runtime_authority/blob_recovery_allocation_cannot_enter_ingest.rs",
+    );
+    cases.compile_fail("tests/physical_runtime_authority/blob_ingest_cannot_escape_runtime.rs");
+    cases.compile_fail("tests/physical_runtime_authority/runtime_cannot_close_with_blob_ingest.rs");
+}
+
+#[test]
+fn c11_blob_relocation_requires_store_selected_hold() {
+    let cases = trybuild::TestCases::new();
+    cases.pass("tests/physical_runtime_authority/blob_relocation_supported.rs");
+    cases.compile_fail(
+        "tests/physical_runtime_authority/stable_read_receipt_cannot_relocate_blob.rs",
+    );
+}
+
 fn record_chunk_view_cases(cases: &trybuild::TestCases) {
     cases.pass("tests/physical_runtime_authority/protected_record_reads_supported.rs");
     cases.compile_fail("tests/physical_runtime_authority/root_observation_cannot_mint_reader.rs");

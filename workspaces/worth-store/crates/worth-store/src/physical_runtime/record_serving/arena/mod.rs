@@ -6,25 +6,31 @@ mod free_ranges;
 mod geometry;
 mod policy;
 mod reconstruction;
+mod released_controls;
 mod reservation;
+mod tier_epoch;
 pub(in crate::physical_runtime::record_serving) use evacuation::ArenaEvacuationLease;
 #[cfg(test)]
 mod tests;
 pub(in crate::physical_runtime::record_serving) use geometry::qualified_arena_alignment;
 pub(in crate::physical_runtime::record_serving) use reconstruction::reconstruct;
+pub(in crate::physical_runtime) use released_controls::{
+    ReleasedControlArenaPlacement, ReleasedControlArenaReservations,
+};
 
 pub(in crate::physical_runtime::record_serving) use allocation::ExtentArenaAllocationOwner;
 pub use policy::{ArenaEvacuationThreshold, ExtentArenaCapacity, ExtentArenaPolicyDenial};
 pub(in crate::physical_runtime::record_serving) use reservation::{
     ArenaReservation, ArenaReservationObligation, SharedArenaAllocationOwner,
 };
+pub(in crate::physical_runtime::record_serving) use tier_epoch::ArenaTierEpochFence;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(in crate::physical_runtime::record_serving) enum ArenaAllocationDenial {
+pub enum ArenaAllocationDenial {
     InvalidGeometry,
     Overlap,
     Capacity,
-    RangeBudget,
+    RangeBudget { required: usize, maximum: usize },
     StaleReservation,
     EvacuationBusy,
 }

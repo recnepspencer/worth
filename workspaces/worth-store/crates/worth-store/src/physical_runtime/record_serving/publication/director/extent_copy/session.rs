@@ -12,11 +12,13 @@ use worth_store_physical_format::{
 };
 
 pub(in crate::physical_runtime::record_serving::publication::director) struct ExtentCopySession {
+    pub(super) producer: CopyProducer,
     pub(super) placement: AdmittedRecordPlacementPolicy,
     pub(super) prepared: PreparedPhysicalMutation,
     pub(super) operation: [u8; 32],
     pub(super) source_root: u64,
     pub(super) source: DurableExtentRecordPlacement,
+    pub(super) target_tier: worth_store_physical_format::PhysicalTierClass,
     pub(super) source_lease: PhysicalRootReadLease,
     pub(super) reservation: ArenaReservation,
     pub(super) allocation: worth_store_buffer_pool::ForegroundWriteAllocationGrant,
@@ -33,6 +35,12 @@ pub(in crate::physical_runtime::record_serving::publication::director) struct Ex
         Option<worth_store_physical_integrity::IntegrityValidatedExtentMembership>,
     pub(super) intent_escaped: bool,
     pub(super) phase: CopyPhase,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(in crate::physical_runtime::record_serving::publication::director) enum CopyProducer {
+    ArenaEvacuation,
+    BlobMovement,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

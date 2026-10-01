@@ -5,7 +5,7 @@ use super::integrity_classification::{
     IntegrityRepairRegionClass,
 };
 use sha2::{Digest, Sha256};
-use worth_store_layout_indexes::DerivedIndexRepairRequest;
+use super::DerivedIndexRepairRequest;
 
 use super::intent::physical_target_identity;
 use super::RepairCandidateSet;
@@ -15,12 +15,12 @@ use crate::{
     AuthorizationReplayPolicy, AuthorizationRevocationObservation, OperationalOperationId,
     OperationalSecurityScope, OperationalTransitionId, OwnerPlanNodeIdentity,
     RepairExecutionBoundary, RepairExecutionBoundaryMoment, RepairExecutionControlPort,
-    RepairExecutionInterrupted, RepairRecoveryDisposition, RepairRecoveryDispositionDenial,
+    RepairExecutionInterrupted, RepairRecoveryDisposition,
     StoreOwnerKind,
 };
 
 #[test]
-fn crash_after_current_owner_effect_requires_exact_resume_instead_of_false_abandonment() {
+fn derived_index_repair_denies_before_any_current_owner_effect() {
     let directory = tempfile::tempdir().unwrap();
     let target = directory.path().join("layout.index");
     let replacement = directory.path().join("layout.rebuilt");
@@ -28,17 +28,14 @@ fn crash_after_current_owner_effect_requires_exact_resume_instead_of_false_aband
     std::fs::write(&replacement, b"rebuilt layout").unwrap();
     let authority = crate::backup::export::current_authority("repair-effect-crash");
     let lowered = lowered_repair(&authority, &target, &replacement);
-    let restart = lowered.clone();
-    let layout_node = lowered
+    assert!(lowered
         .explanation()
         .nodes()
         .iter()
-        .find(|node| node.owner() == StoreOwnerKind::LayoutIndexes)
-        .expect("layout owner node")
-        .identity();
+        .any(|node| node.owner() == StoreOwnerKind::LayoutIndexes));
     let scenario = BackupScenario::new("repair-effect-crash-control");
     let control = scenario.control_store();
-    let ready = lowered
+    let denial = lowered
         .authorize(
             &ExactAuthorizationPort {
                 substitute_plan: None,
@@ -57,43 +54,13 @@ fn crash_after_current_owner_effect_requires_exact_resume_instead_of_false_aband
             21,
             AuthorizationRevocationObservation::NotRevoked { observed_at: 21 },
         )
-        .unwrap();
-    let interruption = ready
-        .execute_with_control(&InterruptAt::once(
-            layout_node,
-            RepairExecutionBoundaryMoment::AfterOwnerEffectBeforeReceipt,
-        ))
-        .expect_err("process loss lands after durable owner effect");
+        .err()
+        .expect("Store owns derived-index rebuild publication");
     assert!(matches!(
-        interruption,
-        super::RepairExecutionDenial::Interrupted(_)
+        denial,
+        super::RepairReadinessDenial::StoreDerivedIndexRebuildRequired
     ));
-    assert_eq!(std::fs::read(&target).unwrap(), b"rebuilt layout");
-
-    let handle = repair_handle(&authority, &control);
-    assert!(handle
-        .started_owner_nodes()
-        .iter()
-        .any(|started| started.node_fingerprint() == layout_node.fingerprint()));
-    assert!(!handle
-        .durable_owner_receipts()
-        .iter()
-        .any(|receipt| receipt.node_fingerprint() == layout_node.fingerprint()));
-    assert_eq!(
-        handle.recovery_disposition(),
-        RepairRecoveryDisposition::CurrentAuthorityResumeRequired {
-            durable_owner_effects: 1,
-        }
-    );
-    assert!(matches!(
-        handle.abandon_before_mutation(&control, &authority, [0x71; 32]),
-        Err(RepairRecoveryDispositionDenial::MutationAlreadyRequiresResume)
-    ));
-    restart
-        .recover_ready(&handle, &control, &authority)
-        .expect("exact plan and owner starts rebind")
-        .execute()
-        .expect("owner validates the already durable replacement and converges");
+    assert_eq!(std::fs::read(&target).unwrap(), b"damaged layout");
     assert!(repair_handles(&authority, &control).is_empty());
 }
 

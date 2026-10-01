@@ -102,9 +102,10 @@ pub use crate::data::temporal::{
     BoundedTemporalReadyPromotionSummary, IntervalWakeRegeneration, PreviousValueRevision,
     ReadyTemporalWake, RetiredTemporalWake, ScheduledTemporalWake, TemporalClockAdvanceSummary,
     TemporalFrontierSnapshot, TemporalPreviousValueAccess, TemporalPreviousValueReference,
-    TemporalReadyPromotionSummary, TemporalWakeAdmissionSummary, TemporalWakeId, TemporalWakeOwner,
-    TemporalWakeReschedule, TemporalWakeRetirementBatch, TemporalWakeRetirementReason,
-    TemporalWakeReuse, TemporalWakeSummary, WakeOrdinal,
+    TemporalReadyPromotionSummary, TemporalRetiredWakeCompactionReport,
+    TemporalWakeAdmissionSummary, TemporalWakeId, TemporalWakeOwner, TemporalWakeReschedule,
+    TemporalWakeRetirementBatch, TemporalWakeRetirementReason, TemporalWakeReuse,
+    TemporalWakeSummary, WakeOrdinal,
 };
 pub use crate::data::tier::TierPolicy as RuntimeTierPolicy;
 pub use crate::data::tier::{DependencyMode, DirtyPropagation, EvaluationTrigger};

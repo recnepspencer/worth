@@ -268,7 +268,8 @@ mod tests {
         extent: RecordExtentGenerationCell,
         payload_bytes: u64,
     ) -> DurableExtentRecordPlacement {
-        DurableExtentRecordPlacement::new(record, extent, payload_bytes, arena_range()).unwrap()
+        DurableExtentRecordPlacement::legacy_unknown(record, extent, payload_bytes, arena_range())
+            .unwrap()
     }
 
     fn arena_range() -> worth_store_physical_format::ExtentArenaRange {

@@ -71,6 +71,7 @@ impl RecoveryPublicationPlan {
                 recovered_root: self.recovered_root,
                 referenced_artifacts: self.referenced_artifacts,
                 created_artifacts: self.created_artifacts,
+                release_topology: self.release_topology,
             },
             self.candidates,
         )
@@ -78,6 +79,9 @@ impl RecoveryPublicationPlan {
 }
 
 impl RecoveryPublicationExpectation {
+    pub(crate) fn take_release_topology(&mut self) -> Option<super::RecoveryReleaseTopologyProof> {
+        self.release_topology.take()
+    }
     pub const fn store_identity(
         &self,
     ) -> worth_store_physical_format::store_namespace::StableStoreIdentity {

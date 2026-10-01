@@ -1,4 +1,6 @@
-use worth_store_physical_format::{DurablePhysicalRootManifest, RecordArtifactFile};
+use worth_store_physical_format::{
+    DurablePhysicalRootManifest, RecordArtifactFile, CHECKPOINT_CERTIFIED_SCHEMA,
+};
 
 use super::super::harness::compare_runtime_and_observer_with_budget;
 use super::super::harness::ProcessWorld;
@@ -7,6 +9,13 @@ use super::successor_candidate_media::{candidate_root_path, candidate_topology};
 #[test]
 fn killed_writer_adopts_exact_multi_level_capacity_transition_candidate() {
     let world = ProcessWorld::start_capacity_transition_crash(0xC8_09_00_47, 0xC8_19_00_47);
+    let checkpoint = std::fs::read(world.writer.root.join("families/checkpoint.current"))
+        .expect("read selected certified checkpoint");
+    assert_eq!(&checkpoint[..8], b"WCP7REC\0");
+    assert_eq!(
+        checkpoint[8], CHECKPOINT_CERTIFIED_SCHEMA,
+        "capacity transition must retain genuine certified checkpoint ancestry"
+    );
     let selected_generation = world
         .writer
         .history

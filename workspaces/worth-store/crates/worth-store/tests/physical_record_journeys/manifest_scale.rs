@@ -6,6 +6,12 @@ mod world;
 #[test]
 fn bounded_scale_identity_format_and_policy_courtroom() {
     let observations = [1_u16, 9, 65].map(world::observe_scale_world);
+    let page_bytes = u64::from(
+        super::scale_support::format()
+            .declaration()
+            .page_size()
+            .bytes(),
+    );
     assert_eq!(observations.map(|value| value.routing_level), [0, 3, 6]);
     assert_eq!(
         observations.map(|value| value.point_blocks),
@@ -17,10 +23,13 @@ fn bounded_scale_identity_format_and_policy_courtroom() {
             && value.scan_allocations >= value.point_allocations
             && value.scan_allocations < 65_536
     }));
-    assert_eq!(observations.map(|value| value.point_media_reads), [2, 2, 2]);
+    // Fresh reopen and locator readmission leave routing frames resident. The
+    // independent manifest-block counts still prove point/scan traversal;
+    // the remaining physical faults here are page-sized data reads.
+    assert_eq!(observations.map(|value| value.point_media_reads), [1, 1, 1]);
     assert_eq!(
         observations.map(|value| value.point_media_bytes),
-        [16_512, 16_512, 16_552]
+        [page_bytes; 3]
     );
     assert_eq!(
         observations.map(|value| value.point_manifest_bytes),
@@ -33,10 +42,10 @@ fn bounded_scale_identity_format_and_policy_courtroom() {
             }] + value.point_blocks * super::durable_frame_oracle::HEADER_BYTES as u64
         })
     );
-    assert_eq!(observations.map(|value| value.scan_media_reads), [0, 7, 64]);
+    assert_eq!(observations.map(|value| value.scan_media_reads), [0, 0, 1]);
     assert_eq!(
         observations.map(|value| value.scan_media_bytes),
-        [0, 1_752, 32_024]
+        [0, 0, page_bytes]
     );
     assert_eq!(
         observations.map(|value| value.scan_manifest_bytes),

@@ -69,6 +69,9 @@ impl RecordPublicationDirector {
         &self,
     ) -> Result<PhysicalExtentCopyResolutionProgress, RecordAppendError> {
         let mut session = self.extent_copy.lock().unwrap_or_else(|e| e.into_inner());
+        let blob_movement = session
+            .as_ref()
+            .is_some_and(|copy| copy.producer == super::session::CopyProducer::BlobMovement);
         let mut slot = self
             .copy_obligation
             .lock()
@@ -97,10 +100,16 @@ impl RecordPublicationDirector {
             state.resolved = true;
             *session = None;
             *slot = None;
+            if blob_movement {
+                self.mutation.cancel_blob_movement_background();
+            }
             return Ok(PhysicalExtentCopyResolutionProgress::Resolved);
         }
         let lsn = self.append_copy_resolution(&mut state, Kind::Cancelled)?;
         *session = None;
+        if blob_movement {
+            self.mutation.cancel_blob_movement_background();
+        }
         Ok(PhysicalExtentCopyResolutionProgress::AwaitingCheckpoint {
             resolution_lsn: lsn,
         })

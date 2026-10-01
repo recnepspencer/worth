@@ -17,6 +17,9 @@ use super::{
     PhysicalMutationIdempotencyKey, PhysicalMutationIdempotencyMaterial,
 };
 
+#[path = "runtime_owner/original_drop.rs"]
+mod original_drop;
+
 pub(in crate::physical_runtime) struct PhysicalMutationIdempotencyRuntimeOwner {
     registry: Mutex<PhysicalMutationIdempotencyRegistry>,
 }
@@ -43,6 +46,16 @@ pub enum PhysicalMutationIdempotencyIssuanceDenial {
 }
 
 impl PhysicalMutationIdempotencyRuntimeOwner {
+    pub(in crate::physical_runtime) fn reconcile_verified_pending_release(
+        &self,
+        pending: &worth_store_recovery_physics::VerifiedPendingWalReleaseCustody,
+    ) -> Result<(), ()> {
+        self.registry
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .reconcile_verified_pending_release(pending)
+    }
+
     pub(super) fn from_rebuilt_registry(
         registry: PhysicalMutationIdempotencyRegistry,
     ) -> Arc<Self> {
@@ -95,6 +108,8 @@ impl PhysicalMutationBindingCompactionRuntimeAuthority {
         &self,
         checkpoint: worth_store_physical_format::PhysicalCheckpointIdentity,
         wal_cutoff_lsn_exclusive: u64,
+        pins: crate::physical_runtime::record_serving::SelectedBlobManifestPins,
+        maximum_binding_bytes: u64,
     ) -> Result<PhysicalMutationBindingCompactionCutover<'_>, PhysicalMutationBindingCompactionDenial>
     {
         let registry = self
@@ -102,7 +117,12 @@ impl PhysicalMutationBindingCompactionRuntimeAuthority {
             .registry
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let pending = registry.prepare_binding_compaction(checkpoint, wal_cutoff_lsn_exclusive)?;
+        let pending = registry.prepare_binding_compaction(
+            checkpoint,
+            wal_cutoff_lsn_exclusive,
+            pins,
+            maximum_binding_bytes,
+        )?;
         Ok(PhysicalMutationBindingCompactionCutover {
             registry,
             pending: Some(pending),

@@ -43,16 +43,23 @@ pub(crate) fn read_durable_frame<'a>(
             OfflinePhysicalFormatField::FamilyKind,
         ));
     }
-    // Root schema 3 marks maintenance-capable roots without changing the byte
-    // shape. This structural reader is not a runtime publication admission.
-    let maintenance_root = expected_kind == 2 && bytes[9] == 3;
-    if !maintenance_root
+    // Root schema 9 adds a selected tier-epoch anchor to maintenance custody.
+    let supported_root_schema = expected_kind == 2 && matches!(bytes[9], 3 | 4 | 5 | 6 | 7 | 9);
+    let supported_routing_schema = expected_kind == 8 && bytes[9] == 3;
+    if !supported_root_schema
+        && !supported_routing_schema
         && bytes[9] != declaration.version().envelope_schema().unwrap_or_default() as u8
     {
         return Err(unsupported(
             OfflineUnsupportedVersionAxis::EnvelopeSchema,
             u64::from(bytes[9]),
-            if expected_kind == 2 { "2|3" } else { "2" },
+            if expected_kind == 2 {
+                "2|3|4|5|6|7|9"
+            } else if expected_kind == 8 {
+                "2|3"
+            } else {
+                "2"
+            },
             9,
             1,
         ));
@@ -76,8 +83,11 @@ pub(crate) fn read_durable_frame<'a>(
     }
     let declared_total = HEADER_BYTES + read_u32(bytes, 24) as usize;
     if bytes.len() != declared_total {
-        if bytes.len() < expected_bytes && declared_total == expected_bytes {
-            return Err(truncation(bytes.len(), expected_bytes));
+        if bytes.len() < declared_total
+            && (declared_total == expected_bytes
+                || (expected_kind == 7 && declared_total == expected_bytes + 8))
+        {
+            return Err(truncation(bytes.len(), declared_total));
         }
         return Err(damaged_field(
             OfflinePhysicalDamageCause::Framing,
@@ -86,7 +96,8 @@ pub(crate) fn read_durable_frame<'a>(
             OfflinePhysicalFormatField::PayloadLength,
         ));
     }
-    if bytes.len() != expected_bytes {
+    let versioned_free_space = expected_kind == 7 && bytes.len() == expected_bytes + 8;
+    if bytes.len() != expected_bytes && !versioned_free_space {
         return Err(damaged_field(
             OfflinePhysicalDamageCause::Framing,
             24,

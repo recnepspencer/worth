@@ -2,6 +2,10 @@ use super::projection_admission::{admit_projection, IntegrityAdmittedRecoveryPro
 use super::projection_materialization::{projected_record_bytes, validate_extent_closure};
 use super::*;
 use worth_store_physical_format::RecordArtifactFile;
+mod blob_semantic;
+mod head_effect;
+use blob_semantic::validate_blob_semantic;
+use head_effect::validate_release_head_effect;
 
 pub(super) fn validate_projection_semantics(
     records: &[PhysicalRedoRecord],
@@ -26,6 +30,12 @@ pub(super) fn validate_projection_semantics(
         {
             return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
         }
+        if worth_store_physical_format::decode_blob_record(record.bytes()).is_ok()
+            && !matches!(*placements[0], CurrentPhysicalRecordPlacement::Extent(_))
+        {
+            return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
+        }
+        validate_blob_semantic(record.bytes(), *identity, store.bytes(), projection)?;
     }
     for (frame_index, frame) in projection
         .frames()
@@ -85,6 +95,7 @@ pub(super) fn validate_projection_semantics(
     }
     validate_bidirectional_closure(projection, &admitted)?;
     validate_resulting_lsns(records, projection, &admitted)?;
+    validate_release_head_effect(records, projection, store, format)?;
     Ok(admitted.into_inline_frames())
 }
 

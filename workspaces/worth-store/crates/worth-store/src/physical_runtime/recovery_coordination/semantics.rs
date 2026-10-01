@@ -22,7 +22,7 @@ const CONTRACTS: [(
     u64,
     PhysicalSignalAspectRole,
     PhysicalWorkSignalFamily,
-); 4] = [
+); 5] = [
     (
         "store.physical.recovery.discovery-basis",
         1_401,
@@ -47,13 +47,19 @@ const CONTRACTS: [(
         PhysicalSignalAspectRole::DependencyAndOutput,
         PhysicalWorkSignalFamily::WalReclamation,
     ),
+    (
+        "store.physical.recovery.checkpoint-residue-basis",
+        1_405,
+        PhysicalSignalAspectRole::DependencyAndOutput,
+        PhysicalWorkSignalFamily::CheckpointCapture,
+    ),
 ];
 
 pub(super) struct InstalledRecoverySemantics {
     pub(super) profile: PhysicalWorkProfileDeclaration,
     pub(super) work_security: worth_store_security::StoreAuthorityBoundSecurityScopeReceipt,
     pub(super) scheduler_security: worth_store_io_scheduler::IoSchedulerSecurityScopeAdmission,
-    pub(super) bases: [PhysicalWorkSemanticBasis; 4],
+    pub(super) bases: [PhysicalWorkSemanticBasis; 5],
 }
 
 pub(super) fn install(
@@ -67,7 +73,7 @@ pub(super) fn install(
     let installed = std::array::from_fn(|index| {
         install_contract(CONTRACTS[index], partitions[index].clone(), witness)
     });
-    let [discovery, redo, publication, cleanup] = installed;
+    let [discovery, redo, publication, cleanup, checkpoint_residue] = installed;
     let authority_fact = discovery
         .basis
         .projection_fact()
@@ -82,9 +88,10 @@ pub(super) fn install(
             redo.declaration,
             publication.declaration,
             cleanup.declaration,
+            checkpoint_residue.declaration,
         ],
     )
-    .expect("the four distinct recovery contracts form one bounded native profile")
+    .expect("the distinct recovery contracts form one bounded native profile")
     .with_capacity(capacity);
     InstalledRecoverySemantics {
         profile,
@@ -95,6 +102,7 @@ pub(super) fn install(
             redo.basis,
             publication.basis,
             cleanup.basis,
+            checkpoint_residue.basis,
         ],
     }
 }
@@ -248,7 +256,7 @@ fn validated_value(
 fn recovery_partitions(
     store: worth_store_physical_format::store_namespace::StableStoreIdentity,
     session: [u8; 16],
-) -> [String; 4] {
+) -> [String; 5] {
     let store = store
         .bytes()
         .iter()
@@ -258,6 +266,12 @@ fn recovery_partitions(
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect::<String>();
-    ["discovery", "redo", "publication", "cleanup"]
-        .map(|stage| format!("store.physical.recovery/{store}/{session}/{stage}"))
+    [
+        "discovery",
+        "redo",
+        "publication",
+        "cleanup",
+        "checkpoint-residue",
+    ]
+    .map(|stage| format!("store.physical.recovery/{store}/{session}/{stage}"))
 }

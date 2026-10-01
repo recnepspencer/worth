@@ -35,6 +35,7 @@ pub(in crate::physical_runtime) struct PhysicalCheckpointCaptureFoundation {
         crate::physical_runtime::PhysicalDurabilityObservation,
     pub(in crate::physical_runtime) reclamation:
         crate::physical_runtime::durability::PhysicalWalReclamationOwner,
+    pub(in crate::physical_runtime) selected_checkpoint_sequence: u64,
 }
 
 pub(super) struct PhysicalCheckpointCaptureOwner {
@@ -55,6 +56,7 @@ pub(super) struct PhysicalCheckpointCaptureOwner {
 pub(super) struct AdmittedPhysicalCheckpointCapture {
     basis: PhysicalCheckpointCaptureBasis,
     session: PhysicalDirtyGenerationCaptureSession,
+    custody: Option<crate::physical_runtime::durability::SelectedCheckpointCustodySnapshot>,
 }
 
 impl PhysicalCheckpointCaptureBasis {
@@ -86,7 +88,12 @@ impl PhysicalCheckpointCaptureOwner {
     ) -> Self {
         Self {
             store: foundation.durability.store_identity(),
-            next_sequence: AtomicU64::new(1),
+            next_sequence: AtomicU64::new(
+                foundation
+                    .selected_checkpoint_sequence
+                    .checked_add(1)
+                    .unwrap_or(0),
+            ),
             policy: foundation.durability.policy_identity(),
             checkpoint_policy: foundation.durability.checkpoint_policy(),
             idempotency_policy: foundation.durability.idempotency_policy(),
@@ -107,7 +114,6 @@ impl PhysicalCheckpointCaptureOwner {
                 PhysicalCheckpointCaptureFailureKind::RuntimeUnavailable,
             ),
         )?;
-        let root = publication.current_root();
         let wal = self.wal.checkpoint_source_range().ok_or(
             PhysicalCheckpointCaptureFailure::before_candidate(
                 PhysicalCheckpointCaptureFailureKind::NoDurableWalSource,
@@ -119,6 +125,22 @@ impl PhysicalCheckpointCaptureOwner {
             )
         })?;
         let identity = self.next_identity()?;
+        let (root, custody) = match publication.checkpoint_custody_snapshot(identity) {
+            Ok(snapshot) => (snapshot.root().clone(), Some(snapshot)),
+            Err(crate::physical_runtime::durability::CheckpointCustodyDenial::Unavailable) => {
+                return Err(PhysicalCheckpointCaptureFailure::before_candidate(
+                    PhysicalCheckpointCaptureFailureKind::CheckpointCustodyUnavailable,
+                ));
+            }
+            Err(
+                crate::physical_runtime::durability::CheckpointCustodyDenial::AnchorMismatch
+                | crate::physical_runtime::durability::CheckpointCustodyDenial::ReleaseCertificateUnavailable,
+            ) => {
+                return Err(PhysicalCheckpointCaptureFailure::before_candidate(
+                    PhysicalCheckpointCaptureFailureKind::CheckpointCustodyUnavailable,
+                ));
+            }
+        };
         if session.store_identity() != self.store || identity.store_identity() != self.store {
             return Err(PhysicalCheckpointCaptureFailure::before_candidate(
                 PhysicalCheckpointCaptureFailureKind::SourceAuthorityMismatch,
@@ -139,6 +161,7 @@ impl PhysicalCheckpointCaptureOwner {
         Ok(AdmittedPhysicalCheckpointCapture {
             basis: PhysicalCheckpointCaptureBasis::new(source, self.policy),
             session,
+            custody,
         })
     }
 

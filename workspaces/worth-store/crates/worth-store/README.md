@@ -5,6 +5,26 @@ rebuilt Worth Store workspace. It owns live Store lifecycle and the adapters
 that join lower physical owners to a serving Store. Physical format, lower
 policy, and platform authority remain in their specialized crates.
 
+## Native Physical Blobs
+
+`ServingPhysicalRuntime::blobs()` exposes Store-owned ingest, explicit bounded
+resume readmission, and protected range reads. Store publishes the session
+declaration before chunk records and publishes a generation only after its
+authenticated tree is complete. Blob
+bytes are ordinary C.5 records packed into extent arenas; the mechanism crate
+cannot persist bytes or issue Store allocations.
+
+Ingest and read sessions borrow the serving runtime and retain their Store
+allocation until completion or drop. A failed append preserves its physical
+no-effect or indeterminate fate; dropping a session does not erase durable
+unfinished custody. Current publication lookup is an explicitly bounded scan,
+not an index lookup. Resume authenticates its untrusted token against a
+protected selected root, rehashes the durable chunk prefix, and preserves the
+original checkpoint expiry. A denial does not abandon or delete durable custody.
+
+See [physical-blobs-and-chunk-trees.md](../../../../plans/worth-store/physical-blobs-and-chunk-trees.md)
+for the implemented caller contract, limits, and later-phase boundaries.
+
 ## Protected Physical Reads
 
 `ServingPhysicalRuntime::records()` captures a protected physical root or

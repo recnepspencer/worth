@@ -2,6 +2,8 @@
 mod c10_crash_evidence;
 #[allow(dead_code)]
 mod c10_phase_five_read;
+#[path = "c10_historical_rewrite/support.rs"]
+mod historical_rewrite_support;
 #[allow(dead_code)]
 mod phase_three_support;
 
@@ -73,6 +75,34 @@ fn sealed_spans_recover_one_generation() {
         }
         drop(parent);
     }
+}
+
+#[test]
+fn partial_span_rewrite_result_remains_exact_after_later_roots() {
+    let (parent, root) = kill_span(8, 4, "after-wal");
+    let (expected_payload, _) = release(parent.path(), &root, 8, "after-wal", 4, "result");
+    assert_eq!(expected_payload.len(), 8);
+    for (index, bytes) in expected_payload.iter().enumerate() {
+        assert_eq!(bytes.len(), 7_500);
+        assert_eq!(bytes[0], index as u8);
+    }
+    let result_root = historical_rewrite_support::selected_catalog_generation(&root);
+    historical_rewrite_support::advance_with_ordinary_appends(&root, true);
+    let selected_before = historical_rewrite_support::selected_catalog_generation(&root);
+    assert!(
+        selected_before >= result_root + 2,
+        "the partial-span result root must be neither selected nor retained-previous"
+    );
+    let segments_before = segment_snapshot(&root);
+    let (payload, selected_after) = release(parent.path(), &root, 8, "after-wal", 4, "historical");
+    assert_eq!(payload, expected_payload);
+    assert_eq!(selected_after, selected_before);
+    assert_eq!(
+        historical_rewrite_support::selected_catalog_generation(&root),
+        selected_before,
+        "fresh recovery must not republish an already historical span"
+    );
+    assert_eq!(segment_snapshot(&root), segments_before);
 }
 
 #[test]

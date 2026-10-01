@@ -18,6 +18,7 @@ pub(super) mod failure_classification;
 mod inline;
 #[cfg(feature = "certification-test-authority")]
 mod read_call_pause;
+mod selected_class;
 mod session;
 pub use cancellation::RecordReadCancellation;
 #[cfg(test)]
@@ -82,6 +83,39 @@ pub struct PhysicalRecordReader {
 }
 
 impl PhysicalRecordReader {
+    /// Retains this selected root while changing only its internal frame work
+    /// to diagnostic-background admission. No raw record route escapes.
+    pub(in crate::physical_runtime) fn for_diagnostic_scrub(mut self) -> Self {
+        self.residency = self.residency.for_diagnostic_scrub();
+        self
+    }
+
+    /// Exact selected C.5 record cardinality for explicitly budgeted
+    /// maintenance scans; never a foreground point-lookup fallback.
+    pub(in crate::physical_runtime) fn selected_record_count(&self) -> u64 {
+        self.current_root.record_count()
+    }
+
+    /// Returns only the directory selected by this reader's protected C.5
+    /// root; it cannot observe a later, unprotected root replacement.
+    pub(in crate::physical_runtime) const fn selected_derived_family_directory(
+        &self,
+    ) -> Option<worth_store_physical_format::DerivedFamilyRootDirectoryBinding> {
+        self.current_root.derived_family_directory()
+    }
+
+    pub(in crate::physical_runtime) const fn selected_latest_blob_publication(
+        &self,
+    ) -> Option<worth_store_physical_format::IndexedThroughBlobPublication> {
+        self.current_root.latest_blob_publication()
+    }
+
+    pub(in crate::physical_runtime) const fn selected_latest_blob_quarantine(
+        &self,
+    ) -> Option<worth_store_physical_format::PersistedRecordIdentity> {
+        self.current_root.latest_blob_quarantine()
+    }
+
     fn admit_read_call(
         &self,
     ) -> Result<crate::physical_runtime::instance::PhysicalExecutionCall, RecordReadError> {
@@ -184,7 +218,7 @@ impl PhysicalRecordReader {
         })?;
         self.residency
             .begin_operation(
-                worth_store_buffer_pool::PhysicalOperationAllocationScope::ForegroundRead,
+                self.residency.read_allocation_scope(),
                 std::num::NonZeroU64::new(u64::from(self.format.declaration().page_size().bytes()))
                     .expect("an admitted format page size is nonzero"),
             )

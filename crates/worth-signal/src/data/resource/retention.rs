@@ -16,6 +16,9 @@ pub struct ResourceRetentionCompactionBudget {
     retained_lifecycle_history_limit: Option<u32>,
     retained_denied_completion_limit: Option<u32>,
     retained_retry_lineage_limit: Option<u32>,
+    pruned_lifecycle_availability_limit: Option<u32>,
+    pruned_denied_availability_limit: Option<u32>,
+    pruned_retry_availability_limit: Option<u32>,
 }
 
 impl ResourceRetentionCompactionBudget {
@@ -24,6 +27,9 @@ impl ResourceRetentionCompactionBudget {
             retained_lifecycle_history_limit: None,
             retained_denied_completion_limit: None,
             retained_retry_lineage_limit: None,
+            pruned_lifecycle_availability_limit: None,
+            pruned_denied_availability_limit: None,
+            pruned_retry_availability_limit: None,
         }
     }
 
@@ -32,6 +38,9 @@ impl ResourceRetentionCompactionBudget {
             retained_lifecycle_history_limit: Some(retained_lifecycle_history_limit),
             retained_denied_completion_limit: None,
             retained_retry_lineage_limit: None,
+            pruned_lifecycle_availability_limit: None,
+            pruned_denied_availability_limit: None,
+            pruned_retry_availability_limit: None,
         }
     }
 
@@ -56,6 +65,19 @@ impl ResourceRetentionCompactionBudget {
         self
     }
 
+    /// Opt-in diagnostic tails; absence outside the tail is never exact history.
+    pub fn with_pruned_availability_limits(
+        mut self,
+        lifecycle: u32,
+        denied: u32,
+        retry: u32,
+    ) -> Self {
+        self.pruned_lifecycle_availability_limit = Some(lifecycle);
+        self.pruned_denied_availability_limit = Some(denied);
+        self.pruned_retry_availability_limit = Some(retry);
+        self
+    }
+
     pub fn retained_lifecycle_history_limit(self) -> Option<u32> {
         self.retained_lifecycle_history_limit
     }
@@ -66,6 +88,18 @@ impl ResourceRetentionCompactionBudget {
 
     pub fn retained_retry_lineage_limit(self) -> Option<u32> {
         self.retained_retry_lineage_limit
+    }
+
+    pub fn pruned_lifecycle_availability_limit(self) -> Option<u32> {
+        self.pruned_lifecycle_availability_limit
+    }
+
+    pub fn pruned_denied_availability_limit(self) -> Option<u32> {
+        self.pruned_denied_availability_limit
+    }
+
+    pub fn pruned_retry_availability_limit(self) -> Option<u32> {
+        self.pruned_retry_availability_limit
     }
 }
 

@@ -13,15 +13,30 @@ use worth_foundational::{
 };
 use worth_store_physical_format::integrity_declarations::families::PHYSICAL_WORK_OBLIGATION_V6_RECORD_BYTES;
 
+mod checkpoint_evidence;
+use super::families::root_manifest::OfflineRootManifestFacts;
+pub(crate) use checkpoint_evidence::SelectedCheckpointEvidence;
+
+pub(crate) struct ObservedJournals {
+    pub(crate) artifacts: Vec<OfflineArtifactObservation>,
+    pub(crate) checkpoint: SelectedCheckpointEvidence,
+}
+
 pub(crate) fn observe_journals(
     root: &Path,
     store: Option<[u8; 16]>,
     walk: &mut BoundedMediaWalk,
     retirements: &mut super::retirement_evidence::RetirementEvidence,
-) -> Vec<OfflineArtifactObservation> {
+    selected_root: Option<&OfflineRootManifestFacts>,
+) -> ObservedJournals {
     let mut observations = Vec::new();
     if walk.exhausted_reason().is_some() {
-        return observations;
+        return ObservedJournals {
+            artifacts: observations,
+            checkpoint: SelectedCheckpointEvidence::Unavailable(Outcome::Indeterminate(
+                walk.exhausted_reason().expect("checked exhaustion"),
+            )),
+        };
     }
     let pending = root.join("families/physical-work");
     if let Ok(scan) = walk.scan_directory(&pending, 2) {
@@ -157,9 +172,19 @@ pub(crate) fn observe_journals(
         observations.extend(wal_coverage.finish(walk));
     }
     let checkpoint = root.join("families/checkpoint.current");
-    if checkpoint.try_exists().unwrap_or(true) {
-        observe_checkpoint(root, &checkpoint, store, None, walk, &mut observations);
-    }
+    let checkpoint_evidence = if checkpoint.try_exists().unwrap_or(true) {
+        observe_checkpoint(
+            root,
+            &checkpoint,
+            store,
+            None,
+            walk,
+            &mut observations,
+            selected_root,
+        )
+    } else {
+        SelectedCheckpointEvidence::Absent
+    };
     let staging = root.join("staging");
     if let Ok(scan) = walk.scan_directory(&staging, 1) {
         for path in scan.entries {
@@ -169,11 +194,22 @@ pub(crate) fn observe_journals(
                 .and_then(|name| name.strip_prefix("checkpoint-")?.strip_suffix(".candidate"))
                 .and_then(hex_word);
             if let Some(sequence) = sequence {
-                observe_checkpoint(root, &path, store, Some(sequence), walk, &mut observations);
+                observe_checkpoint(
+                    root,
+                    &path,
+                    store,
+                    Some(sequence),
+                    walk,
+                    &mut observations,
+                    None,
+                );
             }
         }
     }
-    observations
+    ObservedJournals {
+        artifacts: observations,
+        checkpoint: checkpoint_evidence,
+    }
 }
 
 fn observe_checkpoint(
@@ -183,7 +219,8 @@ fn observe_checkpoint(
     sequence: Option<u64>,
     walk: &mut BoundedMediaWalk,
     observations: &mut Vec<OfflineArtifactObservation>,
-) {
+    selected_root: Option<&OfflineRootManifestFacts>,
+) -> SelectedCheckpointEvidence {
     let relative = relative_path(root, path);
     let acquired = walk.acquire(path, 2);
     match (acquired, store) {
@@ -197,6 +234,9 @@ fn observe_checkpoint(
                 sequence,
                 acquired.byte_length as u64,
             ));
+            SelectedCheckpointEvidence::Unavailable(Outcome::Unknown(
+                OfflineUnknownPhysicalReason::PhysicalAliasNotReinspected,
+            ))
         }
         (Err(outcome), _) => {
             walk.record_outcome(&outcome);
@@ -207,27 +247,38 @@ fn observe_checkpoint(
                 sequence,
                 0,
                 0,
-                outcome,
+                outcome.clone(),
             ));
+            SelectedCheckpointEvidence::Unavailable(outcome)
         }
-        (Ok(acquired), None) => observations.push(project(
-            &relative,
-            Family::CheckpointStreamHeader,
-            "checkpoint-header".into(),
-            sequence,
-            0,
-            acquired.byte_length as u64,
-            Outcome::Unknown(OfflineUnknownPhysicalReason::StoreIdentityUnavailable),
-        )),
+        (Ok(acquired), None) => {
+            let outcome = Outcome::Unknown(OfflineUnknownPhysicalReason::StoreIdentityUnavailable);
+            observations.push(project(
+                &relative,
+                Family::CheckpointStreamHeader,
+                "checkpoint-header".into(),
+                sequence,
+                0,
+                acquired.byte_length as u64,
+                outcome.clone(),
+            ));
+            SelectedCheckpointEvidence::Unavailable(outcome)
+        }
         (Ok(acquired), Some(store)) => {
             let maximum = walk.maximum_entries();
-            for record in read_checkpoint(
+            let mut stream = read_checkpoint(
                 &acquired.bytes,
                 store,
                 sequence,
                 maximum,
                 walk.counters_mut(),
-            ) {
+            );
+            let evidence =
+                checkpoint_evidence::validate(root, selected_root, &stream, &acquired.bytes, walk);
+            if sequence.is_none() {
+                checkpoint_evidence::localize_dependency_failure(&mut stream, &evidence);
+            }
+            for record in stream.records {
                 walk.record_outcome(&record.outcome);
                 observations.push(project(
                     &relative,
@@ -244,6 +295,7 @@ fn observe_checkpoint(
                     record.outcome,
                 ));
             }
+            evidence
         }
     }
 }
