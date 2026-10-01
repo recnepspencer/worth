@@ -10,10 +10,14 @@ pub(super) fn require_exact_pending_replay(
     replay: Option<&VerifiedSelectedReleaseHeadReplayV14>,
 ) -> Result<(), ExecutionBasisDenial> {
     let mut effects = pending.projections.iter().filter_map(|projection| {
-        projection
-            .materialization()
-            .release_head_effect()
-            .map(|effect| (projection.operation(), effect))
+        (match projection.materialization().operation() {
+            worth_store_physical_format::PersistedPhysicalRecoveryOperation::RecordsDropped {
+                head_effect,
+                ..
+            } => head_effect.as_ref(),
+            _ => None,
+        })
+        .map(|effect| (projection.operation(), effect))
     });
     match (effects.next(), replay) {
         (None, None) => Ok(()),

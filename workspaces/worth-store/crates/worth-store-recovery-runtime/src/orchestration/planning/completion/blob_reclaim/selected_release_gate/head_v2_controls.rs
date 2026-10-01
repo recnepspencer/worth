@@ -15,6 +15,7 @@ use worth_store_recovery_physics::{
 
 use super::super::record;
 use crate::{
+    entry::PhysicalRecoveryReleaseHeadControlDenial as Denial,
     integrity_ingress::RecoveryIntegrityIngressTrace,
     orchestration::planning::{
         manifest_entry_budget::ManifestEntryBudget, selected_source_inventory::ResidentAllowance,
@@ -47,26 +48,36 @@ pub(super) fn read_checkpoint_source_controls(
     trace: &mut RecoveryIntegrityIngressTrace,
     scratch: &mut u64,
     resident: &mut ResidentAllowance,
-) -> Option<Vec<AddressedReleaseHeadControlV2>> {
+) -> Result<Vec<AddressedReleaseHeadControlV2>, Denial> {
     if routes
         .windows(2)
         .any(|pair| pair[0].record() >= pair[1].record())
-        || roster
-            .selected_heads()
-            .windows(2)
-            .any(|pair| pair[0].key() >= pair[1].key())
     {
-        return None;
+        return Err(Denial::RouteOrder);
+    }
+    if roster
+        .selected_heads()
+        .windows(2)
+        .any(|pair| pair[0].key() >= pair[1].key())
+    {
+        return Err(Denial::HeadOrder);
     }
     let request_count = roster
         .selected_heads()
         .len()
-        .checked_add(roster.batches().len())?;
+        .checked_add(roster.batches().len())
+        .ok_or(Denial::RequestCountOverflow)?;
     resident
         .entries(request_count, std::mem::size_of::<RequestedTriple>())
-        .ok()?;
+        .map_err(|_| resident_failure(resident))?;
     let mut requests = Vec::new();
-    requests.try_reserve_exact(request_count).ok()?;
+    let requested_bytes = request_bytes::<RequestedTriple>(request_count)?;
+    requests
+        .try_reserve_exact(request_count)
+        .map_err(|cause| Denial::Allocation {
+            requested: requested_bytes,
+            cause,
+        })?;
     for head in roster.selected_heads() {
         requests.push(RequestedTriple {
             descriptor: head.descriptor_record(),
@@ -89,8 +100,14 @@ pub(super) fn read_checkpoint_source_controls(
     let mut unique: Vec<RequestedTriple> = Vec::new();
     resident
         .entries(request_count, std::mem::size_of::<RequestedTriple>())
-        .ok()?;
-    unique.try_reserve_exact(request_count).ok()?;
+        .map_err(|_| resident_failure(resident))?;
+    let requested_bytes = request_bytes::<RequestedTriple>(request_count)?;
+    unique
+        .try_reserve_exact(request_count)
+        .map_err(|cause| Denial::Allocation {
+            requested: requested_bytes,
+            cause,
+        })?;
     for request in requests {
         if let Some(previous) = unique.last_mut() {
             if previous.descriptor == request.descriptor {
@@ -101,7 +118,9 @@ pub(super) fn read_checkpoint_source_controls(
                         && request.manifest.is_some()
                         && previous.manifest != request.manifest
                 {
-                    return None;
+                    return Err(Denial::ConflictingRequest {
+                        descriptor: request.descriptor,
+                    });
                 }
                 if previous.manifest.is_none() {
                     previous.manifest = request.manifest;
@@ -116,9 +135,15 @@ pub(super) fn read_checkpoint_source_controls(
             unique.len(),
             std::mem::size_of::<AddressedReleaseHeadControlV2>(),
         )
-        .ok()?;
+        .map_err(|_| resident_failure(resident))?;
     let mut controls = Vec::new();
-    controls.try_reserve_exact(unique.len()).ok()?;
+    let requested_bytes = request_bytes::<AddressedReleaseHeadControlV2>(unique.len())?;
+    controls
+        .try_reserve_exact(unique.len())
+        .map_err(|cause| Denial::Allocation {
+            requested: requested_bytes,
+            cause,
+        })?;
     for request in unique {
         let descriptor = read_control(
             discovery,
@@ -132,10 +157,15 @@ pub(super) fn read_checkpoint_source_controls(
             scratch,
             resident,
         )?;
-        let BlobRecordV1::ReclaimDescriptorV3(decoded) =
-            decode_blob_record(descriptor.bytes()).ok()?
+        let BlobRecordV1::ReclaimDescriptorV3(decoded) = decode_blob_record(descriptor.bytes())
+            .map_err(|denial| Denial::DescriptorDecode {
+                record: request.descriptor,
+                denial,
+            })?
         else {
-            return None;
+            return Err(Denial::DescriptorKind {
+                record: request.descriptor,
+            });
         };
         let manifest = (
             decoded.base().manifest_record(),
@@ -148,7 +178,9 @@ pub(super) fn read_checkpoint_source_controls(
             || request.descriptor == manifest.0
             || request.reservation == manifest.0
         {
-            return None;
+            return Err(Denial::DescriptorManifestMismatch {
+                record: request.descriptor,
+            });
         }
         let reservation = read_control(
             discovery,
@@ -180,7 +212,25 @@ pub(super) fn read_checkpoint_source_controls(
             manifest,
         ));
     }
-    Some(controls)
+    Ok(controls)
+}
+
+fn request_bytes<T>(count: usize) -> Result<u64, Denial> {
+    u64::try_from(count)
+        .ok()
+        .and_then(|count| count.checked_mul(std::mem::size_of::<T>() as u64))
+        .ok_or(Denial::RequestCountOverflow)
+}
+
+fn resident_failure(resident: &ResidentAllowance) -> Denial {
+    if let Some(required) = resident.exceeded_requirement() {
+        Denial::ResidentBoundExceeded {
+            required,
+            admitted: resident.used().saturating_add(resident.remaining()),
+        }
+    } else {
+        Denial::ManifestEntryLimit
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -195,31 +245,34 @@ fn read_control(
     trace: &mut RecoveryIntegrityIngressTrace,
     scratch: &mut u64,
     resident: &mut ResidentAllowance,
-) -> Option<WitnessedSelectedControlFrame> {
+) -> Result<WitnessedSelectedControlFrame, Denial> {
     let index = routes
         .binary_search_by_key(&record_id, |route| route.record())
-        .ok()?;
+        .map_err(|_| Denial::RouteMissing { record: record_id })?;
     let route = routes[index];
     if !matches!(route, CurrentPhysicalRecordPlacement::Extent(extent)
         if extent.content_class() == SelectedRecordContentClass::Blob(kind)
             && extent.payload_bytes() > 0
             && extent.payload_bytes() <= BLOB_CONTROL_FRAME_MAX_BYTES as u64)
     {
-        return None;
+        return Err(Denial::RouteMismatch { record: record_id });
     }
     // Payload, admitted chunk frame, decoded control, and returned witness
     // coexist while the selected control is read. Debit before any allocation.
-    resident.bytes(route.payload_bytes()).ok()?;
+    resident
+        .bytes(route.payload_bytes())
+        .map_err(|_| resident_failure(resident))?;
     resident
         .transient(
             route
                 .payload_bytes()
-                .checked_mul(3)?
-                .checked_add(u64::from(format.page_size().bytes()).checked_mul(3)?)?
-                .checked_add(CONTROL_READ_WITNESS_OVERHEAD_BYTES)?,
+                .checked_mul(3)
+                .and_then(|v| v.checked_add(u64::from(format.page_size().bytes()).checked_mul(3)?))
+                .and_then(|v| v.checked_add(CONTROL_READ_WITNESS_OVERHEAD_BYTES))
+                .ok_or(Denial::RequestCountOverflow)?,
         )
-        .ok()?;
-    let (bytes, witness) = record::read_with_witness(
+        .map_err(|_| resident_failure(resident))?;
+    let (bytes, witness) = record::read_with_witness_diagnostic(
         discovery,
         format,
         Some(route),
@@ -230,10 +283,20 @@ fn read_control(
         scratch,
         resident,
     )
-    .ok()?;
+    .map_err(|denial| Denial::ControlRead {
+        record: record_id,
+        denial,
+    })?;
     if <[u8; 32]>::from(Sha256::digest(&bytes)) != expected_sha256 {
-        return None;
+        return Err(Denial::FrameDigestMismatch { record: record_id });
     }
-    resident.transient(u64::try_from(bytes.len()).ok()?).ok()?;
-    WitnessedSelectedControlFrame::from_validated(bytes, witness).ok()
+    resident
+        .transient(u64::try_from(bytes.len()).map_err(|_| Denial::RequestCountOverflow)?)
+        .map_err(|_| resident_failure(resident))?;
+    WitnessedSelectedControlFrame::from_validated(bytes, witness).map_err(|denial| {
+        Denial::WitnessMismatch {
+            record: record_id,
+            denial,
+        }
+    })
 }

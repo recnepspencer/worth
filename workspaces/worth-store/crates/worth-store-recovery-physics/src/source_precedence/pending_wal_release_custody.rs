@@ -7,7 +7,7 @@ use std::sync::Arc;
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
     decode_blob_record, BlobReclaimDescriptorV3, BlobReclaimSourceKind, BlobRecordKind,
-    BlobRecordV1, DurablePhysicalRootManifest, PersistedPhysicalRecoveryBlobSemantic,
+    BlobRecordV1, DurablePhysicalRootManifest, PersistedPhysicalRecoveryOperation,
     PersistedRecordIdentity, PhysicalInventoryTranscriptV1, PhysicalRecordFormatDeclaration,
     ReleaseCheckpointNoReleaseV1, ReleasedDropWalFateWitnessV1,
 };

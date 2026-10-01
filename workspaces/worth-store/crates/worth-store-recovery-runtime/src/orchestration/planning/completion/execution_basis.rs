@@ -141,7 +141,10 @@ pub(super) fn derive(
         &basis.observed_pages.selected_source,
         &basis.verified_drops,
         basis.validated_manifest_cleanup,
-        basis.verified_pending_release_head_replay.as_ref(),
+        match &basis.custody {
+            crate::progression::PlanningCustody::PendingPrepared { replay, .. } => Some(replay),
+            _ => None,
+        },
         successor_candidate,
         context.limits.manifest_entries,
         context.limits.staging_bytes,

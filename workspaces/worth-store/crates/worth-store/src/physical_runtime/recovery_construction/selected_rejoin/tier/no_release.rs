@@ -6,12 +6,16 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 use worth_store_physical_format::{
     decode_canonical_redo_v3, decode_checkpoint_certificate, CheckpointCertificateKind,
-    PersistedPhysicalRecoveryBlobSemantic, PhysicalRecordFormatDeclaration,
+    PersistedPhysicalRecoveryOperation, PhysicalExtentCopyRecord, PhysicalRecordFormatDeclaration,
     PhysicalRecoveryProjectionDecodeLimits, ReleaseCheckpointCertificateV1,
 };
 use worth_store_recovery_physics::{
-    VerifiedSelectedNoReleaseCustody, VerifiedSelectedTierEpochCustody,
+    admit_current_source_copy_publication, VerifiedSelectedNoReleaseCustody,
+    VerifiedSelectedTierEpochCustody,
 };
+
+#[path = "no_release/rewrite.rs"]
+mod rewrite;
 
 use super::super::{SelectedMediaRejoinDenial as Denial, MAX_DISCOVERY_ENTRIES};
 use super::routes::NoReleaseControlProvenance;
@@ -78,6 +82,7 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn verif
     sample: &StoreRecoveryBindingFreshnessSample,
     controls: &NoReleaseControlProvenance,
     format: PhysicalRecordFormatDeclaration,
+    selected_root_generation: u64,
 ) -> Result<(), Denial> {
     let mut seen_drops = BTreeSet::new();
     for member in sample.wal_members() {
@@ -91,6 +96,40 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn verif
             total_entries: limit.saturating_mul(3),
             inline_allocations: limit,
         };
+        if let Some(projection) = admit_current_source_copy_publication(
+            member.operation_identity(),
+            member.lsn_range(),
+            member.canonical_redo(),
+            format,
+            limits,
+        )
+        .map_err(|_| Denial::WalFate)?
+        {
+            let worth_store_physical_format::PersistedPhysicalRecoveryPayload::SourceCopy(recipe) =
+                projection.payload()
+            else {
+                return Err(Denial::WalFate);
+            };
+            if !matches_exact_copy_intent(sample.extent_copy_frames(), *recipe, format) {
+                return Err(Denial::WalFate);
+            }
+            continue;
+        }
+        if rewrite::admit_selected_rewrite(
+            member.canonical_redo(),
+            member.operation_identity(),
+            member.group_identity(),
+            member.lsn_range(),
+            sample.operations().iter().map(|operation| {
+                (
+                    operation.idempotency_identity(),
+                    operation.request_fingerprint().bytes(),
+                )
+            }),
+            selected_root_generation,
+        )? {
+            continue;
+        }
         let (_, projection) = decode_canonical_redo_v3(
             member.canonical_redo(),
             member.lsn_range().start().get(),
@@ -101,13 +140,42 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn verif
             format,
         )
         .map_err(|_| Denial::WalFate)?;
-        if let PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding) =
-            projection.blob_semantic()
+        if let PersistedPhysicalRecoveryOperation::RecordsDropped { binding, .. } =
+            projection.operation()
         {
-            if !controls.admits_drop(binding) || !seen_drops.insert(binding.record()) {
+            if !controls.admits_drop(*binding) || !seen_drops.insert(binding.record()) {
                 return Err(Denial::WalFate);
             }
         }
     }
     Ok(())
 }
+
+fn matches_exact_copy_intent(
+    frames: &[(worth_store_wal::WalLsnRange, Box<[u8]>)],
+    recipe: worth_store_physical_format::PersistedExtentCopyRecipe,
+    format: PhysicalRecordFormatDeclaration,
+) -> bool {
+    let mut selected = None;
+    for (range, bytes) in frames {
+        if range.start().get() != recipe.intent_lsn() {
+            continue;
+        }
+        if selected.replace((range, bytes)).is_some() {
+            return false;
+        }
+    }
+    let Some((range, bytes)) = selected else {
+        return false;
+    };
+    recipe.intent_lsn().checked_add(1) == Some(range.end_exclusive().get())
+        && <[u8; 32]>::from(Sha256::digest(bytes)) == recipe.intent_digest()
+        && matches!(
+            PhysicalExtentCopyRecord::decode(bytes, format),
+            Ok(PhysicalExtentCopyRecord::Intent(intent)) if intent == recipe.intent()
+        )
+}
+
+#[cfg(test)]
+#[path = "no_release/tests.rs"]
+mod tests;

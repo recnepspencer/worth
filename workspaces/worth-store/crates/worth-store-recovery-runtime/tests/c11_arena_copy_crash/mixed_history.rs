@@ -2,21 +2,23 @@ use super::*;
 use std::num::NonZeroU64;
 use worth_store::physical_runtime::{
     certification::CertificationPhysicalMutationCheckpoint, BlobCheckpointLimit,
-    BlobIngestDeclaration, BlobReadLimits, RecordCountLimit, RecordScanOutcome, RecordScanRequest,
+    BlobIngestDeclaration, BlobReadLimits, BlobReadOpenFailure, LayoutRebuildLimits,
+    PhysicalLayoutDenial, RecordCountLimit, RecordScanOutcome, RecordScanRequest,
 };
 use worth_store_blob_chunks::BlobChunkSize;
+use worth_store_contracts::DurableArtifactFamilyId;
 
 #[path = "mixed_history/blob_scope.rs"]
 mod blob_scope;
-use super::legacy_copy_frame;
+use super::copy_frame;
 
 const BLOB_CHILD: &str = "mixed_history::blob_child";
-const BLOB_MARKER: &str = "mixed-v5-copy-v6-blob-ready";
+const BLOB_MARKER: &str = "mixed-current-copy-blob-ready";
 const CHUNK_BYTES: usize = 64 * 1024;
 const SOURCE_WINDOW_BYTES: u64 = 32 * 1024;
 
 #[test]
-fn selected_v5_source_copy_and_v6_blob_generation_recover_together() {
+fn selected_current_source_copy_and_blob_generation_recover_together() {
     let directory = tempfile::tempdir().unwrap();
     let root = directory.path().join("store");
     kill_after_final_wal(directory.path());
@@ -27,7 +29,7 @@ fn selected_v5_source_copy_and_v6_blob_generation_recover_together() {
         "the durable final copy WAL has not published a root"
     );
     let record = load_identity(directory.path());
-    let copy_lsn = legacy_copy_frame::rewrite_one_durable_copy_as_v5(&root);
+    let copy_lsn = copy_frame::current_copy_publication_lsn(&root);
     observe_copy_media(&root, directory.path(), "killed");
 
     let first = recover(&root);
@@ -60,10 +62,10 @@ fn selected_v5_source_copy_and_v6_blob_generation_recover_together() {
     let stable_copy = recover(&root);
     assert_eq!(selected_extent(&stable_copy, record), destination);
     drop(stable_copy);
-    legacy_copy_frame::assert_no_published_copy_resolution(&root);
+    copy_frame::assert_no_published_copy_resolution(&root);
 
     let (object, session) = kill_after_blob_generation_wal(directory.path());
-    let blob_lsn = legacy_copy_frame::v6_blob_generation_lsn(&root);
+    let blob_lsn = copy_frame::current_blob_generation_lsn(&root);
     assert!(copy_lsn < blob_lsn);
     let replayed = recover(&root);
     assert_eq!(selected_extent(&replayed, record), destination);
@@ -81,9 +83,36 @@ fn selected_v5_source_copy_and_v6_blob_generation_recover_together() {
     let scope = blob_scope::admitted_blob_scope();
     let limits = BlobReadLimits::new(NonZeroU64::new(1024).unwrap());
     let blobs = serving.blobs().unwrap();
+    let latest = serving
+        .certification_selected_latest_blob_publication()
+        .unwrap()
+        .expect("C8 must restore the selected blob generation publication");
+    let stale_latest = match blobs.resolve_publication(object, 1, &scope, limits) {
+        Err(BlobReadOpenFailure::Layout(PhysicalLayoutDenial::IndexStaleRequiresRebuild {
+            latest,
+            indexed: None,
+        })) => latest,
+        other => panic!("recovered publication must precede derived-index rebuild: {other:?}"),
+    };
+    assert_eq!(stale_latest, latest);
+    let rebuilt = serving
+        .layouts()
+        .unwrap()
+        .rebuild(
+            DurableArtifactFamilyId::BlobCatalog,
+            LayoutRebuildLimits::new(
+                NonZeroU64::new(1024).unwrap(),
+                NonZeroU64::new(1024).unwrap(),
+            ),
+            configuration().1,
+            PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        )
+        .expect("Store must rebuild the derived catalog from selected publication authority");
+    assert_eq!(rebuilt.source(), latest);
+    assert_eq!(rebuilt.validated_chunks(), 1);
     let published = blobs
         .resolve_publication(object, 1, &scope, limits)
-        .expect("v6 generation must publish during recovery");
+        .expect("current generation must publish during recovery");
     assert_eq!(published.session().bytes(), session);
     let mut read = blobs.read(published, &scope, 0, 128, limits).unwrap();
     let mut observed = [0; 128];
@@ -99,7 +128,7 @@ fn selected_v5_source_copy_and_v6_blob_generation_recover_together() {
     let report = observe_arena_in_separate_process(
         &root,
         &directory.path().join("mixed-history.json"),
-        "copy-v5-blob-v6",
+        "copy-current-blob-current",
         "recovered",
     );
     let artifacts = report["artifacts"].as_array().unwrap();
@@ -117,7 +146,7 @@ fn selected_v5_source_copy_and_v6_blob_generation_recover_together() {
 }
 
 #[test]
-#[ignore = "parent kills after v6 blob generation WAL durability"]
+#[ignore = "parent kills after current blob generation WAL durability"]
 fn blob_child() {
     let directory = PathBuf::from(std::env::var_os(BLOB_MARKER).unwrap());
     let root = directory.join("store");
@@ -137,7 +166,7 @@ fn blob_child() {
     .unwrap();
     let mut ingest = blobs
         .begin_ingest(declaration, configuration().1, SOURCE_WINDOW_BYTES, limits)
-        .expect("selected v5 copy must permit v6 blob ingest");
+        .expect("selected current copy must permit blob ingest");
     let session = ingest.session_id().bytes();
     ingest
         .push(&vec![42; SOURCE_WINDOW_BYTES as usize])
@@ -168,10 +197,10 @@ fn blob_child() {
                             return;
                         }
                     }
-                    panic!("v6 generation publication did not reach durable WAL");
+                    panic!("generation publication did not reach durable WAL");
                 }
             }
-            panic!("v6 tree leaf did not reach durable WAL");
+            panic!("tree leaf did not reach durable WAL");
         });
         let _ = ingest.finish();
         panic!("generation publication escaped WAL durability pause");
@@ -193,7 +222,7 @@ fn kill_after_blob_generation_wal(directory: &Path) -> ([u8; 16], [u8; 16]) {
             let _ = child.kill();
             let output = child.wait_with_output().unwrap();
             panic!(
-                "v6 generation seam not reached: {} {}",
+                "generation seam not reached: {} {}",
                 String::from_utf8_lossy(&output.stdout),
                 String::from_utf8_lossy(&output.stderr)
             );

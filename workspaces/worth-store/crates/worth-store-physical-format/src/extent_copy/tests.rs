@@ -252,8 +252,8 @@ fn classified_copy_binds_route_class_in_intent_and_recovery_projection() {
         PersistedPhysicalRecoveryProjection::from_source_copy(17, root, recipe).unwrap();
     let bytes = projection.encode();
     assert!(bytes
-        .windows(b"store.physical.recovery-projection.v13".len())
-        .any(|window| window == b"store.physical.recovery-projection.v13"));
+        .windows(b"store.physical.recovery-projection.v15".len())
+        .any(|window| window == b"store.physical.recovery-projection.v15"));
     let limits = PhysicalRecoveryProjectionDecodeLimits {
         frames: 0,
         record_identities: 1,

@@ -114,8 +114,13 @@ pub(super) fn collect<'plan>(
                 .push((frame_identity(frame.subject()), basis.frames.len(), frame));
         }
         for placement in materialization.placements() {
-            if materialization
-                .derived_retirement()
+            if (match materialization.operation() {
+                worth_store_physical_format::PersistedPhysicalRecoveryOperation::DerivedDirectory {
+                    retirement,
+                    ..
+                } => retirement.as_ref(),
+                _ => None,
+            })
                 .is_none_or(|retirement| {
                     retirement
                         .dropped_records()

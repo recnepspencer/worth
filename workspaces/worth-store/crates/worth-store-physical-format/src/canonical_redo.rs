@@ -75,6 +75,7 @@ pub enum CanonicalRedoWireDenial {
     LsnRangeMismatch,
     InvalidTarget,
     InvalidRecoveryProjection,
+    UnsupportedRecoveryProjectionVersion(u16),
     ProjectionEntryLimit,
     CounterOverflow,
 }
@@ -140,6 +141,9 @@ pub fn decode_canonical_redo_v3(
             .map_err(|denial| match denial {
                 PhysicalRecoveryProjectionDenial::EntryLimit => {
                     CanonicalRedoWireDenial::ProjectionEntryLimit
+                }
+                PhysicalRecoveryProjectionDenial::UnsupportedVersion(version) => {
+                    CanonicalRedoWireDenial::UnsupportedRecoveryProjectionVersion(version)
                 }
                 _ => CanonicalRedoWireDenial::InvalidRecoveryProjection,
             })?;

@@ -17,6 +17,8 @@ use crate::physical_runtime::{
     work::PhysicalCheckpointRecoveryAction,
 };
 
+mod prefix;
+
 impl PhysicalCurrentRootOwner {
     pub(in crate::physical_runtime) fn commit_selected_checkpoint_custody(
         &self,
@@ -68,7 +70,7 @@ impl PhysicalCurrentRootOwner {
         let Some(accumulator_v2) = accumulator_v2 else {
             if !batches.is_empty()
                 || ledger.checkpoint.is_some()
-                || !ledger.pending_batches.is_empty()
+                || !ledger.pending_events.is_empty()
                 || snapshot.root().release_custody_head_root().is_some()
             {
                 return Err(CheckpointCustodyDenial::ReleaseCertificateUnavailable);
@@ -107,52 +109,8 @@ impl PhysicalCurrentRootOwner {
             return Err(CheckpointCustodyDenial::ReleaseCertificateUnavailable);
         }
         let accumulator = accumulator_v2.base();
-        if batches.len() > ledger.pending_batches.len() {
-            return Err(CheckpointCustodyDenial::ReleaseCertificateUnavailable);
-        }
-        for (ordinal, (actual, basis)) in batches
-            .iter()
-            .copied()
-            .zip(ledger.pending_batches.iter().copied())
-            .enumerate()
-        {
-            if actual != expected_batch(snapshot, ordinal, basis)? {
-                return Err(CheckpointCustodyDenial::ReleaseCertificateUnavailable);
-            }
-        }
-        let mut checkpoint_heads = ledger.checkpoint_heads.clone();
-        let target_head_root = snapshot.root().release_custody_head_root();
-        let mut selected_head_steps = 0_usize;
-        while checkpoint_heads.root() != target_head_root {
-            let step = *ledger
-                .pending_head_steps
-                .get(selected_head_steps)
-                .ok_or(CheckpointCustodyDenial::ReleaseCertificateUnavailable)?;
-            step.apply(&mut checkpoint_heads)
-                .map_err(|_| CheckpointCustodyDenial::ReleaseCertificateUnavailable)?;
-            selected_head_steps += 1;
-        }
-        let folded = &ledger.pending_head_steps[..selected_head_steps];
-        let mut next_batch_step = 0_usize;
-        for basis in ledger.pending_batches.iter().take(batches.len()) {
-            let expected = basis
-                .head_step
-                .ok_or(CheckpointCustodyDenial::ReleaseCertificateUnavailable)?;
-            let position = folded[next_batch_step..]
-                .iter()
-                .position(|step| *step == expected)
-                .ok_or(CheckpointCustodyDenial::ReleaseCertificateUnavailable)?;
-            next_batch_step += position + 1;
-        }
-        if ledger
-            .pending_batches
-            .iter()
-            .skip(batches.len())
-            .filter_map(|basis| basis.head_step)
-            .any(|step| folded.contains(&step))
-        {
-            return Err(CheckpointCustodyDenial::ReleaseCertificateUnavailable);
-        }
+        let (checkpoint_heads, selected_events) =
+            prefix::checkpoint_prefix(ledger, snapshot, &batches)?;
         let (head_count, head_roster_digest) = checkpoint_heads
             .commitment()
             .map_err(|_| CheckpointCustodyDenial::ReleaseCertificateUnavailable)?;
@@ -212,8 +170,7 @@ impl PhysicalCurrentRootOwner {
             return Err(CheckpointCustodyDenial::ReleaseCertificateUnavailable);
         }
         let digest: [u8; 32] = Sha256::digest(accumulator_v2.encode()).into();
-        ledger.pending_batches.drain(..batches.len());
-        ledger.pending_head_steps.drain(..selected_head_steps);
+        ledger.pending_events.drain(..selected_events);
         ledger.checkpoint_heads = checkpoint_heads;
         ledger.prior_head_count = head_count;
         ledger.prior_head_roster_digest = head_roster_digest;
@@ -225,8 +182,8 @@ impl PhysicalCurrentRootOwner {
         ledger.prior_cumulative_digest = accumulator.cumulative_digest();
         ledger.prior_tip = Some(tip);
         ledger.prior_terminal = terminal;
-        let records = ledger.pending_batches.len() as u64 + 1;
-        let bytes = ledger.pending_batches.len() as u64
+        let records = ledger.pending_drop_count() as u64 + 1;
+        let bytes = ledger.pending_drop_count() as u64
             * (RELEASE_CHECKPOINT_BATCH_WIRE_BYTES as u64 + CERTIFICATE_FRAME_OVERHEAD)
             + RELEASE_CHECKPOINT_ACCUMULATOR_V2_WIRE_BYTES as u64
             + CERTIFICATE_FRAME_OVERHEAD;

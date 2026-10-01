@@ -72,7 +72,12 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
     .map_err(|_| Denial::WalFate)?;
     wal::verify_sample(&sample, claim)?;
     if no_release_claim.is_some() {
-        no_release::verify_selected_tail(&sample, &controls, reopen.format())?;
+        no_release::verify_selected_tail(
+            &sample,
+            &controls,
+            reopen.format(),
+            selected.root().generation(),
+        )?;
     }
     pause_before_final_reread();
     let store = media.store_identity();

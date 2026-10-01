@@ -172,6 +172,17 @@ impl RecordPublicationDirector {
         {
             return map_record_denial(RecordAppendDenial::DerivedDirectorySourceChanged);
         }
+        let Some(basis) = PreparedDerivedDirectoryBasis::from_admitted(
+            expected_previous,
+            directory.indexed_through_blob_publication(),
+            directory.indexed_through_quarantine(),
+            replaced_nodes,
+            self.durability.store_identity(),
+            self.durability.runtime_identity(),
+            self.generation,
+        ) else {
+            return map_record_denial(RecordAppendDenial::DerivedDirectorySourceChanged);
+        };
         let batch = match RecordAppendBatch::builder().push_owned(encoded).build() {
             Ok(batch) => batch,
             Err(denial) => return map_record_denial(denial),
@@ -181,12 +192,7 @@ impl RecordPublicationDirector {
             placement,
             PhysicalManifestCapacityTransition::PreserveCurrent,
             request,
-            ProtectedAppendKind::Directory(PreparedDerivedDirectoryBasis {
-                expected_previous,
-                indexed_through: directory.indexed_through_blob_publication(),
-                indexed_through_quarantine: directory.indexed_through_quarantine(),
-                replaced_nodes: replaced_nodes.records().to_vec().into(),
-            }),
+            ProtectedAppendKind::Directory(basis),
         )
     }
 
@@ -256,12 +262,9 @@ mod tests {
         assert_eq!(
             validate_prepared_payload(
                 &batch,
-                &ProtectedAppendKind::Directory(PreparedDerivedDirectoryBasis {
-                    expected_previous: None,
-                    indexed_through: Some(marker),
-                    indexed_through_quarantine: None,
-                    replaced_nodes: Vec::new().into(),
-                },)
+                &ProtectedAppendKind::Directory(
+                    PreparedDerivedDirectoryBasis::empty_for_validation(None, Some(marker), None,)
+                )
             ),
             Err(RecordAppendDenial::InvalidDerivedDirectory),
         );

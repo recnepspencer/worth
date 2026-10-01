@@ -22,8 +22,11 @@ pub(in crate::physical_runtime) enum RecoveredReleaseLedgerDenial {
 }
 
 impl From<ReleaseCertificateCapacityDenial> for RecoveredReleaseLedgerDenial {
-    fn from(_: ReleaseCertificateCapacityDenial) -> Self {
-        Self::SelectedFactMismatch
+    fn from(denial: ReleaseCertificateCapacityDenial) -> Self {
+        match denial {
+            ReleaseCertificateCapacityDenial::Resident(cause) => Self::Resident(cause),
+            _ => Self::SelectedFactMismatch,
+        }
     }
 }
 
@@ -65,8 +68,7 @@ impl ReleaseLedgerState {
             cumulative_digest: accumulator.cumulative_digest(),
             selected_tip: Some(tip),
             checkpoint: Some(accumulator.checkpoint()),
-            pending_batches: Vec::new(),
-            pending_head_steps: Vec::new(),
+            pending_events: Vec::new(),
             checkpoint_heads: source_heads,
             effective_heads,
             prior_head_count: head_count,

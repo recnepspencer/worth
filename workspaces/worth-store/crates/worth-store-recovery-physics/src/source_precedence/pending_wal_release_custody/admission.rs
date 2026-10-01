@@ -79,8 +79,8 @@ impl VerifiedPendingWalReleaseCustody {
         {
             return Err(Denial::CheckpointMarker);
         }
-        let PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding) =
-            projection.materialization().blob_semantic()
+        let PersistedPhysicalRecoveryOperation::RecordsDropped { binding, .. } =
+            projection.materialization().operation()
         else {
             return Err(Denial::DurableWalFate);
         };
@@ -111,8 +111,13 @@ impl VerifiedPendingWalReleaseCustody {
         } else if matches!(
             base_custody,
             PendingReleaseCheckpointBase::ReleasedHeadV2(_)
-        ) || projection.materialization().release_head_effect().is_some()
-        {
+        ) || matches!(
+            projection.materialization().operation(),
+            PersistedPhysicalRecoveryOperation::RecordsDropped {
+                head_effect: Some(_),
+                ..
+            }
+        ) {
             return Err(Denial::SourceBinding);
         }
         if descriptor.encode() != descriptor_bytes

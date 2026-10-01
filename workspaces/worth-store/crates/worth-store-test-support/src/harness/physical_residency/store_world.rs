@@ -30,6 +30,8 @@ use super::configuration::{
     PhysicalResidencyStoreConfiguration,
 };
 
+mod recovery_budget;
+
 #[derive(Debug)]
 pub enum PhysicalResidencyStoreWorldConstructionFailure {
     Directory(std::io::Error),

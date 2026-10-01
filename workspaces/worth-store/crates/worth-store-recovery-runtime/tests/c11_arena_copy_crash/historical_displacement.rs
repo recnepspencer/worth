@@ -15,8 +15,8 @@ fn historical_copy_destination_is_retained_and_checked_after_later_rewrite() {
     let root = directory.path().join("store");
     kill_after_final_wal(directory.path());
     let record = load_identity(directory.path());
-    legacy_copy_frame::rewrite_one_durable_copy_as_v5(&root);
-    legacy_copy_frame::assert_no_published_copy_resolution(&root);
+    copy_frame::current_copy_publication_lsn(&root);
+    copy_frame::assert_no_published_copy_resolution(&root);
     let intents = pre_final::independent_copy_intent::produced_copy_intents(&root);
     assert_eq!(intents.len(), 1);
 
@@ -136,7 +136,7 @@ fn historical_copy_destination_is_retained_and_checked_after_later_rewrite() {
         "historical copy must not replay into the selected replacement"
     );
     serving.close();
-    legacy_copy_frame::assert_no_published_copy_resolution(&root);
+    copy_frame::assert_no_published_copy_resolution(&root);
 }
 
 fn assert_redo_blocked_before_effect(root: &Path) {

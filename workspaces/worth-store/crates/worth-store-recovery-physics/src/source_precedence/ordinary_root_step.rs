@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DerivedFamilyRootDirectoryBinding, ExtentArenaId,
     ExtentArenaRange, FreeSpaceKey, IndexedThroughBlobPublication,
-    PersistedPhysicalRecoveryBlobSemantic as Semantic, PersistedPhysicalRecoveryProjection,
+    PersistedPhysicalRecoveryOperation as Semantic, PersistedPhysicalRecoveryProjection,
     PersistedRecordIdentity, PhysicalInventoryTranscriptBuilderV1, PhysicalInventoryTranscriptV1,
     PhysicalRecordFormatDeclaration, RecordFreeSpaceManifestEntry, RecordSegmentPageManifestEntry,
     SegmentPageKey,
@@ -137,7 +137,7 @@ impl VerifiedOrdinaryRootStep {
             return Err(Denial::BoundExceeded);
         }
         if matches!(fate, RecoveryOperationFate::ProvenNoEffect)
-            || matches!(projection.blob_semantic(), Semantic::RecordsDropped(_))
+            || matches!(projection.operation(), Semantic::RecordsDropped { .. })
             || projection.source_root_generation() != source.root.generation()
             || source.root.generation().checked_add(1) != Some(result.root.generation())
             || result.root.generation() != result.free.generation()
@@ -232,9 +232,13 @@ fn scratch_charge(
         projection.placements().len(),
         projection.segment_updates().len(),
         projection.root_state().inline_allocations().len(),
-        projection
-            .derived_retirement()
-            .map_or(0, |value| value.dropped_records().len()),
+        match projection.operation() {
+            Semantic::DerivedDirectory {
+                retirement: Some(retirement),
+                ..
+            } => retirement.dropped_records().len(),
+            _ => 0,
+        },
     ];
     if counts.iter().any(|count| *count as u64 > limit) {
         return None;

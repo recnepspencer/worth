@@ -1,31 +1,26 @@
-use super::{
-    projection_contains_record, RecordIdentity, V13_PROJECTION_DOMAIN, V5_PROJECTION_DOMAIN,
-    V6_PROJECTION_DOMAIN,
-};
+use super::{projection_contains_record, RecordIdentity, CURRENT_PROJECTION_DOMAIN};
 
 #[test]
-fn selected_binding_reads_v5_and_v6_frame_layouts() {
+fn selected_binding_reads_current_frame_layout() {
     let record = record();
-    for (domain, semantic) in [
-        (V5_PROJECTION_DOMAIN, None),
-        (V6_PROJECTION_DOMAIN, Some(&[0][..])),
-    ] {
-        let (mut encoded, tag_offset, _) = projection_fixture(record, domain, semantic);
+    for source_copy in [false, true] {
+        let (mut encoded, tag_offset, _) =
+            projection_fixture_variant(record, CURRENT_PROJECTION_DOMAIN, Some(&[0]), source_copy);
         assert!(projection_contains_record(&encoded, record).unwrap());
 
-        encoded[tag_offset] = 1;
+        encoded[tag_offset] = u8::from(!source_copy);
         assert!(!projection_contains_record(&encoded, record).unwrap_or(false));
-        encoded[tag_offset] = 0;
+        encoded[tag_offset] = u8::from(source_copy);
         encoded.truncate(encoded.len() - 8);
         assert!(projection_contains_record(&encoded, record).is_err());
     }
 }
 
 #[test]
-fn selected_binding_requires_exact_v6_semantic_and_matching_record() {
+fn selected_binding_requires_exact_current_operation_and_matching_record() {
     let record = record();
     for semantic in [None, Some(&[][..]), Some(&[0, 0][..]), Some(&[3][..])] {
-        let (encoded, _, _) = projection_fixture(record, V6_PROJECTION_DOMAIN, semantic);
+        let (encoded, _, _) = projection_fixture(record, CURRENT_PROJECTION_DOMAIN, semantic);
         assert!(!projection_contains_record(&encoded, record).unwrap_or(false));
     }
     let mut bound = vec![1];
@@ -33,45 +28,41 @@ fn selected_binding_requires_exact_v6_semantic_and_matching_record() {
     bound.extend_from_slice(&record.ordinal.to_le_bytes());
     bound.extend_from_slice(&[0; 32]); // the digest may be zero; its identity is checked elsewhere
     bound.extend_from_slice(&2_u64.to_le_bytes());
-    let (encoded, _, _) = projection_fixture(record, V6_PROJECTION_DOMAIN, Some(&bound));
+    let (encoded, _, _) = projection_fixture(record, CURRENT_PROJECTION_DOMAIN, Some(&bound));
     assert!(projection_contains_record(&encoded, record).unwrap());
 
     bound[1] ^= 1;
-    let (encoded, _, _) = projection_fixture(record, V6_PROJECTION_DOMAIN, Some(&bound));
+    let (encoded, _, _) = projection_fixture(record, CURRENT_PROJECTION_DOMAIN, Some(&bound));
     assert!(!projection_contains_record(&encoded, record).unwrap());
     bound[1] ^= 1;
     bound[57..65].copy_from_slice(&3_u64.to_le_bytes());
-    let (encoded, _, _) = projection_fixture(record, V6_PROJECTION_DOMAIN, Some(&bound));
+    let (encoded, _, _) = projection_fixture(record, CURRENT_PROJECTION_DOMAIN, Some(&bound));
     assert!(!projection_contains_record(&encoded, record).unwrap());
 
-    let (encoded, _, _) = projection_fixture(record, V5_PROJECTION_DOMAIN, Some(&[0]));
+    let (encoded, _, _) = projection_fixture(record, CURRENT_PROJECTION_DOMAIN, Some(&[0, 0]));
     assert!(!projection_contains_record(&encoded, record).unwrap_or(false));
 }
 
 #[test]
-fn selected_binding_preserves_v5_and_v6_source_copy_and_rejects_blob_semantic() {
+fn selected_binding_preserves_current_source_copy_and_rejects_nonempty_operation() {
     let record = record();
-    for (domain, semantic) in [
-        (V5_PROJECTION_DOMAIN, None),
-        (V6_PROJECTION_DOMAIN, Some(&[0][..])),
-    ] {
-        let (encoded, _, _) = projection_fixture_variant(record, domain, semantic, true);
-        assert!(projection_contains_record(&encoded, record).unwrap());
-    }
+    let (encoded, _, _) =
+        projection_fixture_variant(record, CURRENT_PROJECTION_DOMAIN, Some(&[0]), true);
+    assert!(projection_contains_record(&encoded, record).unwrap());
     let mut bound = vec![1];
     bound.extend_from_slice(&record.allocation_epoch);
     bound.extend_from_slice(&record.ordinal.to_le_bytes());
     bound.extend_from_slice(&[8; 32]);
     bound.extend_from_slice(&2_u64.to_le_bytes());
     let (encoded, _, _) =
-        projection_fixture_variant(record, V6_PROJECTION_DOMAIN, Some(&bound), true);
+        projection_fixture_variant(record, CURRENT_PROJECTION_DOMAIN, Some(&bound), true);
     assert!(!projection_contains_record(&encoded, record).unwrap());
 }
 
 #[test]
-fn selected_binding_reads_independent_v13_classified_ordinary_wire() {
+fn selected_binding_reads_independent_current_classified_ordinary_wire() {
     let record = record();
-    let (mut encoded, retirement_tag, metadata) = v13_ordinary_fixture(record);
+    let (mut encoded, operation_tag, metadata) = current_ordinary_fixture(record);
     assert!(projection_contains_record(&encoded, record).unwrap());
     assert!(!projection_contains_record(
         &encoded,
@@ -82,13 +73,12 @@ fn selected_binding_reads_independent_v13_classified_ordinary_wire() {
     )
     .unwrap());
 
-    // V13 derived retirement is not the ordinary append family admitted by
-    // this selected-record binding oracle.
+    // A different operation tag cannot reinterpret the current ordinary append.
     for tag in [1, 2] {
-        encoded[retirement_tag] = tag;
-        assert!(!projection_contains_record(&encoded, record).unwrap());
+        encoded[operation_tag] = tag;
+        assert!(projection_contains_record(&encoded, record).is_err());
     }
-    encoded[retirement_tag] = 0;
+    encoded[operation_tag] = 0;
     for (position, value) in [(0, 9), (1, 1), (4, 3), (5, 1)] {
         let previous = encoded[metadata + position];
         encoded[metadata + position] = value;
@@ -100,17 +90,17 @@ fn selected_binding_reads_independent_v13_classified_ordinary_wire() {
 }
 
 #[test]
-fn selected_binding_rejects_unsupported_projection_version_and_noncanonical_v13_semantic() {
+fn selected_binding_rejects_unsupported_projection_version_and_noncanonical_operation() {
     let record = record();
-    let (mut encoded, _, _) = v13_ordinary_fixture(record);
+    let (mut encoded, _, _) = current_ordinary_fixture(record);
     let start = 8;
-    let end = start + V13_PROJECTION_DOMAIN.len();
+    let end = start + CURRENT_PROJECTION_DOMAIN.len();
     encoded[start..end].copy_from_slice(b"store.physical.recovery-projection.v12");
     assert!(!projection_contains_record(&encoded, record).unwrap());
 
-    let (mut encoded, retirement_tag, _) = v13_ordinary_fixture(record);
-    encoded[retirement_tag - 1] = 3;
-    assert!(!projection_contains_record(&encoded, record).unwrap());
+    let (mut encoded, operation_tag, _) = current_ordinary_fixture(record);
+    encoded[operation_tag] = 9;
+    assert!(projection_contains_record(&encoded, record).is_err());
 }
 
 fn record() -> RecordIdentity {
@@ -153,26 +143,27 @@ fn projection_fixture_variant(
         encoded.extend_from_slice(&1_u64.to_le_bytes());
         field(&mut encoded, b"frame");
     }
-    let semantic_offset = semantic.map(|bytes| {
-        let offset = encoded.len();
-        field(&mut encoded, bytes);
-        offset
-    });
     encoded.extend_from_slice(&1_u64.to_le_bytes());
     let mut placement = vec![2];
     placement.extend_from_slice(&identity);
     for value in [3_u64, 4, 1024, 5, 4096, 8192] {
         placement.extend_from_slice(&value.to_le_bytes());
     }
+    placement.extend_from_slice(&[1, 0, 0, 0, 0, 0, 0]);
     field(&mut encoded, &placement);
     encoded.extend_from_slice(&0_u64.to_le_bytes());
     encoded.extend_from_slice(&0_u64.to_le_bytes());
+    let semantic_offset = semantic.map(|bytes| {
+        let offset = encoded.len() + 8;
+        field(&mut encoded, bytes);
+        offset
+    });
     (encoded, tag_offset, semantic_offset)
 }
 
-fn v13_ordinary_fixture(record: RecordIdentity) -> (Vec<u8>, usize, usize) {
+fn current_ordinary_fixture(record: RecordIdentity) -> (Vec<u8>, usize, usize) {
     let mut encoded = Vec::new();
-    field(&mut encoded, V13_PROJECTION_DOMAIN);
+    field(&mut encoded, CURRENT_PROJECTION_DOMAIN);
     encoded.extend_from_slice(&1_u64.to_le_bytes());
     field(&mut encoded, b"root-state");
     encoded.extend_from_slice(&1_u64.to_le_bytes());
@@ -182,9 +173,6 @@ fn v13_ordinary_fixture(record: RecordIdentity) -> (Vec<u8>, usize, usize) {
     encoded.push(0); // durable frame payload, not source copy
     encoded.extend_from_slice(&1_u64.to_le_bytes());
     field(&mut encoded, b"frame");
-    field(&mut encoded, &[0]); // no blob semantic
-    let retirement_tag = encoded.len();
-    encoded.push(0);
     encoded.extend_from_slice(&1_u64.to_le_bytes());
     let mut placement = vec![2];
     placement.extend_from_slice(&identity);
@@ -197,7 +185,9 @@ fn v13_ordinary_fixture(record: RecordIdentity) -> (Vec<u8>, usize, usize) {
     encoded.extend_from_slice(&placement);
     encoded.extend_from_slice(&0_u64.to_le_bytes());
     encoded.extend_from_slice(&0_u64.to_le_bytes());
-    (encoded, retirement_tag, metadata)
+    let operation_tag = encoded.len() + 8;
+    field(&mut encoded, &[0]);
+    (encoded, operation_tag, metadata)
 }
 
 fn field(target: &mut Vec<u8>, value: &[u8]) {

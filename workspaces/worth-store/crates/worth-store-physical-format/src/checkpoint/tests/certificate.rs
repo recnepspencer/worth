@@ -8,9 +8,10 @@ use crate::checkpoint::{
 fn certified_stream() -> (Vec<u8>, Vec<u8>, Vec<u8>) {
     let source = secured_source(17).with_maintenance_protocol();
     let (encoder, header) = CheckpointStreamEncoder::begin_certified(source);
-    assert!(
-        super::super::PhysicalCheckpointSource::decode_c9_legacy_stream_header_record(&header)
-            .is_err()
+    assert_eq!(header[8], 3);
+    assert_eq!(
+        super::super::PhysicalCheckpointSource::decode_stream_header_record(&header),
+        Ok(source)
     );
     let cutover =
         CheckpointBindingCompactionHeader::new(5, source.wal().covered_end_lsn_exclusive())

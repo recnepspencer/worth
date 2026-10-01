@@ -5,7 +5,7 @@
 use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DurablePhysicalRootManifest,
-    PersistedPhysicalRecoveryBlobSemantic, PhysicalRecordFormatDeclaration,
+    PersistedPhysicalRecoveryOperation, PhysicalRecordFormatDeclaration,
 };
 use worth_store_recovery_physics::{
     AdmittedPhysicalRedoMembers, OrderedRootHistoryBuilder, PhysicalSourceSelection,
@@ -175,8 +175,8 @@ pub(super) fn admit(
             &result_segments,
             &result_inventory.free_entries,
         );
-        match member.materialization().blob_semantic() {
-            PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(_) => {
+        match member.materialization().operation() {
+            PersistedPhysicalRecoveryOperation::RecordsDropped { .. } => {
                 released_edge::admit(
                     discovery,
                     budget,

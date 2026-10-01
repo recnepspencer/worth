@@ -3,6 +3,7 @@
 
 use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
 use super::resident_basis;
+use crate::progression::PlanningCustody;
 
 #[path = "pending_wal/claim.rs"]
 mod claim;
@@ -22,13 +23,13 @@ pub(super) fn admit(
     basis: &mut ResolvedPlanningBasis,
     projection_index: usize,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
-    if basis.verified_pending_wal_release_custody.is_some() {
-        return Err(context.redo_block(basis.planning_counters(), None));
-    }
     // V14 release authority is either the independently joined V2 source
     // roster or a genuine NoRelease marker. A headless released checkpoint
     // cannot enter through the old addressed/global-tip admissions.
-    if basis.verified_selected_checkpoint_custody.is_some() {
+    if !matches!(
+        &basis.custody,
+        PlanningCustody::Unresolved | PlanningCustody::SourceHeads(_)
+    ) {
         return Err(context.redo_block(basis.planning_counters(), None));
     }
     let mut resident = match resident_basis::seed(&context, basis) {

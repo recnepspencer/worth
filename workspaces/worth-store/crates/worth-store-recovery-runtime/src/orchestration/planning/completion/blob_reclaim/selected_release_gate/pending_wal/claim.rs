@@ -8,6 +8,7 @@ use worth_store_recovery_physics::{
 use super::super::resident_basis;
 use super::{historical, member_fate::PendingMemberFate, PlanningContext, ResolvedPlanningBasis};
 use crate::orchestration::planning::selected_source_inventory::ResidentAllowance;
+use crate::progression::PlanningCustody;
 
 pub(super) fn admit(
     mut context: PlanningContext,
@@ -50,10 +51,26 @@ pub(super) fn admit(
         return Err(context.redo_block(basis.planning_counters(), limit));
     }
     let projection = &basis.redo.projections()[projection_index];
-    let admitted = match basis.verified_selected_head_custody_v2.take() {
-        Some(selected_head) => VerifiedPendingWalReleaseCustody::admit_from_head_v2(
+    let source_custody = std::mem::replace(&mut basis.custody, PlanningCustody::Unresolved);
+    let admitted = match source_custody {
+        PlanningCustody::SourceHeads(selected_head) => {
+            VerifiedPendingWalReleaseCustody::admit_from_head_v2(
+                &context.selection,
+                selected_head,
+                head_replay.clone(),
+                basis.observed_pages.tier_custody.as_ref(),
+                projection,
+                &basis.redo,
+                &reservation,
+                &manifest,
+                member.wal_fate,
+                member.canonical_redo_digest,
+                &basis.fates,
+                basis.sample.policy_identity(),
+            )
+        }
+        PlanningCustody::Unresolved => VerifiedPendingWalReleaseCustody::admit_with_head_replay(
             &context.selection,
-            selected_head,
             head_replay.clone(),
             basis.observed_pages.tier_custody.as_ref(),
             projection,
@@ -65,19 +82,7 @@ pub(super) fn admit(
             &basis.fates,
             basis.sample.policy_identity(),
         ),
-        None => VerifiedPendingWalReleaseCustody::admit_with_head_replay(
-            &context.selection,
-            head_replay.clone(),
-            basis.observed_pages.tier_custody.as_ref(),
-            projection,
-            &basis.redo,
-            &reservation,
-            &manifest,
-            member.wal_fate,
-            member.canonical_redo_digest,
-            &basis.fates,
-            basis.sample.policy_identity(),
-        ),
+        _ => return Err(context.redo_block(basis.planning_counters(), None)),
     };
     let mut claim = match admitted {
         Ok(claim) => claim,
@@ -86,7 +91,7 @@ pub(super) fn admit(
     context = historical::attach(context, basis, &mut claim, &mut resident)?;
     // Reopen must consume these mandatory head copies, not allocate them
     // after root publication. Preparation is storage, never published custody.
-    if basis.verified_effective_release_heads_v14.is_none() && claim.ordered_history().is_none() {
+    if claim.ordered_history().is_none() {
         let source_count = claim
             .selected_head_v2()
             .map_or(0, |base| base.selected_heads().len()) as u64;
@@ -130,7 +135,9 @@ pub(super) fn admit(
         .observed_pages
         .historical_publication_peak_scratch_bytes
         .max(resident.peak());
-    basis.verified_pending_wal_release_custody = Some(claim);
-    basis.verified_pending_release_head_replay = Some(head_replay);
+    basis.custody = PlanningCustody::PendingPrepared {
+        claim,
+        replay: head_replay,
+    };
     Ok(context)
 }

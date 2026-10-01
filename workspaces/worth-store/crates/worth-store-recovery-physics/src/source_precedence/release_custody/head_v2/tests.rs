@@ -91,7 +91,7 @@ fn v2_roster_and_rooted_walk_share_one_admission_budget_before_head_read() {
     );
     assert!(matches!(
         denied,
-        Err(SelectedCustodyDenial::ResidentBoundExceeded { required, admitted })
+        Err(SelectedHeadRosterAdmissionDenial::Custody(SelectedCustodyDenial::ResidentBoundExceeded { required, admitted }))
             if required > admitted && admitted == insufficient
     ));
     assert_eq!(denied_reads, 0);

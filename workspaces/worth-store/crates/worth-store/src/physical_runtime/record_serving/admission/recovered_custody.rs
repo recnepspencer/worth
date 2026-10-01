@@ -10,9 +10,8 @@ use worth_store_physical_format::{
 };
 use worth_store_recovery_physics::{
     VerifiedEffectiveReleaseHeadRosterV14, VerifiedOrderedHistoricalReleaseCustody,
-    VerifiedPendingWalReleaseCustody, VerifiedSelectedCheckpointCustody,
-    VerifiedSelectedNoReleaseCustody, VerifiedSelectedReleaseHeadCustodyV2,
-    VerifiedSelectedTierEpochCustody,
+    VerifiedPendingWalReleaseCustody, VerifiedSelectedNoReleaseCustody,
+    VerifiedSelectedReleaseHeadCustodyV2, VerifiedSelectedTierEpochCustody,
 };
 
 #[path = "recovered_custody/checkpoint.rs"]
@@ -31,7 +30,6 @@ pub struct RecoveredPhysicalCheckpointCustody {
     store: StableStoreIdentity,
     recovery_allocation: crate::physical_runtime::PhysicalRecoveryAllocationAdmission,
     root: DurablePhysicalRootManifest,
-    released: Option<VerifiedSelectedCheckpointCustody>,
     head_v2: Option<VerifiedSelectedReleaseHeadCustodyV2>,
     no_release: Option<VerifiedSelectedNoReleaseCustody>,
     pending_wal_release: Option<VerifiedPendingWalReleaseCustody>,
@@ -126,35 +124,30 @@ impl RecoveredPhysicalCheckpointCustody {
             None => {}
         }
         match (
-            &self.released,
             &self.head_v2,
             &self.no_release,
             &self.pending_wal_release,
             &self.historical_release,
         ) {
-            (Some(released), None, None, None, None) => {
-                self.verify_released(released, store, root, actual_sha256)?
-            }
-            (None, Some(head_v2), None, None, None) => {
+            (Some(head_v2), None, None, None) => {
                 self.verify_head_v2(head_v2, store, root, actual_sha256, format)?
             }
-            (None, None, Some(no_release), None, None) => {
+            (None, Some(no_release), None, None) => {
                 self.verify_no_release(no_release, store, root, actual_sha256)?
             }
-            (None, None, None, Some(pending), None) => {
+            (None, None, Some(pending), None) => {
                 self.verify_pending_wal_release(pending, store, root, actual_sha256)?
             }
-            (None, None, None, None, Some(historical)) => {
+            (None, None, None, Some(historical)) => {
                 self.verify_ordered_historical_release(historical, store, root, actual_sha256)?
             }
             _ => return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch),
         }
         if let Some(tier) = self.tier.as_ref() {
             let selected = self
-                .released
+                .head_v2
                 .as_ref()
                 .map(|claim| claim.checkpoint())
-                .or_else(|| self.head_v2.as_ref().map(|claim| claim.checkpoint()))
                 .or_else(|| self.no_release.as_ref().map(|claim| claim.checkpoint()))
                 .or_else(|| {
                     self.pending_wal_release
@@ -186,19 +179,6 @@ impl RecoveredPhysicalCheckpointCustody {
         _free_space: &DurableFreeSpaceManifestHeader,
         _format: PhysicalRecordFormatDeclaration,
     ) -> Result<(), RecoveredCheckpointCustodyDenial> {
-        Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch)
-    }
-
-    fn verify_released(
-        &self,
-        _verified: &VerifiedSelectedCheckpointCustody,
-        _store: StableStoreIdentity,
-        _root: &DurablePhysicalRootManifest,
-        _actual_sha256: [u8; 32],
-    ) -> Result<(), RecoveredCheckpointCustodyDenial> {
-        // A V1 accumulator carries no per-object head roster. Even an exact
-        // checkpoint transcript cannot authorize a released Serving ledger.
-        // The V2 route installs its independently rejoined head map.
         Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch)
     }
 
@@ -250,7 +230,6 @@ impl RecoveredPhysicalCheckpointCustody {
     pub(in crate::physical_runtime) fn verified_basis(
         &self,
     ) -> (
-        Option<&VerifiedSelectedCheckpointCustody>,
         Option<&VerifiedSelectedReleaseHeadCustodyV2>,
         Option<&VerifiedSelectedNoReleaseCustody>,
         Option<&VerifiedPendingWalReleaseCustody>,
@@ -259,7 +238,6 @@ impl RecoveredPhysicalCheckpointCustody {
         Option<&VerifiedSelectedTierEpochCustody>,
     ) {
         (
-            self.released.as_ref(),
             self.head_v2.as_ref(),
             self.no_release.as_ref(),
             self.pending_wal_release.as_ref(),

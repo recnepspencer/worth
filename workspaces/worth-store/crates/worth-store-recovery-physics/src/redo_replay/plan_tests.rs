@@ -179,20 +179,20 @@ fn legacy_redo_domains_cannot_masquerade_as_the_v3_projection_grammar() {
 }
 
 #[test]
-fn legacy_projection_domains_cannot_masquerade_as_the_current_v6_grammar() {
+fn unsupported_projection_domains_retain_typed_c9_denial_before_planning() {
     let target = canonical_target_bytes_with_generations(1, 2);
-    for legacy in [
+    for (version, unsupported) in [
         b"store.physical.recovery-projection.v1".as_slice(),
         b"store.physical.recovery-projection.v2".as_slice(),
         b"store.physical.recovery-projection.v3".as_slice(),
         b"store.physical.recovery-projection.v4".as_slice(),
-    ] {
+        b"store.physical.recovery-projection.v5".as_slice(),
+    ]
+    .into_iter()
+    .enumerate()
+    {
         let mut projection = projection_with_generations(1, 1, 2).encode();
-        replace_first(
-            &mut projection,
-            b"store.physical.recovery-projection.v6",
-            legacy,
-        );
+        replace_projection_domain(&mut projection, unsupported);
         let member = PhysicalRedoMemberInput::new(
             range(),
             [1; 32],
@@ -205,7 +205,11 @@ fn legacy_projection_domains_cannot_masquerade_as_the_current_v6_grammar() {
         );
         assert_eq!(
             plan_physical_redo(vec![member], vec![], 1),
-            Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)
+            Err(
+                PhysicalRedoPlanningDenial::UnsupportedRecoveryProjectionVersion(
+                    u16::try_from(version + 1).unwrap()
+                )
+            )
         );
     }
 }

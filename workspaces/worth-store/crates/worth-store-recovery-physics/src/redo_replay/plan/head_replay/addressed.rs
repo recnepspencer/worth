@@ -3,7 +3,7 @@
 
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
-    PersistedPhysicalRecoveryBlobSemantic, ReleaseCustodyHeadMutationV1,
+    PersistedPhysicalRecoveryOperation, ReleaseCustodyHeadMutationV1,
 };
 
 use super::*;
@@ -30,14 +30,13 @@ impl VerifiedSelectedReleaseHeadReplayV14 {
         // addressed frame. Check before the first callback, not after reading.
         require_two_page_window(format, remaining_additional_heap_bytes)?;
         let projection = member.materialization();
-        let PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding) =
-            projection.blob_semantic()
+        let PersistedPhysicalRecoveryOperation::RecordsDropped {
+            binding,
+            head_effect: Some(effect),
+        } = projection.operation()
         else {
             return Err(SelectedReleaseHeadReplayDenial::NotAdmittedUpsert);
         };
-        let effect = projection
-            .release_head_effect()
-            .ok_or(SelectedReleaseHeadReplayDenial::NotAdmittedUpsert)?;
         let ReleaseCustodyHeadMutationV1::Upsert { next, .. } = effect.mutation() else {
             return Err(SelectedReleaseHeadReplayDenial::NotAdmittedUpsert);
         };

@@ -164,6 +164,7 @@ pub(in crate::physical_runtime) use residency::frame_ports::RecordFramePorts;
 #[cfg(feature = "certification-test-authority")]
 pub use residency::frame_ports::{FramePortCounterObserver, FramePortCounterSnapshot};
 pub use residency::scheduled_writeback::PhysicalScheduledWritebackAdmissionDenial;
+pub(in crate::physical_runtime) use residency::MaintenanceRetainedDirectoryCharge;
 #[cfg(feature = "certification-test-authority")]
 pub use residency::{
     AdmittedDirtyFrame, AdmittedPhysicalWriteback, CertificationFrameFaultCause,

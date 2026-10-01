@@ -16,8 +16,8 @@ use worth_store_recovery_physics::{
 use super::{
     heads::SelectedReleaseHeadStep,
     reopen::{encoding::marker_digest_with_resident, RecoveredReleaseLedgerDenial as Denial},
-    ReleaseLedgerState, SelectedNoReleaseMarkerBasis, SelectedReleaseBatchBasis,
-    SelectedReleaseCustodyLedger, CERTIFICATE_FRAME_OVERHEAD,
+    PendingReleaseEvent, ReleaseLedgerState, SelectedNoReleaseMarkerBasis,
+    SelectedReleaseBatchBasis, SelectedReleaseCustodyLedger, CERTIFICATE_FRAME_OVERHEAD,
 };
 use crate::physical_runtime::recovery_residency::StoreRejoinResidentLedger;
 
@@ -87,7 +87,6 @@ impl ReleaseLedgerState {
             if *attached_index != index {
                 return Err(Denial::SelectedFactMismatch);
             }
-            ledger.append_pending_batch(BatchEvidence::ordered(batch, edge), resident)?;
             let step = SelectedReleaseHeadStep::from_effect(replay.replay().effect());
             ledger.effective_heads.apply_transition_admitted(
                 replay.replay().effect().source_root(),
@@ -95,13 +94,7 @@ impl ReleaseLedgerState {
                 replay.replay().effect().mutation(),
                 resident,
             )?;
-            resident.grow_vec(&mut ledger.pending_head_steps, 1)?;
-            ledger.pending_head_steps.push(step);
-            ledger
-                .pending_batches
-                .last_mut()
-                .ok_or(Denial::SelectedFactMismatch)?
-                .head_step = Some(step);
+            ledger.append_pending_batch(BatchEvidence::ordered(batch, edge), step, resident)?;
             cursor += 1;
         }
         if cursor == verified.released_batches().len()
@@ -191,7 +184,6 @@ impl ReleaseLedgerState {
                 if batch.edge_index() != index || *attached_index != index {
                     return Err(Denial::SelectedFactMismatch);
                 }
-                ledger.append_pending_batch(BatchEvidence::ordered(batch, edge), resident)?;
                 let step = SelectedReleaseHeadStep::from_effect(attached.replay().effect());
                 ledger.effective_heads.apply_transition_admitted(
                     attached.replay().effect().source_root(),
@@ -199,13 +191,7 @@ impl ReleaseLedgerState {
                     attached.replay().effect().mutation(),
                     resident,
                 )?;
-                resident.grow_vec(&mut ledger.pending_head_steps, 1)?;
-                ledger.pending_head_steps.push(step);
-                ledger
-                    .pending_batches
-                    .last_mut()
-                    .ok_or(Denial::SelectedFactMismatch)?
-                    .head_step = Some(step);
+                ledger.append_pending_batch(BatchEvidence::ordered(batch, edge), step, resident)?;
                 cursor += 1;
             }
             if cursor != verified.ordered_released_batches().len()
@@ -219,6 +205,13 @@ impl ReleaseLedgerState {
         if replay.effect().source_root() != ledger.effective_heads.root() {
             return Err(Denial::SelectedFactMismatch);
         }
+        let step = SelectedReleaseHeadStep::from_effect(replay.effect());
+        ledger.effective_heads.apply_transition_admitted(
+            replay.effect().source_root(),
+            Some(replay.effect().result_root()),
+            replay.effect().mutation(),
+            resident,
+        )?;
         ledger.append_pending_batch(
             BatchEvidence {
                 descriptor: verified.descriptor(),
@@ -230,22 +223,9 @@ impl ReleaseLedgerState {
                 candidate_root_sha256: root_sha256,
                 fate: verified.wal_fate(),
             },
+            step,
             resident,
         )?;
-        let step = SelectedReleaseHeadStep::from_effect(replay.effect());
-        ledger.effective_heads.apply_transition_admitted(
-            replay.effect().source_root(),
-            Some(replay.effect().result_root()),
-            replay.effect().mutation(),
-            resident,
-        )?;
-        resident.grow_vec(&mut ledger.pending_head_steps, 1)?;
-        ledger.pending_head_steps.push(step);
-        ledger
-            .pending_batches
-            .last_mut()
-            .ok_or(Denial::SelectedFactMismatch)?
-            .head_step = Some(step);
         if !ledger.effective_heads.matches_selected(
             Some(effective.effective_root()),
             effective.effective_heads(),
@@ -290,12 +270,13 @@ impl SelectedReleaseCustodyLedger {
     fn append_pending_batch(
         &mut self,
         batch: BatchEvidence,
+        step: SelectedReleaseHeadStep,
         resident: &mut StoreRejoinResidentLedger,
     ) -> Result<(), Denial> {
         // Terminality belongs to this descriptor's released object. Another
         // object can append a distinct batch even when the previous tip was
         // terminal; its per-object predecessor is checked in Store rejoin.
-        if self.pending_batches.len() as u64 >= MAX_CHECKPOINT_CERTIFICATE_RECORDS {
+        if self.pending_drop_count() as u64 >= MAX_CHECKPOINT_CERTIFICATE_RECORDS {
             return Err(Denial::SelectedFactMismatch);
         }
         let base = batch.descriptor.base();
@@ -346,9 +327,7 @@ impl SelectedReleaseCustodyLedger {
         {
             return Err(Denial::SelectedFactMismatch);
         }
-        resident.grow_vec(&mut self.pending_batches, 1)?;
-        self.pending_batches.push(SelectedReleaseBatchBasis {
-            head_step: None,
+        let basis = SelectedReleaseBatchBasis {
             descriptor_record: batch.descriptor_record,
             descriptor_frame_sha256: batch.descriptor_frame_sha256,
             custody_digest: batch.descriptor.custody_digest(),
@@ -362,7 +341,11 @@ impl SelectedReleaseCustodyLedger {
             cumulative_dropped,
             cumulative_digest,
             terminal: base.terminal(),
-        });
+        };
+        let event =
+            PendingReleaseEvent::for_drop(basis, step).map_err(|_| Denial::SelectedFactMismatch)?;
+        resident.grow_vec(&mut self.pending_events, 1)?;
+        self.pending_events.push(event);
         self.used_records = new_records;
         self.used_bytes = new_bytes;
         self.cumulative_dropped = cumulative_dropped;

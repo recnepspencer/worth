@@ -1,4 +1,5 @@
 use super::*;
+use worth_store::physical_runtime::AdmittedPhysicalRecordFormat;
 
 pub(crate) fn request(root: &Path) -> PhysicalRecoveryOpenRequest {
     request_with_memory(root, 16 << 20)
@@ -8,7 +9,30 @@ pub(crate) fn request_with_memory(
     root: &Path,
     recovery_memory_bytes: u64,
 ) -> PhysicalRecoveryOpenRequest {
-    let configuration = PhysicalRecoveryStaticConfiguration::current();
+    request_with_configuration(
+        root,
+        recovery_memory_bytes,
+        PhysicalRecoveryStaticConfiguration::current(),
+    )
+}
+
+pub(crate) fn request_with_memory_and_format(
+    root: &Path,
+    recovery_memory_bytes: u64,
+    format: AdmittedPhysicalRecordFormat,
+) -> PhysicalRecoveryOpenRequest {
+    request_with_configuration(
+        root,
+        recovery_memory_bytes,
+        PhysicalRecoveryStaticConfiguration::for_record_format(format.declaration()),
+    )
+}
+
+fn request_with_configuration(
+    root: &Path,
+    recovery_memory_bytes: u64,
+    configuration: PhysicalRecoveryStaticConfiguration,
+) -> PhysicalRecoveryOpenRequest {
     let limits = PhysicalRecoveryLimits::admit(PhysicalRecoveryLimitDeclaration {
         selector_candidates: 4,
         checkpoint_candidates: 64,

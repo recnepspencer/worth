@@ -76,12 +76,21 @@ impl ReleaseHeadCapacityCharge {
 }
 
 impl SelectedReleaseCustodyLedger {
+    #[cfg(test)]
     pub(super) fn admits_head_closure(
         &self,
         key: ReleaseCustodyHeadKeyV1,
         charge: ReleaseHeadCapacityCharge,
         recovery_limit: u64,
     ) -> Result<bool, ReleaseCertificateCapacityDenial> {
+        Ok(self.head_closure_bytes(key, charge)? <= recovery_limit)
+    }
+
+    pub(super) fn head_closure_bytes(
+        &self,
+        key: ReleaseCustodyHeadKeyV1,
+        charge: ReleaseHeadCapacityCharge,
+    ) -> Result<u64, ReleaseCertificateCapacityDenial> {
         if charge.head_block_frame_bytes == 0
             || charge.worst_case_new_node_bytes == 0
             || charge.recovery_resident_bytes == 0
@@ -99,7 +108,7 @@ impl SelectedReleaseCustodyLedger {
             charge.head_block_frame_bytes,
         )
         .ok_or(ReleaseCertificateCapacityDenial::CapacityExhausted)?;
-        let pending_closure = (self.pending_batches.len() as u64)
+        let pending_closure = (self.pending_drop_count() as u64)
             .checked_mul(control_max)
             .and_then(|bytes| bytes.checked_mul(CONTROLS_PER_PENDING_BATCH))
             .ok_or(ReleaseCertificateCapacityDenial::CapacityExhausted)?;
@@ -110,7 +119,7 @@ impl SelectedReleaseCustodyLedger {
             .and_then(|bytes| bytes.checked_add(charge.retained_control_bytes))
             .and_then(|bytes| bytes.checked_add(charge.checkpoint_roster_bytes))
             .ok_or(ReleaseCertificateCapacityDenial::CapacityExhausted)?;
-        Ok(total <= recovery_limit)
+        Ok(total)
     }
 }
 

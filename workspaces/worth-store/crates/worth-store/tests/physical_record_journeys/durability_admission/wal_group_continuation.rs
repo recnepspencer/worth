@@ -21,8 +21,8 @@ use worth_store_physical_backend::{
 
 use super::super::{configuration, durability_with_wal_policy, success};
 
-// The v6 recovery projection makes the two-member group 35_288 bytes.
-const SEGMENT_BYTES: u64 = 35_288;
+// The current recovery projection makes the two-member group 35_304 bytes.
+const SEGMENT_BYTES: u64 = 35_304;
 
 #[test]
 fn partial_rotated_group_keeps_its_reserved_suffix_and_excludes_competing_groups() {

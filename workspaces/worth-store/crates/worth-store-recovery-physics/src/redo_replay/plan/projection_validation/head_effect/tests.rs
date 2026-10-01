@@ -7,7 +7,7 @@ use worth_store_physical_format::{
     BlobReclaimSourceKind, CurrentPhysicalRecordPlacement, DurableExtentRecordPlacement,
     ExtentArenaId, ExtentArenaRange, ExtentChunkCoordinate, OriginalDropReservationRequestV1,
     PersistedBlobSemanticRecordBinding, PersistedPhysicalDataFrameSubject,
-    PersistedPhysicalRecoveryBlobSemantic, PersistedPhysicalRecoveryFrame,
+    PersistedPhysicalRecoveryFrame, PersistedPhysicalRecoveryOperation,
     PersistedPhysicalRecoveryRootState, PersistedRecordIdentity,
     PersistedReleaseCustodyHeadEffectV1, PhysicalExtentId, PhysicalGeneration,
     PhysicalGenerationAuthority, RecordArtifactFile, RecordFrameCoordinate,
@@ -147,7 +147,7 @@ fn fixture() -> (
     let binding =
         PersistedBlobSemanticRecordBinding::new(identity, Sha256::digest(&bytes).into(), 12)
             .unwrap();
-    let projection = PersistedPhysicalRecoveryProjection::new_with_blob_semantic(
+    let projection = PersistedPhysicalRecoveryProjection::new_with_operation(
         11,
         PersistedPhysicalRecoveryRootState::new(4096, 1, 32, vec![], None, None).unwrap(),
         vec![identity],
@@ -155,18 +155,25 @@ fn fixture() -> (
         vec![CurrentPhysicalRecordPlacement::Extent(placement)],
         vec![],
         vec![],
-        PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding),
+        PersistedPhysicalRecoveryOperation::RecordsDropped {
+            binding,
+            head_effect: Some(effect),
+        },
     )
-    .unwrap()
-    .with_release_head_upsert(effect)
     .unwrap();
     (bytes, identity, projection, store, format)
 }
 
 #[test]
-fn v14_binds_the_exact_descriptor_and_charges_the_head_roster() {
+fn current_head_effect_binds_exact_descriptor_and_charges_roster() {
     let (bytes, identity, projection, store, format) = fixture();
-    let effect = projection.release_head_effect().unwrap();
+    let PersistedPhysicalRecoveryOperation::RecordsDropped {
+        head_effect: Some(effect),
+        ..
+    } = projection.operation()
+    else {
+        panic!("fixture retains the exact head effect");
+    };
     assert_eq!(
         validate_head_descriptor(&bytes, identity, &projection, store, format, effect),
         Ok(())

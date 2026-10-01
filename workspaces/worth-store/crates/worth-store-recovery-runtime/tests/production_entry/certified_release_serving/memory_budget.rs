@@ -73,7 +73,7 @@ fn selected_release_source_memory_denies_before_effects_and_sufficient_twin_open
             let PhysicalRecoveryOutcome::Blocked(blocked) = outcome else {
                 panic!("bounded V2 source closure must block: {outcome:?}")
             };
-            assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::RedoPlanning);
+            assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::SelectedCustody);
             assert_eq!(blocked.recovery_effects(), 0);
             let evidence = blocked.evidence();
             let limit = evidence.limit.unwrap_or_else(|| {
@@ -86,10 +86,13 @@ fn selected_release_source_memory_denies_before_effects_and_sufficient_twin_open
             assert_eq!(limit.admitted, 512 << 10);
             assert!(limit.observed > limit.admitted);
             assert!(
-                evidence.planning_denial.is_none(),
-                "not a later plan-cost denial"
+                matches!(evidence.planning_denial,
+                    Some(worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial::SelectedReleaseHead(
+                        worth_store_recovery_runtime::PhysicalRecoverySelectedReleaseHeadDenial::ResidentBoundExceeded { .. }
+                    ))),
+                "must be the resident admission boundary, not a later plan-cost denial: {evidence:?}"
             );
-            assert_eq!(evidence.artifact.as_deref(), Some("canonical-redo-plan"));
+            assert_eq!(evidence.artifact.as_deref(), Some("checkpoint-source-release-head-v2"));
             assert_eq!(
                 selector(&root, RecordArtifactFile::CurrentRootSelector),
                 current

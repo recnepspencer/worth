@@ -16,18 +16,7 @@ pub struct PlannedPhysicalRecovery {
     authority: AdmittedPlatformAuthority,
     coordination: RecoveryCoordination,
     selection: PhysicalSourceSelection,
-    verified_selected_checkpoint_custody:
-        Option<worth_store_recovery_physics::VerifiedSelectedCheckpointCustody>,
-    verified_selected_head_custody_v2:
-        Option<worth_store_recovery_physics::VerifiedSelectedReleaseHeadCustodyV2>,
-    verified_selected_no_release_custody:
-        Option<worth_store_recovery_physics::VerifiedSelectedNoReleaseCustody>,
-    verified_pending_wal_release_custody:
-        Option<worth_store_recovery_physics::VerifiedPendingWalReleaseCustody>,
-    verified_ordered_historical_release_custody:
-        Option<worth_store_recovery_physics::VerifiedOrderedHistoricalReleaseCustody>,
-    verified_effective_release_heads_v14:
-        Option<worth_store_recovery_physics::VerifiedEffectiveReleaseHeadRosterV14>,
+    custody: crate::progression::PlanningCustody,
     verified_selected_tier_custody:
         Option<worth_store_recovery_physics::VerifiedSelectedTierEpochCustody>,
     discovery_counters: PhysicalRecoveryDiscoveryCounters,
@@ -53,24 +42,7 @@ impl PlannedPhysicalRecovery {
         authority: AdmittedPlatformAuthority,
         coordination: RecoveryCoordination,
         selection: PhysicalSourceSelection,
-        verified_selected_checkpoint_custody: Option<
-            worth_store_recovery_physics::VerifiedSelectedCheckpointCustody,
-        >,
-        verified_selected_head_custody_v2: Option<
-            worth_store_recovery_physics::VerifiedSelectedReleaseHeadCustodyV2,
-        >,
-        verified_selected_no_release_custody: Option<
-            worth_store_recovery_physics::VerifiedSelectedNoReleaseCustody,
-        >,
-        verified_pending_wal_release_custody: Option<
-            worth_store_recovery_physics::VerifiedPendingWalReleaseCustody,
-        >,
-        verified_ordered_historical_release_custody: Option<
-            worth_store_recovery_physics::VerifiedOrderedHistoricalReleaseCustody,
-        >,
-        verified_effective_release_heads_v14: Option<
-            worth_store_recovery_physics::VerifiedEffectiveReleaseHeadRosterV14,
-        >,
+        custody: crate::progression::PlanningCustody,
         verified_selected_tier_custody: Option<
             worth_store_recovery_physics::VerifiedSelectedTierEpochCustody,
         >,
@@ -92,12 +64,7 @@ impl PlannedPhysicalRecovery {
             authority,
             coordination,
             selection,
-            verified_selected_checkpoint_custody,
-            verified_selected_head_custody_v2,
-            verified_selected_no_release_custody,
-            verified_pending_wal_release_custody,
-            verified_ordered_historical_release_custody,
-            verified_effective_release_heads_v14,
+            custody,
             verified_selected_tier_custody,
             discovery_counters,
             root_protocol_denials,
@@ -249,12 +216,7 @@ impl PlannedPhysicalRecovery {
             authority,
             coordination,
             selection,
-            verified_selected_checkpoint_custody,
-            verified_selected_head_custody_v2,
-            verified_selected_no_release_custody,
-            verified_pending_wal_release_custody,
-            verified_ordered_historical_release_custody,
-            verified_effective_release_heads_v14,
+            custody,
             verified_selected_tier_custody,
             discovery_counters,
             freshness,
@@ -274,12 +236,7 @@ impl PlannedPhysicalRecovery {
             authority,
             coordination,
             selection,
-            verified_selected_checkpoint_custody,
-            verified_selected_head_custody_v2,
-            verified_selected_no_release_custody,
-            verified_pending_wal_release_custody,
-            verified_ordered_historical_release_custody,
-            verified_effective_release_heads_v14,
+            custody,
             verified_selected_tier_custody,
             discovery_counters,
             root_protocol_denials,

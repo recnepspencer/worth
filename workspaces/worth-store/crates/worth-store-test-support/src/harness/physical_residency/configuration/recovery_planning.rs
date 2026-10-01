@@ -1,3 +1,5 @@
+use std::num::NonZeroU64;
+
 use worth_store::physical_runtime::{
     AdmittedPhysicalRecordFormat, ManifestEntryCapacity, PageFillPercent,
     PhysicalOperationAllocationScope as Scope, PhysicalRecordPlacementPolicy,
@@ -30,6 +32,41 @@ pub(in crate::harness::physical_residency) fn recovery_planning_configuration_wi
         .checked_mul(4)
         .expect("four admitted physical pages fit the fixture budget");
     configuration(base, four_format_pages, four_format_pages)
+}
+
+pub(in crate::harness::physical_residency) fn recovery_planning_configuration_with_maintenance_scope(
+    format: AdmittedPhysicalRecordFormat,
+    manifest_capacity: u16,
+    maintenance_bytes: NonZeroU64,
+) -> PhysicalResidencyStoreConfiguration {
+    let base = admitted_store_base_with_format_and_manifest_capacity(format, manifest_capacity);
+    let four_format_pages = u64::from(format.declaration().page_size().bytes())
+        .checked_mul(4)
+        .expect("four admitted physical pages fit the fixture budget");
+    configuration_with_maintenance(
+        base,
+        four_format_pages,
+        four_format_pages,
+        maintenance_bytes.get(),
+    )
+}
+
+pub(in crate::harness::physical_residency) fn recovery_planning_configuration_with_recovery_scope(
+    format: AdmittedPhysicalRecordFormat,
+    manifest_capacity: u16,
+    recovery_bytes: NonZeroU64,
+) -> PhysicalResidencyStoreConfiguration {
+    let base = admitted_store_base_with_format_and_manifest_capacity(format, manifest_capacity);
+    let four_format_pages = u64::from(format.declaration().page_size().bytes())
+        .checked_mul(4)
+        .expect("four admitted physical pages fit the fixture budget");
+    configuration_with_scopes(
+        base,
+        four_format_pages,
+        four_format_pages,
+        OPERATION_BYTES,
+        recovery_bytes.get(),
+    )
 }
 
 pub(in crate::harness::physical_residency) fn span_rewrite_configuration(
@@ -76,6 +113,25 @@ fn configuration(
     resident: u64,
     dirty: u64,
 ) -> PhysicalResidencyStoreConfiguration {
+    configuration_with_maintenance(base, resident, dirty, OPERATION_BYTES)
+}
+
+fn configuration_with_maintenance(
+    base: super::PhysicalResidencyStoreAdmissionBase,
+    resident: u64,
+    dirty: u64,
+    maintenance_bytes: u64,
+) -> PhysicalResidencyStoreConfiguration {
+    configuration_with_scopes(base, resident, dirty, maintenance_bytes, OPERATION_BYTES)
+}
+
+fn configuration_with_scopes(
+    base: super::PhysicalResidencyStoreAdmissionBase,
+    resident: u64,
+    dirty: u64,
+    maintenance_bytes: u64,
+    recovery_bytes: u64,
+) -> PhysicalResidencyStoreConfiguration {
     let format = base.format();
     let mut residency = PhysicalRecordResidencyPolicy::builder()
         .total_bytes(bytes(
@@ -98,7 +154,14 @@ fn configuration(
         Scope::Verification,
         Scope::Blob,
     ] {
-        residency = residency.scope_bytes(scope, bytes(OPERATION_BYTES));
+        residency = residency.scope_bytes(
+            scope,
+            bytes(match scope {
+                Scope::Maintenance => maintenance_bytes,
+                Scope::Recovery => recovery_bytes,
+                _ => OPERATION_BYTES,
+            }),
+        );
     }
     let residency = residency
         .speculative_frames(Speculation::Prefetch, frames(8))

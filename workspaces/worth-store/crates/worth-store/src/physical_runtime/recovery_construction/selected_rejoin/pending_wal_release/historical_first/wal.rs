@@ -2,7 +2,7 @@
 
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
-    decode_canonical_redo_v3, PersistedPhysicalRecoveryBlobSemantic,
+    decode_canonical_redo_v3, PersistedPhysicalRecoveryOperation,
     PersistedPhysicalRecoveryProjection, PhysicalRecordFormatDeclaration,
     PhysicalRecoveryProjectionDecodeLimits,
 };
@@ -122,7 +122,7 @@ pub(super) fn match_batch(
         format,
     )
     .map_err(|_| Denial::WalFate)?;
-    let PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding) = projection.blob_semantic()
+    let PersistedPhysicalRecoveryOperation::RecordsDropped { binding, .. } = projection.operation()
     else {
         return Err(Denial::WalFate);
     };

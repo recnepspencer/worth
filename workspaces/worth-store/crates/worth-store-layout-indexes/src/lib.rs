@@ -10,7 +10,6 @@ mod catalog;
 pub mod compaction_projection;
 pub mod customization;
 pub mod declarations;
-pub mod evolution;
 mod facade;
 pub mod integrity;
 mod keyspace;
@@ -23,11 +22,10 @@ pub mod strategy_declarations;
 
 pub use access::execution::{
     degraded_scan_readiness_cases, AccessPathCounterSnapshot, CounterEnvelopeViolation,
-    DegradedScanAdmissionDenied,
-    DegradedScanCounterReceipt, DegradedScanExecution, DegradedScanLoweringBasis,
-    DegradedScanReadinessCaseId, DegradedScanReadinessOutcome, DegradedScanReadinessView,
-    DegradedScanReady, DegradedScanRebindAdmission, DegradedScanRebindTrace,
-    ExecutedLayoutOperation, LoweredDegradedExactScan,
+    DegradedScanAdmissionDenied, DegradedScanCounterReceipt, DegradedScanExecution,
+    DegradedScanLoweringBasis, DegradedScanReadinessCaseId, DegradedScanReadinessOutcome,
+    DegradedScanReadinessView, DegradedScanReady, DegradedScanRebindAdmission,
+    DegradedScanRebindTrace, ExecutedLayoutOperation, LoweredDegradedExactScan,
     PhysicalDegradedExecutionDenial, PlannedCounterObservation, StaleDegradedExactScan,
 };
 pub use access::execution::{
@@ -88,18 +86,18 @@ pub use maintenance::{
     DerivedIndexRebuildAdmissionView, DerivedIndexRebuildCounterSnapshot,
     DerivedIndexRebuildDenied, DerivedIndexRebuildExecutionCaseId, DerivedIndexRebuildOutcome,
     DerivedIndexRebuildPlan, DerivedIndexRebuildReceipt, DerivedIndexRebuildRequest,
-    DerivedIndexRebuildScope, DerivedIndexRebuildSourceInput,
-    DerivedIndexResultIdentity, IndexLagWitness, IndexMaintenanceFailureOutcome,
-    IndexMaintenanceMode, IndexPublicationProtocol, LayoutLsmMaintenance, LayoutMutationAdmission,
+    DerivedIndexRebuildScope, DerivedIndexRebuildSourceInput, DerivedIndexResultIdentity,
+    IndexLagWitness, IndexMaintenanceFailureOutcome, IndexMaintenanceMode,
+    IndexPublicationProtocol, LayoutLsmMaintenance, LayoutMutationAdmission,
     LayoutMutationAdmissionCaseId, LayoutMutationAdmissionOutcome, LayoutMutationAdmissionView,
-    LayoutMutationPlan, LayoutParityVerification,
-    LayoutRebuildAdmission, LayoutRebuildCandidateReadmission, LayoutRebuildExecution,
-    LazyMaintenanceCapability, LiveMaintenancePosture, LiveMaintenancePostureAdmission,
-    LiveMaintenancePostureCaseId, LiveMaintenancePostureOutcome, LiveMaintenancePostureView,
-    LiveMaintenanceRequest, LsmCompactionAdmissionRequest,
-    LsmCompactionMaintenanceAdmissionOutcome, LsmCompactionMaintenanceAdmissionView,
-    LsmMaintenanceAdmissionDenialKind, LsmMaintenanceAdmissionDenied, LsmMaintenanceDisposition,
-    LsmMaintenanceOperation, LsmMaintenanceOwnerCaseDeclaration, LsmMaintenanceOwnerCaseId,
+    LayoutMutationPlan, LayoutParityVerification, LayoutRebuildAdmission,
+    LayoutRebuildCandidateReadmission, LayoutRebuildExecution, LazyMaintenanceCapability,
+    LiveMaintenancePosture, LiveMaintenancePostureAdmission, LiveMaintenancePostureCaseId,
+    LiveMaintenancePostureOutcome, LiveMaintenancePostureView, LiveMaintenanceRequest,
+    LsmCompactionAdmissionRequest, LsmCompactionMaintenanceAdmissionOutcome,
+    LsmCompactionMaintenanceAdmissionView, LsmMaintenanceAdmissionDenialKind,
+    LsmMaintenanceAdmissionDenied, LsmMaintenanceDisposition, LsmMaintenanceOperation,
+    LsmMaintenanceOwnerCaseDeclaration, LsmMaintenanceOwnerCaseId,
     LsmMaintenanceOwnerCaseObservation, LsmReplayAdmissionRequest,
     LsmReplayMaintenanceAdmissionOutcome, LsmReplayMaintenanceAdmissionView,
     LsmRunPublicationAdmissionOutcome, LsmRunPublicationAdmissionRequest,
@@ -127,9 +125,10 @@ pub use planning::{
     AccessPlanSelector, AdmittedPhysicalMutationRequest, AdmittedPhysicalReadRequest,
     AdmittedPhysicalRecoveryRequest, ImportedBlobReadAdmissionCaseId,
     ImportedBlobReadAdmissionOutcome, ImportedBlobReadAdmissionView,
-    PhysicalAccessRequestAdmissionDenied, SelectedDegradedExactScan, SelectedLsmCompaction, SelectedLsmLookup, SelectedLsmReplayRecovery,
-    SelectedLsmRunPublication, SelectionCandidateAudit, SelectionCandidateOutcome,
-    SelectionCandidateRejection, SelectionCandidateRejectionCase,
+    PhysicalAccessRequestAdmissionDenied, SelectedDegradedExactScan, SelectedLsmCompaction,
+    SelectedLsmLookup, SelectedLsmReplayRecovery, SelectedLsmRunPublication,
+    SelectionCandidateAudit, SelectionCandidateOutcome, SelectionCandidateRejection,
+    SelectionCandidateRejectionCase,
 };
 
 #[cfg(test)]
@@ -167,12 +166,6 @@ pub(crate) use access::shape::{
 pub(crate) use catalog::ArtifactFamilyAccessLane;
 #[cfg(test)]
 pub(crate) use catalog::ArtifactScopePartitionWitness;
-#[cfg(test)]
-pub(crate) use evolution::{
-    LayoutBindingWitness, LayoutCompatibilityWindow, LayoutEvolutionDeclaration,
-    LayoutInterruptionPolicy, LayoutReadCompatibilityPosture, LayoutVersion,
-    LayoutWriteCompatibilityPosture,
-};
 #[cfg(test)]
 pub(crate) use keyspace::{CompositeKeyField, HashCollisionBehavior};
 pub use strategy::{

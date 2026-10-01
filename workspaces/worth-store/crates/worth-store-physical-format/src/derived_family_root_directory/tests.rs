@@ -77,7 +77,7 @@ fn indexed_through_marker_round_trips_and_absence_is_canonical() {
 }
 
 #[test]
-fn quarantine_marker_roundtrips_and_v1_directory_remains_readable() {
+fn quarantine_marker_roundtrips_and_retired_v1_directory_is_rejected() {
     let directory = DerivedFamilyRootDirectoryV1::new(vec![])
         .unwrap()
         .with_indexed_through_quarantine(Some(record(31)));
@@ -88,6 +88,8 @@ fn quarantine_marker_roundtrips_and_v1_directory_remains_readable() {
     let mut old = DerivedFamilyRootDirectoryV1::new(vec![]).unwrap().encode();
     old[8] = 1;
     old.drain(76..101);
-    let decoded = DerivedFamilyRootDirectoryV1::decode(&old).unwrap();
-    assert_eq!(decoded.indexed_through_quarantine(), None);
+    assert_eq!(
+        DerivedFamilyRootDirectoryV1::decode(&old),
+        Err(DerivedFamilyDirectoryDenial::UnsupportedVersion)
+    );
 }

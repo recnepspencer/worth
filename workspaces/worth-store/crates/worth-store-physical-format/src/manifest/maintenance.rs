@@ -1,8 +1,7 @@
-use super::{DurablePhysicalRootManifest, RootManifestDenial};
+use super::DurablePhysicalRootManifest;
 use crate::record_framing::{
-    DurableFrameDenial, DIRECTORY_BOUND_MAINTENANCE_ROOT_SCHEMA, DIRECTORY_BOUND_ROOT_SCHEMA,
-    MAINTENANCE_ROOT_SCHEMA, QUARANTINE_BOUND_MAINTENANCE_ROOT_SCHEMA,
-    QUARANTINE_BOUND_ROOT_SCHEMA, TIER_ANCHORED_MAINTENANCE_ROOT_SCHEMA,
+    DIRECTORY_BOUND_MAINTENANCE_ROOT_SCHEMA, MAINTENANCE_ROOT_SCHEMA,
+    QUARANTINE_BOUND_MAINTENANCE_ROOT_SCHEMA, TIER_ANCHORED_MAINTENANCE_ROOT_SCHEMA,
 };
 
 impl DurablePhysicalRootManifest {
@@ -25,30 +24,6 @@ impl DurablePhysicalRootManifest {
                 | 10
         );
         self
-    }
-
-    /// C.9 envelope only. A maintenance-capable root is rejected before its fields are served.
-    pub fn decode_c9_legacy(
-        bytes: &[u8],
-        max_entries: u16,
-    ) -> Result<(Self, crate::PhysicalRecordFormatDeclaration), RootManifestDenial> {
-        if bytes.get(9).is_some_and(|schema| {
-            matches!(
-                *schema,
-                MAINTENANCE_ROOT_SCHEMA
-                    | DIRECTORY_BOUND_ROOT_SCHEMA
-                    | DIRECTORY_BOUND_MAINTENANCE_ROOT_SCHEMA
-                    | QUARANTINE_BOUND_ROOT_SCHEMA
-                    | QUARANTINE_BOUND_MAINTENANCE_ROOT_SCHEMA
-                    | TIER_ANCHORED_MAINTENANCE_ROOT_SCHEMA
-                    | 10
-            )
-        }) {
-            return Err(RootManifestDenial::Frame(
-                DurableFrameDenial::UnsupportedSchema(bytes[9]),
-            ));
-        }
-        Self::decode(bytes, max_entries)
     }
 }
 
@@ -78,11 +53,11 @@ mod tests {
     #[test]
     fn maintenance_root_is_a_distinct_envelope() {
         let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
-        let legacy = manifest(false).encode(format);
+        let ordinary = manifest(false).encode(format);
         let maintained = manifest(true).encode(format);
-        assert_eq!(legacy[9], 2);
+        assert_eq!(ordinary[9], 2);
         assert_eq!(maintained[9], 3);
-        assert!(!DurablePhysicalRootManifest::decode(&legacy, u16::MAX)
+        assert!(!DurablePhysicalRootManifest::decode(&ordinary, u16::MAX)
             .unwrap()
             .0
             .requires_maintenance_protocol());
@@ -90,12 +65,10 @@ mod tests {
             .unwrap()
             .0
             .requires_maintenance_protocol());
-        assert!(DurablePhysicalRootManifest::decode_c9_legacy(&legacy, u16::MAX).is_ok());
-        assert!(DurablePhysicalRootManifest::decode_c9_legacy(&maintained, u16::MAX).is_err());
     }
 
     #[test]
-    fn extended_root_preserves_legacy_versions_and_exact_marker_binding() {
+    fn directory_bound_root_preserves_current_schemas_and_exact_marker_binding() {
         let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
         let publication = PersistedRecordIdentity::new([7; 16], 1).unwrap();
         let directory = PersistedRecordIdentity::new([7; 16], 2).unwrap();
@@ -122,7 +95,6 @@ mod tests {
                     .0,
                 candidate
             );
-            assert!(DurablePhysicalRootManifest::decode_c9_legacy(&bytes, u16::MAX).is_err());
         }
         assert_eq!(manifest(false).encode(format).len(), 384);
         assert_eq!(manifest(true).encode(format).len(), 384);
@@ -153,7 +125,6 @@ mod tests {
                     .0,
                 candidate
             );
-            assert!(DurablePhysicalRootManifest::decode_c9_legacy(&bytes, u16::MAX).is_err());
         }
     }
 
@@ -174,7 +145,6 @@ mod tests {
                 .0,
             root
         );
-        assert!(DurablePhysicalRootManifest::decode_c9_legacy(&bytes, u16::MAX).is_err());
         let altered = DurablePhysicalRootManifest::builder(2, 9, 2, 43)
             .tier_epoch_anchor(Some([8; 32]))
             .admit()

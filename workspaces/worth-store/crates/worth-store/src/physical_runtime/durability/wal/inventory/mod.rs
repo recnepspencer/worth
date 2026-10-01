@@ -34,6 +34,7 @@ pub enum PhysicalWalOpenFailure {
     ReopenAllocationLimitExceeded { admitted: u64, required: u64 },
     SegmentInspection(WalArtifactStoreDenial),
     MemberPayloadRejected,
+    UnsupportedRecoveryProjectionVersion(u16),
     IncompletePublicationGroup,
     CheckpointCutoffOutsideRetainedWal,
     Topology(WalTopologyDenialKind),

@@ -4,7 +4,7 @@
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
     decode_blob_record, BlobReclaimSourceBasisV1, BlobRecordKind, BlobRecordV1,
-    PersistedPhysicalRecoveryBlobSemantic, PersistedRecordIdentity, RecordFrameCoordinate,
+    PersistedPhysicalRecoveryOperation, PersistedRecordIdentity, RecordFrameCoordinate,
 };
 
 use super::*;
@@ -142,8 +142,8 @@ impl AdmittedPhysicalRedoMembers {
         {
             return None;
         }
-        let PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding) =
-            descriptor_member.projection.blob_semantic()
+        let PersistedPhysicalRecoveryOperation::RecordsDropped { binding, .. } =
+            descriptor_member.projection.operation()
         else {
             return None;
         };

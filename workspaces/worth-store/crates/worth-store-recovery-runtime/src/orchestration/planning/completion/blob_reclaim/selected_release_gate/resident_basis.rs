@@ -3,17 +3,17 @@
 
 use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
 use crate::orchestration::planning::selected_source_inventory::ResidentAllowance;
+use crate::progression::PlanningCustody;
 
 pub(super) fn seed(
     context: &PlanningContext,
     basis: &ResolvedPlanningBasis,
 ) -> Result<ResidentAllowance, Option<crate::entry::PhysicalRecoveryLimitFailure>> {
     // Final custody assembly cannot be used as the source of a second admission.
-    if basis.verified_selected_checkpoint_custody.is_some()
-        || basis.verified_pending_wal_release_custody.is_some()
-        || basis.verified_ordered_historical_release_custody.is_some()
-        || basis.verified_effective_release_heads_v14.is_some()
-    {
+    if !matches!(
+        &basis.custody,
+        PlanningCustody::Unresolved | PlanningCustody::SourceHeads(_)
+    ) {
         return Err(None);
     }
     let mut resident = ResidentAllowance::new(context.limits.recovery_memory_bytes);

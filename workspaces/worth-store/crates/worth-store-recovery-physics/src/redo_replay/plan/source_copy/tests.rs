@@ -22,8 +22,72 @@ fn copy_plan_keeps_two_lsns_and_has_no_synthetic_page_decisions() {
 }
 
 #[test]
+fn borrowed_current_copy_admission_keeps_exact_member_and_shape() {
+    let (format, member) = fixture(RecoveryOperationFate::Indeterminate);
+    let projection = admit_current_source_copy_publication(
+        member.operation(),
+        member.lsn_range(),
+        member.canonical_redo(),
+        format,
+        limits().projection,
+    )
+    .unwrap()
+    .expect("exact current copy member");
+    assert_eq!(
+        projection.operation(),
+        &PersistedPhysicalRecoveryOperation::None
+    );
+    assert_eq!(projection.placements().len(), 1);
+    assert_eq!(projection.record_identities().len(), 1);
+
+    assert_eq!(
+        admit_current_source_copy_publication(
+            [20; 32],
+            member.lsn_range(),
+            member.canonical_redo(),
+            format,
+            limits().projection,
+        ),
+        Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)
+    );
+    let mut malformed = member.canonical_redo().to_vec();
+    malformed.truncate(malformed.len() - 1);
+    assert!(admit_current_source_copy_publication(
+        member.operation(),
+        member.lsn_range(),
+        &malformed,
+        format,
+        limits().projection,
+    )
+    .is_err());
+    let mut zero = limits().projection;
+    zero.placements = 0;
+    assert!(admit_current_source_copy_publication(
+        member.operation(),
+        member.lsn_range(),
+        member.canonical_redo(),
+        format,
+        zero,
+    )
+    .is_err());
+}
+
+#[test]
 fn copy_rejects_foreign_operation_final_lsn_and_unbounded_memory() {
     let (format, member) = fixture(RecoveryOperationFate::Indeterminate);
+    let mut unsupported = member.clone();
+    let domain = b"store.physical.recovery-projection.v15";
+    let domain_offset = unsupported
+        .canonical_redo
+        .windows(domain.len())
+        .position(|window| window == domain)
+        .unwrap();
+    unsupported.canonical_redo[domain_offset..domain_offset + domain.len()]
+        .copy_from_slice(b"store.physical.recovery-projection.v14");
+    assert_eq!(
+        admit_physical_redo_members(vec![unsupported], store(), format, limits()),
+        Err(PhysicalRedoPlanningDenial::UnsupportedRecoveryProjectionVersion(14))
+    );
     let mut wrong_operation = member.clone();
     wrong_operation.operation = [20; 32];
     assert_eq!(

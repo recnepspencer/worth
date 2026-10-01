@@ -25,13 +25,20 @@ impl PersistedPhysicalRecoveryProjection {
         bytes = self.manifests.iter().try_fold(bytes, |sum, manifest| {
             sum.checked_add(u64::try_from(manifest.bytes.len()).ok()?)
         })?;
-        if let Some(retirement) = &self.derived_retirement {
-            bytes = bytes.checked_add(boxed_bytes::<PersistedRecordIdentity>(
-                retirement.dropped_records.len(),
-            )?)?;
-        }
-        if let Some(effect) = &self.release_head_effect {
-            bytes = bytes.checked_add(effect.owned_heap_bytes()?)?;
+        match &self.operation {
+            PersistedPhysicalRecoveryOperation::DerivedDirectory {
+                retirement: Some(retirement),
+                ..
+            } => {
+                bytes = bytes.checked_add(boxed_bytes::<PersistedRecordIdentity>(
+                    retirement.dropped_records.len(),
+                )?)?;
+            }
+            PersistedPhysicalRecoveryOperation::RecordsDropped {
+                head_effect: Some(effect),
+                ..
+            } => bytes = bytes.checked_add(effect.owned_heap_bytes()?)?,
+            _ => {}
         }
         match &self.payload {
             PersistedPhysicalRecoveryPayload::Frames(frames) => {
@@ -58,14 +65,11 @@ mod tests {
             RecordFrameCoordinate::new(RecordArtifactFile::ExtentArena { arena: 1 }, 0, 4)
                 .expect("coordinate");
         let projection = PersistedPhysicalRecoveryProjection {
-            version: RecoveryProjectionVersion::V6,
             source_root_generation: 1,
             root_state,
             record_identities: Box::new([]),
             payload: PersistedPhysicalRecoveryPayload::Frames(Box::new([])),
-            blob_semantic: PersistedPhysicalRecoveryBlobSemantic::None,
-            derived_retirement: None,
-            release_head_effect: None,
+            operation: PersistedPhysicalRecoveryOperation::None,
             placements: Box::new([]),
             segment_updates: Box::new([]),
             manifests: vec![PersistedPhysicalRecoveryManifest {

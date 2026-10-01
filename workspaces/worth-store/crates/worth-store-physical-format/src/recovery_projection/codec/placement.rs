@@ -1,10 +1,6 @@
 use super::*;
 
-pub(super) fn write_placement(
-    target: &mut Vec<u8>,
-    placement: &CurrentPhysicalRecordPlacement,
-    classified: bool,
-) {
+pub(super) fn write_placement(target: &mut Vec<u8>, placement: &CurrentPhysicalRecordPlacement) {
     match placement {
         CurrentPhysicalRecordPlacement::Inline(value) => {
             target.push(1);
@@ -29,14 +25,11 @@ pub(super) fn write_placement(
             target.extend_from_slice(&value.arena_range().length().to_le_bytes());
         }
     }
-    if classified {
-        target.extend_from_slice(&placement.route_metadata().encode());
-    }
+    target.extend_from_slice(&placement.route_metadata().encode());
 }
 
 pub(super) fn read_placement(
     bytes: &[u8],
-    classified: bool,
 ) -> Result<CurrentPhysicalRecordPlacement, PhysicalRecoveryProjectionDenial> {
     let mut cursor = Cursor::new(bytes);
     let kind = cursor.byte()?;
@@ -96,12 +89,9 @@ pub(super) fn read_placement(
         }
         _ => return Err(PhysicalRecoveryProjectionDenial::InvalidPlacement),
     };
-    let route_metadata = if classified {
+    let route_metadata =
         crate::SelectedRecordRouteMetadata::decode(cursor.take(7)?.try_into().unwrap())
-            .ok_or(PhysicalRecoveryProjectionDenial::InvalidPlacement)?
-    } else {
-        crate::SelectedRecordRouteMetadata::legacy_primary()
-    };
+            .ok_or(PhysicalRecoveryProjectionDenial::InvalidPlacement)?;
     cursor.end()?;
     Ok(placement.with_route_metadata(route_metadata))
 }

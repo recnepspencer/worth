@@ -25,7 +25,7 @@ impl SelectedReleaseCustodyLedger {
         if self.effective_heads.root() != root.release_custody_head_root() {
             return Err(CheckpointCustodyDenial::ReleaseCertificateUnavailable);
         }
-        if self.pending_batches.is_empty() && self.checkpoint.is_none() {
+        if self.pending_events.is_empty() && self.checkpoint.is_none() {
             if self.cumulative_dropped != 0
                 || self.cumulative_digest != [0; 32]
                 || self.selected_tip.is_some()
@@ -51,13 +51,13 @@ impl SelectedReleaseCustodyLedger {
                 marker.encode(),
             )]);
         }
-        if self.pending_batches.last().is_some_and(|last| {
+        if self.pending_last_drop().is_some_and(|last| {
             last.cumulative_dropped != self.cumulative_dropped
                 || last.cumulative_digest != self.cumulative_digest
         }) {
             return Err(CheckpointCustodyDenial::ReleaseCertificateUnavailable);
         }
-        if self.pending_batches.is_empty()
+        if self.pending_drop_count() == 0
             && (self.cumulative_dropped != self.prior_cumulative_dropped
                 || self.cumulative_digest != self.prior_cumulative_digest
                 || self.selected_tip != self.prior_tip)
@@ -69,9 +69,14 @@ impl SelectedReleaseCustodyLedger {
             .ok_or(CheckpointCustodyDenial::ReleaseCertificateUnavailable)?;
         let mut batches = Vec::new();
         batches
-            .try_reserve_exact(self.pending_batches.len())
+            .try_reserve_exact(self.pending_drop_count())
             .map_err(|_| CheckpointCustodyDenial::ReleaseCertificateUnavailable)?;
-        for (ordinal, basis) in self.pending_batches.iter().enumerate() {
+        for (ordinal, basis) in self
+            .pending_events
+            .iter()
+            .filter_map(|event| event.batch())
+            .enumerate()
+        {
             batches.push(
                 ReleaseCheckpointBatchV1::new(
                     checkpoint,

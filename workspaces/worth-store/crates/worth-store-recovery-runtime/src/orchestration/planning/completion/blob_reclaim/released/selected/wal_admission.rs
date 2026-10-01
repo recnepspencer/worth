@@ -2,8 +2,8 @@
 
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
-    decode_blob_record, BlobReclaimDescriptorV2, BlobRecordV1,
-    PersistedPhysicalRecoveryBlobSemantic, PersistedRecordIdentity, ReleasedDropCustodyV1,
+    decode_blob_record, BlobReclaimDescriptorV2, BlobRecordV1, PersistedPhysicalRecoveryOperation,
+    PersistedRecordIdentity, ReleasedDropCustodyV1,
 };
 use worth_store_recovery_physics::RecoveryOperationFate;
 
@@ -34,8 +34,8 @@ pub(super) fn admits_indeterminate(
         {
             return false;
         }
-        let PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding) =
-            projection.materialization().blob_semantic()
+        let PersistedPhysicalRecoveryOperation::RecordsDropped { binding, .. } =
+            projection.materialization().operation()
         else {
             return false;
         };

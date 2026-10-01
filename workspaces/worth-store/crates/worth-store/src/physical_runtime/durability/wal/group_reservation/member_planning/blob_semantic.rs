@@ -1,6 +1,6 @@
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
-    BlobRecordKind, PersistedBlobSemanticRecordBinding, PersistedPhysicalRecoveryBlobSemantic,
+    BlobRecordKind, PersistedBlobSemanticRecordBinding, PersistedPhysicalRecoveryOperation,
 };
 
 use crate::physical_runtime::PreparedPhysicalRootProjection;
@@ -9,7 +9,7 @@ pub(super) fn blob_semantic(
     kind: Option<BlobRecordKind>,
     prepared_bytes: &[Vec<u8>],
     root: &PreparedPhysicalRootProjection,
-) -> PersistedPhysicalRecoveryBlobSemantic {
+) -> PersistedPhysicalRecoveryOperation {
     let Some(
         kind @ (BlobRecordKind::SessionDeclared
         | BlobRecordKind::GenerationPublished
@@ -23,7 +23,7 @@ pub(super) fn blob_semantic(
         | BlobRecordKind::ReclaimDescriptorV3),
     ) = kind
     else {
-        return PersistedPhysicalRecoveryBlobSemantic::None;
+        return PersistedPhysicalRecoveryOperation::None;
     };
     let [bytes] = prepared_bytes else {
         unreachable!("typed blob append prepares exactly one record")
@@ -42,27 +42,30 @@ pub(super) fn blob_semantic(
     .expect("planned successor root generation is nonzero");
     match kind {
         BlobRecordKind::SessionDeclared => {
-            PersistedPhysicalRecoveryBlobSemantic::SessionDeclared(binding)
+            PersistedPhysicalRecoveryOperation::SessionDeclared(binding)
         }
         BlobRecordKind::GenerationPublished => {
-            PersistedPhysicalRecoveryBlobSemantic::GenerationPublished(binding)
+            PersistedPhysicalRecoveryOperation::GenerationPublished(binding)
         }
         BlobRecordKind::SessionFrontier => {
-            PersistedPhysicalRecoveryBlobSemantic::SessionFrontier(binding)
+            PersistedPhysicalRecoveryOperation::SessionFrontier(binding)
         }
         BlobRecordKind::SessionAbandoned => {
-            PersistedPhysicalRecoveryBlobSemantic::SessionAbandoned(binding)
+            PersistedPhysicalRecoveryOperation::SessionAbandoned(binding)
         }
         BlobRecordKind::ChunkReuseClaim | BlobRecordKind::ChunkReuseClaimV2 => {
-            PersistedPhysicalRecoveryBlobSemantic::ChunkReused(binding)
+            PersistedPhysicalRecoveryOperation::ChunkReused(binding)
         }
         BlobRecordKind::DedupeQuarantine => {
-            PersistedPhysicalRecoveryBlobSemantic::DedupeQuarantined(binding)
+            PersistedPhysicalRecoveryOperation::DedupeQuarantined(binding)
         }
         BlobRecordKind::ReclaimDescriptor
         | BlobRecordKind::ReclaimDescriptorV2
         | BlobRecordKind::ReclaimDescriptorV3 => {
-            PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding)
+            PersistedPhysicalRecoveryOperation::RecordsDropped {
+                binding,
+                head_effect: root.recovery_release_head_effect().cloned(),
+            }
         }
         _ => unreachable!(),
     }

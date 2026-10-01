@@ -1,5 +1,6 @@
 mod admitted;
 mod completion;
+mod custody;
 mod discovered;
 mod integrity_evidence;
 mod namespace_durable;
@@ -20,6 +21,7 @@ pub use admitted::AdmittedPhysicalRecovery;
 pub use completion::RecoveryCompletion;
 #[cfg(feature = "certification-test-authority")]
 pub use completion::{complete_recovery, RecoveryCompletionDenial};
+pub(crate) use custody::{CustodyState, PlanningCustody};
 pub use discovered::{DiscoveredPhysicalRecovery, PhysicalRecoveryDiscoveryCounters};
 pub(crate) use integrity_evidence::RecoveryIntegrityEvidence;
 pub use namespace_durable::NamespaceDurablePhysicalRecovery;

@@ -15,8 +15,9 @@ use super::super::{configuration, durability_with_wal_policy, media, success};
 use super::independent_wal_oracle::inspect_wal_inventory;
 
 // Exact encoded size of the two-member `second-a`/`second-b` group with
-// the current v6 recovery projection; the independent file oracle checks it.
-const SEGMENT_BYTES: u64 = 35_288;
+// the current recovery projection; the independent file oracle checks it.
+// Each member includes the fixed domain and seven-byte route metadata.
+const SEGMENT_BYTES: u64 = 35_304;
 
 #[test]
 fn whole_groups_rotate_twice_and_reopen_reconstructs_the_exact_bounded_inventory() {

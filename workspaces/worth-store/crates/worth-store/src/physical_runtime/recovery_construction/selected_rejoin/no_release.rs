@@ -77,7 +77,12 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
         MAX_CLEANUP_SAMPLE_BYTES,
     )
     .map_err(|_| Denial::WalFate)?;
-    tier::no_release::verify_selected_tail(&sample, &controls, reopen.format())?;
+    tier::no_release::verify_selected_tail(
+        &sample,
+        &controls,
+        reopen.format(),
+        selected.root.generation(),
+    )?;
     pause_before_final_reread();
     let mut final_read = media
         .bounded_discovery(MAX_DISCOVERY_ENTRIES, MAX_DISCOVERY_BYTES)

@@ -1,4 +1,4 @@
-//! Pending V14 release from a selected V2 checkpoint-source head roster.
+//! Pending release from a selected V2 checkpoint-source head roster.
 //! A keyed predecessor is proved from the actual selected WAL source path,
 //! never from the Store-wide tip or a lifetime manifest ancestry scan.
 
@@ -15,7 +15,7 @@ use crate::{
 };
 
 impl VerifiedPendingWalReleaseCustody {
-    /// First release from NoRelease also requires the exact WAL-chosen V14
+    /// First release from NoRelease also requires the exact WAL-chosen
     /// path; a headless descriptor cannot mint this new claim.
     #[allow(clippy::too_many_arguments)]
     pub fn admit_with_head_replay(

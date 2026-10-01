@@ -158,7 +158,6 @@ impl PhysicalRecoveryConstructionPort {
             reopen,
             None,
             None,
-            None,
             Some(selected_wal),
             Some(selected_controls),
         )?;

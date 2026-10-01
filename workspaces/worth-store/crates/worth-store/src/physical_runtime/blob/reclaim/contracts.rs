@@ -149,6 +149,9 @@ pub enum BlobReclaimFailure {
     Stream(RecordStreamFailure),
     Scan(RecordScanError),
     Deferred(super::BlobReclaimDeferral),
+    /// Mandatory release-certificate backing denied before any control or
+    /// root publication. Retains the actual budget or allocator boundary.
+    ReleaseCertificateBacking(crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial),
     /// Selection denied before the reclaim attempt or any control publication.
     ReleaseCustodySelection(crate::physical_runtime::SelectedReleaseHeadDenial),
     /// Manifest and reservation are already selected; retain their identities

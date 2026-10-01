@@ -75,10 +75,11 @@ pub(super) fn admit(
         .checked_add(trace_backing)?;
     let mut control_resident =
         ResidentAllowance::new(step.maximum_scratch_bytes.checked_sub(control_base)?);
-    let binding = match member.materialization().blob_semantic() {
-        worth_store_physical_format::PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(
+    let binding = match member.materialization().operation() {
+        worth_store_physical_format::PersistedPhysicalRecoveryOperation::RecordsDropped {
             binding,
-        ) => binding,
+            ..
+        } => binding,
         _ => return None,
     };
     let controls = controls::released_controls(
@@ -122,10 +123,13 @@ pub(super) fn admit(
         .checked_sub(prospective_retained)?
         .checked_sub(trace_backing)?
         .checked_sub(control_live)?;
-    let derived = member
-        .materialization()
-        .derived_retirement()
-        .map_or(&[][..], |retirement| retirement.dropped_records());
+    let derived = match member.materialization().operation() {
+        worth_store_physical_format::PersistedPhysicalRecoveryOperation::DerivedDirectory {
+            retirement: Some(retirement),
+            ..
+        } => retirement.dropped_records(),
+        _ => &[],
+    };
     let dropped = dropped_bounded(
         manifest.dropped(),
         derived,

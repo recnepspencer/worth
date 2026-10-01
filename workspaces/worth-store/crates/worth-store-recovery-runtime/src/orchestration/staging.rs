@@ -22,18 +22,7 @@ pub(crate) struct RecoveryStagingInput {
     pub(crate) authority: AdmittedPlatformAuthority,
     pub(crate) coordination: RecoveryCoordination,
     pub(crate) selection: PhysicalSourceSelection,
-    pub(crate) verified_selected_checkpoint_custody:
-        Option<worth_store_recovery_physics::VerifiedSelectedCheckpointCustody>,
-    pub(crate) verified_selected_head_custody_v2:
-        Option<worth_store_recovery_physics::VerifiedSelectedReleaseHeadCustodyV2>,
-    pub(crate) verified_selected_no_release_custody:
-        Option<worth_store_recovery_physics::VerifiedSelectedNoReleaseCustody>,
-    pub(crate) verified_pending_wal_release_custody:
-        Option<worth_store_recovery_physics::VerifiedPendingWalReleaseCustody>,
-    pub(crate) verified_ordered_historical_release_custody:
-        Option<worth_store_recovery_physics::VerifiedOrderedHistoricalReleaseCustody>,
-    pub(crate) verified_effective_release_heads_v14:
-        Option<worth_store_recovery_physics::VerifiedEffectiveReleaseHeadRosterV14>,
+    pub(crate) custody: crate::progression::PlanningCustody,
     pub(crate) verified_selected_tier_custody:
         Option<worth_store_recovery_physics::VerifiedSelectedTierEpochCustody>,
     pub(crate) discovery_counters: PhysicalRecoveryDiscoveryCounters,
@@ -93,12 +82,7 @@ fn complete(
         input.authority,
         input.coordination,
         input.selection,
-        input.verified_selected_checkpoint_custody,
-        input.verified_selected_head_custody_v2,
-        input.verified_selected_no_release_custody,
-        input.verified_pending_wal_release_custody,
-        input.verified_ordered_historical_release_custody,
-        input.verified_effective_release_heads_v14,
+        input.custody,
         input.verified_selected_tier_custody,
         input.discovery_counters,
         input.root_protocol_denials,

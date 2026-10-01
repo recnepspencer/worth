@@ -14,6 +14,7 @@ use worth_store_recovery_physics::{
 
 use super::{selected_controls::read_control, PlanningContext, ResolvedPlanningBasis};
 use crate::orchestration::planning::selected_source_inventory::ResidentAllowance;
+use crate::progression::PlanningCustody;
 
 #[path = "ordered.rs"]
 mod ordered;
@@ -23,8 +24,10 @@ pub(in crate::orchestration::planning::completion::blob_reclaim::selected_releas
     basis: &mut ResolvedPlanningBasis,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     if basis.observed_pages.tier_custody.is_some()
-        || basis.verified_pending_wal_release_custody.is_some()
-        || basis.verified_ordered_historical_release_custody.is_some()
+        || !matches!(
+            &basis.custody,
+            PlanningCustody::Unresolved | PlanningCustody::SourceHeads(_)
+        )
     {
         return Err(context.redo_block(basis.planning_counters(), None));
     }
@@ -32,7 +35,12 @@ pub(in crate::orchestration::planning::completion::blob_reclaim::selected_releas
         Ok(resident) => resident,
         Err(limit) => return Err(context.redo_block(basis.planning_counters(), limit)),
     };
-    let selected_head_v2 = basis.verified_selected_head_custody_v2.take();
+    let selected_head_v2 = match std::mem::replace(&mut basis.custody, PlanningCustody::Unresolved)
+    {
+        PlanningCustody::SourceHeads(base) => Some(base),
+        PlanningCustody::Unresolved => None,
+        _ => return Err(context.redo_block(basis.planning_counters(), None)),
+    };
     let admitted = ordered::admit_roster(
         context,
         basis,
@@ -41,7 +49,10 @@ pub(in crate::orchestration::planning::completion::blob_reclaim::selected_releas
         selected_head_v2.as_ref(),
         &mut resident,
     );
-    basis.verified_selected_head_custody_v2 = selected_head_v2;
+    basis.custody = match selected_head_v2 {
+        Some(base) => PlanningCustody::SourceHeads(base),
+        None => PlanningCustody::Unresolved,
+    };
     let (context, history, batches, head_replays) = admitted?;
     if !matches!(
         history.edges().last(),
@@ -69,7 +80,8 @@ pub(in crate::orchestration::planning::completion::blob_reclaim::selected_releas
         let limit = super::super::resident_basis::limit_failure(&context, &resident);
         return Err(context.redo_block(basis.planning_counters(), limit));
     }
-    let claim = if let Some(base) = basis.verified_selected_head_custody_v2.take() {
+    let source_custody = std::mem::replace(&mut basis.custody, PlanningCustody::Unresolved);
+    let claim = if let PlanningCustody::SourceHeads(base) = source_custody {
         VerifiedOrderedHistoricalReleaseCustody::admit_head_v2(
             &context.selection,
             &basis.observed_pages.selected_source.free_space,
@@ -119,8 +131,10 @@ pub(in crate::orchestration::planning::completion::blob_reclaim::selected_releas
         .observed_pages
         .historical_publication_peak_scratch_bytes
         .max(resident.peak());
-    basis.verified_effective_release_heads_v14 = Some(effective);
-    basis.verified_ordered_historical_release_custody = Some(claim);
+    basis.custody = PlanningCustody::OrderedCompleted {
+        claim,
+        effective_heads: effective,
+    };
     Ok(context)
 }
 

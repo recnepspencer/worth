@@ -1,5 +1,4 @@
 mod comparison_protocol;
-mod selected_comparison_protocol;
 mod documented_commands;
 mod hostile_process;
 mod journal_coverage;
@@ -11,6 +10,7 @@ mod resource_bounds;
 mod root_protocol_adversarial;
 mod root_protocol_corruption_matrix;
 mod root_protocol_expected_counters;
+mod selected_comparison_protocol;
 mod support;
 
 use worth_foundational::{PhysicalArtifactFamily, PhysicalIntegrityPosture};

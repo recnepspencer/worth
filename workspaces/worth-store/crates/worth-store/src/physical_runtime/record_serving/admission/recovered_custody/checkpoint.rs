@@ -11,10 +11,9 @@ impl RecoveredPhysicalCheckpointCustody {
     ) -> Result<(), RecoveredCheckpointCustodyDenial> {
         const MAX_CHECKPOINT_BYTES: u64 = 256 << 20;
         let selected = self
-            .released
+            .head_v2
             .as_ref()
             .map(|claim| claim.checkpoint())
-            .or_else(|| self.head_v2.as_ref().map(|claim| claim.checkpoint()))
             .or_else(|| self.no_release.as_ref().map(|claim| claim.checkpoint()))
             .or_else(|| {
                 self.pending_wal_release

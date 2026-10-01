@@ -3,7 +3,7 @@ use worth_proof::NonEmpty;
 use worth_store_physical_backend::{ArtifactAppendRange, ArtifactTreeDirectory, ArtifactTreeFile};
 use worth_store_physical_format::{
     DerivedFamilyRootDirectoryBinding, IndexedThroughBlobPublication,
-    PersistedPhysicalRecoveryBlobSemantic,
+    PersistedPhysicalRecoveryOperation,
 };
 use worth_store_wal::{
     plan_wal_frame_append, LogSequenceNumber, WalAppendFrontier, WalLsnRange,
@@ -175,7 +175,7 @@ fn plan_member(
             DerivedFamilyRootDirectoryBinding::new(*directory_record, basis.indexed_through),
             basis.expected_previous,
             basis.indexed_through_quarantine,
-            &basis.replaced_nodes,
+            basis.replaced_nodes(),
         );
     }
     let projection = recovery_projection(
@@ -185,8 +185,7 @@ fn plan_member(
         context.derived_directory_basis.as_ref(),
         &prepared_bytes,
     );
-    if let PersistedPhysicalRecoveryBlobSemantic::GenerationPublished(binding) =
-        projection.blob_semantic()
+    if let PersistedPhysicalRecoveryOperation::GenerationPublished(binding) = projection.operation()
     {
         root.set_latest_blob_publication(
             IndexedThroughBlobPublication::new(
@@ -197,9 +196,7 @@ fn plan_member(
             .expect("validated WAL blob binding has a nonzero candidate generation"),
         );
     }
-    if let PersistedPhysicalRecoveryBlobSemantic::DedupeQuarantined(binding) =
-        projection.blob_semantic()
-    {
+    if let PersistedPhysicalRecoveryOperation::DedupeQuarantined(binding) = projection.operation() {
         root.set_latest_blob_quarantine(binding.record());
     }
     let redo = match data.redo_targets() {

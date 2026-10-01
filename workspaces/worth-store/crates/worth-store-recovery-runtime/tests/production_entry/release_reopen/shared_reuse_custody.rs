@@ -23,6 +23,8 @@ use super::super::{admitted_blob_scope, certified_release_serving};
 
 #[path = "shared_reuse_custody/fresh_process.rs"]
 mod fresh_process;
+#[path = "shared_reuse_custody/publication_budget.rs"]
+mod publication_budget;
 #[path = "shared_reuse_custody/world.rs"]
 mod world;
 
@@ -57,9 +59,10 @@ fn run() {
     let destination = world::publish_one(&world, &scope, &payload);
     let destination_marker = selected_marker(world.serving());
     read_exact(world.serving(), &scope, original, &payload);
+    // Both reuse claims still select chunk, publication, and leaf witnesses.
     assert_eq!(
         read_exact(world.serving(), &scope, destination, &payload),
-        4
+        6
     );
     for index in 0..4_u8 {
         world::publish_one(&world, &scope, &vec![0x20 + index; CHUNK]);
@@ -145,15 +148,19 @@ fn recover_serving(
     format: AdmittedPhysicalRecordFormat,
     recovery_bytes: u64,
 ) -> ServingPhysicalRuntime {
-    let outcome = WorthStoreRecovery::recover(certified_release_serving::request_with_memory(
-        root,
-        recovery_bytes,
-    ));
+    let outcome = WorthStoreRecovery::recover(
+        certified_release_serving::request_with_memory_and_format(root, recovery_bytes, format),
+    );
     let PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
         match outcome {
             PhysicalRecoveryOutcome::Blocked(block) => panic!(
-                "shared-reuse recovery blocked: kind={:?}; limit={:?}; effects={}",
+                "shared-reuse recovery blocked: kind={:?}; artifact={:?}; generation={:?}; source_denials={:?}; discovery={:?}; integrity={:?}; limit={:?}; effects={}",
                 block.kind,
+                block.evidence().artifact.as_deref(),
+                block.evidence().source_generation,
+                block.evidence().source_denials.as_slice(),
+                block.evidence().counters,
+                block.evidence().integrity_counters(),
                 block.evidence().limit,
                 block.recovery_effects(),
             ),

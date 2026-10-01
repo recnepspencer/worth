@@ -49,7 +49,14 @@ pub struct PhysicalRecoveryPublicationIndeterminate {
 }
 
 mod refusal;
+#[path = "outcome/selected_release_head.rs"]
+mod selected_release_head;
 pub use refusal::{PhysicalRecoveryRefusal, PhysicalRecoveryRefusalKind};
+pub use selected_release_head::{
+    PhysicalRecoveryReleaseHeadControlDenial, PhysicalRecoveryReleaseHeadReadDenial,
+    PhysicalRecoveryReleaseHeadWalkDenial, PhysicalRecoverySelectedRecordReadDenial,
+    PhysicalRecoverySelectedReleaseHeadDenial,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PhysicalRecoveryBlockKind {
@@ -63,6 +70,7 @@ pub enum PhysicalRecoveryBlockKind {
     PageAdmission,
     OperationReconciliation,
     RedoPlanning,
+    SelectedCustody,
     Staging,
     Publication,
 }
@@ -257,6 +265,8 @@ pub enum PhysicalRecoveryPlanningDenial {
     BindingFreshness(StoreRecoveryBindingSampleDenial),
     OperationReconciliation(OperationReconciliationDenial),
     Redo(PhysicalRedoPlanningDenial),
+    CustodyUnresolved,
+    SelectedReleaseHead(PhysicalRecoverySelectedReleaseHeadDenial),
     Page(PhysicalRecoveryPageAdmissionDenial),
     SuccessorCandidate(super::PhysicalRecoverySuccessorCandidateDenial),
     Cost(RecoveryPlanCostDenial),

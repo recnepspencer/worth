@@ -100,7 +100,7 @@ fn pending_v3_reservation_drift_after_c8_claim_denies_store_seal_and_plain_check
                 indeterminate.handoff_failure(),
                 Some(RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch),
             );
-            assert_plain_serving_checkpoint_unavailable(&root);
+            assert_plain_serving_denied(&root);
         })
         .expect("pending drift recovery worker");
     worker

@@ -58,6 +58,7 @@ pub use residency_observation::{
     PhysicalResidencyCounterSnapshot, PhysicalResidencyObservation,
     PhysicalWritebackCounterSnapshot,
 };
+pub(in crate::physical_runtime) use scoped_allocation::MaintenanceRetainedDirectoryCharge;
 pub use scoped_allocation::{
     BlobPhysicalAllocation, LayoutPhysicalAllocation, MaintenancePhysicalAllocation,
     PhysicalScopedAllocationAdmission, PhysicalScopedAllocationFailure, RecoveryPhysicalAllocation,

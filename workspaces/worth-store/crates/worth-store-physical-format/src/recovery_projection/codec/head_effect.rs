@@ -20,7 +20,7 @@ pub(super) fn encode_head_effect(effect: &PersistedReleaseCustodyHeadEffectV1) -
         next,
     } = effect.mutation()
     else {
-        unreachable!("only upsert effects can be constructed in V14");
+        unreachable!("only upsert release-head effects can be constructed");
     };
     bytes.push(1);
     write_optional_entry(&mut bytes, expected_prior);

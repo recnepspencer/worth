@@ -1,6 +1,9 @@
 //! Proof-gated retirement of selected derived paths and directories.
 
-use std::{collections::BTreeSet, num::NonZeroU64};
+use std::collections::BTreeSet;
+
+mod record_budget;
+use record_budget::RetirementRecordBudget;
 
 use worth_store_contracts::DurableArtifactFamilyId;
 use worth_store_physical_format::{
@@ -10,10 +13,10 @@ use worth_store_physical_integrity::{PhysicalDamageCause, PhysicalIntegrityRejec
 
 use crate::physical_runtime::{
     layout::PhysicalLayoutPagePort, AdmittedRecordPlacementPolicy, MaintenancePhysicalAllocation,
-    PhysicalMutationDeadline, ServingPhysicalRuntime,
+    MaintenanceRetainedDirectoryCharge, PhysicalMutationDeadline, ServingPhysicalRuntime,
 };
 
-use super::{InsertedLayoutTree, TreeWriter, MAXIMUM_HEIGHT, MAXIMUM_RETIREMENT_RECORDS};
+use super::{InsertedLayoutTree, TreeWriter, MAXIMUM_HEIGHT};
 use crate::physical_runtime::layout::PhysicalLayoutMaintenanceFailure;
 
 pub(in crate::physical_runtime) struct RetiredSelectedTree<'runtime> {
@@ -60,7 +63,7 @@ impl DeferredSelectedTreeRetirement {
 
 pub(in crate::physical_runtime) struct AdmittedDirectoryRetirement<'runtime> {
     records: Vec<PersistedRecordIdentity>,
-    _allocation: Option<MaintenancePhysicalAllocation<'runtime>>,
+    allocation: Option<MaintenancePhysicalAllocation<'runtime>>,
 }
 
 impl AdmittedDirectoryRetirement<'_> {
@@ -68,11 +71,24 @@ impl AdmittedDirectoryRetirement<'_> {
         &self.records
     }
 
+    pub(in crate::physical_runtime) fn into_charged_parts(
+        self,
+    ) -> (
+        Vec<PersistedRecordIdentity>,
+        Option<MaintenanceRetainedDirectoryCharge>,
+    ) {
+        (
+            self.records,
+            self.allocation
+                .map(MaintenancePhysicalAllocation::into_retained_directory_charge),
+        )
+    }
+
     #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn certification_empty() -> Self {
         Self {
             records: Vec::new(),
-            _allocation: None,
+            allocation: None,
         }
     }
 }
@@ -85,13 +101,15 @@ pub(in crate::physical_runtime) fn retire_selected_tree<'runtime>(
     placement: AdmittedRecordPlacementPolicy,
     deadline: PhysicalMutationDeadline,
 ) -> Result<RetiredSelectedTree<'runtime>, PhysicalLayoutMaintenanceFailure> {
+    let budget = RetirementRecordBudget::from_port(port);
     let allocation = runtime
         .physical_allocations()
-        .admit_maintenance(retirement_charge(runtime)?)
+        .admit_maintenance(budget.charge(runtime)?)
         .map_err(PhysicalLayoutMaintenanceFailure::WriterAllocation)?;
     let writer = TreeWriter::new(runtime, port, family, placement, deadline, 8)?;
     let mut records = BTreeSet::new();
-    writer.collect_closure(root, None, 0, &mut records)?;
+    writer.collect_closure(root, None, 0, &mut records, budget)?;
+    budget.before_copy(records.len())?;
     Ok(RetiredSelectedTree {
         family,
         root,
@@ -148,9 +166,10 @@ pub(in crate::physical_runtime) fn admit_directory_retirement<'runtime>(
     retired_selected: Vec<RetiredSelectedTree<'runtime>>,
     deferred_selected: Vec<DeferredSelectedTreeRetirement>,
 ) -> Result<AdmittedDirectoryRetirement<'runtime>, PhysicalLayoutMaintenanceFailure> {
+    let budget = RetirementRecordBudget::from_port(port);
     let allocation = runtime
         .physical_allocations()
-        .admit_maintenance(retirement_charge(runtime)?)
+        .admit_maintenance(budget.charge(runtime)?)
         .map_err(PhysicalLayoutMaintenanceFailure::WriterAllocation)?;
     let root_for = |directory: Option<&DerivedFamilyRootDirectoryV1>, family| {
         directory.and_then(|directory| {
@@ -202,12 +221,12 @@ pub(in crate::physical_runtime) fn admit_directory_retirement<'runtime>(
                 .iter()
                 .find(|old| old.family == chain.family && old.root == prior_root)
             {
-                extend_retirement(&mut dropped, &old.records)?;
+                extend_retirement(&mut dropped, &old.records, budget)?;
             } else if !deferred_families.contains(&chain.family) {
                 return Err(PhysicalLayoutMaintenanceFailure::TreeTopologyDamaged);
             }
         }
-        extend_retirement(&mut dropped, &chain.replaced)?;
+        extend_retirement(&mut dropped, &chain.replaced, budget)?;
     }
     for old in &retired_selected {
         if !seen.contains(&old.family) {
@@ -217,7 +236,7 @@ pub(in crate::physical_runtime) fn admit_directory_retirement<'runtime>(
                 return Err(PhysicalLayoutMaintenanceFailure::TreeTopologyDamaged);
             }
             seen.insert(old.family);
-            extend_retirement(&mut dropped, &old.records)?;
+            extend_retirement(&mut dropped, &old.records, budget)?;
         }
     }
     if deferred_families
@@ -259,41 +278,22 @@ pub(in crate::physical_runtime) fn admit_directory_retirement<'runtime>(
             return Err(PhysicalLayoutMaintenanceFailure::TreeTopologyDamaged);
         }
     }
+    budget.before_copy(dropped.len())?;
     Ok(AdmittedDirectoryRetirement {
         records: dropped.into_iter().collect(),
-        _allocation: Some(allocation),
+        allocation: Some(allocation),
     })
-}
-
-fn retirement_charge(
-    runtime: &ServingPhysicalRuntime,
-) -> Result<NonZeroU64, PhysicalLayoutMaintenanceFailure> {
-    // BTreeSet nodes, a concurrent Vec/Arc copy, and five decoded path nodes
-    // can coexist at the admitted retirement-record bound.
-    let bytes = (MAXIMUM_RETIREMENT_RECORDS as u64)
-        .checked_mul(160)
-        .and_then(|bytes| {
-            u64::from(runtime.maximum_inline_record_bytes())
-                .checked_mul(8)
-                .and_then(|headroom| bytes.checked_add(headroom))
-        })
-        .and_then(NonZeroU64::new)
-        .ok_or(PhysicalLayoutMaintenanceFailure::RetirementLimit)?;
-    Ok(bytes)
 }
 
 fn extend_retirement(
     dropped: &mut BTreeSet<PersistedRecordIdentity>,
     records: &[PersistedRecordIdentity],
+    budget: RetirementRecordBudget,
 ) -> Result<(), PhysicalLayoutMaintenanceFailure> {
-    if dropped
-        .len()
-        .checked_add(records.len())
-        .is_none_or(|count| count > MAXIMUM_RETIREMENT_RECORDS)
-    {
-        return Err(PhysicalLayoutMaintenanceFailure::RetirementLimit);
+    for record in records {
+        budget.before_unique_insert(dropped.len(), dropped.contains(record))?;
+        dropped.insert(*record);
     }
-    dropped.extend(records.iter().copied());
     Ok(())
 }
 
@@ -304,13 +304,13 @@ impl TreeWriter<'_, '_> {
         expected_level: Option<u8>,
         depth: u8,
         visited: &mut BTreeSet<PersistedRecordIdentity>,
+        budget: RetirementRecordBudget,
     ) -> Result<(), PhysicalLayoutMaintenanceFailure> {
-        if visited.len() >= MAXIMUM_RETIREMENT_RECORDS {
-            return Err(PhysicalLayoutMaintenanceFailure::RetirementLimit);
-        }
-        if depth >= MAXIMUM_HEIGHT || !visited.insert(record) {
+        if depth >= MAXIMUM_HEIGHT || visited.contains(&record) {
             return Err(PhysicalLayoutMaintenanceFailure::TreeTopologyDamaged);
         }
+        budget.before_unique_insert(visited.len(), false)?;
+        visited.insert(record);
         let node = self.read_node(record)?;
         if expected_level.is_some_and(|expected| node.level() != expected) {
             return Err(PhysicalLayoutMaintenanceFailure::TreeTopologyDamaged);
@@ -323,7 +323,7 @@ impl TreeWriter<'_, '_> {
             let first = node
                 .first_child()
                 .ok_or(PhysicalLayoutMaintenanceFailure::TreeTopologyDamaged)?;
-            self.collect_closure(first, Some(next_level), depth + 1, visited)?;
+            self.collect_closure(first, Some(next_level), depth + 1, visited, budget)?;
             for cell in node.cells() {
                 self.collect_closure(
                     cell.child()
@@ -331,9 +331,14 @@ impl TreeWriter<'_, '_> {
                     Some(next_level),
                     depth + 1,
                     visited,
+                    budget,
                 )?;
             }
         }
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "retirement/tests.rs"]
+mod tests;

@@ -77,7 +77,11 @@ pub(super) fn admit(
     )
     .ok()?;
     let mut dropped = manifest.dropped().to_vec();
-    if let Some(retirement) = first_projection.derived_retirement() {
+    if let worth_store_physical_format::PersistedPhysicalRecoveryOperation::DerivedDirectory {
+        retirement: Some(retirement),
+        ..
+    } = first_projection.operation()
+    {
         dropped.extend_from_slice(retirement.dropped_records());
     }
     dropped.sort_unstable();

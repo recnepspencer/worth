@@ -133,10 +133,8 @@ impl AdmittedPhysicalRedoMembers {
     > {
         self.members.iter().filter_map(|member| {
             matches!(
-                member.projection.blob_semantic(),
-                worth_store_physical_format::PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(
-                    _
-                )
+                member.projection.operation(),
+                worth_store_physical_format::PersistedPhysicalRecoveryOperation::RecordsDropped { .. }
             )
             .then(|| {
                 let [record] = member.records.as_ref() else {

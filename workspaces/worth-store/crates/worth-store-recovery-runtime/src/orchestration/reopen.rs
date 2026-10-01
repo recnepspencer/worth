@@ -4,16 +4,18 @@ use worth_store::physical_runtime::{
 
 use crate::entry::{
     PhysicalRecoveryOutcome, PhysicalRecoveryPublicationIndeterminate,
-    PhysicalRecoveryPublicationSettlement, PhysicalRecoveryReopenCounters,
-    PhysicalRecoveryReopenFailure,
+    PhysicalRecoveryReopenCounters, PhysicalRecoveryReopenFailure,
 };
 use crate::progression::{NamespaceDurablePhysicalRecovery, ReopenedPhysicalRecovery};
+
+#[path = "reopen/custody_rebind.rs"]
+mod custody_rebind;
 
 pub(crate) fn reopen_recovery(
     durable: NamespaceDurablePhysicalRecovery,
 ) -> Result<ReopenedPhysicalRecovery, PhysicalRecoveryOutcome> {
     let NamespaceDurablePhysicalRecovery {
-        mut state,
+        state,
         mut expectation,
         publication_counters,
         publication_settlement,
@@ -33,21 +35,23 @@ pub(crate) fn reopen_recovery(
     {
         PhysicalRecoveryFreshReopenOutcome::Completed(completed) => {
             let counters = completed_counters(&completed);
-            let (rebound_state, custody_valid) = rebind_selected_custody(
+            let rebound_state = custody_rebind::rebind_selected_custody(
                 state,
                 &mut expectation,
                 &publication_settlement,
                 &publication_counters,
                 &completed,
             );
-            state = rebound_state;
-            if !custody_valid {
-                return Err(custody_indeterminate(
-                    state,
-                    publication_counters,
-                    publication_settlement,
-                ));
-            }
+            let state = match rebound_state {
+                Ok(state) => state,
+                Err(state) => {
+                    return Err(custody_indeterminate(
+                        state,
+                        publication_counters,
+                        publication_settlement,
+                    ))
+                }
+            };
             Ok(ReopenedPhysicalRecovery::new(
                 state,
                 expectation,
@@ -68,207 +72,6 @@ pub(crate) fn reopen_recovery(
             ))
         }
     }
-}
-
-fn rebind_selected_custody(
-    mut state: crate::progression::NamespaceDurableState,
-    expectation: &mut crate::progression::RecoveryPublicationExpectation,
-    settlement: &crate::entry::PhysicalRecoveryPublicationSettlementLedger,
-    counters: &crate::entry::PhysicalRecoveryPublicationCounters,
-    completed: &worth_store::physical_runtime::CompletedPhysicalRecoveryFreshReopen,
-) -> (crate::progression::NamespaceDurableState, bool) {
-    if state.verified_selected_checkpoint_custody.is_none()
-        && state.verified_selected_head_custody_v2.is_none()
-        && state.verified_selected_no_release_custody.is_none()
-        && state.verified_pending_wal_release_custody.is_none()
-        && state.verified_ordered_historical_release_custody.is_none()
-        && state.verified_selected_tier_custody.is_none()
-    {
-        return (state, true);
-    }
-    let selected = state.selection.root().selected();
-    let source = selected.manifest();
-    let published = completed.root();
-    let occurrence = completed.fresh_reopen_occurrence();
-    if published != expectation.recovered_root()
-        || completed.format() != selected.selector().format()
-        || occurrence.plan() != expectation.plan_identity()
-        || occurrence.generation() != published.generation()
-        || expectation.store_identity() != selected.selector().store_identity()
-        || expectation.source_generation() != source.generation()
-        || expectation.current_selector().root_generation() != published.generation()
-    {
-        return (state, false);
-    }
-    if published != source
-        && (!matches!(
-            settlement.settlement(),
-            PhysicalRecoveryPublicationSettlement::Completed(_)
-        ) || counters.root_protocol_replacements_performed != 1
-            || expectation.staging_generation() != published.generation()
-            || published.generation() <= source.generation())
-    {
-        return (state, false);
-    }
-    if let Some(claim) = &mut state.verified_selected_head_custody_v2 {
-        if claim
-            .rebind_published_root(&state.selection, published, completed.format())
-            .is_err()
-        {
-            return (state, false);
-        }
-    }
-    if let Some(claim) = &mut state.verified_selected_checkpoint_custody {
-        if claim
-            .rebind_published_root(&state.selection, published, completed.format())
-            .is_err()
-        {
-            return (state, false);
-        }
-    }
-    if let Some(claim) = &mut state.verified_selected_no_release_custody {
-        if claim
-            .rebind_published_root(&state.selection, published, completed.format())
-            .is_err()
-        {
-            return (state, false);
-        }
-    }
-    if let Some(claim) = &mut state.verified_pending_wal_release_custody {
-        if claim
-            .rebind_published_root(&state.selection, published, completed.format())
-            .is_err()
-        {
-            return (state, false);
-        }
-        let Some(topology) = expectation.take_release_topology() else {
-            return (state, false);
-        };
-        if claim
-            .rebind_verified_topology(
-                &topology.source_free,
-                &topology.published_free,
-                topology.transition,
-                completed.format(),
-            )
-            .is_err()
-        {
-            return (state, false);
-        }
-    }
-    if let Some(claim) = state.verified_pending_wal_release_custody.as_mut() {
-        if state.verified_effective_release_heads_v14.is_none() {
-            let source_count = claim
-                .selected_head_v2()
-                .map_or(0usize, |base| base.selected_heads().len());
-            let Some(maximum_entries) = (source_count as u64)
-                .checked_add(claim.ordered_released_batches().len() as u64)
-                .and_then(|entries| entries.checked_add(1))
-            else {
-                return (state, false);
-            };
-            let Some(maximum_retained_bytes) = state
-                .coordination
-                .owner()
-                .recovery_allocation_admission()
-                .map(|allocation| allocation.byte_limit())
-            else {
-                return (state, false);
-            };
-            let admitted = if claim.ordered_history().is_some() {
-                worth_store_recovery_physics::VerifiedEffectiveReleaseHeadRosterV14::admit_ordered_pending(
-                    claim,
-                    maximum_entries,
-                    maximum_retained_bytes,
-                )
-            } else {
-                worth_store_recovery_physics::VerifiedEffectiveReleaseHeadRosterV14::admit_pending(
-                    claim,
-                    maximum_entries,
-                    maximum_retained_bytes,
-                )
-            };
-            let Ok(effective) = admitted else {
-                return (state, false);
-            };
-            state.verified_effective_release_heads_v14 = Some(effective);
-        }
-    }
-    if state.verified_ordered_historical_release_custody.is_some()
-        && state.verified_effective_release_heads_v14.is_none()
-    {
-        return (state, false);
-    }
-    if state
-        .verified_ordered_historical_release_custody
-        .as_ref()
-        .is_some_and(|claim| claim.selected_root() != published || published != source)
-    {
-        return (state, false);
-    }
-    let selected_free = if let Some(claim) = &state.verified_selected_tier_custody {
-        let byte_limit = claim.free_header().encode(completed.format()).len() as u64;
-        let (media, observed) = observed_published_free_header(
-            state.authority.media,
-            &mut state.integrity_trace,
-            published,
-            completed.format(),
-            byte_limit,
-        );
-        state.authority.media = media;
-        match observed {
-            Some(header) => Some(header),
-            None => return (state, false),
-        }
-    } else {
-        None
-    };
-    if let Some(claim) = &mut state.verified_selected_tier_custody {
-        if claim
-            .rebind_published_root_and_free_header(
-                &state.selection,
-                published,
-                selected_free
-                    .as_ref()
-                    .expect("tier claim requires observed free header"),
-                completed.format(),
-            )
-            .is_err()
-        {
-            return (state, false);
-        }
-    }
-    (state, true)
-}
-
-fn observed_published_free_header(
-    media: worth_store::physical_runtime::AdmittedRecoveryFilesystemMedia,
-    trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
-    root: &worth_store_physical_format::DurablePhysicalRootManifest,
-    format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
-    byte_limit: u64,
-) -> (
-    worth_store::physical_runtime::AdmittedRecoveryFilesystemMedia,
-    Option<worth_store_physical_format::DurableFreeSpaceManifestHeader>,
-) {
-    let mut discovery = media
-        .bounded_discovery(1, byte_limit)
-        .expect("the admitted tier header has a positive exact read bound");
-    let header = (|| {
-        let source = discovery
-            .read_free_space_manifest(root.generation(), byte_limit)
-            .ok()?;
-        let header = crate::integrity_ingress::projection::free_space_header(
-            &source,
-            discovery.store_identity(),
-            format,
-            root,
-            trace,
-        )
-        .ok()?;
-        (source.bytes()? == header.encode(format)).then_some(header)
-    })();
-    (discovery.finish(), header)
 }
 
 fn custody_indeterminate(

@@ -1,7 +1,7 @@
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::store_namespace::StableStoreIdentity;
 use worth_store_physical_format::{
-    BlobReclaimSourceBasisV1, BlobRecordV1, PersistedPhysicalRecoveryBlobSemantic,
+    BlobReclaimSourceBasisV1, BlobRecordV1, PersistedPhysicalRecoveryOperation,
     PersistedPhysicalRecoveryProjection, PhysicalRecordFormatDeclaration,
     ReleaseCustodyHeadMutationV1,
 };
@@ -14,7 +14,11 @@ pub(super) fn validate_release_head_effect(
     store: StableStoreIdentity,
     format: PhysicalRecordFormatDeclaration,
 ) -> Result<(), PhysicalRedoPlanningDenial> {
-    let Some(effect) = projection.release_head_effect() else {
+    let PersistedPhysicalRecoveryOperation::RecordsDropped {
+        head_effect: Some(effect),
+        ..
+    } = projection.operation()
+    else {
         return Ok(());
     };
     let [record] = records else {
@@ -49,7 +53,7 @@ fn validate_head_descriptor(
     };
     let basis = effect.source_basis();
     let basis_digest = BlobReclaimSourceBasisV1::ReleasedGeneration(basis).digest(store.bytes());
-    let PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding) = projection.blob_semantic()
+    let PersistedPhysicalRecoveryOperation::RecordsDropped { binding, .. } = projection.operation()
     else {
         return invalid();
     };

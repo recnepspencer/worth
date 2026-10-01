@@ -110,11 +110,16 @@ pub(super) fn verify(
     else {
         return Err(Denial::ControlFrame);
     };
-    let drop_count = manifest.dropped().len().saturating_add(
-        projection
-            .derived_retirement()
-            .map_or(0, |value| value.dropped_records().len()),
-    );
+    let drop_count = manifest
+        .dropped()
+        .len()
+        .saturating_add(match projection.operation() {
+            worth_store_physical_format::PersistedPhysicalRecoveryOperation::DerivedDirectory {
+                retirement: Some(retirement),
+                ..
+            } => retirement.dropped_records().len(),
+            _ => 0,
+        });
     debit(
         &mut remaining,
         (drop_count as u64).saturating_mul(
@@ -122,7 +127,11 @@ pub(super) fn verify(
         ),
     )?;
     let mut dropped = manifest.dropped().to_vec();
-    if let Some(retirement) = projection.derived_retirement() {
+    if let worth_store_physical_format::PersistedPhysicalRecoveryOperation::DerivedDirectory {
+        retirement: Some(retirement),
+        ..
+    } = projection.operation()
+    {
         dropped.extend_from_slice(retirement.dropped_records());
     }
     dropped.sort_unstable();
@@ -344,7 +353,11 @@ pub(super) fn projection_memory(projection: &PersistedPhysicalRecoveryProjection
     for manifest in projection.manifests() {
         bytes = bytes.saturating_add(manifest.bytes().len() as u64);
     }
-    if let Some(retirement) = projection.derived_retirement() {
+    if let worth_store_physical_format::PersistedPhysicalRecoveryOperation::DerivedDirectory {
+        retirement: Some(retirement),
+        ..
+    } = projection.operation()
+    {
         bytes =
             bytes.saturating_add(4 * std::mem::size_of_val(retirement.dropped_records()) as u64);
     }

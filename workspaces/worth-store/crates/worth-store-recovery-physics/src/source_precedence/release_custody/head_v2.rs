@@ -52,6 +52,24 @@ pub struct VerifiedSelectedReleaseHeadCustodyV2 {
     roster: VerifiedCheckpointReleaseHeadRosterV2,
 }
 
+/// A failed rooted observation carries its mechanical walker or media cause;
+/// neither branch is selected-custody authority.
+#[derive(Debug)]
+pub enum SelectedHeadRosterAdmissionDenial<ReadError> {
+    Custody(SelectedCustodyDenial),
+    Walk(ReleaseCustodyHeadWalkDenial<ReadError, ()>),
+    Allocation {
+        requested: u64,
+        cause: std::collections::TryReserveError,
+    },
+}
+
+impl<ReadError> From<SelectedCustodyDenial> for SelectedHeadRosterAdmissionDenial<ReadError> {
+    fn from(value: SelectedCustodyDenial) -> Self {
+        Self::Custody(value)
+    }
+}
+
 impl VerifiedCheckpointReleaseHeadRosterV2 {
     #[allow(clippy::too_many_arguments)]
     pub fn admit_checkpoint_source<Read, ReadError>(
@@ -62,7 +80,7 @@ impl VerifiedCheckpointReleaseHeadRosterV2 {
         maximum_head_entries: u64,
         maximum_resident_bytes: u64,
         read: Read,
-    ) -> Result<Self, SelectedCustodyDenial>
+    ) -> Result<Self, SelectedHeadRosterAdmissionDenial<ReadError>>
     where
         Read: FnMut(ReleaseCustodyHeadBlockReferenceV1, u64) -> Result<Vec<u8>, ReadError>,
     {
@@ -86,12 +104,12 @@ impl VerifiedCheckpointReleaseHeadRosterV2 {
                 != selected_candidate.manifest().tree_identity()
             || source_sha != checkpoint.source_root_frame_sha256()
         {
-            return Err(denial);
+            return Err(denial.into());
         }
         let roster = roster_v2::parse(stream, source_sha, maximum_resident_bytes)?;
         let count = roster.accumulator.head_count();
         if count > maximum_head_entries {
-            return Err(denial);
+            return Err(denial.into());
         }
         let batch_bytes = (roster.batches.capacity() as u64)
             .checked_mul(std::mem::size_of::<ReleaseCheckpointBatchV1>() as u64)
@@ -108,7 +126,12 @@ impl VerifiedCheckpointReleaseHeadRosterV2 {
             maximum_resident_bytes,
         )?;
         let mut heads = Vec::new();
-        heads.try_reserve_exact(head_count).map_err(|_| denial)?;
+        heads.try_reserve_exact(head_count).map_err(|cause| {
+            SelectedHeadRosterAdmissionDenial::Allocation {
+                requested: requested_heads,
+                cause,
+            }
+        })?;
         let owned_heap = batch_bytes
             .checked_add(
                 (heads.capacity() as u64)
@@ -146,26 +169,33 @@ impl VerifiedCheckpointReleaseHeadRosterV2 {
                 Ok(())
             })
             .map_err(|failure| match failure {
-                ReleaseCustodyHeadWalkDenial::ResidentBoundExceeded { required, .. } => {
+                ReleaseCustodyHeadWalkDenial::ResidentBoundExceeded { required, admitted } => {
                     let aggregate = owned_heap.checked_add(required).unwrap_or(u64::MAX);
                     if aggregate > maximum_resident_bytes {
-                        SelectedCustodyDenial::ResidentBoundExceeded {
-                            required: aggregate,
-                            admitted: maximum_resident_bytes,
-                        }
+                        SelectedHeadRosterAdmissionDenial::Custody(
+                            SelectedCustodyDenial::ResidentBoundExceeded {
+                                required: aggregate,
+                                admitted: maximum_resident_bytes,
+                            },
+                        )
                     } else {
                         // A stricter caller-provided walker cap is not an
                         // exhaustion of this aggregate admission.
-                        denial
+                        SelectedHeadRosterAdmissionDenial::Walk(
+                            ReleaseCustodyHeadWalkDenial::ResidentBoundExceeded {
+                                required,
+                                admitted,
+                            },
+                        )
                     }
                 }
-                _ => denial,
+                failure => SelectedHeadRosterAdmissionDenial::Walk(failure),
             })?;
         if walk.entry_count() != count
             || walk.roster_digest() != roster.accumulator.head_roster_digest()
             || heads.len() as u64 != count
         {
-            return Err(denial);
+            return Err(denial.into());
         }
         let peak = roster
             .parse_peak_resident_bytes

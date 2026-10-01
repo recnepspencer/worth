@@ -39,6 +39,17 @@ forbidden_identifiers = ["PhysicalIsolationEntryIdentity", "RecoveryReadinessBas
 guidance = "C.10 retires report-derived isolation entry authority; root correlation must consume an already-issued physical root"
 
 [[source_identifier_denials]]
+root = "workspaces/worth-store/crates/worth-store-layout-indexes/src"
+forbidden_identifiers = [
+  "worth_store_compatibility",
+  "ArtifactCompatibilityWindow",
+  "RollingUpgradePolicy",
+  "CompatibilityFamilyKind",
+  "LayoutEvolutionOwnerCaseObservations",
+]
+guidance = "The Store layout owner must not restore removed historical compatibility imports or planners; keep current format identity, typed refusal and recovery authority in their existing owners"
+
+[[source_identifier_denials]]
 root = "workspaces/worth-store/crates/worth-store-physical-certification/src"
 forbidden_identifiers = ["PhysicalIsolationEntryIdentity", "RecoveryReadinessBasis", "admit_physical_isolation_entry"]
 guidance = "C.10 removes synthetic readiness admission rather than relocating a report-to-root authority route into certification"

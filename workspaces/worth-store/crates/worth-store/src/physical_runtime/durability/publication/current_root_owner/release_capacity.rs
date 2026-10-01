@@ -2,9 +2,11 @@
 //! empty counter on reopen. The pre-effect lease cutover waits for C8's sealed
 //! checkpoint-plus-tail ledger and the typed tag7 encoded-size contract.
 
+pub(super) mod backing;
 mod charge;
 mod checkpoint_commit;
 mod commit;
+mod event;
 mod heads;
 mod no_release;
 mod pending_wal;
@@ -25,23 +27,24 @@ use super::certificate_capacity::CheckpointCustodyOrigin;
 use super::reclaim::{PhysicalReclaimAttempt, ReclaimFenceState};
 use super::PhysicalCurrentRootOwner;
 pub(in crate::physical_runtime) use charge::ReleaseHeadCapacityCharge;
+use event::PendingReleaseEvent;
 pub(in crate::physical_runtime) use heads::SelectedReleaseHeadBasis;
 pub use heads::SelectedReleaseHeadDenial;
 use heads::{SelectedReleaseHeadRoster, SelectedReleaseHeadStep};
 
 const CERTIFICATE_FRAME_OVERHEAD: u64 = 20;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(in crate::physical_runtime) enum ReleaseCertificateCapacityDenial {
     SelectedLedgerUnavailable,
     ReclaimFenceMismatch,
     CapacityExhausted,
     SelectedFactMismatch,
+    Resident(crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial),
 }
 
 #[derive(Clone, Copy)]
 pub(super) struct SelectedReleaseBatchBasis {
-    pub(super) head_step: Option<SelectedReleaseHeadStep>,
     pub(super) descriptor_record: PersistedRecordIdentity,
     pub(super) descriptor_frame_sha256: [u8; 32],
     pub(super) custody_digest: [u8; 32],
@@ -58,6 +61,8 @@ pub(super) struct SelectedReleaseBatchBasis {
 }
 
 pub(super) struct ReleaseCertificatePending {
+    pub(super) key: ReleaseCustodyHeadKeyV1,
+    pub(super) root_frame: Vec<u8>,
     pub(super) needed_records: u16,
     pub(super) worst_case_encoded_bytes: u32,
     pub(super) effect_may_exist: bool,
@@ -151,10 +156,9 @@ pub(in crate::physical_runtime) struct SelectedReleaseCustodyLedger {
     cumulative_digest: [u8; 32],
     selected_tip: Option<ReleasedDropTipProvenanceV1>,
     checkpoint: Option<PhysicalCheckpointIdentity>,
-    pending_batches: Vec<SelectedReleaseBatchBasis>,
-    /// Ordered selected WAL head effects, including terminal retirement
-    /// effects that have no tag-7 Batch record.
-    pending_head_steps: Vec<SelectedReleaseHeadStep>,
+    /// One ordered selected WAL stream. A drop owns its exact head transition;
+    /// a terminal retirement has no tag-7 Batch certificate.
+    pending_events: Vec<PendingReleaseEvent>,
     /// The last namespace-durable checkpoint's source roster.
     checkpoint_heads: SelectedReleaseHeadRoster,
     /// The selected root after all pending WAL-backed head transitions.
@@ -180,8 +184,7 @@ impl SelectedReleaseCustodyLedger {
             cumulative_digest: [0; 32],
             selected_tip: None,
             checkpoint: None,
-            pending_batches: Vec::new(),
-            pending_head_steps: Vec::new(),
+            pending_events: Vec::new(),
             checkpoint_heads: SelectedReleaseHeadRoster::empty(),
             effective_heads: SelectedReleaseHeadRoster::empty(),
             prior_head_count: 0,
@@ -253,35 +256,6 @@ pub(super) enum ReleaseLedgerState {
 }
 
 impl ReleaseLedgerState {
-    pub(super) fn from_verified(
-        verified: &worth_store_recovery_physics::VerifiedSelectedCheckpointCustody,
-    ) -> Self {
-        let accumulator = verified.accumulator();
-        let tip = accumulator.tip();
-        Self::Selected(SelectedReleaseCustodyLedger {
-            no_release_marker: None,
-            used_records: verified.release_certificate_record_count(),
-            used_bytes: verified.release_certificate_encoded_bytes(),
-            cumulative_dropped: accumulator.cumulative_dropped(),
-            cumulative_digest: accumulator.cumulative_digest(),
-            selected_tip: Some(tip),
-            checkpoint: Some(accumulator.checkpoint()),
-            pending_batches: Vec::new(),
-            pending_head_steps: Vec::new(),
-            checkpoint_heads: SelectedReleaseHeadRoster::empty(),
-            effective_heads: SelectedReleaseHeadRoster::empty(),
-            prior_head_count: 0,
-            prior_head_roster_digest: [0; 32],
-            terminal: accumulator.terminal(),
-            prior_checkpoint_root_sha256: accumulator.root_sha256(),
-            prior_accumulator_digest: verified.accumulator_payload_sha256(),
-            prior_cumulative_dropped: accumulator.cumulative_dropped(),
-            prior_cumulative_digest: accumulator.cumulative_digest(),
-            prior_tip: Some(tip),
-            prior_terminal: accumulator.terminal(),
-        })
-    }
-
     pub(super) fn from_origin(origin: CheckpointCustodyOrigin) -> Self {
         match origin {
             CheckpointCustodyOrigin::FreshGenesis => {
@@ -333,9 +307,8 @@ impl PhysicalCurrentRootOwner {
         Ok(())
     }
 
-    /// Dormant until C8 installs a selected reopen ledger and Store derives
-    /// `worst_case_encoded_bytes` from typed V3/tag7 records. No release path
-    /// calls this method during the transitional format cutover.
+    /// Admits the complete release closure and acquires mandatory publication
+    /// backing before the manifest, reservation, descriptor, or root effects.
     pub(in crate::physical_runtime) fn reserve_release_certificate_capacity(
         &self,
         attempt: &PhysicalReclaimAttempt,
@@ -344,7 +317,7 @@ impl PhysicalCurrentRootOwner {
         worst_case_encoded_bytes: u32,
         head_charge: ReleaseHeadCapacityCharge,
     ) -> Result<ReleaseCertificateCapacityLease, ReleaseCertificateCapacityDenial> {
-        let state = self.lock_publication_state();
+        let mut state = self.lock_publication_state();
         let mut fence = self.lock_reclaim();
         let active = fence
             .as_mut()
@@ -353,24 +326,35 @@ impl PhysicalCurrentRootOwner {
         if !active.is_pre_effect_payload_drop() || active.release_certificate_pending.is_some() {
             return Err(ReleaseCertificateCapacityDenial::ReclaimFenceMismatch);
         }
+        let anchored = state.current_root.tier_epoch_anchor().is_some();
+        let current_head_root = state.current_root.release_custody_head_root();
         let ledger = state
             .release_ledger
-            .selected()
+            .selected_mut()
             .ok_or(ReleaseCertificateCapacityDenial::SelectedLedgerUnavailable)?;
-        if !ledger.admits_worst_case(
-            state.current_root.tier_epoch_anchor().is_some(),
-            needed_records,
-            worst_case_encoded_bytes,
-        ) {
+        if !ledger.admits_worst_case(anchored, needed_records, worst_case_encoded_bytes) {
             return Err(ReleaseCertificateCapacityDenial::CapacityExhausted);
         }
-        if ledger.effective_heads.root() != state.current_root.release_custody_head_root() {
+        if ledger.effective_heads.root() != current_head_root {
             return Err(ReleaseCertificateCapacityDenial::SelectedFactMismatch);
         }
-        if !ledger.admits_head_closure(key, head_charge, self.recovery_allocation.byte_limit())? {
-            return Err(ReleaseCertificateCapacityDenial::CapacityExhausted);
-        }
+        let closure_bytes = ledger.head_closure_bytes(key, head_charge)?;
+        let fence_bytes = active.owned_heap_bytes().ok_or_else(|| {
+            ReleaseCertificateCapacityDenial::Resident(
+                crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial::SizeOverflow {
+                    admitted: self.recovery_allocation.byte_limit(),
+                },
+            )
+        })?;
+        let root_frame = ledger.prepare_publication_backing(
+            self.recovery_allocation,
+            closure_bytes,
+            fence_bytes,
+            key,
+        )?;
         active.release_certificate_pending = Some(ReleaseCertificatePending {
+            key,
+            root_frame,
             needed_records,
             worst_case_encoded_bytes,
             effect_may_exist: false,

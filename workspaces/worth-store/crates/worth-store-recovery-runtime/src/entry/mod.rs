@@ -31,6 +31,9 @@ pub use outcome::{
     PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure,
     PhysicalRecoveryOutcome, PhysicalRecoveryPageAdmissionDenial, PhysicalRecoveryPlanningDenial,
     PhysicalRecoveryPublicationIndeterminate, PhysicalRecoveryRefusal, PhysicalRecoveryRefusalKind,
+    PhysicalRecoveryReleaseHeadControlDenial, PhysicalRecoveryReleaseHeadReadDenial,
+    PhysicalRecoveryReleaseHeadWalkDenial, PhysicalRecoverySelectedRecordReadDenial,
+    PhysicalRecoverySelectedReleaseHeadDenial,
 };
 pub use publication::{
     PhysicalRecoveryPublicationCounters, PhysicalRecoveryPublicationDenial,

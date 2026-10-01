@@ -4,7 +4,6 @@
 //! layout admission, planning, readiness, execution, or readmission APIs.
 
 mod access;
-mod evolution;
 mod integrity;
 mod maintenance;
 mod materialization;

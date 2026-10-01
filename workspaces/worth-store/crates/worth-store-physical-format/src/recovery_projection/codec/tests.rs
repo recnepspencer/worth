@@ -5,7 +5,9 @@ use crate::{
 };
 use sha2::{Digest, Sha256};
 
-fn extent_projection() -> PersistedPhysicalRecoveryProjection {
+fn extent_projection(
+    operation: PersistedPhysicalRecoveryOperation,
+) -> Option<PersistedPhysicalRecoveryProjection> {
     let record = PersistedRecordIdentity::new([7; 16], 9).unwrap();
     let extent = PhysicalGenerationAuthority::for_canonical_physical_format()
         .record_extent_cell(PhysicalExtentId::from_raw(3).unwrap())
@@ -18,7 +20,7 @@ fn extent_projection() -> PersistedPhysicalRecoveryProjection {
         ExtentChunkCoordinate::new(record, extent, 1, 0, 1).unwrap(),
     );
     let root = PersistedPhysicalRecoveryRootState::new(4096, 1, 32, vec![], None, None).unwrap();
-    PersistedPhysicalRecoveryProjection::new(
+    PersistedPhysicalRecoveryProjection::new_with_operation(
         11,
         root,
         vec![record],
@@ -26,8 +28,8 @@ fn extent_projection() -> PersistedPhysicalRecoveryProjection {
         vec![CurrentPhysicalRecordPlacement::Extent(placement)],
         vec![],
         vec![],
+        operation,
     )
-    .unwrap()
 }
 
 fn limits() -> PhysicalRecoveryProjectionDecodeLimits {
@@ -37,309 +39,164 @@ fn limits() -> PhysicalRecoveryProjectionDecodeLimits {
         placements: 1,
         segment_updates: 0,
         manifests: 0,
-        total_entries: 1,
+        total_entries: 2,
         inline_allocations: 0,
     }
 }
 
-#[test]
-fn v5_frames_reencode_exactly_and_v6_semantics_bind_one_extent_record() {
-    let mut projection = extent_projection();
-    let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
-    let v6 = projection.encode();
-    assert_eq!(
-        PersistedPhysicalRecoveryProjection::decode(&v6, limits(), format),
-        Ok(projection.clone())
-    );
-
-    projection.version = RecoveryProjectionVersion::V5;
-    let v5 = projection.encode();
-    assert_eq!(
-        PersistedPhysicalRecoveryProjection::decode(&v5, limits(), format),
-        Ok(projection.clone())
-    );
-    assert_eq!(
-        PersistedPhysicalRecoveryProjection::decode(&v5, limits(), format)
-            .unwrap()
-            .encode(),
-        v5
-    );
-    assert_ne!(v5, v6);
-
-    let record = projection.record_identities()[0];
-    let binding = PersistedBlobSemanticRecordBinding::new(record, [5; 32], 12).unwrap();
-    let semantic = PersistedPhysicalRecoveryBlobSemantic::SessionDeclared(binding);
-    let mut declared = extent_projection();
-    declared.blob_semantic = semantic;
-    let bytes = declared.encode();
-    assert_eq!(
-        PersistedPhysicalRecoveryProjection::decode(&bytes, limits(), format),
-        Ok(declared)
-    );
-    let mut frontier = extent_projection();
-    frontier.blob_semantic = PersistedPhysicalRecoveryBlobSemantic::SessionFrontier(binding);
-    let bytes = frontier.encode();
-    assert_eq!(
-        PersistedPhysicalRecoveryProjection::decode(&bytes, limits(), format),
-        Ok(frontier)
-    );
-    let mut abandoned = extent_projection();
-    abandoned.blob_semantic = PersistedPhysicalRecoveryBlobSemantic::SessionAbandoned(binding);
-    let bytes = abandoned.encode();
-    assert_eq!(
-        PersistedPhysicalRecoveryProjection::decode(&bytes, limits(), format),
-        Ok(abandoned)
-    );
-    assert!(PersistedPhysicalRecoveryProjection::new_with_blob_semantic(
-        11,
-        projection.root_state().clone(),
-        vec![record],
-        projection.frames().unwrap().to_vec(),
-        projection.placements().to_vec(),
-        vec![],
-        vec![],
-        PersistedPhysicalRecoveryBlobSemantic::GenerationPublished(
-            PersistedBlobSemanticRecordBinding::new(record, [5; 32], 13).unwrap()
-        ),
-    )
-    .is_none());
+fn format() -> PhysicalRecordFormatDeclaration {
+    PhysicalRecordFormatDeclaration::builder().admit().unwrap()
 }
 
-#[test]
-fn v7_drop_binding_is_additive_and_v6_cannot_reinterpret_its_tag() {
-    let old = extent_projection();
-    let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
-    let record = old.record_identities()[0];
-    let binding = PersistedBlobSemanticRecordBinding::new(record, [5; 32], 12).unwrap();
-    let projected = PersistedPhysicalRecoveryProjection::new_with_blob_semantic(
-        11,
-        old.root_state().clone(),
-        vec![record],
-        old.frames().unwrap().to_vec(),
-        old.placements().to_vec(),
-        vec![],
-        vec![],
-        PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding),
-    )
-    .unwrap();
-    assert_eq!(
-        PersistedPhysicalRecoveryProjection::decode(&projected.encode(), limits(), format),
-        Ok(projected.clone())
-    );
-    let mut mislabeled = projected.encode();
-    let v7 = V7_DOMAIN;
-    let v6 = V6_DOMAIN;
-    assert_eq!(v7.len(), v6.len());
-    let domain_offset = 8;
-    mislabeled[domain_offset..domain_offset + v6.len()].copy_from_slice(v6);
-    assert_eq!(
-        PersistedPhysicalRecoveryProjection::decode(&mislabeled, limits(), format),
-        Err(PhysicalRecoveryProjectionDenial::Malformed)
-    );
-}
-
-#[test]
-fn v8_directory_binding_is_typed_and_cannot_be_reinterpreted_as_v7() {
-    let old = extent_projection();
-    let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
-    let record = old.record_identities()[0];
-    let binding = PersistedBlobSemanticRecordBinding::new(record, [5; 32], 12).unwrap();
-    let source = crate::IndexedThroughBlobPublication::new(11, record, [6; 32]).unwrap();
-    let projected = PersistedPhysicalRecoveryProjection::new_with_blob_semantic(
-        11,
-        old.root_state().clone(),
-        vec![record],
-        old.frames().unwrap().to_vec(),
-        old.placements().to_vec(),
-        vec![],
-        vec![],
-        PersistedPhysicalRecoveryBlobSemantic::DerivedDirectory(
-            PersistedDerivedDirectoryRecordBinding::new(binding, Some(source)),
-        ),
-    )
-    .unwrap();
-    let bytes = projected.encode();
-    assert_eq!(
-        PersistedPhysicalRecoveryProjection::decode(&bytes, limits(), format),
-        Ok(projected),
-    );
-    let mut mislabeled = bytes;
-    mislabeled[8..8 + V7_DOMAIN.len()].copy_from_slice(V7_DOMAIN);
-    assert_eq!(
-        PersistedPhysicalRecoveryProjection::decode(&mislabeled, limits(), format),
-        Err(PhysicalRecoveryProjectionDenial::Malformed),
-    );
-}
-
-#[test]
-fn v10_directory_retirement_binds_exact_prior_record_and_bounded_drops() {
-    let old = extent_projection();
-    let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
-    let record = old.record_identities()[0];
-    let prior_record = PersistedRecordIdentity::new([7; 16], 8).unwrap();
-    let source = crate::IndexedThroughBlobPublication::new(11, record, [6; 32]).unwrap();
-    let binding = PersistedBlobSemanticRecordBinding::new(record, [5; 32], 12).unwrap();
-    let base = PersistedPhysicalRecoveryProjection::new_with_blob_semantic(
-        11,
-        old.root_state().clone(),
-        vec![record],
-        old.frames().unwrap().to_vec(),
-        old.placements().to_vec(),
-        vec![],
-        vec![],
-        PersistedPhysicalRecoveryBlobSemantic::DerivedDirectory(
-            PersistedDerivedDirectoryRecordBinding::new(binding, Some(source)),
-        ),
-    )
-    .unwrap();
-    let predecessor = crate::DerivedFamilyRootDirectoryBinding::new(prior_record, Some(source));
-    assert!(base
-        .clone()
-        .with_derived_retirement(Some(predecessor), vec![])
-        .is_none());
-    assert!(base
-        .clone()
-        .with_derived_retirement(Some(predecessor), vec![prior_record, prior_record])
-        .is_none());
-    let projected = base
-        .with_derived_retirement(Some(predecessor), vec![prior_record])
-        .unwrap();
-    let bytes = projected.encode();
-    let mut admitted_limits = limits();
-    admitted_limits.total_entries = 2;
-    assert_eq!(
-        PersistedPhysicalRecoveryProjection::decode(&bytes, admitted_limits, format),
-        Ok(projected),
-    );
-    assert_eq!(
-        PersistedPhysicalRecoveryProjection::decode(&bytes, limits(), format),
-        Err(PhysicalRecoveryProjectionDenial::EntryLimit),
-    );
-    let encoded_prior_record = [
-        prior_record.allocation_epoch().as_slice(),
-        &prior_record.ordinal().to_le_bytes(),
-    ]
-    .concat();
-    let predecessor_offset = bytes
-        .windows(encoded_prior_record.len())
-        .position(|window| window == encoded_prior_record)
-        .expect("encoded predecessor appears in V10 projection");
-    let mut malformed = bytes.clone();
-    malformed[predecessor_offset - 1] = 2;
-    assert_eq!(
-        PersistedPhysicalRecoveryProjection::decode(&malformed, admitted_limits, format),
-        Err(PhysicalRecoveryProjectionDenial::Malformed),
-    );
-    malformed = bytes;
-    malformed[predecessor_offset + encoded_prior_record.len()] = 2;
-    assert_eq!(
-        PersistedPhysicalRecoveryProjection::decode(&malformed, admitted_limits, format),
-        Err(PhysicalRecoveryProjectionDenial::Malformed),
-    );
-}
-
-#[test]
-fn v12_directory_binds_quarantine_marker_even_when_retirement_is_empty() {
-    let old = extent_projection();
-    let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
-    let record = old.record_identities()[0];
-    let marker = PersistedRecordIdentity::new([7; 16], 8).unwrap();
-    let binding = PersistedBlobSemanticRecordBinding::new(record, [5; 32], 12).unwrap();
-    let projected = PersistedPhysicalRecoveryProjection::new_with_blob_semantic(
-        11,
-        old.root_state().clone(),
-        vec![record],
-        old.frames().unwrap().to_vec(),
-        old.placements().to_vec(),
-        vec![],
-        vec![],
-        PersistedPhysicalRecoveryBlobSemantic::DerivedDirectory(
-            PersistedDerivedDirectoryRecordBinding::new_with_quarantine(
-                binding,
-                None,
-                Some(marker),
-            ),
-        ),
+fn binding() -> PersistedBlobSemanticRecordBinding {
+    PersistedBlobSemanticRecordBinding::new(
+        PersistedRecordIdentity::new([7; 16], 9).unwrap(),
+        [5; 32],
+        12,
     )
     .unwrap()
-    .with_derived_retirement(None, vec![])
-    .unwrap();
-    let bytes = projected.encode();
+}
+
+fn with_domain(encoded: &[u8], domain: &[u8]) -> Vec<u8> {
+    let mut result = Vec::new();
+    field(&mut result, domain);
+    result.extend_from_slice(&encoded[8 + CURRENT_RECOVERY_PROJECTION_DOMAIN.len()..]);
+    result
+}
+
+#[test]
+fn current_domain_roundtrips_frames_and_rejects_retired_domains_before_body() {
+    let projection = extent_projection(PersistedPhysicalRecoveryOperation::None).unwrap();
+    let bytes = projection.encode();
     assert_eq!(
-        PersistedPhysicalRecoveryProjection::decode(&bytes, limits(), format),
-        Ok(projected)
+        PersistedPhysicalRecoveryProjection::decode(&bytes, limits(), format()),
+        Ok(projection),
     );
-    let mut mislabeled = bytes;
-    mislabeled[8..8 + V10_DOMAIN.len()].copy_from_slice(V10_DOMAIN);
+    for version in 1..=14 {
+        let retired = with_domain(
+            &bytes,
+            format!("store.physical.recovery-projection.v{version}").as_bytes(),
+        );
+        assert_eq!(
+            PersistedPhysicalRecoveryProjection::decode(&retired, limits(), format()),
+            Err(PhysicalRecoveryProjectionDenial::UnsupportedVersion(
+                version
+            )),
+        );
+    }
     assert_eq!(
-        PersistedPhysicalRecoveryProjection::decode(&mislabeled, limits(), format),
+        PersistedPhysicalRecoveryProjection::decode(
+            &with_domain(&bytes, b"not-a-recovery-projection"),
+            limits(),
+            format(),
+        ),
         Err(PhysicalRecoveryProjectionDenial::Malformed),
     );
 }
 
 #[test]
-fn v9_reuse_claim_binding_is_typed_and_cannot_be_reinterpreted_as_v8() {
-    let old = extent_projection();
-    let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
-    let record = old.record_identities()[0];
-    let binding = PersistedBlobSemanticRecordBinding::new(record, [5; 32], 12).unwrap();
-    let projected = PersistedPhysicalRecoveryProjection::new_with_blob_semantic(
-        11,
-        old.root_state().clone(),
-        vec![record],
-        old.frames().unwrap().to_vec(),
-        old.placements().to_vec(),
-        vec![],
-        vec![],
-        PersistedPhysicalRecoveryBlobSemantic::ChunkReused(binding),
-    )
-    .unwrap();
-    let bytes = projected.encode();
-    assert_eq!(
-        PersistedPhysicalRecoveryProjection::decode(&bytes, limits(), format),
-        Ok(projected),
+fn current_operation_variants_preserve_exact_binding_and_explicit_unknown_route() {
+    let binding = binding();
+    let operations = [
+        PersistedPhysicalRecoveryOperation::SessionDeclared(binding),
+        PersistedPhysicalRecoveryOperation::GenerationPublished(binding),
+        PersistedPhysicalRecoveryOperation::SessionFrontier(binding),
+        PersistedPhysicalRecoveryOperation::SessionAbandoned(binding),
+        PersistedPhysicalRecoveryOperation::RecordsDropped {
+            binding,
+            head_effect: None,
+        },
+        PersistedPhysicalRecoveryOperation::ChunkReused(binding),
+        PersistedPhysicalRecoveryOperation::DedupeQuarantined(binding),
+    ];
+    for operation in operations {
+        let projection = extent_projection(operation).unwrap();
+        let bytes = projection.encode();
+        let decoded =
+            PersistedPhysicalRecoveryProjection::decode(&bytes, limits(), format()).unwrap();
+        assert_eq!(decoded, projection);
+        assert!(decoded.placements()[0].route_metadata().is_legacy_unknown());
+    }
+    let wrong = PersistedBlobSemanticRecordBinding::new(binding.record(), [5; 32], 13).unwrap();
+    assert!(
+        extent_projection(PersistedPhysicalRecoveryOperation::GenerationPublished(
+            wrong
+        ))
+        .is_none()
     );
-    let mut mislabeled = bytes;
-    mislabeled[8..8 + V8_DOMAIN.len()].copy_from_slice(V8_DOMAIN);
+}
+
+#[test]
+fn directory_quarantine_tristate_and_retirement_are_current_operation_facts() {
+    let record = binding().record();
+    let prior = PersistedRecordIdentity::new([7; 16], 8).unwrap();
+    let source = crate::IndexedThroughBlobPublication::new(11, record, [6; 32]).unwrap();
+    let predecessor = crate::DerivedFamilyRootDirectoryBinding::new(prior, Some(source));
+    assert!(PersistedDerivedDirectoryRetirement::new(Some(predecessor), vec![]).is_none());
+    assert!(
+        PersistedDerivedDirectoryRetirement::new(Some(predecessor), vec![prior, prior]).is_none()
+    );
+    let retirement =
+        PersistedDerivedDirectoryRetirement::new(Some(predecessor), vec![prior]).unwrap();
+    for directory in [
+        PersistedDerivedDirectoryRecordBinding::new(binding(), Some(source)),
+        PersistedDerivedDirectoryRecordBinding::new_with_quarantine(binding(), Some(source), None),
+        PersistedDerivedDirectoryRecordBinding::new_with_quarantine(
+            binding(),
+            Some(source),
+            Some(prior),
+        ),
+    ] {
+        let operation = PersistedPhysicalRecoveryOperation::DerivedDirectory {
+            binding: directory,
+            retirement: Some(retirement.clone()),
+        };
+        let projection = extent_projection(operation).unwrap();
+        assert_eq!(
+            PersistedPhysicalRecoveryProjection::decode(&projection.encode(), limits(), format()),
+            Ok(projection),
+        );
+    }
+    let overlapping = PersistedDerivedDirectoryRetirement::new(None, vec![record]).unwrap();
+    assert!(
+        extent_projection(PersistedPhysicalRecoveryOperation::DerivedDirectory {
+            binding: PersistedDerivedDirectoryRecordBinding::new(binding(), None),
+            retirement: Some(overlapping),
+        })
+        .is_none()
+    );
+}
+
+#[test]
+fn variant_attachment_bytes_cannot_be_reinterpreted_as_other_operations() {
+    let prior = PersistedRecordIdentity::new([7; 16], 8).unwrap();
+    let retirement = PersistedDerivedDirectoryRetirement::new(None, vec![prior]).unwrap();
+    let operation = PersistedPhysicalRecoveryOperation::DerivedDirectory {
+        binding: PersistedDerivedDirectoryRecordBinding::new(binding(), None),
+        retirement: Some(retirement),
+    };
+    let projection = extent_projection(operation.clone()).unwrap();
+    let mut encoded = projection.encode();
+    let mut operation_wire = Vec::new();
+    write_operation(&mut operation_wire, &operation);
+    let tag_at = encoded.len() - operation_wire.len() + 8;
+    assert_eq!(encoded[tag_at], 6);
+    encoded[tag_at] = 5;
     assert_eq!(
-        PersistedPhysicalRecoveryProjection::decode(&mislabeled, limits(), format),
+        PersistedPhysicalRecoveryProjection::decode(&encoded, limits(), format()),
+        Err(PhysicalRecoveryProjectionDenial::Malformed),
+    );
+    let mut encoded = projection.encode();
+    encoded.push(0);
+    assert_eq!(
+        PersistedPhysicalRecoveryProjection::decode(&encoded, limits(), format()),
         Err(PhysicalRecoveryProjectionDenial::Malformed),
     );
 }
 
 #[test]
-fn v11_quarantine_marker_is_typed_and_cannot_be_reinterpreted_as_v10() {
-    let old = extent_projection();
-    let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
-    let record = old.record_identities()[0];
-    let binding = PersistedBlobSemanticRecordBinding::new(record, [5; 32], 12).unwrap();
-    let projected = PersistedPhysicalRecoveryProjection::new_with_blob_semantic(
-        11,
-        old.root_state().clone(),
-        vec![record],
-        old.frames().unwrap().to_vec(),
-        old.placements().to_vec(),
-        vec![],
-        vec![],
-        PersistedPhysicalRecoveryBlobSemantic::DedupeQuarantined(binding),
-    )
-    .unwrap();
-    let bytes = projected.encode();
-    assert_eq!(
-        PersistedPhysicalRecoveryProjection::decode(&bytes, limits(), format),
-        Ok(projected)
-    );
-    let mut mislabeled = bytes;
-    mislabeled[8..8 + V10_DOMAIN.len()].copy_from_slice(V10_DOMAIN);
-    assert_eq!(
-        PersistedPhysicalRecoveryProjection::decode(&mislabeled, limits(), format),
-        Err(PhysicalRecoveryProjectionDenial::Malformed),
-    );
-}
-
-#[test]
-fn v5_source_copy_and_v6_source_copy_preserve_distinct_payload_variant() {
-    let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
+fn current_source_copy_roundtrips_without_operation_or_frame_format_default() {
+    let format = format();
     let source = DurableExtentRecordPlacement::legacy_unknown(
         PersistedRecordIdentity::new([7; 16], 9).unwrap(),
         PhysicalGenerationAuthority::for_canonical_physical_format()
@@ -356,22 +213,15 @@ fn v5_source_copy_and_v6_source_copy_preserve_distinct_payload_variant() {
     let digest = Sha256::digest(PhysicalExtentCopyRecord::Intent(intent).encode()).into();
     let recipe = PersistedExtentCopyRecipe::new(intent, 41, digest).unwrap();
     let root = PersistedPhysicalRecoveryRootState::new(65_536, 1, 32, vec![], None, None).unwrap();
-    let mut projection =
+    let projection =
         PersistedPhysicalRecoveryProjection::from_source_copy(17, root, recipe).unwrap();
-    assert_eq!(
-        PersistedPhysicalRecoveryProjection::decode(&projection.encode(), limits(), format),
-        Ok(projection.clone())
-    );
-    projection.version = RecoveryProjectionVersion::V5;
     let bytes = projection.encode();
     assert_eq!(
         PersistedPhysicalRecoveryProjection::decode(&bytes, limits(), format),
-        Ok(projection)
+        Ok(projection),
     );
     assert_eq!(
-        PersistedPhysicalRecoveryProjection::decode(&bytes, limits(), format)
-            .unwrap()
-            .encode(),
-        bytes
+        PersistedPhysicalRecoveryProjection::decode_frames(&bytes, limits()),
+        Err(PhysicalRecoveryProjectionDenial::Malformed),
     );
 }

@@ -34,11 +34,9 @@ fn maintenance_checkpoint_is_a_distinct_envelope() {
     let source = source(4).with_maintenance_protocol();
     let (_, header) = CheckpointStreamEncoder::begin(source);
     assert_eq!(header[8], 2);
-    assert!(PhysicalCheckpointSource::decode_c9_legacy_stream_header_record(&header).is_err());
-    assert!(
-        PhysicalCheckpointSource::decode_stream_header_record(&header)
-            .unwrap()
-            .requires_maintenance_protocol()
+    assert_eq!(
+        PhysicalCheckpointSource::decode_stream_header_record(&header),
+        Ok(source)
     );
 }
 

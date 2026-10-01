@@ -5,7 +5,7 @@ use std::sync::Arc;
 use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
 use worth_store_physical_format::{
     decode_blob_record, BlobReclaimSourceBasisV1, BlobRecordKind, BlobRecordV1,
-    CurrentPhysicalRecordPlacement, PersistedPhysicalRecoveryBlobSemantic,
+    CurrentPhysicalRecordPlacement, PersistedPhysicalRecoveryOperation,
     PhysicalRecordFormatDeclaration,
 };
 use worth_store_recovery_physics::{
@@ -56,8 +56,8 @@ pub(in crate::orchestration::planning::page_observation) fn classify<'target>(
         .admitted_drop_members()
         .filter(|(_, fate, projection, _)| {
             *fate != RecoveryOperationFate::ProvenNoEffect
-                && matches!(projection.blob_semantic(),
-                PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding)
+                && matches!(projection.operation(),
+                PersistedPhysicalRecoveryOperation::RecordsDropped { binding, .. }
                     if binding.candidate_root_generation() <= selected_root.generation())
         })
         .count();
@@ -66,15 +66,15 @@ pub(in crate::orchestration::planning::page_observation) fn classify<'target>(
             .admitted_drop_members()
             .any(|(_, fate, projection, _)| {
                 fate != RecoveryOperationFate::ProvenNoEffect
-                    && matches!(projection.blob_semantic(),
-                    PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding)
+                    && matches!(projection.operation(),
+                    PersistedPhysicalRecoveryOperation::RecordsDropped { binding, .. }
                         if binding.candidate_root_generation() < selected_root.generation())
             });
     let mut ordered = None;
     let mut ordered_releases = None;
     for (operation, fate, projection, wal_record) in redo.admitted_drop_members() {
-        let PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding) =
-            projection.blob_semantic()
+        let PersistedPhysicalRecoveryOperation::RecordsDropped { binding, .. } =
+            projection.operation()
         else {
             unreachable!()
         };

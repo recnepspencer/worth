@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 const HEADER: usize = 116;
 const FOOTER: usize = 32;
 const DOMAIN: &[u8] = b"store.physical.extent-copy.v1";
+const CLASSIFIED_DOMAIN: &[u8] = b"store.physical.extent-copy.v2";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct IndependentCopyIntent {
@@ -37,11 +38,33 @@ pub(crate) fn produced_copy_intents(root: &Path) -> Vec<IndependentCopyIntent> {
             if bytes.get(end..end + FOOTER).is_none() {
                 break;
             }
-            if let Some(body) = payload
-                .strip_prefix(DOMAIN)
-                .and_then(|rest| rest.strip_prefix(&[1]))
-            {
-                assert_eq!(body.len(), 200, "malformed framed copy intent");
+            let intent = payload
+                .strip_prefix(CLASSIFIED_DOMAIN)
+                .map(|bytes| (bytes, true))
+                .or_else(|| payload.strip_prefix(DOMAIN).map(|bytes| (bytes, false)));
+            if let Some((body, classified)) = intent.and_then(|(bytes, classified)| {
+                bytes.strip_prefix(&[1]).map(|body| (body, classified))
+            }) {
+                assert_eq!(
+                    body.len(),
+                    if classified { 214 } else { 200 },
+                    "malformed framed copy intent"
+                );
+                if classified {
+                    let source_route = &body[200..207];
+                    let destination_route = &body[207..214];
+                    assert!(valid_classified_route(source_route), "invalid source route");
+                    assert_ne!(source_route[0], 0, "classified source cannot be unknown");
+                    assert!(
+                        valid_classified_route(destination_route),
+                        "invalid destination route"
+                    );
+                    assert_eq!(
+                        source_route[..4],
+                        destination_route[..4],
+                        "copy must preserve selected content class"
+                    );
+                }
                 let operation = body[..32].try_into().unwrap();
                 let triple = |at| {
                     [
@@ -70,6 +93,20 @@ pub(crate) fn produced_copy_intents(root: &Path) -> Vec<IndependentCopyIntent> {
         }
     }
     intents
+}
+
+fn valid_classified_route(bytes: &[u8]) -> bool {
+    if bytes.len() != 7 || bytes[5..] != [0; 2] || bytes[4] > 2 {
+        return false;
+    }
+    let family = u16::from_le_bytes([bytes[2], bytes[3]]);
+    match (bytes[0], bytes[1], family) {
+        (0, 0, 0) => bytes[4] == 0,
+        (1 | 4, 0, 0) => true,
+        (2, 1..=16, 0) => true,
+        (3, 0, 1..) => true,
+        _ => false,
+    }
 }
 
 fn number(bytes: &[u8], at: usize) -> u64 {

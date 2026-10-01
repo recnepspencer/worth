@@ -1,8 +1,7 @@
 use sha2::{Digest, Sha256};
 use worth_store_physical_backend::AdmittedRecoveryFilesystemMedia;
 use worth_store_recovery_physics::{
-    VerifiedSelectedCheckpointCustody, VerifiedSelectedNoReleaseCustody,
-    VerifiedSelectedTierEpochCustody,
+    VerifiedSelectedNoReleaseCustody, VerifiedSelectedTierEpochCustody,
 };
 
 use crate::physical_runtime::{
@@ -47,125 +46,6 @@ impl PhysicalRecoveryConstructionPort {
             None,
             None,
             None,
-            None,
-        )
-    }
-
-    pub fn construct_with_verified_custody(
-        coordination: PhysicalRecoveryCoordination,
-        media: AdmittedRecoveryFilesystemMedia,
-        cleanup: ClosedPhysicalRecoveryCleanup,
-        custody: VerifiedSelectedCheckpointCustody,
-    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        Self::construct_verified(coordination, media, cleanup, custody, None, || {})
-    }
-
-    /// Exercises the production Store media rejoin and owner-install path.
-    #[cfg(feature = "certification-test-authority")]
-    #[doc(hidden)]
-    pub fn certification_construct_with_verified_custody(
-        coordination: PhysicalRecoveryCoordination,
-        media: AdmittedRecoveryFilesystemMedia,
-        cleanup: ClosedPhysicalRecoveryCleanup,
-        custody: VerifiedSelectedCheckpointCustody,
-    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        Self::construct_verified(coordination, media, cleanup, custody, None, || {})
-    }
-
-    /// Pauses only between the initial actual-media join and its final
-    /// bounded reread. The callback grants no alternate seal path.
-    #[cfg(feature = "certification-test-authority")]
-    #[doc(hidden)]
-    pub fn certification_construct_with_verified_custody_and_rejoin_pause(
-        coordination: PhysicalRecoveryCoordination,
-        media: AdmittedRecoveryFilesystemMedia,
-        cleanup: ClosedPhysicalRecoveryCleanup,
-        custody: VerifiedSelectedCheckpointCustody,
-        pause_before_final_reread: impl FnOnce(),
-    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        Self::construct_verified(
-            coordination,
-            media,
-            cleanup,
-            custody,
-            None,
-            pause_before_final_reread,
-        )
-    }
-
-    pub fn construct_with_verified_tier_and_release(
-        coordination: PhysicalRecoveryCoordination,
-        media: AdmittedRecoveryFilesystemMedia,
-        cleanup: ClosedPhysicalRecoveryCleanup,
-        tier: VerifiedSelectedTierEpochCustody,
-        released: VerifiedSelectedCheckpointCustody,
-    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        Self::construct_verified(coordination, media, cleanup, released, Some(tier), || {})
-    }
-
-    #[cfg(feature = "certification-test-authority")]
-    #[doc(hidden)]
-    pub fn certification_construct_with_verified_tier_and_release(
-        coordination: PhysicalRecoveryCoordination,
-        media: AdmittedRecoveryFilesystemMedia,
-        cleanup: ClosedPhysicalRecoveryCleanup,
-        tier: VerifiedSelectedTierEpochCustody,
-        released: VerifiedSelectedCheckpointCustody,
-        pause_before_final_reread: impl FnOnce(),
-    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        Self::construct_verified(
-            coordination,
-            media,
-            cleanup,
-            released,
-            Some(tier),
-            pause_before_final_reread,
-        )
-    }
-
-    fn construct_verified(
-        coordination: PhysicalRecoveryCoordination,
-        media: AdmittedRecoveryFilesystemMedia,
-        cleanup: ClosedPhysicalRecoveryCleanup,
-        custody: VerifiedSelectedCheckpointCustody,
-        tier: Option<VerifiedSelectedTierEpochCustody>,
-        pause_before_final_reread: impl FnOnce(),
-    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        if cleanup.live_media_handle_delta() != 0 {
-            let _ = coordination.shutdown_is_quiescent();
-            return Err(RecoveredPhysicalRuntimeConstructionDenial::CleanupMediaNotQuiescent);
-        }
-        let reopen = cleanup.into_reopen();
-        if let Err(denial) = validate_construction_binding(&coordination, &media, &reopen) {
-            let _ = coordination.shutdown_is_quiescent();
-            return Err(denial);
-        }
-        // A physics transcript is a claim, not authority. Re-read the same
-        // admitted media now; WAL/compaction fate still must be joined before
-        // this constructor can issue a serving seal.
-        let (media, selected_wal, selected_controls) = match selected_rejoin::observe_claim(
-            &coordination,
-            media,
-            &reopen,
-            &custody,
-            tier.as_ref(),
-            pause_before_final_reread,
-        ) {
-            Ok(media) => media,
-            Err(_) => {
-                let _ = coordination.shutdown_is_quiescent();
-                return Err(RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch);
-            }
-        };
-        Self::construct_inner(
-            coordination,
-            media,
-            reopen,
-            Some(custody),
-            None,
-            tier,
-            Some(selected_wal),
-            Some(selected_controls),
         )
     }
 
@@ -234,7 +114,6 @@ impl PhysicalRecoveryConstructionPort {
             coordination,
             media,
             reopen,
-            None,
             Some(no_release),
             Some(tier),
             Some(selected_wal),
@@ -305,7 +184,6 @@ impl PhysicalRecoveryConstructionPort {
             coordination,
             media,
             reopen,
-            None,
             Some(no_release),
             None,
             Some(selected_wal),
@@ -317,7 +195,6 @@ impl PhysicalRecoveryConstructionPort {
         coordination: PhysicalRecoveryCoordination,
         media: AdmittedRecoveryFilesystemMedia,
         reopen: CompletedPhysicalRecoveryFreshReopen,
-        checkpoint_custody: Option<VerifiedSelectedCheckpointCustody>,
         no_release_custody: Option<VerifiedSelectedNoReleaseCustody>,
         tier_custody: Option<VerifiedSelectedTierEpochCustody>,
         selected_wal: Option<selected_rejoin::SelectedWalMediaFingerprint>,
@@ -325,19 +202,6 @@ impl PhysicalRecoveryConstructionPort {
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
         let observed_root_sha256: [u8; 32] =
             Sha256::digest(reopen.fresh_reopen_occurrence().root().bytes()).into();
-        let observed_accumulator_sha256 = checkpoint_custody.as_ref().map(|verified| {
-            let digest: [u8; 32] = Sha256::digest(verified.accumulator().encode()).into();
-            digest
-        });
-        if checkpoint_custody.as_ref().is_some_and(|verified| {
-            verified.selected_root() != reopen.root()
-                || verified.selected_root_sha256() != observed_root_sha256
-                || verified.accumulator().checkpoint() != verified.checkpoint().source().identity()
-                || Some(verified.accumulator_payload_sha256()) != observed_accumulator_sha256
-        }) {
-            let _ = coordination.shutdown_is_quiescent();
-            return Err(RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch);
-        }
         if no_release_custody.as_ref().is_some_and(|verified| {
             let marker_digest: [u8; 32] = Sha256::digest(verified.marker().encode()).into();
             verified.selected_root() != reopen.root()
@@ -349,8 +213,7 @@ impl PhysicalRecoveryConstructionPort {
             verified.selected_root() != reopen.root()
                 || verified.selected_root_sha256() != observed_root_sha256
                 || reopen.root().tier_epoch_anchor() != Some(verified.tier_epoch_anchor())
-        }) || (checkpoint_custody.is_some() && no_release_custody.is_some())
-        {
+        }) {
             let _ = coordination.shutdown_is_quiescent();
             return Err(RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch);
         }
@@ -383,7 +246,6 @@ impl PhysicalRecoveryConstructionPort {
             root: reopen.root().clone(),
             media,
             reopen,
-            checkpoint_custody,
             head_v2_custody: None,
             no_release_custody,
             pending_wal_release_custody: None,

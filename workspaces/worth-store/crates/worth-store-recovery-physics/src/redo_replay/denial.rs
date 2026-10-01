@@ -11,6 +11,7 @@ pub enum PhysicalRedoPlanningDenial {
     LsnRangeMismatch,
     InvalidTarget,
     InvalidRecoveryProjection,
+    UnsupportedRecoveryProjectionVersion(u16),
     MissingPageObservation,
     GenerationMismatch,
     PageDigestMismatch,

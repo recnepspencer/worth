@@ -4,6 +4,16 @@ use worth_store_physical_format::PhysicalRecordFormatDeclaration;
 
 use super::PageObservationFailure;
 
+#[derive(Debug)]
+pub(in crate::orchestration::planning) enum ResidentTraceDenial {
+    SizeOverflow,
+    ResidentBoundExceeded,
+    Allocation {
+        requested: u64,
+        cause: std::collections::TryReserveError,
+    },
+}
+
 pub(in crate::orchestration::planning) struct ResidentAllowance {
     used: u64,
     maximum: u64,
@@ -71,16 +81,42 @@ impl ResidentAllowance {
         trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
         additional: usize,
     ) -> Result<(), PageObservationFailure> {
+        self.trace_slots_diagnostic(trace, additional)
+            .map_err(|_| PageObservationFailure::ManifestEntryLimit)
+    }
+
+    pub(in crate::orchestration::planning) fn trace_slots_diagnostic(
+        &mut self,
+        trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
+        additional: usize,
+    ) -> Result<(), ResidentTraceDenial> {
         // Old backing is already retained in used. A growth allocation can
         // coexist with it; preflight the complete new backing, not just delta.
         let allocation = trace
             .observation_reservation_bytes(additional)
-            .ok_or(PageObservationFailure::ManifestEntryLimit)?;
-        self.transient(allocation)?;
-        let growth = trace
-            .reserve_observations(additional)
-            .ok_or(PageObservationFailure::ManifestEntryLimit)?;
+            .ok_or(ResidentTraceDenial::SizeOverflow)?;
+        let capacity = trace
+            .next_observation_capacity(additional)
+            .ok_or(ResidentTraceDenial::SizeOverflow)?;
+        let old = trace
+            .owned_heap_bytes()
+            .ok_or(ResidentTraceDenial::SizeOverflow)?;
+        self.transient(allocation)
+            .map_err(|_| ResidentTraceDenial::ResidentBoundExceeded)?;
+        trace
+            .try_reserve_observation_capacity(capacity)
+            .map_err(|cause| ResidentTraceDenial::Allocation {
+                requested: allocation,
+                cause,
+            })?;
+        let actual = trace
+            .owned_heap_bytes()
+            .ok_or(ResidentTraceDenial::SizeOverflow)?;
+        let growth = actual
+            .checked_sub(old)
+            .ok_or(ResidentTraceDenial::SizeOverflow)?;
         self.bytes(growth)
+            .map_err(|_| ResidentTraceDenial::ResidentBoundExceeded)
     }
 
     pub(in crate::orchestration::planning) fn release(

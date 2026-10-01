@@ -8,7 +8,7 @@ use sha2::{Digest, Sha256};
 
 use worth_store_physical_format::{
     DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest,
-    PersistedPhysicalRecoveryBlobSemantic, PhysicalInventoryTranscriptV1,
+    PersistedPhysicalRecoveryOperation, PhysicalInventoryTranscriptV1,
     PhysicalRecordFormatDeclaration,
 };
 use worth_store_wal::WalLsnRange;
@@ -93,8 +93,8 @@ impl HistoricalReleaseRootChainBuilder {
         maximum_scratch_bytes: u64,
     ) -> Result<Self, HistoricalReleaseRootChainDenial> {
         use HistoricalReleaseRootChainDenial as Denial;
-        let PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding) =
-            first_member.materialization().blob_semantic()
+        let PersistedPhysicalRecoveryOperation::RecordsDropped { binding, .. } =
+            first_member.materialization().operation()
         else {
             return Err(Denial::InvalidFirstDrop);
         };

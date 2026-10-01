@@ -21,6 +21,8 @@ pub(super) mod mixed_failed_ingest;
 #[cfg(feature = "certification-test-authority")]
 #[path = "release_reopen/per_object_pruned_successor.rs"]
 mod per_object_pruned_successor;
+#[path = "release_reopen/published_world.rs"]
+pub(super) mod published_world;
 #[path = "release_reopen/selected_head_oracle.rs"]
 pub(super) mod selected_head_oracle;
 #[cfg(feature = "certification-test-authority")]
@@ -185,62 +187,7 @@ fn released_world_in_tier(
     PersistedRecordIdentity,
     AdmittedBlobReleaseProof,
 ) {
-    const CHUNK: usize = 64 << 10;
-    let world = match wal_segment_bytes {
-        Some(bytes) => PhysicalResidencyStoreWorld::initialize_for_recovery_with_wal_segment_bytes(
-            "release-checkpoint-reopen",
-            bytes,
-        ),
-        None => PhysicalResidencyStoreWorld::initialize_for_recovery("release-checkpoint-reopen"),
-    }
-    .expect("initialize release world");
-    if activate_tier {
-        world
-            .serving()
-            .certification_activate_tier_epoch(world.placement())
-            .expect("typed one-time tier activation before release");
-    }
-    let scope = admitted_blob_scope("c11.recovery.release.scope");
-    let blobs = world.serving().blobs().expect("blob owner");
-    let read_limits = BlobReadLimits::new(NonZeroU64::new(256).unwrap());
-    let object = blobs.issue_object_id(read_limits).expect("object identity");
-    let declaration = BlobIngestDeclaration::new(
-        object,
-        BlobChunkSize::from_bytes(CHUNK as u64).unwrap(),
-        (2 * CHUNK) as u64,
-        &scope,
-        BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-        PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
-    )
-    .unwrap();
-    let mut ingest = blobs
-        .begin_ingest(declaration, world.placement(), CHUNK as u64, read_limits)
-        .expect("begin ingest");
-    ingest.push(&vec![0x31; CHUNK]).expect("first chunk");
-    ingest.push(&vec![0x52; CHUNK]).expect("second chunk");
-    let published = match ingest.finish() {
-        Ok(published) | Err(BlobIngestFailure::PublishedIndexPending { published, .. }) => {
-            published
-        }
-        Err(failure) => panic!("publication failed: {failure:?}"),
-    };
-    drop(blobs);
-    let marker = world
-        .serving()
-        .certification_selected_latest_blob_publication()
-        .unwrap()
-        .expect("selected publication");
-    let record = marker.record();
-    let proof = AdmittedBlobReleaseProof::certification_admit(
-        world.serving().store_identity().bytes(),
-        object.bytes(),
-        published.generation().sequence(),
-        record.allocation_epoch(),
-        record.ordinal(),
-        marker.encoded_digest(),
-        [0x71; 32],
-    )
-    .unwrap();
+    let (world, proof, record) = published_world::create(activate_tier, wal_segment_bytes, None);
     let request = BlobReclaimRequest::released(
         reissue_proof(&proof),
         world.placement(),

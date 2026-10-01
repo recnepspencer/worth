@@ -393,6 +393,7 @@ fn discovery_artifact_context(kind: PhysicalRecoveryBlock) -> &'static str {
         PhysicalRecoveryBlock::PageAdmission => "manifest-addressed page or extent",
         PhysicalRecoveryBlock::OperationReconciliation => "operation-fate evidence",
         PhysicalRecoveryBlock::RedoPlanning => "canonical redo plan",
+        PhysicalRecoveryBlock::SelectedCustody => "checkpoint-source-release-head-v2",
         PhysicalRecoveryBlock::Staging => "closed recovery staging generation",
         PhysicalRecoveryBlock::Publication => "recovered-root publication",
     }

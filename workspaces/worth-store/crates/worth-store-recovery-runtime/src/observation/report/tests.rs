@@ -3,7 +3,7 @@ use sha2::{Digest, Sha256};
 use super::super::{
     protocol, RecoveryReportCounters, RecoveryReportDecodeDenial, RECOVERY_REPORT_PROTOCOL,
 };
-use super::model::RecoveryReportDenialCause;
+use super::model::{RecoveryReportBlockCause, RecoveryReportDenialCause};
 use super::{RecoveryReportEnvelope, RecoveryReportOutcome};
 use crate::{PhysicalRecoveryOutcome, PhysicalRecoveryRefusal, PhysicalRecoveryRefusalKind};
 use worth_foundational::facade::BoundaryProtocolUnsupportedVersionPosture;
@@ -116,6 +116,21 @@ fn publication_indeterminate_is_a_distinct_terminal_report() {
         decoded.denial_cause(),
         Some(RecoveryReportDenialCause::PublicationSettlementIndeterminate)
     );
+}
+
+#[test]
+fn selected_custody_block_cause_round_trips_without_reusing_an_older_code() {
+    let report = RecoveryReportEnvelope {
+        outcome: RecoveryReportOutcome::Blocked,
+        store: Some([0x42; 16]),
+        root_generation: None,
+        counters: RecoveryReportCounters::new(0, 0, 0, 0),
+        denial_cause: Some(RecoveryReportDenialCause::Blocked(
+            RecoveryReportBlockCause::SelectedCustody,
+        )),
+    };
+    let decoded = RecoveryReportEnvelope::decode(&report.encode()).unwrap();
+    assert_eq!(decoded.denial_cause(), report.denial_cause);
 }
 
 #[test]

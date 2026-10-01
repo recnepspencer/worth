@@ -12,6 +12,7 @@ mod selection;
 #[cfg(test)]
 #[path = "heads/tests.rs"]
 mod tests;
+mod transition;
 pub(in crate::physical_runtime) use selection::SelectedReleaseHeadBasis;
 pub use selection::SelectedReleaseHeadDenial;
 
@@ -49,6 +50,10 @@ impl SelectedReleaseHeadStep {
             result_root,
             mutation,
         }
+    }
+
+    pub(super) fn mutation(self) -> ReleaseCustodyHeadMutationV1 {
+        self.mutation
     }
 
     pub(super) fn apply(
@@ -96,6 +101,17 @@ impl SelectedReleaseHeadRoster {
             .checked_mul(std::mem::size_of::<ReleaseCustodyHeadEntryV1>())?
             .try_into()
             .ok()
+    }
+
+    pub(super) fn reserve_for_key(
+        &mut self,
+        key: ReleaseCustodyHeadKeyV1,
+        resident: &mut StoreRejoinResidentLedger,
+    ) -> Result<(), RecoveredReleaseLedgerDenial> {
+        if self.head(key).is_none() {
+            resident.grow_vec(&mut self.entries, 1)?;
+        }
+        Ok(())
     }
 
     pub(super) fn from_selected(
@@ -219,8 +235,15 @@ impl SelectedReleaseHeadRoster {
         result_root: Option<ReleaseCustodyHeadBlockReferenceV1>,
         mutation: ReleaseCustodyHeadMutationV1,
     ) -> Result<(), ReleaseCertificateCapacityDenial> {
-        let slot = self.validated_transition_slot(source_root, mutation)?;
-        self.apply_validated_transition(result_root, mutation, slot)
+        let transition =
+            SelectedReleaseHeadStep::new(source_root, result_root, mutation).prepare(self)?;
+        if transition.inserts() {
+            self.entries
+                .try_reserve_exact(1)
+                .map_err(|_| ReleaseCertificateCapacityDenial::CapacityExhausted)?;
+        }
+        transition.apply(self);
+        Ok(())
     }
 
     pub(super) fn apply_transition_admitted(
@@ -230,60 +253,12 @@ impl SelectedReleaseHeadRoster {
         mutation: ReleaseCustodyHeadMutationV1,
         resident: &mut StoreRejoinResidentLedger,
     ) -> Result<(), RecoveredReleaseLedgerDenial> {
-        let slot = self.validated_transition_slot(source_root, mutation)?;
-        if matches!(mutation, ReleaseCustodyHeadMutationV1::Upsert { .. }) && slot.is_err() {
+        let transition =
+            SelectedReleaseHeadStep::new(source_root, result_root, mutation).prepare(self)?;
+        if transition.inserts() {
             resident.grow_vec(&mut self.entries, 1)?;
         }
-        self.apply_validated_transition(result_root, mutation, slot)?;
-        Ok(())
-    }
-
-    fn validated_transition_slot(
-        &self,
-        source_root: Option<ReleaseCustodyHeadBlockReferenceV1>,
-        mutation: ReleaseCustodyHeadMutationV1,
-    ) -> Result<Result<usize, usize>, ReleaseCertificateCapacityDenial> {
-        let denial = ReleaseCertificateCapacityDenial::SelectedFactMismatch;
-        if self.root != source_root {
-            return Err(denial);
-        }
-        let slot = self
-            .entries
-            .binary_search_by_key(&mutation.key(), |entry| entry.key());
-        if slot.ok().map(|index| self.entries[index]) != mutation.expected_prior() {
-            return Err(denial);
-        }
-        match mutation {
-            ReleaseCustodyHeadMutationV1::Upsert {
-                expected_prior,
-                next,
-            } if valid_successor(expected_prior, next) => {}
-            ReleaseCustodyHeadMutationV1::RetireTerminal { expected_prior }
-                if expected_prior.terminal() => {}
-            _ => return Err(denial),
-        }
-        Ok(slot)
-    }
-
-    fn apply_validated_transition(
-        &mut self,
-        result_root: Option<ReleaseCustodyHeadBlockReferenceV1>,
-        mutation: ReleaseCustodyHeadMutationV1,
-        slot: Result<usize, usize>,
-    ) -> Result<(), ReleaseCertificateCapacityDenial> {
-        match mutation {
-            ReleaseCustodyHeadMutationV1::Upsert { next, .. } => match slot {
-                Ok(index) => self.entries[index] = next,
-                Err(index) => self.entries.insert(index, next),
-            },
-            ReleaseCustodyHeadMutationV1::RetireTerminal { .. } => {
-                self.entries.remove(
-                    slot.map_err(|_| ReleaseCertificateCapacityDenial::SelectedFactMismatch)?,
-                );
-            }
-        }
-        self.root = result_root;
-        self.commitment()?;
+        transition.apply(self);
         Ok(())
     }
 }

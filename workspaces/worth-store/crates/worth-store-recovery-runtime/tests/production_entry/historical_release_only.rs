@@ -67,6 +67,10 @@ fn two_released_batches_then_ordinary_append_reopen_with_historical_seal() {
 
     let outcome = WorthStoreRecovery::recover(certified_release_serving::request(world.root()));
     let PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
+        if let PhysicalRecoveryOutcome::PublicationIndeterminate(failure) = &outcome {
+            panic!("historical-only completed releases must recover: handoff={:?}; reopen={:?}; effects={}",
+                failure.handoff_failure(), failure.reopen_failure(), failure.recovery_effects());
+        }
         panic!("historical-only completed releases must recover: {outcome:?}");
     };
     let seal = handoff

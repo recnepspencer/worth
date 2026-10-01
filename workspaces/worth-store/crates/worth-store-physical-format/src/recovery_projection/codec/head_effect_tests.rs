@@ -6,12 +6,12 @@ use crate::{
     CanonicalRedoWireDenial, CurrentPhysicalRecordPlacement, DurableExtentRecordPlacement,
     ExtentArenaId, ExtentArenaRange, ExtentChunkCoordinate, PersistedBlobSemanticRecordBinding,
     PersistedPhysicalDataFrameSubject, PersistedPhysicalRecoveryFrame,
-    PersistedPhysicalRecoveryRootState, PersistedRecordIdentity, PhysicalExtentId,
-    PhysicalGeneration, PhysicalGenerationAuthority, PhysicalPageSizeClass,
-    PhysicalRecordFormatDeclaration, RecordArtifactFile, RecordFrameCoordinate,
-    ReleaseCustodyHeadEntryV1, ReleaseCustodyHeadKeyV1, ReleaseCustodyHeadMutationV1,
-    ReleaseCustodyHeadTransitionLimitsV1, ReleaseCustodyHeadTransitionV1,
-    ReleasedGenerationReclaimBasisV1, CANONICAL_REDO_V3_DOMAIN,
+    PersistedPhysicalRecoveryOperation, PersistedPhysicalRecoveryRootState,
+    PersistedRecordIdentity, PhysicalExtentId, PhysicalGeneration, PhysicalGenerationAuthority,
+    PhysicalPageSizeClass, PhysicalRecordFormatDeclaration, RecordArtifactFile,
+    RecordFrameCoordinate, ReleaseCustodyHeadEntryV1, ReleaseCustodyHeadKeyV1,
+    ReleaseCustodyHeadMutationV1, ReleaseCustodyHeadTransitionLimitsV1,
+    ReleaseCustodyHeadTransitionV1, ReleasedGenerationReclaimBasisV1, CANONICAL_REDO_V3_DOMAIN,
 };
 
 fn record(ordinal: u64) -> PersistedRecordIdentity {
@@ -104,7 +104,7 @@ fn upsert_projection() -> (
     .unwrap();
     let root = PersistedPhysicalRecoveryRootState::new(4096, 1, 32, vec![], None, None).unwrap();
     let binding = PersistedBlobSemanticRecordBinding::new(identity, [5; 32], 12).unwrap();
-    let projection = PersistedPhysicalRecoveryProjection::new_with_blob_semantic(
+    let projection = PersistedPhysicalRecoveryProjection::new_with_operation(
         11,
         root,
         vec![identity],
@@ -112,16 +112,17 @@ fn upsert_projection() -> (
         vec![CurrentPhysicalRecordPlacement::Extent(placement)],
         vec![],
         vec![],
-        PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding),
+        PersistedPhysicalRecoveryOperation::RecordsDropped {
+            binding,
+            head_effect: Some(effect),
+        },
     )
-    .unwrap()
-    .with_release_head_upsert(effect)
     .unwrap();
     (projection, format)
 }
 
 #[test]
-fn v14_head_upsert_round_trips_and_rejects_substituted_node_bytes() {
+fn v15_head_upsert_round_trips_and_rejects_substituted_node_bytes() {
     let (projection, format) = upsert_projection();
     let bytes = projection.encode();
     let limits = PhysicalRecoveryProjectionDecodeLimits {
@@ -137,7 +138,14 @@ fn v14_head_upsert_round_trips_and_rejects_substituted_node_bytes() {
         PersistedPhysicalRecoveryProjection::decode(&bytes, limits, format),
         Ok(projection.clone())
     );
-    let node = projection.release_head_effect().unwrap().node_writes()[0].frame();
+    let PersistedPhysicalRecoveryOperation::RecordsDropped {
+        head_effect: Some(effect),
+        ..
+    } = projection.operation()
+    else {
+        panic!("fixture must carry a head effect")
+    };
+    let node = effect.node_writes()[0].frame();
     let offset = bytes
         .windows(node.len())
         .position(|window| window == node)
@@ -151,7 +159,7 @@ fn v14_head_upsert_round_trips_and_rejects_substituted_node_bytes() {
 }
 
 #[test]
-fn canonical_redo_decodes_v14_only_with_its_actual_record_format() {
+fn canonical_redo_decodes_v15_only_with_its_actual_record_format() {
     let (projection, format) = upsert_projection();
     let field = |target: &mut Vec<u8>, bytes: &[u8]| {
         target.extend_from_slice(&(bytes.len() as u64).to_le_bytes());
@@ -190,7 +198,7 @@ fn canonical_redo_decodes_v14_only_with_its_actual_record_format() {
         inline_allocations: 0,
     };
     let (_, decoded) = decode_canonical_redo_v3(&member, 12, 13, 1, None, limits, format)
-        .expect("canonical WAL must carry the exact V14 head effect");
+        .expect("canonical WAL must carry the exact V15 head effect");
     assert_eq!(decoded, projection);
     let wrong_format = PhysicalRecordFormatDeclaration::builder()
         .page_size(PhysicalPageSizeClass::KiB32)
@@ -203,9 +211,15 @@ fn canonical_redo_decodes_v14_only_with_its_actual_record_format() {
 }
 
 #[test]
-fn v14_rejects_unrelated_key_and_missing_or_extra_node() {
+fn v15_rejects_unrelated_key_and_missing_or_extra_node() {
     let (projection, format) = upsert_projection();
-    let effect = projection.release_head_effect().unwrap();
+    let PersistedPhysicalRecoveryOperation::RecordsDropped {
+        head_effect: Some(effect),
+        ..
+    } = projection.operation()
+    else {
+        panic!("fixture must carry a head effect")
+    };
     let ReleaseCustodyHeadMutationV1::Upsert { next, .. } = effect.mutation() else {
         panic!("fixture must be an upsert")
     };

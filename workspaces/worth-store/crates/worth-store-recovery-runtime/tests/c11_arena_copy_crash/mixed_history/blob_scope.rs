@@ -25,7 +25,7 @@ pub(super) fn admitted_blob_scope() -> AdmittedBlobScope {
     .unwrap();
     let key = aspects()
         .vocabulary()
-        .key("c11.copy.v5.blob.v6.scope")
+        .key("c11.copy.current.blob.scope")
         .unwrap();
     let contract = aspects()
         .contract()

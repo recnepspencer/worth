@@ -30,19 +30,6 @@ pub enum DurableArtifactFamilyId {
     OfflineVerificationRecord,
     SnapshotArtifact,
     BranchDeltaArtifact,
-    CompatibilityCommitEnvelope,
-    CompatibilityBranchVersionDagRecord,
-    CompatibilityWalRestartRecord,
-    CompatibilitySchemaLineageCursorCheckpointSupport,
-    CompatibilityEmbeddedCheckpointAuthority,
-    CompatibilitySnapshotRecord,
-    CompatibilityDeltaRecord,
-    CompatibilityLegacyLayoutBlockChunkRecord,
-    CompatibilityLegacyBasisContinuationDescriptor,
-    CompatibilityLegacyBulkRecord,
-    CompatibilityLegacyRetentionRebuildRecord,
-    CompatibilityLegacyMaintenanceRecord,
-    CompatibilityLegacyTieringRecord,
     MaintenanceSnapshot,
     MaintenanceCompaction,
     MaintenanceReclaim,
@@ -112,31 +99,6 @@ impl DurableArtifactFamilyId {
             Self::OfflineVerificationRecord => "offline_verification_record",
             Self::SnapshotArtifact => "snapshot_artifact",
             Self::BranchDeltaArtifact => "branch_delta_artifact",
-            Self::CompatibilityCommitEnvelope => "compatibility_commit_envelope",
-            Self::CompatibilityBranchVersionDagRecord => "compatibility_branch_version_dag_record",
-            Self::CompatibilityWalRestartRecord => "compatibility_wal_restart_record",
-            Self::CompatibilitySchemaLineageCursorCheckpointSupport => {
-                "compatibility_schema_lineage_cursor_checkpoint_support"
-            }
-            Self::CompatibilityEmbeddedCheckpointAuthority => {
-                "compatibility_embedded_checkpoint_authority"
-            }
-            Self::CompatibilitySnapshotRecord => "compatibility_snapshot_record",
-            Self::CompatibilityDeltaRecord => "compatibility_delta_record",
-            Self::CompatibilityLegacyLayoutBlockChunkRecord => {
-                "compatibility_milestone_6_layout_block_chunk_record"
-            }
-            Self::CompatibilityLegacyBasisContinuationDescriptor => {
-                "compatibility_milestone_8_basis_continuation_descriptor"
-            }
-            Self::CompatibilityLegacyBulkRecord => "compatibility_milestone_9_bulk_record",
-            Self::CompatibilityLegacyRetentionRebuildRecord => {
-                "compatibility_milestone_10_retention_rebuild_record"
-            }
-            Self::CompatibilityLegacyMaintenanceRecord => {
-                "compatibility_milestone_11_maintenance_record"
-            }
-            Self::CompatibilityLegacyTieringRecord => "compatibility_milestone_13_tiering_record",
             Self::MaintenanceSnapshot => "maintenance_snapshot",
             Self::MaintenanceCompaction => "maintenance_compaction",
             Self::MaintenanceReclaim => "maintenance_reclaim",

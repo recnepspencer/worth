@@ -1533,9 +1533,19 @@ per-object head tree committed by the current checkpoint accumulator. It preserv
 nonterminal object's successor authority across unrelated releases,
 checkpoint replacement and lawful old-WAL pruning; the Store-wide tip never
 substitutes for that object's head. C.8 and Store independently rejoin the
-current selected custody before Serving. V1 NoRelease may seed a genuine first
-V3 and head-bearing successor checkpoint; headless V1 released checkpoints
-remain unavailable and are not upgraded from retained controls.
+current selected custody before Serving. Current NoRelease may seed a genuine
+first release and head-bearing successor checkpoint; a current released
+checkpoint missing its required heads remains unavailable and cannot be
+repaired by blessing retained controls.
+C.11 is current-format-only: Store is undeployed and development data is
+disposable. Each affected artifact/protocol family has one current grammar with
+typed live operation/state variants; unsupported historical versions deny before
+effects. Writers, C.9/C.8, independent Store rejoin and offline parsers cut over
+together, without historical readers, migrations, dual-read/write or speculative
+rolling-upgrade machinery. Version identity, authority, integrity, resource
+bounds and current-format crash/checkpoint/pruning recovery remain mandatory.
+This declared support window follows the explicit undeployed Store policy in
+Architecture 21 and DX 7; all other governing constraints remain binding.
 Phase 6 executes as six gated submilestones: bounded ordinary publication and
 typed diagnostics; atomic one-object release with surviving catalog visibility;
 independent recovered custody and pruned multi-object continuation; lawful
@@ -1582,7 +1592,8 @@ derive or decide them.
 - native content-addressed chunk-tree storage through the same media, WAL/root,
   integrity, lease, C.5.1 work, scheduling, and recovery boundaries, with the
   real bounded `BlobIngestPressure` producer installed in the first native
-  blob phase and v5/v6 recovery-projection readmission
+  blob phase and current-format typed recovery-projection admission, preserving
+  Frames and SourceCopy operation semantics without historical readers
 - constant-memory streaming ingest/read/verify/export/import and interrupted
   ingest recovery
 - collision handling plus physically scoped dedupe, reachability traversal,
@@ -1614,8 +1625,10 @@ derive or decide them.
   preservation, dedupe scope honesty, portable logical-digest parity on
   cross-Store import, and no sidecar or whole-object path. A selected chunk
   without its authenticated session/ordinal claim is rejected even with a
-  valid inner content digest; Phase 2 replay preserves v5 SourceCopy and
-  applies v6 declaration/generation transitions through the existing owner.
+  valid inner content digest; Phase 2 replay preserves current SourceCopy and
+  applies current declaration/generation transitions through the existing owner.
+  Historical versions deny without effects or promotion; they are not migration
+  acceptance cases.
 - **Controlled defect:** hide a full blob materialization and separately accept
   a corrupted derived index as authority. Allocation and rebuild-basis
   predicates must fail.

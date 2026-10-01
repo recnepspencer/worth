@@ -3,9 +3,7 @@ use worth_store_contracts::DurableArtifactFamilyId;
 use crate::{IndexedThroughBlobPublication, PersistedRecordIdentity};
 
 const MAGIC: &[u8; 8] = b"WRC11IDX";
-const VERSION_V1: u8 = 1;
 const VERSION_V2: u8 = 2;
-const PREFIX_V1_BYTES: usize = 76;
 const PREFIX_V2_BYTES: usize = 101;
 const ENTRY_BYTES: usize = 26;
 pub const MAX_DERIVED_FAMILY_ROOTS: usize = 64;
@@ -128,15 +126,13 @@ impl DerivedFamilyRootDirectoryV1 {
     }
 
     pub fn decode(bytes: &[u8]) -> Result<Self, DerivedFamilyDirectoryDenial> {
-        if bytes.len() < PREFIX_V1_BYTES || &bytes[..8] != MAGIC {
+        if bytes.len() < MAGIC.len() + 1 || &bytes[..8] != MAGIC {
             return Err(DerivedFamilyDirectoryDenial::WrongMagic);
         }
-        let prefix_bytes = match bytes[8] {
-            VERSION_V1 => PREFIX_V1_BYTES,
-            VERSION_V2 => PREFIX_V2_BYTES,
-            _ => return Err(DerivedFamilyDirectoryDenial::UnsupportedVersion),
-        };
-        if bytes.len() < prefix_bytes {
+        if bytes.get(8) != Some(&VERSION_V2) {
+            return Err(DerivedFamilyDirectoryDenial::UnsupportedVersion);
+        }
+        if bytes.len() < PREFIX_V2_BYTES {
             return Err(DerivedFamilyDirectoryDenial::InvalidLength);
         }
         if bytes[11] != 0 || bytes[10] > 1 {
@@ -166,32 +162,27 @@ impl DerivedFamilyRootDirectoryV1 {
         if count > MAX_DERIVED_FAMILY_ROOTS {
             return Err(DerivedFamilyDirectoryDenial::EntryLimit);
         }
-        if bytes.len() != prefix_bytes + count * ENTRY_BYTES {
+        if bytes.len() != PREFIX_V2_BYTES + count * ENTRY_BYTES {
             return Err(DerivedFamilyDirectoryDenial::InvalidLength);
         }
-        let quarantine = if prefix_bytes == PREFIX_V2_BYTES {
-            if bytes[76] > 1 {
+        let quarantine = if bytes[76] > 1 {
+            return Err(DerivedFamilyDirectoryDenial::ReservedFieldNonZero);
+        } else if bytes[76] == 0 {
+            if bytes[77..101] != [0; 24] {
                 return Err(DerivedFamilyDirectoryDenial::ReservedFieldNonZero);
             }
-            if bytes[76] == 0 {
-                if bytes[77..101] != [0; 24] {
-                    return Err(DerivedFamilyDirectoryDenial::ReservedFieldNonZero);
-                }
-                None
-            } else {
-                Some(
-                    PersistedRecordIdentity::new(
-                        bytes[77..93].try_into().unwrap(),
-                        u64::from_le_bytes(bytes[93..101].try_into().unwrap()),
-                    )
-                    .ok_or(DerivedFamilyDirectoryDenial::InvalidRecordIdentity)?,
-                )
-            }
-        } else {
             None
+        } else {
+            Some(
+                PersistedRecordIdentity::new(
+                    bytes[77..93].try_into().unwrap(),
+                    u64::from_le_bytes(bytes[93..101].try_into().unwrap()),
+                )
+                .ok_or(DerivedFamilyDirectoryDenial::InvalidRecordIdentity)?,
+            )
         };
         let mut entries = Vec::with_capacity(count);
-        for frame in bytes[prefix_bytes..].chunks_exact(ENTRY_BYTES) {
+        for frame in bytes[PREFIX_V2_BYTES..].chunks_exact(ENTRY_BYTES) {
             let tag = u16::from_le_bytes(frame[..2].try_into().unwrap());
             let family = family_from_tag(tag).ok_or(DerivedFamilyDirectoryDenial::UnknownFamily)?;
             let record = PersistedRecordIdentity::new(

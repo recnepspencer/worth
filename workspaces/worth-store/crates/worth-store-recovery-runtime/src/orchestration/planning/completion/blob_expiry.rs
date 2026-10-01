@@ -7,7 +7,7 @@ use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
     decode_extent_chunk, BlobAbandonmentReasonV1, BlobRecordV1, BlobSessionAbandonedV1,
     BlobSessionDeclarationV1, CurrentPhysicalRecordPlacement, DurableExtentManifest,
-    ExtentArenaFrameLayout, ExtentChunkCoordinate, PersistedPhysicalRecoveryBlobSemantic,
+    ExtentArenaFrameLayout, ExtentChunkCoordinate, PersistedPhysicalRecoveryOperation,
     BLOB_RECORD_HEADER_BYTES, DURABLE_EXTENT_FRAME_HEADER_BYTES, EXTENT_CHUNK_METADATA_BYTES,
 };
 use worth_store_physical_integrity::{PhysicalArtifactScope, PhysicalByteRange};
@@ -25,8 +25,8 @@ pub(super) fn verify(
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     for index in 0..basis.redo.projections().len() {
         let projection = &basis.redo.projections()[index];
-        let PersistedPhysicalRecoveryBlobSemantic::SessionAbandoned(binding) =
-            projection.materialization().blob_semantic()
+        let PersistedPhysicalRecoveryOperation::SessionAbandoned(binding) =
+            projection.materialization().operation()
         else {
             continue;
         };

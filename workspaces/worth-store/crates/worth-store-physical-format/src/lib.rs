@@ -296,12 +296,12 @@ pub use record_framing::{
 pub use record_identity::PersistedRecordIdentity;
 pub use recovery_projection::{
     PersistedBlobSemanticRecordBinding, PersistedDerivedDirectoryRecordBinding,
-    PersistedExtentCopyRecipe, PersistedInlineSegmentAllocation,
-    PersistedPhysicalRecoveryBlobSemantic, PersistedPhysicalRecoveryFrame,
-    PersistedPhysicalRecoveryManifest, PersistedPhysicalRecoveryPayload,
-    PersistedPhysicalRecoveryProjection, PersistedPhysicalRecoveryRootState,
-    PersistedReleaseCustodyHeadEffectV1, PhysicalRecoveryProjectionDecodeLimits,
-    PhysicalRecoveryProjectionDenial,
+    PersistedDerivedDirectoryRetirement, PersistedExtentCopyRecipe,
+    PersistedInlineSegmentAllocation, PersistedPhysicalRecoveryFrame,
+    PersistedPhysicalRecoveryManifest, PersistedPhysicalRecoveryOperation,
+    PersistedPhysicalRecoveryPayload, PersistedPhysicalRecoveryProjection,
+    PersistedPhysicalRecoveryRootState, PersistedReleaseCustodyHeadEffectV1,
+    PhysicalRecoveryProjectionDecodeLimits, PhysicalRecoveryProjectionDenial,
 };
 pub use reference::{
     CheckpointAdjacencyPosture, CurrentRootManifestAdmission, ManifestMembershipDenial,

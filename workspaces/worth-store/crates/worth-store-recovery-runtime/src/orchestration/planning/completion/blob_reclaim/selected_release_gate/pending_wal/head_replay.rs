@@ -18,7 +18,13 @@ pub(super) fn admit(
     staging_bytes: u64,
     resident: &mut ResidentAllowance,
 ) -> Option<VerifiedSelectedReleaseHeadReplayV14> {
-    let effect = projection.materialization().release_head_effect()?;
+    let worth_store_physical_format::PersistedPhysicalRecoveryOperation::RecordsDropped {
+        head_effect: Some(effect),
+        ..
+    } = projection.materialization().operation()
+    else {
+        return None;
+    };
     let format = selected.root().selected().selector().format();
     let peak = effect
         .verification_additional_peak_bytes(format)?

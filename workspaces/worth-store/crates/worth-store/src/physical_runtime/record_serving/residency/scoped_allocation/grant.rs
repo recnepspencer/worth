@@ -92,6 +92,41 @@ exact_scope_allocation!(VerificationPhysicalAllocation, VerificationScope);
 exact_scope_allocation!(BlobPhysicalAllocation, BlobScope);
 exact_scope_allocation!(LayoutPhysicalAllocation, LayoutReadScope);
 
+/// The maintenance charge for retired directory records after preparation
+/// stops borrowing the Serving frame ports. Its pool lease remains owned by
+/// every prepared mutation clone that can still read those records.
+#[derive(Debug)]
+pub(in crate::physical_runtime) struct MaintenanceRetainedDirectoryCharge {
+    grant: OperationAllocationGrant,
+    runtime: RuntimeIdentity,
+    generation: LifecycleGeneration,
+}
+
+impl MaintenancePhysicalAllocation<'_> {
+    pub(in crate::physical_runtime) fn into_retained_directory_charge(
+        self,
+    ) -> MaintenanceRetainedDirectoryCharge {
+        MaintenanceRetainedDirectoryCharge {
+            grant: self.allocation.grant,
+            runtime: self.allocation.runtime,
+            generation: self.allocation.generation,
+        }
+    }
+}
+
+impl MaintenanceRetainedDirectoryCharge {
+    pub(in crate::physical_runtime) fn matches(
+        &self,
+        store: StableStoreIdentity,
+        runtime: RuntimeIdentity,
+        generation: LifecycleGeneration,
+    ) -> bool {
+        self.grant.observation().store() == store
+            && self.runtime == runtime
+            && self.generation == generation
+    }
+}
+
 impl BlobPhysicalAllocation<'_> {
     pub(in crate::physical_runtime::record_serving) fn operation_grant(
         &self,

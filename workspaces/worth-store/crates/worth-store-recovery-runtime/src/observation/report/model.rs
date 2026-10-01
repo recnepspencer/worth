@@ -31,6 +31,7 @@ pub enum RecoveryReportBlockCause {
     PageAdmission,
     OperationReconciliation,
     RedoPlanning,
+    SelectedCustody,
     Staging,
     Publication,
 }
@@ -161,6 +162,7 @@ fn block_cause(kind: PhysicalRecoveryBlockKind) -> RecoveryReportBlockCause {
             RecoveryReportBlockCause::OperationReconciliation
         }
         PhysicalRecoveryBlockKind::RedoPlanning => RecoveryReportBlockCause::RedoPlanning,
+        PhysicalRecoveryBlockKind::SelectedCustody => RecoveryReportBlockCause::SelectedCustody,
         PhysicalRecoveryBlockKind::Staging => RecoveryReportBlockCause::Staging,
         PhysicalRecoveryBlockKind::Publication => RecoveryReportBlockCause::Publication,
     }

@@ -79,6 +79,9 @@ pub(super) fn decode_metadata(
                         .saturating_add(entry_envelope.saturating_mul(bounded.saturating_add(1))),
                 }
             }
+            worth_store_physical_format::CanonicalRedoWireDenial::UnsupportedRecoveryProjectionVersion(version) => {
+                PhysicalWalOpenFailure::UnsupportedRecoveryProjectionVersion(version)
+            }
             _ => PhysicalWalOpenFailure::MemberPayloadRejected,
         })?;
         (
@@ -128,6 +131,9 @@ pub(super) fn decode_metadata(
                             entry_envelope.saturating_mul(bounded.saturating_add(1)),
                         ),
                     }
+                }
+                worth_store_physical_format::PhysicalRecoveryProjectionDenial::UnsupportedVersion(version) => {
+                    PhysicalWalOpenFailure::UnsupportedRecoveryProjectionVersion(version)
                 }
                 _ => PhysicalWalOpenFailure::MemberPayloadRejected,
             })?;

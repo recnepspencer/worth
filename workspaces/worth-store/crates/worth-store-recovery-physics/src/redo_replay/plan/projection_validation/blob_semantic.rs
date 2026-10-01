@@ -1,7 +1,7 @@
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
     decode_blob_record, BlobRecordKind, BlobRecordV1, DerivedFamilyRootDirectoryV1,
-    PersistedPhysicalRecoveryBlobSemantic, PersistedPhysicalRecoveryProjection,
+    PersistedPhysicalRecoveryOperation, PersistedPhysicalRecoveryProjection,
     PersistedRecordIdentity,
 };
 
@@ -38,8 +38,8 @@ pub(super) fn validate_blob_semantic(
         return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
     }
     let payload_kind = payload_kind.map(|(kind, _)| kind);
-    let binding = match projection.blob_semantic() {
-        PersistedPhysicalRecoveryBlobSemantic::None => {
+    let binding = match projection.operation() {
+        PersistedPhysicalRecoveryOperation::None => {
             if bytes.starts_with(b"WRC11IDX") {
                 return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
             }
@@ -62,46 +62,46 @@ pub(super) fn validate_blob_semantic(
             }
             return Ok(());
         }
-        PersistedPhysicalRecoveryBlobSemantic::SessionDeclared(binding) => {
+        PersistedPhysicalRecoveryOperation::SessionDeclared(binding) => {
             if payload_kind != Some(BlobRecordKind::SessionDeclared) {
                 return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
             }
-            binding
+            *binding
         }
-        PersistedPhysicalRecoveryBlobSemantic::GenerationPublished(binding) => {
+        PersistedPhysicalRecoveryOperation::GenerationPublished(binding) => {
             if payload_kind != Some(BlobRecordKind::GenerationPublished) {
                 return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
             }
-            binding
+            *binding
         }
-        PersistedPhysicalRecoveryBlobSemantic::SessionFrontier(binding) => {
+        PersistedPhysicalRecoveryOperation::SessionFrontier(binding) => {
             if payload_kind != Some(BlobRecordKind::SessionFrontier) {
                 return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
             }
-            binding
+            *binding
         }
-        PersistedPhysicalRecoveryBlobSemantic::SessionAbandoned(binding) => {
+        PersistedPhysicalRecoveryOperation::SessionAbandoned(binding) => {
             if payload_kind != Some(BlobRecordKind::SessionAbandoned) {
                 return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
             }
-            binding
+            *binding
         }
-        PersistedPhysicalRecoveryBlobSemantic::ChunkReused(binding) => {
+        PersistedPhysicalRecoveryOperation::ChunkReused(binding) => {
             if !matches!(
                 payload_kind,
                 Some(BlobRecordKind::ChunkReuseClaim | BlobRecordKind::ChunkReuseClaimV2)
             ) {
                 return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
             }
-            binding
+            *binding
         }
-        PersistedPhysicalRecoveryBlobSemantic::DedupeQuarantined(binding) => {
+        PersistedPhysicalRecoveryOperation::DedupeQuarantined(binding) => {
             if payload_kind != Some(BlobRecordKind::DedupeQuarantine) {
                 return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
             }
-            binding
+            *binding
         }
-        PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding) => {
+        PersistedPhysicalRecoveryOperation::RecordsDropped { binding, .. } => {
             if !matches!(
                 payload_kind,
                 Some(
@@ -112,9 +112,11 @@ pub(super) fn validate_blob_semantic(
             ) {
                 return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
             }
-            binding
+            *binding
         }
-        PersistedPhysicalRecoveryBlobSemantic::DerivedDirectory(directory) => {
+        PersistedPhysicalRecoveryOperation::DerivedDirectory {
+            binding: directory, ..
+        } => {
             if payload_kind.is_some() {
                 return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
             }

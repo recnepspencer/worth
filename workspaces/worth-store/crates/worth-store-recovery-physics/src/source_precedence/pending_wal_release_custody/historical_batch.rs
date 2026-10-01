@@ -4,7 +4,7 @@
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
     decode_blob_record, BlobReclaimDescriptorV3, BlobRecordKind, BlobRecordV1, DropSetManifestV3,
-    OriginalDropReservedV1, PersistedPhysicalRecoveryBlobSemantic, PersistedRecordIdentity,
+    OriginalDropReservedV1, PersistedPhysicalRecoveryOperation, PersistedRecordIdentity,
     ReleasedDropWalFateWitnessV1,
 };
 
@@ -99,8 +99,8 @@ impl VerifiedHistoricalPendingWalBatch {
             .iter()
             .filter(|projection| projection.operation() == chain.descriptor_operation());
         let projection = projections.next().ok_or(Denial::DurableWalFate)?;
-        let PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding) =
-            projection.materialization().blob_semantic()
+        let PersistedPhysicalRecoveryOperation::RecordsDropped { binding, .. } =
+            projection.materialization().operation()
         else {
             return Err(Denial::DurableWalFate);
         };

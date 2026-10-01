@@ -26,7 +26,7 @@ pub(super) use routes::observe_routes_with_budget;
 pub(super) use routes::observe_routes_with_resident_budget;
 #[path = "selected_source_inventory/resident.rs"]
 mod resident;
-pub(in crate::orchestration::planning) use resident::ResidentAllowance;
+pub(in crate::orchestration::planning) use resident::{ResidentAllowance, ResidentTraceDenial};
 
 #[cfg(test)]
 pub(super) fn observe(

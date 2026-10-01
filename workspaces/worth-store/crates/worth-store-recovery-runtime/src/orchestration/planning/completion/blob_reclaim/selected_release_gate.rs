@@ -2,19 +2,21 @@
 //! exact V14 post-checkpoint effects. Headless released V1 custody is obsolete.
 
 use super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
+use crate::progression::PlanningCustody;
 use worth_store_physical_format::{
     decode_checkpoint_certificate, BlobRecordKind, CheckpointCertificateKind,
     ReleaseCheckpointCertificateV1, SelectedRecordContentClass,
 };
 
-#[path = "selected_release_gate/certificates.rs"]
-mod certificates;
 #[path = "selected_release_gate/head_v2.rs"]
 mod head_v2;
 #[path = "selected_release_gate/head_v2_controls.rs"]
 mod head_v2_controls;
 #[path = "selected_release_gate/pending_wal.rs"]
 mod pending_wal;
+#[cfg(test)]
+#[path = "selected_release_gate/posture_tests.rs"]
+mod posture_tests;
 
 #[path = "selected_release_gate/resident_basis.rs"]
 mod resident_basis;
@@ -33,34 +35,28 @@ pub(super) fn verify(
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     match checkpoint_posture(&context.selection) {
         Ok(CheckpointReleasePosture::HeadV2) => {
-            if let Some(pending) = basis.verified_pending_wal_release_custody.as_ref() {
+            if let PlanningCustody::PendingPrepared { claim: pending, .. } = &basis.custody {
                 let admitted = pending.selected_head_v2().is_some_and(|custody| {
                     custody.selected_root() == context.selection.root().selected().manifest()
-                }) && pending_replay_matches(basis)
-                    && basis.verified_selected_head_custody_v2.is_none()
-                    && basis.verified_selected_checkpoint_custody.is_none()
-                    && basis.verified_selected_no_release_custody.is_none();
+                }) && pending_replay_matches(basis);
                 return if admitted {
                     Ok(context)
                 } else {
                     Err(context.redo_block(basis.planning_counters(), None))
                 };
             }
-            if basis.verified_selected_head_custody_v2.is_none() {
+            if matches!(&basis.custody, PlanningCustody::Unresolved) {
                 context = head_v2::admit(context, basis)?;
             }
             if basis.observed_pages.ordered_releases.is_some() {
                 return pending_wal::admit_completed_history(context, basis);
             }
-            let custody = basis
-                .verified_selected_head_custody_v2
-                .as_ref()
-                .expect("V2 checkpoint-source custody was joined");
+            let PlanningCustody::SourceHeads(custody) = &basis.custody else {
+                return Err(context.redo_block(basis.planning_counters(), None));
+            };
             let selected = context.selection.root().selected().manifest();
-            if basis.verified_selected_checkpoint_custody.is_some()
-                || basis.verified_selected_no_release_custody.is_some()
-                || custody.checkpoint_source_root().release_custody_head_root()
-                    != selected.release_custody_head_root()
+            if custody.checkpoint_source_root().release_custody_head_root()
+                != selected.release_custody_head_root()
                 || custody
                     .checkpoint_source_root()
                     .next_release_custody_head_block()
@@ -73,7 +69,7 @@ pub(super) fn verify(
             Ok(context)
         }
         Ok(CheckpointReleasePosture::NoRelease) => {
-            if let Some(pending) = basis.verified_pending_wal_release_custody.as_ref() {
+            if let PlanningCustody::PendingPrepared { claim: pending, .. } = &basis.custody {
                 if pending.marker().is_none() || !pending_replay_matches(basis) {
                     return Err(context.redo_block(basis.planning_counters(), None));
                 }
@@ -93,7 +89,10 @@ pub(super) fn verify(
                 Ok(claim) => claim,
                 Err(_) => return Err(context.redo_block(basis.planning_counters(), None)),
             };
-            basis.verified_selected_no_release_custody = Some(claim);
+            if !matches!(&basis.custody, PlanningCustody::Unresolved) {
+                return Err(context.redo_block(basis.planning_counters(), None));
+            }
+            basis.custody = PlanningCustody::NoRelease(claim);
             Ok(context)
         }
         Ok(CheckpointReleasePosture::Absent) => {
@@ -101,6 +100,10 @@ pub(super) fn verify(
             if has_release {
                 Err(next.redo_block(basis.planning_counters(), None))
             } else {
+                if !matches!(&basis.custody, PlanningCustody::Unresolved) {
+                    return Err(next.redo_block(basis.planning_counters(), None));
+                }
+                basis.custody = PlanningCustody::NoCheckpoint;
                 Ok(next)
             }
         }
@@ -109,11 +112,11 @@ pub(super) fn verify(
 }
 
 fn pending_replay_matches(basis: &ResolvedPlanningBasis) -> bool {
-    match (
-        basis.verified_pending_wal_release_custody.as_ref(),
-        basis.verified_pending_release_head_replay.as_ref(),
-    ) {
-        (Some(pending), Some(replay)) => {
+    match &basis.custody {
+        PlanningCustody::PendingPrepared {
+            claim: pending,
+            replay,
+        } => {
             pending.selected_head_replay() == Some(replay)
                 && replay.operation() == pending.descriptor().custody().request().idempotency()
         }
@@ -121,7 +124,7 @@ fn pending_replay_matches(basis: &ResolvedPlanningBasis) -> bool {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum CheckpointReleasePosture {
     Absent,
     NoRelease,
@@ -134,19 +137,26 @@ fn checkpoint_posture(
     let Some(checkpoint) = selected.checkpoint() else {
         return Ok(CheckpointReleasePosture::Absent);
     };
+    checkpoint_records_posture(checkpoint.checkpoint().certificate_records())
+}
+
+fn checkpoint_records_posture(records: &[Box<[u8]>]) -> Result<CheckpointReleasePosture, ()> {
     let mut released = false;
     let mut no_release = false;
     let mut head_v2 = false;
-    for frame in checkpoint.checkpoint().certificate_records() {
+    let mut batches = false;
+    for frame in records {
         let (kind, payload) = decode_checkpoint_certificate(frame).map_err(|_| ())?;
         if kind != CheckpointCertificateKind::ReleasedDrop {
             continue;
         }
         released = true;
         match ReleaseCheckpointCertificateV1::decode(payload).map_err(|_| ())? {
-            ReleaseCheckpointCertificateV1::Batch(_) => {}
+            ReleaseCheckpointCertificateV1::Batch(_) if !no_release && !head_v2 => batches = true,
             ReleaseCheckpointCertificateV1::AccumulatorV2(_) if !head_v2 => head_v2 = true,
-            ReleaseCheckpointCertificateV1::NoRelease(_) if !no_release => no_release = true,
+            ReleaseCheckpointCertificateV1::NoRelease(_) if !no_release && !batches => {
+                no_release = true
+            }
             // V1 released accumulators cannot reconstruct keyed custody.
             _ => return Err(()),
         }

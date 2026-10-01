@@ -6,10 +6,13 @@ pub(super) fn routes_match(
     projection: &PersistedPhysicalRecoveryProjection,
 ) -> Result<bool, OrdinaryRootStepDenial> {
     use OrdinaryRootStepDenial as Denial;
-    let dropped = projection
-        .derived_retirement()
-        .map(|value| value.dropped_records())
-        .unwrap_or_default();
+    let dropped = match projection.operation() {
+        Semantic::DerivedDirectory {
+            retirement: Some(retirement),
+            ..
+        } => retirement.dropped_records(),
+        _ => &[],
+    };
     if dropped.windows(2).any(|pair| pair[0] >= pair[1])
         || dropped.iter().any(|record| {
             source

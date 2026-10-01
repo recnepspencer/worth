@@ -10,7 +10,8 @@ use worth_store_physical_format::{
 
 use super::heads::SelectedReleaseHeadStep;
 use super::{
-    ReleaseCertificateCapacityDenial, SelectedReleaseBatchBasis, CERTIFICATE_FRAME_OVERHEAD,
+    PendingReleaseEvent, ReleaseCertificateCapacityDenial, SelectedReleaseBatchBasis,
+    CERTIFICATE_FRAME_OVERHEAD,
 };
 use crate::physical_runtime::{
     blob::reclaim::released::SelectedReleasedDescriptorObservation,
@@ -35,7 +36,7 @@ impl PhysicalCurrentRootOwner {
             .ok_or(ReleaseCertificateCapacityDenial::ReclaimFenceMismatch)?;
         let pending = active
             .release_certificate_pending
-            .as_ref()
+            .as_mut()
             .filter(|pending| pending.effect_may_exist && pending.needed_records >= 2)
             .ok_or(ReleaseCertificateCapacityDenial::ReclaimFenceMismatch)?;
         let descriptor = selected.descriptor();
@@ -43,7 +44,14 @@ impl PhysicalCurrentRootOwner {
         let reservation = selected.reservation();
         let request = reservation.request();
         let current = &state.current_root;
-        let root_sha256: [u8; 32] = Sha256::digest(current.encode(format)).into();
+        let mut root_frame = current
+            .encode_in_reserved(format, std::mem::take(&mut pending.root_frame))
+            .ok_or(ReleaseCertificateCapacityDenial::CapacityExhausted)?;
+        let root_sha256: [u8; 32] = Sha256::digest(&root_frame).into();
+        root_frame.clear();
+        pending.root_frame = root_frame;
+        let reserved_key = pending.key;
+        let worst_case_encoded_bytes = pending.worst_case_encoded_bytes;
         let current_generation = current.generation();
         let current_cell = current.root_cell();
         let current_head_root = current.release_custody_head_root();
@@ -90,6 +98,7 @@ impl PhysicalCurrentRootOwner {
             || next.source_root_generation() != base.source_root_generation()
             || next.cumulative_dropped() != base.cumulative_dropped()
             || next.terminal() != base.terminal()
+            || next.key() != reserved_key
             || !matches!(
                 &state.checkpoint_custody,
                 super::super::certificate_capacity::CheckpointCustodyState::ReleaseCertificatePending { attempt: pending, .. }
@@ -114,8 +123,7 @@ impl PhysicalCurrentRootOwner {
             .selected_mut()
             .ok_or(ReleaseCertificateCapacityDenial::SelectedLedgerUnavailable)?;
         let head_step = SelectedReleaseHeadStep::from_effect(head_effect);
-        let mut effective_heads = ledger.effective_heads.clone();
-        head_step.apply(&mut effective_heads)?;
+        let transition = head_step.prepare(&ledger.effective_heads)?;
         let evidence = ReleasedDropCumulativeEvidenceV1::new(
             selected.record(),
             selected.frame_sha256(),
@@ -135,10 +143,10 @@ impl PhysicalCurrentRootOwner {
             .map_err(|_| ReleaseCertificateCapacityDenial::SelectedFactMismatch)?;
         // V3's cumulative count is scoped to one released generation; this
         // ratchet count is Store-wide and may include other generations.
-        if ledger.pending_batches.len() >= 63 {
+        if ledger.pending_drop_count() >= 63 {
             return Err(ReleaseCertificateCapacityDenial::SelectedFactMismatch);
         }
-        let next_count = ledger.pending_batches.len() as u64 + 1;
+        let next_count = ledger.pending_drop_count() as u64 + 1;
         let section_bytes = next_count
             .checked_mul(RELEASE_CHECKPOINT_BATCH_WIRE_BYTES as u64 + CERTIFICATE_FRAME_OVERHEAD)
             .and_then(|bytes| {
@@ -149,21 +157,18 @@ impl PhysicalCurrentRootOwner {
             })
             .ok_or(ReleaseCertificateCapacityDenial::CapacityExhausted)?;
         if section_bytes > worth_store_physical_format::MAX_CHECKPOINT_CERTIFICATE_BYTES
-            || section_bytes
-                > u64::from(ledger.used_bytes) + u64::from(pending.worst_case_encoded_bytes)
+            || section_bytes > u64::from(ledger.used_bytes) + u64::from(worst_case_encoded_bytes)
         {
             return Err(ReleaseCertificateCapacityDenial::CapacityExhausted);
         }
-        ledger
-            .pending_batches
-            .try_reserve_exact(1)
-            .map_err(|_| ReleaseCertificateCapacityDenial::CapacityExhausted)?;
-        ledger
-            .pending_head_steps
-            .try_reserve_exact(1)
-            .map_err(|_| ReleaseCertificateCapacityDenial::CapacityExhausted)?;
-        ledger.pending_batches.push(SelectedReleaseBatchBasis {
-            head_step: Some(head_step),
+        if ledger.pending_events.len() == ledger.pending_events.capacity()
+            || !transition.has_backing(&ledger.effective_heads)
+        {
+            return Err(ReleaseCertificateCapacityDenial::CapacityExhausted);
+        }
+        // Every authority join, ratchet/capacity check, and local transition
+        // validation is complete. No fallible allocation follows this point.
+        let batch = SelectedReleaseBatchBasis {
             descriptor_record: selected.record(),
             descriptor_frame_sha256: selected.frame_sha256(),
             custody_digest: descriptor.custody_digest(),
@@ -177,14 +182,15 @@ impl PhysicalCurrentRootOwner {
             cumulative_dropped,
             cumulative_digest,
             terminal: base.terminal(),
-        });
+        };
+        let event = PendingReleaseEvent::for_drop(batch, head_step)?;
+        transition.apply(&mut ledger.effective_heads);
+        ledger.pending_events.push(event);
         ledger.used_records = u16::try_from(next_count + 1).expect("bounded certificate count");
         ledger.used_bytes = u32::try_from(section_bytes).expect("bounded certificate bytes");
         ledger.cumulative_dropped = cumulative_dropped;
         ledger.cumulative_digest = cumulative_digest;
         ledger.selected_tip = Some(tip);
-        ledger.pending_head_steps.push(head_step);
-        ledger.effective_heads = effective_heads;
         ledger.terminal = base.terminal();
         assert!(state
             .checkpoint_custody

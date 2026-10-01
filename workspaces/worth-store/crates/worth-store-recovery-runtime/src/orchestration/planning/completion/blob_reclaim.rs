@@ -23,7 +23,7 @@ pub(crate) use manifest_residue::ValidatedManifestResidueCleanup;
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
     BlobAbandonmentReasonV1, BlobReclaimDescriptorV1, BlobRecordV1, BlobSessionAbandonedV1,
-    BlobSessionDeclarationV1, DropSetManifestV1, PersistedPhysicalRecoveryBlobSemantic,
+    BlobSessionDeclarationV1, DropSetManifestV1, PersistedPhysicalRecoveryOperation,
     PersistedRecordIdentity, BLOB_CONTROL_FRAME_MAX_BYTES,
 };
 
@@ -39,11 +39,12 @@ pub(super) fn verify(
     for index in 0..basis.redo.projections().len() {
         let projection = &basis.redo.projections()[index];
         let operation_id = projection.operation();
-        let PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding) =
-            projection.materialization().blob_semantic()
+        let PersistedPhysicalRecoveryOperation::RecordsDropped { binding, .. } =
+            projection.materialization().operation()
         else {
             continue;
         };
+        let binding = *binding;
         let Some(bytes) = basis
             .redo
             .blob_semantic_record_bytes(projection.operation())

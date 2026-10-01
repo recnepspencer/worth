@@ -28,8 +28,8 @@ mod roster;
 #[path = "release_custody/roster_v2.rs"]
 mod roster_v2;
 pub use head_v2::{
-    AddressedReleaseHeadControlV2, VerifiedCheckpointReleaseHeadRosterV2,
-    VerifiedSelectedReleaseHeadCustodyV2,
+    AddressedReleaseHeadControlV2, SelectedHeadRosterAdmissionDenial,
+    VerifiedCheckpointReleaseHeadRosterV2, VerifiedSelectedReleaseHeadCustodyV2,
 };
 #[path = "release_custody/addressed_base.rs"]
 mod addressed_base;

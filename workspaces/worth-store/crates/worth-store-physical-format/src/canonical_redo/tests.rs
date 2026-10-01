@@ -30,6 +30,18 @@ fn distinct_limit_rejects_second_identity_before_retention() {
     assert_eq!(distinct.len(), 1);
 }
 
+#[test]
+fn canonical_member_preserves_nested_unsupported_projection_version() {
+    let mut bytes = encoded_record(&[(1, [1; 32])]);
+    let mut projection = Vec::new();
+    field(&mut projection, b"store.physical.recovery-projection.v14");
+    field(&mut bytes, &projection);
+    assert_eq!(
+        decode_canonical_redo_v3(&bytes, 1, 2, 1, None, limits(1), format()),
+        Err(CanonicalRedoWireDenial::UnsupportedRecoveryProjectionVersion(14))
+    );
+}
+
 fn limits(maximum: u64) -> PhysicalRecoveryProjectionDecodeLimits {
     PhysicalRecoveryProjectionDecodeLimits {
         frames: maximum,

@@ -7,7 +7,7 @@ use std::collections::BTreeSet;
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
     DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest,
-    PersistedPhysicalRecoveryBlobSemantic, PersistedRecordIdentity, PhysicalInventoryTranscriptV1,
+    PersistedPhysicalRecoveryOperation, PersistedRecordIdentity, PhysicalInventoryTranscriptV1,
     PhysicalRecordFormatDeclaration,
 };
 use worth_store_wal::WalLsnRange;
@@ -213,8 +213,8 @@ impl OrderedRootHistoryBuilder {
         result_free: &DurableFreeSpaceManifestHeader,
         format: PhysicalRecordFormatDeclaration,
     ) -> Result<&VerifiedReleasedRootEdge, OrderedRootHistoryDenial> {
-        let PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding) =
-            member.materialization().blob_semantic()
+        let PersistedPhysicalRecoveryOperation::RecordsDropped { binding, .. } =
+            member.materialization().operation()
         else {
             return Err(OrderedRootHistoryDenial::Effect);
         };

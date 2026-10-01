@@ -1,4 +1,4 @@
-//! Bounded effective head roster for the one pending V14 WAL member. The
+//! Bounded effective head roster for the one pending release WAL member. The
 //! checkpoint-source roster remains immutable; this is a separate post-WAL
 //! state that Store must independently replay and rewalk from actual media.
 
@@ -30,7 +30,7 @@ pub enum EffectiveReleaseHeadDenial {
     ResidentBoundExceeded { required: u64, admitted: u64 },
 }
 
-/// Private-field semantic fold of an exact C.9-admitted pending V14 member.
+/// Private-field semantic fold of an exact C.9-admitted pending release member.
 /// Its digest does not substitute for a rooted selected-media walk.
 #[derive(Debug)]
 pub struct VerifiedEffectiveReleaseHeadRosterV14 {

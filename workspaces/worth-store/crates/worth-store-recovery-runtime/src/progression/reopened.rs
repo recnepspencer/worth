@@ -12,7 +12,7 @@ use crate::handoff::RecoveryOperationFateSet;
 use super::{NamespaceDurableState, RecoveryPublicationExpectation};
 
 pub struct ReopenedPhysicalRecovery {
-    pub(crate) state: NamespaceDurableState,
+    pub(crate) state: NamespaceDurableState<super::CustodyState>,
     pub(crate) expectation: RecoveryPublicationExpectation,
     pub(crate) publication_counters: PhysicalRecoveryPublicationCounters,
     pub(crate) publication_settlement: PhysicalRecoveryPublicationSettlementLedger,
@@ -22,7 +22,7 @@ pub struct ReopenedPhysicalRecovery {
 
 impl ReopenedPhysicalRecovery {
     pub(crate) const fn new(
-        state: NamespaceDurableState,
+        state: NamespaceDurableState<super::CustodyState>,
         expectation: RecoveryPublicationExpectation,
         publication_counters: PhysicalRecoveryPublicationCounters,
         publication_settlement: PhysicalRecoveryPublicationSettlementLedger,

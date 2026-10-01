@@ -35,10 +35,10 @@ pub(super) fn live_bytes(context: &PlanningContext, basis: &ResolvedPlanningBasi
     if let Some(consumed) = &basis.historical_consumed {
         bytes = bytes.checked_add(consumed.owned_heap_bytes()?)?;
     }
-    if let Some(heads) = &basis.verified_selected_head_custody_v2 {
+    if let crate::progression::PlanningCustody::SourceHeads(heads) = &basis.custody {
         bytes = bytes.checked_add(heads.owned_heap_bytes()?)?;
     }
-    if let Some(replay) = &basis.verified_pending_release_head_replay {
+    if let crate::progression::PlanningCustody::PendingPrepared { replay, .. } = &basis.custody {
         bytes = bytes.checked_add(replay.owned_heap_bytes()?)?;
     }
     for (index, drop) in basis.observed_pages.historical_drops.iter().enumerate() {
@@ -86,48 +86,40 @@ fn vector_bytes<T>(values: &Vec<T>) -> Option<u64> {
 /// Equal contents are not enough to identify one allocation. Claims normally
 /// borrow the selected checkpoint, but distinct backing must still be charged.
 fn checkpoint_bytes(context: &PlanningContext, basis: &ResolvedPlanningBasis) -> Option<u64> {
+    let pending = match &basis.custody {
+        crate::progression::PlanningCustody::PendingPrepared { claim, .. } => Some(claim),
+        _ => None,
+    };
+    let completed = match &basis.custody {
+        crate::progression::PlanningCustody::OrderedCompleted { claim, .. } => Some(claim),
+        _ => None,
+    };
+    let source_heads = match &basis.custody {
+        crate::progression::PlanningCustody::SourceHeads(claim) => Some(claim),
+        _ => None,
+    };
+    let no_release = match &basis.custody {
+        crate::progression::PlanningCustody::NoRelease(claim) => Some(claim),
+        _ => None,
+    };
     let checkpoints = [
-        basis
-            .verified_pending_wal_release_custody
-            .as_ref()
+        pending
             .and_then(|claim| claim.selected_release())
             .map(|base| base.checkpoint()),
-        basis
-            .verified_pending_wal_release_custody
-            .as_ref()
+        pending
             .and_then(|claim| claim.addressed_release_base())
             .map(|base| base.checkpoint()),
-        basis
-            .verified_pending_wal_release_custody
-            .as_ref()
+        pending
             .and_then(|claim| claim.selected_head_v2())
             .map(|base| base.checkpoint()),
-        basis
-            .verified_ordered_historical_release_custody
-            .as_ref()
+        completed
             .and_then(|claim| claim.selected_head_v2())
             .map(|base| base.checkpoint()),
         context.selection.checkpoint().map(|base| base.checkpoint()),
-        basis
-            .verified_selected_checkpoint_custody
-            .as_ref()
-            .map(|claim| claim.checkpoint()),
-        basis
-            .verified_selected_head_custody_v2
-            .as_ref()
-            .map(|claim| claim.checkpoint()),
-        basis
-            .verified_selected_no_release_custody
-            .as_ref()
-            .map(|claim| claim.checkpoint()),
-        basis
-            .verified_pending_wal_release_custody
-            .as_ref()
-            .map(|claim| claim.checkpoint()),
-        basis
-            .verified_ordered_historical_release_custody
-            .as_ref()
-            .map(|claim| claim.checkpoint()),
+        source_heads.map(|claim| claim.checkpoint()),
+        no_release.map(|claim| claim.checkpoint()),
+        pending.map(|claim| claim.checkpoint()),
+        completed.map(|claim| claim.checkpoint()),
         basis
             .observed_pages
             .tier_custody
@@ -157,31 +149,27 @@ fn checkpoint_bytes(context: &PlanningContext, basis: &ResolvedPlanningBasis) ->
 /// Final custody owns distinct control/replay/roster buffers, even when they
 /// contain bytes equal to earlier observations. Only shared history is deduped.
 fn final_custody_bytes(basis: &ResolvedPlanningBasis) -> Option<u64> {
-    let mut bytes = 0_u64;
-    if let Some(claim) = &basis.verified_selected_checkpoint_custody {
-        bytes = bytes.checked_add(claim.owned_heap_bytes()?)?;
-    }
-    if let Some(claim) = &basis.verified_pending_wal_release_custody {
-        bytes = bytes.checked_add(claim.owned_heap_bytes()?)?;
-    }
-    if let Some(claim) = &basis.verified_ordered_historical_release_custody {
-        bytes = bytes.checked_add(claim.owned_heap_bytes()?)?;
-    }
-    if let Some(heads) = &basis.verified_effective_release_heads_v14 {
-        bytes = bytes.checked_add(heads.owned_heap_bytes()?)?;
-    }
-    let pending_history = basis
-        .verified_pending_wal_release_custody
-        .as_ref()
-        .and_then(|claim| claim.ordered_history());
-    let completed_history = basis
-        .verified_ordered_historical_release_custody
-        .as_ref()
-        .map(|claim| claim.history());
+    let (pending_history, completed_history, mut bytes) = match &basis.custody {
+        crate::progression::PlanningCustody::Unresolved
+        | crate::progression::PlanningCustody::NoCheckpoint
+        | crate::progression::PlanningCustody::NoRelease(_)
+        | crate::progression::PlanningCustody::SourceHeads(_) => (None, None, 0),
+        crate::progression::PlanningCustody::PendingPrepared { claim, .. } => {
+            (claim.ordered_history(), None, claim.owned_heap_bytes()?)
+        }
+        crate::progression::PlanningCustody::OrderedCompleted {
+            claim,
+            effective_heads,
+        } => (
+            None,
+            Some(claim.history()),
+            claim
+                .owned_heap_bytes()?
+                .checked_add(effective_heads.owned_heap_bytes()?)?,
+        ),
+    };
     for (index, history) in [pending_history, completed_history].into_iter().enumerate() {
-        let Some(history) = history else {
-            continue;
-        };
+        let Some(history) = history else { continue };
         let observed = basis
             .observed_pages
             .historical_drops

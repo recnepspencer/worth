@@ -4,7 +4,7 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 use worth_store_physical_format::{
     decode_canonical_redo_v3, store_namespace::StableStoreIdentity, BlobRecordKind,
-    CurrentPhysicalRecordPlacement, PersistedPhysicalRecoveryBlobSemantic,
+    CurrentPhysicalRecordPlacement, PersistedPhysicalRecoveryOperation,
     PersistedPhysicalRecoveryProjection, PhysicalRecordFormatDeclaration,
     PhysicalRecoveryProjectionDecodeLimits, SelectedRecordContentClass,
 };
@@ -122,7 +122,7 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn match
     ) else {
         return false;
     };
-    let PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding) = projection.blob_semantic()
+    let PersistedPhysicalRecoveryOperation::RecordsDropped { binding, .. } = projection.operation()
     else {
         return false;
     };
@@ -229,23 +229,28 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn match
             || !projection.root_state().inline_allocations().is_empty()
             || projection.root_state().last_inline_record().is_some()
             || projection.root_state().last_inline_segment().is_some()
-            || (projection.derived_retirement().is_some()
-                && member.operation_identity()
-                    != claim.descriptor().custody().request().idempotency())
+            || (matches!(
+                projection.operation(),
+                PersistedPhysicalRecoveryOperation::DerivedDirectory {
+                    retirement: Some(_),
+                    ..
+                }
+            ) && member.operation_identity()
+                != claim.descriptor().custody().request().idempotency())
         {
             return false;
         }
         if member.operation_identity() == claim.descriptor().custody().request().idempotency() {
-            if !matches!(projection.blob_semantic(),
-                PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding)
+            if !matches!(projection.operation(),
+                PersistedPhysicalRecoveryOperation::RecordsDropped { binding, .. }
                     if binding.record() == claim.descriptor_record()
                         && binding.record_payload_sha256() == claim.descriptor_frame_sha256())
             {
                 return false;
             }
         } else if !matches!(
-            projection.blob_semantic(),
-            PersistedPhysicalRecoveryBlobSemantic::None
+            projection.operation(),
+            PersistedPhysicalRecoveryOperation::None
         ) || projection.placements().iter().any(|placement| {
             !matches!(
                 placement.content_class(),

@@ -5,6 +5,9 @@ use worth_store_physical_format::store_namespace::{
 };
 use worth_store_physical_format::PersistedRecordIdentity;
 
+#[path = "tests/local_transition.rs"]
+mod local_transition;
+
 fn entry(object: u8, cumulative_dropped: u64, terminal: bool) -> ReleaseCustodyHeadEntryV1 {
     let record = |ordinal| PersistedRecordIdentity::new([object; 16], ordinal).unwrap();
     ReleaseCustodyHeadEntryV1::new(

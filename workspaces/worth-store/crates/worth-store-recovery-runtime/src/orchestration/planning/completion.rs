@@ -33,11 +33,5 @@ pub(super) fn complete(
     let (context, execution) = execution_basis::derive(context, &mut basis)?;
     let (context, plan_cost, planning_counters) = plan_cost::admit(context, &basis, &execution)?;
     let context = publication_effects::admit(context, planning_counters, &execution.publication)?;
-    Ok(planned_recovery::construct(
-        context,
-        basis,
-        execution,
-        plan_cost,
-        planning_counters,
-    ))
+    planned_recovery::construct(context, basis, execution, plan_cost, planning_counters)
 }

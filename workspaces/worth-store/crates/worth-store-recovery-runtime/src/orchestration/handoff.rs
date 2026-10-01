@@ -33,23 +33,20 @@ pub(crate) fn finish_recovery_after_cleanup(
         worth_store::physical_runtime::PhysicalRecoveryRejoinResidentAdmissionDenial::SizeOverflow,
     ).and_then(|bytes| coordination.admit_rejoin_resident_bytes(bytes));
     let recovery_allocation = coordination.recovery_allocation_admission();
-    let effective_heads = state.verified_effective_release_heads_v14;
-    let has_effective_release = state.verified_pending_wal_release_custody.is_some()
-        || state.verified_ordered_historical_release_custody.is_some();
+    let requires_allocation = matches!(
+        &state.custody,
+        crate::progression::CustodyState::SourceHeads(_)
+            | crate::progression::CustodyState::Pending { .. }
+            | crate::progression::CustodyState::OrderedCompleted { .. }
+    );
     let construction = if let Err(denial) = resident_admission {
         Err(worth_store::physical_runtime::RecoveredPhysicalRuntimeConstructionDenial::ResidentAdmission(denial))
-    } else if has_effective_release != effective_heads.is_some()
-        || (has_effective_release && recovery_allocation.is_none())
-    {
+    } else if requires_allocation && recovery_allocation.is_none() {
         Err(worth_store::physical_runtime::RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch)
-    } else if let Some(claim) = state.verified_selected_head_custody_v2 {
-        if state.verified_selected_checkpoint_custody.is_some()
-            || state.verified_selected_no_release_custody.is_some()
-            || state.verified_pending_wal_release_custody.is_some()
-            || state.verified_ordered_historical_release_custody.is_some()
-        {
-            Err(worth_store::physical_runtime::RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch)
-        } else if let Some(allocation) = coordination.recovery_allocation_admission() {
+    } else {
+        match (state.custody, state.verified_selected_tier_custody) {
+            (crate::progression::CustodyState::SourceHeads(claim), tier) => {
+                if let Some(allocation) = recovery_allocation {
             #[cfg(feature = "certification-test-authority")]
             if crate::certification::enabled() {
                 let descriptor = claim.selected_heads().iter().find_map(|head| {
@@ -76,77 +73,23 @@ pub(crate) fn finish_recovery_after_cleanup(
                     closed_cleanup,
                     allocation,
                     claim,
-                    state.verified_selected_tier_custody,
+                    tier,
                     crate::certification::take_rejoin_pause(),
                 )
             } else {
                 worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_head_custody_v2(
-                    coordination, media, closed_cleanup, allocation, claim, state.verified_selected_tier_custody,
+                    coordination, media, closed_cleanup, allocation, claim, tier,
                 )
             }
             #[cfg(not(feature = "certification-test-authority"))]
             worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_head_custody_v2(
-                coordination, media, closed_cleanup, allocation, claim, state.verified_selected_tier_custody,
+                coordination, media, closed_cleanup, allocation, claim, tier,
             )
         } else {
-            Err(worth_store::physical_runtime::RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch)
-        }
-    } else {
-        match (
-        state.verified_selected_checkpoint_custody,
-        state.verified_selected_no_release_custody,
-        state.verified_pending_wal_release_custody,
-        state.verified_selected_tier_custody,
-        state.verified_ordered_historical_release_custody,
-    ) {
-        (Some(released), None, None, Some(tier), None) => {
-            #[cfg(feature = "certification-test-authority")]
-            if crate::certification::enabled() {
-                let descriptor = state.selection.page_facts().placements().iter().copied()
-                    .find(|route| route.record() == released.accumulator().tip().descriptor_record())
-                    .expect("certified selected descriptor was already joined");
-                crate::certification::pause_after_claim(descriptor);
-                worth_store::physical_runtime::PhysicalRecoveryConstructionPort::certification_construct_with_verified_tier_and_release(
-                    coordination, media, closed_cleanup, tier, released,
-                    crate::certification::take_rejoin_pause(),
-                )
-            } else {
-                worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_tier_and_release(
-                    coordination, media, closed_cleanup, tier, released,
-                )
+                    Err(worth_store::physical_runtime::RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch)
+                }
             }
-            #[cfg(not(feature = "certification-test-authority"))]
-            worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_tier_and_release(
-                coordination, media, closed_cleanup, tier, released,
-            )
-        }
-        (Some(custody), None, None, None, None) => {
-            #[cfg(feature = "certification-test-authority")]
-            if crate::certification::enabled() {
-                let descriptor = state
-                    .selection
-                    .page_facts()
-                    .placements()
-                    .iter()
-                    .copied()
-                    .find(|route| route.record() == custody.accumulator().tip().descriptor_record())
-                    .expect("certified selected descriptor was already joined");
-                crate::certification::pause_after_claim(descriptor);
-                worth_store::physical_runtime::PhysicalRecoveryConstructionPort::certification_construct_with_verified_custody_and_rejoin_pause(
-                    coordination, media, closed_cleanup, custody,
-                    crate::certification::take_rejoin_pause(),
-                )
-            } else {
-                worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_custody(
-                    coordination, media, closed_cleanup, custody,
-                )
-            }
-            #[cfg(not(feature = "certification-test-authority"))]
-            worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_custody(
-                coordination, media, closed_cleanup, custody,
-            )
-        }
-        (None, Some(no_release), None, Some(tier), None) => {
+        (crate::progression::CustodyState::NoRelease(no_release), Some(tier)) => {
             #[cfg(feature = "certification-test-authority")]
             if crate::certification::enabled() {
                 worth_store::physical_runtime::PhysicalRecoveryConstructionPort::certification_construct_with_verified_tier_no_release(
@@ -167,7 +110,7 @@ pub(crate) fn finish_recovery_after_cleanup(
                 coordination, media, closed_cleanup, tier, no_release,
             )
         }
-        (None, Some(no_release), None, None, None) => {
+        (crate::progression::CustodyState::NoRelease(no_release), None) => {
             #[cfg(feature = "certification-test-authority")]
             if crate::certification::enabled() {
                 worth_store::physical_runtime::PhysicalRecoveryConstructionPort::certification_construct_with_verified_no_release(
@@ -187,9 +130,9 @@ pub(crate) fn finish_recovery_after_cleanup(
                 coordination, media, closed_cleanup, no_release,
             )
         }
-        (None, None, Some(pending), None, None) => {
+        (crate::progression::CustodyState::Pending { claim: pending, replay, effective_heads: effective }, None) => {
             let allocation = recovery_allocation.expect("pending recovery allocation was checked");
-            let effective = effective_heads.expect("pending effective heads were checked");
+            drop(replay);
             #[cfg(feature = "certification-test-authority")]
             if crate::certification::enabled() {
                 let reservation = state.selection.page_facts().placements().iter().copied()
@@ -210,9 +153,9 @@ pub(crate) fn finish_recovery_after_cleanup(
                 coordination, media, closed_cleanup, allocation, pending, effective,
             )
         }
-        (None, None, Some(pending), Some(tier), None) => {
+        (crate::progression::CustodyState::Pending { claim: pending, replay, effective_heads: effective }, Some(tier)) => {
             let allocation = recovery_allocation.expect("pending recovery allocation was checked");
-            let effective = effective_heads.expect("pending effective heads were checked");
+            drop(replay);
             #[cfg(feature = "certification-test-authority")]
             if crate::certification::enabled() {
                 let reservation = state.selection.page_facts().placements().iter().copied()
@@ -233,9 +176,9 @@ pub(crate) fn finish_recovery_after_cleanup(
                 coordination, media, closed_cleanup, allocation, pending, effective, tier,
             )
         }
-        (None, None, None, tier, Some(historical)) => {
+        (crate::progression::CustodyState::OrderedCompleted { claim: historical, effective_heads: effective }, tier) => {
             let allocation = recovery_allocation.expect("historical recovery allocation was checked");
-            let effective = effective_heads.expect("historical effective heads were checked");
+
             worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_ordered_historical_release(
                 coordination,
                 media,
@@ -246,7 +189,7 @@ pub(crate) fn finish_recovery_after_cleanup(
                 tier,
             )
         }
-        (None, None, None, None, None) => worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct(
+        (crate::progression::CustodyState::NoCheckpoint, None) => worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct(
             coordination,
             media,
             closed_cleanup,
@@ -254,7 +197,7 @@ pub(crate) fn finish_recovery_after_cleanup(
         _ => Err(
             worth_store::physical_runtime::RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch,
         ),
-    }
+        }
     };
     match construction {
         Ok(core) => {

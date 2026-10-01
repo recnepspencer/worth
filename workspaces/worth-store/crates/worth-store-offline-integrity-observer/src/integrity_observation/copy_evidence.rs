@@ -6,9 +6,9 @@ use super::{
 };
 
 const INTENT_DOMAIN: &[u8] = b"store.physical.extent-copy.v1";
+const CLASSIFIED_INTENT_DOMAIN: &[u8] = b"store.physical.extent-copy.v2";
 const FINAL_DOMAIN: &[u8] = b"store.physical.extent-copy-publication.v1";
-const V5_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v5";
-const V6_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v6";
+const CURRENT_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v15";
 const BINDING_DOMAIN: &[u8] = b"store.physical.mutation-attempt-binding.v1";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -26,6 +26,8 @@ pub(crate) struct CopyIntentFact {
     pub(crate) payload_bytes: u64,
     pub(crate) alignment: u64,
     pub(crate) chunk_count: u32,
+    pub(crate) source_route_metadata: [u8; 7],
+    pub(crate) destination_route_metadata: [u8; 7],
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -54,8 +56,14 @@ pub(crate) struct CopyFinalFact {
 
 impl CopyIntentFact {
     pub(crate) fn decode(payload: &[u8], lsn: (u64, u64)) -> Option<Self> {
-        let body = payload.strip_prefix(INTENT_DOMAIN)?.strip_prefix(&[1])?;
-        if body.len() != 200
+        let (body, classified) = if let Some(body) = payload.strip_prefix(CLASSIFIED_INTENT_DOMAIN)
+        {
+            (body, true)
+        } else {
+            (payload.strip_prefix(INTENT_DOMAIN)?, false)
+        };
+        let body = body.strip_prefix(&[1])?;
+        if body.len() != (if classified { 214 } else { 200 })
             || lsn.0 == 0
             || lsn.0.checked_add(1) != Some(lsn.1)
             || read_u64(body, 64) != 0
@@ -78,6 +86,20 @@ impl CopyIntentFact {
         let alignment = read_u64(body, 152);
         let maximum_frame_bytes = read_u32(body, 160);
         let chunk_count = read_u32(body, 164);
+        let (source_route_metadata, destination_route_metadata) = if classified {
+            let source: [u8; 7] = body[200..207].try_into().ok()?;
+            let destination: [u8; 7] = body[207..214].try_into().ok()?;
+            if !valid_route_metadata(&source)
+                || source[0] == 0
+                || !valid_route_metadata(&destination)
+                || source[..4] != destination[..4]
+            {
+                return None;
+            }
+            (source, destination)
+        } else {
+            ([0; 7], [0; 7])
+        };
         if operation == [0; 32]
             || record[..16] == [0; 16]
             || read_u64(&record, 16) == 0
@@ -117,6 +139,8 @@ impl CopyIntentFact {
             payload_bytes,
             alignment,
             chunk_count,
+            source_route_metadata,
+            destination_route_metadata,
         })
     }
 }
@@ -215,14 +239,9 @@ impl CopyFinalFact {
         let projection = redo.field()?;
         redo.end()?;
         let mut projection = Cursor(projection);
-        let domain = projection.field()?;
-        let v6 = if domain == V6_PROJECTION_DOMAIN {
-            true
-        } else if domain == V5_PROJECTION_DOMAIN {
-            false
-        } else {
+        if projection.field()? != CURRENT_PROJECTION_DOMAIN {
             return None;
-        };
+        }
         let source_root = projection.u64()?;
         if projection.field()?.is_empty() || projection.u64()? != 1 {
             return None;
@@ -235,9 +254,6 @@ impl CopyFinalFact {
         let intent = parse_embedded_intent(intent_bytes)?;
         let intent_lsn = projection.u64()?;
         let digest = projection.take(32)?;
-        if v6 && projection.field()? != [0] {
-            return None;
-        }
         if intent_lsn == 0
             || intent_lsn >= publication_lsn
             || intent.digest != digest
@@ -248,7 +264,7 @@ impl CopyFinalFact {
         {
             return None;
         }
-        let destination = projection.fixed_field(73)?;
+        let destination = projection.fixed_field(80)?;
         if destination[0] != 2
             || destination[1..25] != intent.record
             || read_u64(destination, 25) != intent.extent
@@ -259,8 +275,10 @@ impl CopyFinalFact {
                 read_u64(destination, 57),
                 read_u64(destination, 65),
             ) != intent.destination
+            || destination[73..] != intent.destination_route_metadata
             || projection.u64()? != 0
             || projection.u64()? != 0
+            || projection.field()? != [0]
         {
             return None;
         }
@@ -283,6 +301,20 @@ fn parse_embedded_intent(bytes: &[u8]) -> Option<CopyIntentFact> {
     let mut fact = CopyIntentFact::decode(bytes, (1, 2))?;
     fact.lsn = 0;
     Some(fact)
+}
+
+fn valid_route_metadata(bytes: &[u8]) -> bool {
+    if bytes.len() != 7 || bytes[5..] != [0; 2] || bytes[4] > 2 {
+        return false;
+    }
+    let family = u16::from_le_bytes([bytes[2], bytes[3]]);
+    match (bytes[0], bytes[1], family) {
+        (0, 0, 0) => bytes[4] == 0,
+        (1, 0, 0) | (4, 0, 0) => true,
+        (2, 1..=16, 0) => true,
+        (3, 0, 1..) => true,
+        _ => false,
+    }
 }
 
 struct Cursor<'a>(&'a [u8]);

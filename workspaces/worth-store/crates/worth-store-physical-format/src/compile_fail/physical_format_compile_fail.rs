@@ -8,6 +8,52 @@
 //!     CurrentRootManifestAdmission { root_owner: todo!() },
 //! );
 //! ```
+//! A release-head effect can be attached only to a RecordsDropped operation:
+//! ```compile_fail
+//! use worth_store_physical_format::{
+//!     PersistedBlobSemanticRecordBinding, PersistedPhysicalRecoveryOperation,
+//!     PersistedReleaseCustodyHeadEffectV1,
+//! };
+//! let binding: PersistedBlobSemanticRecordBinding = todo!();
+//! let head: PersistedReleaseCustodyHeadEffectV1 = todo!();
+//! let _ = PersistedPhysicalRecoveryOperation::SessionDeclared {
+//!     binding,
+//!     head_effect: Some(head),
+//! };
+//! ```
+//! A directory retirement can be attached only to a DerivedDirectory operation:
+//! ```compile_fail
+//! use worth_store_physical_format::{
+//!     PersistedBlobSemanticRecordBinding, PersistedDerivedDirectoryRetirement,
+//!     PersistedPhysicalRecoveryOperation,
+//! };
+//! let binding: PersistedBlobSemanticRecordBinding = todo!();
+//! let retirement: PersistedDerivedDirectoryRetirement = todo!();
+//! let _ = PersistedPhysicalRecoveryOperation::GenerationPublished {
+//!     binding,
+//!     retirement: Some(retirement),
+//! };
+//! ```
+//! The two lawful attachments remain constructible through their typed variants:
+//! ```no_run
+//! use worth_store_physical_format::{
+//!     PersistedBlobSemanticRecordBinding, PersistedDerivedDirectoryRecordBinding,
+//!     PersistedDerivedDirectoryRetirement, PersistedPhysicalRecoveryOperation,
+//!     PersistedReleaseCustodyHeadEffectV1,
+//! };
+//! let binding: PersistedBlobSemanticRecordBinding = todo!();
+//! let head: PersistedReleaseCustodyHeadEffectV1 = todo!();
+//! let retirement: PersistedDerivedDirectoryRetirement = todo!();
+//! let dropped = PersistedPhysicalRecoveryOperation::RecordsDropped {
+//!     binding,
+//!     head_effect: Some(head),
+//! };
+//! let directory = PersistedPhysicalRecoveryOperation::DerivedDirectory {
+//!     binding: PersistedDerivedDirectoryRecordBinding::new(binding, None),
+//!     retirement: Some(retirement),
+//! };
+//! let _ = (dropped, directory);
+//! ```
 //! Chunk checksum witnesses cannot be synthesized from copied checksum values:
 //! ```compile_fail
 //! use worth_store_physical_format::{PhysicalChunkChecksum, PhysicalChunkChecksumWitness};

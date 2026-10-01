@@ -95,6 +95,9 @@ impl ReclaimPublication<'_, '_> {
             )
             .map(Some)
             .map_err(|denial| match denial {
+                ReleaseCertificateCapacityDenial::Resident(cause) => {
+                    BlobReclaimFailure::ReleaseCertificateBacking(cause)
+                }
                 ReleaseCertificateCapacityDenial::CapacityExhausted
                 | ReleaseCertificateCapacityDenial::SelectedLedgerUnavailable => {
                     BlobReclaimFailure::Deferred(BlobReclaimDeferral::ReleaseCertificateCapacity)

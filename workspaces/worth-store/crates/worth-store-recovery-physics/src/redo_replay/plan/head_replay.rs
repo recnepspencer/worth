@@ -4,9 +4,10 @@
 //! again during recovery.
 
 use worth_store_physical_format::{
-    DurablePhysicalRootManifest, PersistedReleaseCustodyHeadEffectV1,
-    PhysicalRecordFormatDeclaration, ReleaseCustodyHeadBlockReferenceV1,
-    ReleaseCustodyHeadNodeWriteV1, ReleaseCustodyHeadPathNodeV1,
+    DurablePhysicalRootManifest, PersistedPhysicalRecoveryOperation,
+    PersistedReleaseCustodyHeadEffectV1, PhysicalRecordFormatDeclaration,
+    ReleaseCustodyHeadBlockReferenceV1, ReleaseCustodyHeadNodeWriteV1,
+    ReleaseCustodyHeadPathNodeV1,
 };
 use worth_store_wal::WalLsnRange;
 
@@ -69,7 +70,12 @@ impl VerifiedSelectedReleaseHeadReplayV14 {
         Read: FnMut(ReleaseCustodyHeadBlockReferenceV1, u64) -> Result<Vec<u8>, ReadError>,
     {
         Self::admit_effect(
-            member.materialization().release_head_effect(),
+            match member.materialization().operation() {
+                PersistedPhysicalRecoveryOperation::RecordsDropped { head_effect, .. } => {
+                    head_effect.as_ref()
+                }
+                _ => None,
+            },
             selected.root().selected().manifest(),
             selected.root().selected().selector().format(),
             maximum_effect_bytes,
@@ -103,7 +109,12 @@ impl VerifiedSelectedReleaseHeadReplayV14 {
             .filter(|digest| plan.admits_exact_member_redo_digest(projection, *digest))
             .ok_or(SelectedReleaseHeadReplayDenial::NotAdmittedUpsert)?;
         Self::admit_effect(
-            projection.materialization().release_head_effect(),
+            match projection.materialization().operation() {
+                PersistedPhysicalRecoveryOperation::RecordsDropped { head_effect, .. } => {
+                    head_effect.as_ref()
+                }
+                _ => None,
+            },
             selected.root().selected().manifest(),
             selected.root().selected().selector().format(),
             maximum_effect_bytes,

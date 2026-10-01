@@ -187,6 +187,9 @@ const fn map_wire_denial(denial: CanonicalRedoWireDenial) -> PhysicalRedoPlannin
         CanonicalRedoWireDenial::InvalidRecoveryProjection => {
             PhysicalRedoPlanningDenial::InvalidRecoveryProjection
         }
+        CanonicalRedoWireDenial::UnsupportedRecoveryProjectionVersion(version) => {
+            PhysicalRedoPlanningDenial::UnsupportedRecoveryProjectionVersion(version)
+        }
         CanonicalRedoWireDenial::ProjectionEntryLimit => {
             PhysicalRedoPlanningDenial::InvalidRecoveryProjection
         }

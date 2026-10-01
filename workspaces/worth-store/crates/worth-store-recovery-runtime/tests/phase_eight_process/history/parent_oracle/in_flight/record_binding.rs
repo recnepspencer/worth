@@ -6,10 +6,11 @@ use super::super::canonical_membership::ExpectedCanonicalRecord;
 use super::super::canonical_membership_placement::RecordIdentity;
 
 const REDO_DOMAIN: &[u8] = b"store.physical.wal.canonical-redo.v3";
-const V5_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v5";
-const V6_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v6";
-const V13_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v13";
+const CURRENT_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v15";
 
+#[path = "record_binding/operation.rs"]
+mod operation;
+use operation::inspect_operation;
 #[path = "record_binding/projection_wire.rs"]
 mod projection_wire;
 use projection_wire::{classified_route_metadata, Cursor};
@@ -143,16 +144,9 @@ fn projection_contains_record(
     expected_record: RecordIdentity,
 ) -> Result<bool, String> {
     let mut cursor = Cursor::new(projection);
-    let domain = cursor.field()?;
-    let classified = if domain == V13_PROJECTION_DOMAIN {
-        true
-    } else if domain == V5_PROJECTION_DOMAIN {
-        false
-    } else if domain == V6_PROJECTION_DOMAIN {
-        false
-    } else {
+    if cursor.field()? != CURRENT_PROJECTION_DOMAIN {
         return Ok(false);
-    };
+    }
     let source_root = cursor.u64()?;
     if source_root == 0 || cursor.field()?.is_empty() {
         return Ok(false);
@@ -183,21 +177,6 @@ fn projection_contains_record(
         }
         _ => return Ok(false),
     };
-    let blob_binding = if domain != V5_PROJECTION_DOMAIN {
-        match blob_semantic_binding(cursor.field()?) {
-            Some(Some(_)) if source_copy => return Ok(false),
-            Some(binding) => binding,
-            None => return Ok(false),
-        }
-    } else {
-        None
-    };
-    // The only V13 shape admitted here is the ordinary classified append.
-    // Derived-directory retirement has its own semantic family and cannot
-    // become a record binding through an unexamined extra wire section.
-    if classified && cursor.byte()? != 0 {
-        return Ok(false);
-    }
     let placement_count = cursor.u64()?;
     if placement_count == 0 {
         return Ok(false);
@@ -210,8 +189,7 @@ fn projection_contains_record(
         let kind = placement.byte()?;
         let record = placement.raw_record()?;
         placement_present |= record == expected_record;
-        blob_placement_matches |=
-            blob_binding.is_some_and(|(bound, _)| kind == 2 && bound == record);
+        blob_placement_matches |= kind == 2 && record == expected_record;
         copy_placement_matches |= kind == 2 && record == expected_record;
         match kind {
             1 => {
@@ -243,7 +221,7 @@ fn projection_contains_record(
             }
             _ => return Ok(false),
         }
-        if classified && !classified_route_metadata(placement.take(7)?) {
+        if !classified_route_metadata(placement.take(7)?) {
             return Ok(false);
         }
         if !placement.is_empty() {
@@ -257,6 +235,10 @@ fn projection_contains_record(
     let manifest_count = cursor.u64()?;
     for _ in 0..manifest_count {
         cursor.field()?;
+    }
+    let blob_binding = inspect_operation(&mut cursor)?;
+    if source_copy && blob_binding.is_some() {
+        return Ok(false);
     }
     let copy_shape_valid = !source_copy
         || (identity_count == 1
@@ -276,20 +258,6 @@ fn projection_contains_record(
         && copy_shape_valid
         && blob_binding_valid
         && cursor.is_empty())
-}
-
-fn blob_semantic_binding(bytes: &[u8]) -> Option<Option<(RecordIdentity, u64)>> {
-    match bytes {
-        [0] => Some(None),
-        [1 | 2, rest @ ..] if rest.len() == 64 => {
-            let mut cursor = Cursor::new(rest);
-            let record = cursor.raw_record().ok()?;
-            cursor.take(32).ok()?;
-            let root = cursor.u64().ok()?;
-            (root != 0 && cursor.is_empty()).then_some(Some((record, root)))
-        }
-        _ => None,
-    }
 }
 
 #[cfg(test)]

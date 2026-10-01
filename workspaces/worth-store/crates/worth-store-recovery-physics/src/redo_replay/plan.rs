@@ -70,7 +70,7 @@ mod projection_validation;
 mod retained_storage;
 mod source_copy;
 mod supersession;
-pub use source_copy::PhysicalExtentCopyAdmission;
+pub use source_copy::{admit_current_source_copy_publication, PhysicalExtentCopyAdmission};
 
 pub use admission::{
     admit_physical_redo_members, physical_redo_observation_target_identities,

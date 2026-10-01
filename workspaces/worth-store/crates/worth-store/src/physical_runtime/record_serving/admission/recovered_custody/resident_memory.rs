@@ -24,7 +24,6 @@ impl RecoveredPhysicalCheckpointCustody {
     pub(in crate::physical_runtime) fn owned_heap_bytes(&self) -> Option<u64> {
         let mut bytes = 0_u64;
         for claim in [
-            self.released.as_ref().map(|claim| claim.owned_heap_bytes()),
             self.head_v2.as_ref().map(|claim| claim.owned_heap_bytes()),
             self.pending_wal_release
                 .as_ref()
@@ -52,8 +51,7 @@ impl RecoveredPhysicalCheckpointCustody {
     }
 
     fn shared_checkpoint_bytes(&self) -> Option<u64> {
-        let checkpoints: [Option<&VerifiedCheckpointStream>; 10] = [
-            self.released.as_ref().map(|claim| claim.checkpoint()),
+        let checkpoints: [Option<&VerifiedCheckpointStream>; 9] = [
             self.head_v2.as_ref().map(|claim| claim.checkpoint()),
             self.no_release.as_ref().map(|claim| claim.checkpoint()),
             self.pending_wal_release

@@ -1,8 +1,8 @@
-//! Exact sampled C.9 member and canonical V14 projection for one released edge.
+//! Exact sampled C.9 member and current canonical projection for one released edge.
 
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
-    decode_canonical_redo_v3, PersistedPhysicalRecoveryBlobSemantic,
+    decode_canonical_redo_v3, PersistedPhysicalRecoveryOperation,
     PersistedPhysicalRecoveryProjection, PhysicalRecordFormatDeclaration,
     PhysicalRecoveryProjectionDecodeLimits,
 };
@@ -143,7 +143,10 @@ pub(super) fn matched_projection(
         format,
     )
     .map_err(|_| Denial::WalFate)?;
-    let PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding) = projection.blob_semantic()
+    let PersistedPhysicalRecoveryOperation::RecordsDropped {
+        binding,
+        head_effect,
+    } = projection.operation()
     else {
         return Err(Denial::WalFate);
     };
@@ -154,7 +157,7 @@ pub(super) fn matched_projection(
             != source_generation
                 .checked_add(1)
                 .ok_or(Denial::BoundExceeded)?
-        || projection.release_head_effect() != Some(attached.effect())
+        || head_effect.as_ref() != Some(attached.effect())
     {
         return Err(Denial::WalFate);
     }

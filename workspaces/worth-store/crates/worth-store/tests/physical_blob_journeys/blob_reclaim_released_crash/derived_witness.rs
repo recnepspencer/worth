@@ -94,7 +94,13 @@ fn inspect_member(
         format,
     )
     .ok()?;
-    let retirement = projection.derived_retirement()?;
+    let worth_store_physical_format::PersistedPhysicalRecoveryOperation::DerivedDirectory {
+        retirement: Some(retirement),
+        ..
+    } = projection.operation()
+    else {
+        return None;
+    };
     for page_frame in projection.frames()? {
         let PersistedPhysicalDataFrameSubject::InlinePage(page) = page_frame.subject() else {
             continue;

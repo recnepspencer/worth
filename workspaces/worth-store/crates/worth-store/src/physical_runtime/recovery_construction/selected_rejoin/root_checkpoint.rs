@@ -203,23 +203,6 @@ impl ObservedRootCheckpoint {
     }
 }
 
-pub(super) fn observe(
-    discovery: &mut BoundedRecoveryFilesystemDiscovery,
-    expected_store: StableStoreIdentity,
-    format: PhysicalRecordFormatDeclaration,
-    claim: &VerifiedSelectedCheckpointCustody,
-) -> Result<ObservedRootCheckpoint, Denial> {
-    let observed = observe_parts(
-        &mut RootCheckpointReader::legacy(discovery),
-        expected_store,
-        format,
-        claim.selected_root(),
-        claim.checkpoint(),
-    )?;
-    observed.matches_claim(discovery, claim)?;
-    Ok(observed)
-}
-
 fn observe_parts(
     reader: &mut RootCheckpointReader<'_, '_>,
     expected_store: StableStoreIdentity,

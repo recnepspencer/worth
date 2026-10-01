@@ -13,9 +13,8 @@ pub use comparison::{
 
 pub use integrity_observation::{
     emit_offline_integrity_report, emit_offline_selected_integrity_report,
-    encode_offline_integrity_report, observe_store,
-    OfflineArtifactDuplicateEvidence, OfflineArtifactFamily, OfflineArtifactObservation,
-    OfflineBlobReclaimSourceKind,
+    encode_offline_integrity_report, observe_store, OfflineArtifactDuplicateEvidence,
+    OfflineArtifactFamily, OfflineArtifactObservation, OfflineBlobReclaimSourceKind,
     OfflineIndeterminatePhysicalReason, OfflineIntegrityObservationCounters,
     OfflineIntegrityObservationDenial, OfflineIntegrityObservationLimits,
     OfflineIntegrityObservationLimitsDenial, OfflineIntegrityObservationRequest,

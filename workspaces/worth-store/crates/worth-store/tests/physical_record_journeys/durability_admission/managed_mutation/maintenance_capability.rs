@@ -25,7 +25,6 @@ fn a_rewrite_publishes_maintenance_protocol_metadata() {
     let published = fs::read(newest_root(&root)).unwrap();
     let (manifest, _) = DurablePhysicalRootManifest::decode(&published, u16::MAX).unwrap();
     assert!(manifest.requires_maintenance_protocol());
-    assert!(DurablePhysicalRootManifest::decode_c9_legacy(&published, u16::MAX).is_err());
 
     // An ordinary append after a maintenance rewrite must not downgrade the
     // selected root's protocol bit while carrying its existing routes forward.
@@ -44,7 +43,6 @@ fn a_rewrite_publishes_maintenance_protocol_metadata() {
     }
     let checkpoint = fs::read(root.join("families/checkpoint.current")).unwrap();
     let header = &checkpoint[..CHECKPOINT_STREAM_HEADER_RECORD_BYTES];
-    assert!(PhysicalCheckpointSource::decode_c9_legacy_stream_header_record(header).is_err());
     assert!(
         PhysicalCheckpointSource::decode_stream_header_record(header)
             .unwrap()

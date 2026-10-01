@@ -1,8 +1,9 @@
 use sha2::Digest;
 use worth_store_physical_format::{
-    BlobRecordKind, PersistedInlineSegmentAllocation, PersistedPhysicalRecoveryBlobSemantic,
+    BlobRecordKind, PersistedDerivedDirectoryRetirement, PersistedInlineSegmentAllocation,
     PersistedPhysicalRecoveryFrame, PersistedPhysicalRecoveryManifest,
-    PersistedPhysicalRecoveryProjection, PersistedPhysicalRecoveryRootState,
+    PersistedPhysicalRecoveryOperation, PersistedPhysicalRecoveryProjection,
+    PersistedPhysicalRecoveryRootState,
 };
 
 use crate::physical_runtime::PreparedPhysicalRootProjection;
@@ -73,7 +74,7 @@ pub(super) fn recovery_projection(
                 .expect("the payload projection retains only governed recovery manifests")
         })
         .collect();
-    let blob_semantic = if let Some(basis) = derived_directory_basis {
+    let operation = if let Some(basis) = derived_directory_basis {
         let [bytes] = prepared_bytes else {
             unreachable!("classified directory append is singular")
         };
@@ -89,17 +90,36 @@ pub(super) fn recovery_projection(
                 .expect("successor generation"),
         )
         .expect("nonzero successor generation");
-        PersistedPhysicalRecoveryBlobSemantic::DerivedDirectory(
-            worth_store_physical_format::PersistedDerivedDirectoryRecordBinding::new_with_quarantine(
+        assert!(root.recovery_release_head_effect().is_none());
+        PersistedPhysicalRecoveryOperation::DerivedDirectory {
+            binding: worth_store_physical_format::PersistedDerivedDirectoryRecordBinding::new_with_quarantine(
                 binding,
                 basis.indexed_through,
                 basis.indexed_through_quarantine,
             ),
-        )
+            retirement: Some(
+                PersistedDerivedDirectoryRetirement::new(
+                    basis.expected_previous,
+                    root.recovery_dropped_record_identities().collect(),
+                )
+                .expect("classified directory retains its exact retired record set"),
+            ),
+        }
     } else {
         blob_semantic(blob_record_kind, prepared_bytes, root)
     };
-    let projection = PersistedPhysicalRecoveryProjection::new_with_blob_semantic(
+    assert!(
+        root.recovery_release_head_effect().is_none()
+            || matches!(
+                &operation,
+                PersistedPhysicalRecoveryOperation::RecordsDropped {
+                    head_effect: Some(_),
+                    ..
+                }
+            ),
+        "the pre-WAL head effect cannot be discarded by operation planning"
+    );
+    PersistedPhysicalRecoveryProjection::new_with_operation(
         root.source_root_generation(),
         root_state,
         root.recovery_record_identities().collect(),
@@ -107,22 +127,7 @@ pub(super) fn recovery_projection(
         root.recovery_placements().collect(),
         root.recovery_segment_updates().collect(),
         manifests,
-        blob_semantic,
+        operation,
     )
-    .expect("a WAL-bound physical mutation has one nonempty recovery projection");
-    let projection = match derived_directory_basis {
-        Some(basis) => projection
-            .with_derived_retirement(
-                basis.expected_previous,
-                root.recovery_dropped_record_identities().collect(),
-            )
-            .expect("classified directory retains its exact retired record set"),
-        None => projection,
-    };
-    match root.recovery_release_head_effect() {
-        Some(effect) => projection
-            .with_release_head_upsert(effect.clone())
-            .expect("the fenced pre-WAL head effect binds this exact V3 descriptor"),
-        None => projection,
-    }
+    .expect("a WAL-bound physical mutation has one complete recovery operation")
 }

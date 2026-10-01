@@ -198,7 +198,11 @@ pub(in crate::orchestration::planning::completion) fn verify_historical(
     else {
         return Err(context.redo_block(basis.planning_counters(), None));
     };
-    if let Some(retirement) = projection.materialization().derived_retirement() {
+    if let worth_store_physical_format::PersistedPhysicalRecoveryOperation::DerivedDirectory {
+        retirement: Some(retirement),
+        ..
+    } = projection.materialization().operation()
+    {
         removed.extend_from_slice(retirement.dropped_records());
     }
     let projected = projection.materialization().placements().to_vec();

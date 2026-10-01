@@ -10,7 +10,7 @@ use worth_store_physical_format::{
     encode_data_frame_page_lsn, encode_extent_chunk, BlobAbandonmentReasonV1, BlobRecordV1,
     BlobSessionAbandonedV1, DurableFrameKind, DurablePhysicalRootManifest, DurableRootSelector,
     PersistedBlobSemanticRecordBinding, PersistedPhysicalDataFrameSubject,
-    PersistedPhysicalRecoveryBlobSemantic, PersistedPhysicalRecoveryFrame,
+    PersistedPhysicalRecoveryFrame, PersistedPhysicalRecoveryOperation,
     PersistedPhysicalRecoveryProjection, PhysicalRecordFormatDeclaration,
     PhysicalRecoveryProjectionDecodeLimits, RecordArtifactFile,
 };
@@ -114,8 +114,7 @@ fn rewrite_expiry_frame(
         },
     )
     .ok()?;
-    let PersistedPhysicalRecoveryBlobSemantic::SessionAbandoned(semantic) =
-        projection.blob_semantic()
+    let PersistedPhysicalRecoveryOperation::SessionAbandoned(semantic) = projection.operation()
     else {
         return None;
     };
@@ -173,7 +172,7 @@ fn rewrite_expiry_frame(
         semantic.candidate_root_generation(),
     )
     .unwrap();
-    let replacement_projection = PersistedPhysicalRecoveryProjection::new_with_blob_semantic(
+    let replacement_projection = PersistedPhysicalRecoveryProjection::new_with_operation(
         projection.source_root_generation(),
         projection.root_state().clone(),
         projection.record_identities().to_vec(),
@@ -181,7 +180,7 @@ fn rewrite_expiry_frame(
         projection.placements().to_vec(),
         projection.segment_updates().to_vec(),
         projection.manifests().to_vec(),
-        PersistedPhysicalRecoveryBlobSemantic::SessionAbandoned(replacement_binding),
+        PersistedPhysicalRecoveryOperation::SessionAbandoned(replacement_binding),
     )
     .expect("same production coordinates admit the resealed frame");
     let mut changed_redo = Vec::with_capacity(redo.len());

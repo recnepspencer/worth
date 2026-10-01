@@ -34,20 +34,30 @@ pub(super) fn retained_bytes(
     if let Some(fresh) = &reopened.reopened {
         bytes = bytes.checked_add(fresh.owned_heap_bytes()?)?;
     }
-    if let Some(claim) = &state.verified_selected_checkpoint_custody {
-        bytes = bytes.checked_add(claim.owned_heap_bytes()?)?;
-    }
-    if let Some(claim) = &state.verified_selected_head_custody_v2 {
-        bytes = bytes.checked_add(claim.owned_heap_bytes()?)?;
-    }
-    if let Some(claim) = &state.verified_pending_wal_release_custody {
-        bytes = bytes.checked_add(claim.owned_heap_bytes()?)?;
-    }
-    if let Some(claim) = &state.verified_ordered_historical_release_custody {
-        bytes = bytes.checked_add(claim.owned_heap_bytes()?)?;
-    }
-    if let Some(heads) = &state.verified_effective_release_heads_v14 {
-        bytes = bytes.checked_add(heads.owned_heap_bytes()?)?;
+    match &state.custody {
+        crate::progression::CustodyState::NoCheckpoint
+        | crate::progression::CustodyState::NoRelease(_) => {}
+        crate::progression::CustodyState::SourceHeads(claim) => {
+            bytes = bytes.checked_add(claim.owned_heap_bytes()?)?;
+        }
+        crate::progression::CustodyState::Pending {
+            claim,
+            replay,
+            effective_heads,
+        } => {
+            bytes = bytes
+                .checked_add(claim.owned_heap_bytes()?)?
+                .checked_add(replay.owned_heap_bytes()?)?
+                .checked_add(effective_heads.owned_heap_bytes()?)?;
+        }
+        crate::progression::CustodyState::OrderedCompleted {
+            claim,
+            effective_heads,
+        } => {
+            bytes = bytes
+                .checked_add(claim.owned_heap_bytes()?)?
+                .checked_add(effective_heads.owned_heap_bytes()?)?;
+        }
     }
     bytes = bytes.checked_add(shared_checkpoint_bytes(reopened)?)?;
     bytes.checked_add(shared_history_bytes(reopened)?)
@@ -72,50 +82,42 @@ fn vector_bytes<T>(values: &Vec<T>) -> Option<u64> {
 
 fn shared_checkpoint_bytes(reopened: &ReopenedPhysicalRecovery) -> Option<u64> {
     let state = &reopened.state;
-    let checkpoints: [Option<&VerifiedCheckpointStream>; 11] = [
+    let pending = match &state.custody {
+        crate::progression::CustodyState::Pending { claim, .. } => Some(claim),
+        _ => None,
+    };
+    let completed = match &state.custody {
+        crate::progression::CustodyState::OrderedCompleted { claim, .. } => Some(claim),
+        _ => None,
+    };
+    let source_heads = match &state.custody {
+        crate::progression::CustodyState::SourceHeads(claim) => Some(claim),
+        _ => None,
+    };
+    let no_release = match &state.custody {
+        crate::progression::CustodyState::NoRelease(claim) => Some(claim),
+        _ => None,
+    };
+    let checkpoints: [Option<&VerifiedCheckpointStream>; 10] = [
         state.selection.checkpoint().map(|base| base.checkpoint()),
-        state
-            .verified_selected_checkpoint_custody
-            .as_ref()
-            .map(|claim| claim.checkpoint()),
-        state
-            .verified_selected_head_custody_v2
-            .as_ref()
-            .map(|claim| claim.checkpoint()),
-        state
-            .verified_selected_no_release_custody
-            .as_ref()
-            .map(|claim| claim.checkpoint()),
-        state
-            .verified_pending_wal_release_custody
-            .as_ref()
-            .map(|claim| claim.checkpoint()),
-        state
-            .verified_ordered_historical_release_custody
-            .as_ref()
-            .map(|claim| claim.checkpoint()),
+        source_heads.map(|claim| claim.checkpoint()),
+        no_release.map(|claim| claim.checkpoint()),
+        pending.map(|claim| claim.checkpoint()),
+        completed.map(|claim| claim.checkpoint()),
         state
             .verified_selected_tier_custody
             .as_ref()
             .map(|claim| claim.checkpoint()),
-        state
-            .verified_pending_wal_release_custody
-            .as_ref()
+        pending
             .and_then(|claim| claim.selected_release())
             .map(|base| base.checkpoint()),
-        state
-            .verified_pending_wal_release_custody
-            .as_ref()
+        pending
             .and_then(|claim| claim.addressed_release_base())
             .map(|base| base.checkpoint()),
-        state
-            .verified_pending_wal_release_custody
-            .as_ref()
+        pending
             .and_then(|claim| claim.selected_head_v2())
             .map(|base| base.checkpoint()),
-        state
-            .verified_ordered_historical_release_custody
-            .as_ref()
+        completed
             .and_then(|claim| claim.selected_head_v2())
             .map(|base| base.checkpoint()),
     ];
@@ -142,14 +144,16 @@ fn shared_checkpoint_bytes(reopened: &ReopenedPhysicalRecovery) -> Option<u64> {
 fn shared_history_bytes(reopened: &ReopenedPhysicalRecovery) -> Option<u64> {
     let state = &reopened.state;
     let histories: [Option<&VerifiedOrderedRootHistory>; 2] = [
-        state
-            .verified_pending_wal_release_custody
-            .as_ref()
-            .and_then(|claim| claim.ordered_history()),
-        state
-            .verified_ordered_historical_release_custody
-            .as_ref()
-            .map(|claim| claim.history()),
+        match &state.custody {
+            crate::progression::CustodyState::Pending { claim, .. } => claim.ordered_history(),
+            _ => None,
+        },
+        match &state.custody {
+            crate::progression::CustodyState::OrderedCompleted { claim, .. } => {
+                Some(claim.history())
+            }
+            _ => None,
+        },
     ];
     let mut bytes = 0_u64;
     for (index, history) in histories.into_iter().enumerate() {

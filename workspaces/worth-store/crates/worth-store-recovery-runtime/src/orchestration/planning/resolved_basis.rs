@@ -55,20 +55,7 @@ pub(super) struct ResolvedPlanningBasis {
         worth_store_physical_format::DurablePhysicalRootManifest,
         worth_store_physical_format::DurableFreeSpaceManifestHeader,
     )>,
-    pub(super) verified_selected_checkpoint_custody:
-        Option<worth_store_recovery_physics::VerifiedSelectedCheckpointCustody>,
-    pub(super) verified_selected_head_custody_v2:
-        Option<worth_store_recovery_physics::VerifiedSelectedReleaseHeadCustodyV2>,
-    pub(super) verified_selected_no_release_custody:
-        Option<worth_store_recovery_physics::VerifiedSelectedNoReleaseCustody>,
-    pub(super) verified_pending_wal_release_custody:
-        Option<worth_store_recovery_physics::VerifiedPendingWalReleaseCustody>,
-    pub(super) verified_pending_release_head_replay:
-        Option<worth_store_recovery_physics::VerifiedSelectedReleaseHeadReplayV14>,
-    pub(super) verified_effective_release_heads_v14:
-        Option<worth_store_recovery_physics::VerifiedEffectiveReleaseHeadRosterV14>,
-    pub(super) verified_ordered_historical_release_custody:
-        Option<worth_store_recovery_physics::VerifiedOrderedHistoricalReleaseCustody>,
+    pub(super) custody: crate::progression::PlanningCustody,
     pub(super) validated_manifest_cleanup:
         Option<crate::orchestration::ValidatedManifestResidueCleanup>,
 }
@@ -311,13 +298,7 @@ pub(super) fn resolve(
             verified_historical_release_operations: Default::default(),
             historical_consumed: None,
             verified_historical_release_sources: Default::default(),
-            verified_selected_checkpoint_custody: None,
-            verified_selected_head_custody_v2: None,
-            verified_selected_no_release_custody: None,
-            verified_pending_wal_release_custody: None,
-            verified_pending_release_head_replay: None,
-            verified_effective_release_heads_v14: None,
-            verified_ordered_historical_release_custody: None,
+            custody: crate::progression::PlanningCustody::Unresolved,
             validated_manifest_cleanup: None,
         },
     ))

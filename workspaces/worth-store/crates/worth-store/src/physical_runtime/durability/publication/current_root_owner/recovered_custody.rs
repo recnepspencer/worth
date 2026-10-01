@@ -20,21 +20,17 @@ impl PreparedRecoveredCheckpointCustody {
         resident: &mut StoreRejoinResidentLedger,
     ) -> Result<Self, release_capacity::RecoveredReleaseLedgerDenial> {
         use release_capacity::RecoveredReleaseLedgerDenial as Denial;
-        let (released, head_v2, no_release, pending, effective, historical, tier) =
+        let (head_v2, no_release, pending, effective, historical, tier) =
             source.seal().verified_basis();
-        let selected_root = released
+        let selected_root = head_v2
             .map(|claim| claim.selected_root())
-            .or_else(|| head_v2.map(|claim| claim.selected_root()))
             .or_else(|| no_release.map(|claim| claim.selected_root()))
             .or_else(|| pending.and_then(|claim| claim.published_root()))
             .or_else(|| historical.map(|claim| claim.selected_root()))
             .ok_or(Denial::SelectedFactMismatch)?
             .clone();
-        let release_ledger = match (released, head_v2, no_release, pending, historical) {
-            (Some(verified), None, None, None, None) => {
-                release_capacity::ReleaseLedgerState::from_verified(verified)
-            }
-            (None, Some(verified), None, None, None) => {
+        let release_ledger = match (head_v2, no_release, pending, historical) {
+            (Some(verified), None, None, None) => {
                 release_capacity::ReleaseLedgerState::from_verified_v2_source(
                     verified.accumulator_v2(),
                     verified
@@ -44,17 +40,17 @@ impl PreparedRecoveredCheckpointCustody {
                     resident,
                 )?
             }
-            (None, None, Some(verified), None, None) => {
+            (None, Some(verified), None, None) => {
                 release_capacity::ReleaseLedgerState::from_verified_no_release(verified)
             }
-            (None, None, None, Some(verified), None) => {
+            (None, None, Some(verified), None) => {
                 release_capacity::ReleaseLedgerState::from_verified_pending_wal(
                     verified,
                     effective.ok_or(Denial::SelectedFactMismatch)?,
                     resident,
                 )?
             }
-            (None, None, None, None, Some(verified)) => {
+            (None, None, None, Some(verified)) => {
                 release_capacity::ReleaseLedgerState::from_verified_ordered_historical(
                     verified,
                     effective.ok_or(Denial::SelectedFactMismatch)?,
@@ -111,7 +107,7 @@ impl PhysicalCurrentRootOwner {
         } = recovered;
         let mut state = self.lock_publication_state();
         assert_eq!(selected_root, state.current_root);
-        if let Some(tier) = source.seal().verified_basis().6 {
+        if let Some(tier) = source.seal().verified_basis().5 {
             assert_eq!(tier.free_header(), &state.free_space);
         }
         // Drop the old proof backing only after its conversion has completed.

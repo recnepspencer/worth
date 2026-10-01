@@ -12,7 +12,6 @@ members = [
     "crates/worth-store-buffer-pool",
     "crates/worth-store-certification",
     "crates/worth-store-claim-boundaries",
-    "crates/worth-store-compatibility",
     "crates/worth-store-contracts",
     "crates/worth-store-extensions",
     "crates/worth-store-formal-models",
@@ -63,7 +62,6 @@ worth-store-budgets = { path = "crates/worth-store-budgets" }
 worth-store-buffer-pool = { path = "crates/worth-store-buffer-pool" }
 worth-store-certification = { path = "crates/worth-store-certification" }
 worth-store-claim-boundaries = { path = "crates/worth-store-claim-boundaries" }
-worth-store-compatibility = { path = "crates/worth-store-compatibility" }
 worth-store-contracts = { path = "crates/worth-store-contracts" }
 worth-store-extensions = { path = "crates/worth-store-extensions" }
 worth-store-formal-models = { path = "crates/worth-store-formal-models" }

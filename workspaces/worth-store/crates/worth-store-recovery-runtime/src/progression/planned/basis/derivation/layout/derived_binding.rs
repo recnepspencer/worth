@@ -2,7 +2,7 @@
 
 use super::*;
 use worth_store_physical_format::{
-    PersistedPhysicalRecoveryBlobSemantic as Semantic, PersistedRecordIdentity,
+    PersistedPhysicalRecoveryOperation as Semantic, PersistedRecordIdentity,
 };
 
 pub(super) fn projected_derived_binding(
@@ -22,7 +22,7 @@ pub(super) fn projected_derived_binding(
     let mut directory = selected.derived_family_directory();
     let mut quarantine = selected.latest_blob_quarantine();
     for projection in &pending.projections {
-        match projection.materialization().blob_semantic() {
+        match projection.materialization().operation() {
             Semantic::GenerationPublished(binding) => {
                 if binding.candidate_root_generation() != pending.staging_generation {
                     return Err(ExecutionBasisDenial::Invalid);
@@ -36,8 +36,11 @@ pub(super) fn projected_derived_binding(
                     .ok_or(ExecutionBasisDenial::Invalid)?,
                 );
             }
-            Semantic::DerivedDirectory(binding) => {
-                if let Some(retirement) = projection.materialization().derived_retirement() {
+            Semantic::DerivedDirectory {
+                binding,
+                retirement,
+            } => {
+                if let Some(retirement) = retirement {
                     if retirement.expected_previous() != directory {
                         return Err(ExecutionBasisDenial::Invalid);
                     }

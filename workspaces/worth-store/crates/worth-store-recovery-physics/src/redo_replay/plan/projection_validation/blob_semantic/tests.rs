@@ -49,7 +49,10 @@ fn released_drop_replay_requires_exact_selected_descriptor_binding() {
         PersistedBlobSemanticRecordBinding::new(record, Sha256::digest(&bytes).into(), 12).unwrap();
     let selected = projection(
         &bytes,
-        PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(binding),
+        PersistedPhysicalRecoveryOperation::RecordsDropped {
+            binding,
+            head_effect: None,
+        },
     );
     assert_eq!(
         validate_blob_semantic(&bytes, record, [1; 16], &selected),
@@ -60,7 +63,7 @@ fn released_drop_replay_requires_exact_selected_descriptor_binding() {
             &bytes,
             record,
             [1; 16],
-            &projection(&bytes, PersistedPhysicalRecoveryBlobSemantic::None),
+            &projection(&bytes, PersistedPhysicalRecoveryOperation::None),
         ),
         Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection),
     );
@@ -72,7 +75,10 @@ fn released_drop_replay_requires_exact_selected_descriptor_binding() {
             [1; 16],
             &projection(
                 &bytes,
-                PersistedPhysicalRecoveryBlobSemantic::RecordsDropped(wrong)
+                PersistedPhysicalRecoveryOperation::RecordsDropped {
+                    binding: wrong,
+                    head_effect: None,
+                }
             ),
         ),
         Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection),
@@ -80,7 +86,7 @@ fn released_drop_replay_requires_exact_selected_descriptor_binding() {
 }
 
 #[test]
-fn frontier_replay_requires_exact_typed_v6_binding() {
+fn frontier_replay_requires_exact_typed_operation_binding() {
     let record = PersistedRecordIdentity::new([7; 16], 9).unwrap();
     let frontier = BlobSessionFrontierV1::new(
         [1; 16],
@@ -98,20 +104,20 @@ fn frontier_replay_requires_exact_typed_v6_binding() {
         PersistedBlobSemanticRecordBinding::new(record, Sha256::digest(&bytes).into(), 12).unwrap();
     let selected = projection(
         &bytes,
-        PersistedPhysicalRecoveryBlobSemantic::SessionFrontier(binding),
+        PersistedPhysicalRecoveryOperation::SessionFrontier(binding),
     );
     assert_eq!(
         validate_blob_semantic(&bytes, record, [1; 16], &selected),
         Ok(())
     );
-    let omitted = projection(&bytes, PersistedPhysicalRecoveryBlobSemantic::None);
+    let omitted = projection(&bytes, PersistedPhysicalRecoveryOperation::None);
     assert_eq!(
         validate_blob_semantic(&bytes, record, [1; 16], &omitted),
         Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)
     );
     let mislabeled = projection(
         &bytes,
-        PersistedPhysicalRecoveryBlobSemantic::GenerationPublished(binding),
+        PersistedPhysicalRecoveryOperation::GenerationPublished(binding),
     );
     assert_eq!(
         validate_blob_semantic(&bytes, record, [1; 16], &mislabeled),
@@ -120,7 +126,7 @@ fn frontier_replay_requires_exact_typed_v6_binding() {
 }
 
 #[test]
-fn abandonment_replay_requires_exact_typed_v6_binding() {
+fn abandonment_replay_requires_exact_typed_operation_binding() {
     let record = PersistedRecordIdentity::new([7; 16], 9).unwrap();
     let abandoned = BlobSessionAbandonedV1::new(
         [1; 16],
@@ -135,7 +141,7 @@ fn abandonment_replay_requires_exact_typed_v6_binding() {
         PersistedBlobSemanticRecordBinding::new(record, Sha256::digest(&bytes).into(), 12).unwrap();
     let selected = projection(
         &bytes,
-        PersistedPhysicalRecoveryBlobSemantic::SessionAbandoned(binding),
+        PersistedPhysicalRecoveryOperation::SessionAbandoned(binding),
     );
     assert_eq!(
         validate_blob_semantic(&bytes, record, [1; 16], &selected),
@@ -162,14 +168,14 @@ fn abandonment_replay_requires_exact_typed_v6_binding() {
             [1; 16],
             &projection(
                 &expired,
-                PersistedPhysicalRecoveryBlobSemantic::SessionAbandoned(expiry_binding)
+                PersistedPhysicalRecoveryOperation::SessionAbandoned(expiry_binding)
             )
         ),
         Ok(())
     );
     for other in [
-        PersistedPhysicalRecoveryBlobSemantic::None,
-        PersistedPhysicalRecoveryBlobSemantic::SessionFrontier(binding),
+        PersistedPhysicalRecoveryOperation::None,
+        PersistedPhysicalRecoveryOperation::SessionFrontier(binding),
     ] {
         assert_eq!(
             validate_blob_semantic(&bytes, record, [1; 16], &projection(&bytes, other)),
@@ -188,7 +194,7 @@ fn abandonment_replay_requires_exact_typed_v6_binding() {
             [1; 16],
             &projection(
                 &bytes,
-                PersistedPhysicalRecoveryBlobSemantic::SessionAbandoned(wrong_digest)
+                PersistedPhysicalRecoveryOperation::SessionAbandoned(wrong_digest)
             )
         ),
         Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)
@@ -197,7 +203,7 @@ fn abandonment_replay_requires_exact_typed_v6_binding() {
 
 fn projection(
     bytes: &[u8],
-    semantic: PersistedPhysicalRecoveryBlobSemantic,
+    semantic: PersistedPhysicalRecoveryOperation,
 ) -> PersistedPhysicalRecoveryProjection {
     let record = PersistedRecordIdentity::new([7; 16], 9).unwrap();
     let extent = PhysicalGenerationAuthority::for_canonical_physical_format()
@@ -221,7 +227,7 @@ fn projection(
         bytes,
     )
     .unwrap();
-    PersistedPhysicalRecoveryProjection::new_with_blob_semantic(
+    PersistedPhysicalRecoveryProjection::new_with_operation(
         11,
         PersistedPhysicalRecoveryRootState::new(4096, 1, 32, vec![], None, None).unwrap(),
         vec![record],
@@ -235,7 +241,7 @@ fn projection(
 }
 
 #[test]
-fn directory_replay_requires_typed_v8_and_exact_payload_source() {
+fn directory_replay_requires_typed_operation_and_exact_payload_source() {
     let record = PersistedRecordIdentity::new([7; 16], 9).unwrap();
     let source = IndexedThroughBlobPublication::new(11, record, [4; 32]).unwrap();
     let bytes = DerivedFamilyRootDirectoryV1::new(vec![])
@@ -246,15 +252,16 @@ fn directory_replay_requires_typed_v8_and_exact_payload_source() {
         PersistedBlobSemanticRecordBinding::new(record, Sha256::digest(&bytes).into(), 12).unwrap();
     let selected = projection(
         &bytes,
-        PersistedPhysicalRecoveryBlobSemantic::DerivedDirectory(
-            PersistedDerivedDirectoryRecordBinding::new(binding, Some(source)),
-        ),
+        PersistedPhysicalRecoveryOperation::DerivedDirectory {
+            binding: PersistedDerivedDirectoryRecordBinding::new(binding, Some(source)),
+            retirement: None,
+        },
     );
     assert_eq!(
         validate_blob_semantic(&bytes, record, [1; 16], &selected),
         Ok(())
     );
-    let omitted = projection(&bytes, PersistedPhysicalRecoveryBlobSemantic::None);
+    let omitted = projection(&bytes, PersistedPhysicalRecoveryOperation::None);
     assert_eq!(
         validate_blob_semantic(&bytes, record, [1; 16], &omitted),
         Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection),
@@ -262,9 +269,10 @@ fn directory_replay_requires_typed_v8_and_exact_payload_source() {
     let wrong_source = IndexedThroughBlobPublication::new(11, record, [5; 32]).unwrap();
     let mislabeled = projection(
         &bytes,
-        PersistedPhysicalRecoveryBlobSemantic::DerivedDirectory(
-            PersistedDerivedDirectoryRecordBinding::new(binding, Some(wrong_source)),
-        ),
+        PersistedPhysicalRecoveryOperation::DerivedDirectory {
+            binding: PersistedDerivedDirectoryRecordBinding::new(binding, Some(wrong_source)),
+            retirement: None,
+        },
     );
     assert_eq!(
         validate_blob_semantic(&bytes, record, [1; 16], &mislabeled),
@@ -273,7 +281,7 @@ fn directory_replay_requires_typed_v8_and_exact_payload_source() {
 }
 
 #[test]
-fn v12_directory_replay_rejects_hash_valid_mismatched_quarantine_marker() {
+fn directory_replay_rejects_hash_valid_mismatched_quarantine_marker() {
     let record = PersistedRecordIdentity::new([7; 16], 9).unwrap();
     let marker = PersistedRecordIdentity::new([7; 16], 10).unwrap();
     let bytes = DerivedFamilyRootDirectoryV1::new(vec![])
@@ -284,13 +292,14 @@ fn v12_directory_replay_rejects_hash_valid_mismatched_quarantine_marker() {
         PersistedBlobSemanticRecordBinding::new(record, Sha256::digest(&bytes).into(), 12).unwrap();
     let correct = projection(
         &bytes,
-        PersistedPhysicalRecoveryBlobSemantic::DerivedDirectory(
-            PersistedDerivedDirectoryRecordBinding::new_with_quarantine(
+        PersistedPhysicalRecoveryOperation::DerivedDirectory {
+            binding: PersistedDerivedDirectoryRecordBinding::new_with_quarantine(
                 binding,
                 None,
                 Some(marker),
             ),
-        ),
+            retirement: None,
+        },
     );
     assert_eq!(
         validate_blob_semantic(&bytes, record, [1; 16], &correct),
@@ -298,9 +307,12 @@ fn v12_directory_replay_rejects_hash_valid_mismatched_quarantine_marker() {
     );
     let mismatched = projection(
         &bytes,
-        PersistedPhysicalRecoveryBlobSemantic::DerivedDirectory(
-            PersistedDerivedDirectoryRecordBinding::new_with_quarantine(binding, None, None),
-        ),
+        PersistedPhysicalRecoveryOperation::DerivedDirectory {
+            binding: PersistedDerivedDirectoryRecordBinding::new_with_quarantine(
+                binding, None, None,
+            ),
+            retirement: None,
+        },
     );
     assert_eq!(
         validate_blob_semantic(&bytes, record, [1; 16], &mismatched),
@@ -316,7 +328,7 @@ fn declaration_replay_requires_exact_record_payload_and_successor_binding() {
         PersistedBlobSemanticRecordBinding::new(record, Sha256::digest(&bytes).into(), 12).unwrap();
     let selected = projection(
         &bytes,
-        PersistedPhysicalRecoveryBlobSemantic::SessionDeclared(binding),
+        PersistedPhysicalRecoveryOperation::SessionDeclared(binding),
     );
     assert_eq!(
         validate_blob_semantic(&bytes, record, [1; 16], &selected),
@@ -344,13 +356,13 @@ fn declaration_replay_requires_exact_record_payload_and_successor_binding() {
     let wrong_digest = PersistedBlobSemanticRecordBinding::new(record, [9; 32], 12).unwrap();
     let wrong = projection(
         &bytes,
-        PersistedPhysicalRecoveryBlobSemantic::SessionDeclared(wrong_digest),
+        PersistedPhysicalRecoveryOperation::SessionDeclared(wrong_digest),
     );
     assert_eq!(
         validate_blob_semantic(&bytes, record, [1; 16], &wrong),
         Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection),
     );
-    let omitted = projection(&bytes, PersistedPhysicalRecoveryBlobSemantic::None);
+    let omitted = projection(&bytes, PersistedPhysicalRecoveryOperation::None);
     assert_eq!(
         validate_blob_semantic(&bytes, record, [1; 16], &omitted),
         Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection),

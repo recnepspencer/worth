@@ -1446,14 +1446,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "worth-store-compatibility"
-version = "0.1.0"
-dependencies = [
- "worth-store-authority",
- "worth-store-contracts",
-]
-
-[[package]]
 name = "worth-store-contracts"
 version = "0.1.0"
 dependencies = [
@@ -1522,7 +1514,6 @@ dependencies = [
  "worth-store-authority",
  "worth-store-blob-chunks",
  "worth-store-budgets",
- "worth-store-compatibility",
  "worth-store-contracts",
  "worth-store-io-scheduler",
  "worth-store-lsm-authority",
@@ -1789,6 +1780,7 @@ dependencies = [
  "worth-store",
  "worth-store-authority",
  "worth-store-blob-chunks",
+ "worth-store-contracts",
  "worth-store-offline-integrity-observer",
  "worth-store-offline-verifier",
  "worth-store-physical-format",
@@ -1855,7 +1847,6 @@ dependencies = [
 name = "worth-store-subscription-support"
 version = "0.1.0"
 dependencies = [
- "worth-store-compatibility",
  "worth-store-contracts",
  "worth-store-maintenance",
  "worth-store-replication",
@@ -1878,7 +1869,6 @@ dependencies = [
  "worth-store-authority",
  "worth-store-blob-chunks",
  "worth-store-budgets",
- "worth-store-compatibility",
  "worth-store-contracts",
  "worth-store-io-scheduler",
  "worth-store-layout-indexes",

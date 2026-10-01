@@ -48,7 +48,7 @@ pub(super) fn authenticate(
     let selected = context.selection.root().selected().manifest();
     let selected_sha256: [u8; 32] =
         Sha256::digest(selected.encode(context.authority.record_format)).into();
-    let Some(custody) = basis.verified_selected_head_custody_v2.as_ref() else {
+    let crate::progression::PlanningCustody::SourceHeads(custody) = &basis.custody else {
         return Err(context.redo_block(basis.planning_counters(), None));
     };
     let Some(key) = ReleaseCustodyHeadKeyV1::new(source.object(), source.generation()) else {

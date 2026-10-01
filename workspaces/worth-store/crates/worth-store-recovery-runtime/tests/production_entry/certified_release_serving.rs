@@ -22,13 +22,15 @@ use tamper::{
 };
 #[path = "certified_release_serving/request.rs"]
 mod recovery_request;
-pub(super) use recovery_request::{request, request_with_memory};
+pub(super) use recovery_request::{request, request_with_memory, request_with_memory_and_format};
 #[path = "certified_release_serving/plain_serving.rs"]
 mod plain_serving;
-pub(super) use plain_serving::assert_plain_serving_checkpoint_unavailable;
+pub(super) use plain_serving::assert_plain_serving_denied;
 #[path = "certified_release_serving/empty_no_release.rs"]
 mod empty_no_release;
 pub(super) use empty_no_release::run_empty_no_release;
+#[path = "certified_release_serving/head_diagnostics.rs"]
+mod head_diagnostics;
 #[path = "certified_release_serving/ledger_preparation.rs"]
 mod ledger_preparation;
 #[path = "certified_release_serving/memory_budget.rs"]
@@ -37,6 +39,8 @@ mod memory_budget;
 mod original_admission;
 #[path = "certified_release_serving/pending_wal_rejoin.rs"]
 mod pending_wal_rejoin;
+#[path = "certified_release_serving/release_capacity_budget.rs"]
+mod release_capacity_budget;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Mutation {

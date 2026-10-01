@@ -41,7 +41,11 @@ pub(super) fn assemble(
     // closure, but it cannot invent the record that a derived retirement drops.
     for projection in &pending.projections {
         let recovery = projection.materialization();
-        if let Some(retirement) = recovery.derived_retirement() {
+        if let worth_store_physical_format::PersistedPhysicalRecoveryOperation::DerivedDirectory {
+            retirement: Some(retirement),
+            ..
+        } = recovery.operation()
+        {
             if retirement.dropped_records().iter().any(|record| {
                 !selection
                     .page_facts()
@@ -125,17 +129,24 @@ pub(super) fn assemble(
         .iter()
         .try_fold(verified_drops.len(), |count, projection| {
             count.checked_add(
-                projection
-                    .materialization()
-                    .derived_retirement()
-                    .map_or(0, |retirement| retirement.dropped_records().len()),
+                match projection.materialization().operation() {
+                    worth_store_physical_format::PersistedPhysicalRecoveryOperation::DerivedDirectory {
+                        retirement: Some(retirement),
+                        ..
+                    } => retirement.dropped_records().len(),
+                    _ => 0,
+                },
             )
         })
         .ok_or(ExecutionBasisDenial::Invalid)?;
     let mut all_drops = allowance.reserve(count)?;
     all_drops.extend_from_slice(verified_drops);
     for projection in &pending.projections {
-        if let Some(retirement) = projection.materialization().derived_retirement() {
+        if let worth_store_physical_format::PersistedPhysicalRecoveryOperation::DerivedDirectory {
+            retirement: Some(retirement),
+            ..
+        } = projection.materialization().operation()
+        {
             all_drops.extend_from_slice(retirement.dropped_records());
         }
     }

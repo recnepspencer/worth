@@ -4,9 +4,8 @@ use worth_store_physical_format::{
 };
 use worth_store_recovery_physics::{
     VerifiedEffectiveReleaseHeadRosterV14, VerifiedOrderedHistoricalReleaseCustody,
-    VerifiedPendingWalReleaseCustody, VerifiedSelectedCheckpointCustody,
-    VerifiedSelectedNoReleaseCustody, VerifiedSelectedReleaseHeadCustodyV2,
-    VerifiedSelectedTierEpochCustody,
+    VerifiedPendingWalReleaseCustody, VerifiedSelectedNoReleaseCustody,
+    VerifiedSelectedReleaseHeadCustodyV2, VerifiedSelectedTierEpochCustody,
 };
 
 use crate::physical_runtime::{CompletedPhysicalRecoveryFreshReopen, RuntimeIdentity};
@@ -19,7 +18,6 @@ pub struct RecoveredPhysicalRuntimeCore {
     pub(super) root: DurablePhysicalRootManifest,
     pub(super) media: AdmittedRecoveryFilesystemMedia,
     pub(super) reopen: CompletedPhysicalRecoveryFreshReopen,
-    pub(super) checkpoint_custody: Option<VerifiedSelectedCheckpointCustody>,
     pub(super) head_v2_custody: Option<VerifiedSelectedReleaseHeadCustodyV2>,
     pub(super) no_release_custody: Option<VerifiedSelectedNoReleaseCustody>,
     pub(super) pending_wal_release_custody: Option<VerifiedPendingWalReleaseCustody>,
@@ -142,7 +140,6 @@ impl RecoveredPhysicalRuntimeCore {
             root,
             media,
             reopen,
-            checkpoint_custody,
             head_v2_custody,
             no_release_custody,
             pending_wal_release_custody,
@@ -155,33 +152,23 @@ impl RecoveredPhysicalRuntimeCore {
         } = self;
         drop(media);
         drop(reopen);
-        match (checkpoint_custody, head_v2_custody, no_release_custody, pending_wal_release_custody, historical_release_custody, tier_custody, effective_release_heads) {
-            (Some(released), None, None, None, None, None, None) => Some(
-                crate::physical_runtime::RecoveredPhysicalCheckpointCustody::from_verified(
-                    store, recovery_allocation, root, released, selected_wal?, selected_controls?,
-                ),
-            ),
-            (Some(released), None, None, None, None, Some(tier), None) => Some(
-                crate::physical_runtime::RecoveredPhysicalCheckpointCustody::from_verified_tier_and_release(
-                    store, recovery_allocation, root, released, tier, selected_wal?, selected_controls?,
-                ),
-            ),
-            (None, None, Some(no_release), None, None, tier, None) => Some(
+        match (head_v2_custody, no_release_custody, pending_wal_release_custody, historical_release_custody, tier_custody, effective_release_heads) {
+            (None, Some(no_release), None, None, tier, None) => Some(
                 crate::physical_runtime::RecoveredPhysicalCheckpointCustody::from_verified_no_release(
                     store, recovery_allocation, root, no_release, tier, selected_wal?, selected_controls?,
                 ),
             ),
-            (None, None, None, Some(pending), None, tier, Some(effective)) => Some(
+            (None, None, Some(pending), None, tier, Some(effective)) => Some(
                 crate::physical_runtime::RecoveredPhysicalCheckpointCustody::from_verified_pending_wal_release(
                     store, recovery_allocation, root, pending, effective, tier, selected_wal?, selected_controls?,
                 ),
             ),
-            (None, None, None, None, Some(historical), tier, Some(effective)) => Some(
+            (None, None, None, Some(historical), tier, Some(effective)) => Some(
                 crate::physical_runtime::RecoveredPhysicalCheckpointCustody::from_verified_ordered_historical_release(
                     store, recovery_allocation, root, historical, effective, tier, selected_wal?, selected_controls?,
                 ),
             ),
-            (None, Some(head_v2), None, None, None, tier, None) => Some(
+            (Some(head_v2), None, None, None, tier, None) => Some(
                 crate::physical_runtime::RecoveredPhysicalCheckpointCustody::from_verified_head_v2(
                     store, recovery_allocation, root, head_v2, tier, selected_wal?, selected_controls?,
                 ),

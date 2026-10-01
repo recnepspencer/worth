@@ -6,10 +6,13 @@ pub(super) fn root_matches(
     projection: &PersistedPhysicalRecoveryProjection,
 ) -> bool {
     let state = projection.root_state();
-    let dropped = projection
-        .derived_retirement()
-        .map(|value| value.dropped_records())
-        .unwrap_or_default();
+    let dropped = match projection.operation() {
+        Semantic::DerivedDirectory {
+            retirement: Some(retirement),
+            ..
+        } => retirement.dropped_records(),
+        _ => &[],
+    };
     let removed = |record: PersistedRecordIdentity| dropped.binary_search(&record).is_ok();
     let mut latest = source
         .root
@@ -25,7 +28,7 @@ pub(super) fn root_matches(
         .root
         .latest_blob_quarantine()
         .filter(|value| !removed(*value));
-    match projection.blob_semantic() {
+    match projection.operation() {
         Semantic::GenerationPublished(binding) => {
             latest = IndexedThroughBlobPublication::new(
                 result.root.generation(),
@@ -33,8 +36,11 @@ pub(super) fn root_matches(
                 binding.record_payload_sha256(),
             );
         }
-        Semantic::DerivedDirectory(binding) => {
-            if projection.derived_retirement().is_some_and(|retirement| {
+        Semantic::DerivedDirectory {
+            binding,
+            retirement,
+        } => {
+            if retirement.as_ref().is_some_and(|retirement| {
                 retirement.expected_previous() != source.root.derived_family_directory()
             }) || binding.indexed_through() != latest
                 || binding
@@ -71,8 +77,7 @@ pub(super) fn root_matches(
         )
     };
     result.root.tree_identity() == source.root.tree_identity()
-        && result.root.release_custody_head_root()
-            == source.root.release_custody_head_root()
+        && result.root.release_custody_head_root() == source.root.release_custody_head_root()
         && result.root.next_release_custody_head_block()
             == source.root.next_release_custody_head_block()
         && result.root.requires_maintenance_protocol()

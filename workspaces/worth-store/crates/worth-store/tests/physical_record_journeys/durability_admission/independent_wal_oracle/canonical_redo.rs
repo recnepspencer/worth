@@ -1,8 +1,7 @@
 use super::{BindingField, BindingInspectionDenial, ByteCursor, IndependentRedoTargetClaim};
 
 const REDO_DOMAIN: &[u8] = b"store.physical.wal.canonical-redo.v3";
-const V5_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v5";
-const V6_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v6";
+const CURRENT_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v15";
 
 pub(super) fn independent_canonical_redo(
     records: &[&[u8]],
@@ -70,13 +69,9 @@ pub(super) fn independent_recovery_projection(
 fn inspect_recovery_projection(projection: &[u8]) -> Result<(), BindingInspectionDenial> {
     let mut cursor = ByteCursor::new(projection);
     let domain = cursor.field(BindingField::RedoPayload)?;
-    let v6 = if domain == V6_PROJECTION_DOMAIN {
-        true
-    } else if domain == V5_PROJECTION_DOMAIN {
-        false
-    } else {
+    if domain != CURRENT_PROJECTION_DOMAIN {
         return Err(BindingInspectionDenial::DomainMismatch);
-    };
+    }
     if cursor.read_u64()? == 0 || cursor.field(BindingField::RedoPayload)?.is_empty() {
         return Err(BindingInspectionDenial::InvalidFrame);
     }
@@ -94,15 +89,10 @@ fn inspect_recovery_projection(projection: &[u8]) -> Result<(), BindingInspectio
         }
         _ => return Err(BindingInspectionDenial::InvalidFrame),
     };
-    if v6 {
-        let semantic = cursor.field(BindingField::RedoPayload)?;
-        if !valid_blob_semantic(semantic) || (source_copy && semantic != [0]) {
-            return Err(BindingInspectionDenial::InvalidFrame);
-        }
-    }
     read_sequence(&mut cursor)?; // placements
     read_sequence(&mut cursor)?; // segment updates
     read_sequence(&mut cursor)?; // manifests
+    inspect_operation(&mut cursor, source_copy)?;
     cursor.finish()
 }
 
@@ -114,16 +104,75 @@ fn read_sequence(cursor: &mut ByteCursor<'_>) -> Result<(), BindingInspectionDen
     Ok(())
 }
 
-fn valid_blob_semantic(bytes: &[u8]) -> bool {
-    match bytes {
-        [0] => true,
-        [1 | 2, rest @ ..] if rest.len() == 64 => {
-            rest[..16] != [0; 16]
-                && rest[16..24] != [0; 8]
-                && u64::from_le_bytes(rest[56..64].try_into().expect("fixed root")) != 0
-        }
-        _ => false,
+fn inspect_operation(
+    cursor: &mut ByteCursor<'_>,
+    source_copy: bool,
+) -> Result<(), BindingInspectionDenial> {
+    let bytes = cursor.field(BindingField::RedoPayload)?;
+    let Some((&tag, binding)) = bytes.split_first() else {
+        return Err(BindingInspectionDenial::InvalidFrame);
+    };
+    if tag == 0 {
+        return (binding.is_empty())
+            .then_some(())
+            .ok_or(BindingInspectionDenial::InvalidFrame);
     }
+    if source_copy || !matches!(tag, 1..=8) || binding.len() < 64 {
+        return Err(BindingInspectionDenial::InvalidFrame);
+    }
+    let valid_record = binding[..16] != [0; 16] && binding[16..24] != [0; 8];
+    let valid_root = u64::from_le_bytes(binding[56..64].try_into().expect("fixed root")) != 0;
+    if !valid_record || !valid_root {
+        return Err(BindingInspectionDenial::InvalidFrame);
+    }
+    if tag == 6 {
+        let mut extra = ByteCursor::new(&binding[64..]);
+        match extra.take(BindingField::RedoPayload, 1)? {
+            [0] => {}
+            [1] => {
+                extra.take(BindingField::RedoPayload, 24 + 8 + 32)?;
+            }
+            _ => return Err(BindingInspectionDenial::InvalidFrame),
+        }
+        match extra.take(BindingField::RedoPayload, 1)? {
+            [0 | 1] => {}
+            [2] => {
+                extra.take(BindingField::RedoPayload, 24)?;
+            }
+            _ => return Err(BindingInspectionDenial::InvalidFrame),
+        }
+        extra.finish()?;
+        match cursor.take(BindingField::RedoPayload, 1)? {
+            [0] => {}
+            [1] => {
+                match cursor.take(BindingField::RedoPayload, 1)? {
+                    [0] => {}
+                    [1] => {
+                        cursor.take(BindingField::RedoPayload, 24)?;
+                        match cursor.take(BindingField::RedoPayload, 1)? {
+                            [0] => {}
+                            [1] => {
+                                cursor.take(BindingField::RedoPayload, 24 + 8 + 32)?;
+                            }
+                            _ => return Err(BindingInspectionDenial::InvalidFrame),
+                        }
+                    }
+                    _ => return Err(BindingInspectionDenial::InvalidFrame),
+                }
+                read_sequence(cursor)?;
+            }
+            _ => return Err(BindingInspectionDenial::InvalidFrame),
+        }
+    } else if binding.len() != 64 {
+        return Err(BindingInspectionDenial::InvalidFrame);
+    } else if tag == 5 {
+        match cursor.take(BindingField::RedoPayload, 1)? {
+            [0] => {}
+            [1] if !cursor.field(BindingField::RedoPayload)?.is_empty() => {}
+            _ => return Err(BindingInspectionDenial::InvalidFrame),
+        }
+    }
+    Ok(())
 }
 
 fn write_field(target: &mut Vec<u8>, field: &[u8]) {
@@ -133,11 +182,9 @@ fn write_field(target: &mut Vec<u8>, field: &[u8]) {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        inspect_recovery_projection, write_field, V5_PROJECTION_DOMAIN, V6_PROJECTION_DOMAIN,
-    };
+    use super::{inspect_recovery_projection, write_field, CURRENT_PROJECTION_DOMAIN};
 
-    fn projection(domain: &[u8], source_copy: bool, semantic: Option<&[u8]>) -> Vec<u8> {
+    fn projection(domain: &[u8], source_copy: bool, operation: Option<&[u8]>) -> Vec<u8> {
         let mut bytes = Vec::new();
         write_field(&mut bytes, domain);
         bytes.extend_from_slice(&4_u64.to_le_bytes());
@@ -154,27 +201,21 @@ mod tests {
             bytes.extend_from_slice(&1_u64.to_le_bytes());
             write_field(&mut bytes, b"frame");
         }
-        if let Some(semantic) = semantic {
-            write_field(&mut bytes, semantic);
-        }
         bytes.extend_from_slice(&1_u64.to_le_bytes());
         write_field(&mut bytes, b"placement");
         bytes.extend_from_slice(&0_u64.to_le_bytes());
         bytes.extend_from_slice(&0_u64.to_le_bytes());
+        if let Some(operation) = operation {
+            write_field(&mut bytes, operation);
+        }
         bytes
     }
 
     #[test]
-    fn projection_oracle_admits_both_versions_and_both_physical_variants() {
+    fn projection_oracle_admits_current_domain_and_both_physical_variants() {
         for source_copy in [false, true] {
             assert!(inspect_recovery_projection(&projection(
-                V5_PROJECTION_DOMAIN,
-                source_copy,
-                None
-            ))
-            .is_ok());
-            assert!(inspect_recovery_projection(&projection(
-                V6_PROJECTION_DOMAIN,
+                CURRENT_PROJECTION_DOMAIN,
                 source_copy,
                 Some(&[0])
             ))
@@ -183,32 +224,36 @@ mod tests {
     }
 
     #[test]
-    fn projection_oracle_denies_missing_or_malformed_v6_semantic() {
+    fn projection_oracle_denies_missing_or_malformed_current_operation() {
         for semantic in [None, Some(&[][..]), Some(&[0, 0][..]), Some(&[3][..])] {
             assert!(inspect_recovery_projection(&projection(
-                V6_PROJECTION_DOMAIN,
+                CURRENT_PROJECTION_DOMAIN,
                 false,
                 semantic
             ))
             .is_err());
         }
-        assert!(
-            inspect_recovery_projection(&projection(V5_PROJECTION_DOMAIN, false, Some(&[0])))
-                .is_err()
-        );
+        assert!(inspect_recovery_projection(&projection(
+            b"store.physical.recovery-projection.v6",
+            false,
+            Some(&[0])
+        ))
+        .is_err());
         let mut bound = vec![1];
         bound.extend_from_slice(&[7; 24]);
         bound.extend_from_slice(&[8; 32]);
         bound.extend_from_slice(&5_u64.to_le_bytes());
         assert!(inspect_recovery_projection(&projection(
-            V6_PROJECTION_DOMAIN,
+            CURRENT_PROJECTION_DOMAIN,
             false,
             Some(&bound)
         ))
         .is_ok());
-        assert!(
-            inspect_recovery_projection(&projection(V6_PROJECTION_DOMAIN, true, Some(&bound)))
-                .is_err()
-        );
+        assert!(inspect_recovery_projection(&projection(
+            CURRENT_PROJECTION_DOMAIN,
+            true,
+            Some(&bound)
+        ))
+        .is_err());
     }
 }

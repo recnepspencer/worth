@@ -187,10 +187,13 @@ fn verify_delta(
     {
         return Err(Denial::RoutingFrame);
     }
-    let retirement_dropped = projection
-        .derived_retirement()
-        .map(|retirement| retirement.dropped_records())
-        .unwrap_or(&[]);
+    let retirement_dropped = match projection.operation() {
+        worth_store_physical_format::PersistedPhysicalRecoveryOperation::DerivedDirectory {
+            retirement: Some(retirement),
+            ..
+        } => retirement.dropped_records(),
+        _ => &[],
+    };
     let dropped_count = batch
         .manifest()
         .dropped()

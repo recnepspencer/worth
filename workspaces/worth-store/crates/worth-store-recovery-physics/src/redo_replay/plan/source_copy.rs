@@ -1,6 +1,8 @@
 //! A copy is a bounded regeneration recipe, never an empty frame-target record.
 use super::*;
-use worth_store_physical_format::{PersistedExtentCopyRecipe, PersistedPhysicalRecoveryPayload};
+use worth_store_physical_format::{
+    PersistedExtentCopyRecipe, PersistedPhysicalRecoveryPayload, PhysicalRecoveryProjectionDenial,
+};
 
 const DOMAIN: &[u8] = b"store.physical.extent-copy-publication.v1";
 
@@ -50,14 +52,49 @@ pub(super) fn admit(
     format: PhysicalRecordFormatDeclaration,
     limits: PhysicalRecoveryProjectionDecodeLimits,
 ) -> Result<Option<PhysicalExtentCopyAdmission>, PhysicalRedoPlanningDenial> {
-    if !is_copy(member.canonical_redo()) {
+    let Some(projection) = admit_current_source_copy_publication(
+        member.operation(),
+        member.lsn_range(),
+        member.canonical_redo(),
+        format,
+        limits,
+    )?
+    else {
+        return Ok(None);
+    };
+    if member.fate() == RecoveryOperationFate::ProvenNoEffect {
+        return Err(PhysicalRedoPlanningDenial::ProvenNoEffectHasWalAttempt);
+    }
+    let PersistedPhysicalRecoveryPayload::SourceCopy(recipe) = projection.payload() else {
+        unreachable!("borrowed copy admission proved the source-copy payload")
+    };
+    Ok(Some(PhysicalExtentCopyAdmission {
+        operation: member.operation(),
+        group: member.group(),
+        fate: member.fate(),
+        publication_lsn: member.lsn_range().start().get(),
+        recipe: *recipe,
+        projection,
+    }))
+}
+
+/// Pure C.9 member admission. The caller must separately bind a sampled WAL
+/// member to actual media and join the earlier durable copy-intent frame.
+pub fn admit_current_source_copy_publication(
+    operation: [u8; 32],
+    range: WalLsnRange,
+    canonical_redo: &[u8],
+    format: PhysicalRecordFormatDeclaration,
+    limits: PhysicalRecoveryProjectionDecodeLimits,
+) -> Result<Option<PersistedPhysicalRecoveryProjection>, PhysicalRedoPlanningDenial> {
+    if !is_copy(canonical_redo) {
         return Ok(None);
     }
-    let mut bytes = member.canonical_redo();
+    let mut bytes = canonical_redo;
     field(&mut bytes)?;
     let publication_lsn = number(&mut bytes)?;
-    if publication_lsn != member.lsn_range().start().get()
-        || publication_lsn.checked_add(1) != Some(member.lsn_range().end_exclusive().get())
+    if publication_lsn != range.start().get()
+        || publication_lsn.checked_add(1) != Some(range.end_exclusive().get())
     {
         return Err(PhysicalRedoPlanningDenial::LsnRangeMismatch);
     }
@@ -65,12 +102,26 @@ pub(super) fn admit(
     if !bytes.is_empty() {
         return Err(PhysicalRedoPlanningDenial::MalformedMember);
     }
-    let projection = PersistedPhysicalRecoveryProjection::decode(encoded, limits, format)
-        .map_err(|_| PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
+    let copy_limits = PhysicalRecoveryProjectionDecodeLimits {
+        frames: 0,
+        record_identities: limits.record_identities.min(1),
+        placements: limits.placements.min(1),
+        segment_updates: 0,
+        manifests: 0,
+        total_entries: limits.total_entries.min(1),
+        inline_allocations: 0,
+    };
+    let projection = PersistedPhysicalRecoveryProjection::decode(encoded, copy_limits, format)
+        .map_err(|denial| match denial {
+            PhysicalRecoveryProjectionDenial::UnsupportedVersion(version) => {
+                PhysicalRedoPlanningDenial::UnsupportedRecoveryProjectionVersion(version)
+            }
+            _ => PhysicalRedoPlanningDenial::InvalidRecoveryProjection,
+        })?;
     let PersistedPhysicalRecoveryPayload::SourceCopy(recipe) = projection.payload() else {
         return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
     };
-    if recipe.intent().operation() != member.operation()
+    if recipe.intent().operation() != operation
         || recipe.intent_lsn() >= publication_lsn
         || !projection.root_state().inline_allocations().is_empty()
         || projection.root_state().last_inline_record().is_some()
@@ -78,17 +129,7 @@ pub(super) fn admit(
     {
         return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
     }
-    if member.fate() == RecoveryOperationFate::ProvenNoEffect {
-        return Err(PhysicalRedoPlanningDenial::ProvenNoEffectHasWalAttempt);
-    }
-    Ok(Some(PhysicalExtentCopyAdmission {
-        operation: member.operation(),
-        group: member.group(),
-        fate: member.fate(),
-        publication_lsn,
-        recipe: *recipe,
-        projection,
-    }))
+    Ok(Some(projection))
 }
 
 pub(super) fn charge(

@@ -42,6 +42,92 @@ consumer. All eight documents in `../../docs/coding-guidelines/` govern this des
 Historical S.7/S.8 simulations and certification harnesses establish nothing
 about the production join.
 
+## Store Format Policy: No Historical Compatibility
+
+Store has never been deployed, and its existing development data is disposable.
+C.11 therefore supports only the current Store artifact and protocol grammars;
+it has no obligation to reopen data from abandoned development builds. This
+decision governs Store and its direct writer, validator, recovery, rejoin and
+offline-observation consumers, not unrelated platform workspaces.
+
+For each artifact or protocol family, declare one supported current grammar
+with explicit typed operation and state variants. Keep stable identity and
+version tags so stale or unsupported bytes cannot be mistaken for current
+data. Change the identity/version when incompatible encoding changes require
+it; do not reinterpret old bytes or retain an old reader merely because a
+version was bumped. Historical read/write windows, dual-read or dual-write
+lanes, old-format migrations, downgrade conversions, rolling-upgrade support,
+legacy aliases and compatibility-only registries or harnesses are not C.11
+deliverables and must not survive solely to preserve development history.
+
+Wire identity belongs exclusively to the Format codec, never to a mutation
+instance or caller-selected operation. The recovery projection stores one
+`PersistedPhysicalRecoveryOperation` sum: session and reuse operations carry
+their exact binding; `RecordsDropped` alone can carry a release-head effect;
+`DerivedDirectory` alone can carry a retirement. These attachments retain their
+lawful present/absent states, and unavailable source facts remain explicit.
+The public projection exposes the complete operation, not parallel semantic
+and attachment fields. Checked construction validates identities, generations,
+digests and resource limits; an operation value does not grant recovery or
+publication authority. `Frames` and `SourceCopy` remain distinct payloads.
+
+The current-only projection codec writes one fixed identity unconditionally and
+admits only that identity before decoding its body. There is no per-instance
+format selector or version-conditioned operation dispatch. Rust construction,
+visibility and exhaustive operation matching enforce the public contract;
+the existing boundary checker additionally inspects the producer/decoder AST,
+the single supported-domain declaration and the projection module graph to
+reject a second grammar, a version selector or a domain-selection branch.
+Unsupported-version diagnostics may parse a rejected numeric identity, but
+that rejection path may not select an operation or enter a historical reader.
+Compiler-negative examples protect attachment/type construction; checker
+negative cases protect the private wire boundary. Current publication,
+checkpoint, fresh C.8 recovery, independent Store rejoin and Serving remain
+the integration acceptance, alongside malformed-current-operation refusals.
+
+This is not permission to delete live operation semantics. `Frames` and
+`SourceCopy`, classified or unavailable source facts, `NoRelease`, active and
+terminal release custody, session/frontier transitions, tier certificates and
+head retirement retain their distinct authority and lifecycle meaning in the
+current grammar. An older numeric tag still emitted by a current writer is a
+coordinated cutover target, not evidence that its operation can be deleted.
+Likewise, an older checkpoint or WAL member within a current-format journey is
+current recovery history, not historical software compatibility.
+
+A cutover updates the production writer, physical format, WAL/root publication,
+C.9 integrity admission, C.8 recovery, independent Store rejoin and independent
+offline parsers together at the affected family boundary. Remove the replaced
+production encoding/reader and its compatibility-only fixtures in that slice;
+do not leave parallel lanes or introduce a migration framework. Rebuild junk
+fixtures through the current production format. Existing canonical current
+encoding, hash and authority tests remain valuable; only promises to admit an
+abandoned format are retired. Preserve accepted evidence whose seam is unchanged.
+
+Unsupported historical identities/versions produce a typed unsupported-format
+denial before mutation, recovery promotion or Serving. Opening such a namespace
+must not silently migrate, erase or reinitialize it. Creating a fresh disposable
+namespace is an explicit development action, not a recovery fallback. Current
+format corruption, partial writes, cancellation, checkpoint replacement, lawful
+WAL pruning and fresh-process recovery still require their full existing fates,
+integrity checks, resource budgets and authority provenance. The decisive
+pruned A/B continuation journey below is unchanged.
+
+Before accepting a format cutover, independent review must see a genuine
+current-format positive publication/checkpoint/recovery/Serving journey and
+focused unsupported-version negative evidence at the affected admission
+boundaries. A missing head or altered control in the current grammar must still
+deny; a version rejection alone cannot substitute for current-format recovery
+or structural integrity evidence. There is no requirement for positive recovery
+from historical golden artifacts or coexistence with an abandoned writer.
+
+Architecture 21 and DX 7 explicitly permit this undeployed, disposable,
+current-only Store baseline while retaining identity, typed unsupported-version
+rejection and current-format recoverability. All other governing constraints
+remain binding; this is not a general compatibility waiver. Future deployment
+or an actual retained-data commitment requires
+a new explicit compatibility decision; speculative upgrade machinery is not
+prebuilt here.
+
 ## Decisions Made In Place Of Open Questions
 
 The spec-designer process asks the user where the sources leave a choice open.
@@ -67,6 +153,7 @@ rationale. A reviewer who disagrees changes the decision here before implementat
 | D15 | `worth-store-layout-indexes::maintenance::operational_repair` (raw `std::fs` rename and canonicalize) is deleted with its tests, including `LayoutOperationalRepairOwner`, `DerivedIndexRepairReceipt` and `DerivedIndexRepairExecutionDenial`; `worth-store-operations::workflow::repair` keeps its pure plan, lowering and classification law, and its derived-index execution arm returns an operations-owned typed denial (new variant) naming the Store rebuild owner. | `worth-store-operations` does not depend on `worth-store`, so it cannot call `layouts().rebuild()`; keeping a filesystem executor beside the Store rebuild owner is a parallel authority lane. Operator-authorized repair of authoritative bytes is S.10; derived-index rebuild is the Store's (Phase 4). |
 | D16 | Extent storage becomes packed, range-allocated **extent arenas**, and this ships as Phase 1, before the first blob. An arena is a large file (admitted `ExtentArenaCapacity`, 64 MiB to 4 GiB, default 1 GiB) holding many aligned extent data and manifest frames. An extent's private placement becomes (arena, offset, length, extent generation). Free space becomes range truth with reuse, published with the root. See [Extent arenas](#extent-arenas). | Today every record at or above the extent threshold (which must be below one page, 16 KiB by default) gets its own data file plus its own manifest file, and free space is a bump allocator (`next_extent`, `first_unallocated`) that never reuses anything. A 4 GiB blob would be about 32 000 files, and so would 16 000 ordinary 20 KiB rows. That is a platform scaling defect, not a blob detail, so it is fixed where it lives. The model is the one used by serious storage engines (copy-on-write range allocation over large files, as in shadow-paging, LMDB's free list and BlueStore's allocator): the file count scales with bytes, not objects; writes are large and aligned; and because no allocation may overwrite a range routed by any protected root, torn writes need no double-write or full-page-image scheme. C.5 already separates stable `PhysicalRecordId` from private placement, so no public identity changes. |
 | D17 | The on-disk format version is bumped for arenas; a store in the per-file extent layout is refused at open with a typed format-version denial. No migration or dual-read path exists. | No production store exists in the old layout, and AGENTS.md forbids compatibility surfaces and parallel lanes. |
+| D18 | Every C.11 Store artifact/protocol family is current-format-only under the policy above. Abandoned development formats and compatibility-only production, API and test paths are removed; current writers and all affected consumers cut over together. | Store is undeployed and existing data is disposable. A version tag prevents reinterpretation; it does not create a historical-data support promise. |
 
 ## Current Boundary And Required Cutovers
 
@@ -441,14 +528,14 @@ blob digest alone cannot establish selected-record custody.
   custody identity. Import verifies the portable digest and bytes, then
   constructs its own physical tree. Not a backup artifact.
 
-Phase 2 extends `PersistedPhysicalRecoveryProjection` from v5 to v6 with
+Phase 2 extends the current `PersistedPhysicalRecoveryProjection` grammar with
 one bounded typed blob semantic member: `None`, `SessionDeclared` or
 `GenerationPublished`, with non-`None` members bound to exact C.5 record
 identities, payload digest and root candidate. All newly encoded ordinary
-recovery projections use v6, with `None` for non-blob operations; the reader
-continues to admit v5 `Frames` and `SourceCopy` as `None` without
-reinterpreting their bytes. The v6 physical-target variants retain both
-`Frames` and `SourceCopy` semantics. The producer, C.8 replay, C.9
+recovery projections use that current grammar, with `None` for non-blob
+operations; historical projection formats are rejected, not translated.
+The current physical-target variants retain both `Frames` and `SourceCopy`
+semantics. The producer, C.8 replay, C.9
 validator and independent offline observer recognize the coordinated format
 cutover. The semantic descriptor is a nested member of the existing C.8
 canonical redo, not a second WAL lane, and remains within 1 KiB; the entire
@@ -456,7 +543,8 @@ redo may carry separately bounded physical frame bytes and is not claimed to
 fit 1 KiB. C.8 replays declaration before chunk admission and publication
 only after all claimed records. Phase 3 adds versioned
 `store.physical.blob-resume.v1` frontier/terminal semantics to the same
-envelope, preserving SourceCopy and v5 compatibility. After checkpoint WAL
+envelope, preserving current SourceCopy semantics without historical readers.
+After checkpoint WAL
 pruning, selected declaration, claims and publication records still suffice
 for independent custody classification of chunks and partial tree nodes;
 unselected arena bytes are not authority.
@@ -829,7 +917,7 @@ worth-store-physical-format/src/
   manifest/release_head_routing/                 N bounded keyed head entries and copy-on-write tree blocks (Phase 6)
   recovery_projection/release_head_effect.rs   N exact C.9 metadata-effect envelope; one V3 descriptor data record remains (Phase 6)
   recovery_projection/release_head_retirement.rs N distinct owner-proof-backed terminal-head retirement, never a synthetic V3 (Phase 6)
-  checkpoint/release_certificate/heads.rs       N versioned accumulator head-tree commitment; V1 remains fail-closed where insufficient (Phase 6)
+  checkpoint/release_certificate/heads.rs       N current accumulator head-tree commitment; unsupported formats and insufficient current custody deny (Phase 6)
   btree_node/                                   N slotted.rs, separator.rs, sibling.rs
   lsm_run/                                      N header.rs, entries.rs, membership.rs
   integrity_declarations/families/              E blob_*, btree_node, lsm_run declarations
@@ -898,6 +986,28 @@ Dependency direction after Phase 2: `worth-store` imports the three mechanism
 crates; none of them imports `worth-store`; `worth-store-recovery-runtime`,
 `worth-store-offline-verifier` and `worth-store-test-support` keep importing
 `worth-store` from above. The boundary-check snapshot is the proof.
+
+The compatibility-only owners have no successor authority lane: remove
+`worth-store-compatibility/`,
+`worth-store-layout-indexes/src/evolution/migration/`, its
+`src/observation/evolution.rs` leaf, and
+`worth-store-test-support/src/harness/layout_evolution/`, together with their
+obsolete dependencies, exports and registration. Close callers of
+compatibility-only artifact-family declarations before deleting those rows;
+retain the current artifact-family inventory and format-owned identity checks.
+Current format mechanisms remain in the existing physical-format, integrity,
+recovery and Store owners above, not in a replacement compatibility crate.
+
+The recovery-projection cutover refines the existing Format owner: its
+`recovery_projection/operation.rs` owns the operation sum and checked attachment
+construction, `recovery_projection/codec/operation.rs` owns operation tags,
+and `recovery_projection/codec/domain.rs` owns current identity admission.
+The root projection owns bounded common state and the stable public facade
+remains `worth-store-physical-format::lib`. Remove `codec/version_semantics.rs`
+and all version-specific ordinary lanes. The compiler-shaped constraint belongs
+at `tools/boundary-check/src/source_rules/analysis/store_current_projection.rs`,
+with named wire-boundary checks beneath it; no compatibility crate, alternate
+producer facade or generic migration framework replaces the removed paths.
 
 ## Cost Contracts
 
@@ -970,7 +1080,8 @@ range fails the offline overlap check.
 Invert the crate direction (D8), install `blob_record` frames, the
 `BlobResumeSession::Declared`/`BlobChunkFrame`/`BlobTreeNode`/
 `BlobGenerationPublication` families with their C.9 declarations and
-validators, and the v6 typed recovery transition with v5 read admission.
+validators, and the current typed recovery transition without historical read
+admission.
 The Store-issued session declaration is root-published before any chunk;
 each new chunk has its distinct authenticated occurrence claim. Install the
 real `BlobIngestPressure` producer and bounded retained head together with
@@ -997,8 +1108,9 @@ declaration publication and after a claimed chunk but before generation,
 then require fresh C.8 reopen plus independent observer to identify retained
 unfinished custody without an invented orphan or published blob. Kill after
 generation WAL durability but before root publication and require exact
-once-only redo; v5 projection readmission and v6/SourceCopy coexistence stay
-valid. Proof obligation: hiding a full materialization fails the residency
+once-only redo; current Frames and SourceCopy operations remain valid, while
+unsupported historical projection versions deny before promotion or effects.
+Proof obligation: hiding a full materialization fails the residency
 predicate, while omitting an occurrence claim despite valid C.5 checksum and
 inner SHA fails offline custody validation.
 
@@ -1197,11 +1309,13 @@ and head-transition evidence until selected into the next checkpoint. They
 advance the checkpoint-source roster to an **effective post-WAL roster**;
 neither C.8 nor Store compares that effective roster with the old accumulator
 as if it were still the checkpoint source. The Serving seal binds its final
-root and effective roster, and the next checkpoint commits that roster. A V1
-NoRelease marker may provide the zero-release source for a first V3 and its
-head-bearing successor checkpoint. A V1 released Batch/Accumulator checkpoint
-without heads is not migrated by blessing selected controls or replaying old
-drops: it remains unavailable after this cutover. There is no permissive
+root and effective roster, and the next checkpoint commits that roster. A
+current-format NoRelease marker provides the zero-release source for the first
+admitted release and its head-bearing successor checkpoint. NoRelease and
+released custody are typed states of the current certificate grammar, not a
+historical V1-to-V3 compatibility journey. A current released checkpoint missing
+its required heads remains unavailable; selected controls cannot supply the
+missing custody. Historical certificate formats deny without migration or
 legacy fallback.
 
 Terminal heads stay as tombstones until Store consumes owner-issued exclusion
@@ -1236,9 +1350,10 @@ entry, wrong key, wrong A predecessor/progress/terminality, B-tip substitution,
 an extra selected tree node or roster omission before any new effect.
 The selected checkpoint-source roster must stay valid while a genuine
 postcheckpoint V3 changes only the effective WAL-derived roster; a stale seal
-or post-seal head mutation must deny. A headless V1 release checkpoint with
-only routed controls must remain unavailable, while V1 NoRelease may advance
-through a genuine first V3 into a head-bearing checkpoint. Terminal-head
+or post-seal head mutation must deny. A current release checkpoint missing its
+required heads must remain unavailable even with routed controls, while current
+NoRelease advances through a genuine first release into a head-bearing
+checkpoint. Unsupported historical versions deny before effects. Terminal-head
 retirement without the owner-issued hold/retry/non-reissue exclusion must deny.
 Kill at V3 WAL durability, head-tree node materialization, result root
 publication, checkpoint file
@@ -1289,7 +1404,7 @@ following obligations identify their concrete Phase 6 enforcement boundaries.
 | Architecture 5, 7, 14, 22 | Root preparation and every failure translation preserve the typed underlying cause, responsible boundary, proven/maybe-started effect posture, retained authority and recovery disposition. Cancellation never erases durable work. | Inject preparation, resource, WAL, root and namespace failures; assert exact cause and fate, selected artifacts and recovery result, not merely `is_err()`. A published generation with pending indexing must remain a typed partial outcome, not fixture success or rollback. |
 | Architecture 9, 11, 19, 22; performance allocation and memory laws | One owner-carried aggregate admission accounts for simultaneously live planning state, retained custody, scratch, decoded controls, roster storage and replay copies. Acquire capacity before allocation/growth and before irreversible effects; carry or lawfully transfer the live charge across C.8, Store rejoin, Serving, mutation and disposal. A numeric ceiling or a post-allocation aggregate check is not a live reservation. | Exercise the actual bounded production world and overlapping grants; measure peak and retained charges through handoff and mutable growth. Denial leaves no new forbidden allocation/effect; disposal releases the exact charge. Reconcile `canonical_store_metadata_envelope` against actual retained metadata rather than raising its budget to conceal overhead. |
 | Architecture 8, 10, 17, 18 | Selected checkpoint custody, pending-WAL claims, checkpoint-source roster, effective post-WAL roster and per-object predecessor are distinct owner facts. Ordinary visibility still comes from selected C.5 routes, never a retained catalog cell or the global release tip. | Pruned A/B continuation, post-checkpoint updates, unchanged-entry and stale-seal twins; ordinary surviving-object reads and independent offline observation. No old checkpoint, heap ledger or writer state crosses the fresh-process boundary. |
-| Architecture 21 | Durable head, root, metadata effect and checkpoint changes use declared versions and compatibility windows. Never reinterpret old bytes or bless headless release controls as migration. | V1 NoRelease advances through a genuine first V3; headless V1 release and unsupported versions deny; C.9/C.8 reject incompatible or altered metadata before promotion. |
+| Architecture 21; DX 7 | Durable head, root, metadata effect and checkpoint families declare current-only supported grammars and typed states under the explicitly permitted undeployed Store policy. Keep identity/version checks, never reinterpret old bytes, and reject historical formats without migration. | Current NoRelease advances through a genuine first release; missing current heads and unsupported versions deny; C.9/C.8 and independent Store/observer consumers admit the same current grammar and reject incompatible or altered metadata before promotion. |
 | Architecture 6, 13, 15, 23 | Effects remain in the existing Store work/scheduler/executor/publication path. Physical reachability cannot issue semantic liveness, holds or non-reissue proof. Admission and recovery guarantees cannot be traded for throughput or easier review. | Real held-reader, retirement, movement and interference journeys; compile-fail movement substitutes; media observations expose executor bypass or half-publication. |
 | Composition 1-9, 13-15; domain structure 1-3, 7-11, 17 | Keep proof decisions, execution, replay, diagnostic translation and independent rejoin in their existing semantic owners. Facades export contracts only. Orchestration names proof-building steps; line-count extraction cannot substitute for responsibility boundaries. | Bounded independent structural review, dependency/visibility checks, scoped 400-line guard and judgment of function advisories. New growth enters the destination tree below without phase-named buckets or a second authority lane. |
 
@@ -1364,8 +1479,9 @@ fragmentation or a new generic proof framework.
 Acceptance completes the decisive pruned A/B process journey above and the
 same-world hostile variants already required by Phase 6. Include genuine
 post-checkpoint head change without invalidating the old checkpoint-source
-roster, stale/post-mutation seal denial, V1 NoRelease progression and headless
-V1 release refusal. A passing unsealed-open denial is negative evidence only;
+roster, stale/post-mutation seal denial, current NoRelease progression,
+missing-current-head refusal and unsupported historical-version denial.
+A passing unsealed-open denial is negative evidence only;
 it never replaces positive fresh-process recovered continuation.
 
 #### 6.4: Lawful custody retirement and admitted population
@@ -1457,7 +1573,9 @@ Run the decisive interleaving and the 4 GiB heavy lane; confirm
 `InstalledCapabilityStatus` reports every constructed family truthfully
 (Blob became `Present` in Phase 2 and Layout in Phase 4, with the accessor
 that made them real); remove dead placement-observation
-sessions, fake harness receipts and static inventory rows; revise the
+sessions, fake harness receipts, compatibility-only owners and static inventory
+rows; confirm no historical read/write or migration lane remains under the
+Store format policy; revise the
 documentation deliverables; update the roadmap's C.11 entry with the current
 contract and the C.12/C.13 handoff.
 
@@ -1476,7 +1594,7 @@ docs compile their examples.
 | Offline observer families | After format frames are frozen | Phase 2 closeout |
 | Dependency inversion of `worth-store-blob-chunks` | Immediately | Phase 2 closeout; boundary-check snapshot |
 | Mechanism-crate cleanup (baseline tree, InMemory runtime, fs repair) | After Phase 2 | Phase 4 closeout |
-| Recovery-physics payload kinds | After payload versions are frozen | Phase 2 (v6 declaration and generation), Phase 3 (frontier, terminal and reclaim), Phase 7 (LSM) |
+| Recovery-physics payload kinds | After current payload grammars are frozen | Phase 2 (declaration and generation), Phase 3 (frontier, terminal and reclaim), Phase 7 (LSM); each cutover replaces rather than retains an abandoned grammar |
 | Writer binary and heavy generator | Immediately | First use in Phase 2 |
 | Scheduler producers | Before their effects | Phase 2 (`BlobIngestPressure` and bounded ingest head), Phase 6, Phase 7 |
 
@@ -1488,7 +1606,11 @@ mechanism crate, fixture, harness or in-memory model can produce a blob or
 index byte. Lifecycle review must cover cancellation before and after the
 first effect, resume across processes, close during an open read, and
 shutdown with an active ingest. Persistence review must cover every crash seam
-and the version fields of each new frame and payload. Performance review must
+and the version fields of each new frame and payload. Review must distinguish
+current-format recovery history from abandoned software formats, confirm all
+affected producers and independent consumers use the current grammar, and reject
+historical versions before effects without a migration or fallback lane.
+Performance review must
 compare measured residency and counters to the ceilings at the heavy scale.
 Security review must confirm dedupe scope enforcement and that release proofs
 cannot be forged from physical observations. Tests and evidence: owner-local
@@ -1513,14 +1635,17 @@ Implementation revises these against real APIs, compiling every example:
   range release and arena evacuation; record-dropping publication, blob and
   LSM payloads, retained-storage effects of reclaim. For the Store operator,
   explain the selected per-object head roster, checkpoint replacement and
-  pruning rule, pre-effect capacity denial and terminal-head retirement.
+  pruning rule, pre-effect capacity denial and terminal-head retirement;
+  current-only supported formats, unsupported-version denial and explicit
+  creation of fresh disposable development namespaces, never automatic reset.
 - The C.5 record-path spec and `bounded-physical-record-access.md`: extent
   placement is an arena range; per-extent files are gone.
 - `physical-recovery-and-reopen.md`: blob generation, resume, drop and
   membership redo; residue fates. For recovery implementers, distinguish
   current checkpoint-attested heads from independently replayed pending WAL,
   and state why selected controls or the global tip cannot replace a missing
-  per-object head.
+  per-object head. Distinguish current crash/pruning recovery from unsupported
+  historical-format migration; there is no migration or downgrade procedure.
 - `physical-integrity-and-offline-verification.md`: new families, derived
   rebuild disposition, offline blob/index walk. For offline operators, name
   the head-tree block/roster family, unselected-node residue and mismatch

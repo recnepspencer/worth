@@ -113,7 +113,6 @@ dependencies = [
     "worth-store-authority",
     "worth-store-blob-chunks",
     "worth-store-budgets",
-    "worth-store-compatibility",
     "worth-store-contracts",
     "worth-store-io-scheduler",
     "worth-store-lsm-authority",

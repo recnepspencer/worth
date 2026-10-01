@@ -4,31 +4,6 @@ use super::*;
 
 impl RecoveredPhysicalCheckpointCustody {
     #[cfg(feature = "recovery-runtime-owner")]
-    pub(in crate::physical_runtime) fn from_verified(
-        store: StableStoreIdentity,
-        recovery_allocation: crate::physical_runtime::PhysicalRecoveryAllocationAdmission,
-        root: DurablePhysicalRootManifest,
-        verified: VerifiedSelectedCheckpointCustody,
-        selected_wal: crate::physical_runtime::recovery_construction::SelectedWalMediaFingerprint,
-        selected_controls: crate::physical_runtime::recovery_construction::SelectedControlMediaFingerprint,
-    ) -> Self {
-        Self {
-            store,
-            recovery_allocation,
-            root,
-            released: Some(verified),
-            head_v2: None,
-            no_release: None,
-            pending_wal_release: None,
-            effective_release_heads: None,
-            historical_release: None,
-            tier: None,
-            selected_wal,
-            selected_controls: Some(selected_controls),
-        }
-    }
-
-    #[cfg(feature = "recovery-runtime-owner")]
     pub(in crate::physical_runtime) fn from_verified_no_release(
         store: StableStoreIdentity,
         recovery_allocation: crate::physical_runtime::PhysicalRecoveryAllocationAdmission,
@@ -42,39 +17,12 @@ impl RecoveredPhysicalCheckpointCustody {
             store,
             recovery_allocation,
             root,
-            released: None,
             head_v2: None,
             no_release: Some(verified),
             pending_wal_release: None,
             effective_release_heads: None,
             historical_release: None,
             tier,
-            selected_wal,
-            selected_controls: Some(selected_controls),
-        }
-    }
-
-    #[cfg(feature = "recovery-runtime-owner")]
-    pub(in crate::physical_runtime) fn from_verified_tier_and_release(
-        store: StableStoreIdentity,
-        recovery_allocation: crate::physical_runtime::PhysicalRecoveryAllocationAdmission,
-        root: DurablePhysicalRootManifest,
-        released: VerifiedSelectedCheckpointCustody,
-        tier: VerifiedSelectedTierEpochCustody,
-        selected_wal: crate::physical_runtime::recovery_construction::SelectedWalMediaFingerprint,
-        selected_controls: crate::physical_runtime::recovery_construction::SelectedControlMediaFingerprint,
-    ) -> Self {
-        Self {
-            store,
-            recovery_allocation,
-            root,
-            released: Some(released),
-            head_v2: None,
-            no_release: None,
-            pending_wal_release: None,
-            effective_release_heads: None,
-            historical_release: None,
-            tier: Some(tier),
             selected_wal,
             selected_controls: Some(selected_controls),
         }
@@ -95,7 +43,6 @@ impl RecoveredPhysicalCheckpointCustody {
             store,
             recovery_allocation,
             root,
-            released: None,
             head_v2: None,
             no_release: None,
             pending_wal_release: Some(verified),
@@ -122,7 +69,6 @@ impl RecoveredPhysicalCheckpointCustody {
             store,
             recovery_allocation,
             root,
-            released: None,
             head_v2: None,
             no_release: None,
             pending_wal_release: None,
@@ -148,7 +94,6 @@ impl RecoveredPhysicalCheckpointCustody {
             store,
             recovery_allocation,
             root,
-            released: None,
             head_v2: Some(verified),
             no_release: None,
             pending_wal_release: None,

@@ -114,7 +114,6 @@ impl PhysicalRecoveryConstructionPort {
             media,
             reopen,
             None,
-            None,
             tier,
             Some(selected_wal),
             Some(selected_controls),

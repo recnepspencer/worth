@@ -171,6 +171,18 @@ pub(super) struct ReclaimFenceState {
 }
 
 impl ReclaimFenceState {
+    pub(super) fn owned_heap_bytes(&self) -> Option<u64> {
+        use super::release_capacity::backing::vector_heap_bytes;
+        vector_heap_bytes(&self.displaced)?
+            .checked_add(vector_heap_bytes(&self.drop_records)?)?
+            .checked_add(vector_heap_bytes(&self._recovered_reservations)?)?
+            .checked_add(
+                self.release_certificate_pending
+                    .as_ref()
+                    .map_or(Some(0), |pending| vector_heap_bytes(&pending.root_frame))?,
+            )
+    }
+
     pub(super) fn matches_attempt(&self, attempt: [u8; 16]) -> bool {
         self.id.0 == attempt
     }

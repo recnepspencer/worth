@@ -12,7 +12,6 @@ worth-proof = { path = "../../../../crates/worth-proof" }
 worth-store-authority = { path = "../worth-store-authority" }
 worth-store-budgets = { path = "../worth-store-budgets" }
 worth-store-blob-chunks = { path = "../worth-store-blob-chunks" }
-worth-store-compatibility = { path = "../worth-store-compatibility" }
 worth-store-contracts = { path = "../worth-store-contracts" }
 worth-store-io-scheduler = { path = "../worth-store-io-scheduler" }
 worth-store-lsm-authority = { path = "../worth-store-lsm-authority" }

@@ -163,22 +163,6 @@ impl PhysicalCheckpointSource {
         self.requires_maintenance_protocol = true;
         self
     }
-
-    /// C.9 checkpoint envelope. A maintenance-capable stream is rejected before its header is served.
-    pub fn decode_c9_legacy_stream_header_record(
-        record: &[u8],
-    ) -> Result<Self, CheckpointStreamDecodeDenial> {
-        if record.get(8).is_some_and(|schema| {
-            matches!(
-                *schema,
-                super::record::MAINTENANCE_CHECKPOINT_SCHEMA
-                    | super::record::CERTIFIED_CHECKPOINT_SCHEMA
-            )
-        }) {
-            return Err(CheckpointStreamDecodeDenial::UnsupportedSchema(record[8]));
-        }
-        Self::decode_stream_header_record(record)
-    }
 }
 
 impl PhysicalCheckpointSecurityBinding {
