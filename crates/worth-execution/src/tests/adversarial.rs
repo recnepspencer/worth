@@ -20,7 +20,7 @@ fn zero_retained_reservation_survives_nested_scope_drop() {
     assert!(matches!(outcome, MapOutcome::Complete { .. }));
 }
 
-fn map(values: &[u64], max_result_bytes: u64) -> ExecutionMap<u64, u64> {
+pub(super) fn map(values: &[u64], max_result_bytes: u64) -> ExecutionMap<u64, u64> {
     let expected = (0..values.len())
         .map(|index| PartitionIdentity::new(index as u64 + 1))
         .collect();
@@ -321,4 +321,76 @@ fn unleased_scope_can_compose_serial_patterns_without_claiming_a_lease() {
     assert_eq!(scoped.report.charged_work(), 2);
     assert_eq!(scoped.report.charged_span(), 2);
     assert_eq!(scoped.report.physical().active_workers_high_watermark(), 1);
+}
+
+#[test]
+fn singleton_nested_map_resolves_serial_after_an_earlier_parallel_peak() {
+    let _serial = TEST_LOCK.lock().unwrap();
+    let lease = authority().request_lease(request(4, 2_000, 100)).unwrap();
+    let first = map(&[1, 2], 0);
+    let second = map(&[3], 0);
+    let rendezvous = std::sync::Barrier::new(2);
+    let scoped = run_scope::<(), (), _>(Some(&lease), 0, 0, |_| {
+        let parallel = first.run(Some(&lease), |value, context| {
+            context.checkpoint(1)?;
+            rendezvous.wait();
+            Ok::<_, MapKernelFailure<()>>(*value)
+        });
+        assert!(matches!(&parallel, MapOutcome::Complete { values, .. } if *values == vec![1, 2]));
+        assert_eq!(
+            parallel.report().resolved_posture(),
+            ExecutionPosture::Automatic
+        );
+        assert!(parallel.report().physical().active_workers_high_watermark() > 1);
+        assert!(parallel.report().physical().active_workers_high_watermark() <= 4);
+        let singleton = second.run(Some(&lease), |value, context| {
+            context.checkpoint(1)?;
+            Ok::<_, MapKernelFailure<()>>(*value)
+        });
+        assert!(matches!(&singleton, MapOutcome::Complete { values, .. } if *values == vec![3]));
+        assert_eq!(
+            singleton.report().resolved_posture(),
+            ExecutionPosture::Serial
+        );
+        // Physical evidence retains the request's earlier peak.
+        assert!(
+            singleton
+                .report()
+                .physical()
+                .active_workers_high_watermark()
+                > 1
+        );
+        Ok(())
+    });
+    assert!(scoped.result.is_ok());
+    assert_eq!(scoped.report.charged_work(), 3);
+    assert!(scoped.report.physical().active_workers_high_watermark() <= 4);
+}
+
+#[test]
+fn enclosing_request_uses_its_caller_slot_in_a_wide_native_map() {
+    let _serial = TEST_LOCK.lock().unwrap();
+    let lease = authority().request_lease(request(4, 2_000, 100)).unwrap();
+    let wide = map(&[1, 2, 3, 4], 0);
+    let rendezvous = std::sync::Barrier::new(4);
+    let scoped = run_scope::<(), (), _>(Some(&lease), 0, 0, |_| {
+        let outcome = wide.run(Some(&lease), |value, context| {
+            context.checkpoint(1)?;
+            rendezvous.wait();
+            Ok::<_, MapKernelFailure<()>>(*value)
+        });
+        assert!(
+            matches!(&outcome, MapOutcome::Complete { values, .. } if *values == vec![1, 2, 3, 4])
+        );
+        assert_eq!(
+            outcome.report().resolved_posture(),
+            ExecutionPosture::Automatic
+        );
+        assert!(outcome.report().physical().active_workers_high_watermark() > 1);
+        assert!(outcome.report().physical().active_workers_high_watermark() <= 4);
+        Ok(())
+    });
+    assert!(scoped.result.is_ok());
+    assert_eq!(scoped.report.charged_work(), 4);
+    assert!(scoped.report.physical().active_workers_high_watermark() <= 4);
 }

@@ -8,7 +8,7 @@ mod tests;
 mod visited_slots;
 use visited_slots::VisitedCauseSlots;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub(crate) struct PreparedCauseSlot {
     pub(super) current: PendingCauseSetId,
     pub(super) next: PendingCauseSetId,
@@ -108,11 +108,64 @@ impl CanonicalCauseSetStore {
 }
 
 impl CauseSlotPreparation<'_> {
+    /// Continue a consumer's private epoch slot after its first transition.
+    /// Ordinary packets still use `replacement`, which rejects duplicate owners.
+    pub(crate) fn epoch_replacement_after(
+        &mut self,
+        current: PendingCauseSetId,
+        empty: bool,
+        work: &mut EvaluationWork<'_, '_>,
+    ) -> Result<PreparedCauseSlot, SignalError> {
+        let Some(index) = current.index else {
+            return self.replacement(current, empty, work);
+        };
+        let membership = prepared_owner_set_edit_steps(self.claimed.len()).and_then(|steps| {
+            steps.checked_add(prepared_owner_set_edit_steps(self.allocated.len())?)
+        });
+        work.reserve(membership)?;
+        let index = index.get();
+        if !self.claimed.contains(index) && !self.allocated.contains(index) {
+            return Err(SignalError::invalid_input("epoch cause slot is not held"));
+        }
+        let free = self
+            .inherited_free
+            .checked_add(self.released.len())
+            .ok_or_else(|| SignalError::internal("cause free-slot count overflow"))?;
+        let slot = PreparedCauseSlot {
+            current,
+            next: if empty {
+                PendingCauseSetId::EMPTY
+            } else {
+                current
+            },
+            sets: self.sets,
+            free,
+            empty,
+        };
+        if empty {
+            let release = prepared_owner_set_edit_steps(self.allocated.len()).and_then(|steps| {
+                steps.checked_add(
+                    self.released
+                        .len()
+                        .checked_add(1)?
+                        .checked_mul(std::mem::size_of::<PendingCauseSetId>() + 1)?,
+                )
+            });
+            work.reserve(release)?;
+            self.allocated.remove(index);
+            self.released.push(PendingCauseSetId {
+                index: Some(std::num::NonZeroU32::new(index).expect("held slot index")),
+                generation: current.generation.wrapping_add(1),
+            });
+        }
+        Ok(slot)
+    }
+
     /// Account for the producer's earlier clean transition, without writing it.
     pub(crate) fn release(
         &mut self,
         current: PendingCauseSetId,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         let Some(index) = current.index else {
             return Ok(());
@@ -135,7 +188,7 @@ impl CauseSlotPreparation<'_> {
         &mut self,
         current: PendingCauseSetId,
         empty: bool,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<PreparedCauseSlot, SignalError> {
         work.reserve(Some(
             self.store.sets.lookup_steps()
@@ -204,7 +257,7 @@ impl CauseSlotPreparation<'_> {
     fn claim(
         &mut self,
         current: PendingCauseSetId,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         work.reserve(Some(
             self.store.sets.lookup_steps()

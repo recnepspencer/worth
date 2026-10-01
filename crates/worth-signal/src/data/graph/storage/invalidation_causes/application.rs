@@ -8,7 +8,7 @@ use crate::data::graph::SignalGraph;
 
 impl SignalGraph {
     pub(crate) fn begin_retained_cause_store_publication(
-        &self,
+        &mut self,
         ledger: &std::sync::Arc<crate::data::retained_storage::SignalConditionalRetentionLedger>,
         maximum: crate::data::retained_storage::RetainedStorageCharge,
     ) -> Result<super::RetainedCauseStorePublicationDraft, SignalError> {
@@ -23,7 +23,6 @@ impl SignalGraph {
     }
 
     #[cfg(test)]
-    #[cfg_attr(not(feature = "parallel"), allow(dead_code))]
     pub(crate) fn published_output_commit_order_for_test(&self) -> Vec<(u64, NodeId)> {
         self.cause_sets.published_order_probe.to_vec()
     }

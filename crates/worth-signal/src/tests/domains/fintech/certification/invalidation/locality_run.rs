@@ -151,16 +151,10 @@ mod tests {
         for scenario in FinancialLocalityScenario::ALL {
             assert!(run.cases().iter().any(|case| case.scenario() == scenario));
         }
-        #[cfg(feature = "parallel")]
         assert_eq!(
             run.strategy().decision(),
             TraversalStrategyDecision::CurrentStrategyCertified
         );
-        #[cfg(not(feature = "parallel"))]
-        assert!(matches!(
-            run.strategy().decision(),
-            TraversalStrategyDecision::InsufficientEvidence(_)
-        ));
     }
 
     #[test]

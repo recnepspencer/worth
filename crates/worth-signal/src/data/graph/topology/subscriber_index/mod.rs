@@ -9,6 +9,12 @@ mod membership;
 mod rebuild;
 
 pub(crate) use buckets::ReverseSubscriptionIndex;
+pub(crate) use buckets::ReverseSubscriptionQuery;
+pub(crate) use buckets::{
+    candidate_map_memory_requirement, CandidateEpochBasis, PreparedCandidateEpoch,
+    PreparedCandidateQueries,
+};
+pub(in crate::data::graph) use membership::PreparedReverseSubscriptionReplacement;
 
 #[cfg(test)]
 mod tests {
@@ -186,5 +192,63 @@ mod tests {
             graph.telemetry().invalidation.direct_causality_rejections - rejection_before,
             1
         );
+    }
+
+    #[test]
+    fn unseen_deep_leaf_keeps_known_ancestor_and_unscoped_candidates() {
+        let mut graph = SignalGraph::new();
+        let producer = graph.create_node();
+        let unscoped = graph.create_node();
+        let ancestor = graph.create_node();
+        let sibling = graph.create_node();
+        let aspect = Aspect::new(3);
+        graph
+            .set_dependencies(unscoped, [DependencyEdge::new(producer, aspect)])
+            .unwrap();
+        graph
+            .set_dependencies(
+                ancestor,
+                [DependencyEdge::with_partition_scope(
+                    producer,
+                    aspect,
+                    PartitionSubscription::subtree(
+                        crate::data::output::ScopePath::one("rates").unwrap(),
+                    ),
+                )],
+            )
+            .unwrap();
+        graph
+            .set_dependencies(
+                sibling,
+                [DependencyEdge::with_partition_scope(
+                    producer,
+                    aspect,
+                    PartitionSubscription::exact(
+                        crate::data::output::ScopePath::new(["other", "known"].map(str::to_owned))
+                            .unwrap(),
+                    ),
+                )],
+            )
+            .unwrap();
+        let unknown = crate::data::output::ScopePath::new(
+            ["rates", "unseen", "leaf", "deep"].map(str::to_owned),
+        )
+        .unwrap();
+        let change = ProducedAspectChange {
+            aspect,
+            previous_version: 0,
+            committed_version: 1,
+            changed_scopes: PartitionScopeSet::new([PartitionSubscription::exact(unknown)]),
+        };
+        let query = graph
+            .query_reverse_subscriptions(
+                producer,
+                &change,
+                ScopePrecision::ExactAspectScopes,
+                &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+            )
+            .unwrap();
+        assert_eq!(query.candidates, vec![unscoped, ancestor]);
+        assert!(!query.candidates.contains(&sibling));
     }
 }

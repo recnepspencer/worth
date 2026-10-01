@@ -17,6 +17,7 @@ pub(super) fn collect_dirty_targets(graph: &SignalGraph) -> Vec<NodeId> {
 
 pub(super) fn empty_execution_report() -> ExecutionReport {
     ExecutionReport {
+        execution: Vec::new(),
         plan_summary: crate::logic::planner::PlanSummary::default(),
         stage_count: 0,
         task_count: 0,

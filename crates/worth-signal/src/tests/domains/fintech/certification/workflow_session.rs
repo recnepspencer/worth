@@ -4,7 +4,7 @@ use serde_json::{json, Value};
 
 use crate::facade::{
     AspectVersion, LineageRecord, ReplayEventKind, ReplaySlice, SignalBranchHandle, SignalError,
-    SignalRuntimePolicy, SignalSnapshotV1, StageExecutor,
+    SignalRuntimePolicy, SignalSnapshotV1,
 };
 
 use super::super::aspects::{ALERT, CURVE, LIQUIDITY, PRICE, RISK, VOL};
@@ -52,7 +52,7 @@ pub(super) enum FintechWorkflowStep {
 
 pub(super) struct CertifiedFintechWorkflowSession {
     pub(super) world: FintechWorld,
-    pub(super) executor: StageExecutor,
+    pub(super) workers: Option<usize>,
     pub(super) policy: SignalRuntimePolicy,
     pub(super) named_branches: BTreeMap<String, SignalBranchHandle>,
     pub(super) named_snapshots: BTreeMap<String, SignalSnapshotV1>,
@@ -115,21 +115,12 @@ impl SignalFintechWorkflowCertificationAdapter {
         }
     }
 
-    pub(super) fn executor(profile: &WorkflowRuntimeProfile) -> Result<StageExecutor, SignalError> {
+    pub(super) fn workers(profile: &WorkflowRuntimeProfile) -> Result<Option<usize>, SignalError> {
         match profile.executor_name.as_deref().unwrap_or("serial") {
-            "serial" => Ok(StageExecutor::Serial),
-            "aggressive-parallel" => {
-                #[cfg(feature = "parallel")]
-                {
-                    Ok(StageExecutor::aggressive_parallel())
-                }
-                #[cfg(not(feature = "parallel"))]
-                {
-                    Err(SignalError::invalid_input(
-                        "aggressive-parallel workflow certification requires the `parallel` feature",
-                    ))
-                }
-            }
+            "serial" => Ok(None),
+            "lease-1" => Ok(Some(1)),
+            "lease-2" => Ok(Some(2)),
+            "lease-4" => Ok(Some(4)),
             other => Err(SignalError::invalid_input(format!(
                 "unsupported workflow certification executor `{other}`"
             ))),

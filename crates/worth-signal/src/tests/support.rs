@@ -12,7 +12,6 @@ use crate::facade::{
 };
 use crate::logic::planner::{
     build_evaluation_plan_with_policy_resolver, execute_plan_with_policy_and_condition,
-    StageExecutor,
 };
 use std::collections::BTreeMap;
 use std::ops::DerefMut;
@@ -329,7 +328,6 @@ where
         compute,
         comparator_resolver,
         condition_resolver,
-        StageExecutor::Serial,
         None,
     )?;
     Ok(())

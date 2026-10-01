@@ -11,7 +11,7 @@ fn admit_merge(
     base: Option<&BTreeSet<NodeId>>,
     delta: Option<&SetDelta>,
     target: &mut Vec<NodeId>,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<(), SignalError> {
     let base_len = base.map_or(0, BTreeSet::len);
     let removed = delta.map_or(0, |delta| delta.removed.len());
@@ -47,7 +47,7 @@ pub(in super::super) fn extend_merged_set(
     base: Option<&BTreeSet<NodeId>>,
     delta: Option<&SetDelta>,
     target: &mut Vec<NodeId>,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<SetMergeTraversal, SignalError> {
     admit_merge(base, delta, target, work)?;
     let mut traversal = SetMergeTraversal::default();

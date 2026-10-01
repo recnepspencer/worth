@@ -4,6 +4,64 @@ use crate::recipe::model::{AspectSelectionSpec, RecipeReadSignalSpec};
 use crate::runtime::tests::support::*;
 
 #[test]
+fn worker_family_scope_preflight_rejects_without_partial_definitions() {
+    let mut worker_shell = WorkerRuntimeShell::new(RuntimePolicySpec::default()).unwrap();
+    let mut envelope = crate::runtime::adapters::RuntimeDefinitionEnvelope {
+        policy: RuntimePolicySpec::default(),
+        sources: vec![SourceSpec {
+            id: "base".to_owned(),
+            initial: SignalValue::Number(1.0),
+            produces_aspects: None,
+        }],
+        recipes: Vec::new(),
+        source_families: vec![KeyedSourceFamilySpec {
+            family_id: "prices".to_owned(),
+            initial: SignalValue::Number(2.0),
+            produces_aspects: None,
+        }],
+        recipe_families: vec![KeyedRecipeFamilySpec {
+            family_id: "scoped".to_owned(),
+            reads: vec![RecipeFamilyReadSpec::Keyed {
+                family_id: "prices".to_owned(),
+                scope: Some(
+                    serde_json::from_value(serde_json::json!({
+                        "partitionFrom": "key", "detail": ""
+                    }))
+                    .unwrap(),
+                ),
+                aspects: Default::default(),
+            }],
+            expr: read("prices"),
+            when: None,
+            identity: None,
+            produces_aspects: None,
+        }],
+        worker_public_output_ids: Vec::new(),
+        unavailable_callbacks: Vec::new(),
+    };
+    let error = worker_shell
+        .publish_definition_envelope(envelope.clone())
+        .unwrap_err();
+    assert_eq!(error.code, "invalidInput");
+    assert!(worker_shell.read_value("base").is_err());
+    if let RecipeFamilyReadSpec::Keyed { scope, .. } = &mut envelope.recipe_families[0].reads[0] {
+        *scope = Some(
+            serde_json::from_value(serde_json::json!({
+                "partitionFrom": "key", "detail": "spot"
+            }))
+            .unwrap(),
+        );
+    }
+    // Reuse every id: rejected publication must retain neither ordinary nor
+    // keyed definitions, including the source family registered first.
+    worker_shell.publish_definition_envelope(envelope).unwrap();
+    assert_eq!(
+        worker_shell.read_value("base").unwrap(),
+        SignalValue::Number(1.0)
+    );
+}
+
+#[test]
 fn worker_runtime_shell_denies_callback_definition_envelope_publication() {
     let mut compatibility_runtime = RuntimeCore::new(RuntimePolicySpec::default()).unwrap();
     compatibility_runtime

@@ -7,7 +7,7 @@ impl CommittedSnapshotUpdate {
     pub(crate) fn materialize_with_work(
         &self,
         previous: &DependencySnapshot,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<SharedDependencySnapshot, SignalError> {
         match self {
             Self::Replace(replacement) => {
@@ -32,12 +32,10 @@ impl CommittedSnapshotUpdate {
                         .filter(|n| *n <= isize::MAX as usize),
                 )?;
                 for entry in entries {
-                    let bytes = entry.scope.as_ref().map_or(Some(0), |s| {
-                        s.partition
-                            .0
-                            .len()
-                            .checked_add(s.detail.as_ref().map_or(0, String::len))
-                    });
+                    let bytes = entry
+                        .scope
+                        .as_ref()
+                        .map_or(Some(0), |s| s.path().checked_segment_bytes());
                     work.reserve(bytes)?;
                 }
                 Ok(SharedDependencySnapshot::new(

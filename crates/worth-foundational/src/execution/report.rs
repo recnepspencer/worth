@@ -1,8 +1,9 @@
 use super::ExecutionPosture;
+use serde::{Deserialize, Serialize};
 
 /// Physical scheduling measurements. They describe placement and discarded
 /// work, and are never the canonical charged-work gate.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ExecutionPhysicalReport {
     active_workers_high_watermark: usize,
     peak_charged_memory_bytes: u64,
@@ -50,7 +51,7 @@ impl ExecutionPhysicalReport {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ExecutionFallbackCause {
     NoWork,
     NoLease,
@@ -63,7 +64,7 @@ pub enum ExecutionFallbackCause {
 
 /// Portable computation cost and resolved execution posture. Future pattern
 /// reports carry their own partition and reduction detail alongside this core.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ExecutionReport {
     resolved_posture: ExecutionPosture,
     charged_work: u64,

@@ -1,32 +1,23 @@
 use crate::data::error::SignalError;
+use crate::data::telemetry::InvalidationPerformedCounter;
 
-#[cfg(feature = "parallel")]
-use super::{verify_locality_case, FinancialCanonicalCaseIdentity, FinancialLocalityCaseEvidence};
-#[cfg(feature = "parallel")]
+use super::{
+    verify_locality_case, ExpectedLocalityCounterRow, FinancialCanonicalCaseIdentity,
+    FinancialLocalityCaseEvidence,
+};
 use crate::tests::domains::fintech::world::strategy_work_projection;
-#[cfg(feature = "parallel")]
 use crate::tests::domains::fintech::world::{FinancialLocalityScenario, FinancialWorldDefinition};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[cfg(not(feature = "parallel"))]
-pub(in crate::tests::domains::fintech) struct MeasurementGap;
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(in crate::tests::domains::fintech) enum TraversalStrategyDecision {
-    #[cfg(feature = "parallel")]
     CurrentStrategyCertified,
-    #[cfg(not(feature = "parallel"))]
-    InsufficientEvidence(MeasurementGap),
 }
 
 #[derive(Debug)]
 pub(in crate::tests::domains::fintech) struct InvalidationStrategyReport {
     decision: TraversalStrategyDecision,
-    #[cfg(feature = "parallel")]
     deterministic_case: Option<FinancialCanonicalCaseIdentity>,
-    #[cfg(feature = "parallel")]
     optimized_case: Option<FinancialCanonicalCaseIdentity>,
-    #[cfg(feature = "parallel")]
     canonical_work_items: u64,
 }
 
@@ -35,12 +26,10 @@ impl InvalidationStrategyReport {
         self.decision
     }
 
-    #[cfg(feature = "parallel")]
     pub(in crate::tests::domains::fintech) const fn canonical_work_items(&self) -> u64 {
         self.canonical_work_items
     }
 
-    #[cfg(feature = "parallel")]
     pub(in crate::tests::domains::fintech) fn case_identities(
         &self,
     ) -> Option<(
@@ -53,16 +42,6 @@ impl InvalidationStrategyReport {
     }
 }
 
-#[cfg(not(feature = "parallel"))]
-pub(in crate::tests::domains::fintech) fn certify_current_strategy(
-    _seed: u64,
-) -> Result<InvalidationStrategyReport, SignalError> {
-    Ok(InvalidationStrategyReport {
-        decision: TraversalStrategyDecision::InsufficientEvidence(MeasurementGap),
-    })
-}
-
-#[cfg(feature = "parallel")]
 pub(in crate::tests::domains::fintech) fn certify_current_strategy(
     seed: u64,
 ) -> Result<InvalidationStrategyReport, SignalError> {
@@ -77,18 +56,17 @@ pub(in crate::tests::domains::fintech) fn certify_current_strategy(
         definition(),
         0,
         crate::facade::DiagnosticsTier::Operational,
-        crate::logic::planner::StageExecutor::Serial,
+        1,
     )?;
     let optimized = verify_locality_case(
         definition(),
         0,
         crate::facade::DiagnosticsTier::Operational,
-        crate::logic::planner::StageExecutor::balanced_parallel(),
+        4,
     )?;
     certify_equivalent_streams(deterministic, optimized)
 }
 
-#[cfg(feature = "parallel")]
 fn certify_equivalent_streams(
     deterministic: FinancialLocalityCaseEvidence,
     optimized: FinancialLocalityCaseEvidence,
@@ -108,7 +86,13 @@ fn certify_equivalent_streams(
             "strategies performed different canonical admitted work",
         ));
     }
-    if deterministic.counters() != optimized.counters()
+    if !ExpectedLocalityCounterRow::ALL
+        .into_iter()
+        .zip(InvalidationPerformedCounter::ALL)
+        .filter(|(row, _)| !row.is_physical_batch_shape())
+        .all(|(_, counter)| {
+            deterministic.counters().value(counter) == optimized.counters().value(counter)
+        })
         || deterministic.necessary_evaluations() != optimized.necessary_evaluations()
         || deterministic.identity() != optimized.identity()
     {
@@ -125,7 +109,7 @@ fn certify_equivalent_streams(
     })
 }
 
-#[cfg(all(test, feature = "parallel"))]
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -151,7 +135,7 @@ mod tests {
             ),
             0,
             crate::facade::DiagnosticsTier::Operational,
-            crate::logic::planner::StageExecutor::Serial,
+            1,
         )
         .unwrap();
         let optimized = verify_locality_case(
@@ -162,7 +146,7 @@ mod tests {
             ),
             0,
             crate::facade::DiagnosticsTier::Operational,
-            crate::logic::planner::StageExecutor::balanced_parallel(),
+            4,
         )
         .unwrap();
 

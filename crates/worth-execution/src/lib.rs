@@ -31,8 +31,8 @@ pub use pattern::{
     DecomposeStage, ExecutionDecompose, ExecutionForkJoin, ExecutionMap, ExecutionReduce,
     ExecutionRounds, ExecutionScan, ForkChild, ForkJoinDenial, ForkJoinOutcome, InterfaceSolution,
     InteriorResult, MapDenial, MapKernelContext, MapKernelFailure, MapKernelStop, MapOutcome,
-    MapPartition, MapStop, OracleMismatch, ReduceCertificationFailure, ReduceInputDenial,
-    RoundsDenial, RoundsOutcome, ScanDenial, ScanOutcome,
+    MapPartition, MapStop, OracleMismatch, PreparedExecutionMap, ReduceCertificationFailure,
+    ReduceInputDenial, RoundsDenial, RoundsOutcome, ScanDenial, ScanOutcome,
 };
 pub use reduction::{
     ReductionDenial, ReductionMetrics, ReductionPlan, ReductionRunFailure, ReductionRunStop,

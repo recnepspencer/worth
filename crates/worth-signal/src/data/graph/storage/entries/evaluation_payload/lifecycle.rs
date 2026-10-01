@@ -27,15 +27,19 @@ pub(in crate::data::graph) fn transition_dirty(
             .expect("direct invalidation generation overflow");
         let generation = warm.direct_invalidation_generation;
         match warm.direct_invalidation_basis.as_mut() {
-            Some(basis) => basis.merge_seed(generation, aspect, scopes.iter().cloned()),
+            Some(basis) => std::sync::Arc::make_mut(basis).merge_seed(
+                generation,
+                aspect,
+                scopes.iter().cloned(),
+            ),
             None => {
-                warm.direct_invalidation_basis = Some(
+                warm.direct_invalidation_basis = Some(std::sync::Arc::new(
                         crate::data::proof::invalidation::source_seed::DirectInvalidationBasis::from_seed(
                             generation,
                             aspect,
                             scopes.iter().cloned(),
                         ),
-                    );
+                    ));
             }
         }
     }

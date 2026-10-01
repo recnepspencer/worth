@@ -38,7 +38,6 @@ pub(crate) use compiled_authority::{
 pub(in crate::tests::domains::fintech) use dependency_rewire::FinancialDependencyRewireEvidence;
 pub(in crate::tests::domains::fintech) use factor_sequence::FinancialFactorSequenceEvidence;
 pub(in crate::tests::domains::fintech) use lifecycle_composition::FinancialBranchLifecycleCompletion;
-#[cfg(feature = "parallel")]
 pub(in crate::tests::domains::fintech) use locality_execution::strategy_work_projection;
 pub(crate) use locality_execution::{
     compile_financial_locality_world, compile_financial_locality_world_at_tier,

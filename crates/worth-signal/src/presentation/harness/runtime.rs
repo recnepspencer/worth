@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
+use worth_execution::{ExecutionAuthority, LeaseRequest};
 
 use crate::facade::*;
 
@@ -8,6 +9,30 @@ pub trait SignalEvaluationDriver: Send + Sync {
         &self,
         ctx: &mut EvaluationContext<'_, ()>,
     ) -> Result<EvaluationOutput, SignalError>;
+}
+
+pub trait SignalCheckedEvaluationDriver: Send + Sync {
+    fn evaluate_checked(
+        &self,
+        ctx: &mut CheckedEvaluationContext<'_, '_, '_, '_, ()>,
+    ) -> Result<EvaluationOutput, SignalError>;
+}
+
+impl<F, O> SignalCheckedEvaluationDriver for F
+where
+    F: for<'graph, 'work, 'run, 'lease> Fn(
+            &mut CheckedEvaluationContext<'graph, 'work, 'run, 'lease, ()>,
+        ) -> Result<O, SignalError>
+        + Send
+        + Sync,
+    O: IntoEvaluationOutput,
+{
+    fn evaluate_checked(
+        &self,
+        ctx: &mut CheckedEvaluationContext<'_, '_, '_, '_, ()>,
+    ) -> Result<EvaluationOutput, SignalError> {
+        self(ctx).map(IntoEvaluationOutput::into_evaluation_output)
+    }
 }
 
 impl<F, O> SignalEvaluationDriver for F
@@ -101,6 +126,9 @@ impl SignalMutationAction {
 pub struct SignalHarnessRuntime {
     pub(crate) graph: SignalGraph,
     pub(crate) evaluator: Arc<dyn SignalEvaluationDriver>,
+    pub(crate) checked_evaluator: Option<Arc<dyn SignalCheckedEvaluationDriver>>,
+    pub(crate) execution_authority: Option<Arc<ExecutionAuthority>>,
+    pub(crate) lease_request: Option<LeaseRequest>,
     pub(crate) labels: BTreeMap<String, NodeId>,
 }
 
@@ -135,6 +163,9 @@ impl SignalHarnessRuntime {
 pub struct SignalHarnessRuntimeBuilder {
     graph: SignalGraph,
     evaluator: Option<Arc<dyn SignalEvaluationDriver>>,
+    checked_evaluator: Option<Arc<dyn SignalCheckedEvaluationDriver>>,
+    execution_authority: Option<Arc<ExecutionAuthority>>,
+    lease_request: Option<LeaseRequest>,
     labels: BTreeMap<String, NodeId>,
 }
 
@@ -149,6 +180,9 @@ impl SignalHarnessRuntimeBuilder {
         Self {
             graph: SignalGraph::new(),
             evaluator: None,
+            checked_evaluator: None,
+            execution_authority: None,
+            lease_request: None,
             labels: BTreeMap::new(),
         }
     }
@@ -185,6 +219,23 @@ impl SignalHarnessRuntimeBuilder {
         self.evaluator = Some(Arc::new(evaluator));
     }
 
+    pub fn set_checked_evaluator<F>(&mut self, evaluator: F)
+    where
+        F: SignalCheckedEvaluationDriver + 'static,
+    {
+        self.checked_evaluator = Some(Arc::new(evaluator));
+    }
+
+    pub fn with_execution_authority(
+        mut self,
+        authority: Arc<ExecutionAuthority>,
+        request: LeaseRequest,
+    ) -> Self {
+        self.execution_authority = Some(authority);
+        self.lease_request = Some(request);
+        self
+    }
+
     pub fn build(self) -> Result<SignalHarnessRuntime, SignalError> {
         let evaluator = self.evaluator.ok_or_else(|| {
             SignalError::invalid_input("signal harness runtime requires an evaluator")
@@ -192,6 +243,9 @@ impl SignalHarnessRuntimeBuilder {
         Ok(SignalHarnessRuntime {
             graph: self.graph,
             evaluator,
+            checked_evaluator: self.checked_evaluator,
+            execution_authority: self.execution_authority,
+            lease_request: self.lease_request,
             labels: self.labels,
         })
     }

@@ -28,6 +28,7 @@ static TEST_LOCK: Mutex<()> = Mutex::new(());
 
 mod adversarial;
 mod nesting;
+mod prepared_map;
 
 fn authority() -> &'static ExecutionAuthority {
     AUTHORITY.get_or_init(|| {

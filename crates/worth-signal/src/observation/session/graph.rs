@@ -105,7 +105,7 @@ impl SignalGraph {
     pub(crate) fn finish_optional_observation_session_with_work(
         &self,
         observation: &SignalObservationSession,
-        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
     ) -> Result<Option<SignalInvalidationExecutionReceipt>, SignalError> {
         if observation.graph_instance() != self.runtime_instance_id() {
             return Err(SignalError::invalid_input(

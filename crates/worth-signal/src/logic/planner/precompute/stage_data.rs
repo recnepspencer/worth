@@ -29,16 +29,12 @@ impl OrderedStreamItem for PreparedTaskPatch {
 
 pub(in crate::logic::planner) enum StageExecutionData {
     Prepared(SingleConsumer<Vec<PreparedEvaluation>>),
-    #[cfg(feature = "parallel")]
-    Patched(SingleConsumer<Vec<PreparedTaskPatch>>),
 }
 
 impl StageExecutionData {
     pub(in crate::logic::planner) fn len(&self) -> usize {
         match self {
             Self::Prepared(prepared) => prepared.as_ref().len(),
-            #[cfg(feature = "parallel")]
-            Self::Patched(patches) => patches.as_ref().len(),
         }
     }
 
@@ -57,8 +53,6 @@ impl StageExecutionData {
                     prepared,
                 })
                 .collect(),
-            #[cfg(feature = "parallel")]
-            Self::Patched(patches) => patches.into_inner(),
         }
     }
 }

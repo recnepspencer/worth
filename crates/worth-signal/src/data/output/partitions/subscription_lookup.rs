@@ -7,21 +7,17 @@ impl PartitionInterner {
         &self,
         subscription: &PartitionSubscription,
     ) -> Option<usize> {
-        let partition = subscription
-            .partition
-            .0
-            .len()
-            .checked_mul(2)?
-            .checked_add(1)?
-            .checked_mul(self.partition_lookup.lookup_steps())?;
-        let detail = match &subscription.detail {
-            None => 0,
-            Some(detail) => detail
-                .len()
-                .checked_mul(2)?
-                .checked_add(1)?
-                .checked_mul(self.detail_lookup.lookup_steps())?,
-        };
-        partition.checked_add(detail)
+        subscription
+            .path()
+            .segments()
+            .iter()
+            .try_fold(0usize, |total, segment| {
+                let lookup = segment
+                    .len()
+                    .checked_mul(2)?
+                    .checked_add(1)?
+                    .checked_mul(self.segment_lookup.lookup_steps())?;
+                total.checked_add(lookup)
+            })
     }
 }

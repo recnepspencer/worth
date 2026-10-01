@@ -9,7 +9,7 @@ pub(crate) use certification::certify_reuse_decision;
 pub(crate) use context_resolution::{
     resolve_reuse_boundary_authority, resolve_reuse_boundary_context,
 };
-#[cfg(feature = "parallel")]
 pub(crate) use context_resolution::{
-    resolve_reuse_boundary_authority_with_policy, resolve_reuse_boundary_context_with_policy,
+    resolve_reuse_boundary_authority_with_policy,
+    resolve_reuse_boundary_context_with_policy_observed,
 };

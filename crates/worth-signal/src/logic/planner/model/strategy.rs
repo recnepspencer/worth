@@ -1,193 +1,69 @@
-#[cfg(feature = "parallel")]
-use std::num::NonZeroUsize;
-#[cfg(feature = "parallel")]
-use std::thread::available_parallelism;
-
 use serde::{Deserialize, Serialize};
+use worth_execution::ExecutionResourceLease;
+use worth_foundational::{ExecutionObjectiveProfile, ExecutionPosture};
 
-#[cfg(feature = "parallel")]
-use super::report::ParallelExecutionKind;
+use crate::data::graph::SignalGraph;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub enum StageExecutor {
-    #[default]
-    Serial,
-    #[cfg(feature = "parallel")]
-    StagedParallelPrecompute { policy: ParallelExecutionPolicy },
-    #[cfg(feature = "parallel")]
-    FullParallel { policy: ParallelExecutionPolicy },
-}
-
-impl StageExecutor {
-    #[cfg(feature = "parallel")]
-    pub fn conservative_parallel() -> Self {
-        Self::full_parallel(16).with_parallel_policy(
-            ParallelExecutionPolicy::new(
-                NonZeroUsize::new(16).expect("constant min stage width is non-zero"),
-            )
-            .with_worker_count(2)
-            .with_chunk_size(2)
-            .with_apply_group_min_width(2)
-            .with_max_concurrent_apply_groups(2),
-        )
-    }
-
-    #[cfg(feature = "parallel")]
-    pub fn balanced_parallel() -> Self {
-        Self::full_parallel(12).with_parallel_policy(
-            ParallelExecutionPolicy::new(
-                NonZeroUsize::new(12).expect("constant min stage width is non-zero"),
-            )
-            .with_worker_count(available_parallelism().map_or(4, |count| count.get().min(4)))
-            .with_chunk_size(2)
-            .with_apply_group_min_width(1)
-            .with_max_concurrent_apply_groups(2),
-        )
-    }
-
-    #[cfg(feature = "parallel")]
-    pub fn aggressive_parallel() -> Self {
-        Self::full_parallel(8).with_parallel_policy(
-            ParallelExecutionPolicy::new(
-                NonZeroUsize::new(8).expect("constant min stage width is non-zero"),
-            )
-            .with_worker_count(available_parallelism().map_or(4, |count| count.get().min(8)))
-            .with_chunk_size(1)
-            .with_apply_group_min_width(1)
-            .with_max_concurrent_apply_groups(4),
-        )
-    }
-
-    #[cfg(feature = "parallel")]
-    pub fn parallel(min_stage_width: usize) -> Self {
-        Self::staged_parallel_precompute(min_stage_width)
-    }
-
-    #[cfg(feature = "parallel")]
-    pub fn staged_parallel_precompute(min_stage_width: usize) -> Self {
-        Self::StagedParallelPrecompute {
-            policy: ParallelExecutionPolicy::new(non_zero_width(min_stage_width)),
-        }
-    }
-
-    #[cfg(feature = "parallel")]
-    pub fn full_parallel(min_stage_width: usize) -> Self {
-        Self::FullParallel {
-            policy: ParallelExecutionPolicy::new(non_zero_width(min_stage_width)),
-        }
-    }
-
-    #[cfg(feature = "parallel")]
-    pub fn with_parallel_policy(self, policy: ParallelExecutionPolicy) -> Self {
-        match self {
-            Self::Serial => Self::Serial,
-            Self::StagedParallelPrecompute { .. } => Self::StagedParallelPrecompute { policy },
-            Self::FullParallel { .. } => Self::FullParallel { policy },
-        }
-    }
-
-    #[cfg(feature = "parallel")]
-    pub(crate) fn parallel_kind(&self) -> Option<ParallelExecutionKind> {
-        match self {
-            Self::Serial => None,
-            Self::StagedParallelPrecompute { .. } => {
-                Some(ParallelExecutionKind::StagedParallelPrecompute)
-            }
-            Self::FullParallel { .. } => Some(ParallelExecutionKind::FullParallel),
-        }
-    }
-
-    #[cfg(feature = "parallel")]
-    pub(crate) fn parallel_policy(&self) -> Option<ParallelExecutionPolicy> {
-        match self {
-            Self::Serial => None,
-            Self::StagedParallelPrecompute { policy } | Self::FullParallel { policy } => {
-                Some(*policy)
-            }
-        }
-    }
-
-    #[cfg(feature = "parallel")]
-    pub(crate) fn is_full_parallel(&self) -> bool {
-        matches!(self, Self::FullParallel { .. })
-    }
-}
-
-#[cfg(feature = "parallel")]
-fn non_zero_width(width: usize) -> NonZeroUsize {
-    NonZeroUsize::new(width.max(1)).expect("parallel min stage width is clamped to at least one")
-}
-
-#[cfg(feature = "parallel")]
+/// Installed Signal thresholds resolved against one caller's execution authority.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ParallelExecutionPolicy {
-    pub min_stage_width: NonZeroUsize,
-    pub worker_count: Option<NonZeroUsize>,
-    pub chunk_size: Option<NonZeroUsize>,
-    pub apply_group_min_width: NonZeroUsize,
-    pub max_concurrent_apply_groups: Option<NonZeroUsize>,
+pub struct ResolvedSignalPlannerPolicy {
+    posture: ExecutionPosture,
+    objective: ExecutionObjectiveProfile,
+    parallel_min_tasks: usize,
+    full_parallel_min_tasks: usize,
+    chunk_size: usize,
+    apply_group_min_width: usize,
+    max_concurrent_apply_groups: usize,
 }
 
-#[cfg(feature = "parallel")]
-impl ParallelExecutionPolicy {
-    pub fn new(min_stage_width: NonZeroUsize) -> Self {
+impl ResolvedSignalPlannerPolicy {
+    pub(crate) fn for_graph(
+        graph: &SignalGraph,
+        lease: Option<&ExecutionResourceLease<'_>>,
+    ) -> Self {
+        let installed = graph.installed_runtime_policy();
+        let posture = lease.map_or(ExecutionPosture::Serial, |lease| lease.resolved_posture());
+        let workers = if posture == ExecutionPosture::Automatic {
+            lease.map_or(1, |lease| lease.policy().budget().max_workers().get())
+        } else {
+            1
+        };
         Self {
-            min_stage_width,
-            worker_count: None,
-            chunk_size: None,
-            apply_group_min_width: min_stage_width,
-            max_concurrent_apply_groups: None,
+            posture,
+            objective: installed.execution_objective(),
+            parallel_min_tasks: installed.parallel_min_tasks().max(1),
+            full_parallel_min_tasks: installed.full_parallel_min_tasks().max(1),
+            chunk_size: 1,
+            apply_group_min_width: 1,
+            max_concurrent_apply_groups: workers,
         }
     }
 
-    pub fn with_worker_count(mut self, worker_count: usize) -> Self {
-        self.worker_count = NonZeroUsize::new(worker_count.max(1));
-        self
+    pub const fn posture(self) -> ExecutionPosture {
+        self.posture
     }
 
-    pub fn with_chunk_size(mut self, chunk_size: usize) -> Self {
-        self.chunk_size = NonZeroUsize::new(chunk_size.max(1));
-        self
+    pub const fn objective(self) -> ExecutionObjectiveProfile {
+        self.objective
     }
 
-    pub fn with_apply_group_min_width(mut self, min_width: usize) -> Self {
-        self.apply_group_min_width = NonZeroUsize::new(min_width.max(1))
-            .expect("apply group min width is clamped to at least one");
-        self
+    pub const fn parallel_min_tasks(self) -> usize {
+        self.parallel_min_tasks
     }
 
-    pub fn with_max_concurrent_apply_groups(mut self, max_groups: usize) -> Self {
-        self.max_concurrent_apply_groups = NonZeroUsize::new(max_groups.max(1));
-        self
+    pub const fn full_parallel_min_tasks(self) -> usize {
+        self.full_parallel_min_tasks
     }
 
-    pub(crate) fn chunk_size_for(self, task_count: usize) -> usize {
-        if let Some(chunk_size) = self.chunk_size {
-            return chunk_size.get().min(task_count.max(1));
-        }
-        let workers = self
-            .worker_count
-            .map(|count| count.get())
-            .or_else(|| available_parallelism().ok().map(|count| count.get()))
-            .unwrap_or(1)
-            .max(1);
-        task_count.div_ceil(workers).max(1)
+    pub fn chunk_size_for(self, task_count: usize) -> usize {
+        self.chunk_size.min(task_count.max(1))
     }
 
-    pub(crate) fn worker_count_for(self, task_count: usize) -> usize {
-        self.worker_count
-            .map(|count| count.get())
-            .or_else(|| available_parallelism().ok().map(|count| count.get()))
-            .unwrap_or(1)
-            .min(task_count.max(1))
-            .max(1)
+    pub const fn apply_group_min_width(self) -> usize {
+        self.apply_group_min_width
     }
 
-    pub(crate) fn max_apply_group_count_for(self, task_count: usize) -> usize {
-        self.max_concurrent_apply_groups
-            .map(|count| count.get())
-            .unwrap_or_else(|| self.worker_count_for(task_count))
-            .min(task_count.max(1))
-            .max(1)
+    pub fn max_apply_group_count_for(self, task_count: usize) -> usize {
+        self.max_concurrent_apply_groups.min(task_count.max(1))
     }
 }

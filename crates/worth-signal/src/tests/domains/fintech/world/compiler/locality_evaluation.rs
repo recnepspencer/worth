@@ -5,6 +5,7 @@ use crate::data::aspect::AspectVersion;
 use crate::data::error::SignalError;
 use crate::data::handle::NodeId;
 use crate::data::output::{ChangedRegion, NodeEvaluationResult};
+use crate::logic::checked_context::CheckedEvaluationContext;
 use crate::logic::context::EvaluationContext;
 use crate::logic::evaluation::EvaluationOutput;
 
@@ -142,6 +143,54 @@ impl LocalityEvaluationProgram {
             }
         }
         Ok(view.finish(self.result_for(output)))
+    }
+
+    pub(super) fn evaluate_checked(
+        &self,
+        view: &mut CheckedEvaluationContext<'_, '_, '_, '_, ()>,
+    ) -> Result<EvaluationOutput, SignalError> {
+        view.work()
+            .checkpoint(
+                self.outputs_by_node
+                    .len()
+                    .saturating_add(self.mutations.len())
+                    .saturating_add(256) as u64,
+            )
+            .map_err(|_| SignalError::invalid_input("locality kernel work exhausted"))?;
+        let output = self.outputs_by_node.get(&view.node()).ok_or_else(|| {
+            SignalError::invalid_input("locality evaluator received an unknown node")
+        })?;
+        for subscription in &output.subscriptions {
+            let source = self.handles[&subscription.upstream];
+            let aspect = signal_aspect(subscription.input_aspect);
+            match subscription.edge_scope {
+                None => {
+                    view.read(source, aspect)?;
+                }
+                Some(scope) => {
+                    view.read_scoped(source, aspect, &partition_subscription(scope))?;
+                }
+            }
+        }
+        Ok(view.finish(self.result_for(output)))
+    }
+
+    pub(super) fn record_completed(&self, report: &crate::logic::planner::ExecutionReport) {
+        let mut evaluated = self
+            .evaluated_outputs
+            .lock()
+            .expect("locality evaluation identity lock poisoned");
+        for stage in &report.stages {
+            for task in &stage.task_records {
+                if let Some(output) = self
+                    .outputs_by_node
+                    .get(&task.node)
+                    .filter(|_| task.recomputed)
+                {
+                    evaluated.insert(output.id);
+                }
+            }
+        }
     }
 
     fn result_for(&self, output: &FinancialLocalityOutput) -> NodeEvaluationResult {

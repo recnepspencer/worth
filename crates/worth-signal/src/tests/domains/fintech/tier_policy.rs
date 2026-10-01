@@ -34,12 +34,8 @@ fn fintech_mixed_tier_policy_honors_audit_tolerance_without_hiding_live_truth_ch
         .with_default_comparator(VersionComparatorPolicy::Exact),
     );
 
-    let baseline_desk = world
-        .read_top_desk_with_executor(StageExecutor::Serial)
-        .unwrap();
-    let baseline_threshold = world
-        .read_primary_threshold_with_executor(StageExecutor::Serial)
-        .unwrap();
+    let baseline_desk = world.read_top_desk().unwrap();
+    let baseline_threshold = world.read_primary_threshold().unwrap();
     let skipped_before = world
         .runtime
         .graph()
@@ -48,16 +44,10 @@ fn fintech_mixed_tier_policy_honors_audit_tolerance_without_hiding_live_truth_ch
         .evaluation
         .skipped_by_comparator;
 
-    world
-        .bump_primary_market(3, 0, 0, 0, StageExecutor::Serial)
-        .unwrap();
+    world.bump_primary_market(3, 0, 0, 0).unwrap();
 
-    let after_desk = world
-        .read_top_desk_with_executor(StageExecutor::Serial)
-        .unwrap();
-    let after_threshold = world
-        .read_primary_threshold_with_executor(StageExecutor::Serial)
-        .unwrap();
+    let after_desk = world.read_top_desk().unwrap();
+    let after_threshold = world.read_primary_threshold().unwrap();
 
     assert_eq!(after_desk, baseline_desk);
     assert_ne!(after_threshold, baseline_threshold);

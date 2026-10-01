@@ -2,28 +2,49 @@ use std::collections::BTreeMap;
 
 use crate::facade::{
     LineageRecord, NodeEvaluationResult, OutputChange, ReplaySlice, SignalError,
-    SignalRuntimePolicy, SignalTransaction, StageExecutor,
+    SignalRuntimePolicy, SignalTransaction,
 };
 use crate::tests::support::{version_ab, ASPECT_A, ASPECT_B};
 
-use super::fintech_world::{build_fintech_fixture, fintech_evaluator, seed_fintech_baseline};
+use super::fintech_world::{
+    build_fintech_fixture, fintech_checked_evaluator, fintech_evaluator, seed_fintech_baseline,
+    FintechFixture,
+};
 use super::invariant_oracle::assert_runtime_invariants;
 use super::workflow_truth::{
     capture_active_branch_snapshot, trace_adv, AdversarialWorkflow, FailureInjectionPoint, Lcg,
     ReferenceModel, SignalAdversarialHarness, WorkflowDomain, WorkflowSeed,
 };
+use crate::tests::leased_execution::support::{authority, request};
 
 type FintechTransaction<'a> = SignalTransaction<'a, (), (), (), (), ()>;
+
+fn evaluate_fintech_dirty(fixture: &mut FintechFixture, workers: Option<usize>) {
+    if let Some(workers) = workers {
+        let lease = authority()
+            .request_lease(request(workers, 10_000_000))
+            .unwrap();
+        fixture
+            .runtime
+            .evaluate_dirty_checked(&(), &fintech_checked_evaluator(fixture), &lease)
+            .unwrap();
+    } else {
+        fixture
+            .runtime
+            .evaluate_dirty(&(), &fintech_evaluator(fixture))
+            .unwrap();
+    }
+}
 
 pub(super) fn fintech_session(
     seed: WorkflowSeed,
     workflow: AdversarialWorkflow,
     policy: SignalRuntimePolicy,
-    executor: StageExecutor,
+    workers: Option<usize>,
 ) -> (SignalAdversarialHarness, ReplaySlice, Vec<LineageRecord>) {
     let policy = policy
         .with_observation_activation(worth_foundational::ObservationActivationProfile::Continuous);
-    if !matches!(executor, StageExecutor::Serial) {
+    if workers.is_some() {
         trace_adv(format!(
             "[fintech {:?} seed={}] setup:start",
             workflow, seed.0
@@ -35,7 +56,7 @@ pub(super) fn fintech_session(
     let mut snapshots = BTreeMap::new();
     let mut branch_history = BTreeMap::new();
     let (main, main_snapshot) = seed_fintech_baseline(&mut fixture, &mut model);
-    if !matches!(executor, StageExecutor::Serial) {
+    if workers.is_some() {
         trace_adv(format!(
             "[fintech {:?} seed={}] setup:seeded-main",
             workflow, seed.0
@@ -55,7 +76,7 @@ pub(super) fn fintech_session(
         .runtime
         .capture_branch_snapshot(fixture.runtime.observe().current_branch())
         .unwrap();
-    if !matches!(executor, StageExecutor::Serial) {
+    if workers.is_some() {
         trace_adv(format!(
             "[fintech {:?} seed={}] setup:what-if-ready",
             workflow, seed.0
@@ -84,7 +105,7 @@ pub(super) fn fintech_session(
         .runtime
         .capture_branch_snapshot(fixture.runtime.observe().current_branch())
         .unwrap();
-    if !matches!(executor, StageExecutor::Serial) {
+    if workers.is_some() {
         trace_adv(format!(
             "[fintech {:?} seed={}] setup:correction-ready",
             workflow, seed.0
@@ -109,7 +130,7 @@ pub(super) fn fintech_session(
     let mut rng = Lcg::new(seed);
     let mut ctx = ();
     for step in 0..24 {
-        if !matches!(executor, StageExecutor::Serial) {
+        if workers.is_some() {
             trace_adv(format!(
                 "[fintech {:?} seed={}] step={} branch={}",
                 workflow,
@@ -162,10 +183,7 @@ pub(super) fn fintech_session(
                     })
                     .unwrap();
                 model.branch_mut(model.active).a = next_a;
-                fixture
-                    .runtime
-                    .evaluate_dirty_with_executor(&(), &fintech_evaluator(&fixture), executor)
-                    .unwrap();
+                evaluate_fintech_dirty(&mut fixture, workers);
                 if rng.coin() {
                     capture_active_branch_snapshot(
                         &mut fixture.runtime,
@@ -194,10 +212,7 @@ pub(super) fn fintech_session(
                     })
                     .unwrap();
                 model.branch_mut(model.active).b = next_b;
-                fixture
-                    .runtime
-                    .evaluate_dirty_with_executor(&(), &fintech_evaluator(&fixture), executor)
-                    .unwrap();
+                evaluate_fintech_dirty(&mut fixture, workers);
                 if rng.coin() {
                     capture_active_branch_snapshot(
                         &mut fixture.runtime,
@@ -274,10 +289,7 @@ pub(super) fn fintech_session(
                 );
             }
             _ => {
-                fixture
-                    .runtime
-                    .evaluate_dirty_with_executor(&(), &fintech_evaluator(&fixture), executor)
-                    .unwrap();
+                evaluate_fintech_dirty(&mut fixture, workers);
                 harness.record(&fixture.runtime, step + 3, "drain-dirty", None);
             }
         }
@@ -295,7 +307,7 @@ pub(super) fn fintech_session(
         if !report.errors.is_empty() {
             harness.panic_invariant(
                 &policy,
-                &format!("{executor:?}"),
+                &format!("workers={workers:?}"),
                 format!("step {}: {}", report.step_index, report.errors.join(" | ")),
             );
         }
@@ -316,7 +328,7 @@ pub(super) fn fintech_session(
         if !report.errors.is_empty() {
             harness.panic_invariant(
                 &policy,
-                &format!("{executor:?}"),
+                &format!("workers={workers:?}"),
                 format!("step {}: {}", report.step_index, report.errors.join(" | ")),
             );
         }

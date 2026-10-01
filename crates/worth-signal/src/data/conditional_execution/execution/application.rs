@@ -19,6 +19,7 @@ pub(super) struct ConditionalResolutionAttempt<
     'provider_borrow,
     'providers,
     'counter,
+    'observer,
     Condition,
     Comparator,
     Compute,
@@ -34,11 +35,12 @@ pub(super) struct ConditionalResolutionAttempt<
     pub(super) ready_invalidation:
         Option<crate::data::proof::invalidation::progression::ReadyInvalidationBatch>,
     pub(super) counters: &'counter mut SignalConditionalDecisionCounters,
-    pub(super) work: &'counter mut crate::data::retained_storage::RetainedStoragePreparation,
+    pub(super) work:
+        &'counter mut crate::data::retained_storage::RetainedStoragePreparation<'observer>,
 }
 
 impl<Condition, Comparator, Compute>
-    ConditionalResolutionAttempt<'_, '_, '_, '_, '_, '_, Condition, Comparator, Compute>
+    ConditionalResolutionAttempt<'_, '_, '_, '_, '_, '_, '_, Condition, Comparator, Compute>
 where
     Condition: InstalledSignalConditionResolver,
     Comparator: ComparatorPolicyResolver,

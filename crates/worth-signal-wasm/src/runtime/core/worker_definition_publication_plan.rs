@@ -169,6 +169,13 @@ fn reject_unplannable_recipe_family_reads(
 ) -> Result<(), WorthSignalJsError> {
     for family in &envelope.recipe_families {
         for read in &family.reads {
+            let scope = match read {
+                RecipeFamilyReadSpec::Signal { scope, .. }
+                | RecipeFamilyReadSpec::Keyed { scope, .. } => scope,
+            };
+            if let Some(scope) = scope {
+                scope.compile_key_requirement()?;
+            }
             match read {
                 RecipeFamilyReadSpec::Signal { id, .. } => {
                     reject_unknown_publication_read(known_signal_ids, id, "keyed family")?;

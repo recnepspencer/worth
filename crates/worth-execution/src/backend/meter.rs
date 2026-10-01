@@ -1,7 +1,6 @@
 use std::{
     cell::RefCell,
     marker::PhantomData,
-    mem::size_of,
     rc::Rc,
     sync::{
         atomic::{AtomicU64, AtomicUsize, Ordering},
@@ -20,9 +19,13 @@ thread_local! {
 }
 
 mod activity;
+mod framework_bytes;
 mod nested;
+mod prepared_context;
+mod run_context;
 pub(crate) use activity::{enter_certification_activity, enter_retained_memory, has_active_kernel};
 pub(crate) use nested::record_nested;
+pub(crate) use prepared_context::PreparedMeterContext;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KernelStop {
@@ -60,6 +63,7 @@ pub(crate) struct RunLimits {
     ceiling: u64,
     worker_activity: Arc<WorkerActivity>,
     physical_activity: Arc<PhysicalActivity>,
+    physical_cell_charged: bool,
     force_serial: bool,
     bound_to_lease: bool,
 }
@@ -94,60 +98,6 @@ impl Drop for WorkerActivityGuard {
 }
 
 impl RunLimits {
-    pub(crate) fn for_run(lease: Option<&ExecutionResourceLease<'_>>, serial: bool) -> Self {
-        let parent = ACTIVE_METER.with(|active| active.borrow().last().cloned());
-        let (
-            tokens,
-            deadline,
-            ceiling,
-            worker_activity,
-            physical_activity,
-            inherited_serial,
-            inherited_lease,
-        ) = if let Some(parent) = parent {
-            let parent = parent.borrow();
-            (
-                parent.limits.tokens.clone(),
-                parent.limits.deadline,
-                parent.limits.ceiling.saturating_sub(parent.work),
-                Arc::clone(&parent.limits.worker_activity),
-                Arc::clone(&parent.limits.physical_activity),
-                parent.limits.force_serial,
-                parent.limits.bound_to_lease,
-            )
-        } else {
-            (
-                Vec::new(),
-                None,
-                u64::MAX,
-                Arc::new(WorkerActivity::default()),
-                activity::active_certification_physical()
-                    .unwrap_or_else(|| Arc::new(PhysicalActivity::default())),
-                false,
-                false,
-            )
-        };
-        let mut limits = Self {
-            tokens,
-            deadline,
-            ceiling,
-            worker_activity,
-            physical_activity,
-            force_serial: serial || inherited_serial,
-            bound_to_lease: lease.is_some() || inherited_lease,
-        };
-        if let Some(lease) = lease {
-            limits.tokens.extend(lease.cancellation_lineage());
-            limits.deadline = match (limits.deadline, lease.deadline()) {
-                (Some(parent), Some(child)) => Some(parent.min(child)),
-                (Some(parent), None) => Some(parent),
-                (None, child) => child,
-            };
-            limits.ceiling = limits.ceiling.min(lease.policy().budget().work_ceiling());
-        }
-        limits
-    }
-
     pub(crate) fn has_parent() -> bool {
         ACTIVE_METER.with(|active| !active.borrow().is_empty())
     }
@@ -223,29 +173,6 @@ impl RunLimits {
         self.physical_activity
             .discarded_work
             .load(Ordering::Acquire)
-    }
-
-    pub(crate) fn framework_context_bytes(
-        &self,
-        partitions: usize,
-        max_workers: usize,
-    ) -> Option<u64> {
-        let token_bytes = self
-            .tokens
-            .len()
-            .checked_mul(size_of::<CancellationToken>())?;
-        let per_partition = size_of::<KernelMeter>()
-            .checked_add(2 * size_of::<usize>())? // Rc allocation header
-            .checked_add(token_bytes)? // cloned checkpoint lineage
-            .checked_add(size_of::<(usize, u64)>())?; // worker context stack
-        let partition_bytes = partitions.checked_mul(per_partition)?;
-        let worker_guards =
-            max_workers.checked_mul(size_of::<crate::authority::ResourceReservation>())?;
-        let fixed = size_of::<WorkerActivity>()
-            .checked_add(2 * size_of::<usize>())? // Arc allocation header
-            .checked_add(token_bytes)?
-            .checked_add(worker_guards)?;
-        u64::try_from(partition_bytes.checked_add(fixed)?).ok()
     }
 }
 

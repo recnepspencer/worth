@@ -3,8 +3,10 @@ use std::{mem::size_of, sync::Mutex};
 use worth_foundational::PartitionIdentity;
 use worth_proof::CanonicalUniqueVec;
 
+use crate::authority::ExecutionResourceLease;
 use crate::report::ChargedBytes;
 
+use super::meter::RunLimits;
 use super::port::TaskOutcome;
 
 /// Admission binds checked identities, values, and declared capacities. The
@@ -83,26 +85,64 @@ impl<T: ChargedBytes> AdmittedBatch<T> {
     /// Reserve all declared kernel/result bytes and framework-owned buffers
     /// before either a result slot or native scheduling order is allocated.
     pub(crate) fn execution_memory_bytes<R, E>(&self) -> Option<u64> {
-        let count = self.len();
-        let count_bytes = |item_size: usize| -> Option<u64> {
-            let bytes = count.checked_mul(item_size)?;
-            u64::try_from(bytes).ok()
-        };
         let input_heap = self.values.iter().try_fold(0_u64, |sum, item| {
             sum.checked_add(item.additional_charged_bytes())
         })?;
-        let fixed = [
-            count_bytes(size_of::<T>())?,
-            count_bytes(size_of::<PartitionIdentity>())?,
-            count_bytes(size_of::<u64>())?,
-            count_bytes(size_of::<Mutex<Option<TaskOutcome<R, E>>>>())?,
-            count_bytes(size_of::<usize>())?,
-            count_bytes(size_of::<R>())?,
+        execution_memory_requirement::<T, R, E>(
+            self.len(),
             input_heap,
             self.kernel_scratch_bytes,
             self.declared_result_bytes,
             self.access_memory_bytes,
-        ];
-        fixed.into_iter().try_fold(0_u64, u64::checked_add)
+        )
     }
+}
+
+/// Read-only arithmetic for the same buffers admitted by `run_checked_batch`.
+/// Calling this does not reserve memory or grant execution authority.
+pub(crate) fn execution_memory_requirement<T, R, E>(
+    count: usize,
+    input_heap: u64,
+    kernel_scratch_bytes: u64,
+    declared_result_bytes: u64,
+    access_memory_bytes: u64,
+) -> Option<u64> {
+    let count_bytes = |item_size: usize| -> Option<u64> {
+        let bytes = count.checked_mul(item_size)?;
+        u64::try_from(bytes).ok()
+    };
+    let fixed = [
+        count_bytes(size_of::<T>())?,
+        count_bytes(size_of::<PartitionIdentity>())?,
+        count_bytes(size_of::<u64>())?,
+        count_bytes(size_of::<Mutex<Option<TaskOutcome<R, E>>>>())?,
+        count_bytes(size_of::<usize>())?,
+        count_bytes(size_of::<R>())?,
+        input_heap,
+        kernel_scratch_bytes,
+        declared_result_bytes,
+        access_memory_bytes,
+    ];
+    fixed.into_iter().try_fold(0_u64, u64::checked_add)
+}
+
+/// The complete reservation asked of an actual leased checked batch,
+/// including its inherited cancellation/checkpoint contexts.
+pub(crate) fn execution_memory_requirement_for_lease<T, R, E>(
+    lease: &ExecutionResourceLease<'_>,
+    count: usize,
+    input_heap: u64,
+    kernel_scratch_bytes: u64,
+    declared_result_bytes: u64,
+    access_memory_bytes: u64,
+) -> Option<u64> {
+    let batch = execution_memory_requirement::<T, R, E>(
+        count,
+        input_heap,
+        kernel_scratch_bytes,
+        declared_result_bytes,
+        access_memory_bytes,
+    )?;
+    let context = RunLimits::framework_context_bytes_for_lease(lease, count)?;
+    batch.checked_add(context)
 }

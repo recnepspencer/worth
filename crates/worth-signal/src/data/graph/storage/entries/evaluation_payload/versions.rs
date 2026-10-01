@@ -9,7 +9,7 @@ pub(in crate::data::graph) fn apply_aspect_version(
     version: AspectVersion,
     changed_regions: &[ChangedRegion],
 ) {
-    warm.aspect_version_overrides
+    std::sync::Arc::make_mut(&mut warm.aspect_version_overrides)
         .apply_evaluation(version, changed_regions);
     hot.aspect_version_header.set_global(version);
     hot.aspect_version_header

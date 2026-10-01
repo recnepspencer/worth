@@ -67,7 +67,7 @@ impl AllocationTracker for RequestedObjectTracker {
 /// Returns the workload result and requested-object high-water for its group.
 /// Pre-existing allocations, wrapper bytes, and allocations on other threads
 /// are excluded. This is instrumented evidence, not RSS or ordinary timing.
-pub(super) fn measure<T>(run: impl FnOnce() -> T) -> (T, Option<usize>) {
+pub(crate) fn measure<T>(run: impl FnOnce() -> T) -> (T, Option<usize>) {
     install();
     let _serial = SESSION.lock().unwrap_or_else(|error| error.into_inner());
     let mut token = AllocationGroupToken::register().expect("allocation group id space exhausted");
@@ -116,6 +116,8 @@ impl Drop for ActiveCleanup {
 #[cfg(test)]
 mod tests {
     use super::measure;
+    use crate::data::retained_storage::btree_structure_charge;
+    use std::collections::BTreeMap;
 
     #[test]
     fn peak_tracks_free_after_high_water() {
@@ -176,4 +178,38 @@ mod tests {
         worker.join().unwrap();
         assert_eq!(peak, Some(768));
     }
+
+    #[test]
+    fn retained_btree_node_bound_covers_real_insert_remove_and_reinsert_peaks() {
+        for count in [0, 1, 5, 6, 11, 12, 71, 72, 1_000, 4_225] {
+            let (_, peak) = measure(|| {
+                let mut map = BTreeMap::<usize, [u8; 512]>::new();
+                let key = |ordinal: usize| ordinal.wrapping_mul(0x9e37_79b1);
+                for ordinal in 0..count {
+                    map.insert(key(ordinal), [ordinal as u8; 512]);
+                }
+                for ordinal in (0..count).step_by(3) {
+                    map.remove(&key(ordinal));
+                }
+                for ordinal in (0..count).step_by(3) {
+                    map.insert(key(ordinal), [ordinal as u8; 512]);
+                }
+                std::hint::black_box(map.len());
+            });
+            let bound = btree_structure_charge::<usize, [u8; 512]>(count)
+                .unwrap()
+                .bytes();
+            assert!(
+                peak.expect("tracking allocator measured a peak") as u64 <= bound,
+                "real BTreeMap peak exceeded retained bound for {count} keys"
+            );
+        }
+    }
 }
+
+#[cfg(test)]
+mod cause_cache_tests;
+#[cfg(test)]
+mod cause_vector_tests;
+#[cfg(test)]
+mod diagnostics_epoch_tests;

@@ -57,6 +57,7 @@ impl InvalidationSink for TestSink {
     fn deliver_invalidation(
         &self,
         delivery: crate::facade::BridgeSignalInvalidationDelivery,
+        _lease: Option<&crate::facade::ExecutionResourceLease<'_>>,
     ) -> Result<BridgeDeliveryReceipt, SignalBridgeSinkError> {
         Ok(BridgeDeliveryReceipt::new(
             delivery.invalidation_targets().len(),

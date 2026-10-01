@@ -13,12 +13,8 @@ fn fintech_keyed_audit_cache_reuses_stable_memo_entries_without_cross_shape_corr
     let mut world = setup_seeded_world();
     world.assert_shape(FintechScale::smoke());
 
-    world
-        .read_top_desk_with_executor(StageExecutor::Serial)
-        .unwrap();
-    world
-        .read_top_scenario_with_executor(StageExecutor::Serial)
-        .unwrap();
+    world.read_top_desk().unwrap();
+    world.read_top_scenario().unwrap();
 
     let family = define_keyed_computation(
         &mut world.runtime,
@@ -75,9 +71,7 @@ fn fintech_keyed_audit_cache_reuses_stable_memo_entries_without_cross_shape_corr
         .unwrap()
         .get_aspect_version();
 
-    world
-        .bump_primary_market(8, 3, 2, 1, StageExecutor::Serial)
-        .unwrap();
+    world.bump_primary_market(8, 3, 2, 1).unwrap();
     run_cache(&mut world, &stressed, &compute_calls).unwrap();
     let stressed_version = world
         .runtime

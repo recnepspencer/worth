@@ -10,7 +10,7 @@ impl SignalGraph {
         node: NodeId,
         scope: Option<&PartitionSubscription>,
         additional_scopes: usize,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         // Each pass reads identity/revision, edges, snapshot, producer version,
         // and ledger. Include admission's own reads and bounded page growth as
@@ -34,12 +34,7 @@ impl SignalGraph {
             .warm_ref(node)?
             .aspect_version_overrides
             .lookup_work_bound(scope);
-        let bytes = scope.map_or(Some(0), |s| {
-            s.partition
-                .0
-                .len()
-                .checked_add(s.detail.as_ref().map_or(0, String::len))
-        });
+        let bytes = scope.map_or(Some(0), |s| Some(s.path().total_segment_bytes()));
         // The producer evaluation can add at most one partition and one detail
         // entry per region before the second validation.
         let added = bytes

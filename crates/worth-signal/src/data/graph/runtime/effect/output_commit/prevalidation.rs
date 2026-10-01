@@ -10,7 +10,7 @@ impl SignalGraph {
     pub(super) fn prevalidate_output_commit_packet(
         &self,
         packet: &OutputCommitPacket,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         self.prevalidate_output_commit_storage(&packet.storage, work)
     }
@@ -18,7 +18,7 @@ impl SignalGraph {
     pub(super) fn prevalidate_output_commit_storage(
         &self,
         packet: &OutputCommitStorage,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         let producer = packet.apply.effect.operational.node;
         self.admit_effect_node_mutation_work(work)?;

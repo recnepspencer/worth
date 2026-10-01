@@ -1,4 +1,4 @@
-use crate::data::comparator::ComparatorPolicyResolver;
+use crate::data::comparator::VersionComparatorPolicy;
 use crate::data::dependency::CanonicalDependencies;
 use crate::data::error::SignalError;
 use crate::data::graph::SignalGraph;
@@ -8,8 +8,7 @@ use crate::data::performance::{ResolvedExecutionStrategy, ResolvedMaintenanceStr
 use crate::logic::planner::precompute::{PreparedTaskPatch, StageExecutionData};
 use crate::logic::planner::semantic::StageSemanticIdentity;
 use crate::logic::planner::types::{
-    EligibleTask, LoweredApplyPlan, LoweredStagePlan, LoweredTask, LoweredTaskExecution,
-    StageExecutor,
+    EligibleTask, LoweredStagePlan, LoweredTask, LoweredTaskExecution, ResolvedSignalPlannerPolicy,
 };
 use crate::logic::prepared::{PreparedEvaluationOrigin, PreparedEvaluationOutcome};
 
@@ -18,43 +17,56 @@ use super::footprint::{
     build_apply_footprint, build_lowered_dirty_delta, build_touched_scope_summary, structural_delta,
 };
 use super::strategy::build_lowered_apply_plan;
+use crate::logic::planner::precompute::graph_batch::CheckedApplyCapacity;
 
 pub(super) enum LoweredStageExecutionForm {
     Serial(LoweredSerialStage),
     Generic(LoweredStagePlan),
 }
 
-pub(super) fn build_stage_execution_form(
+pub(super) fn build_legacy_stage_execution_form(
     graph: &mut SignalGraph,
     stage_index: u32,
     stage_tasks: &[EligibleTask],
     stage_execution: StageExecutionData,
-    comparator_resolver: &impl ComparatorPolicyResolver,
-    executor: StageExecutor,
     stage_identities: &[StageSemanticIdentity],
-) -> Result<LoweredStageExecutionForm, SignalError> {
+) -> Result<LoweredSerialStage, SignalError> {
     let prepared_patches = stage_execution.into_patches(stage_tasks);
     let resolved_policy = graph.resolved_performance_policy();
+    LoweredSerialStage::from_prepared_patches(
+        graph,
+        stage_index,
+        stage_tasks,
+        prepared_patches,
+        resolved_policy.maintenance_strategy,
+        resolved_policy.authority_policy,
+        stage_identities,
+    )
+}
 
-    if should_lower_direct_serial(executor) {
-        return Ok(LoweredStageExecutionForm::Serial(
-            LoweredSerialStage::from_prepared_patches(
-                graph,
-                stage_index,
-                stage_tasks,
-                prepared_patches,
-                resolved_policy.maintenance_strategy,
-                resolved_policy.authority_policy,
-                stage_identities,
-            )?,
+pub(super) fn build_checked_stage_execution_form(
+    graph: &mut SignalGraph,
+    stage_index: u32,
+    stage_tasks: &[EligibleTask],
+    stage_execution: StageExecutionData,
+    apply: &mut CheckedApplyCapacity,
+    policy: &ResolvedSignalPlannerPolicy,
+) -> Result<LoweredStagePlan, SignalError> {
+    let prepared_patches = stage_execution.into_patches(stage_tasks);
+    let resolved_policy = graph.resolved_performance_policy();
+    if apply.members().len() != stage_tasks.len() {
+        return Err(SignalError::internal(
+            "checked apply capacity omitted a selected task",
         ));
     }
-
     let lowered_tasks = prepared_patches
         .into_iter()
-        .map(|patch| lower_task_patch(graph, patch, comparator_resolver))
+        .map(|patch| {
+            let comparator_policy = apply.take_policy(patch.task_index)?;
+            lower_task_patch(graph, patch, comparator_policy)
+        })
         .collect::<Result<Vec<_>, SignalError>>()?;
-    let lowered_apply_plan = build_lowered_apply_plan(graph, stage_index, &lowered_tasks, executor);
+    let lowered_apply_plan = build_lowered_apply_plan(&lowered_tasks, policy);
     let dirty_delta = build_lowered_dirty_delta(&lowered_tasks);
     let touched_scope = build_touched_scope_summary(&lowered_tasks);
     let authority_policy = lowered_tasks
@@ -62,7 +74,7 @@ pub(super) fn build_stage_execution_form(
         .find(|task| matches!(task.authority_policy(), AuthorityPolicy::AuthoritativeOnly))
         .map(|task| task.authority_policy())
         .unwrap_or(resolved_policy.authority_policy);
-    let lowered_stage = LoweredStagePlan::new(
+    Ok(LoweredStagePlan::new(
         stage_index,
         lowered_tasks,
         lowered_apply_plan,
@@ -70,52 +82,7 @@ pub(super) fn build_stage_execution_form(
         resolved_policy.execution_strategy,
         resolved_policy.maintenance_strategy,
         authority_policy,
-    );
-
-    if matches!(
-        lowered_stage.lowered_apply_plan(),
-        LoweredApplyPlan::Serial(_)
-    ) {
-        let (
-            stage_index,
-            tasks,
-            lowered_apply_plan,
-            dirty_delta,
-            _execution_strategy,
-            _maintenance_strategy,
-            authority_policy,
-        ) = lowered_stage.into_parts();
-        let LoweredApplyPlan::Serial(plan) = lowered_apply_plan else {
-            unreachable!("checked above")
-        };
-        #[cfg(not(feature = "parallel"))]
-        let _ = plan;
-        return Ok(LoweredStageExecutionForm::Serial(
-            LoweredSerialStage::from_lowered_tasks(
-                stage_index,
-                stage_tasks,
-                authority_policy,
-                dirty_delta,
-                resolved_policy.maintenance_strategy,
-                #[cfg(feature = "parallel")]
-                plan.rejection_reason,
-                tasks,
-                stage_identities,
-            ),
-        ));
-    }
-
-    Ok(LoweredStageExecutionForm::Generic(lowered_stage))
-}
-
-#[cfg(feature = "parallel")]
-fn should_lower_direct_serial(executor: StageExecutor) -> bool {
-    !executor.is_full_parallel()
-}
-
-#[cfg(not(feature = "parallel"))]
-fn should_lower_direct_serial(_executor: StageExecutor) -> bool {
-    true
+    ))
 }
 
 pub(super) fn validate_lowered_stage_plan(lowered: &LoweredStagePlan) {
@@ -178,11 +145,10 @@ pub(super) fn validate_lowered_stage_plan(lowered: &LoweredStagePlan) {
 fn lower_task_patch(
     graph: &mut SignalGraph,
     patch: PreparedTaskPatch,
-    comparator_resolver: &impl ComparatorPolicyResolver,
+    comparator_policy: VersionComparatorPolicy,
 ) -> Result<LoweredTask, SignalError> {
-    #[cfg(not(feature = "parallel"))]
-    let _ = comparator_resolver;
-    graph.refresh_runtime_dependencies_of(patch.node)?;
+    // The admitted graph epoch binds the current dependency revision. A refresh
+    // here would mutate that binding before the whole proposal is preflighted.
     let current_dependencies =
         CanonicalDependencies::from_slice(graph.current_runtime_dependencies_of(patch.node)?);
     let admitted = {
@@ -201,11 +167,6 @@ fn lower_task_patch(
     let before_state = graph.get_state(patch.node)?;
     let before_artifact_state = graph.node_runtime_artifact_finalize_image(patch.node)?;
     let contract = graph.get_contract(patch.node)?;
-    #[cfg(feature = "parallel")]
-    let comparator_policy = comparator_resolver.policy_for_node(
-        patch.node,
-        graph.node_eval_config(patch.node)?.comparator.as_ref(),
-    );
     let recomputed = matches!(prepared.outcome, PreparedEvaluationOutcome::Evaluate)
         && !matches!(prepared.origin, PreparedEvaluationOrigin::MemoizedReuse);
     let partition_aware = !prepared.result.changed_regions.is_empty();
@@ -224,7 +185,6 @@ fn lower_task_patch(
         patch.node,
         contract.semantics.produces,
         next_dependencies,
-        #[cfg(feature = "parallel")]
         comparator_policy,
         contract.execution.path_class,
         contract.authority.policy,

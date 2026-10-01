@@ -21,12 +21,8 @@ fn fintech_retained_and_reconstructed_artifacts_agree_across_runtime_policies() 
             .with_detail_limit(4),
     );
 
-    let retained_audit = retained_world
-        .read_primary_audit_surface(StageExecutor::Serial)
-        .unwrap();
-    let reconstructed_audit = reconstructed_world
-        .read_primary_audit_surface(StageExecutor::Serial)
-        .unwrap();
+    let retained_audit = retained_world.read_primary_audit_surface().unwrap();
+    let reconstructed_audit = reconstructed_world.read_primary_audit_surface().unwrap();
     assert_eq!(retained_audit, reconstructed_audit);
 
     let retained_node = retained_world.top_desk();

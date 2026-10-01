@@ -3,7 +3,7 @@ use crate::data::error::SignalError;
 use crate::data::graph::SignalGraph;
 use crate::data::handle::NodeId;
 use crate::data::output::{
-    scopes_overlap, InternedPartitionSubscription, PartitionMatchMode, PartitionSubscription,
+    scopes_overlap, InternedPartitionSubscription, PartitionSubscription, ScopeCoverage,
 };
 use crate::data::proof::{FrontierEntryClassification, FrontierInclusionBasis};
 
@@ -56,13 +56,9 @@ pub(super) fn subscriber_invalidation_evidence(
                 {
                     return Ok(Some(SubscriptionInvalidationEvidence {
                         classification: FrontierEntryClassification::DirectDirty,
-                        inclusion_basis: match scope.match_mode {
-                            PartitionMatchMode::WholePartition => {
-                                FrontierInclusionBasis::PartitionScopeOverlap
-                            }
-                            PartitionMatchMode::PartitionAndDetail => {
-                                FrontierInclusionBasis::DetailScopeOverlap
-                            }
+                        inclusion_basis: match scope.coverage() {
+                            ScopeCoverage::Subtree => FrontierInclusionBasis::PartitionScopeOverlap,
+                            ScopeCoverage::Exact => FrontierInclusionBasis::DetailScopeOverlap,
                         },
                         partition_scoped_checks: partition_checks,
                     }));
@@ -74,13 +70,9 @@ pub(super) fn subscriber_invalidation_evidence(
             if scopes_overlap(scope, changed_scope) {
                 return Ok(Some(SubscriptionInvalidationEvidence {
                     classification: FrontierEntryClassification::DirectDirty,
-                    inclusion_basis: match scope.match_mode {
-                        PartitionMatchMode::WholePartition => {
-                            FrontierInclusionBasis::PartitionScopeOverlap
-                        }
-                        PartitionMatchMode::PartitionAndDetail => {
-                            FrontierInclusionBasis::DetailScopeOverlap
-                        }
+                    inclusion_basis: match scope.coverage() {
+                        ScopeCoverage::Subtree => FrontierInclusionBasis::PartitionScopeOverlap,
+                        ScopeCoverage::Exact => FrontierInclusionBasis::DetailScopeOverlap,
                     },
                     partition_scoped_checks: partition_checks,
                 }));

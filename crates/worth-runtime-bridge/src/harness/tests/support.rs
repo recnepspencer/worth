@@ -276,6 +276,7 @@ impl InvalidationSink for RejectingSignalSink {
     fn deliver_invalidation(
         &self,
         _delivery: crate::facade::BridgeSignalInvalidationDelivery,
+        _lease: Option<&crate::facade::ExecutionResourceLease<'_>>,
     ) -> Result<crate::facade::BridgeDeliveryReceipt, SignalBridgeSinkError> {
         Err(SignalBridgeSinkError::new("forced sink rejection"))
     }

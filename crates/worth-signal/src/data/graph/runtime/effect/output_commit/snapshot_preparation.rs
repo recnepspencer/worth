@@ -4,6 +4,7 @@ use crate::data::dependency::{
     CommittedSnapshotUpdate, SnapshotDeltaRecord, SnapshotStorageStrategy,
 };
 use crate::data::handle::NodeId;
+use crate::data::request_preparation::SignalPreparationBudget;
 
 #[derive(Debug)]
 pub(super) struct MaterializedEffectSnapshot {
@@ -13,12 +14,70 @@ pub(super) struct MaterializedEffectSnapshot {
     strategy: SnapshotStorageStrategy,
 }
 
+pub(super) struct PreparedSnapshotCandidate {
+    pub(super) node: NodeId,
+    pub(super) snapshot: crate::data::dependency::DependencySnapshot,
+    pub(super) delta: SnapshotDeltaRecord,
+    pub(super) strategy: SnapshotStorageStrategy,
+}
+
 impl SignalGraph {
+    pub(super) fn claim_epoch_snapshot_candidate_shape(
+        &self,
+        apply: &ApplyCommitPacket,
+        preparation: Option<&mut SignalPreparationBudget>,
+    ) -> Result<(), SignalError> {
+        let Some(budget) = preparation else {
+            return Ok(());
+        };
+        let effect = &apply.effect.operational;
+        if apply.defer_snapshot_commit
+            || !effect.snapshot_delta.changed()
+            || !super::super::vocabulary::verdict_commits_snapshot(&effect.verdict)
+        {
+            return Ok(());
+        }
+        if let CommittedSnapshotUpdate::VersionOnly(_) = &effect.dependency_snapshot_update {
+            let previous = self.get_dep_snapshot(effect.node)?;
+            // Arc::make_mut duplicates the shared entry vector and each
+            // scoped entry before changing versions.
+            budget.claim_vec::<crate::data::dependency::DependencySnapshotEntry>(
+                previous.entries().len(),
+            )?;
+            budget.claim_vec::<usize>(5)?;
+            for entry in previous.entries() {
+                if let Some(scope) = entry.scope.as_ref() {
+                    budget.claim_vec::<String>(scope.path().depth())?;
+                    budget.claim_vec::<u8>(scope.path().total_segment_bytes())?;
+                }
+            }
+        }
+        Ok(())
+    }
+
     pub(super) fn materialize_effect_snapshot(
         &mut self,
         apply: &ApplyCommitPacket,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<Option<MaterializedEffectSnapshot>, SignalError> {
+        let Some(candidate) = self.prepare_effect_snapshot_candidate(apply, work)? else {
+            return Ok(None);
+        };
+        let insertion = self.prepare_dependency_snapshot_insertion(candidate.snapshot, work)?;
+        let insertion = self.prepare_effect_snapshot_storage(insertion, work)?;
+        Ok(Some(MaterializedEffectSnapshot {
+            node: candidate.node,
+            insertion,
+            delta: candidate.delta,
+            strategy: candidate.strategy,
+        }))
+    }
+
+    pub(super) fn prepare_effect_snapshot_candidate(
+        &self,
+        apply: &ApplyCommitPacket,
+        work: &mut EvaluationWork<'_, '_>,
+    ) -> Result<Option<PreparedSnapshotCandidate>, SignalError> {
         let effect = &apply.effect.operational;
         if apply.defer_snapshot_commit
             || !effect.snapshot_delta.changed()
@@ -58,12 +117,10 @@ impl SignalGraph {
                 work.reserve(count)?;
                 let mut largest = 0;
                 for entry in left.iter().chain(right) {
-                    let bytes = entry.scope.as_ref().map_or(Some(0), |s| {
-                        s.partition
-                            .0
-                            .len()
-                            .checked_add(s.detail.as_ref().map_or(0, String::len))
-                    });
+                    let bytes = entry
+                        .scope
+                        .as_ref()
+                        .map_or(Some(0), |s| s.path().checked_segment_bytes());
                     work.reserve(bytes.map(|_| 0))?;
                     largest = largest.max(bytes.expect("admitted scope length"));
                 }
@@ -74,12 +131,9 @@ impl SignalGraph {
             }
         };
         let snapshot = update.materialize_with_work(previous, work)?;
-        let insertion =
-            self.prepare_dependency_snapshot_insertion(snapshot.into_snapshot(), work)?;
-        let insertion = self.prepare_effect_snapshot_storage(insertion, work)?;
-        Ok(Some(MaterializedEffectSnapshot {
+        Ok(Some(PreparedSnapshotCandidate {
             node: effect.node,
-            insertion,
+            snapshot: snapshot.into_snapshot(),
             delta,
             strategy: update.storage_strategy(),
         }))

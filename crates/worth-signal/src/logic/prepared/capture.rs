@@ -8,12 +8,30 @@ use crate::data::output::PartitionSubscription;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct PreparedDependencyCapture {
-    edges: Vec<PreparedDependencyEdge>,
+    pub(super) edges: Vec<PreparedDependencyEdge>,
 }
 
 impl PreparedDependencyCapture {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub(crate) fn with_capacity(capacity: usize) -> Self {
+        Self {
+            edges: Vec::with_capacity(capacity),
+        }
+    }
+
+    pub(crate) fn checked_capture_heap_bound(
+        inputs: &crate::data::node::BoundedSignalInputs,
+    ) -> Option<u64> {
+        let fixed = inputs
+            .as_slice()
+            .len()
+            .checked_mul(std::mem::size_of::<PreparedDependencyEdge>())?;
+        u64::try_from(fixed)
+            .ok()?
+            .checked_add(inputs.captured_scope_heap_bound()?)
     }
 
     pub fn record(&mut self, source: NodeId, aspect: Aspect, scope: Option<PartitionSubscription>) {

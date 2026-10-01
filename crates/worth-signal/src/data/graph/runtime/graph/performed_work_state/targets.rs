@@ -9,7 +9,7 @@ impl PerformedWorkCaptureState {
     pub(crate) fn snapshot_targets(
         &self,
         ledger: Option<&Arc<Ledger>>,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<PerformedTargetSnapshot, SignalError> {
         let bindings = self
             .bindings
@@ -56,7 +56,7 @@ impl PerformedWorkCaptureState {
 impl PerformedTargetSnapshot {
     pub(crate) fn empty(
         ledger: Option<&Arc<Ledger>>,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<Self, SignalError> {
         work.reserve(Some(1))?;
         let charge = Charge::capacity::<crate::data::proof::SignalInvalidationExecutionReceipt>(1)

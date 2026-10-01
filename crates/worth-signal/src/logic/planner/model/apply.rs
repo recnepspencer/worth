@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 
 use crate::data::aspect::AspectMask;
-#[cfg(feature = "parallel")]
 use crate::data::comparator::VersionComparatorPolicy;
 use crate::data::dependency::CanonicalDependencies;
 use crate::data::handle::NodeId;
@@ -24,25 +23,6 @@ pub struct ApplyFootprint {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DisjointApplyGroup {
     pub task_indices: Vec<usize>,
-    pub footprint: ApplyFootprint,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum SharedSurfacePolicy {
-    ReductionOnly,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum MutationDomain {
-    LoweredStage,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct DisjointApplyProof {
-    pub stage_index: u32,
-    pub mutation_domain: MutationDomain,
-    pub group_footprints: Vec<ApplyFootprint>,
-    pub shared_surface_policy: SharedSurfacePolicy,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -69,7 +49,6 @@ pub enum ApplyPlanSerialFallbackReason {
 }
 
 impl ApplyPlanSerialFallbackReason {
-    #[cfg(feature = "parallel")]
     pub fn code(self) -> &'static str {
         match self {
             Self::BelowFullParallelThreshold => "below-full-parallel-threshold",
@@ -89,7 +68,6 @@ pub struct SerialApplyPlan {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ConcurrentApplyPlan {
     pub groups: Vec<DisjointApplyGroup>,
-    pub proof: DisjointApplyProof,
     pub reduction: ConcurrentApplyReductionPlan,
 }
 
@@ -135,18 +113,12 @@ impl LoweredTaskExecution {
         &self.prepared
     }
 
-    #[cfg(feature = "parallel")]
     pub(crate) fn dependency_updates(&self) -> u32 {
         self.dependency_updates
     }
 
     pub(crate) fn recomputed(&self) -> bool {
         self.recomputed
-    }
-
-    #[cfg(feature = "parallel")]
-    pub(crate) fn rewiring(&self) -> Option<&RewiringSummary> {
-        self.rewiring.as_ref()
     }
 
     pub(crate) fn into_parts(
@@ -178,7 +150,6 @@ pub struct LoweredTask {
     node: NodeId,
     produced_aspects: AspectMask,
     dependency_inputs: CanonicalDependencies,
-    #[cfg(feature = "parallel")]
     comparator_policy: VersionComparatorPolicy,
     path_class: PathClass,
     authority_policy: AuthorityPolicy,
@@ -249,10 +220,6 @@ impl LoweredStagePlan {
         }
     }
 
-    pub(crate) fn lowered_apply_plan(&self) -> &LoweredApplyPlan {
-        &self.lowered_apply_plan
-    }
-
     pub(crate) fn into_parts(
         self,
     ) -> (
@@ -282,7 +249,7 @@ impl LoweredTask {
         node: NodeId,
         produced_aspects: AspectMask,
         dependency_inputs: CanonicalDependencies,
-        #[cfg(feature = "parallel")] comparator_policy: VersionComparatorPolicy,
+        comparator_policy: VersionComparatorPolicy,
         path_class: PathClass,
         authority_policy: AuthorityPolicy,
         footprint: ApplyFootprint,
@@ -293,17 +260,12 @@ impl LoweredTask {
             node,
             produced_aspects,
             dependency_inputs,
-            #[cfg(feature = "parallel")]
             comparator_policy,
             path_class,
             authority_policy,
             footprint,
             execution,
         }
-    }
-
-    pub(crate) fn task_index(&self) -> usize {
-        self.task_index
     }
 
     pub(crate) fn node(&self) -> NodeId {
@@ -316,11 +278,6 @@ impl LoweredTask {
 
     pub(crate) fn dependency_inputs(&self) -> &CanonicalDependencies {
         &self.dependency_inputs
-    }
-
-    #[cfg(feature = "parallel")]
-    pub(crate) fn comparator_policy(&self) -> VersionComparatorPolicy {
-        self.comparator_policy.clone()
     }
 
     pub(crate) fn path_class(&self) -> PathClass {
@@ -346,6 +303,7 @@ impl LoweredTask {
         NodeId,
         AspectMask,
         CanonicalDependencies,
+        VersionComparatorPolicy,
         PathClass,
         AuthorityPolicy,
         ApplyFootprint,
@@ -356,6 +314,7 @@ impl LoweredTask {
             self.node,
             self.produced_aspects,
             self.dependency_inputs,
+            self.comparator_policy,
             self.path_class,
             self.authority_policy,
             self.footprint,

@@ -1,7 +1,10 @@
+use crate::data::request_preparation::{self as preparation_budget, SignalPreparationBudget};
 pub(crate) mod validation;
 
 mod admission;
+mod depths;
 mod evidence;
+mod required_inputs;
 mod stage_formation;
 mod topology;
 mod unsettled_paths;
@@ -37,16 +40,47 @@ pub fn build_evaluation_plan_with_policy_resolver(
     request_mode: EvaluationRequestMode,
     resolver: &mut impl ComparatorPolicyResolver,
 ) -> Result<EvaluationPlan, SignalError> {
-    let cursor =
-        build_evaluation_cursor_with_policy_resolver(graph, targets, request_mode, resolver)?;
-    Ok(evidence::materialize_plan_from_cursor(cursor))
+    build_evaluation_plan_with_policy_resolver_and_work(
+        graph,
+        targets,
+        request_mode,
+        resolver,
+        None,
+        None,
+    )
 }
 
-pub(crate) fn build_evaluation_cursor_with_policy_resolver(
+pub(crate) fn build_evaluation_plan_with_policy_resolver_and_work(
     graph: &mut SignalGraph,
     targets: &[NodeId],
     request_mode: EvaluationRequestMode,
     resolver: &mut impl ComparatorPolicyResolver,
+    work: Option<&mut worth_execution::MapKernelContext<'_, '_>>,
+    mut preparation: Option<&mut SignalPreparationBudget>,
+) -> Result<EvaluationPlan, SignalError> {
+    let cursor = build_evaluation_cursor_with_work(
+        graph,
+        targets,
+        request_mode,
+        resolver,
+        work,
+        preparation.as_deref_mut(),
+    )?;
+    preparation_budget::claim_vec::<super::types::ExecutionStage>(
+        preparation.as_deref_mut(),
+        cursor.stages.len(),
+    )?;
+    preparation_budget::claim_vec::<super::types::EligibleTask>(preparation, cursor.tasks.len())?;
+    Ok(evidence::materialize_plan_from_cursor(cursor))
+}
+
+fn build_evaluation_cursor_with_work(
+    graph: &mut SignalGraph,
+    targets: &[NodeId],
+    request_mode: EvaluationRequestMode,
+    resolver: &mut impl ComparatorPolicyResolver,
+    work: Option<&mut worth_execution::MapKernelContext<'_, '_>>,
+    preparation: Option<&mut SignalPreparationBudget>,
 ) -> Result<EvaluationCursor, SignalError> {
     let mut deduped_targets = Vec::new();
     let mut flat_tasks = Vec::new();
@@ -59,6 +93,8 @@ pub(crate) fn build_evaluation_cursor_with_policy_resolver(
         &mut deduped_targets,
         &mut flat_tasks,
         &mut stages,
+        work,
+        preparation,
     )?;
 
     Ok(EvaluationCursor {
@@ -77,6 +113,26 @@ pub(crate) fn build_evaluation_session_with_policy_resolver<'a>(
     request_mode: EvaluationRequestMode,
     resolver: &mut impl ComparatorPolicyResolver,
 ) -> Result<SessionScratch<'a>, SignalError> {
+    build_evaluation_session_with_policy_resolver_and_work(
+        graph,
+        scratch,
+        targets,
+        request_mode,
+        resolver,
+        None,
+        None,
+    )
+}
+
+pub(crate) fn build_evaluation_session_with_policy_resolver_and_work<'a>(
+    graph: &mut SignalGraph,
+    scratch: &'a mut TraversalScratch,
+    targets: &[NodeId],
+    request_mode: EvaluationRequestMode,
+    resolver: &mut impl ComparatorPolicyResolver,
+    work: Option<&mut worth_execution::MapKernelContext<'_, '_>>,
+    preparation: Option<&mut SignalPreparationBudget>,
+) -> Result<SessionScratch<'a>, SignalError> {
     let summary = stage_formation::populate_plan_buffers(
         graph,
         targets,
@@ -85,6 +141,8 @@ pub(crate) fn build_evaluation_session_with_policy_resolver<'a>(
         &mut scratch.planner_targets,
         &mut scratch.planner_tasks,
         &mut scratch.planner_stages,
+        work,
+        preparation,
     )?;
 
     Ok(SessionScratch {

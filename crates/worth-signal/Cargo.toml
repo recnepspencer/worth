@@ -11,7 +11,6 @@ categories = ["data-structures", "caching", "science"]
 
 [features]
 default = ["profile-extended"]
-parallel = []
 profile-compact = []
 profile-standard = []
 profile-extended = []
@@ -22,10 +21,10 @@ test-peak-allocation = []
 tracing = "0.1"
 serde = { version = "1", features = ["derive", "rc"] }
 smallvec = { version = "1", features = ["serde"] }
-rayon = "1"
 serde_json = "1"
 worth-proof = { path = "../worth-proof" }
 worth-foundational = { path = "../worth-foundational" }
+worth-execution = { path = "../worth-execution" }
 sha2 = "0.10"
 im = { version = "15.1", features = ["serde"] }
 arc-swap = "1"

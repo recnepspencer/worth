@@ -27,6 +27,34 @@ impl PreparedPendingRevalidationResolution {
 }
 
 impl PreparedPendingRevalidationIndex {
+    pub(crate) fn cloned_buckets(&self) -> BTreeMap<NodeId, im::OrdSet<NodeId>> {
+        self.buckets.clone()
+    }
+    pub(in crate::data::graph) fn for_replacements(
+        graph: &SignalGraph,
+        replacements: &[(NodeId, Vec<NodeId>, Vec<NodeId>)],
+    ) -> Self {
+        let mut buckets = BTreeMap::new();
+        for (consumer, previous, current) in replacements {
+            for &producer in previous.iter().chain(current) {
+                let waiters = buckets.entry(producer).or_insert_with(|| {
+                    graph
+                        .topology
+                        .pending_revalidation_waiters
+                        .get(&producer)
+                        .cloned()
+                        .unwrap_or_default()
+                });
+                if current.contains(&producer) {
+                    waiters.insert(*consumer);
+                } else {
+                    waiters.remove(consumer);
+                }
+            }
+        }
+        Self { buckets }
+    }
+
     pub(in crate::data::graph) fn for_replacement(
         graph: &SignalGraph,
         consumer: NodeId,

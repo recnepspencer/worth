@@ -44,3 +44,34 @@ impl RetainedStorageMeasurement for super::TouchedScopeSummary {
             .checked_add(touched_sources.retained_heap_charge(work)?)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::data::output::PartitionSubscription;
+
+    #[test]
+    fn scope_set_wire_sequence_and_owned_slot_charge_survive_storage_cutover() {
+        let empty = PartitionScopeSet::default();
+        assert_eq!(serde_json::to_string(&empty).unwrap(), "[]");
+        assert_eq!(
+            empty
+                .retained_heap_charge(&mut Preparation::new(2))
+                .unwrap(),
+            Charge::ZERO
+        );
+
+        let scopes = PartitionScopeSet::new([PartitionSubscription::whole_partition("rates")]);
+        let wire = r#"[{"path":["rates"],"coverage":"Subtree"}]"#;
+        assert_eq!(serde_json::to_string(&scopes).unwrap(), wire);
+        let decoded: PartitionScopeSet = serde_json::from_str(wire).unwrap();
+        assert_eq!(decoded, scopes);
+        assert!(
+            scopes
+                .retained_heap_charge(&mut Preparation::new(4))
+                .unwrap()
+                .bytes()
+                >= std::mem::size_of::<PartitionSubscription>() as u64
+        );
+    }
+}

@@ -1,24 +1,19 @@
-use crate::facade::{
-    compare_lineage_records, compare_replay_slices, SignalRuntimePolicy, StageExecutor,
-};
+use crate::facade::{compare_lineage_records, compare_replay_slices, SignalRuntimePolicy};
 
-#[cfg(feature = "parallel")]
 use crate::facade::{NodeEvaluationResult, SignalTransaction};
-#[cfg(feature = "parallel")]
 use crate::tests::support::{version_ab, ASPECT_A};
 
 use super::fintech_session::fintech_session;
 use super::geometry_session::geometry_session;
-#[cfg(feature = "parallel")]
-use super::geometry_world::{build_geometry_fixture, geometry_evaluator, seed_geometry_baseline};
+use super::geometry_world::{
+    build_geometry_fixture, geometry_checked_evaluator, seed_geometry_baseline,
+};
 use super::workflow_truth::{AdversarialWorkflow, WorkflowDomain, WorkflowSeed};
+use crate::tests::leased_execution::support::{authority, request};
 
-#[cfg(feature = "parallel")]
 use super::workflow_truth::trace_adv;
-#[cfg(feature = "parallel")]
 use super::workflow_truth::ReferenceModel;
 
-#[cfg(feature = "parallel")]
 type GeometryTransaction<'a> = SignalTransaction<'a, (), (), (), (), ()>;
 
 #[test]
@@ -37,7 +32,7 @@ fn geometry_kernel_adversarial_seed_matrix_keeps_invariants() {
             seed,
             workflow,
             SignalRuntimePolicy::kernel().with_history_limit(8),
-            StageExecutor::Serial,
+            None,
         );
     }
 }
@@ -58,7 +53,7 @@ fn fintech_adversarial_seed_matrix_keeps_invariants() {
             seed,
             workflow,
             SignalRuntimePolicy::fintech().with_history_limit(8),
-            StageExecutor::Serial,
+            None,
         );
     }
 }
@@ -85,13 +80,13 @@ fn policy_overlap_for_generated_workflows_matches_guaranteed_truth() {
                         seed,
                         workflow,
                         SignalRuntimePolicy::operational().with_history_limit(4),
-                        StageExecutor::Serial,
+                        None,
                     ),
                     WorkflowDomain::Fintech => fintech_session(
                         seed,
                         workflow,
                         SignalRuntimePolicy::operational().with_history_limit(4),
-                        StageExecutor::Serial,
+                        None,
                     ),
                 },
             ),
@@ -102,13 +97,13 @@ fn policy_overlap_for_generated_workflows_matches_guaranteed_truth() {
                         seed,
                         workflow,
                         SignalRuntimePolicy::development().with_history_limit(6),
-                        StageExecutor::Serial,
+                        None,
                     ),
                     WorkflowDomain::Fintech => fintech_session(
                         seed,
                         workflow,
                         SignalRuntimePolicy::development().with_history_limit(6),
-                        StageExecutor::Serial,
+                        None,
                     ),
                 },
             ),
@@ -119,13 +114,13 @@ fn policy_overlap_for_generated_workflows_matches_guaranteed_truth() {
                         seed,
                         workflow,
                         SignalRuntimePolicy::forensic().with_history_limit(8),
-                        StageExecutor::Serial,
+                        None,
                     ),
                     WorkflowDomain::Fintech => fintech_session(
                         seed,
                         workflow,
                         SignalRuntimePolicy::forensic().with_history_limit(8),
-                        StageExecutor::Serial,
+                        None,
                     ),
                 },
             ),
@@ -150,7 +145,6 @@ fn policy_overlap_for_generated_workflows_matches_guaranteed_truth() {
     }
 }
 
-#[cfg(feature = "parallel")]
 #[test]
 fn parallel_geometry_hostile_session_matches_serial_truth() {
     trace_adv("[parallel-test] geometry:start");
@@ -160,31 +154,31 @@ fn parallel_geometry_hostile_session_matches_serial_truth() {
         seed,
         workflow,
         SignalRuntimePolicy::development().with_history_limit(8),
-        StageExecutor::Serial,
+        None,
     );
     trace_adv("[parallel-test] geometry:serial-finished");
-    let parallel = geometry_session(
-        seed,
-        workflow,
-        SignalRuntimePolicy::development().with_history_limit(8),
-        StageExecutor::aggressive_parallel(),
-    );
-    trace_adv("[parallel-test] geometry:parallel-finished");
-
-    let replay_diff = compare_replay_slices(&serial.1, &parallel.1);
-    let lineage_diff = compare_lineage_records(&serial.2, &parallel.2);
-    if !replay_diff.is_empty() || !lineage_diff.is_empty() {
-        parallel.0.panic_diff(
-            &SignalRuntimePolicy::development(),
-            "serial-vs-parallel",
-            "geometry executor differential drift",
-            replay_diff.mismatches.len(),
-            lineage_diff.mismatches.len(),
+    for workers in [1, 2, 4] {
+        let leased = geometry_session(
+            seed,
+            workflow,
+            SignalRuntimePolicy::development().with_history_limit(8),
+            Some(workers),
         );
+        trace_adv(format!("[parallel-test] geometry:lease-{workers}-finished"));
+        let replay_diff = compare_replay_slices(&serial.1, &leased.1);
+        let lineage_diff = compare_lineage_records(&serial.2, &leased.2);
+        if !replay_diff.is_empty() || !lineage_diff.is_empty() {
+            leased.0.panic_diff(
+                &SignalRuntimePolicy::development(),
+                &format!("serial-vs-lease-{workers}"),
+                "geometry execution differential drift",
+                replay_diff.mismatches.len(),
+                lineage_diff.mismatches.len(),
+            );
+        }
     }
 }
 
-#[cfg(feature = "parallel")]
 #[test]
 fn parallel_fintech_hostile_session_matches_serial_truth() {
     trace_adv("[parallel-test] fintech:start");
@@ -194,31 +188,50 @@ fn parallel_fintech_hostile_session_matches_serial_truth() {
         seed,
         workflow,
         SignalRuntimePolicy::development().with_history_limit(8),
-        StageExecutor::Serial,
+        None,
     );
     trace_adv("[parallel-test] fintech:serial-finished");
-    let parallel = fintech_session(
-        seed,
-        workflow,
-        SignalRuntimePolicy::development().with_history_limit(8),
-        StageExecutor::aggressive_parallel(),
-    );
-    trace_adv("[parallel-test] fintech:parallel-finished");
-
-    let replay_diff = compare_replay_slices(&serial.1, &parallel.1);
-    let lineage_diff = compare_lineage_records(&serial.2, &parallel.2);
-    if !replay_diff.is_empty() || !lineage_diff.is_empty() {
-        parallel.0.panic_diff(
-            &SignalRuntimePolicy::development(),
-            "serial-vs-parallel",
-            "fintech executor differential drift",
-            replay_diff.mismatches.len(),
-            lineage_diff.mismatches.len(),
+    for workers in [1, 2, 4] {
+        let leased = fintech_session(
+            seed,
+            workflow,
+            SignalRuntimePolicy::development().with_history_limit(8),
+            Some(workers),
         );
+        trace_adv(format!("[parallel-test] fintech:lease-{workers}-finished"));
+        let replay_diff = compare_replay_slices(&serial.1, &leased.1);
+        let lineage_diff = compare_lineage_records(&serial.2, &leased.2);
+        if !replay_diff.is_empty() || !lineage_diff.is_empty() {
+            leased.0.panic_diff(
+                &SignalRuntimePolicy::development(),
+                &format!("serial-vs-lease-{workers}"),
+                format!(
+                    "fintech execution differential drift; replay count={}/{} first={:?}; lineage count={}/{} first={:?}",
+                    serial.1.frames.len(),
+                    leased.1.frames.len(),
+                    serial
+                        .1
+                        .frames
+                        .iter()
+                        .zip(&leased.1.frames)
+                        .enumerate()
+                        .find(|(_, (left, right))| left != right),
+                    serial.2.len(),
+                    leased.2.len(),
+                    serial
+                        .2
+                        .iter()
+                        .zip(&leased.2)
+                        .enumerate()
+                        .find(|(_, (left, right))| left != right),
+                ),
+                replay_diff.mismatches.len(),
+                lineage_diff.mismatches.len(),
+            );
+        }
     }
 }
 
-#[cfg(feature = "parallel")]
 #[test]
 fn focused_parallel_branch_restore_and_evaluate_dirty_regression() {
     trace_adv("[parallel-test] focused-regression:start");
@@ -250,10 +263,10 @@ fn focused_parallel_branch_restore_and_evaluate_dirty_regression() {
 
     fixture
         .runtime
-        .evaluate_dirty_with_executor(
+        .evaluate_dirty_checked(
             &(),
-            &geometry_evaluator(&fixture),
-            StageExecutor::aggressive_parallel(),
+            &geometry_checked_evaluator(&fixture),
+            &authority().request_lease(request(4, 10_000_000)).unwrap(),
         )
         .unwrap();
     trace_adv("[parallel-test] focused-regression:parallel-evaluated");
@@ -290,13 +303,12 @@ fn long_geometry_churn_seed_matrix_stays_hard_to_surprise() {
             seed,
             AdversarialWorkflow::FeatureEditRewireRestoreChurn,
             SignalRuntimePolicy::kernel().with_history_limit(12),
-            StageExecutor::Serial,
+            None,
         );
     }
 }
 
 #[ignore]
-#[cfg(feature = "parallel")]
 #[test]
 fn long_fintech_parallel_churn_seed_matrix_stays_hard_to_surprise() {
     for seed in [WorkflowSeed(101), WorkflowSeed(131), WorkflowSeed(149)] {
@@ -304,7 +316,7 @@ fn long_fintech_parallel_churn_seed_matrix_stays_hard_to_surprise() {
             seed,
             AdversarialWorkflow::RiskAlertFlapUnderMemoChurn,
             SignalRuntimePolicy::fintech().with_history_limit(12),
-            StageExecutor::aggressive_parallel(),
+            Some(4),
         );
     }
 }

@@ -138,13 +138,15 @@ fn broader_partition_validation_scopes_report_translated_upstream_region_evidenc
     assert!(explanation.causal_links.iter().any(|link| {
         matches!(link.kind, crate::logic::explain::CausalLinkKind::Changed)
             && matches!(link.scope.kind, ScopeProvenanceKind::Translated)
-            && link.scope.source_scope.as_ref().is_some_and(|scope| {
-                scope.partition.0 == "wing" && scope.detail.as_deref() == Some("rib-13")
-            })
+            && link
+                .scope
+                .source_scope
+                .as_ref()
+                .is_some_and(|scope| scope.path().segments() == ["wing", "rib-13"])
             && link
                 .scope
                 .validation_scope
                 .as_ref()
-                .is_some_and(|scope| scope.partition.0 == "wing" && scope.detail.is_none())
+                .is_some_and(|scope| scope.path().segments() == ["wing"])
     }));
 }

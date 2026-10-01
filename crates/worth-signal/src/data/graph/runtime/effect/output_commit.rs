@@ -1,3 +1,7 @@
+mod epoch;
+mod epoch_head;
+mod epoch_nodes;
+mod epoch_snapshots;
 mod node_preparation;
 mod node_publication;
 mod prevalidation;
@@ -24,11 +28,13 @@ use crate::data::proof::invalidation::progression::{
 use crate::logic::evaluation::{
     AppliedEffectReport, EvaluationEffect, EvaluationVerdict, EvaluationWork, SuppressionReason,
 };
+use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
 use super::{
     ApplyCommitPacket, DirectInvalidationPreparationReceipt, OutputCommitPublicationReceipt,
     PreparedParallelApplyCommitPacket, SignalGraph,
 };
+use epoch_head::OutputCommitHead;
 
 /// Final storage-facing preparation never leaves this exclusive publication
 /// boundary. Parallel workers retain only semantic ApplyCommitPacket data;
@@ -98,7 +104,7 @@ impl SignalGraph {
         output_equivalence: OutputEquivalencePolicy,
         comparator_resolver: &mut impl ComparatorPolicyResolver,
         defer_snapshot_commit: bool,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<
         (
             AppliedEffectReport,
@@ -120,28 +126,75 @@ impl SignalGraph {
         &mut self,
         apply: ApplyCommitPacket,
         comparator_resolver: &mut impl ComparatorPolicyResolver,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<Box<OutputCommitPacket>, SignalError> {
-        self.prepare_output_commit_packet_with_probe(apply, comparator_resolver, |_| Ok(()), work)
+        self.prepare_output_commit_packet_with_execution(
+            apply,
+            comparator_resolver,
+            work,
+            None,
+            None,
+        )
+    }
+
+    fn prepare_output_commit_packet_with_execution(
+        &mut self,
+        apply: ApplyCommitPacket,
+        comparator_resolver: &mut impl ComparatorPolicyResolver,
+        work: &mut EvaluationWork<'_, '_>,
+        lease: Option<&ExecutionResourceLease<'_>>,
+        request_work: Option<&mut MapKernelContext<'_, '_>>,
+    ) -> Result<Box<OutputCommitPacket>, SignalError> {
+        self.prepare_output_commit_packet_with_probe_and_execution(
+            apply,
+            comparator_resolver,
+            |_| Ok(()),
+            work,
+            lease,
+            request_work,
+        )
     }
 
     #[cfg_attr(not(test), allow(dead_code))]
     fn prepare_output_commit_packet_with_probe(
         &mut self,
-        mut apply: ApplyCommitPacket,
+        apply: ApplyCommitPacket,
+        comparator_resolver: &mut impl ComparatorPolicyResolver,
+        probe: impl FnMut(OutputCommitPreparationSeam) -> Result<(), SignalError>,
+        work: &mut EvaluationWork<'_, '_>,
+    ) -> Result<Box<OutputCommitPacket>, SignalError> {
+        self.prepare_output_commit_packet_with_probe_and_execution(
+            apply,
+            comparator_resolver,
+            probe,
+            work,
+            None,
+            None,
+        )
+    }
+
+    fn prepare_output_commit_packet_with_probe_and_execution(
+        &mut self,
+        apply: ApplyCommitPacket,
         comparator_resolver: &mut impl ComparatorPolicyResolver,
         mut probe: impl FnMut(OutputCommitPreparationSeam) -> Result<(), SignalError>,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
+        lease: Option<&ExecutionResourceLease<'_>>,
+        request_work: Option<&mut MapKernelContext<'_, '_>>,
     ) -> Result<Box<OutputCommitPacket>, SignalError> {
-        self.apply_semantic_output_commit_decision(&mut apply, comparator_resolver, work)?;
-        let artifact_write = self.build_semantic_artifact_write(&mut apply, work)?;
-        probe(OutputCommitPreparationSeam::SemanticDecision)?;
-        let produced_delta = self.prepare_produced_delta(&apply, work)?;
-        probe(OutputCommitPreparationSeam::ProducedDelta)?;
+        let OutputCommitHead {
+            apply,
+            artifact_write,
+            produced_delta,
+        } = self.prepare_output_commit_head(apply, comparator_resolver, &mut probe, work)?;
         let direct_causes = match (produced_delta.as_ref(), &apply.effect.operational.verdict) {
-            (Some(delta), _) => {
-                Some(self.prepare_direct_output_causes(delta, comparator_resolver, work)?)
-            }
+            (Some(delta), _) => Some(self.prepare_direct_output_causes_with_execution(
+                delta,
+                comparator_resolver,
+                work,
+                lease,
+                request_work,
+            )?),
             (None, EvaluationVerdict::Deferred { .. }) => None,
             (None, _) => {
                 Some(self.prepare_stable_output_resolution(apply.effect.operational.node)?)
@@ -290,26 +343,6 @@ impl SignalGraph {
             ),
             pending_snapshot,
         )
-    }
-
-    #[cfg_attr(not(feature = "parallel"), allow(dead_code))]
-    pub(crate) fn publish_prepared_parallel_apply_commit_packet(
-        &mut self,
-        packet: PreparedParallelApplyCommitPacket,
-        comparator_resolver: &mut impl ComparatorPolicyResolver,
-    ) -> Result<
-        (
-            AppliedEffectReport,
-            Option<crate::logic::evaluation::PendingDependencySnapshot>,
-        ),
-        SignalError,
-    > {
-        let packet = self.prepare_output_commit_packet(
-            packet.0,
-            comparator_resolver,
-            &mut EvaluationWork::Ordinary,
-        )?;
-        Ok(self.publish_output_commit_packet(packet))
     }
 }
 

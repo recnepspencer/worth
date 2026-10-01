@@ -2,28 +2,77 @@ use std::collections::BTreeMap;
 
 use crate::facade::{
     ChangedRegion, EvaluationRequestMode, LineageRecord, NodeEvaluationResult, ReplaySlice,
-    SignalError, SignalRuntimePolicy, SignalTransaction, StageExecutor,
+    SignalError, SignalRuntimePolicy, SignalTransaction,
 };
 use crate::tests::support::{version_ab, ASPECT_A, ASPECT_B};
 
-use super::geometry_world::{build_geometry_fixture, geometry_evaluator, seed_geometry_baseline};
+use super::geometry_world::{
+    build_geometry_fixture, geometry_checked_evaluator, geometry_evaluator, seed_geometry_baseline,
+    GeometryFixture,
+};
 use super::invariant_oracle::assert_runtime_invariants;
 use super::workflow_truth::{
     capture_active_branch_snapshot, trace_adv, AdversarialWorkflow, FailureInjectionPoint, Lcg,
     ReferenceModel, SignalAdversarialHarness, WorkflowDomain, WorkflowSeed,
 };
+use crate::tests::leased_execution::support::{authority, request};
 
 type GeometryTransaction<'a> = SignalTransaction<'a, (), (), (), (), ()>;
+
+fn evaluate_geometry_dirty(fixture: &mut GeometryFixture, workers: Option<usize>) {
+    if let Some(workers) = workers {
+        let lease = authority()
+            .request_lease(request(workers, 10_000_000))
+            .unwrap();
+        fixture
+            .runtime
+            .evaluate_dirty_checked(&(), &geometry_checked_evaluator(fixture), &lease)
+            .unwrap();
+    } else {
+        fixture
+            .runtime
+            .evaluate_dirty(&(), &geometry_evaluator(fixture))
+            .unwrap();
+    }
+}
+
+fn evaluate_geometry_demand(fixture: &mut GeometryFixture, workers: Option<usize>) {
+    if let Some(workers) = workers {
+        let lease = authority()
+            .request_lease(request(workers, 10_000_000))
+            .unwrap();
+        fixture
+            .runtime
+            .evaluate_checked(
+                &[fixture.demand_gate],
+                EvaluationRequestMode::ForceOnDemand,
+                &(),
+                &geometry_checked_evaluator(fixture),
+                &lease,
+            )
+            .unwrap();
+    } else {
+        fixture
+            .runtime
+            .evaluate_with_plan(
+                fixture.demand_gate,
+                &(),
+                &geometry_evaluator(fixture),
+                EvaluationRequestMode::ForceOnDemand,
+            )
+            .unwrap();
+    }
+}
 
 pub(super) fn geometry_session(
     seed: WorkflowSeed,
     workflow: AdversarialWorkflow,
     policy: SignalRuntimePolicy,
-    executor: StageExecutor,
+    workers: Option<usize>,
 ) -> (SignalAdversarialHarness, ReplaySlice, Vec<LineageRecord>) {
     let policy = policy
         .with_observation_activation(worth_foundational::ObservationActivationProfile::Continuous);
-    if !matches!(executor, StageExecutor::Serial) {
+    if workers.is_some() {
         trace_adv(format!(
             "[geometry {:?} seed={}] setup:start",
             workflow, seed.0
@@ -35,7 +84,7 @@ pub(super) fn geometry_session(
     let mut snapshots = BTreeMap::new();
     let mut branch_history = BTreeMap::new();
     let (main, main_snapshot) = seed_geometry_baseline(&mut fixture, &mut model);
-    if !matches!(executor, StageExecutor::Serial) {
+    if workers.is_some() {
         trace_adv(format!(
             "[geometry {:?} seed={}] setup:seeded-main",
             workflow, seed.0
@@ -56,7 +105,7 @@ pub(super) fn geometry_session(
         .runtime
         .capture_branch_snapshot(fixture.runtime.observe().current_branch())
         .unwrap();
-    if !matches!(executor, StageExecutor::Serial) {
+    if workers.is_some() {
         trace_adv(format!(
             "[geometry {:?} seed={}] setup:feature-ready",
             workflow, seed.0
@@ -84,7 +133,7 @@ pub(super) fn geometry_session(
         .runtime
         .capture_branch_snapshot(fixture.runtime.observe().current_branch())
         .unwrap();
-    if !matches!(executor, StageExecutor::Serial) {
+    if workers.is_some() {
         trace_adv(format!(
             "[geometry {:?} seed={}] setup:analysis-ready",
             workflow, seed.0
@@ -109,7 +158,7 @@ pub(super) fn geometry_session(
     let mut rng = Lcg::new(seed);
     let mut ctx = ();
     for step in 0..24 {
-        if !matches!(executor, StageExecutor::Serial) {
+        if workers.is_some() {
             trace_adv(format!(
                 "[geometry {:?} seed={}] step={} branch={}",
                 workflow,
@@ -157,10 +206,7 @@ pub(super) fn geometry_session(
                         });
                 result.unwrap();
                 model.branch_mut(model.active).a = next_a;
-                fixture
-                    .runtime
-                    .evaluate_dirty_with_executor(&(), &geometry_evaluator(&fixture), executor)
-                    .unwrap();
+                evaluate_geometry_dirty(&mut fixture, workers);
                 if rng.coin() {
                     capture_active_branch_snapshot(
                         &mut fixture.runtime,
@@ -194,10 +240,7 @@ pub(super) fn geometry_session(
                         });
                 result.unwrap();
                 model.branch_mut(model.active).b = next_b;
-                fixture
-                    .runtime
-                    .evaluate_dirty_with_executor(&(), &geometry_evaluator(&fixture), executor)
-                    .unwrap();
+                evaluate_geometry_dirty(&mut fixture, workers);
                 if rng.coin() {
                     capture_active_branch_snapshot(
                         &mut fixture.runtime,
@@ -234,16 +277,7 @@ pub(super) fn geometry_session(
                 );
             }
             4 => {
-                fixture
-                    .runtime
-                    .evaluate_with_plan_and_executor(
-                        fixture.demand_gate,
-                        &(),
-                        &geometry_evaluator(&fixture),
-                        EvaluationRequestMode::ForceOnDemand,
-                        executor,
-                    )
-                    .unwrap();
+                evaluate_geometry_demand(&mut fixture, workers);
                 harness.record(&fixture.runtime, step + 3, "force-on-demand", None);
             }
             _ => {
@@ -300,7 +334,7 @@ pub(super) fn geometry_session(
         if !report.errors.is_empty() {
             harness.panic_invariant(
                 &policy,
-                &format!("{executor:?}"),
+                &format!("workers={workers:?}"),
                 format!("step {}: {}", report.step_index, report.errors.join(" | ")),
             );
         }
@@ -321,7 +355,7 @@ pub(super) fn geometry_session(
         if !report.errors.is_empty() {
             harness.panic_invariant(
                 &policy,
-                &format!("{executor:?}"),
+                &format!("workers={workers:?}"),
                 format!("step {}: {}", report.step_index, report.errors.join(" | ")),
             );
         }

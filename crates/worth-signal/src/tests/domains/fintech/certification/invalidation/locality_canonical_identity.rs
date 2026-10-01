@@ -1,27 +1,20 @@
 use crate::data::error::SignalError;
 use crate::data::proof::{
-    attach_foundational_invalidation_performance_receipt,
-    FoundationalInvalidationPerformanceReceipt, SignalInvalidationExecutionReceipt,
+    attach_foundational_invalidation_performance_receipt, SignalInvalidationExecutionReceipt,
 };
-use crate::data::telemetry::SignalInvalidationRealizedCounters;
 use crate::tests::domains::fintech::world::{
     DensityRatio, FinancialLocalityDefinition, FinancialLocalityScenario,
     FinancialLocalityTraceIdentity, LocalityLane, LocalityScaleTuple, RestorePosture,
     SparseFanoutAxis,
 };
 use worth_foundational::facade::{
-    canonicalization, CanonicalBasisDomain, CanonicalBasisEntry, CanonicalBasisEntryKind,
-    CanonicalBasisLocus, CanonicalBasisValue, CanonicalDigestAlgorithmId, CanonicalDigestId,
-    CanonicalIntegerWidth,
+    CanonicalBasisDomain, CanonicalBasisEntry, CanonicalBasisEntryKind, CanonicalBasisLocus,
+    CanonicalBasisValue, CanonicalIntegerWidth,
 };
-use worth_proof::TransitionOutcome;
 
 mod basis;
 
-use super::{
-    ExpectedLocalityCounterRow, FinancialCanonicalCaseIdentity,
-    FinancialLocalityExpectationManifest,
-};
+use super::{FinancialCanonicalCaseIdentity, FinancialLocalityExpectationManifest};
 
 const CASE_DOMAIN: CanonicalBasisDomain =
     CanonicalBasisDomain::Future("WORTH.signal.financial-certification-case");
@@ -31,33 +24,32 @@ pub(in crate::tests::domains::fintech) fn verified_locality_case_identity(
     manifest: &FinancialLocalityExpectationManifest,
     diagnostics_tier: crate::facade::DiagnosticsTier,
     performed: SignalInvalidationExecutionReceipt,
+    physical_batches: u64,
+    physical_peak: u64,
 ) -> Result<FinancialCanonicalCaseIdentity, SignalError> {
     if manifest.scenario() != definition.scenario() {
         return Err(SignalError::invalid_input(
             "locality receipt manifest belongs to another scenario",
         ));
     }
-    let expected_rows = ExpectedLocalityCounterRow::ALL;
-    let expected = SignalInvalidationRealizedCounters::from_values(std::array::from_fn(|index| {
-        manifest.counter_manifest().value(expected_rows[index])
-    }));
-    let receipt = attach_foundational_invalidation_performance_receipt(performed, expected)
-        .map_err(|denial| {
+    let expected =
+        super::locality_receipt::expected_counters(manifest, physical_batches, physical_peak);
+    attach_foundational_invalidation_performance_receipt(performed, expected).map_err(
+        |denial| {
             SignalError::invalid_input(format!(
                 "locality performed receipt did not match its manifest: {denial:?}"
             ))
-        })?;
-    locality_case_identity(definition, manifest, diagnostics_tier, &receipt)
+        },
+    )?;
+    locality_case_identity(definition, manifest, diagnostics_tier)
 }
 
 fn locality_case_identity(
     definition: &FinancialLocalityDefinition,
     manifest: &FinancialLocalityExpectationManifest,
     diagnostics_tier: crate::facade::DiagnosticsTier,
-    receipt: &FoundationalInvalidationPerformanceReceipt,
 ) -> Result<FinancialCanonicalCaseIdentity, SignalError> {
     let trace = manifest.action_trace();
-    let receipt_digest = performance_receipt_digest(receipt)?;
     let mut entries = vec![
         text_entry(
             CASE_DOMAIN,
@@ -72,7 +64,6 @@ fn locality_case_identity(
             "lane",
             lane_name(definition.workload().execution_posture()),
         ),
-        digest_entry(CASE_DOMAIN, "performed_receipt", receipt_digest),
     ];
     entries.extend(scale_entries(definition.scale()));
     entries.extend(basis::identity_entries(
@@ -81,33 +72,6 @@ fn locality_case_identity(
         diagnostics_tier,
     )?);
     FinancialCanonicalCaseIdentity::from_extended_entries(entries)
-}
-
-fn performance_receipt_digest(
-    receipt: &FoundationalInvalidationPerformanceReceipt,
-) -> Result<CanonicalDigestId, SignalError> {
-    let ready =
-        match worth_foundational::prepare_counter_backed_performance_receipt_for_canonical_basis(
-            worth_foundational::performance_api::lower_lane::basis::performance_basis_rule_version(
-            ),
-            receipt,
-        ) {
-            TransitionOutcome::Success(ready) => ready,
-            denied => return Err(denied_identity("performed receipt", denied)),
-        };
-    let digest_ready = match canonicalization()
-        .digest()
-        .for_sequence(ready, CanonicalDigestAlgorithmId::sha256())
-    {
-        TransitionOutcome::Success(ready) => ready,
-        denied => return Err(denied_identity("performed receipt digest", denied)),
-    };
-    let digest = canonicalization().digest().derive(digest_ready);
-    Ok(CanonicalDigestId::new(*digest.value().bytes()))
-}
-
-fn denied_identity(what: &str, denied: impl std::fmt::Debug) -> SignalError {
-    SignalError::internal(format!("{what} canonicalization was denied: {denied:?}"))
 }
 
 fn scale_entries(scale: LocalityScaleTuple) -> Vec<CanonicalBasisEntry> {
@@ -194,19 +158,6 @@ fn unsigned_entry(
             width: CanonicalIntegerWidth::Bits128,
             value,
         },
-    )
-}
-
-fn digest_entry(
-    domain: CanonicalBasisDomain,
-    locus: &'static str,
-    digest: CanonicalDigestId,
-) -> CanonicalBasisEntry {
-    CanonicalBasisEntry::new(
-        domain,
-        CanonicalBasisLocus::Named(locus.into()),
-        CanonicalBasisEntryKind::Identity,
-        CanonicalBasisValue::BytesDigest(digest),
     )
 }
 

@@ -18,3 +18,26 @@ impl RetainedStorageForkGrowth for DependencySnapshotStore {
         Ok(growth)
     }
 }
+
+impl DependencySnapshotStore {
+    pub(crate) fn epoch_fork_growth_bound(&self) -> Result<u64, crate::data::error::SignalError> {
+        let snapshots = self
+            .snapshots
+            .prepared_fork_charge()
+            .map_err(|_| crate::data::error::SignalError::SnapshotIndexUnavailable)?;
+        let interner = self
+            .interner
+            .prepared_fork_charge()
+            .map_err(|_| crate::data::error::SignalError::SnapshotIndexUnavailable)?;
+        let handles = self
+            .shape_handles
+            .prepared_fork_charge()
+            .map_err(|_| crate::data::error::SignalError::SnapshotIndexUnavailable)?;
+        snapshots
+            .source_growth
+            .checked_add(interner.source_growth)
+            .and_then(|charge| charge.checked_add(handles.source_growth))
+            .map(Charge::bytes)
+            .map_err(|_| crate::data::error::SignalError::EvaluationStorageCapacityExhausted)
+    }
+}

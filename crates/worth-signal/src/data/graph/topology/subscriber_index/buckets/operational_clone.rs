@@ -64,17 +64,14 @@ fn materialize_bucket(
     SubscriberScopeBuckets {
         all: materialize_set(base.map(|b| &b.all), delta.map(|d| &d.all)),
         unscoped: materialize_set(base.map(|b| &b.unscoped), delta.map(|d| &d.unscoped)),
-        whole_partitions: materialize_map(
-            base.map(|b| &b.whole_partitions),
-            delta.map(|d| &d.whole_partitions),
+        same_path: materialize_map(base.map(|b| &b.same_path), delta.map(|d| &d.same_path)),
+        subtree_covering: materialize_map(
+            base.map(|b| &b.subtree_covering),
+            delta.map(|d| &d.subtree_covering),
         ),
-        exact_details: materialize_map(
-            base.map(|b| &b.exact_details),
-            delta.map(|d| &d.exact_details),
-        ),
-        partition_scoped: materialize_map(
-            base.map(|b| &b.partition_scoped),
-            delta.map(|d| &d.partition_scoped),
+        subtree_members: materialize_map(
+            base.map(|b| &b.subtree_members),
+            delta.map(|d| &d.subtree_members),
         ),
     }
 }

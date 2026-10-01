@@ -4,7 +4,7 @@ use serde_json::{json, Value};
 
 use crate::facade::{
     EvaluationContext, EvaluationOutput, NodeEvaluationResult, SignalError, SignalGraph,
-    SignalRuntime, SignalRuntimePolicy, StageExecutor,
+    SignalRuntime, SignalRuntimePolicy,
 };
 use crate::tests::performance_support::{
     capture_and_certify_perf_samples, with_perf_topology_asserts_disabled, PerfMeasurement,
@@ -69,16 +69,10 @@ fn perf_suppression_wide_fanout_serial() {
                 Ok(EvaluationOutput::from_result(result))
             };
 
-                let _ = runtime
-                    .read_with_executor(source, &(), &evaluator, StageExecutor::Serial)
-                    .unwrap();
-                let _ = runtime
-                    .read_with_executor(middle, &(), &evaluator, StageExecutor::Serial)
-                    .unwrap();
+                let _ = runtime.read(source, &(), &evaluator).unwrap();
+                let _ = runtime.read(middle, &(), &evaluator).unwrap();
                 for &leaf in &leaves {
-                    let _ = runtime
-                        .read_with_executor(leaf, &(), &evaluator, StageExecutor::Serial)
-                        .unwrap();
+                    let _ = runtime.read(leaf, &(), &evaluator).unwrap();
                 }
 
                 assert_eq!(
@@ -114,9 +108,7 @@ fn perf_suppression_wide_fanout_serial() {
                 let access_before_reread = crate::data::access_counters::snapshot();
                 let leaf_reread_start = Instant::now();
                 for &leaf in &leaves {
-                    let _ = runtime
-                        .read_with_executor(leaf, &(), &evaluator, StageExecutor::Serial)
-                        .unwrap();
+                    let _ = runtime.read(leaf, &(), &evaluator).unwrap();
                 }
                 let leaf_reread_nanos = leaf_reread_start.elapsed().as_nanos();
                 let access_after_reread = crate::data::access_counters::snapshot();

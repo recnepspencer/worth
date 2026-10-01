@@ -1,7 +1,35 @@
 use super::*;
 use crate::tests::domains::fintech::world::{
     ordinary_locality_cases, retained_locality_benchmark_cases, scheduled_locality_cases,
+    SparseFanoutAxis,
 };
+
+#[test]
+fn checked_rejected_descendants_settle_at_the_declared_4096_output_scale() {
+    let evidence = verify_locality_case(
+        FinancialWorldDefinition::sparse_book_fanout(
+            41,
+            4_096,
+            SparseFanoutAxis::RejectedDescendants,
+        ),
+        0,
+        DiagnosticsTier::Operational,
+        1,
+    )
+    .unwrap();
+    assert_eq!(
+        evidence.scenario(),
+        FinancialLocalityScenario::SparseBookFanout
+    );
+    assert_eq!(
+        evidence.scale(),
+        LocalityScaleTuple::SparseBookFanout {
+            total_outputs: 4_096,
+            axis: SparseFanoutAxis::RejectedDescendants,
+        }
+    );
+    assert!(evidence.necessary_evaluation_count() > 0);
+}
 
 #[test]
 fn verified_case_binds_fresh_truth_necessity_work_and_performed_receipt() {
@@ -9,7 +37,7 @@ fn verified_case_binds_fresh_truth_necessity_work_and_performed_receipt() {
         FinancialWorldDefinition::convergent_factor_batch(41, 0),
         0,
         DiagnosticsTier::Operational,
-        StageExecutor::Serial,
+        1,
     )
     .unwrap();
 
@@ -21,6 +49,41 @@ fn verified_case_binds_fresh_truth_necessity_work_and_performed_receipt() {
     assert_ne!(evidence.canonical_work_items(), 0);
     assert!(!evidence.necessary_evaluations().is_empty());
     assert_ne!(evidence.identity().digest_bytes(), &[0; 32]);
+}
+
+#[test]
+fn physical_ready_shape_and_counter_drift_are_rejected_independently() {
+    let mut compiled =
+        compile_financial_locality_world(FinancialWorldDefinition::convergent_factor_batch(41, 0))
+            .unwrap();
+    let manifest = FinancialLocalityExpectationManifest::derive_for_trace(
+        compiled.locality_definition(),
+        &compiled.locality_definition().action_traces()[0],
+        compiled.locality_graph_instance(),
+    );
+    let fresh = FreshFinancialLocalityRecompute::run_for_trace(
+        compiled.locality_definition(),
+        &compiled.locality_definition().action_traces()[0],
+    );
+    let (mut observation, _) = compiled
+        .observe_locality_action_trace_with_workers(0, 1)
+        .unwrap();
+    validate_case_results(&compiled, &manifest, &fresh, &observation).unwrap();
+
+    observation.physical_ready_batches += 1;
+    let wrong_shape =
+        validate_case_results(&compiled, &manifest, &fresh, &observation).unwrap_err();
+    assert!(wrong_shape.to_string().contains("batch_local_allocations"));
+    observation.physical_ready_batches -= 1;
+
+    let mut values = observation.performed_counters.values();
+    values[InvalidationPerformedCounter::PeakBatchMemoryItems.index()] += 1;
+    observation.performed_counters = SignalInvalidationRealizedCounters::from_values(values);
+    let wrong_counter =
+        validate_case_results(&compiled, &manifest, &fresh, &observation).unwrap_err();
+    assert!(wrong_counter
+        .to_string()
+        .contains("peak_batch_memory_items"));
 }
 
 #[test]
@@ -37,7 +100,7 @@ fn ordinary_lifecycle_cases_bind_their_runtime_trace_to_the_manifest() {
             FinancialWorldDefinition::locality_case(41, case),
             0,
             DiagnosticsTier::Operational,
-            StageExecutor::Serial,
+            1,
         )
         .unwrap();
     }
@@ -49,7 +112,7 @@ fn partitioned_primary_trace_matches_independent_financial_truth() {
         FinancialWorldDefinition::partitioned_curve_universe(41, 16, 1, 1),
         0,
         DiagnosticsTier::Operational,
-        StageExecutor::Serial,
+        1,
     )
     .unwrap();
 }
@@ -67,7 +130,7 @@ fn partitioned_family_matches_truth_and_necessity_at_every_ordinary_scale() {
                 FinancialWorldDefinition::locality_case(41, case),
                 trace_index,
                 DiagnosticsTier::Operational,
-                StageExecutor::Serial,
+                1,
             )
             .unwrap();
         }
@@ -108,13 +171,7 @@ fn scheduled_dense_quarter_case_seals_in_isolation() {
         "M13 scheduled step: definition generated elapsed_ms={}",
         generation_started.elapsed().as_millis()
     );
-    verify_locality_case(
-        definition,
-        0,
-        DiagnosticsTier::Operational,
-        StageExecutor::Serial,
-    )
-    .unwrap();
+    verify_locality_case(definition, 0, DiagnosticsTier::Operational, 1).unwrap();
 }
 
 #[test]
@@ -133,7 +190,7 @@ fn retained_dense_restore_benchmark_covers_all_declared_seeds() {
             FinancialWorldDefinition::locality_case(seed, case),
             0,
             DiagnosticsTier::Operational,
-            StageExecutor::Serial,
+            1,
         )
         .unwrap();
         let mut compiled = compile_financial_locality_world(definition).unwrap();
@@ -160,7 +217,7 @@ fn mismatched_fresh_oracle_and_scale_manifest_are_denied() {
         compiled.locality_graph_instance(),
     );
     let (observation, _performed) = compiled
-        .observe_locality_action_trace_with_executor(0, StageExecutor::Serial)
+        .observe_locality_action_trace_with_workers(0, 1)
         .unwrap();
 
     assert!(validate_case_results(&compiled, &manifest, &wrong_fresh, &observation).is_err());

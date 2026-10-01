@@ -12,12 +12,13 @@ impl RetainedStorageMeasurement for NodeContract {
             semantics,
             projection,
             reuse,
-            execution: _,
+            execution,
             authority: _,
         } = self;
         Charge::ZERO
             .checked_add(semantics.retained_heap_charge(work)?)?
             .checked_add(projection.retained_heap_charge(work)?)?
+            .checked_add(execution.bounded_inputs.retained_heap_charge(work)?)?
             .checked_add(reuse.retained_heap_charge(work)?)
     }
 }

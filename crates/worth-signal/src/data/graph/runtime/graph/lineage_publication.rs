@@ -10,7 +10,7 @@ impl SignalGraph {
     pub(crate) fn record_evaluation_lineage(
         &mut self,
         record: LineageRecord,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         let Some(ledger) = self.arena.retained_node_ledger.clone() else {
             self.observation.diagnostics.record_lineage_record(record);
@@ -21,6 +21,11 @@ impl SignalGraph {
                 .observation
                 .diagnostics
                 .record_retained_lineage(record, &ledger, work),
+            EvaluationWork::RequestCheckpoint(_) => {
+                return Err(SignalError::internal(
+                    "request discovery checkpoint cannot prepare retained mutation",
+                ))
+            }
             EvaluationWork::Ordinary => {
                 let maximum = self
                     .installed_runtime_policy()

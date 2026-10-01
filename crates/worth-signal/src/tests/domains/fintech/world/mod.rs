@@ -16,7 +16,6 @@ pub(super) use baseline::{
     FinancialComparatorProfile, FinancialReproductionTuple, FinancialScaleTuple,
     FinancialScenarioIdentity,
 };
-#[cfg(feature = "parallel")]
 pub(super) use compiler::strategy_work_projection;
 pub(crate) use compiler::{
     compile_financial_locality_world, compile_financial_locality_world_at_tier,

@@ -1,10 +1,7 @@
-#![cfg(feature = "parallel")]
-
 use crate::data::error::SignalError;
 use crate::data::graph::SignalGraph;
 use crate::data::handle::NodeId;
 use crate::data::output::MemoizedResultOrigin;
-use crate::data::output_equivalence::OutputEquivalencePolicy;
 use crate::data::proof::SnapshotBatchCommit;
 use crate::data::reuse::ReuseBasis;
 use crate::logic::evaluation::{
@@ -17,24 +14,32 @@ use crate::logic::planner::semantic::{
 };
 use crate::logic::planner::types::{
     ConcurrentApplyReductionPlan, DisjointApplyGroup, LoweredTask, PlanSummary,
-    ReductionOrderingContract, ReductionWorkClass, StageExecutor,
+    ReductionOrderingContract, ReductionWorkClass,
 };
+use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
 use crate::logic::planner::apply::workspace::{
     ConcurrentApplyGroupInput, ConcurrentWorkerInput, GroupLocalApplyPacket, GroupLocalTaskCommit,
     GroupedApplyFailure, StageFinalizeWork, StageScratch,
 };
 
-#[cfg(feature = "parallel")]
 pub(super) use crate::logic::planner::apply::groups::build_stage_apply_groups;
 
-#[cfg(feature = "parallel")]
 pub(super) fn build_group_packet(
     graph: &SignalGraph,
     group: ConcurrentApplyGroupInput,
+    work: &mut MapKernelContext<'_, '_>,
 ) -> Result<GroupLocalApplyPacket, GroupedApplyFailure> {
     let (group_index, worker_inputs) = group.into_parts();
     let mut task_commits = Vec::with_capacity(worker_inputs.len());
+    let mut checkpoint = |visits: usize| {
+        let units = u64::try_from(visits)
+            .map_err(|_| SignalError::invalid_input("grouped apply work bound overflow"))?;
+        work.checkpoint(units)
+            .map_err(|_| SignalError::invalid_input("grouped apply request work stopped"))
+    };
+    let mut evaluation_work =
+        crate::logic::evaluation::EvaluationWork::RequestCheckpoint(&mut checkpoint);
     for worker_input in worker_inputs {
         let (
             task_index,
@@ -59,6 +64,7 @@ pub(super) fn build_group_packet(
             dependency_updates,
             dependency_inputs,
             false,
+            &mut evaluation_work,
         )
         .map_err(|error| grouped_apply_failure_from_build_error(node, identity.record_id, error))?;
         task_commits.push(GroupLocalTaskCommit::new(
@@ -77,14 +83,18 @@ pub(super) fn build_group_packet(
     Ok(GroupLocalApplyPacket::new(group_index, task_commits))
 }
 
-#[cfg(feature = "parallel")]
 pub(super) fn reduce_grouped_concurrent_packets(
     graph: &mut SignalGraph,
     summary: &PlanSummary,
     stage_index: u32,
+    topology: crate::data::graph::PreparedDependencyTopologyEpoch,
     mut packets: Vec<GroupLocalApplyPacket>,
     reduction: ConcurrentApplyReductionPlan,
     comparator_resolver: &mut impl crate::data::comparator::ComparatorPolicyResolver,
+    lease: Option<&ExecutionResourceLease<'_>>,
+    candidates: crate::data::graph::PreparedCandidateEpoch<'_>,
+    mut request_work: Option<&mut MapKernelContext<'_, '_>>,
+    mut preparation: Option<&mut crate::data::request_preparation::SignalPreparationBudget>,
 ) -> Result<StageScratch, SignalError> {
     debug_assert!(
         matches!(
@@ -99,27 +109,153 @@ pub(super) fn reduce_grouped_concurrent_packets(
         }
     }
 
-    let mut semantic_batch = StageSemanticBatch::default();
-    let mut pending_snapshots = Vec::new();
     let mut commits = packets
         .into_iter()
         .flat_map(GroupLocalApplyPacket::into_task_commits)
         .collect::<Vec<_>>();
     commits.sort_by_key(GroupLocalTaskCommit::task_index);
+    let mut metadata = Vec::with_capacity(commits.len());
+    let mut epoch_packets = Vec::with_capacity(commits.len());
     for commit in commits {
-        let update = match publish_group_local_task_commit(
-            graph,
-            commit,
-            &mut pending_snapshots,
-            comparator_resolver,
-        ) {
-            Ok(update) => update,
-            Err(failure) => {
-                record_grouped_apply_failure(graph, summary, stage_index, &failure);
-                return Err(failure.error);
-            }
+        let (
+            task_index,
+            node,
+            identity,
+            before_state,
+            before_artifact_state,
+            dependency_updates,
+            recomputed,
+            partition_aware,
+            rewiring,
+            packet,
+        ) = commit.into_parts();
+        metadata.push((
+            task_index,
+            node,
+            identity,
+            before_state,
+            before_artifact_state,
+            dependency_updates,
+            recomputed,
+            partition_aware,
+            rewiring,
+        ));
+        epoch_packets.push(packet);
+    }
+    if let Some(budget) = preparation.as_deref_mut() {
+        use crate::data::retained_storage::{
+            RetainedStorageMeasurement, RetainedStoragePreparation,
+            RetainedStoragePreparationDenial,
         };
-        semantic_batch.push_segment(segment_for_single_update(update));
+        budget.claim_vec::<crate::data::graph::EpochSemanticSeed>(metadata.len())?;
+        let mut measurement = RetainedStoragePreparation::new(usize::MAX);
+        let mut checkpoint = |visits: usize| {
+            crate::logic::planner::precompute::work::checkpoint(request_work.as_deref_mut(), visits)
+                .map_err(|_| RetainedStoragePreparationDenial::WorkExhausted {
+                    maximum_visits: usize::MAX,
+                })
+        };
+        let mut observed = measurement.reborrow_with_checkpoint(&mut checkpoint);
+        for (_, _, _, _, before_image, _, _, _, rewiring) in &metadata {
+            let bytes = before_image
+                .retained_heap_charge(&mut observed)
+                .and_then(|charge| {
+                    charge.checked_add(rewiring.retained_heap_charge(&mut observed)?)
+                })
+                .map_err(|_| SignalError::EvaluationStorageCapacityExhausted)?;
+            budget.claim(bytes.bytes())?;
+        }
+    }
+    let semantic_seeds = metadata
+        .iter()
+        .map(|(_, node, identity, _, before_image, _, _, _, rewiring)| {
+            crate::data::graph::EpochSemanticSeed {
+                node: *node,
+                execution_record: identity.record_id,
+                semantic_segment: identity.segment_id,
+                before_image: before_image.clone(),
+                rewiring: rewiring.clone(),
+            }
+        })
+        .collect();
+    let epoch = graph
+        .prepare_parallel_apply_epoch(
+            topology,
+            epoch_packets,
+            semantic_seeds,
+            comparator_resolver,
+            lease,
+            candidates,
+            request_work,
+            preparation,
+        )
+        .inspect_err(|error| {
+            if let Some((_, node, identity, ..)) = metadata.first() {
+                record_grouped_apply_failure(
+                    graph,
+                    summary,
+                    stage_index,
+                    &GroupedApplyFailure {
+                        node: *node,
+                        record_id: identity.record_id,
+                        reuse_failure: None,
+                        error: SignalError::internal(error.to_string()),
+                    },
+                );
+            }
+        })?;
+    let outcomes = epoch.publish(graph);
+    assert_eq!(metadata.len(), outcomes.len(), "one epoch outcome per task");
+    let mut semantic_batch = StageSemanticBatch::default();
+    let mut pending_snapshots = Vec::new();
+    for (
+        (
+            task_index,
+            node,
+            identity,
+            before_state,
+            before_artifact_state,
+            dependency_updates,
+            recomputed,
+            partition_aware,
+            rewiring,
+        ),
+        (report, pending_snapshot, prepared_artifacts),
+    ) in metadata.into_iter().zip(outcomes)
+    {
+        if let Some(snapshot) = pending_snapshot {
+            pending_snapshots.push(snapshot);
+        }
+        let after_state = graph.get_state(node).expect("prevalidated epoch task node");
+        let after_trace = graph
+            .node_runtime_artifact_operational_summary(node)
+            .expect("prevalidated epoch artifact state");
+        let memoized_origin = after_trace
+            .as_ref()
+            .map(|trace| trace.memoized_origin)
+            .unwrap_or(MemoizedResultOrigin::DirectCompute);
+        let reuse_basis = after_trace
+            .map(|trace| trace.reuse_basis)
+            .unwrap_or_else(ReuseBasis::fresh_compute);
+        semantic_batch.push_segment(segment_for_single_update(
+            SemanticTaskUpdate::new(
+                task_index,
+                node,
+                identity,
+                before_state,
+                before_artifact_state,
+                after_state,
+                dependency_updates,
+                recomputed,
+                partition_aware,
+                report.temporal_eligibility,
+                rewiring,
+                report.verdict,
+                memoized_origin,
+                reuse_basis,
+            )
+            .with_prepared_artifacts(prepared_artifacts),
+        ));
     }
     let publication_breadth =
         semantic_batch.segment_count() as u64 + pending_snapshots.len() as u64;
@@ -133,76 +269,6 @@ pub(super) fn reduce_grouped_concurrent_packets(
     ))
 }
 
-#[cfg(feature = "parallel")]
-fn publish_group_local_task_commit(
-    graph: &mut SignalGraph,
-    commit: GroupLocalTaskCommit,
-    pending_snapshots: &mut Vec<crate::logic::evaluation::PendingDependencySnapshot>,
-    comparator_resolver: &mut impl crate::data::comparator::ComparatorPolicyResolver,
-) -> Result<SemanticTaskUpdate, GroupedApplyFailure> {
-    let (
-        task_index,
-        node,
-        identity,
-        before_state,
-        before_artifact_state,
-        dependency_updates,
-        recomputed,
-        partition_aware,
-        rewiring,
-        commit_packet,
-    ) = commit.into_parts();
-    let (report, pending_snapshot) = graph
-        .publish_prepared_parallel_apply_commit_packet(commit_packet, comparator_resolver)
-        .map_err(|error| GroupedApplyFailure {
-            node,
-            record_id: identity.record_id,
-            error,
-            reuse_failure: None,
-        })?;
-    if let Some(snapshot) = pending_snapshot {
-        pending_snapshots.push(snapshot);
-    }
-    let after_state = graph.get_state(node).map_err(|error| GroupedApplyFailure {
-        node,
-        record_id: identity.record_id,
-        error,
-        reuse_failure: None,
-    })?;
-    let after_trace = graph
-        .node_runtime_artifact_operational_summary(node)
-        .map_err(|error| GroupedApplyFailure {
-            node,
-            record_id: identity.record_id,
-            error,
-            reuse_failure: None,
-        })?;
-    let memoized_origin = after_trace
-        .as_ref()
-        .map(|trace| trace.memoized_origin)
-        .unwrap_or(MemoizedResultOrigin::DirectCompute);
-    let reuse_basis = after_trace
-        .map(|trace| trace.reuse_basis)
-        .unwrap_or_else(ReuseBasis::fresh_compute);
-    Ok(SemanticTaskUpdate::new(
-        task_index,
-        node,
-        identity,
-        before_state,
-        before_artifact_state,
-        after_state,
-        dependency_updates,
-        recomputed,
-        partition_aware,
-        report.temporal_eligibility,
-        rewiring,
-        report.verdict,
-        memoized_origin,
-        reuse_basis,
-    ))
-}
-
-#[cfg(feature = "parallel")]
 fn grouped_apply_failure_from_build_error(
     node: NodeId,
     record_id: crate::logic::planner::ExecutionRecordId,
@@ -216,7 +282,6 @@ fn grouped_apply_failure_from_build_error(
     }
 }
 
-#[cfg(feature = "parallel")]
 pub(super) fn record_grouped_apply_failure(
     graph: &mut SignalGraph,
     summary: &PlanSummary,
@@ -233,7 +298,7 @@ pub(super) fn record_grouped_apply_failure(
                 crate::diagnostics::failure::ExecutionFailurePhase::Apply,
                 Some(stage_index),
                 Some(failure.node),
-                Some(StageExecutor::full_parallel(1)),
+                None,
                 Some(failure.record_id),
                 Some(*summary),
                 failure.error.to_string(),
@@ -242,7 +307,6 @@ pub(super) fn record_grouped_apply_failure(
     );
 }
 
-#[cfg(feature = "parallel")]
 pub(super) fn build_concurrent_apply_group_inputs(
     tasks: Vec<LoweredTask>,
     dependency_inputs: Vec<EffectDependencyInputs>,
@@ -273,45 +337,22 @@ pub(super) fn build_concurrent_apply_group_inputs(
     Ok(group_inputs)
 }
 
-#[cfg(feature = "parallel")]
 fn take_slot<T>(slot: &mut Option<T>, context: &'static str) -> Result<T, SignalError> {
     slot.take().ok_or_else(|| SignalError::internal(context))
 }
 
-#[cfg(feature = "parallel")]
-pub(super) fn can_lower_true_grouped_concurrent(
-    graph: &SignalGraph,
-    tasks: &[LoweredTask],
-    groups: &[DisjointApplyGroup],
-) -> bool {
-    !groups.is_empty()
-        && tasks.iter().all(|task| {
-            task.execution().dependency_updates() == 0
-                && task.execution().rewiring().is_none()
-                && matches!(
-                    graph
-                        .node_eval_config(task.node())
-                        .map(|config| &config.output_equivalence),
-                    Ok(OutputEquivalencePolicy::ExactAspectVersion
-                        | OutputEquivalencePolicy::OutputIdentity
-                        | OutputEquivalencePolicy::AspectVersionTolerance { .. })
-                )
-        })
-}
-
-#[cfg(feature = "parallel")]
 impl LoweredTask {
     fn into_concurrent_worker_input(
         self,
         identity: StageSemanticIdentity,
         dependency_inputs: EffectDependencyInputs,
     ) -> ConcurrentWorkerInput {
-        let comparator_policy = self.comparator_policy();
         let (
             task_index,
             node,
             _produced_aspects,
             _dependency_inputs,
+            comparator_policy,
             _path_class,
             _authority_policy,
             _footprint,

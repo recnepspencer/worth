@@ -75,8 +75,8 @@ fn admitted_normalization_matches_independent_sort_for_duplicates_and_scope_payl
 fn equal_edge_counts_cannot_hide_large_scope_payload_traversal() {
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
-    for detail in [String::new(), "λ".repeat(8_192)] {
-        let large = !detail.is_empty();
+    for detail in ["small".to_owned(), "λ".repeat(8_192)] {
+        let large = detail.len() > 1_024;
         let entries = [DependencySnapshotEntry {
             source: node,
             aspect: Aspect::new(0),

@@ -9,10 +9,24 @@ use crate::data::proof::invalidation::output_commit::{
 };
 
 impl SignalGraph {
+    #[cfg(test)]
     pub(super) fn prepare_produced_delta(
         &self,
         apply: &ApplyCommitPacket,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
+    ) -> Result<Option<ProducedAspectDelta>, SignalError> {
+        self.prepare_produced_delta_at_ordinal(
+            apply,
+            self.cause_sets.reserve_output_commit_ordinal(),
+            work,
+        )
+    }
+
+    pub(super) fn prepare_produced_delta_at_ordinal(
+        &self,
+        apply: &ApplyCommitPacket,
+        ordinal: crate::data::proof::invalidation::binding::OutputCommitOrdinal,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<Option<ProducedAspectDelta>, SignalError> {
         if !matches!(
             apply.effect.operational.verdict,
@@ -28,20 +42,30 @@ impl SignalGraph {
         let exact = apply.effect.changed_aspect_regions();
         let legacy = apply.effect.changed_regions();
         let aspects = crate::data::aspect::MAX_ASPECTS;
+        // Admit all three fixed version scans before discovering the initialized
+        // array width. Reserved capacity is memory, not payload-copy work.
+        work.reserve(Some(4 * aspects))?;
+        let emitted = previous
+            .slots()
+            .iter()
+            .zip(committed.slots())
+            .enumerate()
+            .filter(|(index, (before, after))| {
+                before != after
+                    && produces.contains(AspectMask::from_aspect(Aspect::new(*index as u8)))
+            })
+            .count();
         // Two exact-region passes per emitted aspect: count, then select.
-        // Fixed-domain allocation, version scans and aspect canonicalization
-        // are included before collecting any changes.
+        // Canonicalization includes actual initialized payload moves.
         work.reserve(
             exact
                 .len()
                 .checked_mul(2)
-                .and_then(|n| n.checked_mul(aspects))
+                .and_then(|n| n.checked_mul(emitted))
                 .and_then(|n| {
-                    n.checked_add(
-                        aspects * std::mem::size_of::<ProducedAspectChange>()
-                            + 8 * aspects * aspects
-                            + 8 * aspects,
-                    )
+                    n.checked_add(NonEmptyCanonicalAspectChangeSet::construction_work_bound(
+                        emitted,
+                    )?)
                 }),
         )?;
         let changed_count = previous
@@ -80,7 +104,7 @@ impl SignalGraph {
         Ok(
             NonEmptyCanonicalAspectChangeSet::new(changes).map(|changes| ProducedAspectDelta {
                 producer,
-                output_commit_ordinal: self.cause_sets.reserve_output_commit_ordinal(),
+                output_commit_ordinal: ordinal,
                 committed_output_version: committed,
                 changes,
                 scope_precision,

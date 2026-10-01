@@ -66,12 +66,12 @@ impl CompiledFinancialWorld {
     pub(crate) fn run_locality_performance_sequence(
         &mut self,
         batch_count: usize,
-        executor: crate::logic::planner::StageExecutor,
+        workers: usize,
         observe: bool,
     ) -> Result<FinancialPerformanceBatchReport, crate::data::error::SignalError> {
         match &mut self.kind {
             CompiledFinancialWorldKind::Locality(locality) => {
-                locality.run_performance_sequence(batch_count, executor, observe)
+                locality.run_performance_sequence(batch_count, workers, observe)
             }
             CompiledFinancialWorldKind::Portfolio(_) => {
                 Err(crate::data::error::SignalError::invalid_input(

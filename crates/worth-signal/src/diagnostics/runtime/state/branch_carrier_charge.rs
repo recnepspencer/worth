@@ -84,6 +84,7 @@ impl DiagnosticsState {
             observation_activation_mask: _,
             transaction_flow_scope: _,
             lineage_custody,
+            fact_custody,
             replay_events_by_branch,
             replay_events_by_node,
             replay_events_by_artifact,
@@ -125,6 +126,7 @@ impl DiagnosticsState {
         charge = charge.checked_add(empty_map_charge(provenance_facts, work)?)?;
         charge = charge.checked_add(branch_catalog.retained_heap_charge(work)?)?;
         charge = charge.checked_add(lineage_custody.retained_heap_charge(work)?)?;
+        charge = charge.checked_add(fact_custody.retained_heap_charge(work)?)?;
         Ok(charge)
     }
 }

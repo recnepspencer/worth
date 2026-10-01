@@ -80,7 +80,7 @@ impl SignalGraph {
             state: hot.state,
             dirty_aspects: hot.dirty_aspects,
             evaluation_config: &self.arena.definitions[index].eval_config,
-            runtime: warm.runtime_artifact_state.as_ref(),
+            runtime: warm.runtime_artifact_state.as_deref(),
             retained: cold.and_then(|cold| cold.retained_artifact.as_ref()),
             execution: cold.and_then(|cold| cold.execution_trace),
             causality: cold.and_then(|cold| cold.causality.as_ref()),
@@ -147,7 +147,7 @@ impl SignalGraph {
         &self,
         node: NodeId,
     ) -> Result<NodeReplayProjection, SignalError> {
-        let runtime_artifact_state = self.warm_ref(node)?.runtime_artifact_state.as_ref();
+        let runtime_artifact_state = self.warm_ref(node)?.runtime_artifact_state.as_deref();
         let lineage_artifact_id =
             runtime_artifact_state.and_then(|state| state.lineage_artifact_id().get());
         let (persistent_correspondence_kind, composition_region_count) = runtime_artifact_state
@@ -187,7 +187,7 @@ impl SignalGraph {
         artifact_id: crate::diagnostics::lineage::LineageArtifactId,
         execution_record_id: crate::logic::planner::ExecutionRecordId,
         semantic_segment_id: crate::logic::planner::SemanticSegmentId,
-        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         // Finalization already selected the artifact image. The mutation owner
         // validates the handle and handles absent payloads without another read.

@@ -1,8 +1,9 @@
+use serde::{Deserialize, Serialize};
 use std::num::NonZeroUsize;
 
 /// The caller's parallelism preference. Capability resolution may run either
 /// posture serially, but may never weaken the determinism contract.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ExecutionPosture {
     Serial,
     Automatic,
@@ -10,7 +11,7 @@ pub enum ExecutionPosture {
 
 /// Stable, data-derived identity of a partition. Worker position and pool
 /// width never participate in this identity.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct PartitionIdentity(u64);
 
 impl PartitionIdentity {

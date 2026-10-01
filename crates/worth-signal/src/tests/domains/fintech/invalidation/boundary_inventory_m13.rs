@@ -126,14 +126,28 @@ const OPERATIONAL_BOUNDARIES: &[ExactBoundarySymbol] = &[
         "data/graph/runtime/effect/output_commit.rs",
         "../../../../data/graph/runtime/effect/output_commit.rs",
         "prepare_output_commit_packet",
-        3
+        2
+    ),
+    boundary!(
+        "leased output commit preparation seam",
+        "data/graph/runtime/effect/output_commit.rs",
+        "../../../../data/graph/runtime/effect/output_commit.rs",
+        "prepare_output_commit_packet_with_execution",
+        2
+    ),
+    boundary!(
+        "ordinal-bound produced delta owner",
+        "data/graph/runtime/effect/output_commit/produced_delta.rs",
+        "../../../../data/graph/runtime/effect/output_commit/produced_delta.rs",
+        "prepare_produced_delta_at_ordinal",
+        2
     ),
     boundary!(
         "performed output publication seam",
         "data/graph/runtime/effect/output_commit.rs",
         "../../../../data/graph/runtime/effect/output_commit.rs",
         "publish_output_commit_packet",
-        3
+        2
     ),
     boundary!(
         "checkpoint cause readmission",
@@ -147,6 +161,13 @@ const OPERATIONAL_BOUNDARIES: &[ExactBoundarySymbol] = &[
         "logic/invalidation/causality/revalidation.rs",
         "../../../../logic/invalidation/causality/revalidation.rs",
         "node_invalidation_input",
+        2
+    ),
+    boundary!(
+        "request-checked invalidation input",
+        "logic/invalidation/causality/revalidation.rs",
+        "../../../../logic/invalidation/causality/revalidation.rs",
+        "node_invalidation_input_with_execution_work",
         1
     ),
     boundary!(
@@ -280,7 +301,7 @@ fn exact_token_occurrences(source: &str, symbol: &str) -> usize {
 
 #[test]
 fn phase_1_inventory_freezes_current_operational_cutover_boundaries() {
-    assert_eq!(OPERATIONAL_BOUNDARIES.len(), 23);
+    assert_eq!(OPERATIONAL_BOUNDARIES.len(), 26);
     assert_exact_inventory(OPERATIONAL_BOUNDARIES);
 }
 
@@ -298,7 +319,7 @@ fn phase_1_inventory_freezes_counter_topology_and_export_authorities() {
 
 #[test]
 fn phase_1_inventory_freezes_planner_readiness_and_executor_seams() {
-    assert_eq!(PLANNER_AND_EXECUTOR_BOUNDARIES.len(), 38);
+    assert_eq!(PLANNER_AND_EXECUTOR_BOUNDARIES.len(), 43);
     assert_exact_inventory(PLANNER_AND_EXECUTOR_BOUNDARIES);
 }
 

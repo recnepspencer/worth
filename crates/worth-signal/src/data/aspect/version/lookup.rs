@@ -10,18 +10,11 @@ impl PartitionVersionOverrides {
         let Some(scope) = scope else {
             return Some(1);
         };
-        let partition = scope.partition.0.len().checked_mul(2)?.checked_add(1)?;
-        let partitions = self.partitions.len().checked_mul(partition)?;
-        let details = match scope.detail.as_ref() {
-            Some(detail) => self.details.len().checked_mul(
-                detail
-                    .len()
-                    .checked_mul(2)?
-                    .checked_add(partition)?
-                    .checked_add(1)?,
-            )?,
-            None => 0,
-        };
-        partitions.checked_add(details)?.checked_add(1)
+        let bytes = scope.path().total_segment_bytes();
+        let one_lookup = bytes
+            .checked_mul(2)?
+            .checked_add(16)?
+            .checked_mul(self.paths.len().checked_add(1)?)?;
+        one_lookup.checked_mul(scope.path().depth())?.checked_add(1)
     }
 }

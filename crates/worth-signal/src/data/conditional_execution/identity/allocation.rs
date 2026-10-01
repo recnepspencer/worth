@@ -29,11 +29,7 @@ pub(super) fn admit(
         if let Some(scope) = &dependency.scope {
             bytes = conditional_work::checked(
                 work,
-                bytes
-                    .checked_add(scope.partition.0.len())
-                    .and_then(|bytes| {
-                        bytes.checked_add(scope.detail.as_ref().map_or(0, String::len))
-                    }),
+                bytes.checked_add(scope.path().total_segment_bytes()),
             )?;
         }
     }

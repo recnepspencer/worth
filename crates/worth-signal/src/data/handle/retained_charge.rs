@@ -14,3 +14,8 @@ impl RetainedStorageMeasurement for NodeId {
         Ok(Charge::ZERO)
     }
 }
+impl worth_execution::ChargedBytes for super::NodeId {
+    fn additional_charged_bytes(&self) -> u64 {
+        0
+    }
+}

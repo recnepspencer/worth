@@ -1,14 +1,23 @@
 use serde_json::json;
 
+use crate::diagnostics::{policy::OrdinaryAccessLane, summary::GraphSummary};
 use crate::facade::{DiagnosticsTier, NodeId, SignalGraph};
 
 pub(super) fn canonical_runtime_artifacts(graph: &SignalGraph, node: NodeId) -> serde_json::Value {
     let explanation = graph.observe().explain(node).unwrap();
     let explanation_fact = graph.explanation_fact(node);
     let provenance = graph.provenance_fact(node).cloned();
-    let diagnostics = graph
-        .observe()
-        .diagnostics_summary(DiagnosticsTier::Development);
+    // Display summaries may retain the snapshot preceding a pending input.
+    // Canonical epoch comparisons inspect the current graph owner instead.
+    let diagnostics = GraphSummary::from_graph(
+        graph,
+        DiagnosticsTier::Development,
+        graph
+            .installed_runtime_policy()
+            .retention_budget()
+            .detail_limit,
+        OrdinaryAccessLane,
+    );
     let replay = graph
         .replay_events()
         .iter()

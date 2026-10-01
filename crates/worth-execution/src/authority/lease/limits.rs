@@ -85,11 +85,9 @@ impl<'a> ExecutionResourceLease<'a> {
         self.node.deadline
     }
 
-    pub(crate) fn cancellation_lineage(&self) -> Vec<CancellationToken> {
-        self.lineage()
-            .into_iter()
+    pub(crate) fn cancellation_lineage(&self) -> impl Iterator<Item = CancellationToken> + '_ {
+        std::iter::successors(Some(self.node.as_ref()), |node| node.parent.as_deref())
             .map(|node| node.cancellation.clone())
-            .collect()
     }
 }
 

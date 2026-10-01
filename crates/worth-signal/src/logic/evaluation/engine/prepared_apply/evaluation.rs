@@ -49,7 +49,7 @@ pub(crate) fn apply_prepared_evaluation_after_dependencies_with_policy(
     dependency_updates: u32,
     dependency_inputs: Option<EffectDependencyInputs>,
     defer_snapshot_commit: bool,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<PreparedApplyResult, SignalError> {
     if !matches!(prepared.outcome, PreparedEvaluationOutcome::Evaluate) {
         return apply_passive_prepared_evaluation(
@@ -87,7 +87,7 @@ fn apply_passive_prepared_evaluation(
     dependency_updates: u32,
     dependency_inputs: Option<EffectDependencyInputs>,
     defer_snapshot_commit: bool,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<PreparedApplyResult, SignalError> {
     let passive =
         lower_passive_prepared_effect(graph, node, prepared, |graph, node, result, keyed| {
@@ -132,7 +132,7 @@ fn apply_evaluated_prepared_evaluation(
     dependency_updates: u32,
     dependency_inputs: Option<EffectDependencyInputs>,
     defer_snapshot_commit: bool,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<PreparedApplyResult, SignalError> {
     let application = build_evaluated_prepared_application(
         graph,

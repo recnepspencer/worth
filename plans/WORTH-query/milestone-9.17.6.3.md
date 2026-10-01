@@ -1,6 +1,7 @@
 # Milestone 9.17.6.3: Exact Invalidation And Parallel Computation
 
-> **Status:** Not started. Successor to [9.17.6](./milestone-9.17.6.md). This is the
+> **Status:** In progress. Phases 1 to 4 are implemented and reviewed. Phases 5
+> to 8 remain. Successor to [9.17.6](./milestone-9.17.6.md). This is the
 > one plan for exact invalidation and parallel execution in WORTH. It replaces the
 > canceled Signal Milestones 14 to 17 and the 9.17.6 rules that kept touched
 > records as evidence only. Every phase depends only on completed work. Portable
@@ -800,6 +801,15 @@ Topological level alone proves none of these in a rewiring graph.
 - **Backpressure.** Ready queues, prepared packets, rewiring proposals and
   unpublished results are bounded by the lease. Exhaustion reduces admitted
   concurrency or rejects before dispatch.
+- **Checked result declaration.** A node may declare
+  `max_checked_result_heap_bytes`, the maximum additional heap of its checked
+  result, trace and keyed output; dependency capture has a separate bound.
+  `None` keeps adaptive admission and `Some(0)` explicitly declares a heap-free
+  result. Before callbacks, the epoch admits a common result grant at least as
+  large as every selected declaration or rejects the candidate. The checked
+  callback enforces each node's own limit. Fresh Signal snapshots write schema
+  3; schema 2 remains readable with an absent or null declaration, while a
+  schema 2 payload carrying a non-null declaration is rejected before restore.
 - **Node kinds.** Async-capable, temporal, previous-value and on-demand nodes run
   as singleton conflict groups, ordered canonically.
 - **Stays serial.** Parallel plan validation, condition preview and eligibility
@@ -1247,6 +1257,69 @@ lease. The Signal and Query lanes remain on the ratchet list.
   request lease.
 
 Phase 7 may trust exact, parallel graph progression below Query.
+
+The phase boundary is a consuming progression: planned work becomes an opaque
+checked epoch selection, preparation consumes that selection and its resource
+grant, and apply consumes prepared proposals with their disjointness proof,
+caller lease and immutable resource summary. Legacy serial work has a separate
+variant. Publication consumes a fully prepared epoch; it does not repeat
+admission or discover a new memory policy after evaluation. Capacity bounds
+come from the storage and packet owners that allocate those structures. Phase 7
+passes its lease into this same boundary and consumes the resulting progress;
+it does not rebuild Signal admission or create a second execution lane.
+
+Each logical stage mints one readiness epoch and carries it in both admitted
+variants. Resource backpressure can split that stage into several publication
+epochs without changing its semantic readiness identity or canonical task
+order. Physical progress still counts the epochs that actually published.
+
+Before evaluator dispatch, Execution reserves the admitted apply and candidate
+maps' memory under their selected leases, including any Serial child and
+checkpoint contexts. Selection accounts for their simultaneous reservations
+inside the request. Candidate slots come from the selected producers' declared
+aspects; their storage bounds come from the reverse index and admitted output
+heap. Canonical output deltas later activate those slots, preserving scoped
+lookup. Consuming prepared-map values retain the reservations through
+settlement. They bind the preparation parent and physical accounting ledger;
+dispatch under a different parent is denied. Dispatch resolves current work,
+cancellation and deadlines and acquires workers then. It does not readmit the
+same memory or retain a stale work allowance. Host contention therefore cannot
+turn a successfully admitted epoch into a later apply or candidate memory denial.
+
+Prospective subscriber settlement distinguishes producer output edits from
+consumer operational edits before callback dispatch. Producer edits may replace
+artifacts and semantic diagnostics; consumer edits may change only topology,
+invalidation state and pending revalidation. Consumer preparation preserves cold
+artifacts and shares immutable warm companions through the node storage owner.
+The prepared mutation surface makes artifact writes unavailable to that role.
+A previously selected consumer becoming a producer requires the incremental
+producer capacity before dispatch; selection alone is insufficient proof.
+
+Node draft capacity comes from the unique selected-node union. Cause preparation
+accounts for selected pages, replacement cells, index paths and the actual peak
+of sequential staging. Request allocation and retained logical custody remain
+separate: shared historical roots do not become new request allocations, while
+their complete custody remains reserved by the retained storage owner. Moving
+between a cause map and its successor vectors releases predecessor scratch only
+when those allocations are actually gone. These changes preserve canonical
+cause handles, atomic publication and the original request limits.
+
+Canonical scope sets and prepared invalidation caches own only their populated
+scope vectors. Empty sets allocate no scope backing. Their public values and
+serialized sequence shape remain unchanged; every nonempty backing and copy is
+admitted at the existing scope or cache owner. Prepared caches move into the
+installed node's scope storage without duplicating strings. Persistent index
+forecasts account for the final shared index structure and one in-flight edit,
+rather than summing a complete retained path for each final page. Node root
+copy-on-write storage is admitted separately from node draft backing and from
+retained logical custody.
+
+QA for this refinement includes the real checked Bank rejected-descendant case
+at 4,096 outputs under its existing 16 MiB preparation limit, independent
+allocation evidence for shared-history cause edits, consumer-to-producer
+capacity upgrades, and retained preparation denial preserving both roots and
+observable artifacts. Bridge, World, WASM and Query consume the same prepared
+graph boundary; this refinement creates no additional execution authority.
 
 ### Phase 5: Exact invalidation
 

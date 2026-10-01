@@ -1,12 +1,9 @@
-#[cfg(feature = "parallel")]
 use crate::data::trace::assemble_trace_summary;
-use crate::facade::{EvaluationContext, EvaluationRequestMode, NodeEvaluationResult, SignalGraph};
-#[cfg(feature = "parallel")]
-use crate::facade::{StageExecutionOutcome, StageExecutor};
-#[cfg(feature = "parallel")]
-use crate::logic::planner::model::{
-    ParallelAdmissionReason, ParallelApplyMode, ParallelExecutionKind,
+use crate::facade::{
+    BoundedSignalInputs, CheckedEvaluationContext, NodeContract, StageExecutionOutcome,
 };
+use crate::facade::{EvaluationContext, EvaluationRequestMode, NodeEvaluationResult, SignalGraph};
+use crate::tests::leased_execution::support::{authority, request};
 use crate::tests::support::{version_ab, GraphDependencyBatchExt, ASPECT_A};
 
 #[test]
@@ -41,12 +38,19 @@ fn prepared_plan_captures_dependencies_without_manual_graph_wiring() {
     assert_eq!(dependencies[0].aspect(), ASPECT_A);
 }
 
-#[cfg(feature = "parallel")]
 #[test]
 fn prepared_parallel_precompute_matches_serial_results() {
+    let serial_lease = authority().request_lease(request(1, 10_000_000)).unwrap();
+    let parallel_lease = authority().request_lease(request(4, 10_000_000)).unwrap();
     let mut serial_graph = SignalGraph::new();
-    let a = serial_graph.node().build();
-    let b = serial_graph.node().build();
+    let a = serial_graph
+        .node()
+        .with_contract(NodeContract::wildcard().with_bounded_inputs(BoundedSignalInputs::default()))
+        .build();
+    let b = serial_graph
+        .node()
+        .with_contract(NodeContract::wildcard().with_bounded_inputs(BoundedSignalInputs::default()))
+        .build();
 
     let mut parallel_graph = serial_graph.clone();
     let parallel_a = a;
@@ -59,18 +63,14 @@ fn prepared_parallel_precompute_matches_serial_results() {
         .build_evaluation_plan(&[parallel_a, parallel_b], EvaluationRequestMode::Default)
         .unwrap();
 
-    let evaluator = |ctx: &mut EvaluationContext<'_, ()>| Ok(ctx.finish(version_ab(7, 0)));
+    let evaluator =
+        |ctx: &mut CheckedEvaluationContext<'_, '_, '_, '_, ()>| Ok(ctx.finish(version_ab(7, 0)));
 
     let serial_report = serial_graph
-        .execute_prepared_plan_with_executor(&plan, &(), &evaluator, StageExecutor::Serial)
+        .execute_prepared_plan_checked(&plan, &(), &evaluator, &serial_lease)
         .unwrap();
     let parallel_report = parallel_graph
-        .execute_prepared_plan_with_executor(
-            &parallel_plan,
-            &(),
-            &evaluator,
-            StageExecutor::parallel(1),
-        )
+        .execute_prepared_plan_checked(&parallel_plan, &(), &evaluator, &parallel_lease)
         .unwrap();
 
     assert_eq!(
@@ -135,18 +135,22 @@ fn build_evaluation_plan_handles_deep_linear_chain_without_recursion() {
     assert_eq!(plan.stages.last().unwrap().tasks[0].node, previous);
 }
 
-#[cfg(feature = "parallel")]
 #[test]
 fn parallel_executor_threshold_keeps_narrow_stage_serial() {
+    let parallel_lease = authority().request_lease(request(4, 10_000_000)).unwrap();
     let mut graph = SignalGraph::new();
-    let node = graph.node().build();
+    let node = graph
+        .node()
+        .with_contract(NodeContract::wildcard().with_bounded_inputs(BoundedSignalInputs::default()))
+        .build();
     let plan = graph
         .build_evaluation_plan(&[node], EvaluationRequestMode::Default)
         .unwrap();
-    let evaluator = |ctx: &mut EvaluationContext<'_, ()>| Ok(ctx.finish(version_ab(1, 0)));
+    let evaluator =
+        |ctx: &mut CheckedEvaluationContext<'_, '_, '_, '_, ()>| Ok(ctx.finish(version_ab(1, 0)));
 
     let report = graph
-        .execute_prepared_plan_with_executor(&plan, &(), &evaluator, StageExecutor::parallel(2))
+        .execute_prepared_plan_checked(&plan, &(), &evaluator, &parallel_lease)
         .unwrap();
 
     assert!(matches!(
@@ -155,12 +159,20 @@ fn parallel_executor_threshold_keeps_narrow_stage_serial() {
     ));
 }
 
-#[cfg(feature = "parallel")]
 #[test]
-fn full_parallel_executor_falls_back_honestly_when_mutable_apply_is_unavailable() {
+fn checked_wide_epoch_preserves_serial_results_and_reports_actual_placement() {
+    let serial_lease = authority().request_lease(request(1, 10_000_000)).unwrap();
+    let parallel_lease = authority().request_lease(request(4, 10_000_000)).unwrap();
     let mut serial_graph = SignalGraph::new();
     let serial_nodes = (0..12)
-        .map(|_| serial_graph.node().build())
+        .map(|_| {
+            serial_graph
+                .node()
+                .with_contract(
+                    NodeContract::wildcard().with_bounded_inputs(BoundedSignalInputs::default()),
+                )
+                .build()
+        })
         .collect::<Vec<_>>();
 
     let mut parallel_graph = serial_graph.clone();
@@ -173,18 +185,14 @@ fn full_parallel_executor_falls_back_honestly_when_mutable_apply_is_unavailable(
         .build_evaluation_plan(&parallel_nodes, EvaluationRequestMode::Default)
         .unwrap();
 
-    let evaluator = |ctx: &mut EvaluationContext<'_, ()>| Ok(ctx.finish(version_ab(11, 0)));
+    let evaluator =
+        |ctx: &mut CheckedEvaluationContext<'_, '_, '_, '_, ()>| Ok(ctx.finish(version_ab(11, 0)));
 
     let serial_report = serial_graph
-        .execute_prepared_plan_with_executor(&plan, &(), &evaluator, StageExecutor::Serial)
+        .execute_prepared_plan_checked(&plan, &(), &evaluator, &serial_lease)
         .unwrap();
     let parallel_report = parallel_graph
-        .execute_prepared_plan_with_executor(
-            &parallel_plan,
-            &(),
-            &evaluator,
-            StageExecutor::aggressive_parallel(),
-        )
+        .execute_prepared_plan_checked(&parallel_plan, &(), &evaluator, &parallel_lease)
         .unwrap();
 
     for (serial_node, parallel_node) in serial_nodes.iter().zip(parallel_nodes.iter()) {
@@ -195,18 +203,15 @@ fn full_parallel_executor_falls_back_honestly_when_mutable_apply_is_unavailable(
     }
     assert_eq!(serial_report.task_count, parallel_report.task_count);
     assert_eq!(serial_report.tasks_executed, parallel_report.tasks_executed);
-    assert!(parallel_report
-        .stages
+    let physically_parallel = parallel_report
+        .execution
         .iter()
-        .all(|stage| match stage.parallel_admission_reason {
-            Some(ParallelAdmissionReason::FullParallelUnsupportedByMutableEngine) => {
-                stage.parallel_kind.is_none()
-                    && stage.apply_mode == Some(ParallelApplyMode::SerialApply)
-            }
-            Some(ParallelAdmissionReason::AdmittedProofSafeGroupedConcurrent) => {
-                stage.parallel_kind == Some(ParallelExecutionKind::FullParallel)
-                    && stage.apply_mode == Some(ParallelApplyMode::GroupedConcurrentApply)
-            }
-            _ => false,
-        }));
+        .any(|execution| execution.physical().active_workers_high_watermark() > 1);
+    assert_eq!(
+        parallel_report
+            .stages
+            .iter()
+            .any(|stage| stage.outcome == StageExecutionOutcome::CompletedParallel),
+        physically_parallel
+    );
 }

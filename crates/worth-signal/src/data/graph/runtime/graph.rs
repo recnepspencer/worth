@@ -45,9 +45,11 @@ mod reconstruction_counters;
 #[path = "graph/replacement_test_observation.rs"]
 mod replacement_test_observation;
 mod retained_node_edit;
+mod retained_node_edit_compat;
 mod retained_node_mutation;
 pub(crate) use retained_node_edit::{
-    PreparedRetainedNodeEdit, RetainedNodeEditOutcome, RetainedNodeEditPreparation,
+    OperationalNodePayload, PreparedRetainedNodeEdit, RetainedNodeEditOutcome,
+    RetainedNodeEditPreparation, RetainedNodePayload, SelectedNodeDraft, SelectedNodeRole,
 };
 pub(in crate::data::graph) use retained_node_mutation::{
     map_accounting as map_node_edit_accounting, map_edit as map_node_edit,
@@ -61,7 +63,8 @@ mod topology_state;
 mod traversal_state;
 
 pub(crate) use crate::logic::invalidation::causality::{
-    PreparedDirectCauseNodes, PreparedDirectCausePublication, PreparedRetainedDirectCauseStores,
+    PreparedDirectCauseNodes, PreparedDirectCausePublication, PreparedEpochCausePublication,
+    PreparedRetainedDirectCauseStores,
 };
 pub(crate) use branch_mutations::{BranchMutationNodeImage, BranchMutationRecord};
 pub use branch_mutations::{
@@ -228,6 +231,9 @@ pub struct SignalGraph {
     #[serde(skip, default)]
     pub(crate) pending_repeated_invalidation_admissions:
         crate::data::persistent_ord_map::PersistentOrdMap<NodeId, u64>,
+    #[cfg(test)]
+    #[serde(skip)]
+    pub(in crate::data::graph) epoch_output_preparation_fault_after: std::sync::atomic::AtomicUsize,
 }
 
 #[derive(Deserialize)]
@@ -269,6 +275,8 @@ impl<'de> Deserialize<'de> for SignalGraph {
             invalidation_performed_counters: InvalidationPerformedCounterState::default(),
             invalidation_performed_work: PerformedWorkCaptureState::default(),
             pending_repeated_invalidation_admissions: Default::default(),
+            #[cfg(test)]
+            epoch_output_preparation_fault_after: Default::default(),
         };
         graph.rebind_observation_capture_state();
         Ok(graph)

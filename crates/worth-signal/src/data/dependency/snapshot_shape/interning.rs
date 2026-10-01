@@ -9,32 +9,30 @@ impl DependencySnapshotShapeStore {
     pub(in crate::data::dependency) fn prepare_intern_with_work(
         &mut self,
         shape: DependencySnapshotShape,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<PreparedShapeInsertion, SignalError> {
         if shape.as_slice().is_empty() {
             return Ok(PreparedShapeInsertion::existing(SnapshotShapeHandle::EMPTY));
         }
         match work {
             EvaluationWork::Ordinary => self.rebuild_interner_if_needed(),
-            EvaluationWork::Conditional(_) if !self.retained_interner_is_complete() => {
+            EvaluationWork::Conditional(_) | EvaluationWork::RequestCheckpoint(_)
+                if !self.retained_interner_is_complete() =>
+            {
                 return Err(SignalError::SnapshotIndexUnavailable)
             }
-            EvaluationWork::Conditional(_) => {}
+            EvaluationWork::Conditional(_) | EvaluationWork::RequestCheckpoint(_) => {}
         }
         work.reserve(Some(shape.as_slice().len()))?;
         let mut query = Some(16usize);
         for key in shape.as_slice() {
-            query = query
-                .and_then(|n| n.checked_add(16))
-                .and_then(|n| n.checked_add(key.scope.as_ref().map_or(0, |s| s.partition.0.len())))
-                .and_then(|n| {
-                    n.checked_add(
-                        key.scope
-                            .as_ref()
-                            .and_then(|s| s.detail.as_ref())
-                            .map_or(0, String::len),
-                    )
-                });
+            query = query.and_then(|n| n.checked_add(16)).and_then(|n| {
+                n.checked_add(
+                    key.scope
+                        .as_ref()
+                        .map_or(0, |s| s.path().total_segment_bytes()),
+                )
+            });
         }
         let comparison = query.and_then(|n| n.checked_mul(2));
         let steps = self.interner.lookup_steps();
@@ -81,7 +79,7 @@ impl DependencySnapshotShapeStore {
     pub(crate) fn intern_with_work(
         &mut self,
         shape: DependencySnapshotShape,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<SnapshotShapeHandle, SignalError> {
         let insertion = self.prepare_intern_with_work(shape, work)?;
         Ok(insertion.publish(self))

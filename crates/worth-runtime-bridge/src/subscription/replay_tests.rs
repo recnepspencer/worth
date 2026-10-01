@@ -109,6 +109,7 @@ impl crate::adapter::InvalidationSink for StaticSink {
     fn deliver_invalidation(
         &self,
         delivery: crate::routing::BridgeSignalInvalidationDelivery,
+        _lease: Option<&crate::facade::ExecutionResourceLease<'_>>,
     ) -> Result<crate::delivery::BridgeDeliveryReceipt, crate::adapter::SignalBridgeSinkError> {
         Ok(crate::delivery::BridgeDeliveryReceipt::new(
             delivery.invalidation_targets().len(),

@@ -102,7 +102,7 @@ impl RetainedStorageMeasurement for PrecomputeSummary {
     fn retained_heap_charge(&self, work: &mut Work) -> Result<Charge, Denial> {
         work.visit()?;
         let Self {
-            executor: _,
+            posture: _,
             stage_count: _,
             task_count: _,
             prepared_evaluations_produced: _,

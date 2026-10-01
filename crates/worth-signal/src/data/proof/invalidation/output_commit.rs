@@ -27,6 +27,18 @@ pub(crate) struct ProducedAspectChange {
 pub(crate) struct NonEmptyCanonicalAspectChangeSet(Vec<ProducedAspectChange>);
 
 impl NonEmptyCanonicalAspectChangeSet {
+    /// Initialized payload moves, sorting and deduplication for this concrete
+    /// constructor. Capacity alone performs no payload writes. The caller
+    /// separately admits the fixed version scan and nested scope copies.
+    pub(crate) fn construction_work_bound(count: usize) -> Option<usize> {
+        let layers = usize::BITS as usize - count.saturating_sub(1).leading_zeros() as usize;
+        let moves_per_entry = layers.checked_mul(8)?.checked_add(3)?;
+        count
+            .checked_mul(moves_per_entry)?
+            .checked_mul(std::mem::size_of::<ProducedAspectChange>())?
+            .checked_add(count.checked_mul(layers.checked_mul(8)?.checked_add(8)?)?)
+    }
+
     pub(crate) fn new(mut changes: Vec<ProducedAspectChange>) -> Option<Self> {
         changes.sort_by_key(|change| change.aspect.index());
         changes.dedup_by_key(|change| change.aspect.index());

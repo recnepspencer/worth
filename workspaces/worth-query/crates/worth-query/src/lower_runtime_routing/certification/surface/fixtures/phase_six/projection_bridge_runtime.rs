@@ -234,6 +234,7 @@ impl InvalidationSink for ProjectionBridgeSink {
     fn deliver_invalidation(
         &self,
         delivery: BridgeSignalInvalidationDelivery,
+        _lease: Option<&worth_runtime_bridge::facade::ExecutionResourceLease<'_>>,
     ) -> Result<BridgeDeliveryReceipt, SignalBridgeSinkError> {
         Ok(BridgeDeliveryReceipt::new(
             delivery.invalidation_targets().len(),

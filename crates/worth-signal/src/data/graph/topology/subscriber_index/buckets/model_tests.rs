@@ -4,7 +4,7 @@ use super::{IndexedSubscriptionMembership, ReverseSubscriptionIndex};
 use crate::data::aspect::Aspect;
 use crate::data::handle::NodeId;
 use crate::data::output::{
-    DetailTokenId, InternedPartitionSubscription, PartitionMatchMode, PartitionTokenId,
+    InternedPartitionSubscription, InternedScopePath, PartitionTokenId, ScopeCoverage,
 };
 
 #[test]
@@ -197,30 +197,138 @@ fn scope_matches(
     let Some(membership) = membership else {
         return true;
     };
-    if membership.partition != query.partition {
-        return false;
-    }
-    match query.match_mode {
-        PartitionMatchMode::WholePartition => true,
-        PartitionMatchMode::PartitionAndDetail => {
-            membership.match_mode == PartitionMatchMode::WholePartition
-                || membership.detail == query.detail
-        }
+    let membership_path = membership.path();
+    let query_path = query.path();
+    let left = membership_path.segments();
+    let right = query_path.segments();
+    let left_prefix = right.starts_with(left);
+    let right_prefix = left.starts_with(right);
+    match (membership.coverage(), query.coverage()) {
+        (ScopeCoverage::Exact, ScopeCoverage::Exact) => left == right,
+        (ScopeCoverage::Subtree, ScopeCoverage::Exact) => left_prefix,
+        (ScopeCoverage::Exact, ScopeCoverage::Subtree) => right_prefix,
+        (ScopeCoverage::Subtree, ScopeCoverage::Subtree) => left_prefix || right_prefix,
     }
 }
 
 fn whole(partition: u32) -> InternedPartitionSubscription {
-    InternedPartitionSubscription {
-        partition: PartitionTokenId(partition),
-        detail: None,
-        match_mode: PartitionMatchMode::WholePartition,
-    }
+    InternedPartitionSubscription::new(
+        InternedScopePath::new(&[PartitionTokenId(partition)]).unwrap(),
+        ScopeCoverage::Subtree,
+    )
 }
 
 fn detail(partition: u32, detail: u32) -> InternedPartitionSubscription {
-    InternedPartitionSubscription {
-        partition: PartitionTokenId(partition),
-        detail: Some(DetailTokenId(detail)),
-        match_mode: PartitionMatchMode::PartitionAndDetail,
+    InternedPartitionSubscription::new(
+        InternedScopePath::new(&[PartitionTokenId(partition), PartitionTokenId(detail)]).unwrap(),
+        ScopeCoverage::Exact,
+    )
+}
+
+#[test]
+fn hierarchy_candidates_match_authoritative_membership_model_at_all_depths() {
+    let producer = NodeId::new(0, 0);
+    let aspect = Aspect::new(1);
+    for depth in [1usize, 2, 4, 8] {
+        let stem: Vec<_> = (0..depth)
+            .map(|level| PartitionTokenId(level as u32))
+            .collect();
+        let leaf = InternedScopePath::new(&stem).unwrap();
+        let ancestor = leaf.prefix(1).unwrap();
+        let mut sibling = stem.clone();
+        sibling[depth - 1] = PartitionTokenId(99);
+        let sibling = InternedScopePath::new(&sibling).unwrap();
+        let scopes = [
+            None,
+            Some(InternedPartitionSubscription::new(
+                ancestor,
+                ScopeCoverage::Subtree,
+            )),
+            Some(InternedPartitionSubscription::new(
+                leaf,
+                ScopeCoverage::Exact,
+            )),
+            Some(InternedPartitionSubscription::new(
+                sibling,
+                ScopeCoverage::Exact,
+            )),
+        ];
+        let mut index = ReverseSubscriptionIndex::default();
+        let mut model = BTreeMap::new();
+        for (ordinal, scope) in scopes.into_iter().enumerate() {
+            let consumer = NodeId::new((ordinal + 1) as u32, 0);
+            index.replace_consumer(consumer, memberships(producer, aspect, &[scope]));
+            model.insert(consumer, vec![scope]);
+        }
+        let mut fork = index.fork_persistent();
+        for coverage in [ScopeCoverage::Exact, ScopeCoverage::Subtree] {
+            let query = InternedPartitionSubscription::new(leaf, coverage);
+            let expected = expected_scope_candidates(&model, query);
+            assert_eq!(
+                index
+                    .query_scope(
+                        producer,
+                        aspect,
+                        query,
+                        &mut crate::logic::evaluation::EvaluationWork::Ordinary
+                    )
+                    .unwrap()
+                    .candidates,
+                expected,
+                "flat depth {depth}"
+            );
+            assert_eq!(
+                fork.query_scope(
+                    producer,
+                    aspect,
+                    query,
+                    &mut crate::logic::evaluation::EvaluationWork::Ordinary
+                )
+                .unwrap()
+                .candidates,
+                expected,
+                "fork depth {depth}"
+            );
+        }
+        fork.replace_consumer(NodeId::new(3, 0), Vec::new());
+        index.replace_consumer(NodeId::new(3, 0), Vec::new());
+        model.remove(&NodeId::new(3, 0));
+        let query = InternedPartitionSubscription::new(leaf, ScopeCoverage::Exact);
+        assert_eq!(
+            fork.query_scope(
+                producer,
+                aspect,
+                query,
+                &mut crate::logic::evaluation::EvaluationWork::Ordinary
+            )
+            .unwrap()
+            .candidates,
+            expected_scope_candidates(&model, query)
+        );
+        let replacement = Some(InternedPartitionSubscription::new(
+            sibling,
+            ScopeCoverage::Subtree,
+        ));
+        index.replace_consumer(
+            NodeId::new(2, 0),
+            memberships(producer, aspect, &[replacement]),
+        );
+        model.insert(NodeId::new(2, 0), vec![replacement]);
+        for changed in [leaf, sibling] {
+            let query = InternedPartitionSubscription::new(changed, ScopeCoverage::Exact);
+            assert_eq!(
+                index
+                    .query_scope(
+                        producer,
+                        aspect,
+                        query,
+                        &mut crate::logic::evaluation::EvaluationWork::Ordinary
+                    )
+                    .unwrap()
+                    .candidates,
+                expected_scope_candidates(&model, query),
+                "replacement depth {depth}"
+            );
+        }
     }
 }

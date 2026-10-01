@@ -11,7 +11,7 @@ use crate::data::retained_storage::{
     RetainedStoragePreparation as Preparation, RetainedStoragePreparationDenial as Denial,
 };
 
-fn work() -> Preparation {
+fn work() -> Preparation<'static> {
     Preparation::new(100_000)
 }
 

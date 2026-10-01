@@ -35,16 +35,16 @@ pub use self::core::*;
 pub use self::core::{
     apply_installed_scoped_changes, mark_changed, mark_changed_with_regions, mark_dirty,
     mark_dirty_with_regions, resolve_signal_delta_threshold, AdmittedHostComputedReadSet,
-    AfterCondition, Aspect, AspectMask, AspectVersion, AtOrAfterCondition,
+    AfterCondition, Aspect, AspectMask, AspectVersion, AtOrAfterCondition, BoundedSignalInputs,
     BoundedTemporalReadyPromotionSummary, CanonicalChangedRegions, ChangedRegion,
     ClockAdvanceOrdinal, ClockAdvanceRequest, ClockAuthority, ClockCheckpointId, ClockDomain,
     ClockTick, CommittedHostComputedArtifact, ComparatorPolicyResolver, ConditionEvaluationContext,
-    DebounceCondition, DeferredTemporalEligibility, DeniedHostComputedEvaluation,
-    DeniedHostComputedReadSet, DependencyEdge, EvaluationCondition, HostComputedApiFamily,
-    HostComputedDenialClass, HostComputedDependencyPatch, HostComputedDescriptor,
-    HostComputedDescriptorId, HostComputedDiagnosticsSummary, HostComputedEvaluationOutcome,
-    HostComputedEvaluationRequest, HostComputedEvaluationResponse, HostComputedEvaluator,
-    HostComputedFailure, HostComputedFailureClass, HostComputedOutcomeClass,
+    DebounceCondition, DeclaredSignalInput, DeferredTemporalEligibility,
+    DeniedHostComputedEvaluation, DeniedHostComputedReadSet, DependencyEdge, EvaluationCondition,
+    HostComputedApiFamily, HostComputedDenialClass, HostComputedDependencyPatch,
+    HostComputedDescriptor, HostComputedDescriptorId, HostComputedDiagnosticsSummary,
+    HostComputedEvaluationOutcome, HostComputedEvaluationRequest, HostComputedEvaluationResponse,
+    HostComputedEvaluator, HostComputedFailure, HostComputedFailureClass, HostComputedOutcomeClass,
     HostComputedPreparedResponse, InstalledSignalAspectCapability,
     InstalledSignalAspectLoweringAuthority, InstalledSignalAspectSetCapability,
     InstalledSignalAuthorizationPolicy, InstalledSignalComparatorIdentity,
@@ -54,9 +54,9 @@ pub use self::core::{
     InstalledSignalNodeCapability, InstalledSignalScopedChange, InstalledSignalScopedChangeSet,
     InstalledSignalScopedChangeView, IntervalAnchor, IntervalCondition, IntervalPeriod,
     LoweredTemporalEligibility, MissedTickPolicy, NodeBuilder, NodeEvaluationResult, NodeId,
-    NodeState, OutputChange, OutputIdentity, PartitionMatchMode, PartitionSubscription,
-    PartitionToken, PreparedHostComputedEvaluation, ReadyTemporalEligibility, RuntimeClockBasis,
-    SignalAspectLoweringOwner, SignalAspectLoweringOwnershipDenial,
+    NodeState, OutputChange, OutputIdentity, PartitionSubscription, PartitionToken,
+    PreparedHostComputedEvaluation, ReadyTemporalEligibility, RuntimeClockBasis, ScopeCoverage,
+    ScopePath, ScopePathError, SignalAspectLoweringOwner, SignalAspectLoweringOwnershipDenial,
     SignalAuthorizationClauseContract, SignalAuthorizationClauseObservation,
     SignalAuthorizationDecision, SignalAuthorizationDecisionEvidence, SignalAuthorizationDenial,
     SignalAuthorizationDependencyCardinality, SignalAuthorizationEvaluationCounters,
@@ -76,14 +76,16 @@ pub use self::core::{
     SignalConditionalExecutionAffinityMismatch, SignalConditionalExecutionFailure,
     SignalConditionalExecutionRequest, SignalConditionalSemanticComparisonMismatch,
     SignalConditionalSemanticContinuity, SignalConditionalSemanticMismatch,
-    SignalConditionalVersionComparator, SignalDeltaThresholdContract, SignalError, SignalGraph,
+    SignalConditionalVersionComparator, SignalDeltaThresholdContract, SignalError,
+    SignalExecutionFailure, SignalExecutionStop, SignalExecutionStopReason, SignalGraph,
     SignalGraphLifecycleProbe, SignalInstalledScopedChangeDenial,
-    SignalInstalledScopedChangeOutcome, SignalThresholdBoundary, SignalThresholdComparisonDomain,
-    SignalThresholdValueFamily, StagedHostComputedArtifact, StaleAfterCondition,
-    TemporalClockAdvanceSummary, TemporalCondition, TemporalDuration, TemporalEligibilityAuthority,
-    TemporalExecutionSummary, TemporalReadyPromotionSummary, TemporalWakeAdmissionSummary,
-    TemporalWakeOwner, TemporalWakeRetirementBatch, ThrottleCondition, ValidatedClockAdvance,
-    VersionComparatorPolicy, VersionComparatorResolver, CORE_STORAGE_PROFILE_ID, MAX_ASPECTS,
+    SignalInstalledScopedChangeOutcome, SignalPublicationDisposition, SignalPublicationProgress,
+    SignalThresholdBoundary, SignalThresholdComparisonDomain, SignalThresholdValueFamily,
+    StagedHostComputedArtifact, StaleAfterCondition, TemporalClockAdvanceSummary,
+    TemporalCondition, TemporalDuration, TemporalEligibilityAuthority, TemporalExecutionSummary,
+    TemporalReadyPromotionSummary, TemporalWakeAdmissionSummary, TemporalWakeOwner,
+    TemporalWakeRetirementBatch, ThrottleCondition, ValidatedClockAdvance, VersionComparatorPolicy,
+    VersionComparatorResolver, CORE_STORAGE_PROFILE_ID, MAX_ASPECTS,
 };
 
 #[cfg(test)]
@@ -139,13 +141,12 @@ pub use self::runtime::{
     RuntimeConfig as SignalRuntimeConfig, RuntimeRunRequest as RuntimeExecutionRequest,
     RuntimeTierPolicy as TierPolicy, TransactionRunRequest as TransactionExecutionRequest,
 };
-#[cfg(all(feature = "parallel", not(test)))]
-pub use self::specialist::ParallelExecutionPolicy;
 #[cfg(test)]
 pub use self::specialist::{
-    ComparatorPolicy as VersionComparatorPolicy, ComparatorResolver as VersionComparatorResolver,
-    ConditionEvaluationContext, ConditionResolver, DefaultConditionResolver, EvaluationContext,
-    EvaluationOutput, PlannedRun as PreparedEvaluation, ReadView as ExecutionReadView,
+    CheckedEvaluationContext, ComparatorPolicy as VersionComparatorPolicy,
+    ComparatorResolver as VersionComparatorResolver, ConditionEvaluationContext, ConditionResolver,
+    DefaultConditionResolver, EvaluationContext, EvaluationOutput,
+    PlannedRun as PreparedEvaluation, ReadView as ExecutionReadView,
     RunMode as EvaluationRequestMode, TemporalConditionResolver,
 };
 #[cfg(not(test))]
@@ -189,7 +190,7 @@ pub use crate::data::comparator::DefaultComparatorResolver;
 #[cfg(test)]
 pub use crate::data::dependency::CanonicalDependencies;
 #[cfg(test)]
-pub use crate::data::graph::{GcPressure, ObservationLevel, ParallelismHint};
+pub use crate::data::graph::{GcPressure, ObservationLevel};
 #[cfg(test)]
 pub use crate::data::output::MemoizedResultOrigin;
 

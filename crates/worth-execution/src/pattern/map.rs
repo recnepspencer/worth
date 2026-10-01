@@ -10,6 +10,9 @@ use crate::{
     report::ChargedBytes,
 };
 
+mod prepared;
+pub use prepared::PreparedExecutionMap;
+
 pub use crate::backend::{
     BatchStop as MapStop, KernelContext as MapKernelContext, KernelFailure as MapKernelFailure,
     KernelStop as MapKernelStop,
@@ -93,6 +96,44 @@ impl<R, E> From<BatchOutcome<R, E>> for MapOutcome<R, E> {
 }
 
 impl<T, K: Ord + ChargedBytes> ExecutionMap<T, K> {
+    /// Query the exact generic execution reservation for a declared shape.
+    /// The checked run performs the authoritative reservation before dispatch.
+    pub fn declared_memory_requirement<R, E>(
+        count: usize,
+        input_heap: u64,
+        kernel_scratch_bytes: u64,
+        declared_result_bytes: u64,
+        access_memory_bytes: u64,
+    ) -> Option<u64> {
+        crate::backend::execution_memory_requirement::<T, R, E>(
+            count,
+            input_heap,
+            kernel_scratch_bytes,
+            declared_result_bytes,
+            access_memory_bytes,
+        )
+    }
+
+    /// Full leased reservation, including the actual request's checkpoint
+    /// lineage and worker contexts. The later run still reserves it itself.
+    pub fn declared_memory_requirement_for_lease<R, E>(
+        lease: &ExecutionResourceLease<'_>,
+        count: usize,
+        input_heap: u64,
+        kernel_scratch_bytes: u64,
+        declared_result_bytes: u64,
+        access_memory_bytes: u64,
+    ) -> Option<u64> {
+        crate::backend::execution_memory_requirement_for_lease::<T, R, E>(
+            lease,
+            count,
+            input_heap,
+            kernel_scratch_bytes,
+            declared_result_bytes,
+            access_memory_bytes,
+        )
+    }
+
     pub fn try_from_declared_partitions(
         expected_identities: Vec<PartitionIdentity>,
         mut partitions: Vec<MapPartition<T, K>>,
@@ -193,6 +234,19 @@ impl<T, K> ExecutionMap<T, K> {
 }
 
 impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
+    /// Consume the checked map and retain its exact live memory admission
+    /// before domain evaluators run. Dispatch later reserves only a worker.
+    pub fn prepare_run<'authority, R, E>(
+        self,
+        lease: ExecutionResourceLease<'authority>,
+    ) -> Result<PreparedExecutionMap<'authority, T, K, R, E>, crate::LeaseDenial>
+    where
+        R: Send + ChargedBytes,
+        E: Send + ChargedBytes,
+    {
+        prepared::prepare_map(self, lease)
+    }
+
     pub fn run<R, E, F>(
         &self,
         lease: Option<&ExecutionResourceLease<'_>>,

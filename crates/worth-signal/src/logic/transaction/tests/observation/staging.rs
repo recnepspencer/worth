@@ -1,7 +1,7 @@
 use super::super::runtime_world::build_runtime;
 use super::world::NoopObservationListener;
 use crate::facade::{
-    AuthorityPolicy, EvaluationRequestMode, NodeEvaluationResult, ObservationPolicy, StageExecutor,
+    AuthorityPolicy, EvaluationRequestMode, NodeEvaluationResult, ObservationPolicy,
 };
 use crate::tests::support::{version_ab, GraphDependencyBatchExt, ASPECT_A};
 
@@ -208,11 +208,9 @@ fn observation_phase2_prepared_plan_execution_stages_and_classifies_observers() 
 
     let mut ctx = ();
     let mut tx = runtime.begin(&mut ctx);
-    tx.execute_prepared_plan_with_executor(
-        &plan,
-        &|view| Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0)))),
-        StageExecutor::Serial,
-    )
+    tx.execute_prepared_plan(&plan, &|view| {
+        Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
+    })
     .unwrap();
 
     let summary = tx.observation_scratch_summary();

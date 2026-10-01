@@ -68,16 +68,16 @@ impl RetainedStorageMeasurement for BucketDelta {
         let Self {
             all,
             unscoped,
-            whole_partitions,
-            exact_details,
-            partition_scoped,
+            same_path,
+            subtree_covering,
+            subtree_members,
         } = self;
         Charge::ZERO
             .checked_add(all.retained_heap_charge(work)?)?
             .checked_add(unscoped.retained_heap_charge(work)?)?
-            .checked_add(whole_partitions.retained_heap_charge(work)?)?
-            .checked_add(exact_details.retained_heap_charge(work)?)?
-            .checked_add(partition_scoped.retained_heap_charge(work)?)
+            .checked_add(same_path.retained_heap_charge(work)?)?
+            .checked_add(subtree_covering.retained_heap_charge(work)?)?
+            .checked_add(subtree_members.retained_heap_charge(work)?)
     }
 }
 impl RetainedStorageMeasurement for ReverseSubscriptionStorage {

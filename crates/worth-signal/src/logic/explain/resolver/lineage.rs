@@ -184,11 +184,11 @@ fn canonicalize_rewiring_dependencies(dependencies: &mut [RewiringDependency]) {
     dependencies.sort_by_key(rewiring_key);
 }
 
-fn rewiring_key(dependency: &RewiringDependency) -> (u32, u32, usize, String, u8) {
+fn rewiring_key(dependency: &RewiringDependency) -> (u32, u32, usize, Vec<String>, u8) {
     let scope = dependency.subscription.as_ref().map(|subscription| {
         (
-            subscription.detail.clone().unwrap_or_default(),
-            subscription.match_mode as u8,
+            subscription.path().segments().to_vec(),
+            subscription.coverage() as u8,
         )
     });
     (
@@ -197,7 +197,7 @@ fn rewiring_key(dependency: &RewiringDependency) -> (u32, u32, usize, String, u8
         dependency.aspect.index(),
         scope
             .as_ref()
-            .map(|(detail, _)| detail.clone())
+            .map(|(path, _)| path.clone())
             .unwrap_or_default(),
         scope.as_ref().map(|(_, mode)| *mode).unwrap_or_default(),
     )

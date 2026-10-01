@@ -7,10 +7,8 @@ impl PartitionInterner {
         resources: &mut SignalConditionalRetentionReservation,
     ) -> Self {
         Self {
-            partitions: self.partitions.fork_reserved(resources),
-            details: self.details.fork_reserved(resources),
-            partition_lookup: self.partition_lookup.fork_reserved(resources),
-            detail_lookup: self.detail_lookup.fork_reserved(resources),
+            segments: self.segments.fork_reserved(resources),
+            segment_lookup: self.segment_lookup.fork_reserved(resources),
         }
     }
 }

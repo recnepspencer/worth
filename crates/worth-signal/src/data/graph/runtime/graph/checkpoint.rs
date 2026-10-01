@@ -155,6 +155,8 @@ impl SignalGraph {
             observation_sessions,
             observation_capture_cleanup: Some(observation_capture_cleanup),
             pending_repeated_invalidation_admissions: Default::default(),
+            #[cfg(test)]
+            epoch_output_preparation_fault_after: Default::default(),
         };
         let installed_policy = graph.observation.installed_policy;
         graph

@@ -1,7 +1,6 @@
 use std::collections::BTreeSet;
 
 use crate::facade::DiagnosticsTier;
-use crate::facade::StageExecutor;
 use crate::tests::domains::fintech::certification::invalidation::{
     FinancialNecessityManifest, FreshFinancialRecompute,
 };
@@ -28,7 +27,7 @@ fn partitioned_curve_bucket_bump() {
     let details = evidence
         .pending_scopes()
         .iter()
-        .filter_map(|scope| scope.detail.clone())
+        .filter_map(|scope| scope.path().segments().get(1).cloned())
         .collect::<BTreeSet<_>>();
     assert_eq!(details, BTreeSet::from(["usd-1y".into(), "eur-1y".into()]));
     assert!(evidence.gated_consumer_was_pending());
@@ -47,9 +46,7 @@ fn partitioned_curve_bucket_bump() {
     assert_eq!(compiled.ledger().observed_work(), required);
 
     let mut legacy_locality_twin = setup_world();
-    legacy_locality_twin
-        .shock_rates_bucket_one(7, StageExecutor::Serial)
-        .unwrap();
+    legacy_locality_twin.shock_rates_bucket_one(7).unwrap();
 }
 
 #[test]

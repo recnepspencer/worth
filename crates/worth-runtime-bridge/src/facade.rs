@@ -60,6 +60,7 @@
 //! ```
 
 use std::sync::Arc;
+pub use worth_execution::ExecutionResourceLease;
 
 use crate::diagnostics::DiagnosticSink;
 use crate::mapping::{FrozenAspectMappingRegistry, FrozenMappingRegistry};

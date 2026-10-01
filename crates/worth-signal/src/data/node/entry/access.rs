@@ -32,7 +32,7 @@ impl NodeEntry {
     /// Set the aspect version after evaluation.
     pub fn set_aspect_version(&mut self, version: AspectVersion) {
         self.hot.aspect_version_header.set_global(version);
-        self.warm.aspect_version_overrides.set_global(version);
+        std::sync::Arc::make_mut(&mut self.warm.aspect_version_overrides).set_global(version);
         self.hot
             .aspect_version_header
             .set_has_partition_overrides(self.warm.aspect_version_overrides.has_overrides());
@@ -44,8 +44,7 @@ impl NodeEntry {
         changed_regions: &[ChangedRegion],
     ) {
         self.hot.aspect_version_header.set_global(version);
-        self.warm
-            .aspect_version_overrides
+        std::sync::Arc::make_mut(&mut self.warm.aspect_version_overrides)
             .apply_evaluation(version, changed_regions);
         self.hot
             .aspect_version_header
@@ -140,7 +139,7 @@ impl NodeEntry {
     pub(crate) fn direct_invalidation_basis(
         &self,
     ) -> Option<&crate::data::proof::invalidation::source_seed::DirectInvalidationBasis> {
-        self.warm.direct_invalidation_basis.as_ref()
+        self.warm.direct_invalidation_basis.as_deref()
     }
 
     pub(crate) fn mark_pending_dependency_revalidation(

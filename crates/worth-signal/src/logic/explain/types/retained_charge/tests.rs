@@ -1,6 +1,6 @@
 use super::*;
 use crate::data::node::EvaluationCondition;
-use crate::data::output::PartitionSubscription;
+use crate::data::output::{PartitionSubscription, ScopePath};
 use crate::logic::explain::types::{ConditionDecision, MeaningfulChangeReason, UpstreamCause};
 use crate::tests::explanation_retention_fixture::materialized_explanation;
 use crate::tests::support::ASPECT_A;
@@ -48,7 +48,7 @@ fn upstream_conditions_comparators_and_both_scope_copies_have_independent_cost()
     partition.push_str("partition");
     let mut detail = String::with_capacity(256);
     detail.push_str("detail");
-    let scope_bytes = partition.capacity() + detail.capacity();
+    let scope_bytes = partition.capacity() + detail.capacity() + 2 * std::mem::size_of::<String>();
     let subscription = PartitionSubscription::partition_and_detail(partition, detail);
     let cause = UpstreamCause::ConditionDeferred {
         source: node,
@@ -106,8 +106,14 @@ fn upstream_conditions_comparators_and_both_scope_copies_have_independent_cost()
         .into_iter()
         .flatten()
     {
-        delta += grow_string(&mut subscription.partition.0)
-            + grow_string(subscription.detail.as_mut().unwrap());
+        let old = subscription.path().retained_capacity_bytes();
+        let segments = subscription.path().segments().iter().map(|segment| {
+            let mut grown = String::with_capacity(segment.capacity() + 1024);
+            grown.push_str(segment);
+            grown
+        });
+        *subscription = PartitionSubscription::exact(ScopePath::new(segments).unwrap());
+        delta += (subscription.path().retained_capacity_bytes() - old) as u64;
     }
     assert_eq!(
         scope

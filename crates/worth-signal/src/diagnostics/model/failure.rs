@@ -6,7 +6,8 @@ use crate::data::error::SignalError;
 use crate::data::handle::NodeId;
 use crate::diagnostics::epochs::EventEpochSummary;
 use crate::diagnostics::profile::DiagnosticsTier;
-use crate::logic::planner::{ExecutionRecordId, PlanSummary, StageExecutor};
+use crate::logic::planner::{ExecutionRecordId, PlanSummary};
+use worth_foundational::ExecutionPosture;
 
 /// High-level phase where an execution failure occurred.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -27,7 +28,7 @@ pub struct ExecutionFailureContext {
     pub phase: ExecutionFailurePhase,
     pub stage_index: Option<u32>,
     pub node: Option<NodeId>,
-    pub executor: Option<StageExecutor>,
+    pub posture: Option<ExecutionPosture>,
     pub execution_record_id: Option<ExecutionRecordId>,
     pub plan_summary: Option<PlanSummary>,
     pub message: String,
@@ -51,7 +52,7 @@ pub struct FailureSummary {
     pub phase: ExecutionFailurePhase,
     pub stage_index: Option<u32>,
     pub node: Option<NodeId>,
-    pub executor: Option<StageExecutor>,
+    pub posture: Option<ExecutionPosture>,
     pub execution_record_id: Option<ExecutionRecordId>,
     pub has_plan_summary: bool,
     pub rolled_back: bool,
@@ -69,7 +70,7 @@ impl FailureSummary {
             phase,
             stage_index: None,
             node: None,
-            executor: None,
+            posture: None,
             execution_record_id: None,
             has_plan_summary: false,
             rolled_back: false,
@@ -86,7 +87,7 @@ impl ExecutionFailureContext {
         phase: ExecutionFailurePhase,
         stage_index: Option<u32>,
         node: Option<NodeId>,
-        executor: Option<StageExecutor>,
+        posture: Option<ExecutionPosture>,
         execution_record_id: Option<ExecutionRecordId>,
         plan_summary: Option<PlanSummary>,
         message: impl Into<String>,
@@ -95,7 +96,7 @@ impl ExecutionFailureContext {
             phase,
             stage_index,
             node,
-            executor,
+            posture,
             execution_record_id,
             plan_summary,
             message: message.into(),
@@ -128,7 +129,7 @@ impl ExecutionFailureContext {
             phase: self.phase,
             stage_index: self.stage_index,
             node: self.node,
-            executor: self.executor,
+            posture: self.posture,
             execution_record_id: self.execution_record_id,
             has_plan_summary: self.plan_summary.is_some(),
             rolled_back: rollback.map(|d| d.rolled_back).unwrap_or(false),

@@ -106,7 +106,7 @@ impl DependencySnapshot {
 
     pub(crate) fn canonicalize_with_work(
         mut self,
-        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
     ) -> Result<Self, crate::data::error::SignalError> {
         normalization::normalize(&mut self, work)?;
         Ok(self)

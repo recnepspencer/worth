@@ -1,7 +1,7 @@
 use crate::facade::{
-    KeyedComputation, NodeEvaluationResult, NodeId, OutputChange, SignalBranchHandle, SignalError,
-    SignalGraph, SignalRuntime, SignalRuntimePolicy, SignalSnapshotV1, SignalTransaction,
-    StageExecutor,
+    BoundedSignalInputs, DeclaredSignalInput, KeyedComputation, NodeContract, NodeEvaluationResult,
+    NodeId, OutputChange, SignalBranchHandle, SignalError, SignalGraph, SignalRuntime,
+    SignalRuntimePolicy, SignalSnapshotV1, SignalTransaction,
 };
 use crate::tests::support::{
     define_keyed_computation, mask_a, mask_b, version_ab, DependencyBatchBuilder, ASPECT_A,
@@ -68,27 +68,94 @@ pub(super) fn fintech_evaluator(
     }
 }
 
+pub(super) fn fintech_checked_evaluator(
+    fixture: &FintechFixture,
+) -> impl for<'graph, 'work, 'run, 'lease> Fn(
+    &mut crate::logic::checked_context::CheckedEvaluationContext<'graph, 'work, 'run, 'lease, ()>,
+) -> Result<
+    crate::logic::evaluation::EvaluationOutput,
+    SignalError,
+> + Sync {
+    let (ticks, volatility, throttle, alert, risk) = (
+        fixture.ticks,
+        fixture.volatility,
+        fixture.throttle,
+        fixture.alert,
+        fixture.risk,
+    );
+    move |ctx| {
+        ctx.work()
+            .checkpoint(128)
+            .map_err(|_| SignalError::invalid_input("fintech kernel work exhausted"))?;
+        let node = ctx.node();
+        let (version, identity, continuity) = if node == throttle {
+            let a = ctx.read(ticks, ASPECT_A)?;
+            (version_ab(a, 0), format!("throttle-{a}"), "throttle")
+        } else if node == alert {
+            let b = ctx.read(volatility, ASPECT_B)?;
+            (version_ab(0, b), format!("alert-{b}"), "alert")
+        } else if node == risk {
+            let a = ctx.read(throttle, ASPECT_A)?;
+            let b = ctx.read(alert, ASPECT_B)?;
+            (version_ab(a, b), format!("risk-{a}-{b}"), "risk-surface")
+        } else {
+            return Err(SignalError::invalid_input(format!(
+                "unexpected fintech node {node}"
+            )));
+        };
+        Ok(ctx.finish(
+            NodeEvaluationResult::from_version(version)
+                .with_output_identity(identity)
+                .with_continuity_token(continuity),
+        ))
+    }
+}
+
+fn bounded(inputs: impl IntoIterator<Item = DeclaredSignalInput>) -> NodeContract {
+    NodeContract::wildcard().with_bounded_inputs(BoundedSignalInputs::new(inputs))
+}
+
 pub(super) fn build_fintech_fixture(policy: SignalRuntimePolicy) -> FintechFixture {
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
         .build();
     runtime.set_runtime_policy(policy);
 
-    let ticks = runtime.graph_mut().node().output_identity().build();
-    let volatility = runtime.graph_mut().node().output_identity().build();
+    let ticks = runtime
+        .graph_mut()
+        .node()
+        .with_contract(bounded([]))
+        .output_identity()
+        .build();
+    let volatility = runtime
+        .graph_mut()
+        .node()
+        .with_contract(bounded([]))
+        .output_identity()
+        .build();
     let throttle = runtime
         .graph_mut()
         .node()
+        .with_contract(bounded([DeclaredSignalInput::new(ticks, ASPECT_A)]))
         .reads_aspects(mask_a())
         .delta_threshold(2.0)
         .build();
     let alert = runtime
         .graph_mut()
         .node()
+        .with_contract(bounded([DeclaredSignalInput::new(volatility, ASPECT_B)]))
         .reads_aspects(mask_b())
         .aspect_filter(mask_b())
         .build();
-    let risk = runtime.graph_mut().node().output_identity().build();
+    let risk = runtime
+        .graph_mut()
+        .node()
+        .with_contract(bounded([
+            DeclaredSignalInput::new(throttle, ASPECT_A),
+            DeclaredSignalInput::new(alert, ASPECT_B),
+        ]))
+        .output_identity()
+        .build();
 
     let mut dependencies = DependencyBatchBuilder::new(runtime.graph_mut());
     dependencies
@@ -152,7 +219,7 @@ pub(super) fn seed_fintech_baseline(
 
     fixture
         .runtime
-        .evaluate_dirty_with_executor(&(), &fintech_evaluator(fixture), StageExecutor::Serial)
+        .evaluate_dirty(&(), &fintech_evaluator(fixture))
         .unwrap();
 
     let main = fixture.runtime.observe().current_branch();

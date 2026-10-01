@@ -17,7 +17,7 @@ fn partition_count_matches_independent_set_with_exact_and_short_work() {
             .collect();
         let expected = regions
             .iter()
-            .map(|region| region.partition.0.as_str())
+            .map(|region| region.path().segments()[0].as_str())
             .collect::<std::collections::BTreeSet<_>>()
             .len() as u32;
         let mut work = Work::new(1_000_000);

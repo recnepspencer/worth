@@ -84,6 +84,68 @@ impl CanonicalDependencyCauseSet {
         &self.dirty_scoped_aspects
     }
 
+    /// Bounds the copies and canonical origin sorting performed by lowering.
+    pub(crate) fn lowering_copy_work(&self) -> u64 {
+        let scope_work = |scope: &PartitionSubscription| {
+            (scope.path().total_segment_bytes() as u64)
+                .saturating_add(scope.path().depth() as u64)
+                .saturating_add(1)
+        };
+        let mut units = 1_u64;
+        for (_, scope) in &self.dirty_scoped_aspects {
+            units = units.saturating_add(scope_work(scope));
+        }
+        if let Some(causes) = self.dependency_causes() {
+            units = units.saturating_add(
+                (causes.len() as u64)
+                    .saturating_mul(causes.len().checked_ilog2().unwrap_or(0) as u64 + 32),
+            );
+            for cause in causes {
+                for scope in [&cause.key.edge_scope, &cause.binding_axes.edge_scope]
+                    .into_iter()
+                    .flatten()
+                {
+                    units = units.saturating_add(scope_work(scope));
+                }
+                for scope in cause.changed_scopes.as_slice() {
+                    units = units.saturating_add(scope_work(scope));
+                }
+            }
+        }
+        units
+    }
+
+    pub(crate) fn lowering_heap_bound(&self) -> Result<u64, crate::data::error::SignalError> {
+        use crate::data::retained_storage::{
+            RetainedStorageCharge as Charge, RetainedStorageMeasurement, RetainedStoragePreparation,
+        };
+        let mut measurement = RetainedStoragePreparation::new(usize::MAX);
+        let bound = (|| {
+            let mut bytes = self
+                .dirty_scoped_aspects
+                .retained_heap_charge(&mut measurement)?;
+            if let Some(causes) = self.dependency_causes() {
+                bytes = bytes
+                    .checked_add(Charge::capacity::<ResolvedDependencyCause>(causes.len())?)?;
+                for cause in causes {
+                    bytes = bytes.checked_add(cause.retained_heap_charge(&mut measurement)?)?;
+                }
+                // Origin evidence is copied across resolve/lower/ready bindings.
+                bytes = bytes.checked_add(
+                    Charge::capacity::<super::binding::OutputCommitOrdinal>(causes.len())?
+                        .checked_mul(4)?,
+                )?;
+            }
+            bytes.checked_mul(3)
+        })()
+        .map_err(|_| {
+            crate::data::error::SignalError::invalid_input(
+                "invalidation preparation memory overflow",
+            )
+        })?;
+        Ok(bound.bytes())
+    }
+
     pub(crate) fn is_bound_to_revision(&self, revision: DependencyRevision) -> bool {
         match &self.basis {
             CanonicalInvalidationBasis::DependencyCauses(causes) => causes

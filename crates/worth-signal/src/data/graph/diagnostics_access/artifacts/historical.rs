@@ -180,12 +180,22 @@ impl SignalGraph {
         &self,
         snapshot: &SignalSnapshotV1,
     ) -> Result<(), SignalError> {
-        if snapshot.meta.schema_version != SignalSnapshotMeta::SCHEMA_VERSION {
-            return Err(SignalError::invalid_input(format!(
-                "snapshot schema version {} is incompatible with runtime schema {}",
+        if !(SignalSnapshotMeta::MIN_READABLE_SCHEMA_VERSION..=SignalSnapshotMeta::SCHEMA_VERSION)
+            .contains(&snapshot.meta.schema_version)
+        {
+            return Err(SignalError::incompatible_snapshot(format!(
+                "snapshot schema version {} is outside supported versions {}..={}",
                 snapshot.meta.schema_version,
+                SignalSnapshotMeta::MIN_READABLE_SCHEMA_VERSION,
                 SignalSnapshotMeta::SCHEMA_VERSION
             )));
+        }
+        if snapshot.meta.schema_version == SignalSnapshotMeta::MIN_READABLE_SCHEMA_VERSION
+            && snapshot_contains_checked_result_limit(snapshot)
+        {
+            return Err(SignalError::incompatible_snapshot(
+                "snapshot schema version 2 cannot carry a checked result heap limit",
+            ));
         }
         if snapshot.meta.core_storage_profile != crate::data::core_profile::CORE_STORAGE_PROFILE_ID
         {
@@ -351,3 +361,27 @@ impl SignalGraph {
         Ok(())
     }
 }
+
+fn snapshot_contains_checked_result_limit(snapshot: &SignalSnapshotV1) -> bool {
+    snapshot
+        .checkpoint_image
+        .authority
+        .arena
+        .slots
+        .iter()
+        .filter_map(|slot| slot.node.as_ref())
+        .any(|node| node.max_checked_result_heap_bytes().is_some())
+        || (0..snapshot.diagnostic_graph.arena_capacity())
+            .filter_map(|index| snapshot.diagnostic_graph.live_node_id_at(index))
+            .any(|node| {
+                snapshot
+                    .diagnostic_graph
+                    .get_contract(node)
+                    .is_ok_and(|contract| {
+                        contract.execution.max_checked_result_heap_bytes.is_some()
+                    })
+            })
+}
+
+#[cfg(test)]
+mod snapshot_schema_tests;

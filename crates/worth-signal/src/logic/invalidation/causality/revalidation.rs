@@ -8,6 +8,76 @@ use crate::data::proof::invalidation::binding::ResolvedDependencyCause;
 use crate::data::graph::SignalGraph;
 
 impl SignalGraph {
+    pub(crate) fn node_invalidation_input_with_execution_work(
+        &self,
+        node: NodeId,
+        work: Option<&mut worth_execution::MapKernelContext<'_, '_>>,
+        preparation: Option<&mut crate::data::request_preparation::SignalPreparationBudget>,
+    ) -> Result<crate::data::proof::invalidation::revalidation::NodeInvalidationInput, SignalError>
+    {
+        if let Some(work) = work {
+            // Inspect borrowed owner storage before any cloned cause/scope payload.
+            work.checkpoint(1)
+                .map_err(|_| SignalError::invalid_input("invalidation input admission stopped"))?;
+            let causes = self.pending_causes(node)?;
+            let scopes = self.node_dirty_partition_scope_payload(node)?;
+            let mut units = (causes.len() as u64)
+                .saturating_mul(causes.len().checked_ilog2().unwrap_or(0) as u64 + 32);
+            let scope_work = |scope: &crate::data::output::PartitionSubscription| {
+                (scope.path().total_segment_bytes() as u64)
+                    .saturating_add(scope.path().depth() as u64)
+                    .saturating_add(1)
+            };
+            for (_, scope) in scopes {
+                units = units.saturating_add(scope_work(scope).saturating_mul(3));
+            }
+            for cause in causes {
+                for scope in [&cause.key.edge_scope, &cause.binding_axes.edge_scope]
+                    .into_iter()
+                    .flatten()
+                {
+                    units = units.saturating_add(scope_work(scope));
+                }
+                for scope in cause.changed_scopes.as_slice() {
+                    units = units.saturating_add(scope_work(scope).saturating_mul(2));
+                }
+            }
+            if let Some(pending) = self.node_pending_revalidation(node)? {
+                units = units.saturating_add(pending.unresolved_producers().len() as u64);
+            }
+            work.checkpoint(units).map_err(|_| {
+                SignalError::invalid_input("invalidation input stopped before copying authority")
+            })?;
+            if let Some(budget) = preparation {
+                use crate::data::retained_storage::{
+                    RetainedStorageCharge as Charge, RetainedStorageMeasurement,
+                    RetainedStoragePreparation,
+                };
+                let mut measurement = RetainedStoragePreparation::new(usize::MAX);
+                let bytes = (|| {
+                    let mut bytes = Charge::capacity::<ResolvedDependencyCause>(causes.len())?;
+                    for cause in causes {
+                        bytes = bytes.checked_add(cause.retained_heap_charge(&mut measurement)?)?;
+                    }
+                    bytes = bytes.checked_add(Charge::capacity::<(crate::data::aspect::Aspect,
+                        crate::data::output::PartitionSubscription)>(scopes.len())?)?;
+                    for scoped in scopes {
+                        bytes = bytes.checked_add(scoped.retained_heap_charge(&mut measurement)?)?;
+                    }
+                    if let Some(pending) = self.node_pending_revalidation(node)
+                        .map_err(|_| crate::data::retained_storage::RetainedStoragePreparationDenial::ChargeOverflow)? {
+                        bytes = bytes.checked_add(Charge::capacity::<NodeId>(pending.unresolved_producers().len())?)?;
+                    }
+                    // Canonicalization retains both the causes and their derived
+                    // scoped cache; direct-source reconstruction also copies it.
+                    bytes.checked_mul(3)
+                })().map_err(|_| SignalError::invalid_input("invalidation input memory overflow"))?;
+                budget.claim(bytes.bytes())?;
+            }
+        }
+        self.node_invalidation_input(node)
+    }
+
     pub(crate) fn node_invalidation_input(
         &self,
         node: NodeId,

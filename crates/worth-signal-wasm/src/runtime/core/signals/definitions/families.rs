@@ -1,5 +1,8 @@
 use crate::boundary::errors::WorthSignalJsError;
-use crate::recipe::model::{KeyedRecipeFamilySpec, KeyedSourceFamilySpec, RecipeFamilyReadSpec};
+use crate::recipe::model::{
+    KeyedRecipeFamilySpec, KeyedSourceFamilySpec, RecipeFamilyReadSpec,
+    RecipeFamilyScopeKeyRequirement,
+};
 
 use super::super::super::state::{StoredRecipeFamily, StoredSourceFamily};
 use super::super::super::RuntimeCore;
@@ -37,7 +40,16 @@ impl RuntimeCore {
                 spec.family_id
             )));
         }
+        let mut scope_key_requirement = RecipeFamilyScopeKeyRequirement::Unrestricted;
         for read in &spec.reads {
+            let scope = match read {
+                RecipeFamilyReadSpec::Signal { scope, .. }
+                | RecipeFamilyReadSpec::Keyed { scope, .. } => scope,
+            };
+            if let Some(scope) = scope {
+                scope_key_requirement =
+                    scope_key_requirement.including(scope.compile_key_requirement()?);
+            }
             match read {
                 RecipeFamilyReadSpec::Signal { id, .. } => {
                     if !self.catalog.contains_key(id) {
@@ -56,12 +68,20 @@ impl RuntimeCore {
                             spec.family_id
                         )));
                     }
+                    if let Some(child) = store.recipe_families.get(family_id) {
+                        scope_key_requirement =
+                            scope_key_requirement.including(child.scope_key_requirement);
+                    }
                 }
             }
         }
-        store
-            .recipe_families
-            .insert(spec.family_id.clone(), StoredRecipeFamily { spec });
+        store.recipe_families.insert(
+            spec.family_id.clone(),
+            StoredRecipeFamily {
+                spec,
+                scope_key_requirement,
+            },
+        );
         Ok(())
     }
 }

@@ -13,6 +13,7 @@ pub(super) fn build_causal_link_with_graph(
     traversal_cost: &mut ExplanationTraversalCost,
 ) -> CausalLink {
     let scope = scope_provenance_for_cause(graph, cause, traversal_cost);
+    let scope_untouched = matches!(scope.kind, ScopeProvenanceKind::Discarded);
     match cause {
         UpstreamCause::Changed {
             source,
@@ -90,7 +91,9 @@ pub(super) fn build_causal_link_with_graph(
             source: Some(*source),
             aspect: Some(*aspect),
             disposition: CausalDisposition::Ignored,
-            kind: if subscription.is_some() && cached_version != current_version {
+            kind: if scope_untouched
+                || (subscription.is_some() && cached_version != current_version)
+            {
                 CausalLinkKind::ScopeUntouched
             } else {
                 CausalLinkKind::Clean
@@ -100,7 +103,9 @@ pub(super) fn build_causal_link_with_graph(
             current_version: Some(*current_version),
             comparator: None,
             reason: None,
-            note: if subscription.is_some() && cached_version != current_version {
+            note: if scope_untouched
+                || (subscription.is_some() && cached_version != current_version)
+            {
                 Some("partition-sensitive validation discarded the upstream change for this local scope".to_string())
             } else {
                 None
@@ -216,7 +221,15 @@ fn scope_provenance_for_cause(
         .ok()
         .flatten()
         .and_then(|trace| {
-            translated_source_scope(trace.changed_scopes().as_slice(), &validation_scope)
+            let changed_scopes = trace.changed_scopes().as_slice();
+            translated_source_scope(changed_scopes, &validation_scope).or_else(|| {
+                // Exact scoped versions remain equal for disjoint writes.
+                // Preserve the latest producer region as discarded diagnostic
+                // evidence without treating it as a cause of recomputation.
+                matches!(cause, UpstreamCause::Clean { .. })
+                    .then(|| changed_scopes.first().cloned())
+                    .flatten()
+            })
         });
 
     let (kind, note) = match (source_scope.as_ref(), changed) {
@@ -263,6 +276,6 @@ fn translated_source_scope(
 ) -> Option<PartitionSubscription> {
     changed_scopes
         .iter()
-        .find(|scope| scope.partition == validation_scope.partition)
+        .find(|scope| crate::data::output::scopes_overlap(*scope, validation_scope))
         .cloned()
 }

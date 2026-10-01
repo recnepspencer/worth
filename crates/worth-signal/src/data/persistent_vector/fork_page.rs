@@ -160,6 +160,7 @@ impl<T: RetainedStorageMeasurement> ForkPage<T> {
 impl<T> ForkPage<T> {
     pub(super) fn replacement_structure_bound(&self, offset: usize) -> Result<Charge, Denial> {
         let mut overrides = self.overrides.capacity();
+        let mut appended = self.appended.capacity();
         if offset < self.base_len && self.override_position(offset).is_err() {
             // Rust 1.94 Vec growth for these fixed (usize, Arc<T>) entries:
             // at least four initially, then doubling. A shared page clone can
@@ -170,9 +171,18 @@ impl<T> ForkPage<T> {
                     .checked_mul(2)
                     .ok_or(Denial::ChargeOverflow)?,
             );
+        } else if offset == self.base_len + self.appended.len() {
+            // Replacing the logical tail extends this page. A cloned page can
+            // retain only len slots, and Vec may grow to twice that length.
+            appended = appended.max(4).max(
+                self.appended
+                    .len()
+                    .checked_mul(2)
+                    .ok_or(Denial::ChargeOverflow)?,
+            );
         }
         Charge::capacity::<(usize, Arc<T>)>(overrides)?
-            .checked_add(Charge::capacity::<Arc<T>>(self.appended.capacity())?)
+            .checked_add(Charge::capacity::<Arc<T>>(appended)?)
     }
 
     pub(super) fn mutation_structure_charge(&self) -> Result<Charge, Denial> {

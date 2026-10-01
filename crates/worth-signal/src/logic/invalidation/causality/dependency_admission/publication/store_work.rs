@@ -9,7 +9,7 @@ impl PreparedDirectCausePublication {
         graph: &SignalGraph,
         version: crate::data::aspect::AspectVersion,
         regions: &[crate::data::output::ChangedRegion],
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         if let Some(delta) = &self.admission.commit {
             work.reserve(Some(self.admission.replacements.len()))?;
@@ -30,7 +30,7 @@ impl PreparedDirectCausePublication {
     pub(crate) fn admit_cause_store_work(
         &self,
         graph: &SignalGraph,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         if self.admission.replacements.is_empty() {
             return Ok(());

@@ -13,7 +13,7 @@ pub use decompose::{
 pub use fork_join::{ExecutionForkJoin, ForkChild, ForkJoinDenial, ForkJoinOutcome};
 pub use map::{
     ExecutionMap, MapDenial, MapKernelContext, MapKernelFailure, MapKernelStop, MapOutcome,
-    MapPartition, MapStop, OracleMismatch,
+    MapPartition, MapStop, OracleMismatch, PreparedExecutionMap,
 };
 pub use reduce::{ExecutionReduce, ReduceCertificationFailure, ReduceInputDenial};
 pub use rounds::{ExecutionRounds, RoundsDenial, RoundsOutcome};

@@ -12,6 +12,7 @@ pub(crate) use execution::{execute_ready, execute_ready_with_work};
 pub(crate) use lowering::lower_current_work;
 pub(crate) use queue::{ReadyInvalidationQueue, ReadyQueueEntry};
 pub(crate) use readiness::admit_current_readiness;
+pub(crate) use readiness::ensure_ready_is_current;
 
 #[cfg(test)]
 mod tests;

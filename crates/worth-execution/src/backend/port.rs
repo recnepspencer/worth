@@ -16,7 +16,7 @@ use crate::{
 use super::{
     admission::AdmittedBatch,
     meter::{record_nested, KernelContext, KernelFailure, RunLimits},
-    native, perturbation, serial, settlement,
+    native, perturbation, serial, settlement, PreparedBatchResources,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -80,12 +80,59 @@ where
     E: ChargedBytes + Send,
     F: Fn(&T, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>> + Sync,
 {
+    run_checked_batch_inner(lease, batch, backend, kernel, charge_parent, None)
+}
+
+pub(crate) fn run_checked_batch_prepared<T, R, E, F>(
+    lease: &ExecutionResourceLease<'_>,
+    batch: &AdmittedBatch<T>,
+    backend: BackendKind,
+    resources: PreparedBatchResources,
+    kernel: &F,
+) -> BatchOutcome<R, E>
+where
+    T: ChargedBytes + Sync,
+    R: ChargedBytes + Send,
+    E: ChargedBytes + Send,
+    F: Fn(&T, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>> + Sync,
+{
+    run_checked_batch_inner(Some(lease), batch, backend, kernel, true, Some(resources))
+}
+
+fn run_checked_batch_inner<T, R, E, F>(
+    lease: Option<&ExecutionResourceLease<'_>>,
+    batch: &AdmittedBatch<T>,
+    backend: BackendKind,
+    kernel: &F,
+    charge_parent: bool,
+    prepared: Option<PreparedBatchResources>,
+) -> BatchOutcome<R, E>
+where
+    T: ChargedBytes + Sync,
+    R: ChargedBytes + Send,
+    E: ChargedBytes + Send,
+    F: Fn(&T, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>> + Sync,
+{
     if lease.is_none() && RunLimits::has_leased_parent() {
         let outcome = denied(LeaseDenial::UnrelatedNestedLease);
         record_nested(outcome.report, true);
         return outcome;
     }
-    let limits = RunLimits::for_run(lease, matches!(backend, BackendKind::Serial));
+    if prepared
+        .as_ref()
+        .is_some_and(|resources| !resources.matches_current_parent())
+    {
+        let outcome = denied(LeaseDenial::UnrelatedNestedLease);
+        if charge_parent {
+            record_nested(outcome.report, true);
+        }
+        return outcome;
+    }
+    let limits = if let Some(resources) = prepared.as_ref() {
+        resources.dispatch_limits(lease.expect("prepared map requires its lease"), backend)
+    } else {
+        RunLimits::for_run(lease, matches!(backend, BackendKind::Serial))
+    };
     let requested_posture = if lease
         .is_some_and(|value| value.resolved_posture() == ExecutionPosture::Automatic)
         && !limits.force_serial()
@@ -111,17 +158,23 @@ where
         None
     };
     if batch.len() == 0 {
+        let physical = if prepared.is_some() {
+            ExecutionPhysicalReport::new(
+                limits.worker_high_watermark(),
+                limits.peak_memory(),
+                Some(0),
+                0,
+                limits.discarded_work(),
+            )
+        } else {
+            ExecutionPhysicalReport::default()
+        };
         let outcome = BatchOutcome {
             values: Vec::new(),
             stop: None,
             prefix_boundary: None,
-            report: ExecutionReport::new(
-                ExecutionPosture::Serial,
-                0,
-                0,
-                ExecutionPhysicalReport::default(),
-            )
-            .with_fallback(ExecutionFallbackCause::NoWork),
+            report: ExecutionReport::new(ExecutionPosture::Serial, 0, 0, physical)
+                .with_fallback(ExecutionFallbackCause::NoWork),
         };
         if charge_parent {
             record_nested(outcome.report, false);
@@ -139,8 +192,19 @@ where
         }
         return outcome;
     };
+    if prepared
+        .as_ref()
+        .is_some_and(|resources| !resources.matches_dispatch(memory_bytes))
+    {
+        let outcome = denied(LeaseDenial::UnrelatedNestedLease);
+        if charge_parent {
+            record_nested(outcome.report, true);
+        }
+        return outcome;
+    }
     let reservation = if let Some(lease) = lease {
-        match lease.reserve_entry(memory_bytes) {
+        let admission_bytes = if prepared.is_some() { 0 } else { memory_bytes };
+        match lease.reserve_entry(admission_bytes) {
             Ok(guard) => Some(guard),
             Err(denial) => {
                 let outcome = denied(denial);
@@ -153,9 +217,13 @@ where
     } else {
         None
     };
-    let _memory_activity = reservation
-        .as_ref()
-        .map(|_| limits.enter_memory(memory_bytes));
+    let _memory_activity = if prepared.is_some() {
+        None
+    } else {
+        reservation
+            .as_ref()
+            .map(|_| limits.enter_memory(memory_bytes))
+    };
     // The reservation remains alive through settlement and result-vector
     // allocation; the returned values leave the lease at this boundary.
     let outcomes: Vec<Mutex<Option<TaskOutcome<R, E>>>> =

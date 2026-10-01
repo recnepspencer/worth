@@ -1,6 +1,4 @@
-use crate::facade::{
-    AspectVersion, ChangedRegion, NodeEvaluationResult, NodeId, SignalError, StageExecutor,
-};
+use crate::facade::{AspectVersion, ChangedRegion, NodeEvaluationResult, NodeId, SignalError};
 
 use super::super::market_seed::MarketSeed;
 use super::super::node_families::{
@@ -141,16 +139,14 @@ impl super::FintechWorld {
         self.handles.partition.coarse_book
     }
 
-    pub(in crate::tests::domains::fintech) fn read_primary_market_source_with_executor(
+    pub(in crate::tests::domains::fintech) fn read_primary_market_source(
         &mut self,
-        executor: StageExecutor,
     ) -> Result<AspectVersion, SignalError> {
-        self.read_node_with_executor(self.primary_market_source(), executor)
+        self.read_node(self.primary_market_source())
     }
 
     pub(in crate::tests::domains::fintech) fn inject_primary_market_rollback(
         &mut self,
-        executor: StageExecutor,
     ) -> Result<(), SignalError> {
         let top_desk = self.top_desk();
         let evaluation = self.evaluation_shape();
@@ -172,7 +168,7 @@ impl super::FintechWorld {
                     .with_output_identity("bad-branch-correction"),
                 ))
             })?;
-            tx.read_with_executor(top_desk, &evaluator, executor)?;
+            tx.read(top_desk, &evaluator)?;
             Err(SignalError::invalid_input("synthetic analysis rollback"))
         });
         match err {
@@ -189,7 +185,6 @@ impl super::FintechWorld {
         vol_delta: i64,
         curve_delta: i64,
         liquidity_delta: i64,
-        executor: StageExecutor,
     ) -> Result<AspectVersion, SignalError> {
         let source = self.primary_market_source();
         let current = self.runtime.graph().node_aspect_version(source)?;
@@ -241,7 +236,7 @@ impl super::FintechWorld {
             Ok(())
         })?;
 
-        self.read_node_with_executor(source, executor)
+        self.read_node(source)
     }
 
     pub(in crate::tests::domains::fintech) fn apply_partition_shock(
@@ -249,7 +244,6 @@ impl super::FintechWorld {
         partition: MarketPartition,
         detail: Option<PartitionDetail>,
         price_delta: i64,
-        executor: StageExecutor,
     ) -> Result<AspectVersion, SignalError> {
         let source = self.partitioned_market_source();
         let current = self.runtime.graph().node_aspect_version(source)?;
@@ -288,68 +282,59 @@ impl super::FintechWorld {
             Ok(())
         })?;
 
-        self.read_node_with_executor(source, executor)
+        self.read_node(source)
     }
 
     pub(in crate::tests::domains::fintech) fn shock_rates_bucket_zero(
         &mut self,
         price_delta: i64,
-        executor: StageExecutor,
     ) -> Result<AspectVersion, SignalError> {
         self.apply_partition_shock(
             MarketPartition::Rates,
             Some(PartitionDetail::Bucket0),
             price_delta,
-            executor,
         )
     }
 
     pub(in crate::tests::domains::fintech) fn shock_rates_bucket_one(
         &mut self,
         price_delta: i64,
-        executor: StageExecutor,
     ) -> Result<AspectVersion, SignalError> {
         self.apply_partition_shock(
             MarketPartition::Rates,
             Some(PartitionDetail::Bucket1),
             price_delta,
-            executor,
         )
     }
 
     pub(in crate::tests::domains::fintech) fn shock_credit_partition(
         &mut self,
         price_delta: i64,
-        executor: StageExecutor,
     ) -> Result<AspectVersion, SignalError> {
-        self.apply_partition_shock(MarketPartition::Credit, None, price_delta, executor)
+        self.apply_partition_shock(MarketPartition::Credit, None, price_delta)
     }
 
-    pub(in crate::tests::domains::fintech) fn read_rates_partition_with_executor(
+    pub(in crate::tests::domains::fintech) fn read_rates_partition(
         &mut self,
-        executor: StageExecutor,
     ) -> Result<AspectVersion, SignalError> {
-        self.read_node_with_executor(self.rates_partition_node(), executor)
+        self.read_node(self.rates_partition_node())
     }
 
-    pub(in crate::tests::domains::fintech) fn read_credit_partition_with_executor(
+    pub(in crate::tests::domains::fintech) fn read_credit_partition(
         &mut self,
-        executor: StageExecutor,
     ) -> Result<AspectVersion, SignalError> {
-        self.read_node_with_executor(self.credit_partition_node(), executor)
+        self.read_node(self.credit_partition_node())
     }
 
-    pub(in crate::tests::domains::fintech) fn read_rates_bucket_zero_with_executor(
+    pub(in crate::tests::domains::fintech) fn read_rates_bucket_zero(
         &mut self,
-        executor: StageExecutor,
     ) -> Result<AspectVersion, SignalError> {
-        self.read_node_with_executor(self.rates_bucket_zero_node(), executor)
+        self.read_node(self.rates_bucket_zero_node())
     }
 
-    pub(in crate::tests::domains::fintech) fn read_coarse_partition_book_with_executor(
+    pub(in crate::tests::domains::fintech) fn read_coarse_partition_book(
         &mut self,
-        executor: StageExecutor,
     ) -> Result<AspectVersion, SignalError> {
-        self.read_node_with_executor(self.coarse_partition_book_node(), executor)
+        self.read_node(self.coarse_partition_book_node())
     }
 }

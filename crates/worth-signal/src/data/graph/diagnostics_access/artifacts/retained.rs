@@ -9,7 +9,7 @@ use crate::logic::explain::{
 };
 
 impl SignalGraph {
-    fn attach_rewiring_topology_links(
+    pub(super) fn attach_rewiring_topology_links(
         &self,
         explanation: &mut NodeExplanation,
         rewiring: &crate::logic::explain::RewiringSummary,

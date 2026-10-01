@@ -26,7 +26,7 @@ impl SignalGraph {
         &mut self,
         storage: &mut OutputCommitStorage,
         state: &mut Option<super::super::PreparedEffectNodeState>,
-        allowance: &mut EvaluationWork<'_>,
+        allowance: &mut EvaluationWork<'_, '_>,
     ) -> Result<Option<super::retained_publication::PreparedRetainedOutputPublication>, SignalError>
     {
         if self.arena.retained_node_ledger.is_none() {
@@ -36,6 +36,9 @@ impl SignalGraph {
             EvaluationWork::Conditional(work) => self
                 .prepare_reserved_output_nodes(storage, state, work)
                 .map(Some),
+            EvaluationWork::RequestCheckpoint(_) => Err(SignalError::internal(
+                "request discovery checkpoint cannot prepare retained mutation",
+            )),
             EvaluationWork::Ordinary => {
                 let maximum = self
                     .installed_runtime_policy()

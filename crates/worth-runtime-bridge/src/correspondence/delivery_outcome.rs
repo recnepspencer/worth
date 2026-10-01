@@ -57,6 +57,11 @@ impl BridgeDeliveredCorrespondenceChange {
         }
     }
 
+    pub fn scope_change(&self) -> Option<&worth_signal::facade::ChangedRegion> {
+        self.semantic_change()
+            .and_then(BridgeSemanticAspectChange::scope_change)
+    }
+
     pub fn structural_change(&self) -> Option<&BridgeCommittedRecordChange> {
         match &self.inner {
             BridgeDeliveredCorrespondenceChangeInner::SemanticAspect { .. } => None,

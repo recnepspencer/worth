@@ -4,11 +4,10 @@ use crate::data::handle::NodeId;
 use crate::logic::context::EvaluationContext;
 use crate::logic::evaluation::EvaluationRequestMode;
 use crate::logic::evaluation::IntoEvaluationOutput;
-use crate::logic::planner::StageExecutor;
 
 use super::super::super::state::SignalRuntime;
 use super::super::request_order::requested_dependency_order;
-use super::super::shared::{apply_strategy_maintenance, executor_for_strategy};
+use super::super::shared::apply_strategy_maintenance;
 
 use super::request::ExecutionIntent;
 
@@ -30,12 +29,7 @@ where
         O: IntoEvaluationOutput,
     {
         let strategy = self.derive_evaluation_strategy();
-        let version = self.read_with_executor(
-            node,
-            runtime_ctx,
-            evaluator,
-            executor_for_strategy(strategy),
-        )?;
+        let version = self.read_serial(node, runtime_ctx, evaluator)?;
         apply_strategy_maintenance(&mut self.graph, strategy);
         Ok(version)
     }
@@ -53,12 +47,11 @@ where
         self.read(node, runtime_ctx, evaluator)
     }
 
-    pub fn read_with_executor<F, O>(
+    fn read_serial<F, O>(
         &mut self,
         node: NodeId,
         runtime_ctx: &Ctx,
         evaluator: &F,
-        executor: StageExecutor,
     ) -> Result<AspectVersion, SignalError>
     where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
@@ -69,12 +62,14 @@ where
             let mut scheduled = 0_u32;
             let mut executed = 0_u32;
             for target in requested_dependency_order(&self.graph, node)? {
-                let report = self.evaluate_with_plan_and_executor(
-                    target,
+                let report = self.execute_evaluation(
+                    ExecutionIntent::Targets {
+                        targets: std::slice::from_ref(&target),
+                        request_mode: EvaluationRequestMode::Default,
+                    },
                     runtime_ctx,
                     evaluator,
-                    EvaluationRequestMode::Default,
-                    executor,
+                    None,
                 )?;
                 scheduled = scheduled.saturating_add(report.task_count);
                 executed = executed.saturating_add(report.tasks_executed);
@@ -99,22 +94,16 @@ where
         O: IntoEvaluationOutput,
     {
         let strategy = self.derive_evaluation_strategy();
-        let versions = self.read_many_with_executor(
-            nodes,
-            runtime_ctx,
-            evaluator,
-            executor_for_strategy(strategy),
-        )?;
+        let versions = self.read_many_serial(nodes, runtime_ctx, evaluator)?;
         apply_strategy_maintenance(&mut self.graph, strategy);
         Ok(versions)
     }
 
-    pub fn read_many_with_executor<F, O>(
+    fn read_many_serial<F, O>(
         &mut self,
         nodes: &[NodeId],
         runtime_ctx: &Ctx,
         evaluator: &F,
-        executor: StageExecutor,
     ) -> Result<Vec<AspectVersion>, SignalError>
     where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
@@ -138,7 +127,7 @@ where
                 },
                 runtime_ctx,
                 evaluator,
-                executor,
+                None,
             )?;
         }
         nodes

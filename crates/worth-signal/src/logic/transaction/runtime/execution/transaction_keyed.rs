@@ -10,6 +10,7 @@ use crate::data::reuse::PersistentCorrespondenceEvidence;
 use crate::diagnostics::ExecutionFailurePhase;
 use crate::logic::context::EvaluationContext;
 use crate::logic::evaluation::{EvaluationRequestMode, IntoEvaluationOutput};
+use crate::logic::planner::precompute::callback::LegacyPrecompute;
 use crate::logic::prepared::{
     PreparedEvaluationOrigin, PreparedKeyedContext, PreparedMemoDecision,
 };
@@ -17,7 +18,6 @@ use crate::logic::prepared::{
 use super::super::transaction::SignalTransaction;
 use super::shared::{
     absorb_execution_report_telemetry, execute_targets_with_prepared_runtime_config_detailed,
-    executor_for_strategy,
 };
 
 impl<'a, D, I, E, Ctx, T> SignalTransaction<'a, D, I, E, Ctx, T>
@@ -118,8 +118,6 @@ where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
         O: IntoEvaluationOutput,
     {
-        let strategy = self.graph.derive_evaluation_strategy();
-        let executor = executor_for_strategy(strategy);
         self.with_telemetry(|telemetry| telemetry.invalidation.keyed_evaluation_count += 1);
         self.stage_evaluate_candidate_batch(std::slice::from_ref(&node))?;
         self.rollback_packets
@@ -184,19 +182,21 @@ where
                     temporal_lowering.clone(),
                     &[node],
                     request_mode,
-                    &|_current, _view| {
-                        Ok(crate::logic::prepared::PreparedEvaluation::from_result(
-                            cached_result.clone(),
-                        )
-                        .with_origin(reuse_request.prepared_origin())
-                        .with_memo_decision(PreparedMemoDecision::Hit)
-                        .with_keyed(PreparedKeyedContext {
-                            memoized_origin:
-                                crate::data::output::MemoizedResultOrigin::MemoizedFromCache,
-                            ..base_keyed_context.clone()
-                        }))
-                    },
-                    executor,
+                    &LegacyPrecompute::new(
+                        |_current, _view: &crate::logic::prepared::ExecutionReadView<'_>| {
+                            Ok(crate::logic::prepared::PreparedEvaluation::from_result(
+                                cached_result.clone(),
+                            )
+                            .with_origin(reuse_request.prepared_origin())
+                            .with_memo_decision(PreparedMemoDecision::Hit)
+                            .with_keyed(PreparedKeyedContext {
+                                memoized_origin:
+                                    crate::data::output::MemoizedResultOrigin::MemoizedFromCache,
+                                ..base_keyed_context.clone()
+                            }))
+                        },
+                    ),
+                    None,
                 ) {
                     Ok(report) => report,
                     Err(failure) => {
@@ -230,23 +230,25 @@ where
             temporal_lowering,
             &[node],
             request_mode,
-            &|current, view| {
-                let mut ctx = EvaluationContext::new(view.graph(), current, &*self.runtime_ctx);
-                let output = evaluator(&mut ctx)?;
-                let prepared = ctx
-                    .into_prepared(output)
-                    .with_origin(reuse_request.compute_origin())
-                    .with_memo_decision(PreparedMemoDecision::Miss)
-                    .with_keyed(base_keyed_context.clone());
-                if current == node {
-                    let mut guard = last_result
-                        .lock()
-                        .map_err(|_| SignalError::internal("memo capture mutex poisoned"))?;
-                    *guard = Some(prepared.result.clone());
-                }
-                Ok(prepared)
-            },
-            executor,
+            &LegacyPrecompute::new(
+                |current, view: &crate::logic::prepared::ExecutionReadView<'_>| {
+                    let mut ctx = EvaluationContext::new(view.graph(), current, &*self.runtime_ctx);
+                    let output = evaluator(&mut ctx)?;
+                    let prepared = ctx
+                        .into_prepared(output)
+                        .with_origin(reuse_request.compute_origin())
+                        .with_memo_decision(PreparedMemoDecision::Miss)
+                        .with_keyed(base_keyed_context.clone());
+                    if current == node {
+                        let mut guard = last_result
+                            .lock()
+                            .map_err(|_| SignalError::internal("memo capture mutex poisoned"))?;
+                        *guard = Some(prepared.result.clone());
+                    }
+                    Ok(prepared)
+                },
+            ),
+            None,
         ) {
             Ok(report) => Ok(report),
             Err(failure) => {

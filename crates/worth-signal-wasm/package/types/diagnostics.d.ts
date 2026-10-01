@@ -1118,7 +1118,7 @@ export interface WebPerformanceSummary {
   deliveredObservationCount: number;
   rollbackSuppressedDeliveryCount: number;
   serialExecutorUsageCount: number;
-  parallelExecutorUsageCount: number;
+  executionReport: WebExecutionReportSummary | null;
   outputSerializationCount: number;
   outputSerializationBreadth: number;
   jsCallbackInvocationCount: number;
@@ -1169,4 +1169,15 @@ export interface WebPerformanceSummary {
   hostCapabilityCompatibilityDenialCount?: number;
   hostCapabilityUnavailabilityArtifactCount?: number;
   hostCapabilityBroadFanoutDenialCount?: number;
+}
+
+export interface WebExecutionReportSummary {
+  resolvedPosture: string;
+  chargedWork: number;
+  chargedSpan: number;
+  activeWorkersHighWatermark: number;
+  peakChargedMemoryBytes: number;
+  peakQueueWidth: number;
+  discardedInFlightWork: number;
+  fallback: string | null;
 }

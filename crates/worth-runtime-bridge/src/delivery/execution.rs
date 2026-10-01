@@ -233,7 +233,7 @@ pub(crate) fn deliver_prepared_route_with_lease(
     );
     let receipt = runtime
         .signal_sink
-        .deliver_invalidation(delivery)
+        .deliver_invalidation(delivery, lease)
         .map_err(|error| {
             reject_delivery(
                 runtime,

@@ -45,7 +45,7 @@ pub(crate) fn admit_current_readiness(
     }
 }
 
-pub(super) fn ensure_ready_is_current(
+pub(crate) fn ensure_ready_is_current(
     graph: &SignalGraph,
     ready: &ReadyInvalidationBatch,
 ) -> Result<(), SignalError> {
@@ -73,7 +73,7 @@ pub(super) fn ensure_ready_is_current(
     Ok(())
 }
 
-fn current_origin(
+pub(crate) fn current_origin(
     graph: &SignalGraph,
     target: crate::data::handle::NodeId,
     expected: &InvalidationOriginBinding,
