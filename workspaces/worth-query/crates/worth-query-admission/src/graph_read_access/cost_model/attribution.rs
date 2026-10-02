@@ -1,5 +1,6 @@
 use super::WorthQueryGraphReadMemoryByteEstimate;
 use crate::graph_read_access::WorthQueryGraphReadAccessRequirementKind;
+use std::fmt::{self, Write};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryGraphReadIntrinsicCostContribution {
@@ -40,8 +41,9 @@ impl WorthQueryGraphReadIntrinsicCostContribution {
         }
     }
 
-    pub(crate) fn digest_part(&self) -> String {
-        format!(
+    pub(crate) fn write_digest_part(&self, output: &mut dyn Write) -> fmt::Result {
+        write!(
+            output,
             "intrinsic_contribution:frontier:{}:edges:{}:roots:{}:intermediate:{}",
             self.frontier_breadth,
             self.edge_touches,
@@ -76,10 +78,12 @@ impl WorthQueryGraphReadSupportedCostContribution {
         }
     }
 
-    pub(crate) fn digest_part(&self) -> String {
-        format!(
-            "supported_contribution:{}:allocation_lifecycle:{}",
-            self.memory.digest_part(),
+    pub(crate) fn write_digest_part(&self, output: &mut dyn Write) -> fmt::Result {
+        output.write_str("supported_contribution:")?;
+        self.memory.write_digest_part(output)?;
+        write!(
+            output,
+            ":allocation_lifecycle:{}",
             self.allocation_lifecycle_count
         )
     }
@@ -124,13 +128,15 @@ impl WorthQueryGraphReadCostAttributionRow {
         }
     }
 
-    pub(crate) fn digest_part(&self) -> String {
-        format!(
-            "attribution:{}:{}:{}:{}",
+    pub(crate) fn write_digest_part(&self, output: &mut dyn Write) -> fmt::Result {
+        write!(
+            output,
+            "attribution:{}:{}:",
             self.requirement_digest_part,
             self.requirement_kind.as_str(),
-            self.intrinsic.digest_part(),
-            self.supported.digest_part()
-        )
+        )?;
+        self.intrinsic.write_digest_part(output)?;
+        output.write_str(":")?;
+        self.supported.write_digest_part(output)
     }
 }

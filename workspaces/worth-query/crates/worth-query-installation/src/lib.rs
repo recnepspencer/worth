@@ -223,6 +223,7 @@ pub mod facade {
         WorthQueryReadGraphPlanningContract, WorthQueryReadGraphPredicateView,
         WorthQueryReadGraphProjectionView, WorthQueryReadGraphRelationDirection,
         WorthQueryReadGraphRelationView, WorthQueryResolvedApplicationQueryLimits,
+        WorthQueryRetainedApplicationQueryGraphObligations,
     };
     pub use crate::application_schema::{
         InstalledInboundOccurrenceContract, WorthQueryInstalledApplicationAspectContract,

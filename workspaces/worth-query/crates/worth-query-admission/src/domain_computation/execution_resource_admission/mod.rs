@@ -18,7 +18,8 @@ pub use capacity_reservation::{
     WorthQueryExecutionCapacityReservationScope,
 };
 pub(crate) use capacity_reservation::{
-    reserve_graph_provider_capacity, WorthQueryReservedGraphProviderCapacity,
+    reserve_graph_provider_capacity, reserve_graph_provider_capacity_admitted,
+    WorthQueryCapacityReservationAdmissionStop, WorthQueryReservedGraphProviderCapacity,
 };
 pub use lowering::admit_execution_resource_plan;
 

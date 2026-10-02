@@ -147,6 +147,35 @@ pub(crate) fn reserve_graph_provider_capacity(
     })
 }
 
+pub(crate) fn reserve_graph_provider_capacity_admitted<Stop>(
+    support: &WorthQueryExecutionResourceSupport,
+    admit: &mut impl FnMut(u64, u64) -> Result<(), Stop>,
+) -> Result<
+    Option<WorthQueryReservedGraphProviderCapacity>,
+    WorthQueryCapacityReservationAdmissionStop<Stop>,
+> {
+    // The capacity implementation owns its atomic/Arc/Box quote. The support
+    // owner knows the exact copied identity that the reservation retains.
+    admit(2, 0).map_err(WorthQueryCapacityReservationAdmissionStop::Admission)?;
+    let identity_bytes = u64::try_from(support.identity().len())
+        .map_err(|_| WorthQueryCapacityReservationAdmissionStop::AccountingOverflow)?;
+    let (reservation_work, reservation_bytes) = support
+        .capacity()
+        .reservation_preflight_cost()
+        .ok_or(WorthQueryCapacityReservationAdmissionStop::AccountingOverflow)?;
+    admit(identity_bytes, identity_bytes)
+        .map_err(WorthQueryCapacityReservationAdmissionStop::Admission)?;
+    admit(reservation_work, reservation_bytes)
+        .map_err(WorthQueryCapacityReservationAdmissionStop::Admission)?;
+    Ok(reserve_graph_provider_capacity(support))
+}
+
+#[derive(Debug)]
+pub(crate) enum WorthQueryCapacityReservationAdmissionStop<Stop> {
+    Admission(Stop),
+    AccountingOverflow,
+}
+
 fn release_reservations(
     resource_plan_identity: &str,
     reservations: Vec<Box<dyn WorthQueryExecutionCapacityReservation>>,

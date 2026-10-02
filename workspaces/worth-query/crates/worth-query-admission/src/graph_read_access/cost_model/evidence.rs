@@ -1,5 +1,6 @@
 use super::WorthQueryGraphReadCostEstimateStatus;
 use crate::graph_read_access::WorthQueryGraphReadAccessRequirementSet;
+use std::fmt::{self, Write};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryGraphReadCostEvidence {
@@ -36,7 +37,15 @@ impl WorthQueryGraphReadCostEvidence {
     }
 
     pub(crate) fn digest_part(&self) -> String {
-        format!(
+        let mut text = String::new();
+        self.write_digest_part(&mut text)
+            .expect("String formatting cannot fail");
+        text
+    }
+
+    pub(crate) fn write_digest_part(&self, output: &mut dyn Write) -> fmt::Result {
+        write!(
+            output,
             "evidence:{}:relation_statistics:{}:missing_relation_statistics:{}:requirement_rows:{}",
             self.status.as_str(),
             self.relation_statistic_count,

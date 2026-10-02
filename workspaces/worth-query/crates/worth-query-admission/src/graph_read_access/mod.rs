@@ -17,6 +17,7 @@ mod requirement_row;
 mod requirement_set;
 
 pub use access_posture::WorthQueryGraphReadAccessAdmissionPosture;
+pub(crate) use cost_model::estimate_graph_read_access_cost_admitted;
 pub use cost_model::{
     derive_graph_read_cost_evidence, estimate_graph_read_access_cost,
     estimate_graph_read_access_cost_with_planning_observation,
@@ -32,14 +33,15 @@ pub use cost_model::{
     WorthQueryGraphReadObservedCostEstimate, WorthQueryGraphReadPlanningObservation,
     WorthQueryGraphReadSupportedCostContribution, WorthQueryGraphReadSupportedCostEstimate,
 };
+pub(crate) use graph_index_inventory::match_graph_index_inventory_for_requirements_admitted;
 pub use graph_index_inventory::{
     match_current_graph_index_inventory_for_requirements,
     match_graph_index_inventory_for_requirements, worth_query_graph_index_inventory,
-    WorthQueryGraphIndexInventory, WorthQueryGraphIndexInventoryCounters,
-    WorthQueryGraphIndexInventoryMatch, WorthQueryGraphIndexInventoryMatchOutcome,
-    WorthQueryGraphIndexInventoryMatchReport, WorthQueryGraphIndexLifecycleClass,
-    WorthQueryGraphIndexLifecycleOwner, WorthQueryGraphIndexPosture,
-    WorthQueryGraphIndexSupportRow, WorthQueryGraphIndexSupportState,
+    WorthQueryGraphIndexInventory, WorthQueryGraphIndexInventoryAdmissionStop,
+    WorthQueryGraphIndexInventoryCounters, WorthQueryGraphIndexInventoryMatch,
+    WorthQueryGraphIndexInventoryMatchOutcome, WorthQueryGraphIndexInventoryMatchReport,
+    WorthQueryGraphIndexLifecycleClass, WorthQueryGraphIndexLifecycleOwner,
+    WorthQueryGraphIndexPosture, WorthQueryGraphIndexSupportRow, WorthQueryGraphIndexSupportState,
 };
 pub use graph_vocabulary::{
     WorthQueryAdmittedGraphReadRelationDirection, WorthQueryGraphReadAccessShapeDigest,
@@ -57,6 +59,7 @@ pub use operation_capability::{
     WorthQueryGraphReadOperationUnsupportedShapeDeclaration,
 };
 pub(crate) use plan_review::review_graph_read_access;
+pub(crate) use plan_review::review_graph_read_access_admitted;
 pub use plan_review::WorthQueryGraphReadPlanReview;
 pub use plan_review_denial::{
     WorthQueryGraphReadPlanReviewDenial, WorthQueryGraphReadPlanReviewDenialKind,

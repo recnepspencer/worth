@@ -2,6 +2,7 @@ use worth_query_installation::facade::{
     ApplicationSchemaBindingIdentity, WorthQueryInstalledGraphObligation,
     WorthQueryInstalledGraphObligationSet, WorthQueryInstalledGraphObligationSetIdentity,
     WorthQueryInstalledGraphObligationSubjectKind,
+    WorthQueryRetainedApplicationQueryGraphObligations,
 };
 
 use super::WorthQueryGraphObligationSelectionCounters;
@@ -46,45 +47,57 @@ impl WorthQueryGraphWorkIntent {
 ///
 /// ```compile_fail
 /// use worth_query_admission::facade::graph_obligation::WorthQuerySelectedGraphObligations;
-/// let forged = WorthQuerySelectedGraphObligations { installed: todo!(), rows: todo!(), intent: todo!(), counters: todo!() };
+/// let forged = WorthQuerySelectedGraphObligations { installed: todo!(), intent: todo!(), counters: todo!() };
 /// ```
 #[derive(Debug)]
 pub struct WorthQuerySelectedGraphObligations {
-    installed: WorthQueryInstalledGraphObligationSet,
-    rows: Vec<WorthQueryInstalledGraphObligation>,
+    installed: SelectedInstalledGraphObligations,
     intent: WorthQueryGraphWorkIntent,
     counters: WorthQueryGraphObligationSelectionCounters,
 }
 
+#[derive(Debug)]
+pub(super) enum SelectedInstalledGraphObligations {
+    Owned(WorthQueryInstalledGraphObligationSet),
+    Shared(WorthQueryRetainedApplicationQueryGraphObligations),
+}
+
+impl SelectedInstalledGraphObligations {
+    pub(super) fn installed_set(&self) -> &WorthQueryInstalledGraphObligationSet {
+        match self {
+            Self::Owned(installed) => installed,
+            Self::Shared(installed) => installed.installed_set(),
+        }
+    }
+}
+
 impl WorthQuerySelectedGraphObligations {
     pub(super) fn seal(
-        installed: WorthQueryInstalledGraphObligationSet,
-        rows: Vec<WorthQueryInstalledGraphObligation>,
+        installed: SelectedInstalledGraphObligations,
         intent: WorthQueryGraphWorkIntent,
         counters: WorthQueryGraphObligationSelectionCounters,
     ) -> Self {
         Self {
             installed,
-            rows,
             intent,
             counters,
         }
     }
 
-    pub const fn identity(&self) -> &WorthQueryInstalledGraphObligationSetIdentity {
-        self.installed.identity()
+    pub fn identity(&self) -> &WorthQueryInstalledGraphObligationSetIdentity {
+        self.installed.installed_set().identity()
     }
 
-    pub const fn binding_identity(&self) -> &ApplicationSchemaBindingIdentity {
-        self.installed.binding_identity()
+    pub fn binding_identity(&self) -> &ApplicationSchemaBindingIdentity {
+        self.installed.installed_set().binding_identity()
     }
 
-    pub const fn subject_kind(&self) -> WorthQueryInstalledGraphObligationSubjectKind {
-        self.installed.subject_kind()
+    pub fn subject_kind(&self) -> WorthQueryInstalledGraphObligationSubjectKind {
+        self.installed.installed_set().subject_kind()
     }
 
     pub fn subject_name(&self) -> &str {
-        self.installed.subject_name()
+        self.installed.installed_set().subject_name()
     }
 
     pub const fn intent(&self) -> WorthQueryGraphWorkIntent {
@@ -92,7 +105,7 @@ impl WorthQuerySelectedGraphObligations {
     }
 
     pub(super) fn rows(&self) -> &[WorthQueryInstalledGraphObligation] {
-        &self.rows
+        self.installed.installed_set().rows()
     }
 
     pub const fn counters(&self) -> WorthQueryGraphObligationSelectionCounters {

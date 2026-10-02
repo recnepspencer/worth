@@ -5,6 +5,7 @@ use super::{
     WorthQueryGraphReadMemoryByteEstimate, WorthQueryGraphReadSupportedCostContribution,
     WorthQueryGraphReadSupportedCostEstimate,
 };
+use crate::graph_read_access::digest_text::{admitted_digest_text, AdmittedDigestTextStop};
 use crate::graph_read_access::{
     WorthQueryGraphReadAccessRequirementKind, WorthQueryGraphReadAccessRequirementRow,
     WorthQueryGraphReadAccessRequirementSet, WorthQueryGraphReadPredicateFamily,
@@ -33,6 +34,59 @@ pub fn estimate_graph_read_access_cost(
         counters,
         attribution_rows,
     )
+}
+
+pub(crate) fn estimate_graph_read_access_cost_admitted<Stop>(
+    requirements: &WorthQueryGraphReadAccessRequirementSet,
+    evidence: WorthQueryGraphReadCostEvidence,
+    mut admit: impl FnMut(u64, u64) -> Result<(), Stop>,
+) -> Result<WorthQueryGraphReadAccessCostEstimate, AdmittedDigestTextStop<Stop>> {
+    let rows = requirements.rows();
+    let scan = u64::try_from(rows.len())
+        .ok()
+        .and_then(|count| count.checked_mul(9))
+        .ok_or(AdmittedDigestTextStop::AccountingOverflow)?;
+    admit(scan, 0).map_err(AdmittedDigestTextStop::Admission)?;
+    let attribution_rows = estimate_cost_attribution_rows_admitted(rows, &mut admit)?;
+    let intrinsic = estimate_intrinsic_cost(&attribution_rows);
+    let supported = estimate_supported_cost(&attribution_rows);
+    let counters = estimate_cost_counters(rows);
+    WorthQueryGraphReadAccessCostEstimate::new_admitted(
+        *requirements.digest().as_digest(),
+        &evidence,
+        intrinsic,
+        supported,
+        counters,
+        attribution_rows,
+        admit,
+    )
+}
+
+pub(crate) fn estimate_cost_attribution_rows_admitted<Stop>(
+    rows: &[WorthQueryGraphReadAccessRequirementRow],
+    mut admit: impl FnMut(u64, u64) -> Result<(), Stop>,
+) -> Result<Vec<WorthQueryGraphReadCostAttributionRow>, AdmittedDigestTextStop<Stop>> {
+    let count =
+        u64::try_from(rows.len()).map_err(|_| AdmittedDigestTextStop::AccountingOverflow)?;
+    let backing = rows
+        .len()
+        .checked_mul(std::mem::size_of::<WorthQueryGraphReadCostAttributionRow>())
+        .and_then(|bytes| u64::try_from(bytes).ok())
+        .ok_or(AdmittedDigestTextStop::AccountingOverflow)?;
+    admit(count, backing).map_err(AdmittedDigestTextStop::Admission)?;
+    let mut attribution = Vec::with_capacity(rows.len());
+    for row in rows {
+        let visits = row
+            .digest_visit_work()
+            .ok_or(AdmittedDigestTextStop::AccountingOverflow)?;
+        let digest =
+            admitted_digest_text(visits, |output| row.write_digest_part(output), &mut admit)?;
+        // The shared builder reads kind, intrinsic dimensions and supported
+        // dimensions after the digest has been materialized.
+        admit(11, 0).map_err(AdmittedDigestTextStop::Admission)?;
+        attribution.push(estimate_cost_attribution_row_with_digest(row, digest));
+    }
+    Ok(attribution)
 }
 
 fn estimate_intrinsic_cost(
@@ -87,8 +141,15 @@ fn estimate_cost_attribution_rows(
 fn estimate_cost_attribution_row(
     row: &WorthQueryGraphReadAccessRequirementRow,
 ) -> WorthQueryGraphReadCostAttributionRow {
+    estimate_cost_attribution_row_with_digest(row, row.digest_part())
+}
+
+fn estimate_cost_attribution_row_with_digest(
+    row: &WorthQueryGraphReadAccessRequirementRow,
+    digest: String,
+) -> WorthQueryGraphReadCostAttributionRow {
     WorthQueryGraphReadCostAttributionRow::new(
-        row.digest_part(),
+        digest,
         row.kind().clone(),
         intrinsic_contribution(row),
         supported_contribution(row),

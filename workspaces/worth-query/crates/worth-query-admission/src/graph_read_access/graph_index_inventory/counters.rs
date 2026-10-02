@@ -45,7 +45,15 @@ impl WorthQueryGraphIndexInventoryCounters {
     }
 
     pub fn digest_part(&self) -> String {
-        format!(
+        let mut text = String::new();
+        self.write_digest_part(&mut text)
+            .expect("String formatting cannot fail");
+        text
+    }
+
+    pub(crate) fn write_digest_part(&self, output: &mut dyn Write) -> fmt::Result {
+        write!(
+            output,
             "counters:{}:{}:{}:{}:{}",
             self.inventory_row_count,
             self.requirement_row_count,
@@ -55,3 +63,4 @@ impl WorthQueryGraphIndexInventoryCounters {
         )
     }
 }
+use std::fmt::{self, Write};

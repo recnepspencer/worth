@@ -15,7 +15,17 @@ impl<T: Send> WorthQueryExecutionCapacityReservation for T {}
 pub trait WorthQueryExecutionCapacityPort: Send + Sync {
     fn capacity_subject_identity(&self) -> &str;
 
+    /// Owner-declared Work and backing for one successful reservation. The
+    /// caller admits this before `try_reserve` can change capacity state.
+    fn reservation_preflight_cost(&self) -> Option<(u64, u64)>;
+
     fn try_reserve(&self) -> Option<Box<dyn WorthQueryExecutionCapacityReservation>>;
+}
+
+#[derive(Debug)]
+pub enum WorthQueryGraphProviderLookupStop<Stop> {
+    Admission(Stop),
+    AccountingOverflow,
 }
 
 #[derive(Clone)]
@@ -256,10 +266,37 @@ impl WorthQueryExecutionResourceSupportSnapshot {
     }
 
     pub fn graph_provider(&self, role: &str) -> Option<&WorthQueryExecutionResourceSupport> {
-        self.graph_providers
-            .binary_search_by(|(candidate, _)| candidate.as_str().cmp(role))
-            .ok()
-            .map(|index| &self.graph_providers[index].1)
+        self.graph_provider_admitted(role, &mut |_, _| Ok::<(), std::convert::Infallible>(()))
+            .expect("ordinary installed support lookup has no resource refusal")
+    }
+
+    pub fn graph_provider_admitted<Stop>(
+        &self,
+        role: &str,
+        admit: &mut impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<Option<&WorthQueryExecutionResourceSupport>, WorthQueryGraphProviderLookupStop<Stop>>
+    {
+        let mut lower = 0;
+        let mut upper = self.graph_providers.len();
+        while lower < upper {
+            // Selected header inspection precedes the text width/read.
+            admit(1, 0).map_err(WorthQueryGraphProviderLookupStop::Admission)?;
+            let middle = lower + (upper - lower) / 2;
+            let candidate = &self.graph_providers[middle].0;
+            let work = candidate
+                .len()
+                .checked_add(role.len())
+                .and_then(|width| width.checked_add(1))
+                .and_then(|width| u64::try_from(width).ok())
+                .ok_or(WorthQueryGraphProviderLookupStop::AccountingOverflow)?;
+            admit(work, 0).map_err(WorthQueryGraphProviderLookupStop::Admission)?;
+            match candidate.as_str().cmp(role) {
+                std::cmp::Ordering::Less => lower = middle + 1,
+                std::cmp::Ordering::Greater => upper = middle,
+                std::cmp::Ordering::Equal => return Ok(Some(&self.graph_providers[middle].1)),
+            }
+        }
+        Ok(None)
     }
 
     pub fn commit_providers(&self) -> &[(String, WorthQueryExecutionResourceSupport)] {

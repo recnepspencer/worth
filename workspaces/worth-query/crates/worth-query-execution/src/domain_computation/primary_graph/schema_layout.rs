@@ -25,6 +25,8 @@ mod provider_dispatch_outbox;
 mod provider_idempotency;
 mod provider_inbound_completion;
 mod registry_lowering;
+mod support_admission;
+pub(in crate::domain_computation::primary_graph) use support_admission::WorthQuerySupportLookupStop;
 
 use super::workflow::schema::WorthQueryWorkflowLayout;
 use crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxLayout;
@@ -334,18 +336,6 @@ impl WorthQueryPrimaryGraphLayout {
         self.fields
             .values()
             .filter_map(|field| field.equality_index_id)
-    }
-
-    pub(super) fn supports_equality_field(&self, aspect: &AspectKey, field: &FieldKey) -> bool {
-        self.equality_field_keys
-            .get(aspect)
-            .is_some_and(|fields| fields.contains(field))
-    }
-
-    pub(super) fn supports_projection_field(&self, aspect: &AspectKey, field: &FieldKey) -> bool {
-        self.projection_field_keys
-            .get(aspect)
-            .is_some_and(|fields| fields.contains(field))
     }
 
     pub(super) const fn provider_idempotency(&self) -> &WorthQueryProviderIdempotencyLayout {

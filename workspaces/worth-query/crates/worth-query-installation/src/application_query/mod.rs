@@ -43,6 +43,7 @@ pub use installed_binding::{
 };
 pub use installed_contract::{
     WorthQueryInstalledApplicationQuery, WorthQueryInstalledApplicationQueryAuthorization,
+    WorthQueryRetainedApplicationQueryGraphObligations,
 };
 pub use live_contract::WorthQueryInstalledApplicationLiveContract;
 pub use output_dependency_contract::WorthQueryInstalledOutputDependencyContract;

@@ -208,6 +208,13 @@ impl WorthQueryPrimaryGraphProvider {
         self.resource_support.snapshot()
     }
 
+    pub(super) fn application_resource_support_ref(
+        &self,
+    ) -> &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot
+    {
+        self.resource_support.snapshot_ref()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn bind_application_idempotency_intent(
         &self,
         batch: worth_relational::facade::transactions::WorkerIntentBatch,

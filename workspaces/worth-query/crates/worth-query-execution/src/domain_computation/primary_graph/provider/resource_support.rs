@@ -58,6 +58,13 @@ impl WorthQueryPrimaryGraphResourceSupport {
     {
         self.snapshot.clone()
     }
+
+    pub(super) fn snapshot_ref(
+        &self,
+    ) -> &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot
+    {
+        &self.snapshot
+    }
 }
 
 fn component_support(

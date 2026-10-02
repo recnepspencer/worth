@@ -44,12 +44,18 @@ pub(crate) fn select_best_support_row_for_requirement<'a>(
     requirement: &WorthQueryGraphReadAccessRequirementRow,
     inventory: &'a WorthQueryGraphIndexInventory,
 ) -> Option<&'a WorthQueryGraphIndexSupportRow> {
-    let rows = inventory.rows_for_requirement_kind(requirement.kind());
-    rows.iter()
-        .copied()
+    inventory
+        .rows()
+        .iter()
+        .filter(|row| row.requirement_kind() == requirement.kind())
         .find(|row| {
             classify_inventory_match_outcome(requirement, row)
                 == WorthQueryGraphIndexInventoryMatchOutcome::ExactMatch
         })
-        .or_else(|| rows.first().copied())
+        .or_else(|| {
+            inventory
+                .rows()
+                .iter()
+                .find(|row| row.requirement_kind() == requirement.kind())
+        })
 }
