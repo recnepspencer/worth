@@ -6,12 +6,28 @@ impl PersistedPhysicalRecoveryFrame {
         coordinate: RecordFrameCoordinate,
         bytes: &[u8],
     ) -> Option<Self> {
-        (bytes.len() == coordinate.length() as usize && subject_matches(subject, coordinate))
-            .then_some(Self {
-                subject,
-                coordinate,
-                bytes: bytes.into(),
-            })
+        Self::new_with_storage(
+            subject,
+            coordinate,
+            bytes,
+            &mut decode_storage::UnrestrictedDecodeStorage,
+        )
+        .ok()
+    }
+    pub(super) fn new_with_storage<S: PhysicalRecoveryDecodeStorage>(
+        subject: PersistedPhysicalDataFrameSubject,
+        coordinate: RecordFrameCoordinate,
+        bytes: &[u8],
+        storage: &mut S,
+    ) -> Result<Self, PhysicalRecoveryDecodeFailure<S::Denial>> {
+        if bytes.len() != coordinate.length() as usize || !subject_matches(subject, coordinate) {
+            return Err(PhysicalRecoveryProjectionDenial::InvalidFrame.into());
+        }
+        Ok(Self {
+            subject,
+            coordinate,
+            bytes: decode_storage::copy_box(bytes, storage)?,
+        })
     }
     pub const fn subject(&self) -> PersistedPhysicalDataFrameSubject {
         self.subject
@@ -26,13 +42,28 @@ impl PersistedPhysicalRecoveryFrame {
 
 impl PersistedPhysicalRecoveryManifest {
     pub fn new(coordinate: RecordFrameCoordinate, bytes: &[u8]) -> Option<Self> {
-        (matches!(
+        Self::new_with_storage(
+            coordinate,
+            bytes,
+            &mut decode_storage::UnrestrictedDecodeStorage,
+        )
+        .ok()
+    }
+    pub(super) fn new_with_storage<S: PhysicalRecoveryDecodeStorage>(
+        coordinate: RecordFrameCoordinate,
+        bytes: &[u8],
+        storage: &mut S,
+    ) -> Result<Self, PhysicalRecoveryDecodeFailure<S::Denial>> {
+        if !matches!(
             coordinate.artifact(),
             RecordArtifactFile::ExtentArena { .. }
-        ) && coordinate.length() as usize == bytes.len())
-        .then_some(Self {
+        ) || coordinate.length() as usize != bytes.len()
+        {
+            return Err(PhysicalRecoveryProjectionDenial::InvalidManifest.into());
+        }
+        Ok(Self {
             coordinate,
-            bytes: bytes.into(),
+            bytes: decode_storage::copy_box(bytes, storage)?,
         })
     }
     pub const fn artifact(&self) -> RecordArtifactFile {

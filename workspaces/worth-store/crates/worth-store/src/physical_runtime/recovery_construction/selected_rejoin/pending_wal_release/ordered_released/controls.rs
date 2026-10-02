@@ -4,7 +4,7 @@ use sha2::{Digest, Sha256};
 use worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery;
 use worth_store_physical_format::{
     decode_blob_record, BlobRecordKind, BlobRecordV1, CurrentPhysicalRecordPlacement,
-    PhysicalRecordFormatDeclaration,
+    PersistedRecordIdentity, PhysicalRecordFormatDeclaration,
 };
 use worth_store_recovery_physics::{
     VerifiedOrderedPendingWalReleaseBatch, VerifiedReleasedRootEdge,
@@ -15,6 +15,9 @@ use super::super::super::{
     MAX_CONTROL_FRAME_BYTES,
 };
 use super::super::delta;
+#[path = "controls/completed.rs"]
+mod completed;
+pub(super) use completed::verify_with_storage;
 
 pub(super) fn verify(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
@@ -24,6 +27,52 @@ pub(super) fn verify(
     batch: &VerifiedOrderedPendingWalReleaseBatch,
     format: PhysicalRecordFormatDeclaration,
 ) -> Result<SelectedControlMediaFingerprint, Denial> {
+    let records = verify_batch_binding(discovery, edge, batch)?;
+    let mut slices = Vec::new();
+    for (frame, expected) in [
+        (batch.descriptor_frame(), batch.descriptor().encode()),
+        (batch.reservation_frame(), batch.reservation().encode()),
+        (batch.manifest_frame(), batch.manifest().encode()),
+    ] {
+        if frame.candidate_root_frame_sha256() != edge.result_root_frame_sha256()
+            || frame.payload_sha256() != <[u8; 32]>::from(Sha256::digest(&expected))
+            || frame.bytes() != expected
+        {
+            return Err(Denial::ControlFrame);
+        }
+        let index = result
+            .routes
+            .binary_search_by_key(&frame.record(), |route| route.record())
+            .map_err(|_| Denial::ControlFrame)?;
+        let CurrentPhysicalRecordPlacement::Extent(extent) = result.routes[index] else {
+            return Err(Denial::UnsupportedSelectedPlacement);
+        };
+        let maximum = u64::try_from(expected.len()).map_err(|_| Denial::BoundExceeded)?;
+        if maximum > MAX_CONTROL_FRAME_BYTES {
+            return Err(Denial::BoundExceeded);
+        }
+        let bytes = tier::no_release_frame::read(discovery, format, extent, maximum, &mut slices)?;
+        if bytes != expected || Sha256::digest(&bytes).as_slice() != frame.payload_sha256() {
+            return Err(Denial::ControlFrame);
+        }
+        if !matches!(
+            decode_blob_record(&bytes),
+            Ok(BlobRecordV1::ReclaimDescriptorV3(_)
+                | BlobRecordV1::OriginalDropReserved(_)
+                | BlobRecordV1::DropSetManifestV3(_))
+        ) {
+            return Err(Denial::ControlFrame);
+        }
+    }
+    verify_source_routes(source, result, records)?;
+    Ok(SelectedControlMediaFingerprint::observed(slices))
+}
+
+pub(super) fn verify_batch_binding(
+    discovery: &BoundedRecoveryFilesystemDiscovery,
+    edge: &VerifiedReleasedRootEdge,
+    batch: &VerifiedOrderedPendingWalReleaseBatch,
+) -> Result<[PersistedRecordIdentity; 3], Denial> {
     let base = batch.descriptor().base();
     let custody = batch.descriptor().custody();
     let reserved = batch.reservation();
@@ -62,46 +111,15 @@ pub(super) fn verify(
     {
         return Err(Denial::ControlFrame);
     }
-    let mut slices = Vec::new();
-    for (frame, expected) in [
-        (batch.descriptor_frame(), batch.descriptor().encode()),
-        (batch.reservation_frame(), batch.reservation().encode()),
-        (batch.manifest_frame(), batch.manifest().encode()),
-    ] {
-        if frame.candidate_root_frame_sha256() != edge.result_root_frame_sha256()
-            || frame.payload_sha256() != <[u8; 32]>::from(Sha256::digest(&expected))
-            || frame.bytes() != expected
-        {
-            return Err(Denial::ControlFrame);
-        }
-        let index = result
-            .routes
-            .binary_search_by_key(&frame.record(), |route| route.record())
-            .map_err(|_| Denial::ControlFrame)?;
-        let CurrentPhysicalRecordPlacement::Extent(extent) = result.routes[index] else {
-            return Err(Denial::UnsupportedSelectedPlacement);
-        };
-        let maximum = u64::try_from(expected.len()).map_err(|_| Denial::BoundExceeded)?;
-        if maximum > MAX_CONTROL_FRAME_BYTES {
-            return Err(Denial::BoundExceeded);
-        }
-        let bytes = tier::no_release_frame::read(discovery, format, extent, maximum, &mut slices)?;
-        if bytes != expected || Sha256::digest(&bytes).as_slice() != frame.payload_sha256() {
-            return Err(Denial::ControlFrame);
-        }
-        if !matches!(
-            decode_blob_record(&bytes),
-            Ok(BlobRecordV1::ReclaimDescriptorV3(_)
-                | BlobRecordV1::OriginalDropReserved(_)
-                | BlobRecordV1::DropSetManifestV3(_))
-        ) {
-            return Err(Denial::ControlFrame);
-        }
-    }
-    for record in [
-        batch.reservation_frame().record(),
-        batch.manifest_frame().record(),
-    ] {
+    Ok(records)
+}
+
+pub(super) fn verify_source_routes(
+    source: &delta::Snapshot,
+    result: &delta::Snapshot,
+    records: [PersistedRecordIdentity; 3],
+) -> Result<(), Denial> {
+    for record in [records[1], records[2]] {
         let source_route = source
             .routes
             .binary_search_by_key(&record, |route| route.record())
@@ -116,5 +134,5 @@ pub(super) fn verify(
             return Err(Denial::ControlFrame);
         }
     }
-    Ok(SelectedControlMediaFingerprint::observed(slices))
+    Ok(())
 }

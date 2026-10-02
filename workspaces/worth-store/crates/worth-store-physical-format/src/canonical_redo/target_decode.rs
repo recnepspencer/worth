@@ -4,27 +4,32 @@ use super::{
     CanonicalRedoExtentCoordinate, CanonicalRedoTarget, CanonicalRedoTargetIdentity,
     CanonicalRedoWireDenial, Cursor,
 };
+use crate::recovery_projection::decode_storage::reserve_vec;
 use crate::RecordArtifactFile;
+use crate::{PhysicalRecoveryDecodeFailure, PhysicalRecoveryDecodeStorage};
 
-pub(super) fn decode_targets(
+pub(super) fn decode_targets<S: PhysicalRecoveryDecodeStorage>(
     cursor: &mut Cursor<'_>,
     total: &mut u64,
     maximum: u64,
     distinct: &mut Option<(&mut BTreeSet<CanonicalRedoTargetIdentity>, u64)>,
-) -> Result<Box<[CanonicalRedoTarget]>, CanonicalRedoWireDenial> {
+    storage: &mut S,
+) -> Result<Box<[CanonicalRedoTarget]>, PhysicalRecoveryDecodeFailure<S::Denial>> {
     let count = cursor.u64()?;
     if count == 0 {
-        return Err(CanonicalRedoWireDenial::InvalidTarget);
+        return Err(CanonicalRedoWireDenial::InvalidTarget.into());
     }
     *total = total
         .checked_add(count)
         .ok_or(CanonicalRedoWireDenial::CounterOverflow)?;
     if *total > maximum {
-        return Err(CanonicalRedoWireDenial::TargetLimit);
+        return Err(CanonicalRedoWireDenial::TargetLimit.into());
     }
-    let mut targets = Vec::with_capacity(
+    cursor.require_count_backing(count, 8 + 32 + 1)?;
+    let mut targets = reserve_vec(
         usize::try_from(count).map_err(|_| CanonicalRedoWireDenial::TargetLimit)?,
-    );
+        storage,
+    )?;
     let mut prior = None;
     for _ in 0..count {
         let encoded = cursor.field()?;
@@ -33,13 +38,13 @@ pub(super) fn decode_targets(
         if let Some((identities, maximum_distinct)) = distinct.as_mut() {
             let identity = target.identity();
             if !identities.contains(&identity) && identities.len() as u64 == *maximum_distinct {
-                return Err(CanonicalRedoWireDenial::DistinctTargetLimit);
+                return Err(CanonicalRedoWireDenial::DistinctTargetLimit.into());
             }
             identities.insert(identity);
         }
         let order = target.canonical_order();
         if prior.as_ref().is_some_and(|prior| prior > &order) {
-            return Err(CanonicalRedoWireDenial::NonCanonicalTargetOrder);
+            return Err(CanonicalRedoWireDenial::NonCanonicalTargetOrder.into());
         }
         prior = Some(order);
         targets.push(target);
@@ -191,7 +196,14 @@ mod tests {
             framed.extend_from_slice(&[5; 32]);
             let mut cursor = Cursor::new(&framed);
             let mut total = 0;
-            let decoded = decode_targets(&mut cursor, &mut total, 1, &mut None).unwrap();
+            let decoded = decode_targets(
+                &mut cursor,
+                &mut total,
+                1,
+                &mut None,
+                &mut crate::recovery_projection::decode_storage::UnrestrictedDecodeStorage,
+            )
+            .unwrap();
             assert_eq!(decoded.len(), 1);
             assert_eq!(total, 1);
             cursor.require_end().unwrap();

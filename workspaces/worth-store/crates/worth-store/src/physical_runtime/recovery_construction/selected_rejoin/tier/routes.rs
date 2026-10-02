@@ -22,7 +22,8 @@ use super::super::MAX_DISCOVERY_BYTES;
 use super::no_release_controls;
 mod resident;
 pub(in crate::physical_runtime::recovery_construction::selected_rejoin) use resident::{
-    verify_with_resident, ResidentRouteProvenance,
+    verify_snapshot_with_storage, verify_with_resident, verify_with_storage,
+    ResidentRouteProvenance, RouteWalkStorage, VisitedNodes,
 };
 
 pub(in crate::physical_runtime::recovery_construction::selected_rejoin) const MAX_BLOCKS: usize =

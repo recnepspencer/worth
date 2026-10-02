@@ -60,7 +60,22 @@ impl PersistedPhysicalRecoveryProjection {
         limits: PhysicalRecoveryProjectionDecodeLimits,
         format: crate::PhysicalRecordFormatDeclaration,
     ) -> Result<Self, PhysicalRecoveryProjectionDenial> {
-        Self::decode_payload(bytes, limits, Some(format))
+        Self::decode_with_storage(
+            bytes,
+            limits,
+            format,
+            &mut decode_storage::UnrestrictedDecodeStorage,
+        )
+        .map_err(decode_storage::projection_denial)
+    }
+
+    pub fn decode_with_storage<S: PhysicalRecoveryDecodeStorage>(
+        bytes: &[u8],
+        limits: PhysicalRecoveryProjectionDecodeLimits,
+        format: crate::PhysicalRecordFormatDeclaration,
+        storage: &mut S,
+    ) -> Result<Self, PhysicalRecoveryDecodeFailure<S::Denial>> {
+        Self::decode_payload(bytes, limits, Some(format), storage)
     }
 
     /// Frame-only protocol owners cannot admit source-copy geometry without the
@@ -69,29 +84,43 @@ impl PersistedPhysicalRecoveryProjection {
         bytes: &[u8],
         limits: PhysicalRecoveryProjectionDecodeLimits,
     ) -> Result<Self, PhysicalRecoveryProjectionDenial> {
-        Self::decode_payload(bytes, limits, None)
+        Self::decode_payload(
+            bytes,
+            limits,
+            None,
+            &mut decode_storage::UnrestrictedDecodeStorage,
+        )
+        .map_err(decode_storage::projection_denial)
     }
 
-    fn decode_payload(
+    fn decode_payload<S: PhysicalRecoveryDecodeStorage>(
         bytes: &[u8],
         limits: PhysicalRecoveryProjectionDecodeLimits,
         format: Option<crate::PhysicalRecordFormatDeclaration>,
-    ) -> Result<Self, PhysicalRecoveryProjectionDenial> {
+        storage: &mut S,
+    ) -> Result<Self, PhysicalRecoveryDecodeFailure<S::Denial>> {
         let mut cursor = Cursor::new(bytes);
         require_current_domain(cursor.field()?)?;
         let source_root_generation = cursor.u64()?;
-        let root_state =
-            PersistedPhysicalRecoveryRootState::decode(cursor.field()?, limits.inline_allocations)
-                .ok_or(PhysicalRecoveryProjectionDenial::Malformed)?;
-        let record_identities = read_sequence(&mut cursor, limits.record_identities, |bytes| {
-            let mut item = Cursor::new(bytes);
-            let record = read_record(&mut item)?;
-            item.end()?;
-            Ok(record)
-        })?;
+        let root_state = PersistedPhysicalRecoveryRootState::decode_with_storage(
+            cursor.field()?,
+            limits.inline_allocations,
+            storage,
+        )?;
+        let record_identities = read_sequence(
+            &mut cursor,
+            limits.record_identities,
+            storage,
+            |bytes, _| {
+                let mut item = Cursor::new(bytes);
+                let record = read_record(&mut item)?;
+                item.end()?;
+                Ok(record)
+            },
+        )?;
         let payload = match cursor.byte()? {
             0 => PersistedPhysicalRecoveryPayload::Frames(
-                read_sequence(&mut cursor, limits.frames, read_frame)?.into_boxed_slice(),
+                read_sequence(&mut cursor, limits.frames, storage, read_frame)?.into_boxed_slice(),
             ),
             1 => {
                 let format = format.ok_or(PhysicalRecoveryProjectionDenial::Malformed)?;
@@ -99,7 +128,7 @@ impl PersistedPhysicalRecoveryProjection {
                     crate::PhysicalExtentCopyRecord::decode(cursor.field()?, format)
                         .map_err(|_| PhysicalRecoveryProjectionDenial::Malformed)?
                 else {
-                    return Err(PhysicalRecoveryProjectionDenial::Malformed);
+                    return Err(PhysicalRecoveryProjectionDenial::Malformed.into());
                 };
                 let lsn = cursor.u64()?;
                 let digest = cursor
@@ -107,29 +136,31 @@ impl PersistedPhysicalRecoveryProjection {
                     .try_into()
                     .map_err(|_| PhysicalRecoveryProjectionDenial::Malformed)?;
                 PersistedPhysicalRecoveryPayload::SourceCopy(
-                    PersistedExtentCopyRecipe::new(intent, lsn, digest)
-                        .ok_or(PhysicalRecoveryProjectionDenial::Malformed)?,
+                    PersistedExtentCopyRecipe::new_with_storage(intent, lsn, digest, storage)?,
                 )
             }
-            _ => return Err(PhysicalRecoveryProjectionDenial::Malformed),
+            _ => return Err(PhysicalRecoveryProjectionDenial::Malformed.into()),
         };
         let mut remaining_entries = limits.total_entries;
         let placements = read_bounded_sequence(
             &mut cursor,
             limits.placements,
             &mut remaining_entries,
-            read_placement,
+            storage,
+            |bytes, _| read_placement(bytes).map_err(Into::into),
         )?;
         let segment_updates = read_bounded_sequence(
             &mut cursor,
             limits.segment_updates,
             &mut remaining_entries,
-            read_segment_update,
+            storage,
+            |bytes, _| read_segment_update(bytes).map_err(Into::into),
         )?;
         let manifests = read_bounded_sequence(
             &mut cursor,
             limits.manifests,
             &mut remaining_entries,
+            storage,
             read_manifest,
         )?;
         let operation = read_operation(
@@ -137,32 +168,39 @@ impl PersistedPhysicalRecoveryProjection {
             source_root_generation,
             &mut remaining_entries,
             format,
+            storage,
         )?;
         cursor.end()?;
         match payload {
-            PersistedPhysicalRecoveryPayload::Frames(frames) => Self::new_with_operation(
-                source_root_generation,
-                root_state,
-                record_identities,
-                frames.into_vec(),
-                placements,
-                segment_updates,
-                manifests,
-                operation,
-            )
-            .ok_or(PhysicalRecoveryProjectionDenial::Malformed),
+            PersistedPhysicalRecoveryPayload::Frames(frames) => {
+                Self::new_with_operation_in_storage(
+                    source_root_generation,
+                    root_state,
+                    record_identities,
+                    frames.into_vec(),
+                    placements,
+                    segment_updates,
+                    manifests,
+                    operation,
+                    storage,
+                )
+            }
             PersistedPhysicalRecoveryPayload::SourceCopy(recipe) => {
                 if operation != PersistedPhysicalRecoveryOperation::None {
-                    return Err(PhysicalRecoveryProjectionDenial::Malformed);
+                    return Err(PhysicalRecoveryProjectionDenial::Malformed.into());
                 }
-                let expected = Self::from_source_copy(source_root_generation, root_state, recipe)
-                    .ok_or(PhysicalRecoveryProjectionDenial::Malformed)?;
+                let expected = Self::from_source_copy_with_storage(
+                    source_root_generation,
+                    root_state,
+                    recipe,
+                    storage,
+                )?;
                 (record_identities.as_slice() == expected.record_identities()
                     && placements.as_slice() == expected.placements()
                     && segment_updates.is_empty()
                     && manifests.is_empty())
                 .then_some(expected)
-                .ok_or(PhysicalRecoveryProjectionDenial::Malformed)
+                .ok_or_else(|| PhysicalRecoveryProjectionDenial::Malformed.into())
             }
         }
     }
@@ -173,13 +211,13 @@ fn write_frame(target: &mut Vec<u8>, frame: &PersistedPhysicalRecoveryFrame) {
     field(target, frame.bytes());
 }
 
-fn read_frame(
+fn read_frame<S: PhysicalRecoveryDecodeStorage>(
     bytes: &[u8],
-) -> Result<PersistedPhysicalRecoveryFrame, PhysicalRecoveryProjectionDenial> {
+    storage: &mut S,
+) -> Result<PersistedPhysicalRecoveryFrame, PhysicalRecoveryDecodeFailure<S::Denial>> {
     let mut cursor = Cursor::new(bytes);
     let (subject, coordinate) = read_subject_coordinate(&mut cursor)?;
     let payload = cursor.field()?;
     cursor.end()?;
-    PersistedPhysicalRecoveryFrame::new(subject, coordinate, payload)
-        .ok_or(PhysicalRecoveryProjectionDenial::InvalidFrame)
+    PersistedPhysicalRecoveryFrame::new_with_storage(subject, coordinate, payload, storage)
 }

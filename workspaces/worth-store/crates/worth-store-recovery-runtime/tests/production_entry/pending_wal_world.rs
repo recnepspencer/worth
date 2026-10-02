@@ -32,6 +32,12 @@ mod selected_media;
 #[path = "pending_wal_world/three_batch.rs"]
 mod three_batch;
 
+pub(super) fn selected_session_declared_extent(
+    root: &Path,
+) -> worth_store_physical_format::ExtentArenaRange {
+    selected_media::selected_session_declared_extent(root)
+}
+
 const ROLE_ENV: &str = "WORTH_C11_PENDING_V3_CHILD_ROLE";
 const MARKER_ENV: &str = "WORTH_C11_PENDING_V3_CHILD_MARKER";
 const ROOT_ENV: &str = "WORTH_C11_PENDING_V3_CHILD_ROOT";

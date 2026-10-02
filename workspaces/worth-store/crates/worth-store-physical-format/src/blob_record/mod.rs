@@ -29,7 +29,7 @@ pub use generation::BlobGenerationPublicationV1;
 pub use reclaim::{
     BlobReclaimDescriptorV1, BlobReclaimDescriptorV2, BlobReclaimDescriptorV3,
     BlobReclaimSourceBasisV1, BlobReclaimSourceKind, DropSetManifestV1, DropSetManifestV2,
-    DropSetManifestV3, DropSetManifestV3View, FailedIngestReclaimBasisV1,
+    DropSetManifestV2View, DropSetManifestV3, DropSetManifestV3View, FailedIngestReclaimBasisV1,
     OriginalDropReservationRequestV1, OriginalDropReservedV1, ReleasedDropCustodyV1,
     ReleasedDropPredecessorV1, ReleasedGenerationReclaimBasisV1, MAXIMUM_DROP_SET_RECORDS,
 };

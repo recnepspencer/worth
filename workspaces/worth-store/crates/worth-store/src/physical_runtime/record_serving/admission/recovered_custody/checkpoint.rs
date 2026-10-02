@@ -5,10 +5,12 @@ use super::*;
 
 impl RecoveredCheckpointCustodyEvidence {
     #[cfg(feature = "recovery-runtime-owner")]
-    pub(super) fn verify_current_checkpoint(
+    pub(super) fn verify_funded_current_checkpoint(
         &self,
         media: &QualifiedFilesystemMedia,
-    ) -> Result<(), RecoveredCheckpointCustodyDenial> {
+        window: &mut crate::physical_runtime::PhysicalRecoveryReadAllocation<'_>,
+    ) -> Result<(), crate::physical_runtime::record_serving::RecordBootstrapDenial> {
+        use crate::physical_runtime::record_serving::RecordBootstrapDenial as Denial;
         const MAX_CHECKPOINT_BYTES: u64 = 256 << 20;
         let selected = self
             .head_v2
@@ -25,23 +27,27 @@ impl RecoveredCheckpointCustodyEvidence {
                     .as_ref()
                     .map(|claim| claim.checkpoint())
             })
-            .ok_or(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch)?;
-        self.checkpoint_stream(selected)?;
+            .ok_or(Denial::RecoveredCheckpointCustodyMismatch)?;
+        self.checkpoint_stream(selected)
+            .map_err(|_| Denial::RecoveredCheckpointCustodyMismatch)?;
         let length = selected.encoded_bytes();
-        if length > MAX_CHECKPOINT_BYTES {
-            return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
+        if length == 0 || length > MAX_CHECKPOINT_BYTES {
+            return Err(Denial::RecoveredCheckpointCustodyMismatch);
         }
-        let artifact = ArtifactTreeDirectory::families()
-            .file("checkpoint.current")
-            .map_err(|_| RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch)?;
-        let bytes = media
-            .artifact_tree()
-            .read_bounded(&artifact, length)
-            .map_err(|_| RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch)?;
+        let mut observation = media
+            .bounded_record_observation(1, length)
+            .map_err(Denial::RecoveredCheckpointObservationUnavailable)?;
+        let observed = window
+            .read_serving_checkpoint(&mut observation, length)
+            .map_err(Denial::RecoveredCheckpointRead)?;
+        let bytes = observed
+            .observed()
+            .bytes()
+            .ok_or(Denial::RecoveredCheckpointCustodyMismatch)?;
         if bytes.len() as u64 != length
-            || <[u8; 32]>::from(Sha256::digest(&bytes)) != selected.encoded_digest()
+            || <[u8; 32]>::from(Sha256::digest(bytes)) != selected.encoded_digest()
         {
-            return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
+            return Err(Denial::RecoveredCheckpointCustodyMismatch);
         }
         Ok(())
     }
@@ -90,8 +96,29 @@ impl RecoveredCheckpointCustodyEvidence {
         if observed != marker || payload != marker.encode() {
             return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
         }
-        // Completed ordered history has no independent Store head-path and
-        // final-roster rejoin yet. Even a typed C8 claim cannot open Serving.
-        Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch)
+        let effective = self
+            .effective_release_heads
+            .as_ref()
+            .ok_or(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch)?;
+        if verified.selected_head_v2().is_some()
+            || !effective.checkpoint_source_heads().is_empty()
+            || effective.checkpoint_source_root().is_some()
+            || effective.checkpoint_source_next_block() != 1
+            || effective.effective_root_frame_sha256() != actual_sha256
+            || root.release_custody_head_root() != Some(effective.effective_root())
+            || root.next_release_custody_head_block() != effective.effective_next_block()
+            || effective.ordered_replays().len() != verified.released_batches().len()
+        {
+            return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
+        }
+        let Some((_, last)) = effective.ordered_replays().last() else {
+            return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
+        };
+        if last.replay().result_root() != effective.effective_root()
+            || last.replay().result_next_block() != effective.effective_next_block()
+        {
+            return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
+        }
+        Ok(())
     }
 }

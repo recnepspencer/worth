@@ -2,7 +2,7 @@
 //! serving admission. The sealed witness is never constructed from raw bytes.
 
 use sha2::{Digest, Sha256};
-use worth_store_physical_backend::{ArtifactTreeDirectory, QualifiedFilesystemMedia};
+use worth_store_physical_backend::QualifiedFilesystemMedia;
 use worth_store_physical_format::store_namespace::StableStoreIdentity;
 use worth_store_physical_format::{
     decode_checkpoint_certificate, CheckpointCertificateKind, DurableFreeSpaceManifestHeader,
@@ -155,11 +155,11 @@ impl RecoveredCheckpointCustodyEvidence {
         if self.store != store || self.root != *root {
             return Err(RecoveredCheckpointCustodyDenial::SelectedRootMismatch);
         }
-        self.verify_current_checkpoint(media)?;
-        if !self
-            .selected_controls
-            .as_ref()
-            .is_some_and(|controls| controls.matches_serving_media(media))
+        if self.historical_release.is_none()
+            && !self
+                .selected_controls
+                .as_ref()
+                .is_some_and(|controls| controls.matches_serving_media(media))
         {
             return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
         }

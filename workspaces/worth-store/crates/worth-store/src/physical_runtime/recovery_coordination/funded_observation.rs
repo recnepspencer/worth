@@ -73,6 +73,33 @@ impl FundedRecoveryObservation {
 }
 
 impl PhysicalRecoveryReadAllocation<'_> {
+    pub(in crate::physical_runtime) fn read_serving_checkpoint(
+        &mut self,
+        observation: &mut BorrowedRecordFilesystemObservation<'_>,
+        byte_limit: u64,
+    ) -> Result<
+        FundedRecoveryObservation,
+        RecoveryDiscoveryAllocationFailure<PhysicalRecoveryObservationAllocationDenial>,
+    > {
+        use PhysicalRecoveryObservationAllocationDenial as Denial;
+        let failure = |cause| RecoveryDiscoveryAllocationFailure::Allocation {
+            artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint,
+            offset: 0,
+            requested: 0,
+            cause,
+        };
+        if observation.store_identity() != self.store_identity() {
+            return Err(failure(Denial::StoreMismatch));
+        }
+        if !observation.path_storage_is_qualified() {
+            return Err(failure(Denial::UnqualifiedPathStorage));
+        }
+        let mut storage = storage::NativeObservationStorage::new(self);
+        let observed =
+            observation.read_current_checkpoint_with_storage(byte_limit, &mut storage)?;
+        Ok(storage.finish(observed))
+    }
+
     pub(in crate::physical_runtime) fn read_serving_record(
         &mut self,
         observation: &mut BorrowedRecordFilesystemObservation<'_>,

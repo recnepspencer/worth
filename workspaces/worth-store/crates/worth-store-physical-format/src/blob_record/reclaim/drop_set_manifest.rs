@@ -4,11 +4,15 @@ use crate::PersistedRecordIdentity;
 
 use super::super::envelope::{encode, nonzero_16};
 use super::super::{BlobRecordDenial, BlobRecordKind};
-use super::basis::{read_record, write_record};
+use super::basis::write_record;
 use super::FailedIngestReclaimBasisV1;
 
+#[path = "drop_set_manifest/view.rs"]
+mod view;
+pub(super) use view::DropSetManifestV1View;
+
 pub const MAXIMUM_DROP_SET_RECORDS: usize = 1024;
-const FIXED_PAYLOAD_BYTES: usize = 194;
+pub(super) const FIXED_PAYLOAD_BYTES: usize = 194;
 pub(super) const DROPPED_DIGEST_DOMAIN: &[u8] = b"store.physical.blob-drop-set-identities.v1";
 
 /// A routed custody record. Its existence does not authorize un-routing.
@@ -72,30 +76,18 @@ impl DropSetManifestV1 {
     }
 
     pub(in crate::blob_record) fn decode_payload(payload: &[u8]) -> Result<Self, BlobRecordDenial> {
-        if payload.len() < FIXED_PAYLOAD_BYTES {
-            return Err(BlobRecordDenial::LengthMismatch);
+        let view = DropSetManifestV1View::decode_payload(payload)?;
+        Ok(Self::from_view(view))
+    }
+
+    pub(super) fn from_view(view: DropSetManifestV1View<'_>) -> Self {
+        Self {
+            store: view.store(),
+            reclaim_attempt: view.reclaim_attempt(),
+            source_basis: view.source_basis(),
+            dropped_digest: view.dropped_digest(),
+            dropped: view.collect_owned().into_boxed_slice(),
         }
-        let count = u16::from_le_bytes(payload[160..162].try_into().expect("fixed count"));
-        if count == 0 || usize::from(count) > MAXIMUM_DROP_SET_RECORDS {
-            return Err(BlobRecordDenial::InvalidDropSet);
-        }
-        if payload.len() != FIXED_PAYLOAD_BYTES + usize::from(count) * 24 {
-            return Err(BlobRecordDenial::LengthMismatch);
-        }
-        let mut dropped = Vec::with_capacity(usize::from(count));
-        for bytes in payload[194..].chunks_exact(24) {
-            dropped.push(read_record(bytes)?);
-        }
-        let value = Self::new(
-            payload[..16].try_into().expect("fixed store"),
-            payload[16..32].try_into().expect("fixed attempt"),
-            FailedIngestReclaimBasisV1::decode(&payload[32..160])?,
-            dropped,
-        )?;
-        if payload[162..194] != value.dropped_digest {
-            return Err(BlobRecordDenial::InvalidDropSet);
-        }
-        Ok(value)
     }
 
     pub const fn store(&self) -> [u8; 16] {

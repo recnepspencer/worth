@@ -113,12 +113,12 @@ pub use blob_record::{
     BlobReclaimDescriptorV3, BlobReclaimSourceBasisV1, BlobReclaimSourceKind, BlobRecordDenial,
     BlobRecordKind, BlobRecordV1, BlobSessionAbandonedV1, BlobSessionDeclarationV1,
     BlobSessionFrontierV1, BlobTreeEntryV1, BlobTreeNodeKind, BlobTreeNodeV1, BlobTreeOccurrenceV1,
-    DecodedBlobChunkFrameV1, DropSetManifestV1, DropSetManifestV2, DropSetManifestV3,
-    DropSetManifestV3View, FailedIngestReclaimBasisV1, OriginalDropReservationRequestV1,
-    OriginalDropReservedV1, ReleasedDropCustodyV1, ReleasedDropPredecessorV1,
-    ReleasedGenerationReclaimBasisV1, BLOB_CHUNK_FRAME_MAX_BYTES, BLOB_CONTROL_FRAME_MAX_BYTES,
-    BLOB_RECORD_HEADER_BYTES, BLOB_RECORD_VERSION, BLOB_TREE_NODE_FRAME_MAX_BYTES,
-    MAXIMUM_DROP_SET_RECORDS,
+    DecodedBlobChunkFrameV1, DropSetManifestV1, DropSetManifestV2, DropSetManifestV2View,
+    DropSetManifestV3, DropSetManifestV3View, FailedIngestReclaimBasisV1,
+    OriginalDropReservationRequestV1, OriginalDropReservedV1, ReleasedDropCustodyV1,
+    ReleasedDropPredecessorV1, ReleasedGenerationReclaimBasisV1, BLOB_CHUNK_FRAME_MAX_BYTES,
+    BLOB_CONTROL_FRAME_MAX_BYTES, BLOB_RECORD_HEADER_BYTES, BLOB_RECORD_VERSION,
+    BLOB_TREE_NODE_FRAME_MAX_BYTES, MAXIMUM_DROP_SET_RECORDS,
 };
 pub use bootstrap::{
     physical_bootstrap_catalog, BootstrapCatalog, BootstrapCatalogDenial, CurrentRootCatalogEntry,
@@ -134,9 +134,9 @@ pub use canonical_basis::{
     prepare_physical_page_header_canonical_basis, PhysicalPageHeaderCanonicalBasisOutcome,
 };
 pub use canonical_redo::{
-    decode_canonical_redo_v3, CanonicalRedoExtentCoordinate, CanonicalRedoTarget,
-    CanonicalRedoTargetIdentity, CanonicalRedoWireDenial, CanonicalRedoWireRecord,
-    CANONICAL_REDO_V3_DOMAIN,
+    decode_canonical_redo_v3, decode_canonical_redo_v3_with_storage, CanonicalRedoExtentCoordinate,
+    CanonicalRedoTarget, CanonicalRedoTargetIdentity, CanonicalRedoWireDenial,
+    CanonicalRedoWireRecord, CANONICAL_REDO_V3_DOMAIN,
 };
 pub use checkpoint::{
     checkpoint_certificate_frame_bytes, checkpoint_stream_encoded_digest,
@@ -233,12 +233,13 @@ pub use manifest::{
     arena_tier_at_epoch, maximum_current_root_entries, maximum_segment_manifest_pages,
     required_tree_level, verify_release_custody_head_controls,
     verify_release_custody_head_controls_view, verify_release_custody_head_successor,
-    AllocationClassManifestEntry, BoundedFreeSpaceMembershipBlockDecodeDenial,
-    BoundedRootRoutingBlockDecodeDenial, BoundedSegmentMembershipBlockDecodeDenial,
-    CurrentPhysicalRecordPlacement, DerivedFamilyRootDirectoryBinding, DurableArtifactCrc32c,
-    DurableExtentManifest, DurableExtentRecordPlacement, DurableFreeSpaceManifestHeader,
-    DurableInlineRecordPlacement, DurablePhysicalRootManifest, DurablePhysicalRootManifestBuilder,
-    DurableSegmentManifest, ExtentManifestEntry, ExtentManifestVocabulary, FreeSpaceBlockReference,
+    verify_release_custody_head_successor_view, AllocationClassManifestEntry,
+    BoundedFreeSpaceMembershipBlockDecodeDenial, BoundedRootRoutingBlockDecodeDenial,
+    BoundedSegmentMembershipBlockDecodeDenial, CurrentPhysicalRecordPlacement,
+    DerivedFamilyRootDirectoryBinding, DurableArtifactCrc32c, DurableExtentManifest,
+    DurableExtentRecordPlacement, DurableFreeSpaceManifestHeader, DurableInlineRecordPlacement,
+    DurablePhysicalRootManifest, DurablePhysicalRootManifestBuilder, DurableSegmentManifest,
+    ExtentManifestEntry, ExtentManifestVocabulary, FreeSpaceBlockReference,
     FreeSpaceHeaderScopeIdentity, FreeSpaceKey, FreeSpaceManifestEntry,
     FreeSpaceMembershipBlockDecodeLimits, FreeSpaceMembershipBlockScopeIdentity,
     FreeSpaceRoutingDenial, IndexedThroughBlobPublication, InlinePageFreeFrontier,
@@ -301,6 +302,7 @@ pub use recovery_projection::{
     PersistedPhysicalRecoveryManifest, PersistedPhysicalRecoveryOperation,
     PersistedPhysicalRecoveryPayload, PersistedPhysicalRecoveryProjection,
     PersistedPhysicalRecoveryRootState, PersistedReleaseCustodyHeadEffectV1,
+    PhysicalRecoveryDecodeFailure, PhysicalRecoveryDecodeStorage,
     PhysicalRecoveryProjectionDecodeLimits, PhysicalRecoveryProjectionDenial,
 };
 pub use reference::{

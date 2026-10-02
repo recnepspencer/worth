@@ -19,6 +19,10 @@ use crate::physical_runtime::{
     IntegrityAdmittedRecoveryWalFrame, StoreRecoveryBindingFreshnessSample,
 };
 
+#[path = "historical_chain/completed.rs"]
+mod completed;
+pub(super) use completed::verify_completed_ordinary_step;
+
 const DISCOVERY_HEADROOM: u64 = 64 << 20;
 const OPERATION_ROSTER_WIDTH: u64 = 4 * std::mem::size_of::<[u8; 32]>() as u64;
 

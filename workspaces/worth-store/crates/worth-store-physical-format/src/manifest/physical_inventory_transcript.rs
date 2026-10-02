@@ -48,8 +48,21 @@ impl PhysicalInventoryTranscriptV1 {
         free: &DurableFreeSpaceManifestHeader,
         format: PhysicalRecordFormatDeclaration,
     ) -> bool {
-        self.root_sha256 == framed_digest(ROOT_DOMAIN, &root.encode(format))
-            && self.free_header_sha256 == framed_digest(FREE_HEADER_DOMAIN, &free.encode(format))
+        self.matches_headers_bytes(root, free, &root.encode(format), &free.encode(format))
+    }
+
+    /// Compares the same commitment without re-encoding or allocating.
+    /// Callers must bind these canonical frames to their decoded headers;
+    /// this comparison alone grants no integrity or recovery authority.
+    pub fn matches_headers_bytes(
+        self,
+        root: &DurablePhysicalRootManifest,
+        free: &DurableFreeSpaceManifestHeader,
+        root_bytes: &[u8],
+        free_bytes: &[u8],
+    ) -> bool {
+        self.root_sha256 == framed_digest(ROOT_DOMAIN, root_bytes)
+            && self.free_header_sha256 == framed_digest(FREE_HEADER_DOMAIN, free_bytes)
             && self.route_count == root.record_count()
             && self.free_entry_count == free.entry_count()
     }
@@ -328,6 +341,12 @@ mod tests {
             PhysicalInventoryTranscriptBuilderV1::new(&root, &free, format, 2).unwrap();
         original_builder.include_route(original).unwrap();
         let original_transcript = original_builder.finish().unwrap();
+        let root_bytes = root.encode(format);
+        let free_bytes = free.encode(format);
+        assert!(original_transcript.matches_headers_bytes(&root, &free, &root_bytes, &free_bytes));
+        let mut altered = root_bytes;
+        altered[0] ^= 1;
+        assert!(!original_transcript.matches_headers_bytes(&root, &free, &altered, &free_bytes));
         let CurrentPhysicalRecordPlacement::Extent(extent) = original else {
             unreachable!()
         };

@@ -3,7 +3,8 @@
 
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
-    decode_canonical_redo_v3, PersistedPhysicalRecoveryProjection, PhysicalRecordFormatDeclaration,
+    decode_canonical_redo_v3, decode_canonical_redo_v3_with_storage,
+    PersistedPhysicalRecoveryProjection, PhysicalRecordFormatDeclaration,
     PhysicalRecoveryProjectionDecodeLimits,
 };
 use worth_store_recovery_physics::{
@@ -11,10 +12,16 @@ use worth_store_recovery_physics::{
     VerifiedOrdinaryRootStep,
 };
 
-use super::super::SelectedMediaRejoinDenial as Denial;
+use super::super::{
+    resident::{
+        decode_storage::{decode_denial, RejoinDecodeStorage, RejoinDecoded},
+        StoreRejoinResidentLedger,
+    },
+    SelectedMediaRejoinDenial as Denial,
+};
 use crate::physical_runtime::{
-    IntegrityAdmittedRecoveryWalFrame, StoreRecoveryBindingFreshnessSample,
-    StoreRecoveryOperationFate,
+    IntegrityAdmittedRecoveryWalFrame, PhysicalRecoveryReadAllocation,
+    StoreRecoveryBindingFreshnessSample, StoreRecoveryOperationFate,
 };
 
 pub(super) struct MatchedOrdinaryMember {
@@ -51,6 +58,70 @@ pub(super) fn match_step(
     cutoff: u64,
     maximum_decode_scratch_bytes: u64,
     format: PhysicalRecordFormatDeclaration,
+) -> Result<MatchedOrdinaryMember, Denial> {
+    match_step_inner(
+        step,
+        sample,
+        selected_wal,
+        cutoff,
+        |bytes, start, end, bound, limits| {
+            let retained = bound.checked_mul(4).ok_or(Denial::BoundExceeded)?;
+            if retained > maximum_decode_scratch_bytes {
+                return Err(Denial::BoundExceeded);
+            }
+            let (_, projection) =
+                decode_canonical_redo_v3(bytes, start, end, bound, None, limits, format)
+                    .map_err(|_| Denial::WalFate)?;
+            Ok((projection, retained))
+        },
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(super) fn match_step_with_storage(
+    step: &VerifiedOrdinaryRootStep,
+    sample: &StoreRecoveryBindingFreshnessSample,
+    selected_wal: &[IntegrityAdmittedRecoveryWalFrame],
+    cutoff: u64,
+    format: PhysicalRecordFormatDeclaration,
+    window: &PhysicalRecoveryReadAllocation<'_>,
+    resident: &mut StoreRejoinResidentLedger,
+) -> Result<RejoinDecoded<MatchedOrdinaryMember>, Denial> {
+    let mut storage = RejoinDecodeStorage::new(window, resident);
+    let matched = match_step_inner(
+        step,
+        sample,
+        selected_wal,
+        cutoff,
+        |bytes, start, end, bound, limits| {
+            let (_, projection) = decode_canonical_redo_v3_with_storage(
+                bytes,
+                start,
+                end,
+                bound,
+                limits,
+                format,
+                &mut storage,
+            )
+            .map_err(decode_denial)?;
+            Ok((projection, 0))
+        },
+    )?;
+    Ok(RejoinDecoded::new(matched, storage.into_charge()))
+}
+
+fn match_step_inner(
+    step: &VerifiedOrdinaryRootStep,
+    sample: &StoreRecoveryBindingFreshnessSample,
+    selected_wal: &[IntegrityAdmittedRecoveryWalFrame],
+    cutoff: u64,
+    decode: impl FnOnce(
+        &[u8],
+        u64,
+        u64,
+        u64,
+        PhysicalRecoveryProjectionDecodeLimits,
+    ) -> Result<(PersistedPhysicalRecoveryProjection, u64), Denial>,
 ) -> Result<MatchedOrdinaryMember, Denial> {
     let range = step.lsn_range().ok_or(Denial::WalFate)?;
     if range.start().get() < cutoff {
@@ -110,13 +181,6 @@ pub(super) fn match_step(
         return Err(Denial::WalFate);
     }
     let bound = member.canonical_redo().len() as u64;
-    // The sampled canonical bytes remain live while decode allocates frames,
-    // placements, manifests and inline state. Reserve a conservative peak
-    // before asking the decoder to allocate any of those owned vectors.
-    let retained_scratch_bytes = bound.checked_mul(4).ok_or(Denial::BoundExceeded)?;
-    if retained_scratch_bytes > maximum_decode_scratch_bytes {
-        return Err(Denial::BoundExceeded);
-    }
     let limits = PhysicalRecoveryProjectionDecodeLimits {
         frames: bound,
         record_identities: bound,
@@ -126,16 +190,13 @@ pub(super) fn match_step(
         total_entries: bound.saturating_mul(3),
         inline_allocations: bound,
     };
-    let (_, projection) = decode_canonical_redo_v3(
+    let (projection, retained_scratch_bytes) = decode(
         member.canonical_redo(),
         range.start().get(),
         range.end_exclusive().get(),
         bound,
-        None,
         limits,
-        format,
-    )
-    .map_err(|_| Denial::WalFate)?;
+    )?;
     Ok(MatchedOrdinaryMember {
         projection,
         operation: step.operation(),

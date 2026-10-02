@@ -1,4 +1,5 @@
-//! Native media freshness advances custody through WAL and full-tree head reads.
+//! Native media freshness advances custody through WAL, checkpoint, head,
+//! and selected-control reads before Serving admission.
 
 use super::{
     DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration,
@@ -41,7 +42,7 @@ impl RecoveredCheckpointCustodyEvidence {
 }
 
 impl WalVerifiedRecoveredCustodyEvidence {
-    pub(in crate::physical_runtime) fn verify_heads_for_serving(
+    pub(in crate::physical_runtime) fn verify_selected_media_for_serving(
         self,
         media: &QualifiedFilesystemMedia,
         window: &mut PhysicalRecoveryReadAllocation<'_>,
@@ -51,6 +52,8 @@ impl WalVerifiedRecoveredCustodyEvidence {
                 return Err(RecordBootstrapDenial::RecoveredCheckpointCustodyMismatch);
             }
         }
+        self.evidence
+            .verify_funded_current_checkpoint(media, window)?;
         let controls = self
             .evidence
             .selected_controls
@@ -63,6 +66,7 @@ impl WalVerifiedRecoveredCustodyEvidence {
         ) {
             (Some(_), None, None) => controls.has_selected_head_walk(),
             (None, Some(_), None) => controls.has_pending_head_walks(),
+            (None, None, Some(_)) => controls.has_completed_history_head_walks(),
             (None, None, None) => controls.has_no_head_walk(),
             _ => false,
         };
@@ -70,6 +74,11 @@ impl WalVerifiedRecoveredCustodyEvidence {
             return Err(RecordBootstrapDenial::RecoveredHeadWitnessPostureMismatch);
         }
         if !controls.verify_funded_heads_for_serving(media, window)? {
+            return Err(RecordBootstrapDenial::RecoveredCheckpointCustodyMismatch);
+        }
+        if self.evidence.historical_release.is_some()
+            && !controls.verify_funded_completed_raw_for_serving(media, window)?
+        {
             return Err(RecordBootstrapDenial::RecoveredCheckpointCustodyMismatch);
         }
         Ok(FundedMediaVerifiedRecoveredCustodyEvidence {

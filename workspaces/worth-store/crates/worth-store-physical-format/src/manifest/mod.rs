@@ -85,12 +85,12 @@ pub use record_free_space_entry::{
 };
 pub use release_custody_head::{
     verify_release_custody_head_controls, verify_release_custody_head_controls_view,
-    verify_release_custody_head_successor, ReleaseCustodyHeadBlockReferenceV1,
-    ReleaseCustodyHeadBlockV1, ReleaseCustodyHeadBlockViewV1, ReleaseCustodyHeadControlIdentityV1,
-    ReleaseCustodyHeadDenial, ReleaseCustodyHeadEntryV1, ReleaseCustodyHeadKeyV1,
-    ReleaseCustodyHeadMutationV1, ReleaseCustodyHeadNodeWriteV1, ReleaseCustodyHeadPathNodeV1,
-    ReleaseCustodyHeadRosterDigestV1, ReleaseCustodyHeadTransitionLimitsV1,
-    ReleaseCustodyHeadTransitionV1,
+    verify_release_custody_head_successor, verify_release_custody_head_successor_view,
+    ReleaseCustodyHeadBlockReferenceV1, ReleaseCustodyHeadBlockV1, ReleaseCustodyHeadBlockViewV1,
+    ReleaseCustodyHeadControlIdentityV1, ReleaseCustodyHeadDenial, ReleaseCustodyHeadEntryV1,
+    ReleaseCustodyHeadKeyV1, ReleaseCustodyHeadMutationV1, ReleaseCustodyHeadNodeWriteV1,
+    ReleaseCustodyHeadPathNodeV1, ReleaseCustodyHeadRosterDigestV1,
+    ReleaseCustodyHeadTransitionLimitsV1, ReleaseCustodyHeadTransitionV1,
 };
 pub use selected_record_route::{
     PhysicalTierClass, SelectedRecordContentClass, SelectedRecordRouteMetadata,

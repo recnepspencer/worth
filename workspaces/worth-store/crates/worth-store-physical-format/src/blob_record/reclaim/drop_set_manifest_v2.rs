@@ -3,8 +3,12 @@ use crate::PersistedRecordIdentity;
 use super::super::{envelope::encode, BlobRecordDenial, BlobRecordKind};
 use super::{DropSetManifestV1, FailedIngestReclaimBasisV1};
 
-const SLOT_BYTES: usize = 9;
-const NEVER_RESERVED: u8 = 1;
+#[path = "drop_set_manifest_v2/view.rs"]
+mod view;
+pub use view::DropSetManifestV2View;
+
+pub(super) const SLOT_BYTES: usize = 9;
+pub(super) const NEVER_RESERVED: u8 = 1;
 
 /// Selected manifest custody that can prove the original drop was not yet
 /// reserved, provided no matching Reserved transition remains selected.
@@ -48,24 +52,10 @@ impl DropSetManifestV2 {
     }
 
     pub(in crate::blob_record) fn decode_payload(payload: &[u8]) -> Result<Self, BlobRecordDenial> {
-        let split = payload
-            .len()
-            .checked_sub(SLOT_BYTES)
-            .ok_or(BlobRecordDenial::LengthMismatch)?;
-        if payload[split + 8] != NEVER_RESERVED {
-            return Err(BlobRecordDenial::InvalidDropSet);
-        }
-        let generation = u64::from_le_bytes(
-            payload[split..split + 8]
-                .try_into()
-                .expect("slot length admitted"),
-        );
-        if generation == 0 {
-            return Err(BlobRecordDenial::InvalidDropSet);
-        }
+        let view = DropSetManifestV2View::decode_payload(payload)?;
         Ok(Self {
-            drop_set: DropSetManifestV1::decode_payload(&payload[..split])?,
-            manifest_selected_generation: generation,
+            drop_set: DropSetManifestV1::from_view(view.drop_set()),
+            manifest_selected_generation: view.never_reserved_slot_generation(),
         })
     }
 

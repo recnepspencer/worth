@@ -98,7 +98,9 @@ fn pending_v3_reservation_drift_after_c8_claim_denies_store_seal_and_plain_check
             };
             assert_eq!(
                 indeterminate.handoff_failure(),
-                Some(RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch),
+                Some(RecoveredPhysicalRuntimeConstructionDenial::RejoinSelectedMedia(
+                    worth_store::physical_runtime::PhysicalRecoverySelectedRejoinMismatch::ControlFrame,
+                )),
             );
             assert_plain_serving_denied(&root);
         })

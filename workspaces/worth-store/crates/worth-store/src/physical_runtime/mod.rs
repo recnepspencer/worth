@@ -218,8 +218,9 @@ pub use record_serving::*;
 #[cfg(feature = "recovery-runtime-owner")]
 pub use recovery_construction::{
     PhysicalRecoveryConstructionAuthority, PhysicalRecoveryConstructionPort,
-    PhysicalRecoveryRejoinResidentBoundary, PhysicalRecoveryWalResidentStage,
-    RecoveredPhysicalRuntimeConstructionDenial, RecoveredPhysicalRuntimeCore,
+    PhysicalRecoveryRejoinResidentBoundary, PhysicalRecoverySelectedRejoinMismatch,
+    PhysicalRecoveryWalResidentStage, RecoveredPhysicalRuntimeConstructionDenial,
+    RecoveredPhysicalRuntimeCore,
 };
 #[cfg(feature = "recovery-runtime-owner")]
 pub use recovery_coordination::{

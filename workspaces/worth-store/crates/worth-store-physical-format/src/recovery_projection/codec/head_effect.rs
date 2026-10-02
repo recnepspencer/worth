@@ -38,12 +38,13 @@ pub(super) fn encode_head_effect(effect: &PersistedReleaseCustodyHeadEffectV1) -
     bytes
 }
 
-pub(super) fn decode_head_effect(
+pub(super) fn decode_head_effect<S: PhysicalRecoveryDecodeStorage>(
     bytes: &[u8],
     source_root_generation: u64,
     remaining_entries: &mut u64,
     format: crate::PhysicalRecordFormatDeclaration,
-) -> Result<PersistedReleaseCustodyHeadEffectV1, PhysicalRecoveryProjectionDenial> {
+    storage: &mut S,
+) -> Result<PersistedReleaseCustodyHeadEffectV1, PhysicalRecoveryDecodeFailure<S::Denial>> {
     let mut cursor = Cursor::new(bytes);
     let tree_identity = cursor.u64()?;
     let source_basis = ReleasedGenerationReclaimBasisV1::decode(cursor.field()?)
@@ -51,7 +52,7 @@ pub(super) fn decode_head_effect(
     let source_root = read_optional_ref(&mut cursor)?;
     let source_next_block = cursor.u64()?;
     if cursor.byte()? != 1 {
-        return Err(PhysicalRecoveryProjectionDenial::Malformed);
+        return Err(PhysicalRecoveryProjectionDenial::Malformed.into());
     }
     let expected_prior = read_optional_entry(&mut cursor)?;
     let next = read_entry(&mut cursor)?;
@@ -65,33 +66,36 @@ pub(super) fn decode_head_effect(
         &mut cursor,
         *remaining_entries,
         remaining_entries,
-        |bytes| {
+        storage,
+        |bytes, storage| {
             let mut cursor = Cursor::new(bytes);
             let reference = read_ref(&mut cursor)?;
             let frame = cursor.field()?;
             if frame.len() > format.page_size().bytes() as usize {
-                return Err(PhysicalRecoveryProjectionDenial::EntryLimit);
+                return Err(PhysicalRecoveryProjectionDenial::EntryLimit.into());
             }
             cursor.end()?;
-            Ok(ReleaseCustodyHeadPathNodeV1::new(reference, frame.to_vec()))
+            let mut owned = decode_storage::reserve_vec(frame.len(), storage)?;
+            owned.extend_from_slice(frame);
+            Ok(ReleaseCustodyHeadPathNodeV1::new(reference, owned))
         },
     )?;
     let writes = read_bounded_sequence(
         &mut cursor,
         *remaining_entries,
         remaining_entries,
-        |bytes| {
+        storage,
+        |bytes, storage| {
             let mut cursor = Cursor::new(bytes);
             let reference = read_ref(&mut cursor)?;
             let frame = cursor.field()?;
             if frame.len() > format.page_size().bytes() as usize {
-                return Err(PhysicalRecoveryProjectionDenial::EntryLimit);
+                return Err(PhysicalRecoveryProjectionDenial::EntryLimit.into());
             }
             cursor.end()?;
-            Ok(ReleaseCustodyHeadNodeWriteV1::new(
-                reference,
-                frame.to_vec(),
-            ))
+            let mut owned = decode_storage::reserve_vec(frame.len(), storage)?;
+            owned.extend_from_slice(frame);
+            Ok(ReleaseCustodyHeadNodeWriteV1::new(reference, owned))
         },
     )?;
     cursor.end()?;
@@ -107,6 +111,19 @@ pub(super) fn decode_head_effect(
             .ok_or(PhysicalRecoveryProjectionDenial::EntryLimit)?,
     )
     .ok_or(PhysicalRecoveryProjectionDenial::EntryLimit)?;
+    // The decoded path and writes remain live across both exact recomputations.
+    // The first returns a retained plan; the second runs while it is still live.
+    // Fund both structural bounds before either invokes the allocating planner.
+    let verification_bytes = ReleaseCustodyHeadTransitionV1::verification_additional_peak_bytes(
+        &path,
+        writes.len(),
+        format,
+    )
+    .and_then(|bytes| bytes.checked_mul(2))
+    .ok_or(PhysicalRecoveryDecodeFailure::SizeOverflow)?;
+    storage
+        .admit_allocation(verification_bytes)
+        .map_err(PhysicalRecoveryDecodeFailure::Allocation)?;
     let planned = ReleaseCustodyHeadTransitionV1::verify_exact(
         source_root,
         source_next_block,
@@ -130,6 +147,7 @@ pub(super) fn decode_head_effect(
         format,
         limits,
     )
+    .map_err(Into::into)
 }
 
 fn write_ref(bytes: &mut Vec<u8>, reference: HeadRef) {

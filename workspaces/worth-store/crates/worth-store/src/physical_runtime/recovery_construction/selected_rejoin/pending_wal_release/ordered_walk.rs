@@ -22,6 +22,9 @@ use crate::physical_runtime::{
     IntegrityAdmittedRecoveryWalFrame, StoreRecoveryBindingFreshnessSample,
 };
 
+#[path = "ordered_walk/completed.rs"]
+mod completed;
+
 #[allow(clippy::too_many_arguments)]
 pub(super) fn verify(
     media: AdmittedRecoveryFilesystemMedia,
@@ -75,7 +78,7 @@ pub(super) fn verify(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub(super) fn verify_historical(
+pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn verify_historical(
     media: AdmittedRecoveryFilesystemMedia,
     window: &mut crate::physical_runtime::PhysicalRecoveryReadAllocation<'_>,
     claim: &VerifiedOrderedHistoricalReleaseCustody,
@@ -83,7 +86,9 @@ pub(super) fn verify_historical(
     sample: &StoreRecoveryBindingFreshnessSample,
     frames: &[IntegrityAdmittedRecoveryWalFrame],
     format: PhysicalRecordFormatDeclaration,
-    retained: u64,
+    resident: &mut super::super::resident::StoreRejoinResidentLedger,
+    raw: &mut super::super::control_frames::FundedCompletedHistoricalRawSlices,
+    fold: &mut super::super::completed_history::CompletedHistoryHeadFold,
 ) -> Result<
     (
         AdmittedRecoveryFilesystemMedia,
@@ -102,7 +107,7 @@ pub(super) fn verify_historical(
     {
         return Err(Denial::RootBinding);
     }
-    verify_edges(
+    completed::verify_edges(
         media,
         window,
         claim.history(),
@@ -118,8 +123,9 @@ pub(super) fn verify_historical(
         frames,
         effective,
         format,
-        retained,
-        None,
+        resident,
+        raw,
+        fold,
     )
 }
 

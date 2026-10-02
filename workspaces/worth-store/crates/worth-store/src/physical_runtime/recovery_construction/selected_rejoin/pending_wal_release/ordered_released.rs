@@ -12,6 +12,7 @@ use worth_store_recovery_physics::{
     VerifiedReleasedV3InventoryTransition,
 };
 
+use super::super::tier::routes::RouteWalkStorage;
 use super::super::{
     control_frames::SelectedControlMediaFingerprint, SelectedMediaRejoinDenial as Denial,
     MAX_DISCOVERY_BYTES, MAX_DISCOVERY_ENTRIES,
@@ -21,10 +22,13 @@ use crate::physical_runtime::{
     IntegrityAdmittedRecoveryWalFrame, StoreRecoveryBindingFreshnessSample,
 };
 
+#[path = "ordered_released/completed.rs"]
+mod completed;
 #[path = "ordered_released/controls.rs"]
 mod controls;
 #[path = "ordered_released/member_projection.rs"]
 mod member_projection;
+pub(super) use completed::verify_completed;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn verify(
@@ -178,6 +182,35 @@ fn verify_delta(
     format: PhysicalRecordFormatDeclaration,
     maximum_scratch: u64,
 ) -> Result<(), Denial> {
+    verify_delta_with_storage(
+        source,
+        result,
+        source_snapshot,
+        result_snapshot,
+        edge,
+        batch,
+        projection,
+        replay,
+        format,
+        maximum_scratch,
+        &mut (),
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn verify_delta_with_storage<S: RouteWalkStorage>(
+    source: &addressed_root::AddressedRoot,
+    result: &addressed_root::AddressedRoot,
+    source_snapshot: &delta::Snapshot,
+    result_snapshot: &delta::Snapshot,
+    edge: &VerifiedReleasedRootEdge,
+    batch: &VerifiedOrderedPendingWalReleaseBatch,
+    projection: &PersistedPhysicalRecoveryProjection,
+    replay: &worth_store_recovery_physics::VerifiedSelectedReleaseHeadReplayV14,
+    format: PhysicalRecordFormatDeclaration,
+    maximum_scratch: u64,
+    storage: &mut S,
+) -> Result<(), Denial> {
     if projection.placements() != edge.transition().projected()
         || !projection.segment_updates().is_empty()
         || !projection.root_state().inline_allocations().is_empty()
@@ -205,10 +238,7 @@ fn verify_delta(
     if dropped_count as u64 > delta::MAX_TRANSITION_ENTRIES || dropped_bytes > maximum_scratch {
         return Err(Denial::BoundExceeded);
     }
-    let mut dropped = Vec::new();
-    dropped
-        .try_reserve_exact(dropped_count)
-        .map_err(|_| Denial::BoundExceeded)?;
+    let mut dropped = storage.reserve_vec(dropped_count)?;
     dropped.extend_from_slice(batch.manifest().dropped());
     dropped.extend_from_slice(retirement_dropped);
     dropped.sort_unstable();
@@ -243,5 +273,6 @@ fn verify_delta(
     if &actual != edge.transition() {
         return Err(Denial::RoutingFrame);
     }
+    storage.discard_vec(dropped)?;
     Ok(())
 }

@@ -1,6 +1,7 @@
 //! Preserve the resource boundary's typed cause across the Store handoff.
 
 use super::super::selected_rejoin::SelectedMediaRejoinDenial;
+use super::super::PhysicalRecoverySelectedRejoinMismatch as Mismatch;
 use super::RecoveredPhysicalRuntimeConstructionDenial;
 
 pub(super) fn construction_denial(
@@ -73,8 +74,51 @@ pub(super) fn construction_denial(
             requested,
             cause,
         },
-        _ => RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch,
+        SelectedMediaRejoinDenial::Qualification(cause) => {
+            RecoveredPhysicalRuntimeConstructionDenial::RejoinQualification(cause)
+        }
+        SelectedMediaRejoinDenial::Discovery(cause) => {
+            RecoveredPhysicalRuntimeConstructionDenial::RejoinDiscovery(cause)
+        }
+        SelectedMediaRejoinDenial::CanonicalRedo(cause) => {
+            RecoveredPhysicalRuntimeConstructionDenial::RejoinCanonicalRedo(cause)
+        }
+        SelectedMediaRejoinDenial::RecoveryProjection(cause) => {
+            RecoveredPhysicalRuntimeConstructionDenial::RejoinRecoveryProjection(cause)
+        }
+        SelectedMediaRejoinDenial::MissingSelector => semantic_mismatch(Mismatch::MissingSelector),
+        SelectedMediaRejoinDenial::MissingRoot => semantic_mismatch(Mismatch::MissingRoot),
+        SelectedMediaRejoinDenial::MissingCheckpoint => {
+            semantic_mismatch(Mismatch::MissingCheckpoint)
+        }
+        SelectedMediaRejoinDenial::MissingRoute => semantic_mismatch(Mismatch::MissingRoute),
+        SelectedMediaRejoinDenial::MissingFrame => semantic_mismatch(Mismatch::MissingFrame),
+        SelectedMediaRejoinDenial::RootBinding => semantic_mismatch(Mismatch::RootBinding),
+        SelectedMediaRejoinDenial::CheckpointBinding => {
+            semantic_mismatch(Mismatch::CheckpointBinding)
+        }
+        SelectedMediaRejoinDenial::CertificateRoster => {
+            semantic_mismatch(Mismatch::CertificateRoster)
+        }
+        SelectedMediaRejoinDenial::UnsupportedSelectedControl {
+            record,
+            content_class,
+        } => RecoveredPhysicalRuntimeConstructionDenial::RejoinUnsupportedSelectedControl {
+            record,
+            content_class,
+        },
+        SelectedMediaRejoinDenial::RoutingFrame => semantic_mismatch(Mismatch::RoutingFrame),
+        SelectedMediaRejoinDenial::UnsupportedSelectedPlacement => {
+            semantic_mismatch(Mismatch::UnsupportedSelectedPlacement)
+        }
+        SelectedMediaRejoinDenial::ControlFrame => semantic_mismatch(Mismatch::ControlFrame),
+        SelectedMediaRejoinDenial::BoundExceeded => semantic_mismatch(Mismatch::BoundExceeded),
+        SelectedMediaRejoinDenial::WalFate => semantic_mismatch(Mismatch::WalFate),
     }
+}
+
+fn semantic_mismatch(cause: Mismatch) -> RecoveredPhysicalRuntimeConstructionDenial {
+    RecoveredPhysicalRuntimeConstructionDenial::RejoinSelectedMedia(cause)
 }
 
 #[cfg(test)]
@@ -108,7 +152,9 @@ mod tests {
             .at_resident_boundary(Boundary::FinalSelectedMediaObservation);
         assert_eq!(
             construction_denial(denial),
-            RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch
+            RecoveredPhysicalRuntimeConstructionDenial::RejoinSelectedMedia(
+                Mismatch::CertificateRoster
+            )
         );
     }
 

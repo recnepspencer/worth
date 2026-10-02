@@ -1,6 +1,7 @@
 //! Rejoins a C.8 custody claim against one Store-admitted physical media
 //! session before a recovered serving capability can be issued.
 
+pub(super) mod completed_history;
 pub(super) mod control_frames;
 pub(super) mod head_v2;
 pub(super) mod no_release;
@@ -75,6 +76,10 @@ pub(in crate::physical_runtime) enum SelectedMediaRejoinDenial {
     RootBinding,
     CheckpointBinding,
     CertificateRoster,
+    UnsupportedSelectedControl {
+        record: worth_store_physical_format::PersistedRecordIdentity,
+        content_class: worth_store_physical_format::SelectedRecordContentClass,
+    },
     RoutingFrame,
     UnsupportedSelectedPlacement,
     ControlFrame,
@@ -83,6 +88,8 @@ pub(in crate::physical_runtime) enum SelectedMediaRejoinDenial {
         boundary: Option<crate::physical_runtime::PhysicalRecoveryRejoinResidentBoundary>,
         cause: crate::physical_runtime::StoreRecoveryBindingSampleAllocationDenial,
     },
+    CanonicalRedo(worth_store_physical_format::CanonicalRedoWireDenial),
+    RecoveryProjection(worth_store_physical_format::PhysicalRecoveryProjectionDenial),
     WalFate,
 }
 

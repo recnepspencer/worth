@@ -177,14 +177,15 @@ fn current_and_successor_controls_match_exact_key_frames_and_progress() {
     );
     let next = triple(Some(first.entry), vec![record(13)]);
     assert_eq!(verify_current(&next), Ok(()));
+    let next_frame = next.manifest.encode();
     assert_eq!(
-        verify_release_custody_head_successor(
+        verify_release_custody_head_successor_view(
             first.entry,
             next.entry,
             next.frames,
             next.descriptor,
             next.reservation,
-            &next.manifest,
+            DropSetManifestV3View::decode(&next_frame).unwrap(),
         ),
         Ok(())
     );

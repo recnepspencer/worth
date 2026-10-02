@@ -12,13 +12,13 @@ use crate::physical_runtime::{
 };
 
 use super::{
-    validate_construction_binding, PhysicalRecoveryConstructionPort,
+    selected_rejoin, validate_construction_binding, PhysicalRecoveryConstructionPort,
     RecoveredPhysicalRuntimeConstructionDenial, RecoveredPhysicalRuntimeCore,
 };
 
 impl PhysicalRecoveryConstructionPort {
     pub fn construct_with_verified_ordered_historical_release(
-        coordination: PhysicalRecoveryCoordination,
+        mut coordination: PhysicalRecoveryCoordination,
         media: AdmittedRecoveryFilesystemMedia,
         cleanup: ClosedPhysicalRecoveryCleanup,
         recovery_allocation: PhysicalRecoveryAllocationAdmission,
@@ -47,11 +47,39 @@ impl PhysicalRecoveryConstructionPort {
             let _ = coordination.shutdown_is_quiescent();
             return Err(denial);
         }
-        // The partial historical walker does not yet independently rejoin
-        // every addressed V14 head path and final rooted roster. Retaining
-        // its typed claim is not a substitute for that media proof.
-        let _ = (media, reopen, historical, effective, tier);
-        let _ = coordination.shutdown_is_quiescent();
-        Err(RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch)
+        // Tier custody and released checkpoint bases require their own source
+        // joins; neither may enter the NoRelease completed-history owner.
+        if tier.is_some() || historical.selected_head_v2().is_some() {
+            let _ = coordination.shutdown_is_quiescent();
+            return Err(RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch);
+        }
+        let (media, selected_wal, selected_controls) =
+            match selected_rejoin::completed_history::observe_claim(
+                &mut coordination,
+                media,
+                &reopen,
+                &historical,
+                &effective,
+                recovery_allocation,
+                || {},
+            ) {
+                Ok(value) => value,
+                Err(denial) => {
+                    let _ = coordination.shutdown_is_quiescent();
+                    return Err(super::rejoin_denial::construction_denial(denial));
+                }
+            };
+        let mut core = Self::construct_inner(
+            coordination,
+            media,
+            reopen,
+            None,
+            None,
+            Some(selected_wal),
+            Some(selected_controls),
+        )?;
+        core.historical_release_custody = Some(historical);
+        core.effective_release_heads = Some(effective);
+        Ok(core)
     }
 }

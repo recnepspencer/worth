@@ -94,6 +94,10 @@ fn mixed_v1_two_v3_historical_rejoin_opens_then_resealed_v1_denies_serving() {
 fn recover(root: &Path) -> worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff {
     let outcome = WorthStoreRecovery::recover(certified_release_serving::request(root));
     let PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
+        if let PhysicalRecoveryOutcome::PublicationIndeterminate(failure) = &outcome {
+            panic!("mixed current failed-ingest + two V3 rejoin failed: handoff={:?}; reopen={:?}; effects={}",
+                failure.handoff_failure(), failure.reopen_failure(), failure.recovery_effects());
+        }
         panic!("mixed V1 + two V3 C8/Store custody must recover: {outcome:?}");
     };
     handoff

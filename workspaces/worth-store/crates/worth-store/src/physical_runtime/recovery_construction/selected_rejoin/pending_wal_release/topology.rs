@@ -1,8 +1,6 @@
 //! Streaming, integrity-validated free and segment membership rewalk. Route
 //! leaves are streamed by `tier::routes`; no whole inventory map is retained.
 
-use std::collections::BTreeSet;
-
 use worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery;
 use worth_store_physical_format::{
     DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest,
@@ -17,6 +15,7 @@ use worth_store_physical_integrity::{
     SegmentMembershipBlockIntegrityValidation, UntrustedPhysicalArtifact,
 };
 
+use super::super::tier::routes::{RouteWalkStorage, VisitedNodes};
 use super::super::{
     control_frames::SelectedArtifactSlice, SelectedMediaRejoinDenial as Denial,
     MAX_DISCOVERY_ENTRIES,
@@ -44,7 +43,8 @@ pub(super) fn observe_memberships(
     format: PhysicalRecordFormatDeclaration,
     transcript: &mut PhysicalInventoryTranscriptBuilderV1,
 ) -> Result<Vec<SelectedArtifactSlice>, Denial> {
-    let mut slices = Vec::new();
+    let mut storage = ();
+    let mut slices = storage.reserve_vec(0)?;
     observe_segments(
         discovery,
         root,
@@ -53,8 +53,17 @@ pub(super) fn observe_memberships(
         &mut slices,
         None,
         u64::MAX,
+        &mut storage,
     )?;
-    observe_free(discovery, free, format, transcript, &mut slices, None)?;
+    observe_free(
+        discovery,
+        free,
+        format,
+        transcript,
+        &mut slices,
+        None,
+        &mut storage,
+    )?;
     Ok(slices)
 }
 
@@ -73,12 +82,65 @@ pub(super) fn observe_membership_snapshot(
     ),
     Denial,
 > {
-    let mut slices = Vec::new();
-    let mut segments = Vec::new();
-    let mut free_entries = Vec::new();
-    free_entries
-        .try_reserve_exact(usize::try_from(free.entry_count()).map_err(|_| Denial::BoundExceeded)?)
-        .map_err(|_| Denial::BoundExceeded)?;
+    let mut storage = ();
+    observe_membership_snapshot_inner(
+        discovery,
+        root,
+        free,
+        format,
+        transcript,
+        maximum_segments,
+        &mut storage,
+    )
+}
+
+pub(super) fn observe_membership_snapshot_with_storage<S: RouteWalkStorage>(
+    discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    root: &DurablePhysicalRootManifest,
+    free: &DurableFreeSpaceManifestHeader,
+    format: PhysicalRecordFormatDeclaration,
+    transcript: &mut PhysicalInventoryTranscriptBuilderV1,
+    maximum_segments: u64,
+    storage: &mut S,
+) -> Result<
+    (
+        Vec<RecordSegmentPageManifestEntry>,
+        Vec<RecordFreeSpaceManifestEntry>,
+        Vec<SelectedArtifactSlice>,
+    ),
+    Denial,
+> {
+    observe_membership_snapshot_inner(
+        discovery,
+        root,
+        free,
+        format,
+        transcript,
+        maximum_segments,
+        storage,
+    )
+}
+
+fn observe_membership_snapshot_inner<S: RouteWalkStorage>(
+    discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    root: &DurablePhysicalRootManifest,
+    free: &DurableFreeSpaceManifestHeader,
+    format: PhysicalRecordFormatDeclaration,
+    transcript: &mut PhysicalInventoryTranscriptBuilderV1,
+    maximum_segments: u64,
+    storage: &mut S,
+) -> Result<
+    (
+        Vec<RecordSegmentPageManifestEntry>,
+        Vec<RecordFreeSpaceManifestEntry>,
+        Vec<SelectedArtifactSlice>,
+    ),
+    Denial,
+> {
+    let mut slices = storage.reserve_vec(0)?;
+    let mut segments = storage.reserve_vec(0)?;
+    let mut free_entries = storage
+        .reserve_vec(usize::try_from(free.entry_count()).map_err(|_| Denial::BoundExceeded)?)?;
     observe_segments(
         discovery,
         root,
@@ -87,6 +149,7 @@ pub(super) fn observe_membership_snapshot(
         &mut slices,
         Some(&mut segments),
         maximum_segments,
+        storage,
     )?;
     observe_free(
         discovery,
@@ -95,6 +158,7 @@ pub(super) fn observe_membership_snapshot(
         transcript,
         &mut slices,
         Some(&mut free_entries),
+        storage,
     )?;
     Ok((segments, free_entries, slices))
 }
@@ -111,23 +175,29 @@ fn observe_segments(
     slices: &mut Vec<SelectedArtifactSlice>,
     mut snapshot: Option<&mut Vec<RecordSegmentPageManifestEntry>>,
     maximum_segments: u64,
+    storage: &mut impl RouteWalkStorage,
 ) -> Result<(), Denial> {
     let tree = PhysicalTreeIdentity::new(root.tree_identity()).ok_or(Denial::RootBinding)?;
-    let mut stack = root.segment_root().into_iter().collect::<Vec<_>>();
-    let mut seen = BTreeSet::new();
+    let mut stack = storage.reserve_vec(usize::from(root.segment_root().is_some()))?;
+    if let Some(reference) = root.segment_root() {
+        stack.push(reference);
+    }
+    let mut seen = VisitedNodes::default();
     while let Some(reference) = stack.pop() {
-        if seen.len() >= MAX_BLOCKS || !seen.insert((reference.generation(), reference.block())) {
+        if !seen.insert((reference.generation(), reference.block()), storage)? {
             return Err(Denial::BoundExceeded);
         }
-        let bytes = discovery
-            .read_segment_membership_block(
-                reference.generation(),
-                reference.block(),
-                u64::from(format.page_size().bytes()),
-            )
-            .map_err(Denial::Discovery)?
-            .into_bytes()
-            .ok_or(Denial::MissingFrame)?;
+        if slices.len() >= MAX_BLOCKS {
+            return Err(Denial::BoundExceeded);
+        }
+        storage.grow_vec_geometrically(slices, 1)?;
+        let artifact = RecordArtifactFile::SegmentMembershipBlock {
+            generation: reference.generation(),
+            block: reference.block(),
+        };
+        let frame =
+            storage.read_page(discovery, artifact, u64::from(format.page_size().bytes()))?;
+        let bytes = frame.bytes().ok_or(Denial::MissingFrame)?;
         let identity = SegmentMembershipBlockScopeIdentity::new(tree, reference);
         let range =
             PhysicalByteRange::new(0, bytes.len() as u64).map_err(|_| Denial::RoutingFrame)?;
@@ -138,26 +208,15 @@ fn observe_segments(
             range,
         );
         let (validation, _) = validate_segment_membership_block(
-            UntrustedPhysicalArtifact::from_bounded_bytes(&bytes),
+            UntrustedPhysicalArtifact::from_bounded_bytes(bytes),
             scope,
         );
         let SegmentMembershipBlockIntegrityValidation::Intact(block) = validation else {
             return Err(Denial::RoutingFrame);
         };
-        if slices.len() >= MAX_BLOCKS {
-            return Err(Denial::BoundExceeded);
-        }
         slices.push(
-            SelectedArtifactSlice::observed(
-                RecordArtifactFile::SegmentMembershipBlock {
-                    generation: reference.generation(),
-                    block: reference.block(),
-                },
-                0,
-                &bytes,
-                true,
-            )
-            .ok_or(Denial::BoundExceeded)?,
+            SelectedArtifactSlice::observed(artifact, 0, bytes, true)
+                .ok_or(Denial::BoundExceeded)?,
         );
         if let Some(entries) = block.entries() {
             for entry in entries {
@@ -171,14 +230,13 @@ fn observe_segments(
                     if snapshot.len() as u64 >= maximum_segments {
                         return Err(Denial::BoundExceeded);
                     }
-                    snapshot
-                        .try_reserve_exact(1)
-                        .map_err(|_| Denial::BoundExceeded)?;
+                    storage.grow_vec_geometrically(snapshot, 1)?;
                     snapshot.push(*entry);
                 }
             }
         } else {
             let children = block.children().ok_or(Denial::RoutingFrame)?;
+            storage.grow_vec(&mut stack, children.len())?;
             for child in children.iter().rev() {
                 if child.level().checked_add(1) != Some(reference.level())
                     || child.generation() > reference.generation()
@@ -188,7 +246,11 @@ fn observe_segments(
                 stack.push(*child);
             }
         }
+        drop(block);
+        storage.discard_frame(frame)?;
     }
+    storage.discard_vec(stack)?;
+    seen.discard(storage)?;
     Ok(())
 }
 
@@ -199,23 +261,29 @@ fn observe_free(
     transcript: &mut PhysicalInventoryTranscriptBuilderV1,
     slices: &mut Vec<SelectedArtifactSlice>,
     mut snapshot: Option<&mut Vec<RecordFreeSpaceManifestEntry>>,
+    storage: &mut impl RouteWalkStorage,
 ) -> Result<(), Denial> {
     let tree = PhysicalTreeIdentity::new(free.tree_identity()).ok_or(Denial::RootBinding)?;
-    let mut stack = free.root().into_iter().collect::<Vec<_>>();
-    let mut seen = BTreeSet::new();
+    let mut stack = storage.reserve_vec(usize::from(free.root().is_some()))?;
+    if let Some(reference) = free.root() {
+        stack.push(reference);
+    }
+    let mut seen = VisitedNodes::default();
     while let Some(reference) = stack.pop() {
-        if seen.len() >= MAX_BLOCKS || !seen.insert((reference.generation(), reference.block())) {
+        if !seen.insert((reference.generation(), reference.block()), storage)? {
             return Err(Denial::BoundExceeded);
         }
-        let bytes = discovery
-            .read_free_space_membership_block(
-                reference.generation(),
-                reference.block(),
-                u64::from(format.page_size().bytes()),
-            )
-            .map_err(Denial::Discovery)?
-            .into_bytes()
-            .ok_or(Denial::MissingFrame)?;
+        if slices.len() >= MAX_BLOCKS {
+            return Err(Denial::BoundExceeded);
+        }
+        storage.grow_vec_geometrically(slices, 1)?;
+        let artifact = RecordArtifactFile::FreeSpaceMembershipBlock {
+            generation: reference.generation(),
+            block: reference.block(),
+        };
+        let frame =
+            storage.read_page(discovery, artifact, u64::from(format.page_size().bytes()))?;
+        let bytes = frame.bytes().ok_or(Denial::MissingFrame)?;
         let identity = FreeSpaceMembershipBlockScopeIdentity::new(tree, reference);
         let range =
             PhysicalByteRange::new(0, bytes.len() as u64).map_err(|_| Denial::RoutingFrame)?;
@@ -226,26 +294,15 @@ fn observe_free(
             range,
         );
         let (validation, _) = validate_free_space_membership_block(
-            UntrustedPhysicalArtifact::from_bounded_bytes(&bytes),
+            UntrustedPhysicalArtifact::from_bounded_bytes(bytes),
             scope,
         );
         let FreeSpaceMembershipBlockIntegrityValidation::Intact(block) = validation else {
             return Err(Denial::RoutingFrame);
         };
-        if slices.len() >= MAX_BLOCKS {
-            return Err(Denial::BoundExceeded);
-        }
         slices.push(
-            SelectedArtifactSlice::observed(
-                RecordArtifactFile::FreeSpaceMembershipBlock {
-                    generation: reference.generation(),
-                    block: reference.block(),
-                },
-                0,
-                &bytes,
-                true,
-            )
-            .ok_or(Denial::BoundExceeded)?,
+            SelectedArtifactSlice::observed(artifact, 0, bytes, true)
+                .ok_or(Denial::BoundExceeded)?,
         );
         if let Some(entries) = block.entries() {
             for entry in entries {
@@ -256,11 +313,13 @@ fn observe_free(
                     .include_free(*entry)
                     .map_err(|_| Denial::RoutingFrame)?;
                 if let Some(snapshot) = snapshot.as_deref_mut() {
+                    storage.grow_vec_geometrically(snapshot, 1)?;
                     snapshot.push(*entry);
                 }
             }
         } else {
             let children = block.children().ok_or(Denial::RoutingFrame)?;
+            storage.grow_vec(&mut stack, children.len())?;
             for child in children.iter().rev() {
                 if child.level().checked_add(1) != Some(reference.level())
                     || child.generation() > reference.generation()
@@ -270,6 +329,10 @@ fn observe_free(
                 stack.push(*child);
             }
         }
+        drop(block);
+        storage.discard_frame(frame)?;
     }
+    storage.discard_vec(stack)?;
+    seen.discard(storage)?;
     Ok(())
 }

@@ -2,20 +2,26 @@
 
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
-    decode_canonical_redo_v3, PersistedPhysicalRecoveryOperation,
-    PersistedPhysicalRecoveryProjection, PhysicalRecordFormatDeclaration,
-    PhysicalRecoveryProjectionDecodeLimits,
+    decode_canonical_redo_v3, decode_canonical_redo_v3_with_storage,
+    PersistedPhysicalRecoveryOperation, PersistedPhysicalRecoveryProjection,
+    PhysicalRecordFormatDeclaration, PhysicalRecoveryProjectionDecodeLimits,
 };
 use worth_store_recovery_physics::{
     RecoveryOperationFate, VerifiedOrderedPendingWalReleaseBatch,
     VerifiedOrderedReleasedHeadReplayV14, VerifiedReleasedRootEdge,
 };
 
-use super::super::super::{wal_fate, SelectedMediaRejoinDenial as Denial};
+use super::super::super::{
+    resident::{
+        decode_storage::{decode_denial, RejoinDecodeStorage, RejoinDecoded},
+        StoreRejoinResidentLedger,
+    },
+    wal_fate, SelectedMediaRejoinDenial as Denial,
+};
 use super::super::delta;
 use crate::physical_runtime::{
-    IntegrityAdmittedRecoveryWalFrame, StoreRecoveryBindingFreshnessSample,
-    StoreRecoveryOperationFate,
+    IntegrityAdmittedRecoveryWalFrame, PhysicalRecoveryReadAllocation,
+    StoreRecoveryBindingFreshnessSample, StoreRecoveryOperationFate,
 };
 
 #[allow(clippy::too_many_arguments)]
@@ -29,6 +35,86 @@ pub(super) fn matched_projection(
     cutoff: u64,
     retained_peak: u64,
     format: PhysicalRecordFormatDeclaration,
+) -> Result<PersistedPhysicalRecoveryProjection, Denial> {
+    matched_projection_inner(
+        edge,
+        batch,
+        replay,
+        source_generation,
+        sample,
+        frames,
+        cutoff,
+        |bytes, start, end, bound, limits| {
+            if bound.checked_mul(4).ok_or(Denial::BoundExceeded)?
+                > delta::MAX_TRANSITION_MEMORY
+                    .checked_sub(retained_peak)
+                    .ok_or(Denial::BoundExceeded)?
+            {
+                return Err(Denial::BoundExceeded);
+            }
+            let (_, projection) =
+                decode_canonical_redo_v3(bytes, start, end, bound, None, limits, format)
+                    .map_err(|_| Denial::WalFate)?;
+            Ok(projection)
+        },
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(super) fn matched_projection_with_storage(
+    edge: &VerifiedReleasedRootEdge,
+    batch: &VerifiedOrderedPendingWalReleaseBatch,
+    replay: &VerifiedOrderedReleasedHeadReplayV14,
+    source_generation: u64,
+    sample: &StoreRecoveryBindingFreshnessSample,
+    frames: &[IntegrityAdmittedRecoveryWalFrame],
+    cutoff: u64,
+    format: PhysicalRecordFormatDeclaration,
+    window: &PhysicalRecoveryReadAllocation<'_>,
+    resident: &mut StoreRejoinResidentLedger,
+) -> Result<RejoinDecoded<PersistedPhysicalRecoveryProjection>, Denial> {
+    let mut storage = RejoinDecodeStorage::new(window, resident);
+    let projection = matched_projection_inner(
+        edge,
+        batch,
+        replay,
+        source_generation,
+        sample,
+        frames,
+        cutoff,
+        |bytes, start, end, bound, limits| {
+            let (_, projection) = decode_canonical_redo_v3_with_storage(
+                bytes,
+                start,
+                end,
+                bound,
+                limits,
+                format,
+                &mut storage,
+            )
+            .map_err(decode_denial)?;
+            Ok(projection)
+        },
+    )?;
+    Ok(RejoinDecoded::new(projection, storage.into_charge()))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn matched_projection_inner(
+    edge: &VerifiedReleasedRootEdge,
+    batch: &VerifiedOrderedPendingWalReleaseBatch,
+    replay: &VerifiedOrderedReleasedHeadReplayV14,
+    source_generation: u64,
+    sample: &StoreRecoveryBindingFreshnessSample,
+    frames: &[IntegrityAdmittedRecoveryWalFrame],
+    cutoff: u64,
+    decode: impl FnOnce(
+        &[u8],
+        u64,
+        u64,
+        u64,
+        PhysicalRecoveryProjectionDecodeLimits,
+    ) -> Result<PersistedPhysicalRecoveryProjection, Denial>,
 ) -> Result<PersistedPhysicalRecoveryProjection, Denial> {
     let request = batch.descriptor().custody().request();
     let witness = batch.wal_fate();
@@ -117,13 +203,6 @@ pub(super) fn matched_projection(
         return Err(Denial::WalFate);
     }
     let bound = member.canonical_redo().len() as u64;
-    if bound.checked_mul(4).ok_or(Denial::BoundExceeded)?
-        > delta::MAX_TRANSITION_MEMORY
-            .checked_sub(retained_peak)
-            .ok_or(Denial::BoundExceeded)?
-    {
-        return Err(Denial::BoundExceeded);
-    }
     let limits = PhysicalRecoveryProjectionDecodeLimits {
         frames: bound,
         record_identities: bound,
@@ -133,16 +212,13 @@ pub(super) fn matched_projection(
         total_entries: bound.saturating_mul(3),
         inline_allocations: bound,
     };
-    let (_, projection) = decode_canonical_redo_v3(
+    let projection = decode(
         member.canonical_redo(),
         witness.lsn_start(),
         witness.lsn_end_exclusive(),
         bound,
-        None,
         limits,
-        format,
-    )
-    .map_err(|_| Denial::WalFate)?;
+    )?;
     let PersistedPhysicalRecoveryOperation::RecordsDropped {
         binding,
         head_effect,

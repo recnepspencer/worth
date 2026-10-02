@@ -45,6 +45,10 @@ pub(super) struct Snapshot {
     pub(super) fingerprint: SelectedControlMediaFingerprint,
 }
 
+#[path = "delta/funded_snapshot.rs"]
+mod funded_snapshot;
+pub(super) use funded_snapshot::snapshot_with_storage;
+
 pub(super) fn verify(
     media: AdmittedRecoveryFilesystemMedia,
     reopen: &CompletedPhysicalRecoveryFreshReopen,

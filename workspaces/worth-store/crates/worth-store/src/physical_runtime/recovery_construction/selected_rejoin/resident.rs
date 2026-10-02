@@ -4,6 +4,9 @@ pub(in crate::physical_runtime) use crate::physical_runtime::recovery_residency:
     PhysicalRecoveryRejoinResidentDenial, StoreRejoinResidentLedger,
 };
 
+#[path = "resident/decode_storage.rs"]
+pub(super) mod decode_storage;
+
 pub(super) fn discovery_allocation_denial(
     failure: worth_store_physical_backend::RecoveryDiscoveryAllocationFailure<
         PhysicalRecoveryRejoinResidentDenial,

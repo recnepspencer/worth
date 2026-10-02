@@ -5,8 +5,8 @@ use std::{fs, path::Path};
 
 use worth_store_physical_format::{
     durable_artifact_checksum, BlobRecordKind, CurrentPhysicalRecordPlacement,
-    DurablePhysicalRootManifest, DurableRootSelector, PhysicalRootRoutingBlock, RecordArtifactFile,
-    SelectedRecordContentClass,
+    DurablePhysicalRootManifest, DurableRootSelector, ExtentArenaRange, PhysicalRootRoutingBlock,
+    RecordArtifactFile, SelectedRecordContentClass,
 };
 
 pub(super) struct Snapshot {
@@ -61,6 +61,19 @@ pub(super) fn read(root: &Path) -> Snapshot {
         generation: manifest.generation(),
         routes,
     }
+}
+
+pub(super) fn selected_session_declared_extent(root: &Path) -> ExtentArenaRange {
+    let snapshot = read(root);
+    let selected = snapshot.routes.into_iter().find(|route| {
+        route.content_class() == SelectedRecordContentClass::Blob(BlobRecordKind::SessionDeclared)
+    });
+    let CurrentPhysicalRecordPlacement::Extent(extent) =
+        selected.expect("real selected SessionDeclared control")
+    else {
+        panic!("selected SessionDeclared must have an actual extent placement")
+    };
+    extent.arena_range()
 }
 
 pub(super) fn assert_distinct_ingest_step(before: &Snapshot, after: &Snapshot) {

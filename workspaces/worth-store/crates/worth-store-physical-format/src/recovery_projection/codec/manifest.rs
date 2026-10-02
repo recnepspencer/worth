@@ -10,9 +10,10 @@ pub(super) fn write_manifest(target: &mut Vec<u8>, manifest: &PersistedPhysicalR
     field(target, manifest.bytes());
 }
 
-pub(super) fn read_manifest(
+pub(super) fn read_manifest<S: PhysicalRecoveryDecodeStorage>(
     bytes: &[u8],
-) -> Result<PersistedPhysicalRecoveryManifest, PhysicalRecoveryProjectionDenial> {
+    storage: &mut S,
+) -> Result<PersistedPhysicalRecoveryManifest, PhysicalRecoveryDecodeFailure<S::Denial>> {
     let mut cursor = Cursor::new(bytes);
     let artifact = RecordArtifactFile::ExtentArena {
         arena: cursor.u64()?,
@@ -21,6 +22,5 @@ pub(super) fn read_manifest(
         .ok_or(PhysicalRecoveryProjectionDenial::InvalidManifest)?;
     let payload = cursor.field()?;
     cursor.end()?;
-    PersistedPhysicalRecoveryManifest::new(coordinate, payload)
-        .ok_or(PhysicalRecoveryProjectionDenial::InvalidManifest)
+    PersistedPhysicalRecoveryManifest::new_with_storage(coordinate, payload, storage)
 }

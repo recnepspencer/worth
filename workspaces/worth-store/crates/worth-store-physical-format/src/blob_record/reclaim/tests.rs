@@ -1,7 +1,7 @@
 use sha2::{Digest, Sha256};
 
 use super::*;
-use crate::{BlobRecordDenial, PersistedRecordIdentity, BLOB_RECORD_HEADER_BYTES};
+use crate::{BlobRecordDenial, BlobRecordKind, PersistedRecordIdentity, BLOB_RECORD_HEADER_BYTES};
 
 fn record(ordinal: u64) -> PersistedRecordIdentity {
     PersistedRecordIdentity::new([1; 16], ordinal).expect("valid record")
@@ -146,4 +146,82 @@ fn malformed_or_unbounded_id_inventory_is_denied_before_publication() {
         ),
         Err(BlobRecordDenial::InvalidReclaimDescriptor),
     );
+}
+
+#[test]
+fn borrowed_failed_ingest_manifests_match_owned_current_wire_facts() {
+    let dropped = vec![record(3), record(4)];
+    let v2 = DropSetManifestV2::new([5; 16], [6; 16], basis(), dropped, 7).unwrap();
+    let v2_bytes = v2.encode();
+    let borrowed_v2 = DropSetManifestV2View::decode(&v2_bytes).unwrap();
+    assert_eq!(borrowed_v2.store(), v2.store());
+    assert_eq!(borrowed_v2.reclaim_attempt(), v2.reclaim_attempt());
+    assert_eq!(borrowed_v2.source_basis(), v2.source_basis());
+    assert_eq!(borrowed_v2.source_basis_digest(), v2.source_basis_digest());
+    assert_eq!(borrowed_v2.count(), v2.count());
+    assert_eq!(borrowed_v2.dropped_digest(), v2.drop_set().dropped_digest());
+    assert_eq!(borrowed_v2.never_reserved_slot_generation(), 7);
+    assert!(borrowed_v2.contains_record(record(4)));
+    assert!(!borrowed_v2.contains_record(record(5)));
+    assert_eq!(
+        borrowed_v2.canonical_frame_sha256(),
+        <[u8; 32]>::from(Sha256::digest(&v2_bytes))
+    );
+    let retired = v2.drop_set().encode();
+    assert_eq!(
+        DropSetManifestV2View::decode(&retired).unwrap_err(),
+        BlobRecordDenial::UnknownKind
+    );
+    assert_eq!(DropSetManifestV2::decode(&v2_bytes), Ok(v2));
+}
+
+#[test]
+fn borrowed_failed_ingest_manifests_deny_malformed_current_grammar() {
+    let manifest =
+        DropSetManifestV2::new([5; 16], [6; 16], basis(), vec![record(3), record(4)], 7).unwrap();
+    let payload = manifest.encode()[BLOB_RECORD_HEADER_BYTES..].to_vec();
+    let mut malformed = Vec::new();
+    let mut zero_count = payload.clone();
+    zero_count[160..162].copy_from_slice(&0_u16.to_le_bytes());
+    malformed.push(zero_count);
+    let mut wrong_count = payload.clone();
+    wrong_count[160..162].copy_from_slice(&3_u16.to_le_bytes());
+    malformed.push(wrong_count);
+    let mut unordered = payload.clone();
+    unordered[194..218].copy_from_slice(&payload[218..242]);
+    unordered[218..242].copy_from_slice(&payload[194..218]);
+    malformed.push(unordered);
+    let mut wrong_digest = payload.clone();
+    wrong_digest[162] ^= 1;
+    malformed.push(wrong_digest);
+    let mut excluded_source = payload.clone();
+    excluded_source[48..72].copy_from_slice(&payload[194..218]);
+    malformed.push(excluded_source);
+    let mut forged_source = payload.clone();
+    forged_source[32..48].fill(0);
+    malformed.push(forged_source);
+    for payload in malformed {
+        let bytes = super::super::envelope::encode(BlobRecordKind::DropSetManifestV2, &payload)
+            .expect("bounded malformed frame");
+        let borrowed = DropSetManifestV2View::decode(&bytes).unwrap_err();
+        let owned = DropSetManifestV2::decode(&bytes).unwrap_err();
+        assert_eq!(borrowed, owned);
+    }
+
+    let v2 = DropSetManifestV2::new([5; 16], [6; 16], basis(), vec![record(3)], 7).unwrap();
+    let payload = v2.encode()[BLOB_RECORD_HEADER_BYTES..].to_vec();
+    for trailer in [0_u64.to_le_bytes().to_vec(), 7_u64.to_le_bytes().to_vec()] {
+        let mut malformed = payload.clone();
+        let trailer_start = malformed.len() - 9;
+        malformed[trailer_start..trailer_start + 8].copy_from_slice(&trailer);
+        if trailer[0] == 7 {
+            *malformed.last_mut().unwrap() = 2;
+        }
+        let bytes = super::super::envelope::encode(BlobRecordKind::DropSetManifestV2, &malformed)
+            .expect("bounded malformed frame");
+        assert_eq!(
+            DropSetManifestV2View::decode(&bytes).unwrap_err(),
+            DropSetManifestV2::decode(&bytes).unwrap_err()
+        );
+    }
 }

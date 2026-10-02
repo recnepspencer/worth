@@ -200,6 +200,7 @@ fn canonical_redo_decodes_v15_only_with_its_actual_record_format() {
     let (_, decoded) = decode_canonical_redo_v3(&member, 12, 13, 1, None, limits, format)
         .expect("canonical WAL must carry the exact V15 head effect");
     assert_eq!(decoded, projection);
+    assert_funded_canonical_decode(&member, limits, format, &projection);
     let wrong_format = PhysicalRecordFormatDeclaration::builder()
         .page_size(PhysicalPageSizeClass::KiB32)
         .admit()
@@ -208,6 +209,72 @@ fn canonical_redo_decodes_v15_only_with_its_actual_record_format() {
         decode_canonical_redo_v3(&member, 12, 13, 1, None, limits, wrong_format),
         Err(CanonicalRedoWireDenial::InvalidRecoveryProjection),
     );
+}
+
+fn assert_funded_canonical_decode(
+    member: &[u8],
+    limits: PhysicalRecoveryProjectionDecodeLimits,
+    format: PhysicalRecordFormatDeclaration,
+    expected: &PersistedPhysicalRecoveryProjection,
+) {
+    struct Admission {
+        requests: Vec<u64>,
+        deny_at: Option<usize>,
+    }
+    impl PhysicalRecoveryDecodeStorage for Admission {
+        type Denial = usize;
+        fn admit_allocation(&mut self, bytes: u64) -> Result<(), usize> {
+            let request = self.requests.len();
+            self.requests.push(bytes);
+            if self.deny_at == Some(request) {
+                Err(request)
+            } else {
+                Ok(())
+            }
+        }
+    }
+    let mut admitted = Admission {
+        requests: Vec::new(),
+        deny_at: None,
+    };
+    let (_, decoded) = crate::decode_canonical_redo_v3_with_storage(
+        member,
+        12,
+        13,
+        1,
+        limits,
+        format,
+        &mut admitted,
+    )
+    .expect("funded decoder preserves exact canonical semantics");
+    assert_eq!(&decoded, expected);
+    assert!(admitted.requests.iter().sum::<u64>() >= decoded.owned_heap_bytes().unwrap());
+    assert!(
+        admitted
+            .requests
+            .iter()
+            .any(|bytes| *bytes > u64::from(format.page_size().bytes())),
+        "exact head recomputation must request its additional structural scratch"
+    );
+    for deny_at in 0..admitted.requests.len() {
+        let mut denied = Admission {
+            requests: Vec::new(),
+            deny_at: Some(deny_at),
+        };
+        let result = crate::decode_canonical_redo_v3_with_storage(
+            member,
+            12,
+            13,
+            1,
+            limits,
+            format,
+            &mut denied,
+        );
+        assert!(
+            matches!(result, Err(PhysicalRecoveryDecodeFailure::Allocation(request)) if request == deny_at)
+        );
+        assert_eq!(denied.requests, admitted.requests[..=deny_at]);
+    }
 }
 
 #[test]
@@ -278,7 +345,14 @@ fn v15_rejects_unrelated_key_and_missing_or_extra_node() {
         changed[write_count_offset..write_count_offset + 8].copy_from_slice(&count.to_le_bytes());
         let mut remaining = 2;
         assert_eq!(
-            decode_head_effect(&changed, 11, &mut remaining, format),
+            decode_head_effect(
+                &changed,
+                11,
+                &mut remaining,
+                format,
+                &mut decode_storage::UnrestrictedDecodeStorage
+            )
+            .map_err(decode_storage::projection_denial),
             Err(PhysicalRecoveryProjectionDenial::Malformed),
         );
     }

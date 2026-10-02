@@ -81,15 +81,16 @@ pub(super) fn write_operation(
     }
 }
 
-pub(super) fn read_operation(
+pub(super) fn read_operation<S: PhysicalRecoveryDecodeStorage>(
     cursor: &mut Cursor<'_>,
     source_root_generation: u64,
     remaining_entries: &mut u64,
     format: Option<crate::PhysicalRecordFormatDeclaration>,
-) -> Result<PersistedPhysicalRecoveryOperation, PhysicalRecoveryProjectionDenial> {
+    storage: &mut S,
+) -> Result<PersistedPhysicalRecoveryOperation, PhysicalRecoveryDecodeFailure<S::Denial>> {
     let bytes = cursor.field()?;
     if bytes.len() > MAXIMUM_OPERATION_BINDING_BYTES {
-        return Err(PhysicalRecoveryProjectionDenial::EntryLimit);
+        return Err(PhysicalRecoveryProjectionDenial::EntryLimit.into());
     }
     let mut binding = Cursor::new(bytes);
     let operation = match binding.byte()? {
@@ -109,8 +110,9 @@ pub(super) fn read_operation(
                             source_root_generation,
                             remaining_entries,
                             format.ok_or(PhysicalRecoveryProjectionDenial::Malformed)?,
+                            storage,
                         )?),
-                        _ => return Err(PhysicalRecoveryProjectionDenial::Malformed),
+                        _ => return Err(PhysicalRecoveryProjectionDenial::Malformed.into()),
                     };
                     PersistedPhysicalRecoveryOperation::RecordsDropped {
                         binding: value,
@@ -137,7 +139,7 @@ pub(super) fn read_operation(
                     publication,
                     Some(read_record(&mut binding)?),
                 ),
-                _ => return Err(PhysicalRecoveryProjectionDenial::Malformed),
+                _ => return Err(PhysicalRecoveryProjectionDenial::Malformed.into()),
             };
             let retirement = match cursor.byte()? {
                 0 => None,
@@ -147,7 +149,8 @@ pub(super) fn read_operation(
                         cursor,
                         *remaining_entries,
                         remaining_entries,
-                        |bytes| {
+                        storage,
+                        |bytes, _| {
                             let mut item = Cursor::new(bytes);
                             let record = read_record(&mut item)?;
                             item.end()?;
@@ -159,14 +162,14 @@ pub(super) fn read_operation(
                             .ok_or(PhysicalRecoveryProjectionDenial::Malformed)?,
                     )
                 }
-                _ => return Err(PhysicalRecoveryProjectionDenial::Malformed),
+                _ => return Err(PhysicalRecoveryProjectionDenial::Malformed.into()),
             };
             PersistedPhysicalRecoveryOperation::DerivedDirectory {
                 binding: directory,
                 retirement,
             }
         }
-        _ => return Err(PhysicalRecoveryProjectionDenial::Malformed),
+        _ => return Err(PhysicalRecoveryProjectionDenial::Malformed.into()),
     };
     binding.end()?;
     Ok(operation)

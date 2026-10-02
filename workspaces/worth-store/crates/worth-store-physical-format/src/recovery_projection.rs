@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use crate::{
     CurrentPhysicalRecordPlacement, DurableExtentRecordPlacement, DurableInlineRecordPlacement,
     ExtentArenaId, ExtentArenaRange, ExtentChunkCoordinate, PersistedPhysicalDataFrameSubject,
@@ -9,12 +7,14 @@ use crate::{
 };
 
 mod codec;
+pub(crate) mod decode_storage;
 mod frame;
 mod head_effect;
 mod operation;
 mod retained_storage;
 mod root_state;
 mod source_copy;
+pub use decode_storage::{PhysicalRecoveryDecodeFailure, PhysicalRecoveryDecodeStorage};
 pub use head_effect::PersistedReleaseCustodyHeadEffectV1;
 pub use operation::{
     PersistedBlobSemanticRecordBinding, PersistedDerivedDirectoryRecordBinding,
@@ -141,11 +141,39 @@ impl PersistedPhysicalRecoveryProjection {
         manifests: Vec<PersistedPhysicalRecoveryManifest>,
         operation: PersistedPhysicalRecoveryOperation,
     ) -> Option<Self> {
+        Self::new_with_operation_in_storage(
+            source_root_generation,
+            root_state,
+            record_identities,
+            frames,
+            placements,
+            segment_updates,
+            manifests,
+            operation,
+            &mut decode_storage::UnrestrictedDecodeStorage,
+        )
+        .ok()
+    }
+
+    fn new_with_operation_in_storage<S: PhysicalRecoveryDecodeStorage>(
+        source_root_generation: u64,
+        root_state: PersistedPhysicalRecoveryRootState,
+        record_identities: Vec<PersistedRecordIdentity>,
+        frames: Vec<PersistedPhysicalRecoveryFrame>,
+        placements: Vec<CurrentPhysicalRecordPlacement>,
+        segment_updates: Vec<RecordSegmentPageManifestEntry>,
+        manifests: Vec<PersistedPhysicalRecoveryManifest>,
+        operation: PersistedPhysicalRecoveryOperation,
+        storage: &mut S,
+    ) -> Result<Self, PhysicalRecoveryDecodeFailure<S::Denial>> {
         (source_root_generation != 0
             && !record_identities.is_empty()
             && !frames.is_empty()
-            && unique(record_identities.iter().copied())
-            && unique(frames.iter().map(|frame| (frame.subject, frame.coordinate)))
+            && unique_in_storage(record_identities.iter().copied(), storage)?
+            && unique_in_storage(
+                frames.iter().map(|frame| (frame.subject, frame.coordinate)),
+                storage,
+            )?
             && strictly_ordered(placements.iter().map(|placement| placement.record()))
             && strictly_ordered(
                 segment_updates
@@ -164,6 +192,7 @@ impl PersistedPhysicalRecoveryProjection {
             segment_updates: segment_updates.into_boxed_slice(),
             manifests: manifests.into_boxed_slice(),
         })
+        .ok_or_else(|| PhysicalRecoveryProjectionDenial::Malformed.into())
     }
 
     pub const fn source_root_generation(&self) -> u64 {
@@ -198,14 +227,27 @@ impl PersistedPhysicalRecoveryProjection {
     }
 }
 
-fn unique<T: Ord>(values: impl Iterator<Item = T>) -> bool {
-    let mut seen = BTreeSet::new();
-    values.into_iter().all(|value| seen.insert(value))
+fn unique_in_storage<T: Ord, S: PhysicalRecoveryDecodeStorage>(
+    values: impl ExactSizeIterator<Item = T>,
+    storage: &mut S,
+) -> Result<bool, PhysicalRecoveryDecodeFailure<S::Denial>> {
+    let mut seen = decode_storage::reserve_vec(values.len(), storage)?;
+    seen.extend(values);
+    seen.sort_unstable();
+    Ok(seen.windows(2).all(|pair| pair[0] != pair[1]))
 }
 
-fn strictly_ordered<T: Ord>(values: impl Iterator<Item = T>) -> bool {
-    let values = values.collect::<Vec<_>>();
-    values.windows(2).all(|pair| pair[0] < pair[1])
+fn strictly_ordered<T: Ord>(mut values: impl Iterator<Item = T>) -> bool {
+    let Some(mut prior) = values.next() else {
+        return true;
+    };
+    for value in values {
+        if prior >= value {
+            return false;
+        }
+        prior = value;
+    }
+    true
 }
 
 #[cfg(test)]

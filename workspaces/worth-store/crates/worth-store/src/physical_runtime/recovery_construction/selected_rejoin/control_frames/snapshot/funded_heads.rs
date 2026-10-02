@@ -11,6 +11,10 @@ use crate::physical_runtime::{
 pub(super) enum SelectedHeadMediaWitness {
     Absent,
     Selected(FundedHeadSlices),
+    CompletedHistory {
+        checkpoint: FundedHeadSlices,
+        effective: FundedHeadSlices,
+    },
     PendingReplay {
         checkpoint: FundedHeadSlices,
         pre_pending: FundedHeadSlices,
@@ -23,6 +27,10 @@ impl SelectedHeadMediaWitness {
         let components = match self {
             Self::Absent => [None, None, None],
             Self::Selected(heads) => [Some(heads), None, None],
+            Self::CompletedHistory {
+                checkpoint,
+                effective,
+            } => [Some(checkpoint), Some(effective), None],
             Self::PendingReplay {
                 checkpoint,
                 pre_pending,

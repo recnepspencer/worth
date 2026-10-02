@@ -6,9 +6,9 @@ use sha2::{Digest, Sha256};
 use worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery;
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest,
-    ManifestBlockReference, PhysicalRecordFormatDeclaration, PhysicalTreeIdentity,
-    RecordArtifactFile, RootRoutingBlockDecodeLimits, RootRoutingBlockPreflight,
-    RootRoutingBlockScopeIdentity, RootRoutingCoordinateKey,
+    ManifestBlockReference, PhysicalInventoryTranscriptBuilderV1, PhysicalRecordFormatDeclaration,
+    PhysicalTreeIdentity, RecordArtifactFile, RootRoutingBlockDecodeLimits,
+    RootRoutingBlockPreflight, RootRoutingBlockScopeIdentity, RootRoutingCoordinateKey,
 };
 use worth_store_physical_integrity::{
     validate_root_routing_block_borrowed, BorrowedRootRoutingBlockIntegrityValidation,
@@ -22,11 +22,12 @@ use super::{
 use crate::physical_runtime::recovery_construction::selected_rejoin::control_frames::{
     SelectedArtifactSlice, SelectedControlMediaFingerprint,
 };
-use crate::physical_runtime::recovery_construction::selected_rejoin::resident::{
-    discovery_allocation_denial, PhysicalRecoveryRejoinResidentDenial, StoreRejoinResidentLedger,
-};
+use crate::physical_runtime::recovery_construction::selected_rejoin::resident::StoreRejoinResidentLedger;
 use crate::physical_runtime::recovery_construction::selected_rejoin::SelectedMediaRejoinDenial as Denial;
 use crate::physical_runtime::recovery_construction::selected_rejoin::MAX_DISCOVERY_BYTES;
+#[path = "resident/storage.rs"]
+mod storage;
+pub(in crate::physical_runtime::recovery_construction::selected_rejoin) use storage::RouteWalkStorage;
 
 #[derive(Debug, PartialEq, Eq)]
 pub(in crate::physical_runtime::recovery_construction::selected_rejoin) struct ResidentRouteProvenance
@@ -72,6 +73,20 @@ impl ResidentRouteProvenance {
         resident.release(route_bytes);
         Ok(SelectedControlMediaFingerprint::observed(slices))
     }
+
+    pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn into_media_fingerprint_with_storage<
+        S: RouteWalkStorage,
+    >(
+        self,
+        storage: &mut S,
+    ) -> Result<SelectedControlMediaFingerprint, Denial> {
+        let Self {
+            selected_routes,
+            slices,
+        } = self;
+        storage.discard_vec(selected_routes)?;
+        Ok(SelectedControlMediaFingerprint::observed(slices))
+    }
 }
 
 pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn verify_with_resident(
@@ -81,50 +96,88 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn verif
     format: PhysicalRecordFormatDeclaration,
     resident: &mut StoreRejoinResidentLedger,
 ) -> Result<ResidentRouteProvenance, Denial> {
+    verify_inner(discovery, root, free, format, resident, None, None)
+}
+
+pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn verify_with_storage<
+    S: RouteWalkStorage,
+>(
+    discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    root: &DurablePhysicalRootManifest,
+    free: &DurableFreeSpaceManifestHeader,
+    format: PhysicalRecordFormatDeclaration,
+    storage: &mut S,
+) -> Result<ResidentRouteProvenance, Denial> {
+    verify_inner(discovery, root, free, format, storage, None, None)
+}
+
+pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn verify_snapshot_with_storage<
+    S: RouteWalkStorage,
+>(
+    discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    root: &DurablePhysicalRootManifest,
+    free: &DurableFreeSpaceManifestHeader,
+    format: PhysicalRecordFormatDeclaration,
+    transcript: &mut PhysicalInventoryTranscriptBuilderV1,
+    storage: &mut S,
+) -> Result<(ResidentRouteProvenance, Vec<CurrentPhysicalRecordPlacement>), Denial> {
+    let count = usize::try_from(root.record_count()).map_err(|_| Denial::BoundExceeded)?;
+    let mut snapshot = storage.reserve_vec(count)?;
+    let proof = verify_inner(
+        discovery,
+        root,
+        free,
+        format,
+        storage,
+        Some(transcript),
+        Some(&mut snapshot),
+    )?;
+    Ok((proof, snapshot))
+}
+
+fn verify_inner<S: RouteWalkStorage>(
+    discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    root: &DurablePhysicalRootManifest,
+    free: &DurableFreeSpaceManifestHeader,
+    format: PhysicalRecordFormatDeclaration,
+    storage: &mut S,
+    mut transcript: Option<&mut PhysicalInventoryTranscriptBuilderV1>,
+    mut snapshot: Option<&mut Vec<CurrentPhysicalRecordPlacement>>,
+) -> Result<ResidentRouteProvenance, Denial> {
     const MAX_ENTRIES: u64 =
         MAX_DISCOVERY_BYTES / (4 * std::mem::size_of::<CurrentPhysicalRecordPlacement>() as u64);
     if root.record_count() > MAX_ENTRIES {
         return Err(Denial::BoundExceeded);
     }
     let tree = PhysicalTreeIdentity::new(root.tree_identity()).ok_or(Denial::RootBinding)?;
-    let mut stack = resident
-        .reserve_vec::<ManifestBlockReference>(usize::from(root.routing_root().is_some()))
-        .map_err(Denial::Resident)?;
+    let mut stack = storage
+        .reserve_vec::<ManifestBlockReference>(usize::from(root.routing_root().is_some()))?;
     if let Some(reference) = root.routing_root() {
         stack.push(reference);
     }
     let mut seen = VisitedNodes::default();
-    let mut coordinates = resident
-        .reserve_vec::<RootRoutingCoordinateKey>(if root.routing_root().is_some() {
+    let mut coordinates =
+        storage.reserve_vec::<RootRoutingCoordinateKey>(if root.routing_root().is_some() {
             usize::from(root.node_capacity())
         } else {
             0
-        })
-        .map_err(Denial::Resident)?;
+        })?;
     let mut selected_routes = Vec::new();
     let mut slices = Vec::new();
     let mut count = 0_u64;
     let mut last_record = None;
     while let Some(reference) = stack.pop() {
-        if !seen.insert((reference.generation(), reference.block()), resident)? {
+        if !seen.insert((reference.generation(), reference.block()), storage)? {
             return Err(Denial::RoutingFrame);
         }
         // This output is retained; admit its next slot before any page read.
-        resident
-            .grow_vec_geometrically(&mut slices, 1)
-            .map_err(Denial::Resident)?;
+        storage.grow_vec_geometrically(&mut slices, 1)?;
         let artifact = RecordArtifactFile::RootRoutingBlock {
             generation: reference.generation(),
             block: reference.block(),
         };
         let page_bytes = u64::from(format.page_size().bytes());
-        resident.transient(page_bytes).map_err(Denial::Resident)?;
-        let frame = discovery
-            .read_record_artifact_with_allocator(artifact, page_bytes, |length| {
-                resident.reserve_bytes(length)
-            })
-            .map_err(discovery_allocation_denial)?;
-        let frame_charge = frame.owned_heap_bytes().ok_or_else(|| overflow(resident))?;
+        let frame = storage.read_page(discovery, artifact, page_bytes)?;
         let bytes = frame.bytes().ok_or(Denial::MissingRoute)?;
         // Framing/count preflight grants no route authority; the borrowed
         // Integrity entry below still checks every semantic and root binding.
@@ -138,11 +191,7 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn verif
             .0
             .coordinate_scratch_slots();
         if coordinates.capacity() < scratch_slots {
-            return Err(Denial::Resident(
-                PhysicalRecoveryRejoinResidentDenial::SizeOverflow {
-                    admitted: resident.used().saturating_add(resident.remaining()),
-                },
-            ));
+            return Err(storage.overflow());
         }
         let range =
             PhysicalByteRange::new(0, bytes.len() as u64).map_err(|_| Denial::RoutingFrame)?;
@@ -157,11 +206,7 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn verif
             scope,
             &mut coordinates,
         )
-        .map_err(|_| {
-            Denial::Resident(PhysicalRecoveryRejoinResidentDenial::SizeOverflow {
-                admitted: resident.used().saturating_add(resident.remaining()),
-            })
-        })?;
+        .map_err(|_| storage.overflow())?;
         let BorrowedRootRoutingBlockIntegrityValidation::Intact(block) = validation else {
             return Err(Denial::RoutingFrame);
         };
@@ -179,10 +224,16 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn verif
                 }
                 last_record = Some(placement.record());
                 validate_route(placement, free)?;
+                if let Some(transcript) = transcript.as_deref_mut() {
+                    transcript
+                        .include_route(placement)
+                        .map_err(|_| Denial::RoutingFrame)?;
+                }
+                if let Some(snapshot) = snapshot.as_deref_mut() {
+                    snapshot.push(placement);
+                }
                 if selected_control(placement, false) {
-                    resident
-                        .grow_vec_geometrically(&mut selected_routes, 1)
-                        .map_err(Denial::Resident)?;
+                    storage.grow_vec_geometrically(&mut selected_routes, 1)?;
                     selected_routes.push(placement);
                 }
                 count += 1;
@@ -193,29 +244,21 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn verif
                 return Err(Denial::RoutingFrame);
             }
             validate_stack_growth(stack.len(), children.len())?;
-            resident
-                .grow_vec(&mut stack, children.len())
-                .map_err(Denial::Resident)?;
+            storage.grow_vec(&mut stack, children.len())?;
             for child in children.rev() {
                 validate_child(child, reference)?;
                 stack.push(child);
             }
         }
         drop(block);
-        drop(frame);
-        resident.release(frame_charge);
+        storage.discard_frame(frame)?;
     }
     if count != root.record_count() {
         return Err(Denial::RoutingFrame);
     }
-    let stack_charge = resident.vector_bytes(&stack).map_err(Denial::Resident)?;
-    let coordinate_charge = resident
-        .vector_bytes(&coordinates)
-        .map_err(Denial::Resident)?;
-    drop((stack, coordinates));
-    resident.release(stack_charge);
-    resident.release(coordinate_charge);
-    seen.discard(resident)?;
+    storage.discard_vec(stack)?;
+    storage.discard_vec(coordinates)?;
+    seen.discard(storage)?;
     Ok(ResidentRouteProvenance {
         selected_routes,
         slices,
@@ -223,16 +266,16 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn verif
 }
 
 #[derive(Default)]
-struct VisitedNodes {
+pub(in crate::physical_runtime::recovery_construction::selected_rejoin) struct VisitedNodes {
     slots: Vec<Option<(u64, u64)>>,
     len: usize,
 }
 
 impl VisitedNodes {
-    fn insert(
+    pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn insert(
         &mut self,
         key: (u64, u64),
-        resident: &mut StoreRejoinResidentLedger,
+        storage: &mut impl RouteWalkStorage,
     ) -> Result<bool, Denial> {
         if self.len >= MAX_BLOCKS {
             return Err(Denial::RoutingFrame);
@@ -247,21 +290,15 @@ impl VisitedNodes {
                 .max(8)
                 .checked_mul(2)
                 .ok_or(Denial::BoundExceeded)?;
-            let mut replacement = resident
-                .reserve_vec::<Option<(u64, u64)>>(capacity)
-                .map_err(Denial::Resident)?;
+            let mut replacement = storage.reserve_vec::<Option<(u64, u64)>>(capacity)?;
             replacement.resize(capacity, None);
             for old in self.slots.iter().flatten().copied() {
                 if probe_insert(&mut replacement, old) != Some(true) {
                     return Err(Denial::BoundExceeded);
                 }
             }
-            let old_charge = resident
-                .vector_bytes(&self.slots)
-                .map_err(Denial::Resident)?;
             let old = std::mem::replace(&mut self.slots, replacement);
-            drop(old);
-            resident.release(old_charge);
+            storage.discard_vec(old)?;
         }
         let inserted = probe_insert(&mut self.slots, key).ok_or(Denial::BoundExceeded)?;
         if inserted {
@@ -269,13 +306,11 @@ impl VisitedNodes {
         }
         Ok(inserted)
     }
-    fn discard(self, resident: &mut StoreRejoinResidentLedger) -> Result<(), Denial> {
-        let charge = resident
-            .vector_bytes(&self.slots)
-            .map_err(Denial::Resident)?;
-        drop(self);
-        resident.release(charge);
-        Ok(())
+    pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn discard(
+        self,
+        storage: &mut impl RouteWalkStorage,
+    ) -> Result<(), Denial> {
+        storage.discard_vec(self.slots)
     }
 }
 
@@ -314,9 +349,4 @@ fn probe_find(slots: &[Option<(u64, u64)>], key: (u64, u64)) -> Option<bool> {
         }
     }
     None
-}
-fn overflow(resident: &StoreRejoinResidentLedger) -> Denial {
-    Denial::Resident(PhysicalRecoveryRejoinResidentDenial::SizeOverflow {
-        admitted: resident.used().saturating_add(resident.remaining()),
-    })
 }

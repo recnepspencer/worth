@@ -5,13 +5,18 @@ use sha2::{Digest, Sha256};
 use worth_store_physical_backend::{ArtifactTreeDirectory, QualifiedFilesystemMedia};
 use worth_store_physical_format::RecordArtifactFile;
 
+#[cfg(test)]
 use super::super::resident::{PhysicalRecoveryRejoinResidentDenial, StoreRejoinResidentLedger};
+
 use super::super::{release_heads::FundedHeadSlices, SelectedMediaRejoinDenial};
 
 mod funded_heads;
 use funded_heads::SelectedHeadMediaWitness;
 mod funded_effects;
 pub(in crate::physical_runtime::recovery_construction) use funded_effects::FundedHeadEffectSlices;
+mod completed_raw;
+pub(in crate::physical_runtime::recovery_construction) use completed_raw::FundedCompletedHistoricalRawSlices;
+mod merge;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(in crate::physical_runtime) struct SelectedArtifactSlice {
@@ -62,6 +67,7 @@ pub(in crate::physical_runtime) struct SelectedControlMediaFingerprint {
     slices: Vec<SelectedArtifactSlice>,
     heads: SelectedHeadMediaWitness,
     effects: Option<FundedHeadEffectSlices>,
+    completed_raw: Option<FundedCompletedHistoricalRawSlices>,
 }
 
 impl SelectedControlMediaFingerprint {
@@ -70,6 +76,7 @@ impl SelectedControlMediaFingerprint {
             slices,
             heads: SelectedHeadMediaWitness::Absent,
             effects: None,
+            completed_raw: None,
         }
     }
 
@@ -78,6 +85,7 @@ impl SelectedControlMediaFingerprint {
             slices: Vec::new(),
             heads: SelectedHeadMediaWitness::Selected(heads),
             effects: None,
+            completed_raw: None,
         }
     }
 
@@ -94,6 +102,22 @@ impl SelectedControlMediaFingerprint {
                 effective,
             },
             effects: None,
+            completed_raw: None,
+        }
+    }
+
+    pub(in crate::physical_runtime) fn completed_history_heads(
+        checkpoint: FundedHeadSlices,
+        effective: FundedHeadSlices,
+    ) -> Self {
+        Self {
+            slices: Vec::new(),
+            heads: SelectedHeadMediaWitness::CompletedHistory {
+                checkpoint,
+                effective,
+            },
+            effects: None,
+            completed_raw: None,
         }
     }
 
@@ -104,7 +128,32 @@ impl SelectedControlMediaFingerprint {
             slices: Vec::new(),
             heads: SelectedHeadMediaWitness::Absent,
             effects: Some(effects),
+            completed_raw: None,
         }
+    }
+
+    /// Freezes the completed history's raw slice vector only after its final
+    /// merge; later growth is rejected at `admit_merge`.
+    pub(in crate::physical_runtime::recovery_construction) fn attach_completed_history_backing(
+        &mut self,
+        backing: FundedCompletedHistoricalRawSlices,
+        window: &crate::physical_runtime::PhysicalRecoveryReadAllocation<'_>,
+    ) -> Result<(), SelectedMediaRejoinDenial> {
+        let actual = u64::try_from(self.slices.capacity())
+            .ok()
+            .and_then(|count| {
+                count.checked_mul(std::mem::size_of::<SelectedArtifactSlice>() as u64)
+            })
+            .ok_or(SelectedMediaRejoinDenial::BoundExceeded)?;
+        if self.completed_raw.is_some()
+            || !backing.matching_owner(window)
+            || backing.retained_bytes() != actual
+            || backing.charged_bytes() != actual
+        {
+            return Err(SelectedMediaRejoinDenial::RootBinding);
+        }
+        self.completed_raw = Some(backing);
+        Ok(())
     }
 
     /// Actual retained backing, distinct from the conservative rejoin bound.
@@ -119,7 +168,12 @@ impl SelectedControlMediaFingerprint {
     pub(in crate::physical_runtime) fn independently_funded_heap_bytes(&self) -> Option<u64> {
         self.heads
             .owned_heap_bytes()?
-            .checked_add(self.effect_heap_bytes()?)
+            .checked_add(self.effect_heap_bytes()?)?
+            .checked_add(
+                self.completed_raw
+                    .as_ref()
+                    .map_or(0, |raw| raw.retained_bytes()),
+            )
     }
 
     pub(in crate::physical_runtime) fn head_walk_heap_bytes(&self) -> Option<u64> {
@@ -140,6 +194,13 @@ impl SelectedControlMediaFingerprint {
         matches!(self.heads, SelectedHeadMediaWitness::PendingReplay { .. })
     }
 
+    pub(in crate::physical_runtime) fn has_completed_history_head_walks(&self) -> bool {
+        matches!(
+            self.heads,
+            SelectedHeadMediaWitness::CompletedHistory { .. }
+        )
+    }
+
     pub(in crate::physical_runtime) fn has_no_head_walk(&self) -> bool {
         matches!(self.heads, SelectedHeadMediaWitness::Absent)
     }
@@ -157,6 +218,17 @@ impl SelectedControlMediaFingerprint {
         })
     }
 
+    pub(in crate::physical_runtime) fn verify_funded_completed_raw_for_serving(
+        &self,
+        media: &QualifiedFilesystemMedia,
+        window: &mut crate::physical_runtime::PhysicalRecoveryReadAllocation<'_>,
+    ) -> Result<bool, crate::physical_runtime::record_serving::RecordBootstrapDenial> {
+        match &self.completed_raw {
+            Some(backing) => backing.verify_serving_media(&self.slices, media, window),
+            None => Ok(!self.has_completed_history_head_walks()),
+        }
+    }
+
     pub(in crate::physical_runtime) fn matches_serving_media(
         &self,
         media: &QualifiedFilesystemMedia,
@@ -164,43 +236,6 @@ impl SelectedControlMediaFingerprint {
         self.slices
             .iter()
             .all(|slice| slice.matches_serving_media(media))
-    }
-
-    pub(in crate::physical_runtime) fn extend(
-        &mut self,
-        other: Self,
-    ) -> Result<(), SelectedMediaRejoinDenial> {
-        self.admit_merge(&other)?;
-        self.merge_effects(other.effects)?;
-        self.slices.extend(other.slices);
-        self.heads.merge_admitted(other.heads);
-        Ok(())
-    }
-
-    /// Both fingerprints' backing is already retained in this same ledger.
-    /// Growth keeps the donor and previous destination charged through the
-    /// reallocation, then releases the donor only after its backing is dropped.
-    pub(in crate::physical_runtime) fn extend_with_resident(
-        &mut self,
-        mut other: Self,
-        resident: &mut StoreRejoinResidentLedger,
-    ) -> Result<(), SelectedMediaRejoinDenial> {
-        self.admit_merge(&other)?;
-        let donor_bytes = resident
-            .vector_bytes(&other.slices)
-            .map_err(SelectedMediaRejoinDenial::Resident)?;
-        resident
-            .grow_vec(&mut self.slices, other.slices.len())
-            .map_err(SelectedMediaRejoinDenial::Resident)?;
-        self.merge_effects(other.effects.take())?;
-        self.slices.append(&mut other.slices);
-        self.heads.merge_admitted(std::mem::replace(
-            &mut other.heads,
-            SelectedHeadMediaWitness::Absent,
-        ));
-        drop(other);
-        resident.release(donor_bytes);
-        Ok(())
     }
 
     pub(in crate::physical_runtime) fn retained_memory_bytes(&self) -> u64 {
@@ -217,81 +252,6 @@ impl SelectedControlMediaFingerprint {
                     .unwrap_or(u64::MAX)
                     .saturating_mul(4),
             )
-    }
-
-    pub(in crate::physical_runtime) fn try_extend_bounded(
-        &mut self,
-        other: Self,
-        maximum_retained_bytes: u64,
-    ) -> Result<(), SelectedMediaRejoinDenial> {
-        self.admit_merge(&other)?;
-        let head_bytes = match self.heads.owned_heap_bytes().and_then(|bytes| {
-            bytes
-                .checked_add(other.heads.owned_heap_bytes()?)?
-                .checked_mul(4)
-        }) {
-            Some(bytes) => bytes,
-            None => return Err(SelectedMediaRejoinDenial::BoundExceeded),
-        };
-        let funded_effect_bytes = match (&self.effects, &other.effects) {
-            (Some(destination), Some(donor)) => destination.merged_owned_heap_bytes(donor)?,
-            _ => self
-                .effect_heap_bytes()
-                .and_then(|bytes| bytes.checked_add(other.effect_heap_bytes()?))
-                .ok_or(SelectedMediaRejoinDenial::BoundExceeded)?,
-        }
-        .checked_mul(4)
-        .ok_or(SelectedMediaRejoinDenial::BoundExceeded)?;
-        let next_len = match self.slices.len().checked_add(other.slices.len()) {
-            Some(next) => next,
-            None => return Err(SelectedMediaRejoinDenial::BoundExceeded),
-        };
-        let needed = match (next_len as u64)
-            .checked_mul(4 * std::mem::size_of::<SelectedArtifactSlice>() as u64)
-            .and_then(|bytes| bytes.checked_add(head_bytes))
-            .and_then(|bytes| bytes.checked_add(funded_effect_bytes))
-        {
-            Some(bytes) if bytes <= maximum_retained_bytes => bytes,
-            _ => return Err(SelectedMediaRejoinDenial::BoundExceeded),
-        };
-        if self.slices.try_reserve_exact(other.slices.len()).is_err()
-            || self.retained_memory_bytes() > maximum_retained_bytes
-            || needed > maximum_retained_bytes
-        {
-            return Err(SelectedMediaRejoinDenial::BoundExceeded);
-        }
-        self.merge_effects(other.effects)?;
-        self.slices.extend(other.slices);
-        self.heads.merge_admitted(other.heads);
-        (self.retained_memory_bytes() <= maximum_retained_bytes)
-            .then_some(())
-            .ok_or(SelectedMediaRejoinDenial::BoundExceeded)
-    }
-
-    fn admit_merge(&self, other: &Self) -> Result<(), SelectedMediaRejoinDenial> {
-        if !self.heads.can_merge(&other.heads) {
-            return Err(SelectedMediaRejoinDenial::CertificateRoster);
-        }
-        if let (Some(destination), Some(donor)) = (&self.effects, &other.effects) {
-            if !destination.can_merge(donor) {
-                return Err(SelectedMediaRejoinDenial::RootBinding);
-            }
-        }
-        Ok(())
-    }
-
-    fn merge_effects(
-        &mut self,
-        other: Option<FundedHeadEffectSlices>,
-    ) -> Result<(), SelectedMediaRejoinDenial> {
-        match (&mut self.effects, other) {
-            (_, None) => Ok(()),
-            (None, Some(effects)) => {
-                self.effects = Some(effects);
-                Ok(())
-            }
-            (Some(destination), Some(donor)) => destination.merge(donor),
-        }
     }
 }
 

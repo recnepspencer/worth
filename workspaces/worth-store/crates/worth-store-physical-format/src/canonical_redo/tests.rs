@@ -1,6 +1,43 @@
 use super::*;
 
 #[test]
+fn truncated_in_policy_count_rejects_before_any_backing_request() {
+    struct Deny {
+        requested: Option<u64>,
+    }
+    impl PhysicalRecoveryDecodeStorage for Deny {
+        type Denial = &'static str;
+        fn admit_allocation(&mut self, bytes: u64) -> Result<(), Self::Denial> {
+            self.requested = Some(bytes);
+            Err("recovery pool exhausted")
+        }
+    }
+    let mut bytes = Vec::new();
+    field(&mut bytes, CANONICAL_REDO_V3_DOMAIN);
+    bytes.extend_from_slice(&4_u64.to_le_bytes());
+    let mut storage = Deny { requested: None };
+    let result =
+        decode_canonical_redo_v3_with_storage(&bytes, 1, 5, 4, limits(4), format(), &mut storage);
+    assert!(matches!(
+        result,
+        Err(PhysicalRecoveryDecodeFailure::Canonical(
+            CanonicalRedoWireDenial::MalformedMember
+        ))
+    ));
+    assert_eq!(storage.requested, None);
+    let target_count_only = 4_u64.to_le_bytes();
+    let mut cursor = Cursor::new(&target_count_only);
+    let targets = decode_targets(&mut cursor, &mut 0, 4, &mut None, &mut storage);
+    assert!(matches!(
+        targets,
+        Err(PhysicalRecoveryDecodeFailure::Canonical(
+            CanonicalRedoWireDenial::MalformedMember
+        ))
+    ));
+    assert_eq!(storage.requested, None);
+}
+
+#[test]
 fn count_limit_precedes_record_allocation() {
     let mut bytes = Vec::new();
     field(&mut bytes, CANONICAL_REDO_V3_DOMAIN);

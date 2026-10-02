@@ -58,6 +58,17 @@ impl BorrowedRecordFilesystemObservation<'_> {
         self.observation.counters
     }
 
+    /// Rechecks the live checkpoint through the same confined, allocated
+    /// artifact reader. This observation cannot select or certify a checkpoint.
+    pub fn read_current_checkpoint_with_storage<S: ArtifactTreeReadAllocator>(
+        &mut self,
+        byte_limit: u64,
+        storage: &mut S,
+    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryAllocationFailure<S::Denial>> {
+        self.observation
+            .read_current_checkpoint_with_storage(byte_limit, storage)
+    }
+
     pub fn read_record_artifact_with_storage<S: ArtifactTreeReadAllocator>(
         &mut self,
         address: RecordArtifactFile,

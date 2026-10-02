@@ -146,7 +146,27 @@ pub fn verify_release_custody_head_successor(
     reservation: OriginalDropReservedV1,
     manifest: &DropSetManifestV3,
 ) -> Result<(), ReleaseCustodyHeadDenial> {
-    verify_release_custody_head_controls(next, frames, descriptor, reservation, manifest)?;
+    verify_release_custody_head_successor_view(
+        prior,
+        next,
+        frames,
+        descriptor,
+        reservation,
+        DropSetManifestV3View::from_owned(manifest),
+    )
+}
+
+/// One-key progression over a grammar-validated borrowed manifest. The owned
+/// entry point delegates here; both preserve the same control and prior checks.
+pub fn verify_release_custody_head_successor_view(
+    prior: ReleaseCustodyHeadEntryV1,
+    next: ReleaseCustodyHeadEntryV1,
+    frames: ReleaseCustodyHeadControlIdentityV1,
+    descriptor: BlobReclaimDescriptorV3,
+    reservation: OriginalDropReservedV1,
+    manifest: DropSetManifestV3View<'_>,
+) -> Result<(), ReleaseCustodyHeadDenial> {
+    verify_release_custody_head_controls_view(next, frames, descriptor, reservation, manifest)?;
     let predecessor = next
         .predecessor()
         .ok_or(ReleaseCustodyHeadDenial::Mutation)?;

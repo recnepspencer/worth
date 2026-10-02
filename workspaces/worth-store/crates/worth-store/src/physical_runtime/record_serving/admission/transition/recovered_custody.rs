@@ -125,7 +125,7 @@ fn verify_funded_media(
         &mut window,
     )?;
     let verified =
-        verified.verify_heads_for_serving(runtime.record_serving_media(), &mut window)?;
+        verified.verify_selected_media_for_serving(runtime.record_serving_media(), &mut window)?;
     drop(window);
     // Real native growth precedes remaining control checks and ledger lowering;
     // a competing owner can deny restoration, with its exact native cause.

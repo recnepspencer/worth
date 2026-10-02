@@ -94,6 +94,16 @@ pub enum RecordBootstrapDenial {
     #[cfg(feature = "recovery-runtime-owner")]
     RecoveredWalRead(crate::physical_runtime::FundedRecoveryWalReadFailure),
     #[cfg(feature = "recovery-runtime-owner")]
+    RecoveredCheckpointRead(
+        worth_store_physical_backend::RecoveryDiscoveryAllocationFailure<
+            crate::physical_runtime::PhysicalRecoveryObservationAllocationDenial,
+        >,
+    ),
+    #[cfg(feature = "recovery-runtime-owner")]
+    RecoveredCheckpointObservationUnavailable(
+        worth_store_physical_backend::RecoveryFilesystemQualificationError,
+    ),
+    #[cfg(feature = "recovery-runtime-owner")]
     RecoveredHeadRead(
         worth_store_physical_backend::RecoveryDiscoveryAllocationFailure<
             crate::physical_runtime::PhysicalRecoveryObservationAllocationDenial,

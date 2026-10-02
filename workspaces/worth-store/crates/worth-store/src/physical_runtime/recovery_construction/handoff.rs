@@ -89,6 +89,34 @@ pub enum RecoveredPhysicalRuntimeConstructionDenial {
     CleanupMediaNotQuiescent,
     RuntimeIdentityUnavailable,
     SelectedCustodyMismatch,
+    RejoinSelectedMedia(PhysicalRecoverySelectedRejoinMismatch),
+    RejoinUnsupportedSelectedControl {
+        record: worth_store_physical_format::PersistedRecordIdentity,
+        content_class: worth_store_physical_format::SelectedRecordContentClass,
+    },
+    RejoinQualification(worth_store_physical_backend::RecoveryFilesystemQualificationError),
+    RejoinDiscovery(crate::physical_runtime::RecoveryDiscoveryFailure),
+    RejoinCanonicalRedo(worth_store_physical_format::CanonicalRedoWireDenial),
+    RejoinRecoveryProjection(worth_store_physical_format::PhysicalRecoveryProjectionDenial),
+}
+
+/// The independent Store predicate that denied selected custody. This is
+/// diagnostic truth only and cannot authorize recovery or Serving.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PhysicalRecoverySelectedRejoinMismatch {
+    MissingSelector,
+    MissingRoot,
+    MissingCheckpoint,
+    MissingRoute,
+    MissingFrame,
+    RootBinding,
+    CheckpointBinding,
+    CertificateRoster,
+    RoutingFrame,
+    UnsupportedSelectedPlacement,
+    ControlFrame,
+    BoundExceeded,
+    WalFate,
 }
 
 /// The production rejoin step that exhausted the carried resident admission.

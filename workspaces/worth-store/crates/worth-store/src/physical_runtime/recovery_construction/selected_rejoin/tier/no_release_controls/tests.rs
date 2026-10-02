@@ -1,38 +1,10 @@
 use super::*;
-use worth_store_physical_format::{BlobReclaimDescriptorV2, OriginalDropReservationRequestV1};
+use worth_store_physical_format::{
+    FailedIngestReclaimBasisV1, OriginalDropReservationRequestV1, OriginalDropReservedV1,
+};
 
 fn record(ordinal: u64) -> PersistedRecordIdentity {
     PersistedRecordIdentity::new([4; 16], ordinal).unwrap()
-}
-
-#[test]
-fn released_v2_claim_cannot_enter_failed_ingest_provenance() {
-    for (kind, admitted) in [
-        (BlobReclaimSourceKind::FailedIngest, true),
-        (BlobReclaimSourceKind::ReleasedGeneration, false),
-    ] {
-        let value = BlobReclaimDescriptorV2::new(
-            [1; 16],
-            [2; 16],
-            kind,
-            [3; 32],
-            record(3),
-            [5; 32],
-            1,
-            7,
-            8,
-            None,
-            1,
-            true,
-        )
-        .unwrap();
-        let BlobRecordV1::ReclaimDescriptorV2(decoded) =
-            decode_blob_record(&value.encode()).unwrap()
-        else {
-            panic!("actual V2 format decode")
-        };
-        assert_eq!(failed_ingest_v2(decoded), admitted);
-    }
 }
 
 #[test]
@@ -127,7 +99,7 @@ fn reservation_retargeted_to_another_selected_manifest_is_denied() {
     };
     let first_attempt = first.attempt;
     let first_digest = first.digest;
-    let manifests = BTreeMap::from([(record(3), first), (record(4), second)]);
+    let manifests = vec![(record(3), first), (record(4), second)];
     let request = OriginalDropReservationRequestV1::new([5; 32], [6; 32], 8, 12).unwrap();
     let valid = OriginalDropReservedV1::new(
         store,

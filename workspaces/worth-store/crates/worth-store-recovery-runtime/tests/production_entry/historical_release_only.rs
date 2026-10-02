@@ -11,6 +11,8 @@ use worth_store::physical_runtime::{
 use worth_store_physical_format::{DurableRootSelector, RecordArtifactFile};
 use worth_store_recovery_runtime::{PhysicalRecoveryOutcome, WorthStoreRecovery};
 
+#[path = "historical_release_only/completed_freshness.rs"]
+mod completed_freshness;
 #[path = "historical_release_only/completed_tip.rs"]
 mod completed_tip;
 
@@ -67,6 +69,7 @@ fn two_released_batches_then_ordinary_append_reopen_with_historical_seal() {
         "ordinary append must advance the selected root",
     );
     serving.close();
+    let completed_selected = selected_generation(world.root());
 
     let outcome = WorthStoreRecovery::recover(certified_release_serving::request(world.root()));
     let PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
@@ -76,6 +79,12 @@ fn two_released_batches_then_ordinary_append_reopen_with_historical_seal() {
         }
         panic!("historical-only completed releases must recover: {outcome:?}");
     };
+    assert_eq!(handoff.core().recovery_effect_count(), 0);
+    assert_eq!(selected_generation(world.root()), completed_selected);
+    assert_eq!(
+        fs::read(world.root().join("families/checkpoint.current")).unwrap(),
+        checkpoint_before,
+    );
     let seal = handoff
         .into_core()
         .into_checkpoint_custody()

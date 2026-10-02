@@ -17,6 +17,73 @@ const ORIGINAL: u64 = 16 << 10;
 
 #[cfg(windows)]
 #[test]
+fn borrowed_checkpoint_denies_payload_before_read_then_retains_exact_native_backing() {
+    let (root, runtime, coordination) = world();
+    let media = runtime.record_serving_media();
+    let path = root.path().join("store/families/checkpoint.current");
+    let input = [53; 8192];
+    std::fs::write(&path, input).unwrap();
+    let ports = coordination.residency.ports().clone();
+    let held = ports
+        .begin_operation(Scope::Recovery, NonZeroU64::new(ORIGINAL - 4096).unwrap())
+        .unwrap();
+    let mut window = PhysicalRecoveryReadAllocation::for_coordination(&coordination).unwrap();
+    let mut observation = media.bounded_record_observation(2, ORIGINAL).unwrap();
+    let reads = media
+        .counters()
+        .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead);
+    let failure = window
+        .read_serving_checkpoint(&mut observation, ORIGINAL)
+        .unwrap_err();
+    assert!(
+        matches!(failure,
+            RecoveryDiscoveryAllocationFailure::Allocation {
+                artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint,
+                offset: 0,
+                requested: 8192,
+                cause: PhysicalRecoveryObservationAllocationDenial::Residency(
+                    PhysicalRecoveryRejoinResidentDenial::BudgetExceeded { required, admitted },
+                ),
+            } if required == ORIGINAL - 4096 + 8192 && admitted == ORIGINAL
+        ),
+        "checkpoint payload denial must preserve the responsible native cause: {failure:?}"
+    );
+    assert_eq!(observation.counters().bytes_read, 0);
+    assert_eq!(
+        media
+            .counters()
+            .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead,),
+        reads
+    );
+    assert_eq!(
+        ports.counters().active_operation_bytes_for(Scope::Recovery),
+        ORIGINAL - 4096
+    );
+    drop(held);
+    let observed = window
+        .read_serving_checkpoint(&mut observation, ORIGINAL)
+        .unwrap();
+    assert_eq!(observed.observed().bytes(), Some(input.as_slice()));
+    assert_eq!(observed.charged_bytes(), 8192);
+    assert_eq!(observed.owned_heap_bytes(), Some(8192));
+    drop(observation);
+    drop(window);
+    drop(coordination);
+    runtime.close();
+    assert_eq!(
+        ports.counters().active_operation_bytes_for(Scope::Recovery),
+        8192
+    );
+    drop(observed);
+    assert_eq!(
+        ports.counters().active_operation_bytes_for(Scope::Recovery),
+        0
+    );
+    assert_eq!(std::fs::read(path).unwrap(), input);
+}
+
+#[cfg(windows)]
+#[test]
 fn borrowed_head_reread_denies_native_address_backing_then_retries_and_retains_bytes() {
     let (root, runtime, coordination) = world();
     let media = runtime.record_serving_media();

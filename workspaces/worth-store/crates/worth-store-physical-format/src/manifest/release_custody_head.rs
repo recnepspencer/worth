@@ -11,7 +11,8 @@ pub use entry::{ReleaseCustodyHeadEntryV1, ReleaseCustodyHeadKeyV1};
 pub use roster::ReleaseCustodyHeadRosterDigestV1;
 pub use semantic::{
     verify_release_custody_head_controls, verify_release_custody_head_controls_view,
-    verify_release_custody_head_successor, ReleaseCustodyHeadControlIdentityV1,
+    verify_release_custody_head_successor, verify_release_custody_head_successor_view,
+    ReleaseCustodyHeadControlIdentityV1,
 };
 pub use transition::{
     ReleaseCustodyHeadMutationV1, ReleaseCustodyHeadNodeWriteV1, ReleaseCustodyHeadPathNodeV1,

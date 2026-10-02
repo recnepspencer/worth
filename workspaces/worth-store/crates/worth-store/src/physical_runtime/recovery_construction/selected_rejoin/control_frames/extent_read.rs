@@ -1,6 +1,6 @@
 //! C.9 extent-frame reading for a selected reclaim control.
 
-use worth_store_physical_backend::{BoundedRecoveryFilesystemDiscovery, ObservedRecoveryArtifact};
+use worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery;
 use worth_store_physical_format::{
     decode_extent_chunk, DurableExtentManifest, DurableExtentRecordPlacement,
     ExtentArenaFrameLayout, ExtentChunkCoordinate, PhysicalRecordFormatDeclaration,
@@ -14,9 +14,10 @@ use worth_store_physical_integrity::{
 };
 
 use super::{super::SelectedMediaRejoinDenial as Denial, SelectedArtifactSlice};
-use crate::physical_runtime::recovery_construction::selected_rejoin::resident::{
-    discovery_allocation_denial, StoreRejoinResidentLedger,
-};
+use crate::physical_runtime::recovery_construction::selected_rejoin::resident::StoreRejoinResidentLedger;
+#[path = "extent_read/storage.rs"]
+mod storage;
+pub(in crate::physical_runtime::recovery_construction::selected_rejoin) use storage::ExtentReadStorage;
 
 pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn read_extent(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
@@ -24,7 +25,7 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn read_
     placement: DurableExtentRecordPlacement,
     slices: &mut Vec<SelectedArtifactSlice>,
 ) -> Result<(Vec<u8>, IntegrityValidatedSelectedExtentPayload), Denial> {
-    read_extent_inner(discovery, format, placement, slices, None)
+    read_extent_inner(discovery, format, placement, slices, &mut ())
 }
 
 /// `slices` is empty or its existing backing is already charged to `resident`.
@@ -37,23 +38,35 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn read_
     slices: &mut Vec<SelectedArtifactSlice>,
     resident: &mut StoreRejoinResidentLedger,
 ) -> Result<(Vec<u8>, IntegrityValidatedSelectedExtentPayload), Denial> {
-    read_extent_inner(discovery, format, placement, slices, Some(resident))
+    read_extent_inner(discovery, format, placement, slices, resident)
 }
 
-fn read_extent_inner(
+pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn read_extent_with_storage<
+    S: ExtentReadStorage,
+>(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     format: PhysicalRecordFormatDeclaration,
     placement: DurableExtentRecordPlacement,
     slices: &mut Vec<SelectedArtifactSlice>,
-    mut resident: Option<&mut StoreRejoinResidentLedger>,
+    storage: &mut S,
+) -> Result<(Vec<u8>, IntegrityValidatedSelectedExtentPayload), Denial> {
+    read_extent_inner(discovery, format, placement, slices, storage)
+}
+
+fn read_extent_inner<S: ExtentReadStorage>(
+    discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    format: PhysicalRecordFormatDeclaration,
+    placement: DurableExtentRecordPlacement,
+    slices: &mut Vec<SelectedArtifactSlice>,
+    storage: &mut S,
 ) -> Result<(Vec<u8>, IntegrityValidatedSelectedExtentPayload), Denial> {
     let page_limit = u64::from(format.page_size().bytes());
-    let observed = read_manifest(discovery, placement, page_limit, &mut resident)?;
+    let observed = storage.read_manifest(discovery, placement, page_limit)?;
     let manifest_bytes = observed.bytes().ok_or(Denial::MissingFrame)?;
     let arena_artifact = RecordArtifactFile::ExtentArena {
         arena: placement.arena_range().arena().get(),
     };
-    grow_slices(slices, &mut resident)?;
+    storage.grow_slices(slices)?;
     slices.push(
         SelectedArtifactSlice::observed(
             arena_artifact,
@@ -96,12 +109,7 @@ fn read_extent_inner(
         .ok_or(Denial::ControlFrame)?;
     let payload_length =
         usize::try_from(placement.payload_bytes()).map_err(|_| Denial::BoundExceeded)?;
-    let mut payload = match resident.as_deref_mut() {
-        Some(resident) => resident
-            .reserve_vec(payload_length)
-            .map_err(Denial::Resident)?,
-        None => Vec::with_capacity(payload_length),
-    };
+    let mut payload = storage.reserve_payload(payload_length)?;
     for ordinal in 1..=manifest.chunk_count() {
         let coordinate = ExtentChunkCoordinate::new(
             placement.record(),
@@ -115,13 +123,12 @@ fn read_extent_inner(
             .min(manifest.chunk_payload_capacity() as usize);
         let frame_length = DURABLE_EXTENT_FRAME_HEADER_BYTES + EXTENT_CHUNK_METADATA_BYTES + length;
         let relative = layout.chunk_offset(ordinal).ok_or(Denial::ControlFrame)?;
-        let frame = read_chunk(
+        let frame = storage.read_chunk(
             discovery,
             placement,
             relative,
             u32::try_from(frame_length).map_err(|_| Denial::BoundExceeded)?,
             page_limit,
-            &mut resident,
         )?;
         let bytes = frame.bytes().ok_or(Denial::MissingFrame)?;
         let absolute = placement
@@ -129,7 +136,7 @@ fn read_extent_inner(
             .offset()
             .checked_add(relative)
             .ok_or(Denial::ControlFrame)?;
-        grow_slices(slices, &mut resident)?;
+        storage.grow_slices(slices)?;
         slices.push(
             SelectedArtifactSlice::observed(arena_artifact, absolute, bytes, false)
                 .ok_or(Denial::BoundExceeded)?,
@@ -155,78 +162,12 @@ fn read_extent_inner(
             return Err(Denial::ControlFrame);
         }
         payload.extend_from_slice(chunk_payload);
-        release_observation(frame, &mut resident)?;
+        storage.discard_frame(frame)?;
     }
     let witness = builder.finish().ok_or(Denial::ControlFrame)?;
     if !witness.matches_frame(&payload) {
         return Err(Denial::ControlFrame);
     }
-    release_observation(observed, &mut resident)?;
+    storage.discard_frame(observed)?;
     Ok((payload, witness))
-}
-
-fn read_manifest(
-    discovery: &mut BoundedRecoveryFilesystemDiscovery,
-    placement: DurableExtentRecordPlacement,
-    page_limit: u64,
-    resident: &mut Option<&mut StoreRejoinResidentLedger>,
-) -> Result<ObservedRecoveryArtifact, Denial> {
-    match resident.as_deref_mut() {
-        Some(resident) => discovery
-            .read_extent_manifest_with_allocator(placement.arena_range(), page_limit, |length| {
-                resident.reserve_bytes(length)
-            })
-            .map_err(discovery_allocation_denial),
-        None => discovery
-            .read_extent_manifest(placement.arena_range(), page_limit)
-            .map_err(Denial::Discovery),
-    }
-}
-
-fn read_chunk(
-    discovery: &mut BoundedRecoveryFilesystemDiscovery,
-    placement: DurableExtentRecordPlacement,
-    relative: u64,
-    length: u32,
-    page_limit: u64,
-    resident: &mut Option<&mut StoreRejoinResidentLedger>,
-) -> Result<ObservedRecoveryArtifact, Denial> {
-    match resident.as_deref_mut() {
-        Some(resident) => discovery
-            .read_extent_range_with_allocator(
-                placement.arena_range(),
-                relative,
-                length,
-                page_limit,
-                |length| resident.reserve_bytes(length),
-            )
-            .map_err(discovery_allocation_denial),
-        None => discovery
-            .read_extent_range(placement.arena_range(), relative, length, page_limit)
-            .map_err(Denial::Discovery),
-    }
-}
-
-fn grow_slices(
-    slices: &mut Vec<SelectedArtifactSlice>,
-    resident: &mut Option<&mut StoreRejoinResidentLedger>,
-) -> Result<(), Denial> {
-    if let Some(resident) = resident.as_deref_mut() {
-        resident
-            .grow_vec_geometrically(slices, 1)
-            .map_err(Denial::Resident)?;
-    }
-    Ok(())
-}
-
-fn release_observation(
-    observed: ObservedRecoveryArtifact,
-    resident: &mut Option<&mut StoreRejoinResidentLedger>,
-) -> Result<(), Denial> {
-    let charge = observed.owned_heap_bytes().ok_or(Denial::BoundExceeded)?;
-    drop(observed);
-    if let Some(resident) = resident.as_deref_mut() {
-        resident.release(charge);
-    }
-    Ok(())
 }

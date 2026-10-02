@@ -7,10 +7,13 @@ use std::collections::BTreeSet;
 
 use sha2::{Digest, Sha256};
 
+use crate::recovery_projection::decode_storage::{
+    canonical_denial, copy_box, reserve_vec, UnrestrictedDecodeStorage,
+};
 use crate::{
     PersistedPhysicalDataFrameSubject, PersistedPhysicalRecoveryProjection,
-    PhysicalRecordFormatDeclaration, PhysicalRecoveryProjectionDecodeLimits,
-    PhysicalRecoveryProjectionDenial, RecordArtifactFile,
+    PhysicalRecordFormatDeclaration, PhysicalRecoveryDecodeFailure, PhysicalRecoveryDecodeStorage,
+    PhysicalRecoveryProjectionDecodeLimits, RecordArtifactFile,
 };
 
 mod target;
@@ -87,7 +90,7 @@ pub fn decode_canonical_redo_v3(
     expected_start_lsn: u64,
     expected_end_lsn_exclusive: u64,
     maximum_targets: u64,
-    mut distinct: Option<(&mut BTreeSet<CanonicalRedoTargetIdentity>, u64)>,
+    distinct: Option<(&mut BTreeSet<CanonicalRedoTargetIdentity>, u64)>,
     projection_limits: PhysicalRecoveryProjectionDecodeLimits,
     format: PhysicalRecordFormatDeclaration,
 ) -> Result<
@@ -97,19 +100,79 @@ pub fn decode_canonical_redo_v3(
     ),
     CanonicalRedoWireDenial,
 > {
+    decode_in_storage(
+        bytes,
+        expected_start_lsn,
+        expected_end_lsn_exclusive,
+        maximum_targets,
+        distinct,
+        projection_limits,
+        format,
+        &mut UnrestrictedDecodeStorage,
+    )
+    .map_err(canonical_denial)
+}
+
+/// Decode with caller-carried admission for every owned allocation and bounded
+/// verification scratch. Cross-member distinct-set policy remains its caller's
+/// responsibility; this path performs the same per-member format validation.
+pub fn decode_canonical_redo_v3_with_storage<S: PhysicalRecoveryDecodeStorage>(
+    bytes: &[u8],
+    expected_start_lsn: u64,
+    expected_end_lsn_exclusive: u64,
+    maximum_targets: u64,
+    projection_limits: PhysicalRecoveryProjectionDecodeLimits,
+    format: PhysicalRecordFormatDeclaration,
+    storage: &mut S,
+) -> Result<
+    (
+        Box<[CanonicalRedoWireRecord]>,
+        PersistedPhysicalRecoveryProjection,
+    ),
+    PhysicalRecoveryDecodeFailure<S::Denial>,
+> {
+    decode_in_storage(
+        bytes,
+        expected_start_lsn,
+        expected_end_lsn_exclusive,
+        maximum_targets,
+        None,
+        projection_limits,
+        format,
+        storage,
+    )
+}
+
+fn decode_in_storage<S: PhysicalRecoveryDecodeStorage>(
+    bytes: &[u8],
+    expected_start_lsn: u64,
+    expected_end_lsn_exclusive: u64,
+    maximum_targets: u64,
+    mut distinct: Option<(&mut BTreeSet<CanonicalRedoTargetIdentity>, u64)>,
+    projection_limits: PhysicalRecoveryProjectionDecodeLimits,
+    format: PhysicalRecordFormatDeclaration,
+    storage: &mut S,
+) -> Result<
+    (
+        Box<[CanonicalRedoWireRecord]>,
+        PersistedPhysicalRecoveryProjection,
+    ),
+    PhysicalRecoveryDecodeFailure<S::Denial>,
+> {
     let mut cursor = Cursor::new(bytes);
     if cursor.field()? != CANONICAL_REDO_V3_DOMAIN {
-        return Err(CanonicalRedoWireDenial::WrongDomain);
+        return Err(CanonicalRedoWireDenial::WrongDomain.into());
     }
     let count = cursor.u64()?;
     if count == 0 || count != expected_end_lsn_exclusive.saturating_sub(expected_start_lsn) {
-        return Err(CanonicalRedoWireDenial::LsnRangeMismatch);
+        return Err(CanonicalRedoWireDenial::LsnRangeMismatch.into());
     }
     if count > maximum_targets {
-        return Err(CanonicalRedoWireDenial::TargetLimit);
+        return Err(CanonicalRedoWireDenial::TargetLimit.into());
     }
+    cursor.require_count_backing(count, 4 + 8 + 8 + 8)?;
     let capacity = usize::try_from(count).map_err(|_| CanonicalRedoWireDenial::RecordCountLimit)?;
-    let mut records = Vec::with_capacity(capacity);
+    let mut records = reserve_vec(capacity, storage)?;
     let mut target_count = 0_u64;
     for expected_ordinal in 0..count {
         let ordinal = cursor.u32()?;
@@ -117,36 +180,32 @@ pub fn decode_canonical_redo_v3(
         if u64::from(ordinal) != expected_ordinal
             || expected_start_lsn.checked_add(expected_ordinal) != Some(lsn)
         {
-            return Err(CanonicalRedoWireDenial::InvalidRecordOrder);
+            return Err(CanonicalRedoWireDenial::InvalidRecordOrder.into());
         }
         let targets = decode_targets(
             &mut cursor,
             &mut target_count,
             maximum_targets,
             &mut distinct,
+            storage,
         )?;
         let record_bytes = cursor.field()?;
         if record_bytes.is_empty() {
-            return Err(CanonicalRedoWireDenial::MalformedMember);
+            return Err(CanonicalRedoWireDenial::MalformedMember.into());
         }
         records.push(CanonicalRedoWireRecord {
             ordinal,
             lsn,
             targets,
-            bytes: record_bytes.into(),
+            bytes: copy_box(record_bytes, storage)?,
         });
     }
-    let projection =
-        PersistedPhysicalRecoveryProjection::decode(cursor.field()?, projection_limits, format)
-            .map_err(|denial| match denial {
-                PhysicalRecoveryProjectionDenial::EntryLimit => {
-                    CanonicalRedoWireDenial::ProjectionEntryLimit
-                }
-                PhysicalRecoveryProjectionDenial::UnsupportedVersion(version) => {
-                    CanonicalRedoWireDenial::UnsupportedRecoveryProjectionVersion(version)
-                }
-                _ => CanonicalRedoWireDenial::InvalidRecoveryProjection,
-            })?;
+    let projection = PersistedPhysicalRecoveryProjection::decode_with_storage(
+        cursor.field()?,
+        projection_limits,
+        format,
+        storage,
+    )?;
     cursor.require_end()?;
     validate_projection(&records, &projection)?;
     Ok((records.into_boxed_slice(), projection))
@@ -165,11 +224,7 @@ fn validate_projection(
     let frames = projection
         .frames()
         .ok_or(CanonicalRedoWireDenial::InvalidRecoveryProjection)?;
-    let targets = records
-        .iter()
-        .flat_map(|record| record.targets.iter())
-        .collect::<Vec<_>>();
-    for target in &targets {
+    for target in records.iter().flat_map(|record| record.targets.iter()) {
         let matches = frames
             .iter()
             .filter(|frame| materialization_matches(target, frame))
@@ -179,8 +234,9 @@ fn validate_projection(
         }
     }
     if frames.iter().any(|frame| {
-        !targets
+        !records
             .iter()
+            .flat_map(|record| record.targets.iter())
             .any(|target| materialization_matches(target, frame))
     }) {
         return Err(CanonicalRedoWireDenial::InvalidRecoveryProjection);
@@ -240,6 +296,19 @@ struct Cursor<'a> {
 impl<'a> Cursor<'a> {
     const fn new(bytes: &'a [u8]) -> Self {
         Self { remaining: bytes }
+    }
+    fn require_count_backing(
+        &self,
+        count: u64,
+        minimum_bytes: usize,
+    ) -> Result<(), CanonicalRedoWireDenial> {
+        let required = usize::try_from(count)
+            .ok()
+            .and_then(|count| count.checked_mul(minimum_bytes));
+        if required.is_none_or(|required| required > self.remaining.len()) {
+            return Err(CanonicalRedoWireDenial::MalformedMember);
+        }
+        Ok(())
     }
     fn byte(&mut self) -> Result<u8, CanonicalRedoWireDenial> {
         Ok(self.take(1)?[0])

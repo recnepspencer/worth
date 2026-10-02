@@ -2,7 +2,7 @@
 //! any one-shot Serving custody can be minted.
 
 pub(super) mod no_release;
-mod no_release_controls;
+pub(in crate::physical_runtime::recovery_construction::selected_rejoin) mod no_release_controls;
 pub(in crate::physical_runtime::recovery_construction::selected_rejoin) mod no_release_frame;
 pub(super) mod released_partition;
 pub(super) mod routes;

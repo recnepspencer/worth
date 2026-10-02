@@ -26,7 +26,7 @@ mod addressed_root;
 #[path = "pending_wal_release/controls.rs"]
 mod controls;
 #[path = "pending_wal_release/delta.rs"]
-mod delta;
+pub(super) mod delta;
 #[path = "pending_wal_release/head_effect_media.rs"]
 mod head_effect_media;
 #[path = "pending_wal_release/head_v14.rs"]
@@ -35,8 +35,6 @@ mod head_v14;
 mod historical_chain;
 #[path = "pending_wal_release/historical_first.rs"]
 mod historical_first;
-#[path = "pending_wal_release/historical_only.rs"]
-pub(in crate::physical_runtime::recovery_construction) mod historical_only;
 #[path = "pending_wal_release/lineage.rs"]
 mod lineage;
 #[path = "pending_wal_release/ordered_history.rs"]
@@ -44,7 +42,7 @@ mod ordered_history;
 #[path = "pending_wal_release/ordered_released.rs"]
 mod ordered_released;
 #[path = "pending_wal_release/ordered_walk.rs"]
-mod ordered_walk;
+pub(super) mod ordered_walk;
 #[path = "pending_wal_release/ordinary_member.rs"]
 mod ordinary_member;
 #[path = "pending_wal_release/resident_budget.rs"]

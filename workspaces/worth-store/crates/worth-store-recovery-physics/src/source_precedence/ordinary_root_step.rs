@@ -52,6 +52,18 @@ pub struct ObservedOrdinaryRootMember<'a> {
 }
 
 impl VerifiedOrdinaryRootStep {
+    /// Additional peak used by this same actual-media recheck, excluding its
+    /// borrowed source/result inventories and the decoded WAL projection.
+    /// A Store caller can admit this amount in its native recovery pool before
+    /// entering the allocation-owning predicate.
+    pub fn maximum_recheck_heap_bytes(
+        source: ReleasedInventoryView<'_>,
+        result: ReleasedInventoryView<'_>,
+        projection: &PersistedPhysicalRecoveryProjection,
+        maximum_entries: u64,
+    ) -> Option<u64> {
+        scratch_charge(source, result, projection, maximum_entries)
+    }
     /// An early C.9 member view lets PageAdmission prove a historical root
     /// chain before the later immutable redo plan can be constructed.
     #[allow(clippy::too_many_arguments)]
