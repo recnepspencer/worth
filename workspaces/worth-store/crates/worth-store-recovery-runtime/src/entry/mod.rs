@@ -29,7 +29,9 @@ pub use limits::{
 pub use outcome::{
     HistoricalDropAdmissionStage, PhysicalRecoveryBlock, PhysicalRecoveryBlockEvidence,
     PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure,
-    PhysicalRecoveryOutcome, PhysicalRecoveryPageAdmissionDenial, PhysicalRecoveryPlanningDenial,
+    PhysicalRecoveryOrderedReleaseDenial, PhysicalRecoveryOrderedReleaseJoin,
+    PhysicalRecoveryOrderedReleaseStorage, PhysicalRecoveryOutcome,
+    PhysicalRecoveryPageAdmissionDenial, PhysicalRecoveryPlanningDenial,
     PhysicalRecoveryPublicationIndeterminate, PhysicalRecoveryRefusal, PhysicalRecoveryRefusalKind,
     PhysicalRecoveryReleaseHeadControlDenial, PhysicalRecoveryReleaseHeadReadDenial,
     PhysicalRecoveryReleaseHeadWalkDenial, PhysicalRecoverySelectedRecordReadDenial,

@@ -1,5 +1,5 @@
-//! A selected ordinary tail may follow all released V14 effects. There is no
-//! pending descriptor in this case; the final roster is the selected result.
+//! Fold all completed V14 effects through the exact selected result. An
+//! ordinary tail is optional; no pending descriptor is manufactured.
 
 use worth_store_physical_format::{
     ReleaseCustodyHeadEntryV1, ReleaseCustodyHeadMutationV1, ReleaseCustodyHeadRosterDigestV1,

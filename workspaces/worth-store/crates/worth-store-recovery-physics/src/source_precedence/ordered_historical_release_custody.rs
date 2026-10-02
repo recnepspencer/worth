@@ -1,4 +1,4 @@
-//! Completed postcheckpoint V3 releases followed by an ordinary selected tip.
+//! Completed postcheckpoint V3 releases through the exact selected tip.
 //! No pending descriptor or synthetic terminal fate is manufactured here.
 
 use std::sync::Arc;

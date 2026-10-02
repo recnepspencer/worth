@@ -57,6 +57,8 @@ pub enum PendingWalReleaseCustodyDenial {
     ControlBinding,
     DurableWalFate,
     PublishedRoot,
+    RetainedSizeOverflow,
+    RetainedBoundExceeded { required: u64, admitted: u64 },
 }
 
 #[derive(Debug)]

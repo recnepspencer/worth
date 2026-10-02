@@ -1,12 +1,8 @@
 use worth_store::physical_runtime::{
     RecoveredPhysicalRuntimeConstructionDenial, RecoveryDiscoveryFailure,
-    StoreRecoveryBindingSampleDenial,
 };
 use worth_store_physical_format::{store_namespace::StableStoreIdentity, RecordArtifactFile};
-use worth_store_recovery_physics::{
-    OperationReconciliationDenial, PhysicalRedoPlanningDenial, PhysicalRedoTargetIdentity,
-    RecoveryPlanCostDenial, RecoveryPlanningCounters,
-};
+use worth_store_recovery_physics::{PhysicalRedoTargetIdentity, RecoveryPlanningCounters};
 
 use crate::progression::PhysicalRecoveryDiscoveryCounters;
 
@@ -48,9 +44,15 @@ pub struct PhysicalRecoveryPublicationIndeterminate {
     integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 }
 
+#[path = "outcome/planning_denial.rs"]
+mod planning_denial;
 mod refusal;
 #[path = "outcome/selected_release_head.rs"]
 mod selected_release_head;
+pub use planning_denial::{
+    PhysicalRecoveryOrderedReleaseDenial, PhysicalRecoveryOrderedReleaseJoin,
+    PhysicalRecoveryOrderedReleaseStorage, PhysicalRecoveryPlanningDenial,
+};
 pub use refusal::{PhysicalRecoveryRefusal, PhysicalRecoveryRefusalKind};
 pub use selected_release_head::{
     PhysicalRecoveryReleaseHeadControlDenial, PhysicalRecoveryReleaseHeadReadDenial,
@@ -250,29 +252,6 @@ impl PhysicalRecoveryPublicationIndeterminate {
     pub const fn checkpoint_residue_indeterminate(&self) -> bool {
         self.checkpoint_residue_indeterminate
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum PhysicalRecoveryPlanningDenial {
-    PublicationCandidateAllocation {
-        requested_bytes: u64,
-        cause: std::collections::TryReserveError,
-    },
-    ExecutionImageAllocation {
-        requested_bytes: u64,
-        cause: std::collections::TryReserveError,
-    },
-    BindingFreshness(StoreRecoveryBindingSampleDenial),
-    BindingSamplingAllocation(
-        worth_store::physical_runtime::StoreRecoveryBindingSampleAllocationDenial,
-    ),
-    OperationReconciliation(OperationReconciliationDenial),
-    Redo(PhysicalRedoPlanningDenial),
-    CustodyUnresolved,
-    SelectedReleaseHead(PhysicalRecoverySelectedReleaseHeadDenial),
-    Page(PhysicalRecoveryPageAdmissionDenial),
-    SuccessorCandidate(super::PhysicalRecoverySuccessorCandidateDenial),
-    Cost(RecoveryPlanCostDenial),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

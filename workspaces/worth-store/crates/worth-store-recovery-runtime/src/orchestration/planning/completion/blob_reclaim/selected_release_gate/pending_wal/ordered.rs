@@ -1,45 +1,43 @@
-//! Attach every completed V3 edge under one checkpoint before the final
-//! pending V3. Controls are addressed to each edge's own candidate root.
+//! Admit every ordered V3 edge under one checkpoint. Controls are addressed
+//! to each edge's own candidate root.
 
 use std::sync::Arc;
 
-use sha2::{Digest, Sha256};
-use worth_store_physical_format::ReleasedDropWalFateWitnessV1;
 use worth_store_recovery_physics::{
     EffectiveReleaseHeadDenial, VerifiedAddressedCheckpointReleaseBase,
     VerifiedOrderedPendingWalReleaseBatch, VerifiedOrderedReleasedHeadReplayV14,
-    VerifiedOrderedRootEdge, VerifiedPendingWalReleaseCustody,
-    VerifiedSelectedReleaseHeadCustodyV2,
+    VerifiedPendingWalReleaseCustody, VerifiedSelectedReleaseHeadCustodyV2,
 };
 
 use super::{PlanningContext, ResolvedPlanningBasis};
+use crate::entry::{
+    PhysicalRecoveryOrderedReleaseDenial as Denial,
+    PhysicalRecoveryOrderedReleaseStorage as Storage,
+};
 use crate::orchestration::planning::selected_source_inventory::ResidentAllowance;
 
-fn limit_block(
+#[path = "ordered/denial.rs"]
+pub(super) mod denial;
+#[path = "ordered/member_binding.rs"]
+mod member_binding;
+#[path = "ordered/roster_storage.rs"]
+mod roster_storage;
+use roster_storage::reserve_roster;
+
+fn resident_block(
     context: PlanningContext,
     basis: &ResolvedPlanningBasis,
     resident: &ResidentAllowance,
 ) -> crate::entry::PhysicalRecoveryOutcome {
     let limit = super::super::resident_basis::limit_failure(&context, resident);
-    context.redo_block(basis.planning_counters(), limit)
+    denial::block(context, basis, resident_denial(resident), limit)
 }
 
-fn reserve_roster<T>(
-    values: &mut Vec<T>,
-    count: usize,
-    resident: &mut ResidentAllowance,
-) -> Result<(), ()> {
-    let requested = u64::try_from(count)
-        .ok()
-        .and_then(|count| count.checked_mul(std::mem::size_of::<T>() as u64))
-        .unwrap_or(u64::MAX);
-    resident.transient(requested).map_err(|_| ())?;
-    values.try_reserve_exact(count).map_err(|_| ())?;
-    let actual = u64::try_from(values.capacity())
-        .ok()
-        .and_then(|capacity| capacity.checked_mul(std::mem::size_of::<T>() as u64))
-        .unwrap_or(u64::MAX);
-    resident.bytes(actual).map_err(|_| ())
+fn resident_denial(resident: &ResidentAllowance) -> Denial {
+    Denial::ResidentBoundExceeded {
+        required: resident.exceeded_requirement().unwrap_or(u64::MAX),
+        admitted: resident.used().saturating_add(resident.remaining()),
+    }
 }
 
 pub(super) fn attach(
@@ -63,13 +61,16 @@ pub(super) fn attach(
         })
         .unwrap_or(u64::MAX);
     if resident.transient(replacement_headers).is_err() {
-        return Err(limit_block(context, basis, resident));
+        return Err(resident_block(context, basis, resident));
     }
-    if claim
-        .attach_ordered_history(history, batches, context.limits.staging_bytes)
-        .is_err()
+    if let Err(cause) = claim.attach_ordered_history(history, batches, context.limits.staging_bytes)
     {
-        return Err(context.redo_block(basis.planning_counters(), None));
+        return Err(denial::block(
+            context,
+            basis,
+            Denial::PendingAttachment(cause),
+            None,
+        ));
     }
     let prepared = claim.prepare_ordered_effective_heads(
         head_replays,
@@ -79,14 +80,30 @@ pub(super) fn attach(
     );
     let backing = match prepared {
         Ok(backing) => backing,
-        Err(EffectiveReleaseHeadDenial::ResidentBoundExceeded { required, .. }) => {
+        Err(EffectiveReleaseHeadDenial::ResidentBoundExceeded { required, admitted }) => {
             let _ = resident.transient(required);
-            return Err(limit_block(context, basis, resident));
+            let limit = super::super::resident_basis::limit_failure(&context, resident);
+            return Err(denial::block(
+                context,
+                basis,
+                Denial::EffectiveHeads(EffectiveReleaseHeadDenial::ResidentBoundExceeded {
+                    required,
+                    admitted,
+                }),
+                limit,
+            ));
         }
-        Err(_) => return Err(context.redo_block(basis.planning_counters(), None)),
+        Err(cause) => {
+            return Err(denial::block(
+                context,
+                basis,
+                Denial::EffectiveHeads(cause),
+                None,
+            ))
+        }
     };
     if resident.bytes(backing).is_err() {
-        return Err(limit_block(context, basis, resident));
+        return Err(resident_block(context, basis, resident));
     }
     Ok(context)
 }
@@ -108,7 +125,7 @@ pub(super) fn admit_roster(
     crate::entry::PhysicalRecoveryOutcome,
 > {
     let Some(releases) = basis.observed_pages.ordered_releases.take() else {
-        return Err(context.redo_block(basis.planning_counters(), None));
+        return Err(denial::block(context, basis, Denial::MissingReleases, None));
     };
     let histories = basis
         .observed_pages
@@ -117,13 +134,13 @@ pub(super) fn admit_roster(
         .filter_map(|evidence| evidence.ordered_history.as_ref());
     let mut histories = histories.peekable();
     let Some(history) = histories.next().cloned() else {
-        return Err(context.redo_block(basis.planning_counters(), None));
+        return Err(denial::block(context, basis, Denial::MissingHistory, None));
     };
     if releases.len() < minimum_releases
         || histories.any(|other| !Arc::ptr_eq(other, &history))
         || releases.len() != basis.observed_pages.historical_drops.len()
     {
-        return Err(context.redo_block(basis.planning_counters(), None));
+        return Err(denial::block(context, basis, Denial::RosterBinding, None));
     }
     let roster_bytes = (releases.len() as u64)
         .checked_mul(std::mem::size_of::<VerifiedOrderedPendingWalReleaseBatch>() as u64)
@@ -136,82 +153,49 @@ pub(super) fn admit_roster(
             )
         })
         .and_then(|value| value.checked_add(history.peak_scratch_bytes()));
-    let Some(roster_bytes) = roster_bytes else {
-        return Err(context.redo_block(basis.planning_counters(), None));
+    let admitted = context.limits.staging_bytes;
+    let Some(required) = roster_bytes else {
+        return Err(denial::block(
+            context,
+            basis,
+            Denial::StagingBoundExceeded {
+                required: u64::MAX,
+                admitted,
+            },
+            None,
+        ));
     };
-    let Some(mut remaining_bytes) = context.limits.staging_bytes.checked_sub(roster_bytes) else {
-        return Err(context.redo_block(basis.planning_counters(), None));
+    let Some(mut remaining_bytes) = admitted.checked_sub(required) else {
+        return Err(denial::block(
+            context,
+            basis,
+            Denial::StagingBoundExceeded { required, admitted },
+            None,
+        ));
     };
     let mut batches = Vec::new();
     let mut head_replays = Vec::new();
-    if reserve_roster(&mut batches, releases.len(), resident).is_err() {
-        return Err(limit_block(context, basis, resident));
+    if let Err(cause) = reserve_roster(&mut batches, releases.len(), Storage::BatchRoster, resident)
+    {
+        let limit = super::super::resident_basis::limit_failure(&context, resident);
+        return Err(denial::block(context, basis, cause, limit));
     }
-    if reserve_roster(&mut head_replays, releases.len(), resident).is_err() {
-        return Err(limit_block(context, basis, resident));
+    if let Err(cause) = reserve_roster(
+        &mut head_replays,
+        releases.len(),
+        Storage::HeadReplayRoster,
+        resident,
+    ) {
+        let limit = super::super::resident_basis::limit_failure(&context, resident);
+        return Err(denial::block(context, basis, cause, limit));
     }
     for release in releases {
-        if !basis
-            .verified_historical_release_operations
-            .contains(&release.operation)
-        {
-            return Err(context.redo_block(basis.planning_counters(), None));
-        }
-        let mut edges = history.edges().iter().enumerate().filter(|(_, edge)| {
-            matches!(edge, VerifiedOrderedRootEdge::Released(value)
-                if value.operation() == release.operation)
-        });
-        let Some((edge_index, VerifiedOrderedRootEdge::Released(edge))) = edges.next() else {
-            return Err(context.redo_block(basis.planning_counters(), None));
+        let member = match member_binding::join(&context, basis, &history, &release) {
+            Ok(member) => member,
+            Err(cause) => return Err(denial::block(context, basis, cause, None)),
         };
-        if edges.next().is_some()
-            || edge.descriptor_record() != release.descriptor_frame.record()
-            || edge.descriptor_frame_sha256() != release.descriptor_frame.payload_sha256()
-        {
-            return Err(context.redo_block(basis.planning_counters(), None));
-        }
-        let mut members = basis
-            .sample
-            .wal_members()
-            .iter()
-            .filter(|member| member.operation_identity() == release.operation);
-        let Some(member) = members.next() else {
-            return Err(context.redo_block(basis.planning_counters(), None));
-        };
-        if members.next().is_some()
-            || member.lsn_range() != edge.lsn()
-            || <[u8; 32]>::from(Sha256::digest(member.canonical_redo())) != edge.redo_sha256()
-        {
-            return Err(context.redo_block(basis.planning_counters(), None));
-        }
-        let frame_binding = {
-            let mut frames = context
-                .integrity
-                .admitted_wal()
-                .recoverable_frame_iter(context.selection.wal_tail())
-                .filter(|frame| {
-                    frame.lsn_start() == edge.lsn().start().get()
-                        && frame.lsn_end() == edge.lsn().end_exclusive().get()
-                });
-            let binding = frames.next().map(|frame| {
-                (
-                    frame.lsn_start(),
-                    frame.lsn_end(),
-                    frame.identity_digest(),
-                    frame.payload_digest(),
-                )
-            });
-            (binding, frames.next().is_some())
-        };
-        let (Some((lsn_start, lsn_end, identity_digest, payload_digest)), false) = frame_binding
-        else {
-            return Err(context.redo_block(basis.planning_counters(), None));
-        };
-        let Ok(wal_fate) =
-            ReleasedDropWalFateWitnessV1::new(lsn_start, lsn_end, identity_digest, payload_digest)
-        else {
-            return Err(context.redo_block(basis.planning_counters(), None));
-        };
+        let edge_index = member.edge_index();
+        let wal_fate = member.wal_fate();
         let encoding_peak = u64::try_from(release.manifest_frame.bytes().len())
             .ok()
             .and_then(|len| len.checked_mul(3))
@@ -225,7 +209,7 @@ pub(super) fn admit_roster(
             .checked_add(decoded_manifest)
             .unwrap_or(u64::MAX);
         if resident.transient(decode_window).is_err() || resident.bytes(decoded_manifest).is_err() {
-            return Err(limit_block(context, basis, resident));
+            return Err(resident_block(context, basis, resident));
         }
         let admitted = VerifiedOrderedPendingWalReleaseBatch::admit(
             &history,
@@ -248,8 +232,20 @@ pub(super) fn admit_roster(
             &batches,
             remaining_bytes,
         );
-        let Ok(batch) = admitted else {
-            return Err(context.redo_block(basis.planning_counters(), None));
+        let batch = match admitted {
+            Ok(batch) => batch,
+            Err(cause) => {
+                return Err(denial::block(
+                    context,
+                    basis,
+                    Denial::Batch {
+                        operation: release.operation,
+                        edge_index,
+                        cause,
+                    },
+                    None,
+                ))
+            }
         };
         remaining_bytes = remaining_bytes.saturating_sub(batch.retained_bytes());
         batches.push(batch);

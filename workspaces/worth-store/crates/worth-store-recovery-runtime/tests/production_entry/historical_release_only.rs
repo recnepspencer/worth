@@ -11,6 +11,9 @@ use worth_store::physical_runtime::{
 use worth_store_physical_format::{DurableRootSelector, RecordArtifactFile};
 use worth_store_recovery_runtime::{PhysicalRecoveryOutcome, WorthStoreRecovery};
 
+#[path = "historical_release_only/completed_tip.rs"]
+mod completed_tip;
+
 #[test]
 fn two_released_batches_then_ordinary_append_reopen_with_historical_seal() {
     let world = pending_wal_world::first();

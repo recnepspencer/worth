@@ -212,9 +212,12 @@ impl VerifiedOrderedPendingWalReleaseBatch {
                         >() as u64)?,
                 )
             })
-            .ok_or(Denial::ControlBinding)?;
+            .ok_or(Denial::RetainedSizeOverflow)?;
         if retained_bytes > remaining_retained_bytes {
-            return Err(Denial::ControlBinding);
+            return Err(Denial::RetainedBoundExceeded {
+                required: retained_bytes,
+                admitted: remaining_retained_bytes,
+            });
         }
         Ok(Self {
             edge_index,
