@@ -1,5 +1,8 @@
 mod access_posture;
 mod cost_model;
+pub(crate) mod digest_text;
+pub(crate) use digest_text::AdmittedDigestTextStop;
+mod digest_order;
 mod graph_index_inventory;
 mod graph_vocabulary;
 mod operation_capability;
@@ -59,6 +62,7 @@ pub use plan_review_denial::{
     WorthQueryGraphReadPlanReviewDenial, WorthQueryGraphReadPlanReviewDenialKind,
 };
 pub use planning_derivation::derive_canonical_graph_read_access_requirements;
+pub(crate) use planning_derivation::derive_canonical_graph_read_access_requirements_admitted;
 pub use planning_input::{
     WorthQueryCanonicalGraphReadPlanningInput, WorthQueryGraphReadPlanningIdentity,
     WorthQueryGraphReadPlanningOrderingField, WorthQueryGraphReadPlanningPredicateField,

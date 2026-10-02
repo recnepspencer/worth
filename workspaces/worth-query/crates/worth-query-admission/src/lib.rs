@@ -2,8 +2,8 @@
 //!
 //! This package owns basis, policy, support, resource, and descriptive
 //! graph-read planning decisions together with proof-bearing handoffs accepted
-//! by execution. It does not mint an executable application-query plan,
-//! allocate, contact providers, execute work, or publish results.
+//! by execution, including bounded preparation buffers. Executable plans,
+//! provider contact, execution, and publication belong to execution.
 
 #![forbid(unsafe_code)]
 
@@ -21,6 +21,8 @@ pub mod facade;
 #[doc(hidden)]
 pub mod integration {
     pub use crate::application_query::requirements::derive_graph_read_access_requirements_for_contract;
+    pub use crate::application_query::requirements::derive_graph_read_access_requirements_for_contract_admitted;
+    pub use crate::canonical_identity_derivation::WorthQueryCanonicalIdentityStop;
     pub use crate::domain_computation::execution_resource_admission::{
         admit_execution_resource_plan, reserve_execution_resource_plan,
         reserve_workflow_resource_plan, WorthQueryCapacityReservedExecutionResourcePlan,

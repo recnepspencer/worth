@@ -47,7 +47,8 @@ pub use installed_contract::{
 pub use live_contract::WorthQueryInstalledApplicationLiveContract;
 pub use output_dependency_contract::WorthQueryInstalledOutputDependencyContract;
 pub use planning_contract::{
-    prepare_canonical_read_graph_planning_basis, WorthQueryPreparedReadGraphPlanningContract,
+    prepare_canonical_read_graph_planning_basis, WorthQueryAdmittedReadGraphPlanningInventory,
+    WorthQueryPlanningInventoryStop, WorthQueryPreparedReadGraphPlanningContract,
     WorthQueryReadGraphGuardView, WorthQueryReadGraphOrderingMechanism,
     WorthQueryReadGraphOrderingView, WorthQueryReadGraphPlanningContract,
     WorthQueryReadGraphPredicateView, WorthQueryReadGraphProjectionView,

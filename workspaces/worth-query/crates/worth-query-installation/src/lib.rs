@@ -203,8 +203,8 @@ pub mod facade {
         WorthQueryWorkflowVocabularyCoverage,
     };
     pub use crate::application_query::{
-        prepare_canonical_read_graph_planning_basis, WorthQueryApplicationCanonicalArtifact,
-        WorthQueryApplicationQueryCanonicalWorkPolicy,
+        prepare_canonical_read_graph_planning_basis, WorthQueryAdmittedReadGraphPlanningInventory,
+        WorthQueryApplicationCanonicalArtifact, WorthQueryApplicationQueryCanonicalWorkPolicy,
         WorthQueryApplicationQueryInstallationDenial,
         WorthQueryApplicationQueryInstallationDenialKind, WorthQueryApplicationQueryLimitDenial,
         WorthQueryInstalledApplicationContinuationContract,
@@ -217,12 +217,12 @@ pub mod facade {
         WorthQueryInstalledGraphProjection, WorthQueryInstalledGraphReadContract,
         WorthQueryInstalledGraphRelation, WorthQueryInstalledOutputDependencyContract,
         WorthQueryInstalledRootPath, WorthQueryInstalledRootPathGuard,
-        WorthQueryInstalledRootPathStep, WorthQueryPreparedReadGraphPlanningContract,
-        WorthQueryReadGraphGuardView, WorthQueryReadGraphOrderingMechanism,
-        WorthQueryReadGraphOrderingView, WorthQueryReadGraphPlanningContract,
-        WorthQueryReadGraphPredicateView, WorthQueryReadGraphProjectionView,
-        WorthQueryReadGraphRelationDirection, WorthQueryReadGraphRelationView,
-        WorthQueryResolvedApplicationQueryLimits,
+        WorthQueryInstalledRootPathStep, WorthQueryPlanningInventoryStop,
+        WorthQueryPreparedReadGraphPlanningContract, WorthQueryReadGraphGuardView,
+        WorthQueryReadGraphOrderingMechanism, WorthQueryReadGraphOrderingView,
+        WorthQueryReadGraphPlanningContract, WorthQueryReadGraphPredicateView,
+        WorthQueryReadGraphProjectionView, WorthQueryReadGraphRelationDirection,
+        WorthQueryReadGraphRelationView, WorthQueryResolvedApplicationQueryLimits,
     };
     pub use crate::application_schema::{
         InstalledInboundOccurrenceContract, WorthQueryInstalledApplicationAspectContract,

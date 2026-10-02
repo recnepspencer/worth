@@ -58,6 +58,20 @@ The review explains admission. The admitted plan is move-only authority. The
 review cannot execute, and a plan from another runtime, installation
 generation, query, branch, basis, or session cannot substitute.
 
+### Preparation Under A Carried Meter
+
+The internal admitted requirement constructor accepts the concrete installed
+graph contract. Its borrowed planning inventory keeps canonical identity and
+graph meaning together; each inventory pass requires admission before visits.
+It creates owned requirement rows through the same field and identity grammar
+as ordinary planning, with claims before copies, sorting and hashing.
+
+An admitted canonical basis has a distinct builder type. Its preparation and
+derivation transitions require the carried meter and preserve the original
+resource refusal. It cannot use the ordinary builder's unmetered transitions.
+These descriptive requirements still need runtime support review, provider
+capacity and a managed session before they grant executable authority.
+
 ## How It Executes
 
 1. Installation binds one canonical read graph to the installed query.
