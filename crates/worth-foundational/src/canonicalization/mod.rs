@@ -18,19 +18,20 @@ mod value_lowering;
 pub use value_lowering::canonical_basis_value_for_aspect_value;
 
 pub use basis::{
-    prepare_canonical_basis_bundle, prepare_canonical_basis_sequence, CanonicalBasisBundle,
+    prepare_canonical_basis_bundle, prepare_canonical_basis_sequence,
+    prepare_owned_canonical_basis_sequence_admitted, CanonicalBasisBundle,
     CanonicalBasisConstructionDenial, CanonicalBasisDomain, CanonicalBasisEntry,
     CanonicalBasisEntryId, CanonicalBasisEntryKind, CanonicalBasisLocus,
-    CanonicalBasisReadinessProofs, CanonicalBasisReady, CanonicalBasisReadyArtifact,
-    CanonicalBasisSequence, CanonicalBasisValue, CanonicalBundleReadinessProofs,
-    CanonicalBundleReady, CanonicalBundleReadyArtifact, CanonicalComparisonReadinessProofs,
-    CanonicalComparisonReady, CanonicalDigestDerivationReadinessProofs,
-    CanonicalDigestDerivationReady, CanonicalDigestInputShapeBound, CanonicalDomainCoherence,
-    CanonicalEquivalenceBasisDeclared, CanonicalExportManifestBound,
-    CanonicalExportReadinessProofs, CanonicalExportReady, CanonicalFloatWidth,
-    CanonicalIntegerWidth, CanonicalMismatchLociBound, CanonicalProductionReadinessCertified,
-    CanonicalProductionTestReady, CanonicalRuleVersionBound, CanonicalizationCost,
-    CanonicalizationCostObserved, CanonicalizationRuleVersion,
+    CanonicalBasisPreparationStop, CanonicalBasisReadinessProofs, CanonicalBasisReady,
+    CanonicalBasisReadyArtifact, CanonicalBasisSequence, CanonicalBasisValue,
+    CanonicalBundleReadinessProofs, CanonicalBundleReady, CanonicalBundleReadyArtifact,
+    CanonicalComparisonReadinessProofs, CanonicalComparisonReady,
+    CanonicalDigestDerivationReadinessProofs, CanonicalDigestDerivationReady,
+    CanonicalDigestInputShapeBound, CanonicalDomainCoherence, CanonicalEquivalenceBasisDeclared,
+    CanonicalExportManifestBound, CanonicalExportReadinessProofs, CanonicalExportReady,
+    CanonicalFloatWidth, CanonicalIntegerWidth, CanonicalMismatchLociBound,
+    CanonicalProductionReadinessCertified, CanonicalProductionTestReady, CanonicalRuleVersionBound,
+    CanonicalizationCost, CanonicalizationCostObserved, CanonicalizationRuleVersion,
 };
 pub use contract_preparation::{
     aspect_contract_digest_preparation_basis, prepare_aspect_contract_for_canonical_basis,
