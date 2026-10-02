@@ -92,6 +92,47 @@ let digest = canonicalization().digest().derive(ready);
 This is the smallest honest example because digest derivation begins only after
 canonical readiness already exists.
 
+## Resource-Admitted Sequence Derivation
+
+An owning runtime can carry its existing resource admission through canonical
+preparation and hashing:
+
+```rust
+let ready = canonicalization().digest().for_sequence_with_admission(
+    sequence_ready,
+    CanonicalDigestAlgorithmId::sha256(),
+    digest_budget,
+    &mut admit_resources,
+)?;
+let digest = canonicalization().digest().derive_with_admission(
+    ready,
+    &mut admit_resources,
+)?;
+```
+
+The callback receives `(work, allocation_bytes)` and returns its own typed
+refusal. It admits initialized buffer copies, geometric buffer growth, bounded
+stack formatting, metadata copies, and hashing before those operations. Work
+includes selected validation and measurement visits. Allocation claims cover
+each requested owned backing allocation; they are cumulative, not a peak-live
+measurement. The runtime supplies its own request, cancellation, and resource
+policy. Foundation introduces no runtime ledger or lifecycle authority.
+
+`CanonicalDigestAdmissionStop::Resource(stop)` preserves the original refusal;
+canonical validity and encoded-byte budget failures remain
+`CanonicalDigestAdmissionStop::Derivation(denial)`. Arithmetic overflow and
+allocation failure have separate variants. A refusal returns no ready artifact
+or digest. Both entries consume their input, and callers must supply the same
+admission throughout the operation.
+
+The sequence entry moves the already-owned basis into digest evidence instead
+of copying its entries. Its resource scope begins with that ready input;
+construction of the basis and algorithm identifier remains with their owners.
+Ordinary and admitted entries use the same canonical grammar, validation, and
+digest meaning. The admitted sequence preparation path is currently exposed
+for a single sequence; the hash continuation also accepts ordinarily prepared
+bundle and export artifacts.
+
 ## Real Example
 
 ```rust

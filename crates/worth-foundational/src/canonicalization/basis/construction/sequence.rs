@@ -60,6 +60,17 @@ impl CanonicalBasisSequence {
     pub const fn cost(&self) -> CanonicalizationCost {
         self.cost
     }
+
+    pub(crate) fn into_parts(
+        self,
+    ) -> (
+        CanonicalizationRuleVersion,
+        CanonicalBasisDomain,
+        Vec<CanonicalBasisEntry>,
+        CanonicalizationCost,
+    ) {
+        (self.version, self.domain, self.entries, self.cost)
+    }
 }
 
 pub type CanonicalBasisReadyArtifact = Artifact<

@@ -51,6 +51,14 @@ pub struct StructAspectValue {
 }
 
 impl StructAspectValue {
+    pub fn len(&self) -> usize {
+        self.fields.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.fields.is_empty()
+    }
+
     pub fn new(
         fields: impl IntoIterator<Item = (FieldKey, AspectValue)>,
     ) -> Result<Self, StructAspectValueConstructionDenial> {

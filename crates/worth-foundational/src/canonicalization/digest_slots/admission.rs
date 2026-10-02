@@ -16,6 +16,7 @@ use super::evidence::{
     CanonicalDigestInputEvidence,
 };
 use super::material::canonical_digest_material;
+use super::resource_admission::{CanonicalDigestPreparationStop, CanonicalResourceAdmission};
 use super::{CanonicalDigestWorkBudget, CanonicalDigestWorkEvidence};
 
 pub type CanonicalDigestDerivationReadyArtifact = Artifact<
@@ -45,12 +46,9 @@ pub fn admit_canonical_sequence_digest_derivation_with_budget(
     budget: CanonicalDigestWorkBudget,
 ) -> TransitionOutcome<CanonicalDigestDerivationReadyArtifact, CanonicalDigestDerivationDenial> {
     let (sequence, _proofs, _basis) = sequence.into_parts().into_parts();
-    let evidence = CanonicalDigestInputEvidence::SingleSequence(CanonicalDigestBasisSequence::new(
-        sequence.version().clone(),
-        sequence.domain(),
-        sequence.entries(),
-        sequence.cost(),
-    ));
+    let evidence = CanonicalDigestInputEvidence::SingleSequence(
+        CanonicalDigestBasisSequence::from_owned_sequence(sequence),
+    );
     admit_canonical_digest_derivation(slot.into_metadata(), evidence, budget)
 }
 
@@ -135,37 +133,75 @@ fn admit_canonical_digest_derivation(
     evidence: CanonicalDigestInputEvidence,
     budget: CanonicalDigestWorkBudget,
 ) -> TransitionOutcome<CanonicalDigestDerivationReadyArtifact, CanonicalDigestDerivationDenial> {
+    match prepare_canonical_digest_derivation(algorithm, evidence, budget, None) {
+        Ok(ready) => TransitionOutcome::success(ready),
+        Err(CanonicalDigestPreparationStop::Derivation(denial)) => {
+            TransitionOutcome::denied(denial)
+        }
+        Err(stop) => unreachable!("ordinary codec has no resource-refusal port: {stop:?}"),
+    }
+}
+
+pub(super) fn prepare_canonical_digest_derivation(
+    algorithm: CanonicalDigestAlgorithmMetadata,
+    evidence: CanonicalDigestInputEvidence,
+    budget: CanonicalDigestWorkBudget,
+    mut admission: Option<&mut CanonicalResourceAdmission<'_>>,
+) -> Result<CanonicalDigestDerivationReadyArtifact, CanonicalDigestPreparationStop> {
+    if let Some(admission) = admission.as_deref_mut() {
+        let work = algorithm
+            .id()
+            .as_str()
+            .len()
+            .checked_add(algorithm.rule_version().as_str().len())
+            .and_then(|work| work.checked_add(evidence.version().as_str().len()))
+            .and_then(|work| {
+                work.checked_add(match algorithm.input_domain() {
+                    super::algorithm::CanonicalDigestInputDomain::Single(
+                        super::super::CanonicalBasisDomain::Future(name),
+                    ) => name.len(),
+                    _ => 0,
+                })
+            })
+            .and_then(|work| work.checked_add(5))
+            .ok_or(CanonicalDigestPreparationStop::AccountingOverflow)?;
+        admission(work, 0).map_err(|()| CanonicalDigestPreparationStop::ResourceRefused)?;
+    }
     if !algorithm.id().is_supported() {
-        return TransitionOutcome::denied(CanonicalDigestDerivationDenial::UnsupportedAlgorithm);
+        return Err(CanonicalDigestPreparationStop::Derivation(
+            CanonicalDigestDerivationDenial::UnsupportedAlgorithm,
+        ));
     }
     if algorithm.rule_version() != evidence.version() {
-        return TransitionOutcome::denied(CanonicalDigestDerivationDenial::RuleVersionMismatch);
+        return Err(CanonicalDigestPreparationStop::Derivation(
+            CanonicalDigestDerivationDenial::RuleVersionMismatch,
+        ));
     }
     if algorithm.input_shape() != evidence.input_shape() {
-        return TransitionOutcome::denied(CanonicalDigestDerivationDenial::InputShapeMismatch);
+        return Err(CanonicalDigestPreparationStop::Derivation(
+            CanonicalDigestDerivationDenial::InputShapeMismatch,
+        ));
     }
     if algorithm.input_domain() != evidence.input_domain() {
-        return TransitionOutcome::denied(CanonicalDigestDerivationDenial::InputDomainMismatch);
+        return Err(CanonicalDigestPreparationStop::Derivation(
+            CanonicalDigestDerivationDenial::InputDomainMismatch,
+        ));
     }
     let entry_count = evidence.entry_count();
     if entry_count > budget.maximum_entry_count() {
-        return TransitionOutcome::denied(CanonicalDigestDerivationDenial::EntryLimitExceeded {
-            maximum: budget.maximum_entry_count(),
-            actual: entry_count,
-        });
+        return Err(CanonicalDigestPreparationStop::Derivation(
+            CanonicalDigestDerivationDenial::EntryLimitExceeded {
+                maximum: budget.maximum_entry_count(),
+                actual: entry_count,
+            },
+        ));
     }
-    let material =
-        match canonical_digest_material(&algorithm, &evidence, budget.maximum_encoded_bytes()) {
-            Ok(material) => material,
-            Err(denial) => {
-                return TransitionOutcome::denied(
-                    CanonicalDigestDerivationDenial::EncodedByteLimitExceeded {
-                        maximum: denial.maximum(),
-                        attempted: denial.attempted(),
-                    },
-                )
-            }
-        };
+    let material = canonical_digest_material(
+        &algorithm,
+        &evidence,
+        budget.maximum_encoded_bytes(),
+        admission.as_deref_mut(),
+    )?;
     let work = CanonicalDigestWorkEvidence::new(
         entry_count,
         material.encoded_bytes(),
@@ -184,13 +220,32 @@ fn admit_canonical_digest_derivation(
         ),
     );
     let input = CanonicalDigestDerivationInput::new(
-        algorithm.clone(),
+        admitted_algorithm_clone(&algorithm, admission)?,
         evidence,
         material.into_bytes(),
         work,
     );
 
-    TransitionOutcome::success(Artifact::with_proofs_and_current_basis(
+    Ok(Artifact::with_proofs_and_current_basis(
         input, proofs, algorithm, authority,
     ))
+}
+
+pub(super) fn admitted_algorithm_clone(
+    algorithm: &CanonicalDigestAlgorithmMetadata,
+    admission: Option<&mut CanonicalResourceAdmission<'_>>,
+) -> Result<CanonicalDigestAlgorithmMetadata, CanonicalDigestPreparationStop> {
+    if let Some(admission) = admission {
+        let bytes = algorithm
+            .id()
+            .as_str()
+            .len()
+            .checked_add(algorithm.rule_version().as_str().len())
+            .ok_or(CanonicalDigestPreparationStop::AccountingOverflow)?;
+        let work = bytes
+            .checked_add(2)
+            .ok_or(CanonicalDigestPreparationStop::AccountingOverflow)?;
+        admission(work, bytes).map_err(|()| CanonicalDigestPreparationStop::ResourceRefused)?;
+    }
+    Ok(algorithm.clone())
 }
