@@ -40,7 +40,7 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
         ) else {
             return false;
         };
-        candidate_contracts == self.contracts
+        candidate_contracts.eq(self.contracts.as_ref())
     }
 
     pub(crate) fn authority_matches(&self, package: &WorthQueryInstalledPackageAuthority) -> bool {

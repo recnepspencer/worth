@@ -178,7 +178,7 @@ where
         graph_work,
         operation.operation(),
     )?;
-    let contracts = operation.contracts().clone();
+    let contracts = operation.retain_compiled_contracts_for_admission();
     let canonical_work = WorthQueryCanonicalWorkPhases::new(
         contracts.canonical_work(),
         preconditions.canonical_work().combine(canonical_work),

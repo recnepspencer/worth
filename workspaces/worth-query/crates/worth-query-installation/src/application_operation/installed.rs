@@ -80,7 +80,7 @@ pub struct WorthQueryInstalledApplicationOperation<Schema, Operation, Input> {
     schema_name: String,
     operation: String,
     input_type: String,
-    contracts: WorthQueryCompiledApplicationOperationContracts,
+    contracts: Arc<WorthQueryCompiledApplicationOperationContracts>,
     native_contracts:
         Arc<crate::application_schema::WorthQueryInstalledApplicationSchemaContractCatalog>,
     portable_native_contracts: Arc<Vec<WorthQueryPortableNativeAspectContractRecord>>,
@@ -264,7 +264,7 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
             schema_name: schema.schema_name().to_string(),
             operation: operation.to_string(),
             input_type: input_type.to_string(),
-            contracts,
+            contracts: Arc::new(contracts),
             native_contracts: schema.retain_native_contracts(),
             portable_native_contracts: Arc::new(schema.portable_native_contracts().to_vec()),
             portable_contract: portable_contract.clone(),
@@ -295,11 +295,30 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
         &self.contracts
     }
 
+    /// Retains the one cold-compiled immutable contract object for an admitted
+    /// operation. This does not recompile or revalidate its installed meaning.
+    #[doc(hidden)]
+    pub fn retain_compiled_contracts_for_admission(
+        &self,
+    ) -> Arc<WorthQueryCompiledApplicationOperationContracts> {
+        Arc::clone(&self.contracts)
+    }
+
+    /// Funds the shallow Arc retain before an admitted operation takes custody.
+    #[doc(hidden)]
+    pub fn retain_compiled_contracts_admitted<E>(
+        &self,
+        prepare: &mut impl FnMut(u64, u64) -> Result<(), E>,
+    ) -> Result<Arc<WorthQueryCompiledApplicationOperationContracts>, E> {
+        prepare(2, 0)?;
+        Ok(Arc::clone(&self.contracts))
+    }
+
     pub fn input_type(&self) -> &str {
         &self.input_type
     }
 
-    pub const fn execution_posture(
+    pub fn execution_posture(
         &self,
     ) -> super::WorthQueryInstalledApplicationOperationExecutionPosture {
         self.contracts.execution_posture()

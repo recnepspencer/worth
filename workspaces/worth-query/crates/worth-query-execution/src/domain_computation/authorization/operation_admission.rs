@@ -120,7 +120,7 @@ pub struct WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scop
     scope_entity_name: String,
     authentication_valid_until: Instant,
     request_scope: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-    contracts: WorthQueryCompiledApplicationOperationContracts,
+    contracts: Arc<WorthQueryCompiledApplicationOperationContracts>,
     mutation_preconditions: WorthQueryBoundMutationPreconditions,
     authorization: Option<WorthQueryRetainedAuthorizationDecisionFacts>,
     governed_input_identity: Option<[u8; 32]>,
