@@ -1,28 +1,31 @@
-use worth_query_installation::facade::{
-    WorthQueryExecutionResourceEnvelope, WorthQueryExecutionStrategyContract,
-};
+use worth_query_installation::facade::WorthQueryExecutionResourceEnvelope;
 
 use crate::admission_digest::hash_parts;
-
-use super::WorthQueryExecutionResourceSupportSnapshot;
 
 pub(super) fn admitted_plan_identity(
     binding_identity: &str,
     contract_identity: &str,
     request_identity: &str,
-    support: &WorthQueryExecutionResourceSupportSnapshot,
-    strategy: &WorthQueryExecutionStrategyContract,
+    support_identity: &str,
+    strategy_name: &str,
+    envelope_identity: &str,
 ) -> String {
-    let envelope_identity = admitted_envelope_identity(strategy.envelope());
-    hash_parts(&[
-        "worth_query_admitted_execution_resource_plan_v1".into(),
-        format!("binding:{binding_identity}"),
-        format!("contract:{contract_identity}"),
-        format!("request:{request_identity}"),
-        format!("support:{}", support.identity()),
-        format!("strategy:{}", strategy.name().as_str()),
-        format!("envelope:{envelope_identity}"),
-    ])
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    for (prefix, value) in [
+        ("", "worth_query_admitted_execution_resource_plan_v1"),
+        ("binding:", binding_identity),
+        ("contract:", contract_identity),
+        ("request:", request_identity),
+        ("support:", support_identity),
+        ("strategy:", strategy_name),
+        ("envelope:", envelope_identity),
+    ] {
+        hasher.update(((prefix.len() + value.len()) as u64).to_le_bytes());
+        hasher.update(prefix.as_bytes());
+        hasher.update(value.as_bytes());
+    }
+    worth_foundational::facade::CanonicalDigestId::new(hasher.finalize().into()).render_hex()
 }
 
 pub(super) fn admitted_envelope_identity(envelope: &WorthQueryExecutionResourceEnvelope) -> String {

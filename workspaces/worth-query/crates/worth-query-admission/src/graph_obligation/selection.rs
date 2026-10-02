@@ -65,7 +65,7 @@ pub fn select_shared_application_query_graph_obligations_admitted<Stop>(
     )
 }
 
-fn select_core<Stop>(
+pub(super) fn select_core<Stop>(
     installed: SelectedInstalledGraphObligations,
     intent: WorthQueryGraphWorkIntent,
     mut admit: impl FnMut(u64, u64) -> Result<(), Stop>,

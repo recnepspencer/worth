@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use worth_query_installation::facade::{
     ApplicationSchemaBindingIdentity, WorthQueryInstalledGraphObligation,
     WorthQueryInstalledGraphObligationSet, WorthQueryInstalledGraphObligationSetIdentity,
@@ -60,6 +62,7 @@ pub struct WorthQuerySelectedGraphObligations {
 pub(super) enum SelectedInstalledGraphObligations {
     Owned(WorthQueryInstalledGraphObligationSet),
     Shared(WorthQueryRetainedApplicationQueryGraphObligations),
+    PreparedOperation(Arc<WorthQueryInstalledGraphObligationSet>),
 }
 
 impl SelectedInstalledGraphObligations {
@@ -67,6 +70,7 @@ impl SelectedInstalledGraphObligations {
         match self {
             Self::Owned(installed) => installed,
             Self::Shared(installed) => installed.installed_set(),
+            Self::PreparedOperation(installed) => installed,
         }
     }
 }

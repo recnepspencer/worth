@@ -7,8 +7,8 @@ use worth_query_installation::facade::{
 };
 
 use super::{
-    admission_plan_digest::admitted_plan_identity, WorthQueryAdmittedExecutionResourcePlan,
-    WorthQueryExecutionResourceAdmissionCounters, WorthQueryExecutionResourceAdmissionDenial,
+    WorthQueryAdmittedExecutionResourcePlan, WorthQueryExecutionResourceAdmissionCounters,
+    WorthQueryExecutionResourceAdmissionDenial,
     WorthQueryExecutionResourceAdmissionDenialKind as Kind,
     WorthQueryExecutionResourceSupportSnapshot,
 };
@@ -18,8 +18,25 @@ pub fn admit_execution_resource_plan(
     contract: &WorthQueryExecutionResourceContract,
     request: &WorthQueryExecutionResourceRequest,
     support: WorthQueryExecutionResourceSupportSnapshot,
-    mut counters: WorthQueryExecutionResourceAdmissionCounters,
+    counters: WorthQueryExecutionResourceAdmissionCounters,
 ) -> Result<WorthQueryAdmittedExecutionResourcePlan, WorthQueryExecutionResourceAdmissionDenial> {
+    let (prepared, counters) =
+        prepare_execution_resource_plan(contract, request, support, counters)?;
+    Ok(prepared.bind(binding_identity, counters))
+}
+
+pub(crate) fn prepare_execution_resource_plan(
+    contract: &WorthQueryExecutionResourceContract,
+    request: &WorthQueryExecutionResourceRequest,
+    support: WorthQueryExecutionResourceSupportSnapshot,
+    mut counters: WorthQueryExecutionResourceAdmissionCounters,
+) -> Result<
+    (
+        super::PreparedExecutionResourcePlan,
+        WorthQueryExecutionResourceAdmissionCounters,
+    ),
+    WorthQueryExecutionResourceAdmissionDenial,
+> {
     counters.resource_contract_lookups += 1;
     contract.validate().map_err(|detail| {
         WorthQueryExecutionResourceAdmissionDenial::new(Kind::ResourceContract, detail, counters)
@@ -37,24 +54,13 @@ pub fn admit_execution_resource_plan(
     for strategy in &fitting {
         counters.support_snapshot_checks += 1;
         if support.supports(strategy) {
-            let request_identity = request.canonical_identity();
-            let contract_identity = contract.canonical_identity();
-            let identity = admitted_plan_identity(
-                binding_identity,
-                &contract_identity,
-                &request_identity,
-                &support,
-                strategy,
-            );
-            return Ok(WorthQueryAdmittedExecutionResourcePlan::new(
-                identity,
-                binding_identity,
-                contract_identity,
+            let prepared = super::PreparedExecutionResourcePlan::new(
+                contract.canonical_identity(),
                 request,
                 support,
                 (*strategy).clone(),
-                counters,
-            ));
+            );
+            return Ok((prepared, counters));
         }
     }
     if let Some(strategy) = fitting.first() {

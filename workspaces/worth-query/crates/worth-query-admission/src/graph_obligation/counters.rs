@@ -9,6 +9,13 @@ pub struct WorthQueryGraphObligationSelectionCounters {
 }
 
 impl WorthQueryGraphObligationSelectionCounters {
+    pub(super) fn retained_selection(selected_rows: usize) -> Self {
+        Self {
+            selected_rows,
+            ..Self::default()
+        }
+    }
+
     pub(super) fn checked_subject(&mut self) {
         self.installed_subject_checks += 1;
     }

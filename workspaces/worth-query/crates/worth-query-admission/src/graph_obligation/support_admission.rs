@@ -1,3 +1,9 @@
+mod prepared_operation;
+pub use prepared_operation::{
+    admit_prepared_application_operation_graph_work_admitted,
+    prepare_application_operation_graph_work, WorthQueryPreparedApplicationOperationGraphWork,
+};
+
 use std::convert::Infallible;
 use worth_query_declaration::facade::domain_computation::WorthQueryExecutionResourceRequest;
 use worth_query_installation::facade::{

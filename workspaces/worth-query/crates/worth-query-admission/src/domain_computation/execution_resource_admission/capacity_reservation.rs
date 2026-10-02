@@ -3,9 +3,13 @@ use super::{
     WorthQueryExecutionCapacityReservation, WorthQueryExecutionResourceSupport,
 };
 
+mod admitted_direct;
+pub(crate) use admitted_direct::reserve_execution_resource_plan_admitted;
+
 pub struct WorthQueryCapacityReservedExecutionResourcePlan {
     resources: WorthQueryAdmittedExecutionResourcePlan,
     provider_reservations: Vec<Box<dyn WorthQueryExecutionCapacityReservation>>,
+    release_identity: String,
 }
 
 pub(crate) struct WorthQueryReservedGraphProviderCapacity {
@@ -25,14 +29,6 @@ impl WorthQueryReservedGraphProviderCapacity {
 }
 
 impl WorthQueryCapacityReservedExecutionResourcePlan {
-    fn reserve(resources: WorthQueryAdmittedExecutionResourcePlan) -> Option<Self> {
-        let reservations = reserve_plans([&resources])?;
-        Some(Self {
-            resources,
-            provider_reservations: reservations,
-        })
-    }
-
     pub fn resources(&self) -> &WorthQueryAdmittedExecutionResourcePlan {
         &self.resources
     }
@@ -46,11 +42,13 @@ impl WorthQueryCapacityReservedExecutionResourcePlan {
     }
 
     pub fn release(self) -> WorthQueryExecutionCapacityReleaseReceipt {
-        release_reservations(
-            self.resources.identity(),
-            self.provider_reservations,
-            WorthQueryExecutionCapacityReservationScope::Direct,
-        )
+        let released_reservation_count = self.provider_reservations.len();
+        drop(self.provider_reservations);
+        WorthQueryExecutionCapacityReleaseReceipt {
+            resource_plan_identity: self.release_identity,
+            scope: WorthQueryExecutionCapacityReservationScope::Direct,
+            released_reservation_count,
+        }
     }
 }
 
@@ -121,12 +119,15 @@ impl WorthQueryExecutionCapacityReleaseReceipt {
 }
 
 pub fn reserve_execution_resource_plan(
-    mut resources: WorthQueryAdmittedExecutionResourcePlan,
+    resources: WorthQueryAdmittedExecutionResourcePlan,
 ) -> Option<WorthQueryCapacityReservedExecutionResourcePlan> {
-    resources.record_capacity_reservation_check();
-    let mut reserved = WorthQueryCapacityReservedExecutionResourcePlan::reserve(resources)?;
-    reserved.resources_mut().record_capacity_reservation();
-    Some(reserved)
+    match reserve_execution_resource_plan_admitted(resources, &mut |_, _| {
+        Ok::<(), std::convert::Infallible>(())
+    }) {
+        Ok(reserved) => reserved,
+        Err(WorthQueryCapacityReservationAdmissionStop::Admission(never)) => match never {},
+        Err(WorthQueryCapacityReservationAdmissionStop::AccountingOverflow) => None,
+    }
 }
 
 pub fn reserve_workflow_resource_plan(
