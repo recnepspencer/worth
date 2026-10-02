@@ -1,8 +1,6 @@
 use worth_store::physical_runtime::{RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryFailure};
 use worth_store_recovery_physics::PhysicalBootstrapFallbackAnchor;
-use worth_store_recovery_physics::{
-    PhysicalRecoveryResidue, PhysicalRootSlotObservation, PhysicalWalSegmentCandidate,
-};
+use worth_store_recovery_physics::{PhysicalRecoveryResidue, PhysicalRootSlotObservation};
 
 use crate::entry::{
     AdmittedPlatformAuthority, PhysicalRecoveryBlockEvidence,
@@ -36,11 +34,11 @@ pub(crate) struct DiscoveryMaterial {
 }
 
 pub(crate) enum CheckpointDiscovery {
-    Absent,
+    Absent(worth_store::physical_runtime::ObservedRecoveryArtifact),
     Rejected(crate::entry::PhysicalRecoveryCheckpointIntegrityDenial),
     Admitted {
         projection: crate::integrity_ingress::OwnerCheckpointProjection,
-        source_root: worth_store::physical_runtime::ObservedRecoveryArtifact,
+        source_root: worth_store::physical_runtime::FundedRecoveryObservation,
     },
 }
 
@@ -52,10 +50,10 @@ pub(crate) enum BootstrapDiscovery {
 }
 
 pub(crate) struct WalDiscovery {
-    pub(crate) candidates: Vec<PhysicalWalSegmentCandidate>,
+    pub(crate) candidates: crate::orchestration::wal_selection::ResidentWalCandidates,
     pub(crate) rejected: bool,
     pub(super) admitted: AdmittedWalInventory,
-    pub(super) integrity_observations: Vec<crate::entry::PhysicalRecoveryWalIntegrityObservation>,
+    pub(super) integrity_observations: crate::entry::PhysicalRecoveryIntegrityObservations,
     pub(super) integrity_ingress: crate::integrity_ingress::RecoveryIntegrityIngressCounters,
     scanned_frames: u64,
     valid_frames: u64,
@@ -72,18 +70,18 @@ pub(crate) struct WalDiscovery {
 impl WalDiscovery {
     pub(crate) fn integrity_observations(
         &self,
-    ) -> Vec<crate::entry::PhysicalRecoveryWalIntegrityObservation> {
+    ) -> crate::entry::PhysicalRecoveryIntegrityObservations {
         self.integrity_observations.clone()
     }
 
     pub(crate) fn into_selection_parts(
         self,
     ) -> (
-        Vec<PhysicalWalSegmentCandidate>,
+        crate::orchestration::wal_selection::ResidentWalCandidates,
         bool,
         Vec<crate::entry::PhysicalRecoveryWalIntegrityDenial>,
         AdmittedWalInventory,
-        Vec<crate::entry::PhysicalRecoveryWalIntegrityObservation>,
+        crate::entry::PhysicalRecoveryIntegrityObservations,
     ) {
         (
             self.candidates,
@@ -100,7 +98,7 @@ pub(super) struct DiscoveryFailure {
     limit: Option<PhysicalRecoveryLimitFailure>,
     source_denials: Vec<PhysicalRecoverySourceDenial>,
     integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
-    integrity_observations: Vec<crate::entry::PhysicalRecoveryWalIntegrityObservation>,
+    integrity_observations: crate::entry::PhysicalRecoveryIntegrityObservations,
 }
 
 impl DiscoveryFailure {
@@ -124,7 +122,7 @@ impl DiscoveryFailure {
 
     pub(super) fn with_integrity_observations(
         mut self,
-        observations: Vec<crate::entry::PhysicalRecoveryWalIntegrityObservation>,
+        observations: crate::entry::PhysicalRecoveryIntegrityObservations,
     ) -> Self {
         self.integrity_observations = observations;
         self
@@ -138,14 +136,14 @@ impl From<PhysicalRecoveryBlock> for DiscoveryFailure {
             limit: None,
             source_denials: Vec::new(),
             integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace::new(),
-            integrity_observations: Vec::new(),
+            integrity_observations: crate::entry::PhysicalRecoveryIntegrityObservations::default(),
         }
     }
 }
 
 pub(crate) fn discover_sources(
     authority: AdmittedPlatformAuthority,
-    coordination: RecoveryCoordination,
+    mut coordination: RecoveryCoordination,
 ) -> Result<
     DiscoveryMaterial,
     (
@@ -202,7 +200,7 @@ pub(crate) fn discover_sources(
     let mut ingress_trace = crate::integrity_ingress::RecoveryIntegrityIngressTrace::new();
     let result = observe_all(
         &mut discovery,
-        &coordination,
+        &mut coordination,
         limits,
         record_format,
         &mut counters,
@@ -254,10 +252,7 @@ pub(crate) fn discover_sources(
                     artifact: Some(discovery_artifact_context(kind).to_owned()),
                     source_denials,
                     integrity_trace,
-                    integrity_observations:
-                        crate::entry::PhysicalRecoveryIntegrityObservations::new(
-                            integrity_observations,
-                        ),
+                    integrity_observations,
                     ..PhysicalRecoveryBlockEvidence::default()
                 },
             ))
@@ -280,7 +275,7 @@ pub(super) fn map_discovery_failure(
             }),
             source_denials: Vec::new(),
             integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace::new(),
-            integrity_observations: Vec::new(),
+            integrity_observations: crate::entry::PhysicalRecoveryIntegrityObservations::default(),
         },
         RecoveryDiscoveryFailure::ByteLimitExceeded {
             observed,
@@ -300,7 +295,7 @@ pub(super) fn map_discovery_failure(
             }),
             source_denials: Vec::new(),
             integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace::new(),
-            integrity_observations: Vec::new(),
+            integrity_observations: crate::entry::PhysicalRecoveryIntegrityObservations::default(),
         },
         RecoveryDiscoveryFailure::Media { artifact, failure } => DiscoveryFailure {
             kind: PhysicalRecoveryBlock::MediaObservation,
@@ -313,7 +308,7 @@ pub(super) fn map_discovery_failure(
                 },
             }],
             integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace::new(),
-            integrity_observations: Vec::new(),
+            integrity_observations: crate::entry::PhysicalRecoveryIntegrityObservations::default(),
         },
         RecoveryDiscoveryFailure::InvalidAddress { artifact } => DiscoveryFailure {
             kind: PhysicalRecoveryBlock::MediaObservation,
@@ -323,7 +318,7 @@ pub(super) fn map_discovery_failure(
                 failure: PhysicalRecoveryMediaObservationFailure::InvalidAddress,
             }],
             integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace::new(),
-            integrity_observations: Vec::new(),
+            integrity_observations: crate::entry::PhysicalRecoveryIntegrityObservations::default(),
         },
     }
 }
@@ -377,7 +372,7 @@ pub(super) fn discovery_limit(
         }),
         source_denials: Vec::new(),
         integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace::new(),
-        integrity_observations: Vec::new(),
+        integrity_observations: crate::entry::PhysicalRecoveryIntegrityObservations::default(),
     }
 }
 

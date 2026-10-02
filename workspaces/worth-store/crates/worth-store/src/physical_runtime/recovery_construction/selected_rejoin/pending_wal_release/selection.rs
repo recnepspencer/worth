@@ -66,6 +66,7 @@ pub(super) fn observe(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     reopen: &CompletedPhysicalRecoveryFreshReopen,
     claim: &VerifiedPendingWalReleaseCustody,
+    checkpoint: &worth_store_physical_integrity::VerifiedCheckpointStream,
 ) -> Result<Selection, Denial> {
     let format = reopen.format();
     let page_limit = u64::from(format.page_size().bytes());
@@ -137,14 +138,14 @@ pub(super) fn observe(
     }
     match (claim.marker(), claim.selected_release()) {
         (Some(marker), None)
-            if no_release_roster_matches(claim)
+            if no_release_roster_matches(claim, checkpoint)
                 && marker.checkpoint() == claim.checkpoint().source().identity()
                 && marker.root_sha256() == claim.checkpoint_source_root_sha256() => {}
         (None, Some(base)) => {
             let (observed_source, releases, count, bytes) = root_checkpoint::inspect_checkpoint(
                 &checkpoint_bytes,
                 claim.checkpoint().source().identity(),
-                claim.checkpoint().certificate_records(),
+                checkpoint.certificate_records(),
             )?;
             let mut expected = base
                 .batches()
@@ -171,7 +172,7 @@ pub(super) fn observe(
             let (observed_source, releases, count, bytes) = root_checkpoint::inspect_checkpoint(
                 &checkpoint_bytes,
                 claim.checkpoint().source().identity(),
-                claim.checkpoint().certificate_records(),
+                checkpoint.certificate_records(),
             )?;
             let mut expected = base
                 .batches()
@@ -200,7 +201,7 @@ pub(super) fn observe(
             let (observed_source, releases, _, _) = root_checkpoint::inspect_checkpoint(
                 &checkpoint_bytes,
                 claim.checkpoint().source().identity(),
-                claim.checkpoint().certificate_records(),
+                checkpoint.certificate_records(),
             )?;
             let mut expected = base
                 .batches()
@@ -328,13 +329,16 @@ pub(super) fn observe(
     })
 }
 
-fn no_release_roster_matches(claim: &VerifiedPendingWalReleaseCustody) -> bool {
+fn no_release_roster_matches(
+    claim: &VerifiedPendingWalReleaseCustody,
+    checkpoint: &worth_store_physical_integrity::VerifiedCheckpointStream,
+) -> bool {
     let Some(marker) = claim.marker() else {
         return false;
     };
     let mut tier_seen = false;
     let mut release_seen = false;
-    for frame in claim.checkpoint().certificate_records() {
+    for frame in checkpoint.certificate_records() {
         let Ok((kind, payload)) = decode_checkpoint_certificate(frame) else {
             return false;
         };

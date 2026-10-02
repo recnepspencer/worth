@@ -1,15 +1,31 @@
 //! Heap backing retained by the one-shot Serving seal and loaded bootstrap.
 //! The enclosing inline objects and a previous C.8 reopen are not charged here.
 
-use worth_store_physical_integrity::VerifiedCheckpointStream;
 use worth_store_recovery_physics::VerifiedOrderedRootHistory;
 
-use super::RecoveredPhysicalCheckpointCustody;
+use super::RecoveredCheckpointCustodyEvidence;
 
-impl RecoveredPhysicalCheckpointCustody {
+impl RecoveredCheckpointCustodyEvidence {
+    /// Only the remaining heap relies on the bootstrap grant. Native owners
+    /// stay live separately and still participate in the pool's aggregate cap.
+    pub(in crate::physical_runtime) fn bootstrap_covered_heap_bytes(&self) -> Option<u64> {
+        let funded = self
+            .selected_wal
+            .owned_heap_bytes()?
+            .checked_add(self.shared_checkpoint_bytes()?)?
+            .checked_add(
+                self.selected_controls
+                    .as_ref()
+                    .map_or(Some(0), |controls| {
+                        controls.independently_funded_heap_bytes()
+                    })?,
+            )?;
+        self.owned_heap_bytes()?.checked_sub(funded)
+    }
+
     /// Read-only retained cost for sizing a Serving policy; it mints no grant.
     #[cfg(feature = "recovery-runtime-owner")]
-    pub fn retained_heap_bytes(
+    pub(in crate::physical_runtime) fn retained_heap_bytes(
         &self,
     ) -> Result<u64, crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial> {
         self.owned_heap_bytes().ok_or(
@@ -51,51 +67,10 @@ impl RecoveredPhysicalCheckpointCustody {
     }
 
     fn shared_checkpoint_bytes(&self) -> Option<u64> {
-        let checkpoints: [Option<&VerifiedCheckpointStream>; 9] = [
-            self.head_v2.as_ref().map(|claim| claim.checkpoint()),
-            self.no_release.as_ref().map(|claim| claim.checkpoint()),
-            self.pending_wal_release
-                .as_ref()
-                .map(|claim| claim.checkpoint()),
-            self.historical_release
-                .as_ref()
-                .map(|claim| claim.checkpoint()),
-            self.tier.as_ref().map(|claim| claim.checkpoint()),
-            self.pending_wal_release
-                .as_ref()
-                .and_then(|claim| claim.selected_release())
-                .map(|base| base.checkpoint()),
-            self.pending_wal_release
-                .as_ref()
-                .and_then(|claim| claim.addressed_release_base())
-                .map(|base| base.checkpoint()),
-            self.pending_wal_release
-                .as_ref()
-                .and_then(|claim| claim.selected_head_v2())
-                .map(|base| base.checkpoint()),
-            self.historical_release
-                .as_ref()
-                .and_then(|claim| claim.selected_head_v2())
-                .map(|base| base.checkpoint()),
-        ];
-        let mut bytes = 0_u64;
-        for (index, checkpoint) in checkpoints.iter().enumerate() {
-            let Some(checkpoint) = checkpoint else {
-                continue;
-            };
-            if checkpoints[..index]
-                .iter()
-                .flatten()
-                .any(|prior| std::ptr::eq(*prior, *checkpoint))
-            {
-                continue;
-            }
-            bytes = bytes
-                .checked_add(checkpoint.owned_heap_bytes()?)?
-                .checked_add(u64::try_from(std::mem::size_of_val(*checkpoint)).ok()?)?
-                .checked_add(u64::try_from(2 * std::mem::size_of::<usize>()).ok()?)?;
+        match self.checkpoint_ownership.checkpoint() {
+            Some(shared) => shared.owned_heap_bytes(),
+            None => Some(0),
         }
-        Some(bytes)
     }
 
     fn shared_history_bytes(&self) -> Option<u64> {

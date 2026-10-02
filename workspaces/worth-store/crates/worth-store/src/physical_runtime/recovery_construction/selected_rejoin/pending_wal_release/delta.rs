@@ -54,12 +54,13 @@ pub(super) fn verify(
     claim: &VerifiedPendingWalReleaseCustody,
     projection: &PersistedPhysicalRecoveryProjection,
     sample: &StoreRecoveryBindingFreshnessSample,
+    checkpoint: &crate::physical_runtime::SharedRecoveryCheckpoint,
 ) -> Result<AdmittedRecoveryFilesystemMedia, Denial> {
     let format = reopen.format();
     let mut discovery = media
         .bounded_discovery(MAX_DISCOVERY_ENTRIES, MAX_DISCOVERY_BYTES)
         .map_err(Denial::Qualification)?;
-    let selected = selection::observe(&mut discovery, reopen, claim)?;
+    let selected = selection::observe(&mut discovery, reopen, claim, checkpoint.stream())?;
     if !prior.same_bytes(&selected) {
         return Err(Denial::RootBinding);
     }
@@ -70,7 +71,7 @@ pub(super) fn verify(
         selected.free.clone(),
     );
     drop(selected);
-    let retained = retained_memory(prior, controls, claim, projection, sample)?;
+    let retained = retained_memory(prior, controls, claim, projection, sample, checkpoint)?;
     let mut remaining = MAX_TRANSITION_MEMORY
         .checked_sub(retained)
         .ok_or(Denial::BoundExceeded)?;
@@ -196,7 +197,7 @@ pub(super) fn snapshot(
         &mut transcript,
         maximum_segments,
     )?;
-    fingerprint.extend(SelectedControlMediaFingerprint::observed(membership_slices));
+    fingerprint.extend(SelectedControlMediaFingerprint::observed(membership_slices))?;
     for (artifact, bytes) in [
         (
             RecordArtifactFile::RootManifest {
@@ -214,7 +215,7 @@ pub(super) fn snapshot(
         fingerprint.extend(SelectedControlMediaFingerprint::observed(vec![
             SelectedArtifactSlice::observed(artifact, 0, &bytes, true)
                 .ok_or(Denial::BoundExceeded)?,
-        ]));
+        ]))?;
     }
     let segment_width = 4 * std::mem::size_of::<RecordSegmentPageManifestEntry>() as u64;
     debit(
@@ -266,13 +267,15 @@ pub(super) fn retained_memory(
     claim: &VerifiedPendingWalReleaseCustody,
     projection: &PersistedPhysicalRecoveryProjection,
     sample: &StoreRecoveryBindingFreshnessSample,
+    checkpoint: &crate::physical_runtime::SharedRecoveryCheckpoint,
 ) -> Result<u64, Denial> {
     let bytes = selected
         .retained_memory_bytes()
         .saturating_add(controls.retained_memory_bytes())
         .saturating_add(claim_memory(claim))
+        .saturating_add(checkpoint.owned_heap_bytes().ok_or(Denial::BoundExceeded)?)
         .saturating_add(projection_memory(projection))
-        .saturating_add(sample_memory(sample))
+        .saturating_add(sample_memory(sample)?)
         .saturating_add(DISCOVERY_HEADROOM)
         .saturating_add(FINAL_WAL_INVENTORY_HEADROOM)
         .saturating_add(8 << 20);
@@ -282,14 +285,6 @@ pub(super) fn retained_memory(
 }
 
 fn claim_memory(claim: &VerifiedPendingWalReleaseCustody) -> u64 {
-    let certificates = claim
-        .checkpoint()
-        .certificate_records()
-        .iter()
-        .fold(0_u64, |sum, frame| {
-            sum.saturating_add(frame.len() as u64)
-                .saturating_add(4 * std::mem::size_of_val(frame) as u64)
-        });
     let batches = claim
         .selected_release()
         .map_or(0, |base| 4 * std::mem::size_of_val(base.batches()) as u64);
@@ -328,7 +323,6 @@ fn claim_memory(claim: &VerifiedPendingWalReleaseCustody) -> u64 {
         )
     });
     (std::mem::size_of_val(claim) as u64)
-        .saturating_add(certificates)
         .saturating_add(batches)
         .saturating_add(projected)
         .saturating_add(historical)
@@ -364,20 +358,16 @@ pub(super) fn projection_memory(projection: &PersistedPhysicalRecoveryProjection
     bytes
 }
 
-pub(super) fn sample_memory(sample: &StoreRecoveryBindingFreshnessSample) -> u64 {
-    let mut bytes = (std::mem::size_of_val(sample) as u64)
-        .saturating_add(4 * std::mem::size_of_val(sample.operations()) as u64)
-        .saturating_add(4 * std::mem::size_of_val(sample.wal_members()) as u64)
-        .saturating_add(4 * std::mem::size_of_val(sample.retirements()) as u64)
-        .saturating_add(4 * std::mem::size_of_val(sample.extent_copy_frames()) as u64)
-        .saturating_add(4 * std::mem::size_of_val(sample.blob_manifest_residue_cleanups()) as u64);
-    for member in sample.wal_members() {
-        bytes = bytes.saturating_add(member.canonical_redo().len() as u64);
-    }
-    for (_, frame) in sample.extent_copy_frames() {
-        bytes = bytes.saturating_add(frame.len() as u64);
-    }
-    bytes
+pub(super) fn sample_memory(sample: &StoreRecoveryBindingFreshnessSample) -> Result<u64, Denial> {
+    // Preserve the transition envelope's 4x roster / 1x payload allowance,
+    // using actual retained capacities rather than visible slice lengths.
+    let heap = sample.owned_heap_bytes().ok_or(Denial::BoundExceeded)?;
+    let roster = sample.roster_heap_bytes().ok_or(Denial::BoundExceeded)?;
+    roster
+        .checked_mul(3)
+        .and_then(|extra| heap.checked_add(extra))
+        .and_then(|bytes| bytes.checked_add(std::mem::size_of_val(sample) as u64))
+        .ok_or(Denial::BoundExceeded)
 }
 
 #[cfg(test)]

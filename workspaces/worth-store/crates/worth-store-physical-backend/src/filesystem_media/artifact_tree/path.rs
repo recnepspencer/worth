@@ -30,6 +30,9 @@ pub enum ArtifactTreePathDenial {
 }
 
 impl ArtifactTreeDirectory {
+    pub(crate) fn validate_file_component(component: &str) -> Result<(), ArtifactTreePathDenial> {
+        validate_component(component)
+    }
     /// Retained path backing, excluding the inline directory value.
     pub fn owned_heap_bytes(&self) -> Option<u64> {
         let slots = self
@@ -149,31 +152,13 @@ pub(in crate::filesystem_media) fn validate_component(
         return Err(ArtifactTreePathDenial::NonPortableComponent);
     }
     let stem = component.split('.').next().unwrap_or(component);
-    if matches!(
-        stem.to_ascii_uppercase().as_str(),
-        "CON"
-            | "PRN"
-            | "AUX"
-            | "NUL"
-            | "COM1"
-            | "COM2"
-            | "COM3"
-            | "COM4"
-            | "COM5"
-            | "COM6"
-            | "COM7"
-            | "COM8"
-            | "COM9"
-            | "LPT1"
-            | "LPT2"
-            | "LPT3"
-            | "LPT4"
-            | "LPT5"
-            | "LPT6"
-            | "LPT7"
-            | "LPT8"
-            | "LPT9"
-    ) {
+    if [
+        "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8",
+        "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+    ]
+    .iter()
+    .any(|device| stem.eq_ignore_ascii_case(device))
+    {
         return Err(ArtifactTreePathDenial::ReservedDeviceName);
     }
     Ok(())

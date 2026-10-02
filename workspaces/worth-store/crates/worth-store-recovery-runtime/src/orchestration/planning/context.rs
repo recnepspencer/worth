@@ -1,6 +1,5 @@
 use worth_store_recovery_physics::{
-    PhysicalRedoPlanningDenial, PhysicalSourceSelection, RecoveryPlanCostDenial,
-    RecoveryPlanningCounters,
+    PhysicalRedoPlanningDenial, RecoveryPlanCostDenial, RecoveryPlanningCounters,
 };
 
 use crate::entry::{
@@ -13,7 +12,7 @@ use crate::progression::{
     PhysicalRecoveryDiscoveryCounters, RecoveryIntegrityEvidence, SelectedPhysicalRecovery,
 };
 
-use super::super::RecoveryCoordination;
+use super::super::{RecoveryCoordination, ResidentSourceSelection};
 use super::denial::{
     block, block_with_planning_attempt_denial, cost_denial_block, redo_block, redo_denial_block,
 };
@@ -21,7 +20,7 @@ use super::denial::{
 pub(super) struct PlanningContext {
     pub(super) authority: AdmittedPlatformAuthority,
     pub(super) coordination: RecoveryCoordination,
-    pub(super) selection: PhysicalSourceSelection,
+    pub(super) selection: ResidentSourceSelection,
     pub(super) integrity: RecoveryIntegrityEvidence,
     pub(super) counters: PhysicalRecoveryDiscoveryCounters,
     pub(super) root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,

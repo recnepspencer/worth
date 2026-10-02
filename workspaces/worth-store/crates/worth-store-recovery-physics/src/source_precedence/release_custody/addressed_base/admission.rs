@@ -6,6 +6,7 @@ use worth_store_physical_format::{
     BlobRecordV1, PersistedRecordIdentity, PhysicalRecordFormatDeclaration,
     ReleaseCheckpointBatchV1, ReleasedDropCumulativeEvidenceV1, ReleasedDropWalFateWitnessV1,
 };
+use worth_store_physical_integrity::VerifiedCheckpointStream;
 
 use super::{
     checks::{require_addressed_fate, require_frame, verify_lineage},
@@ -25,6 +26,7 @@ impl VerifiedAddressedCheckpointReleaseBase {
     #[allow(clippy::too_many_arguments)]
     pub fn admit(
         selected: &PhysicalSourceSelection,
+        stream: &VerifiedCheckpointStream,
         history: &VerifiedOrderedRootHistory,
         source: ReleasedInventoryView<'_>,
         descriptor_frame: WitnessedSelectedControlFrame,
@@ -43,7 +45,9 @@ impl VerifiedAddressedCheckpointReleaseBase {
         let checkpoint = selected
             .checkpoint()
             .ok_or(SelectedCustodyDenial::MissingCheckpoint)?;
-        let stream = checkpoint.checkpoint();
+        if stream.facts() != *checkpoint.checkpoint() {
+            return Err(SelectedCustodyDenial::CertificateRoster);
+        }
         let checkpoint_root = source.root;
         let checkpoint_free = source.free;
         let root_basis = stream.source().root();
@@ -292,7 +296,7 @@ impl VerifiedAddressedCheckpointReleaseBase {
             return Err(denial);
         }
         Ok(Self {
-            checkpoint: checkpoint.share_checkpoint(),
+            checkpoint: *checkpoint.checkpoint(),
             checkpoint_root: checkpoint_root.clone(),
             checkpoint_root_frame_sha256: root_sha,
             checkpoint_free_space_frame_sha256: free_sha,

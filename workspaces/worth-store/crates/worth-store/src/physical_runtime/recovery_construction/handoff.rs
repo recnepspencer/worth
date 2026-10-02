@@ -11,6 +11,9 @@ use worth_store_recovery_physics::{
 use crate::physical_runtime::{CompletedPhysicalRecoveryFreshReopen, RuntimeIdentity};
 
 pub struct RecoveredPhysicalRuntimeCore {
+    pub(super) residency: crate::physical_runtime::instance::PhysicalResidencyOwner,
+    pub(super) checkpoint_ownership:
+        crate::physical_runtime::recovery_coordination::RecoveryCheckpointOwnership,
     pub(super) store: StableStoreIdentity,
     pub(super) recovery_allocation: crate::physical_runtime::PhysicalRecoveryAllocationAdmission,
     pub(super) runtime: RuntimeIdentity,
@@ -31,7 +34,19 @@ pub struct RecoveredPhysicalRuntimeCore {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RecoveredPhysicalRuntimeConstructionDenial {
     ResidentAdmission(crate::physical_runtime::PhysicalRecoveryRejoinResidentAdmissionDenial),
+    RejoinWalRead {
+        boundary: Option<PhysicalRecoveryRejoinResidentBoundary>,
+        cause: crate::physical_runtime::FundedRecoveryWalReadFailure,
+    },
     RejoinResident(super::selected_rejoin::PhysicalRecoveryRejoinResidentDenial),
+    RejoinWalAdmission {
+        boundary: Option<PhysicalRecoveryRejoinResidentBoundary>,
+        cause: crate::physical_runtime::RecoveryWalAllocationDenial,
+    },
+    RejoinBindingSampling {
+        boundary: Option<PhysicalRecoveryRejoinResidentBoundary>,
+        cause: crate::physical_runtime::StoreRecoveryBindingSampleAllocationDenial,
+    },
     RejoinResidentBoundary {
         boundary: PhysicalRecoveryRejoinResidentBoundary,
         cause: super::selected_rejoin::PhysicalRecoveryRejoinResidentDenial,
@@ -51,6 +66,12 @@ pub enum RecoveredPhysicalRuntimeConstructionDenial {
         offset: u64,
         requested: usize,
         cause: super::selected_rejoin::PhysicalRecoveryRejoinResidentDenial,
+    },
+    RejoinRecordReadAllocation {
+        artifact: worth_store_physical_backend::RecoveryDiscoveryArtifact,
+        offset: u64,
+        requested: usize,
+        cause: crate::physical_runtime::PhysicalRecoveryObservationAllocationDenial,
     },
     RejoinReadBufferLengthMismatch {
         artifact: worth_store_physical_backend::RecoveryDiscoveryArtifact,
@@ -93,6 +114,52 @@ pub enum PhysicalRecoveryWalResidentStage {
 }
 
 impl RecoveredPhysicalRuntimeCore {
+    pub fn checkpoint(&self) -> Option<&crate::physical_runtime::SharedRecoveryCheckpoint> {
+        self.checkpoint_ownership.checkpoint()
+    }
+
+    /// Actual retained WAL fingerprint slot capacity. This observes storage,
+    /// not pool accounting, and grants no media or allocation authority.
+    pub fn selected_wal_owned_heap_bytes(&self) -> Option<u64> {
+        self.selected_wal.as_ref()?.owned_heap_bytes()
+    }
+
+    /// Actual full-tree witness backing, excluding routing and effect slices.
+    #[cfg(feature = "certification-test-authority")]
+    pub fn selected_head_walk_owned_heap_bytes(&self) -> Option<u64> {
+        self.selected_controls
+            .as_ref()?
+            .independently_funded_heap_bytes()
+    }
+
+    pub const fn residency_policy(
+        &self,
+    ) -> crate::physical_runtime::record_serving::AdmittedPhysicalRecordResidencyPolicy {
+        self.residency.admitted_policy()
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub fn certification_residency_allocations(
+        &self,
+    ) -> worth_store_buffer_pool::PhysicalResidencyAllocationEventObserver {
+        self.residency.ports().allocation_events()
+    }
+
+    /// Test-only pressure on the carried pool; grants no media or Serving authority.
+    #[cfg(feature = "certification-test-authority")]
+    pub fn certification_begin_recovery_allocation(
+        &self,
+        bytes: std::num::NonZeroU64,
+    ) -> Result<
+        worth_store_buffer_pool::OperationAllocationGrant,
+        worth_store_buffer_pool::PhysicalResidencyDenial,
+    > {
+        self.residency.ports().begin_operation(
+            worth_store_buffer_pool::PhysicalOperationAllocationScope::Recovery,
+            bytes,
+        )
+    }
+
     pub const fn store_identity(&self) -> StableStoreIdentity {
         self.store
     }
@@ -135,6 +202,8 @@ impl RecoveredPhysicalRuntimeCore {
         self,
     ) -> Option<crate::physical_runtime::RecoveredPhysicalCheckpointCustody> {
         let Self {
+            residency,
+            checkpoint_ownership,
             store,
             recovery_allocation,
             root,
@@ -152,25 +221,26 @@ impl RecoveredPhysicalRuntimeCore {
         } = self;
         drop(media);
         drop(reopen);
+        checkpoint_ownership.checkpoint()?;
         match (head_v2_custody, no_release_custody, pending_wal_release_custody, historical_release_custody, tier_custody, effective_release_heads) {
             (None, Some(no_release), None, None, tier, None) => Some(
                 crate::physical_runtime::RecoveredPhysicalCheckpointCustody::from_verified_no_release(
-                    store, recovery_allocation, root, no_release, tier, selected_wal?, selected_controls?,
+                    residency, checkpoint_ownership, store, recovery_allocation, root, no_release, tier, selected_wal?, selected_controls?,
                 ),
             ),
             (None, None, Some(pending), None, tier, Some(effective)) => Some(
                 crate::physical_runtime::RecoveredPhysicalCheckpointCustody::from_verified_pending_wal_release(
-                    store, recovery_allocation, root, pending, effective, tier, selected_wal?, selected_controls?,
+                    residency, checkpoint_ownership, store, recovery_allocation, root, pending, effective, tier, selected_wal?, selected_controls?,
                 ),
             ),
             (None, None, None, Some(historical), tier, Some(effective)) => Some(
                 crate::physical_runtime::RecoveredPhysicalCheckpointCustody::from_verified_ordered_historical_release(
-                    store, recovery_allocation, root, historical, effective, tier, selected_wal?, selected_controls?,
+                    residency, checkpoint_ownership, store, recovery_allocation, root, historical, effective, tier, selected_wal?, selected_controls?,
                 ),
             ),
             (Some(head_v2), None, None, None, tier, None) => Some(
                 crate::physical_runtime::RecoveredPhysicalCheckpointCustody::from_verified_head_v2(
-                    store, recovery_allocation, root, head_v2, tier, selected_wal?, selected_controls?,
+                    residency, checkpoint_ownership, store, recovery_allocation, root, head_v2, tier, selected_wal?, selected_controls?,
                 ),
             ),
             _ => None,

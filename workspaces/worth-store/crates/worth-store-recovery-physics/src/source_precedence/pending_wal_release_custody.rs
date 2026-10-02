@@ -11,7 +11,7 @@ use worth_store_physical_format::{
     PersistedRecordIdentity, PhysicalInventoryTranscriptV1, PhysicalRecordFormatDeclaration,
     ReleaseCheckpointNoReleaseV1, ReleasedDropWalFateWitnessV1,
 };
-use worth_store_physical_integrity::VerifiedCheckpointStream;
+use worth_store_physical_integrity::{VerifiedCheckpointFacts, VerifiedCheckpointStream};
 
 use super::no_release_custody::selected_checkpoint_marker;
 use super::release_custody::{
@@ -71,7 +71,7 @@ enum PendingReleaseCheckpointBase {
 /// selected checkpoint, C.9 member, controls, and final root before sealing.
 #[derive(Debug)]
 pub struct VerifiedPendingWalReleaseCustody {
-    checkpoint: Arc<VerifiedCheckpointStream>,
+    checkpoint: VerifiedCheckpointFacts,
     base: PendingReleaseCheckpointBase,
     checkpoint_source_root_sha256: [u8; 32],
     source_root: DurablePhysicalRootManifest,
@@ -101,6 +101,7 @@ impl VerifiedPendingWalReleaseCustody {
     #[allow(clippy::too_many_arguments)]
     pub fn admit(
         selected: &PhysicalSourceSelection,
+        stream: &VerifiedCheckpointStream,
         tier: Option<&VerifiedSelectedTierEpochCustody>,
         projection: &PhysicalRedoProjection,
         redo: &ImmutablePhysicalRedoPlan,
@@ -111,7 +112,7 @@ impl VerifiedPendingWalReleaseCustody {
         fates: &ReconciledOperationFates,
         policy: [u8; 32],
     ) -> Result<Self, PendingWalReleaseCustodyDenial> {
-        let marker = selected_checkpoint_marker(selected)
+        let marker = selected_checkpoint_marker(selected, stream)
             .map_err(|_| PendingWalReleaseCustodyDenial::CheckpointMarker)?;
         Self::admit_with_base(
             selected,
@@ -224,7 +225,7 @@ impl VerifiedPendingWalReleaseCustody {
         Ok(())
     }
 
-    pub fn checkpoint(&self) -> &VerifiedCheckpointStream {
+    pub fn checkpoint(&self) -> &VerifiedCheckpointFacts {
         &self.checkpoint
     }
     pub fn marker(&self) -> Option<ReleaseCheckpointNoReleaseV1> {

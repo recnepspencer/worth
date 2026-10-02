@@ -18,6 +18,43 @@ pub enum PhysicalRecoveryRejoinResidentAdmissionDenial {
 }
 
 impl PhysicalRecoveryCoordination {
+    pub(in crate::physical_runtime) fn sampling_allocation_basis(
+        &self,
+    ) -> Result<
+        (
+            &crate::physical_runtime::instance::PhysicalResidencyOwner,
+            crate::physical_runtime::PhysicalRecoveryAllocationAdmission,
+            crate::physical_runtime::LifecycleGeneration,
+        ),
+        PhysicalRecoveryRejoinResidentAdmissionDenial,
+    > {
+        let allocation = self
+            .recovery_allocation
+            .ok_or(PhysicalRecoveryRejoinResidentAdmissionDenial::MissingAllocation)?;
+        Ok((
+            &self.residency,
+            allocation,
+            super::lifecycle_from(self.session_identity()),
+        ))
+    }
+
+    pub(in crate::physical_runtime::recovery_coordination) fn source_read_allocation_basis(
+        &mut self,
+    ) -> Result<
+        (
+            &mut crate::physical_runtime::instance::PhysicalResidencyOwner,
+            crate::physical_runtime::PhysicalRecoveryAllocationAdmission,
+            crate::physical_runtime::LifecycleGeneration,
+        ),
+        PhysicalRecoveryRejoinResidentAdmissionDenial,
+    > {
+        let allocation = self
+            .recovery_allocation
+            .ok_or(PhysicalRecoveryRejoinResidentAdmissionDenial::MissingAllocation)?;
+        let generation = super::lifecycle_from(self.session_identity());
+        Ok((&mut self.residency, allocation, generation))
+    }
+
     pub fn admit_rejoin_resident_bytes(
         &mut self,
         already_live: u64,

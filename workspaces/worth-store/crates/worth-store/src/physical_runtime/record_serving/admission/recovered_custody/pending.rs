@@ -3,7 +3,7 @@
 use super::*;
 use worth_store_physical_format::ReleaseCustodyHeadMutationV1;
 
-impl RecoveredPhysicalCheckpointCustody {
+impl RecoveredCheckpointCustodyEvidence {
     pub(super) fn verify_pending_wal_release(
         &self,
         verified: &VerifiedPendingWalReleaseCustody,
@@ -86,7 +86,10 @@ impl RecoveredPhysicalCheckpointCustody {
                     return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
                 }
                 let mut selected = 0;
-                for frame in verified.checkpoint().certificate_records() {
+                for frame in self
+                    .checkpoint_stream(verified.checkpoint())?
+                    .certificate_records()
+                {
                     let (kind, payload) = decode_checkpoint_certificate(frame).map_err(|_| {
                         RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch
                     })?;

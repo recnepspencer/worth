@@ -7,6 +7,13 @@ mod progression;
 mod request;
 mod request_fingerprint;
 
+#[cfg(all(
+    test,
+    feature = "recovery-runtime-owner",
+    feature = "certification-test-authority"
+))]
+pub(in crate::physical_runtime) use idempotency::with_conflicting_binding_history;
+
 pub(in crate::physical_runtime) use handle::PhysicalMutationAttempt;
 pub use handle::PhysicalMutationHandle;
 pub use idempotency::{
@@ -52,6 +59,7 @@ pub(in crate::physical_runtime) use idempotency::{
 #[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use idempotency::{
     DecodedPhysicalMutationBindingRecord, PersistedPhysicalMutationFate,
+    PhysicalBindingCompactionRecordDecodeDenial, PhysicalPersistedBindingDecodeDenial,
 };
 pub(in crate::physical_runtime) use request::PhysicalMutationDurabilityRequest;
 pub(in crate::physical_runtime) use request_fingerprint::{

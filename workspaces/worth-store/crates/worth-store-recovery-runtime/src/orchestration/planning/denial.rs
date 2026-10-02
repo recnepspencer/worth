@@ -222,10 +222,9 @@ pub(super) fn block_with_root_protocol_counters(
 }
 
 pub(super) fn sample_limit(
-    failure: worth_store::physical_runtime::StoreRecoveryBindingSampleFailure,
+    failure: &worth_store::physical_runtime::StoreRecoveryBindingSampleFailure,
     operation_bindings: u64,
     redo_bytes: u64,
-    recovery_memory_bytes: u64,
 ) -> Option<PhysicalRecoveryLimitFailure> {
     match failure.denial() {
         StoreRecoveryBindingSampleDenial::OperationBindingLimit => {
@@ -241,10 +240,22 @@ pub(super) fn sample_limit(
             admitted: redo_bytes,
         }),
         StoreRecoveryBindingSampleDenial::RecoveryMemoryLimit => {
+            use worth_store::physical_runtime::{
+                PhysicalRecoveryRejoinResidentDenial as Native,
+                StoreRecoveryBindingSampleAllocationDenial as Allocation,
+            };
+            let (observed, admitted) = match failure.allocation_denial()? {
+                Allocation::Backing {
+                    cause: Native::BudgetExceeded { required, admitted },
+                    ..
+                }
+                | Allocation::LocalLimit { required, admitted } => (*required, *admitted),
+                _ => return None,
+            };
             Some(PhysicalRecoveryLimitFailure {
                 dimension: PhysicalRecoveryLimitDimension::RecoveryMemoryBytes,
-                observed: recovery_memory_bytes.saturating_add(1),
-                admitted: recovery_memory_bytes,
+                observed,
+                admitted,
             })
         }
         _ => None,

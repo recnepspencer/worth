@@ -44,6 +44,7 @@ impl PhysicalResidencyPool {
                     next_loading_ordinal: 1,
                     next_resident_generation: PhysicalResidentFrameGeneration::FIRST,
                     active_candidate_publications: 0,
+                    recovery_operation_bytes_ceiling: u64::MAX,
                     dirty_generation: PhysicalDirtyGeneration::GENESIS,
                     accepting: true,
                     closed: false,
@@ -189,6 +190,18 @@ impl PhysicalResidencyPool {
             bytes: bytes.get(),
             active_use_bytes: std::sync::atomic::AtomicU64::new(0),
         })
+    }
+
+    /// Atomically narrows the aggregate Recovery operation-byte ceiling.
+    ///
+    /// A larger ceiling cannot widen an earlier restriction. A ceiling below
+    /// live Recovery grants is denied without changing the existing limit.
+    /// This ceiling is additional to the native scope, global and headroom limits.
+    pub fn restrict_recovery_operation_bytes(
+        &self,
+        ceiling: u64,
+    ) -> Result<(), PhysicalResidencyDenial> {
+        self.inner.restrict_recovery_operation_bytes(ceiling)
     }
 
     pub fn claim_writeback(

@@ -74,6 +74,10 @@ pub enum RecordBootstrapDenial {
     ReadProtectionUnavailable(crate::physical_runtime::PhysicalReadProtectionDenial),
     IdentityEntropyUnavailable,
     ConfigurationMismatch,
+    ResidencyPolicyFormatMismatch {
+        configured: worth_store_physical_format::PhysicalRecordFormatDeclaration,
+        admitted: worth_store_physical_format::PhysicalRecordFormatDeclaration,
+    },
     RecordFamilyAlreadyExists,
     RecordFamilyAbsent,
     AmbiguousRecordFamilyResidue,
@@ -83,7 +87,25 @@ pub enum RecordBootstrapDenial {
     PhysicalRecordFormatMismatch(PhysicalRecordFormatMismatch),
     CurrentRootDamaged,
     RecoveredCheckpointCustodyMismatch,
+    #[cfg(feature = "recovery-runtime-owner")]
+    RecoveredHeadWitnessOwnerMismatch,
+    #[cfg(feature = "recovery-runtime-owner")]
+    RecoveredHeadWitnessPostureMismatch,
+    #[cfg(feature = "recovery-runtime-owner")]
+    RecoveredWalRead(crate::physical_runtime::FundedRecoveryWalReadFailure),
+    #[cfg(feature = "recovery-runtime-owner")]
+    RecoveredHeadRead(
+        worth_store_physical_backend::RecoveryDiscoveryAllocationFailure<
+            crate::physical_runtime::PhysicalRecoveryObservationAllocationDenial,
+        >,
+    ),
+    #[cfg(feature = "recovery-runtime-owner")]
+    RecoveredHeadObservationUnavailable(
+        worth_store_physical_backend::RecoveryFilesystemQualificationError,
+    ),
     RecoveredCustodyResident(crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial),
+    RecoveredResidencyStoreMismatch,
+    RecoveredResidencyPolicyMismatch,
     FreeSpaceManifestDamaged,
     BackendUnavailable(ArtifactTreeFailure),
     ResidencyUnavailable(super::super::PhysicalRecordResidencyFailure),

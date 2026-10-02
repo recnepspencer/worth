@@ -1,6 +1,5 @@
 use worth_store::physical_runtime::{
-    ObservedRecoveryArtifact, StoreRecoveryCheckpointBindingBasis,
-    StoreRecoveryCheckpointBindingRebuilder,
+    ObservedRecoveryArtifact, SharedRecoveryCheckpoint, StoreRecoveryCheckpointBindingBasis,
 };
 use worth_store_physical_format::PhysicalCheckpointIdentity;
 use worth_store_physical_integrity::{
@@ -14,7 +13,8 @@ use super::{
     IntegrityAdmittedCheckpointStreamHeader,
 };
 use crate::integrity_ingress::{
-    ObservedRecoverySource, RecoveryIntegrityIngressObservation, RecoveryIntegrityIngressRejection,
+    checkpoint_stream::RecordEvidenceAllocation, ObservedRecoverySource,
+    RecoveryIntegrityIngressObservation, RecoveryIntegrityIngressRejection,
     RecoveryIntegrityIngressTrace,
 };
 
@@ -28,7 +28,7 @@ pub(crate) struct IntegrityAdmittedCheckpointStream<'media> {
 }
 
 pub(crate) struct OwnerCheckpointProjection {
-    pub(crate) checkpoint: VerifiedCheckpointStream,
+    pub(crate) checkpoint: SharedRecoveryCheckpoint,
     pub(crate) binding_basis: StoreRecoveryCheckpointBindingBasis,
 }
 
@@ -88,7 +88,10 @@ impl<'media> IntegrityAdmittedCheckpointStream<'media> {
         self,
         maximum_binding_records: u64,
         trace: &mut RecoveryIntegrityIngressTrace,
-    ) -> Result<OwnerCheckpointProjection, RecoveryIntegrityIngressRejection> {
+        allocation: &mut RecordEvidenceAllocation<'_, '_>,
+    ) -> Result<OwnerCheckpointProjection, crate::integrity_ingress::CheckpointStreamAdmissionFailure>
+    {
+        use crate::integrity_ingress::CheckpointStreamAdmissionFailure as Failure;
         let footer_scope = self.footer.scope();
         let bytes = self
             .header
@@ -96,30 +99,19 @@ impl<'media> IntegrityAdmittedCheckpointStream<'media> {
             .observed()
             .bytes()
             .ok_or(RecoveryIntegrityIngressRejection::MissingBoundedArtifact)?;
-        let dirty = self
-            .dirty
-            .iter()
-            .map(IntegrityAdmittedCheckpointDirtyBasis::validated)
-            .collect::<Vec<_>>();
-        let bindings = self
-            .bindings
-            .iter()
-            .map(IntegrityAdmittedCheckpointBinding::validated)
-            .collect::<Vec<_>>();
-        let source = self.header.validated().source();
-        let mut binding_rebuilder = StoreRecoveryCheckpointBindingRebuilder::begin(
-            source.identity().store_identity(),
-            source,
-            self.footer
-                .validated()
-                .footer()
-                .binding_compaction_generation(),
-            maximum_binding_records,
+        let mut dirty = allocation.reserve_records(self.dirty.len() as u64)?;
+        dirty.extend(
+            self.dirty
+                .iter()
+                .map(IntegrityAdmittedCheckpointDirtyBasis::validated),
         );
-        for binding in &self.bindings {
-            binding_rebuilder.consume(binding.validated(), binding.source().input()?);
-        }
-        let verified = VerifiedCheckpointStream::assemble_from_validated_records_with_certificates(
+        let mut bindings = allocation.reserve_records(self.bindings.len() as u64)?;
+        bindings.extend(
+            self.bindings
+                .iter()
+                .map(IntegrityAdmittedCheckpointBinding::validated),
+        );
+        let assembly = VerifiedCheckpointStream::validate_records_with_certificates(
             UntrustedPhysicalArtifact::from_bounded_bytes(bytes),
             self.header.validated(),
             &dirty,
@@ -141,6 +133,23 @@ impl<'media> IntegrityAdmittedCheckpointStream<'media> {
             }
         })?;
         trace.record(RecoveryIntegrityIngressObservation::admitted(footer_scope));
+        if assembly.facts().source().root().generation() == 0 {
+            return Err(Failure::Binding(
+                worth_store_recovery_physics::PhysicalCheckpointBaseDenial::RootGenerationMismatch,
+            ));
+        }
+        let verified = allocation
+            .retain_checkpoint(assembly)
+            .map_err(Failure::Backing)?;
+        let mut binding_rebuilder =
+            allocation.begin_binding_rebuild(&verified, maximum_binding_records)?;
+        for binding in &self.bindings {
+            allocation.consume_binding(
+                &mut binding_rebuilder,
+                binding.validated(),
+                binding.source().input()?,
+            )?;
+        }
         let counters = trace.counters_mut();
         counters.record_owner_projection();
         for _ in &self.dirty {
@@ -151,7 +160,9 @@ impl<'media> IntegrityAdmittedCheckpointStream<'media> {
             counters.record_owner_projection();
         }
         counters.record_owner_projection();
-        let binding_basis = binding_rebuilder.finish(&verified);
+        let binding_basis = binding_rebuilder
+            .finish()
+            .map_err(Failure::BindingBasisBacking)?;
         Ok(OwnerCheckpointProjection {
             checkpoint: verified,
             binding_basis,

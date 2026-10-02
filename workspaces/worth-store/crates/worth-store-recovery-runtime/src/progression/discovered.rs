@@ -5,6 +5,9 @@ use crate::orchestration::DiscoveryMaterial;
 
 mod selection;
 
+#[cfg(all(test, feature = "certification-test-authority"))]
+mod checkpoint_scratch_tests;
+
 use selection::{select_sources, SelectionInput};
 
 pub struct DiscoveredPhysicalRecovery {
@@ -113,10 +116,29 @@ impl DiscoveredPhysicalRecovery {
             counters,
             integrity_trace,
         };
-        match select_sources(input, authority.limits) {
+        match select_sources(input, authority.limits, coordination.owner_mut()) {
             Ok(selected) => {
-                if let Some(basis) = selected.checkpoint_binding_basis {
-                    assert!(coordination.install_checkpoint_binding_basis(basis));
+                if let Err(cause) = selected
+                    .checkpoint_installation
+                    .install(coordination.owner_mut())
+                {
+                    let mut denials = selected.root_protocol_denials;
+                    denials.push(
+                        crate::entry::PhysicalRecoverySourceDenial::CheckpointInstallation(cause),
+                    );
+                    return blocked(
+                        authority,
+                        coordination,
+                        PhysicalRecoveryBlockKind::Checkpoint,
+                        PhysicalRecoveryBlockEvidence {
+                            counters: selected.counters,
+                            artifact: Some("families/checkpoint.current".to_owned()),
+                            source_denials: denials,
+                            integrity_trace: selected.integrity_trace,
+                            integrity_observations: selected.wal_integrity_observations,
+                            ..PhysicalRecoveryBlockEvidence::default()
+                        },
+                    );
                 }
                 Ok(super::SelectedPhysicalRecovery::new(
                     authority,

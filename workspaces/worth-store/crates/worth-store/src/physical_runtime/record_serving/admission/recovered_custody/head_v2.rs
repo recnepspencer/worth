@@ -9,7 +9,7 @@ use worth_store_recovery_physics::VerifiedSelectedReleaseHeadCustodyV2;
 
 use super::*;
 
-impl RecoveredPhysicalCheckpointCustody {
+impl RecoveredCheckpointCustodyEvidence {
     pub(super) fn verify_head_v2(
         &self,
         claim: &VerifiedSelectedReleaseHeadCustodyV2,
@@ -20,7 +20,7 @@ impl RecoveredPhysicalCheckpointCustody {
     ) -> Result<(), RecoveredCheckpointCustodyDenial> {
         let denial = RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch;
         let source = claim.checkpoint_source_root();
-        let checkpoint = claim.checkpoint();
+        let checkpoint = self.checkpoint_stream(claim.checkpoint())?;
         let accumulator = claim.accumulator_v2();
         let base = accumulator.base();
         let source_sha: [u8; 32] = Sha256::digest(source.encode(format)).into();

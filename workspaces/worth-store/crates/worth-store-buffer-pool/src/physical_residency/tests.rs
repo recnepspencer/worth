@@ -44,6 +44,8 @@ mod pin_lease_pressure;
 mod pressure_limits;
 #[path = "tests/range_invalidation.rs"]
 mod range_invalidation;
+#[path = "tests/recovery_admission.rs"]
+mod recovery_admission;
 #[path = "tests/shutdown.rs"]
 mod shutdown;
 #[path = "tests/speculation.rs"]

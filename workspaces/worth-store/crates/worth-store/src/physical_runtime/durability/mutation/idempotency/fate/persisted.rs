@@ -1,3 +1,5 @@
+mod encoding;
+
 use std::num::NonZeroU32;
 use std::sync::Arc;
 
@@ -154,51 +156,6 @@ impl PersistedPhysicalMutationFate {
         }
     }
 
-    pub(in crate::physical_runtime) fn encode(&self, target: &mut Vec<u8>) {
-        match self {
-            Self::ProvenNoEffect(fate) => {
-                target.push(1);
-                target.push(fate.cause().encoding_code());
-            }
-            Self::Completed(completed) => {
-                target.push(2);
-                write_field(target, completed.binding.bytes());
-                let breadth = completed.fact.breadth();
-                target.extend_from_slice(&breadth.data_effect_count().to_le_bytes());
-                target.extend_from_slice(&breadth.current_root_generation().to_le_bytes());
-                target.extend_from_slice(
-                    &u32::try_from(completed.fact.persisted_records().len())
-                        .expect("admitted record count fits u32")
-                        .to_le_bytes(),
-                );
-                for record in completed.fact.persisted_records() {
-                    write_field(target, &record.allocation_epoch());
-                    target.extend_from_slice(&record.ordinal().to_le_bytes());
-                }
-                for field in completed.fact.observation().persisted_fields() {
-                    target.extend_from_slice(&field.to_le_bytes());
-                }
-            }
-            Self::Indeterminate(indeterminate) => {
-                target.push(3);
-                target.push(indeterminate.fate.stage().encoding_code());
-                target
-                    .extend_from_slice(&indeterminate.fate.completed_effect_count().to_le_bytes());
-                match &indeterminate.basis {
-                    PersistedIndeterminatePhysicalMutationBasis::Unsealed => target.push(1),
-                    PersistedIndeterminatePhysicalMutationBasis::GroupSealed(group) => {
-                        target.push(2);
-                        encode_group(target, *group);
-                    }
-                    PersistedIndeterminatePhysicalMutationBasis::WalBound(binding) => {
-                        target.push(3);
-                        write_field(target, binding.bytes());
-                    }
-                }
-            }
-        }
-    }
-
     pub(in crate::physical_runtime) fn decode(
         cursor: &mut CanonicalBindingCursor<'_>,
         basis: &PhysicalMutationBindingBasis,
@@ -236,7 +193,32 @@ impl PersistedPhysicalMutationFate {
         let data_effect_count = cursor.u32()?;
         let current_root_generation = cursor.u64()?;
         let record_count = cursor.u32()?;
-        let mut records = Vec::with_capacity(record_count as usize);
+        let record_bytes = (record_count as usize)
+            .checked_mul(32)
+            .and_then(|bytes| bytes.checked_add(13 * 8))
+            .ok_or(PhysicalPersistedBindingDecodeDenial::FieldLengthOverflow)?;
+        if record_bytes > cursor.remaining_bytes() {
+            return Err(PhysicalPersistedBindingDecodeDenial::Truncated);
+        }
+        let requested = (record_count as u64)
+            .checked_mul(std::mem::size_of::<PersistedRecordIdentity>() as u64)
+            .ok_or(PhysicalPersistedBindingDecodeDenial::FieldLengthOverflow)?;
+        let mut records = Vec::new();
+        records
+            .try_reserve_exact(record_count as usize)
+            .map_err(|cause| PhysicalPersistedBindingDecodeDenial::Allocation {
+                requested,
+                cause,
+            })?;
+        if records.capacity() > record_count as usize {
+            return Err(
+                PhysicalPersistedBindingDecodeDenial::AllocatorExceededReservation {
+                    requested,
+                    actual: records.capacity() as u64
+                        * std::mem::size_of::<PersistedRecordIdentity>() as u64,
+                },
+            );
+        }
         for _ in 0..record_count {
             let allocation_epoch = cursor.array_field()?;
             let ordinal = cursor.u64()?;
@@ -297,13 +279,6 @@ impl PersistedPhysicalMutationFate {
     }
 }
 
-fn encode_group(target: &mut Vec<u8>, group: PhysicalDurabilityGroupMemberBinding) {
-    write_field(target, &group.group_identity().bytes());
-    target.extend_from_slice(&group.ordinal().get().to_le_bytes());
-    target.extend_from_slice(&group.member_count().get().to_le_bytes());
-    write_field(target, &group.membership_digest());
-}
-
 fn decode_group(
     cursor: &mut CanonicalBindingCursor<'_>,
     basis: &PhysicalMutationBindingBasis,
@@ -337,11 +312,6 @@ fn require_binding_matches(
     } else {
         Err(PhysicalPersistedBindingDecodeDenial::NonCanonicalEncoding)
     }
-}
-
-fn write_field(target: &mut Vec<u8>, field: &[u8]) {
-    target.extend_from_slice(&(field.len() as u64).to_le_bytes());
-    target.extend_from_slice(field);
 }
 
 impl PhysicalMutationBindingBasis {

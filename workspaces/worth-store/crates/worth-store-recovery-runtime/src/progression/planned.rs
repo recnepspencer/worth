@@ -8,14 +8,14 @@ use crate::entry::{
     AdmittedPlatformAuthority, PhysicalRecoveryOutcome, PhysicalRecoverySourceDenial,
 };
 use crate::handoff::RecoveryOperationFateSet;
-use crate::orchestration::RecoveryCoordination;
+use crate::orchestration::{RecoveryCoordination, ResidentSourceSelection};
 
 use super::{PhysicalRecoveryDiscoveryCounters, RecoveryIntegrityEvidence};
 
 pub struct PlannedPhysicalRecovery {
     authority: AdmittedPlatformAuthority,
     coordination: RecoveryCoordination,
-    selection: PhysicalSourceSelection,
+    selection: ResidentSourceSelection,
     custody: crate::progression::PlanningCustody,
     verified_selected_tier_custody:
         Option<worth_store_recovery_physics::VerifiedSelectedTierEpochCustody>,
@@ -41,7 +41,7 @@ impl PlannedPhysicalRecovery {
     pub(crate) const fn new(
         authority: AdmittedPlatformAuthority,
         coordination: RecoveryCoordination,
-        selection: PhysicalSourceSelection,
+        selection: ResidentSourceSelection,
         custody: crate::progression::PlanningCustody,
         verified_selected_tier_custody: Option<
             worth_store_recovery_physics::VerifiedSelectedTierEpochCustody,
@@ -126,7 +126,7 @@ impl PlannedPhysicalRecovery {
         self.quiescence
     }
     pub const fn selected_sources(&self) -> &PhysicalSourceSelection {
-        &self.selection
+        self.selection.facts()
     }
     pub const fn integrity_observation_count(&self) -> u64 {
         self.integrity_trace.counters().attempted

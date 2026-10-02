@@ -78,6 +78,7 @@ pub(super) fn observe(
     format: PhysicalRecordFormatDeclaration,
     claim: &VerifiedPendingWalReleaseCustody,
     recovery_allocation: PhysicalRecoveryAllocationAdmission,
+    checkpoint: &worth_store_physical_integrity::VerifiedCheckpointStream,
 ) -> Result<Controls, Denial> {
     let (expected_source, expected_published) = claim.topologies().ok_or(Denial::RoutingFrame)?;
     let mut source_builder = PhysicalInventoryTranscriptBuilderV1::new(
@@ -141,8 +142,9 @@ pub(super) fn observe(
     let mut checkpoint_slices = Vec::new();
     let mut selected_head_v2_controls = None;
     let selected_base = if let Some(base) = claim.selected_release() {
-        let addressed =
-            root_checkpoint::addressed::observe_release_base(discovery, selected, base, format)?;
+        let addressed = root_checkpoint::addressed::observe_release_base(
+            discovery, selected, base, format, checkpoint,
+        )?;
         base_failed_ingest_slices.extend_from_slice(source_partition.reservation_slices());
         tier::verify_failed_ingest_subset(
             discovery,

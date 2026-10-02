@@ -1,8 +1,25 @@
+use crate::orchestration::NativeWalRoster;
+use std::sync::Arc;
 use worth_store_physical_integrity::{PhysicalArtifactScope, PhysicalIntegrityRejection};
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+mod assembly;
+pub(crate) use assembly::WalIntegrityObservationBuilder;
+
+#[derive(Debug, Clone, Default)]
 pub struct PhysicalRecoveryIntegrityObservations {
-    wal: Vec<PhysicalRecoveryWalIntegrityObservation>,
+    storage: ObservationStorage,
+}
+
+#[derive(Debug, Clone, Default)]
+enum ObservationStorage {
+    #[default]
+    Empty,
+    Shared(Arc<ObservationData>),
+}
+
+#[derive(Debug)]
+struct ObservationData {
+    roster: NativeWalRoster<PhysicalRecoveryWalIntegrityObservation>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -18,20 +35,41 @@ pub enum PhysicalRecoveryWalIntegrityObservationOutcome {
 }
 
 impl PhysicalRecoveryIntegrityObservations {
-    pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {
-        u64::try_from(self.wal.capacity())
-            .ok()?
-            .checked_mul(std::mem::size_of::<PhysicalRecoveryWalIntegrityObservation>() as u64)
+    pub(crate) const fn empty() -> Self {
+        Self {
+            storage: ObservationStorage::Empty,
+        }
     }
 
-    pub(crate) const fn new(wal: Vec<PhysicalRecoveryWalIntegrityObservation>) -> Self {
-        Self { wal }
+    pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {
+        match &self.storage {
+            ObservationStorage::Empty => Some(0),
+            ObservationStorage::Shared(data) => data.roster.owned_heap_bytes(),
+        }
+    }
+
+    pub fn charged_bytes(&self) -> u64 {
+        match &self.storage {
+            ObservationStorage::Empty => 0,
+            ObservationStorage::Shared(data) => data.roster.charged_bytes(),
+        }
     }
 
     pub fn wal(&self) -> &[PhysicalRecoveryWalIntegrityObservation] {
-        &self.wal
+        match &self.storage {
+            ObservationStorage::Empty => &[],
+            ObservationStorage::Shared(data) => data.roster.as_slice(),
+        }
     }
 }
+
+impl PartialEq for PhysicalRecoveryIntegrityObservations {
+    fn eq(&self, other: &Self) -> bool {
+        self.wal() == other.wal()
+    }
+}
+
+impl Eq for PhysicalRecoveryIntegrityObservations {}
 
 impl PhysicalRecoveryWalIntegrityObservation {
     pub(crate) const fn new(
@@ -49,3 +87,6 @@ impl PhysicalRecoveryWalIntegrityObservation {
         self.outcome
     }
 }
+
+#[cfg(all(test, feature = "certification-test-authority"))]
+mod tests;

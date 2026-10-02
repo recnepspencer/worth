@@ -71,7 +71,7 @@ impl ReopenedPhysicalRecovery {
         &self.state.fates
     }
     pub const fn selected_sources(&self) -> &PhysicalSourceSelection {
-        &self.state.selection
+        self.state.selection.facts()
     }
     pub fn root_protocol_denials(&self) -> &[PhysicalRecoverySourceDenial] {
         &self.state.root_protocol_denials

@@ -1,8 +1,7 @@
 use worth_store_recovery_physics::{
-    admit_physical_page_facts, admit_physical_wal_tail, select_physical_recovery_sources,
-    PhysicalCheckpointBase, PhysicalRecoveryResidue, PhysicalRootSlotObservation,
-    PhysicalSourceSelection, SelectedCompactionProduct, SelectedPhysicalPageFacts,
-    SelectedPhysicalRoot, SelectedPhysicalRootRole, SelectedPhysicalWalTail,
+    admit_physical_page_facts, PhysicalCheckpointBase, PhysicalRecoveryResidue,
+    PhysicalRootSlotObservation, SelectedCompactionProduct, SelectedPhysicalPageFacts,
+    SelectedPhysicalRoot, SelectedPhysicalRootRole,
 };
 
 use crate::entry::{
@@ -13,15 +12,18 @@ use crate::orchestration::{
     AdmittedWalInventory, BootstrapDiscovery, CheckpointDiscovery, ManifestFactsDiscovery,
     ManifestFactsState, WalDiscovery,
 };
-use worth_store::physical_runtime::StoreRecoveryCheckpointBindingBasis;
 
 use super::PhysicalRecoveryDiscoveryCounters;
+use crate::orchestration::{
+    wal_selection::{ResidentWalTail, WalTailSelectionDenial},
+    ResidentSourceSelection,
+};
 
 mod checkpoint;
 mod failure;
 mod root;
 
-use checkpoint::select_checkpoint;
+use checkpoint::{select_checkpoint, CheckpointInstallation};
 use failure::SelectionFailure;
 
 pub(super) struct SelectionInput {
@@ -39,11 +41,10 @@ pub(super) struct SelectionInput {
 }
 
 pub(super) struct SelectionOutput {
-    pub(super) selection: PhysicalSourceSelection,
+    pub(super) selection: ResidentSourceSelection,
     pub(super) admitted_wal: AdmittedWalInventory,
-    pub(super) wal_integrity_observations:
-        Vec<crate::entry::PhysicalRecoveryWalIntegrityObservation>,
-    pub(super) checkpoint_binding_basis: Option<StoreRecoveryCheckpointBindingBasis>,
+    pub(super) wal_integrity_observations: crate::entry::PhysicalRecoveryIntegrityObservations,
+    pub(super) checkpoint_installation: CheckpointInstallation,
     pub(super) counters: PhysicalRecoveryDiscoveryCounters,
     pub(super) root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
     pub(super) integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
@@ -60,7 +61,7 @@ struct FinalSelectionInput {
     page_facts: SelectedPhysicalPageFacts,
     retained_previous_page_facts: Option<SelectedPhysicalPageFacts>,
     checkpoint: Option<PhysicalCheckpointBase>,
-    wal_tail: SelectedPhysicalWalTail,
+    wal_tail: ResidentWalTail,
     compaction: Option<SelectedCompactionProduct>,
     residue: Vec<PhysicalRecoveryResidue>,
     counters: PhysicalRecoveryDiscoveryCounters,
@@ -69,6 +70,7 @@ struct FinalSelectionInput {
 pub(super) fn select_sources(
     input: SelectionInput,
     limits: PhysicalRecoveryLimits,
+    coordination: &mut worth_store::physical_runtime::PhysicalRecoveryCoordination,
 ) -> Result<SelectionOutput, SelectionFailure> {
     let mut counters = input.counters;
     let mut integrity_trace = input.integrity_trace;
@@ -106,15 +108,19 @@ pub(super) fn select_sources(
             .with_integrity_trace(integrity_trace.clone())
             .with_integrity_observations(wal_integrity_observations.clone())
     })?;
-    let (checkpoint, checkpoint_binding_basis) =
-        select_checkpoint(&root, input.checkpoint, counters, &mut integrity_trace).map_err(
-            |failure| {
-                failure
-                    .with_root_protocol_denials(&root_protocol_denials)
-                    .with_integrity_trace(integrity_trace.clone())
-                    .with_integrity_observations(wal_integrity_observations.clone())
-            },
-        )?;
+    let (checkpoint, checkpoint_installation) = select_checkpoint(
+        &root,
+        input.checkpoint,
+        counters,
+        &mut integrity_trace,
+        coordination,
+    )
+    .map_err(|failure| {
+        failure
+            .with_root_protocol_denials(&root_protocol_denials)
+            .with_integrity_trace(integrity_trace.clone())
+            .with_integrity_observations(wal_integrity_observations.clone())
+    })?;
     let frontier = checkpoint
         .as_ref()
         .map_or(0, |checkpoint| checkpoint.wal_tail_begin_lsn());
@@ -124,14 +130,19 @@ pub(super) fn select_sources(
             .compaction_cutover()
             .wal_cutoff_lsn_exclusive()
     });
-    let (wal_tail, admitted_wal, wal_integrity_observations) =
-        select_wal(&root, input.wal, frontier, checkpoint_cutoff, &mut counters).map_err(
-            |failure| {
-                failure
-                    .with_root_protocol_denials(&root_protocol_denials)
-                    .with_integrity_trace(integrity_trace.clone())
-            },
-        )?;
+    let (wal_tail, admitted_wal, wal_integrity_observations) = select_wal(
+        &root,
+        input.wal,
+        frontier,
+        checkpoint_cutoff,
+        &mut counters,
+        coordination,
+    )
+    .map_err(|failure| {
+        failure
+            .with_root_protocol_denials(&root_protocol_denials)
+            .with_integrity_trace(integrity_trace.clone())
+    })?;
     let compaction = checkpoint.as_ref().map(SelectedCompactionProduct::admit);
     let selection = select_final_cut(FinalSelectionInput {
         root,
@@ -154,7 +165,7 @@ pub(super) fn select_sources(
         selection,
         admitted_wal,
         wal_integrity_observations,
-        checkpoint_binding_basis,
+        checkpoint_installation,
         counters,
         root_protocol_denials,
         integrity_trace,
@@ -250,11 +261,12 @@ fn select_wal(
     frontier: u64,
     checkpoint_cutoff: Option<u64>,
     counters: &mut PhysicalRecoveryDiscoveryCounters,
+    coordination: &worth_store::physical_runtime::PhysicalRecoveryCoordination,
 ) -> Result<
     (
-        SelectedPhysicalWalTail,
+        ResidentWalTail,
         AdmittedWalInventory,
-        Vec<crate::entry::PhysicalRecoveryWalIntegrityObservation>,
+        crate::entry::PhysicalRecoveryIntegrityObservations,
     ),
     SelectionFailure,
 > {
@@ -275,10 +287,19 @@ fn select_wal(
         .with_integrity_observations(observations)
         .with_source_denials(denials));
     }
-    match admit_physical_wal_tail(frontier, checkpoint_cutoff, candidates) {
+    match candidates.select_tail(coordination, frontier, checkpoint_cutoff) {
         Ok(selected) => Ok((selected, admitted, observations)),
         Err(denial) => {
-            counters.wal_missing_range_denials += 1;
+            let source_denial = match denial {
+                WalTailSelectionDenial::Selection(denial) => {
+                    counters.wal_missing_range_denials += 1;
+                    PhysicalRecoverySourceDenial::WalTail(denial)
+                }
+                WalTailSelectionDenial::Allocation(cause) => PhysicalRecoverySourceDenial::WalInventoryAllocation {
+                    boundary: crate::entry::PhysicalRecoveryWalInventoryAllocationBoundary::TailPartition,
+                    cause,
+                },
+            };
             Err(SelectionFailure::new(
                 PhysicalRecoveryBlockKind::WalInventory,
                 *counters,
@@ -287,34 +308,35 @@ fn select_wal(
             .with_generation(generation)
             .with_lsn(frontier)
             .with_integrity_observations(observations)
-            .with_source_denials(vec![PhysicalRecoverySourceDenial::WalTail(denial)]))
+            .with_source_denials(vec![source_denial]))
         }
     }
 }
 
 fn select_final_cut(
     input: FinalSelectionInput,
-) -> Result<PhysicalSourceSelection, SelectionFailure> {
+) -> Result<ResidentSourceSelection, SelectionFailure> {
     let generation = input.root.selected().selector().root_generation();
-    select_physical_recovery_sources(
-        input.root,
-        input.page_facts,
-        input.retained_previous_page_facts,
-        input.checkpoint,
-        input.wal_tail,
-        input.compaction,
-        input.residue,
-    )
-    .map_err(|denial| {
-        SelectionFailure::new(
-            PhysicalRecoveryBlockKind::SourceSelection,
-            input.counters,
-            "selected persisted-source cut",
+    input
+        .wal_tail
+        .select_sources(
+            input.root,
+            input.page_facts,
+            input.retained_previous_page_facts,
+            input.checkpoint,
+            input.compaction,
+            input.residue,
         )
-        .with_generation(generation)
-        .with_lsn(input.frontier)
-        .with_source_denials(vec![PhysicalRecoverySourceDenial::FinalSelection(denial)])
-    })
+        .map_err(|denial| {
+            SelectionFailure::new(
+                PhysicalRecoveryBlockKind::SourceSelection,
+                input.counters,
+                "selected persisted-source cut",
+            )
+            .with_generation(generation)
+            .with_lsn(input.frontier)
+            .with_source_denials(vec![PhysicalRecoverySourceDenial::FinalSelection(denial)])
+        })
 }
 
 fn manifest_failure(

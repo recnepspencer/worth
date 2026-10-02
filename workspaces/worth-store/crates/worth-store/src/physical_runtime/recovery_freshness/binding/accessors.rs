@@ -4,30 +4,40 @@ impl StoreRecoveryBindingFreshnessSample {
     /// Owned recovery-data backing, excluding this inline value and past scratch.
     /// Canonical redo and copy frames are distinct retained allocations.
     pub fn owned_heap_bytes(&self) -> Option<u64> {
-        let storage = [
-            std::mem::size_of_val(&*self.operations),
-            std::mem::size_of_val(&*self.wal_members),
-            std::mem::size_of_val(&*self.retirements),
-            std::mem::size_of_val(&*self.extent_copy_frames),
-            std::mem::size_of_val(&*self.blob_manifest_residue_cleanups),
-        ];
-        let mut bytes = storage.into_iter().try_fold(0_u64, |total, size| {
-            total.checked_add(u64::try_from(size).ok()?)
-        })?;
+        let mut bytes = self.roster_heap_bytes()?;
         for member in &self.wal_members {
-            bytes = bytes.checked_add(u64::try_from(member.canonical_redo.len()).ok()?)?;
+            bytes = bytes.checked_add(u64::try_from(member.canonical_redo.capacity()).ok()?)?;
         }
         for (_, frame) in &self.extent_copy_frames {
-            bytes = bytes.checked_add(u64::try_from(frame.len()).ok()?)?;
+            bytes = bytes.checked_add(u64::try_from(frame.capacity()).ok()?)?;
         }
         Some(bytes)
+    }
+
+    pub(in crate::physical_runtime) fn roster_heap_bytes(&self) -> Option<u64> {
+        fn bytes<T>(vector: &Vec<T>) -> Option<u64> {
+            u64::try_from(vector.capacity())
+                .ok()?
+                .checked_mul(std::mem::size_of::<T>() as u64)
+        }
+        bytes(&self.operations)?
+            .checked_add(bytes(&self.wal_members)?)?
+            .checked_add(bytes(&self.retirements)?)?
+            .checked_add(bytes(&self.extent_copy_frames)?)?
+            .checked_add(bytes(&self.blob_manifest_residue_cleanups)?)
+    }
+
+    pub fn charged_bytes(&self) -> u64 {
+        self.backing.bytes()
     }
 
     pub const fn tier_epoch_activation(&self) -> Option<StoreTierEpochActivationObservation> {
         self.tier_epoch_activation
     }
-    pub fn extent_copy_frames(&self) -> &[(WalLsnRange, Box<[u8]>)] {
-        &self.extent_copy_frames
+    pub fn extent_copy_frames(&self) -> impl ExactSizeIterator<Item = (WalLsnRange, &[u8])> {
+        self.extent_copy_frames
+            .iter()
+            .map(|(range, bytes)| (*range, bytes.as_slice()))
     }
     pub fn blob_manifest_residue_cleanups(
         &self,

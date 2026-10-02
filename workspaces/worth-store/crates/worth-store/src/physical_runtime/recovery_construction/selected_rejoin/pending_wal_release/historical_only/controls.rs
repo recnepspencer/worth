@@ -23,6 +23,7 @@ pub(super) fn observe(
     reopen: &CompletedPhysicalRecoveryFreshReopen,
     claim: &VerifiedOrderedHistoricalReleaseCustody,
     remaining_bytes: u64,
+    checkpoint: &worth_store_physical_integrity::VerifiedCheckpointStream,
 ) -> Result<
     (
         AdmittedRecoveryFilesystemMedia,
@@ -47,7 +48,7 @@ pub(super) fn observe(
                 .ok_or(Denial::BoundExceeded)?,
         )
         .map_err(Denial::Qualification)?;
-    if !selection::observe(&mut discovery, reopen, claim)?.same_bytes(selected) {
+    if !selection::observe(&mut discovery, reopen, claim, checkpoint)?.same_bytes(selected) {
         return Err(Denial::RootBinding);
     }
     let routes = tier::routes::verify(

@@ -6,11 +6,11 @@ use crate::filesystem_media::{
 };
 
 use super::{
-    record_artifact, BoundedRecoveryFilesystemDiscovery, ObservedRecoveryArtifact,
-    RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryFailure,
+    record_artifact, FilesystemObservation, ObservedRecoveryArtifact, RecoveryDiscoveryArtifact,
+    RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryFailure,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RecoveryDiscoveryAllocationFailure<E> {
     Discovery(RecoveryDiscoveryFailure),
     Allocation {
@@ -33,7 +33,7 @@ impl<E> From<RecoveryDiscoveryFailure> for RecoveryDiscoveryAllocationFailure<E>
     }
 }
 
-impl BoundedRecoveryFilesystemDiscovery {
+impl<M: super::DiscoveryMediaBacking> FilesystemObservation<M> {
     pub fn read_extent_manifest_with_allocator<E>(
         &mut self,
         range: ExtentArenaRange,
@@ -143,7 +143,7 @@ impl BoundedRecoveryFilesystemDiscovery {
                 self.counters.bytes_read += length;
                 self.counters.addressed_artifacts_read += 1;
                 Ok(ObservedRecoveryArtifact::new(
-                    self.parts.store_identity,
+                    self.parts.store_identity(),
                     context,
                     offset,
                     Some(bytes),
@@ -153,7 +153,7 @@ impl BoundedRecoveryFilesystemDiscovery {
                 if failure.kind() == ArtifactTreeFailureKind::Absent =>
             {
                 Ok(ObservedRecoveryArtifact::new(
-                    self.parts.store_identity,
+                    self.parts.store_identity(),
                     context,
                     offset,
                     None,
@@ -171,6 +171,21 @@ impl BoundedRecoveryFilesystemDiscovery {
         fixed: bool,
         allocate: impl FnOnce(usize) -> Result<Vec<u8>, E>,
     ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryAllocationFailure<E>> {
+        self.read_whole_with(context, byte_limit, fixed, |tree, limit| {
+            tree.read_bounded_with_allocator(&artifact, limit, allocate)
+        })
+    }
+
+    pub(super) fn read_whole_with<E>(
+        &mut self,
+        context: RecoveryDiscoveryArtifact,
+        byte_limit: u64,
+        fixed: bool,
+        read: impl FnOnce(
+            crate::filesystem_media::ArtifactTreeMedia<'_>,
+            u64,
+        ) -> Result<Vec<u8>, ArtifactTreeAllocatedReadFailure<E>>,
+    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryAllocationFailure<E>> {
         let observation_is_tighter = self.remaining_bytes <= byte_limit;
         let effective_byte_limit = byte_limit.min(self.remaining_bytes);
         if self.remaining_entries == 0 {
@@ -181,11 +196,7 @@ impl BoundedRecoveryFilesystemDiscovery {
             .into());
         }
         self.remaining_entries -= 1;
-        match self.parts.artifact_tree().read_bounded_with_allocator(
-            &artifact,
-            effective_byte_limit,
-            allocate,
-        ) {
+        match read(self.parts.artifact_tree(), effective_byte_limit) {
             Ok(bytes) => {
                 self.counters.bytes_read = self
                     .counters
@@ -207,7 +218,7 @@ impl BoundedRecoveryFilesystemDiscovery {
                     self.counters.addressed_artifacts_read += 1;
                 }
                 Ok(ObservedRecoveryArtifact::new(
-                    self.parts.store_identity,
+                    self.parts.store_identity(),
                     context,
                     0,
                     Some(bytes),
@@ -217,7 +228,7 @@ impl BoundedRecoveryFilesystemDiscovery {
                 if failure.kind() == ArtifactTreeFailureKind::Absent =>
             {
                 Ok(ObservedRecoveryArtifact::new(
-                    self.parts.store_identity,
+                    self.parts.store_identity(),
                     context,
                     0,
                     None,
@@ -256,7 +267,7 @@ impl BoundedRecoveryFilesystemDiscovery {
     }
 }
 
-fn map_allocated_failure<E>(
+pub(super) fn map_allocated_failure<E>(
     failure: ArtifactTreeAllocatedReadFailure<E>,
     artifact: RecoveryDiscoveryArtifact,
     offset: u64,

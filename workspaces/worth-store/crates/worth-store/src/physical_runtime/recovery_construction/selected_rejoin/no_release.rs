@@ -15,8 +15,8 @@ use super::{
     MAX_CLEANUP_SAMPLE_BYTES, MAX_DISCOVERY_BYTES, MAX_DISCOVERY_ENTRIES,
 };
 use crate::physical_runtime::{
-    CompletedPhysicalRecoveryFreshReopen, PhysicalRecoveryCoordination,
-    PhysicalRecoveryFreshnessPort,
+    CompletedPhysicalRecoveryFreshReopen, IntegrityAdmittedRecoveryWalFrameView,
+    PhysicalRecoveryCoordination, PhysicalRecoveryFreshnessPort,
 };
 
 struct Selection {
@@ -53,7 +53,10 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
     ),
     Denial,
 > {
-    tier::no_release::verify_marker_claim(claim, false)?;
+    let checkpoint = coordination
+        .require_selected_checkpoint(claim.checkpoint())
+        .map_err(|_| Denial::CheckpointBinding)?;
+    tier::no_release::verify_marker_claim(claim, false, checkpoint.stream())?;
     let mut first = media
         .bounded_discovery(MAX_DISCOVERY_ENTRIES, MAX_DISCOVERY_BYTES)
         .map_err(Denial::Qualification)?;
@@ -65,18 +68,23 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
         reopen.format(),
         Some(claim.checkpoint().source().identity().sequence().get()),
     )?;
-    let selected_wal = wal_inventory::admit_complete_inventory(&mut first, coordination)?;
+    let selected_wal =
+        wal_inventory::admit_complete_inventory(&mut first, coordination).map_err(|denial| {
+            denial.at_resident_boundary(
+                crate::physical_runtime::PhysicalRecoveryRejoinResidentBoundary::FirstWalAdmission,
+            )
+        })?;
     let media = first.finish();
     let sample = PhysicalRecoveryFreshnessPort::sample_binding(
         coordination,
         &media,
         claim.checkpoint(),
-        selected_wal.frames().iter(),
+        IntegrityAdmittedRecoveryWalFrameView::from_frames(selected_wal.frames()),
         MAX_DISCOVERY_ENTRIES,
         wal_inventory::MAX_WAL_BYTES,
         MAX_CLEANUP_SAMPLE_BYTES,
     )
-    .map_err(|_| Denial::WalFate)?;
+    .map_err(Denial::binding_sampling)?;
     tier::no_release::verify_selected_tail(
         &sample,
         &controls,
@@ -101,13 +109,18 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
     if controls != reread_controls {
         return Err(Denial::ControlFrame);
     }
-    let final_wal = wal_inventory::admit_complete_inventory(&mut final_read, coordination)?;
+    let final_wal = wal_inventory::admit_complete_inventory(&mut final_read, coordination)
+        .map_err(|denial| {
+            denial.at_resident_boundary(
+                crate::physical_runtime::PhysicalRecoveryRejoinResidentBoundary::FinalWalAdmission,
+            )
+        })?;
     if !selected_wal.matches_reread(&final_wal) {
         return Err(Denial::WalFate);
     }
     Ok((
         final_read.finish(),
-        final_wal.fingerprint(),
+        final_wal.into_fingerprint(),
         controls.into_media_fingerprint(),
     ))
 }

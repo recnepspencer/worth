@@ -54,6 +54,7 @@ pub(super) fn validate(
         .map(|basis| {
             VerifiedSelectedTierEpochCustody::admit_selected_tier(
                 evidence.selection,
+                evidence.checkpoint.ok_or_else(invalid)?,
                 header,
                 basis.intent,
                 basis.intent_frame,
@@ -89,27 +90,30 @@ fn selected_epoch_authorization(
     let Some(epoch) = header.tier_epoch_start() else {
         return None;
     };
+    let checkpoint = evidence.selection.checkpoint()?;
+    let stream = evidence.checkpoint?;
+    if stream.facts() != *checkpoint.checkpoint() {
+        return None;
+    }
     let selected = evidence.selection.root().selected();
     let selected_root = selected.manifest();
     let root_sha256: [u8; 32] =
         Sha256::digest(selected_root.encode(selected.selector().format())).into();
-    let Some(checkpoint) = evidence.selection.checkpoint() else {
+    let frames = evidence.selected_wal.iter().map(|frame| {
+        TierEpochWalFrameWitnessV1::new(
+            frame.lsn_start(),
+            frame.lsn_end(),
+            frame.identity_digest(),
+            frame.payload_digest(),
+        )
+    });
+    // Preserve the former Option collection's fail-closed validation, including
+    // malformed witnesses unrelated to the selected activation interval.
+    if frames.clone().any(|frame| frame.is_none()) {
         return None;
-    };
-    let frames: Vec<TierEpochWalFrameWitnessV1> = evidence
-        .selected_wal
-        .iter()
-        .map(|frame| {
-            TierEpochWalFrameWitnessV1::new(
-                frame.lsn_start(),
-                frame.lsn_end(),
-                frame.identity_digest(),
-                frame.payload_digest(),
-            )
-        })
-        .collect::<Option<_>>()?;
+    }
     let mut certificate = None;
-    for frame in checkpoint.checkpoint().certificate_records() {
+    for frame in stream.certificate_records() {
         let Ok((kind, payload)) = decode_checkpoint_certificate(frame) else {
             return None;
         };
@@ -128,7 +132,7 @@ fn selected_epoch_authorization(
             let retained_activation_agrees = match evidence.sample.tier_epoch_activation() {
                 None => true,
                 Some(observed) => selected_pair_matches_certificate(
-                    &frames,
+                    frames.clone(),
                     intent,
                     cert.intent_frame(),
                     cert.completed_frame(),
@@ -168,8 +172,8 @@ fn selected_epoch_authorization(
                 // match. Any later, duplicate, partial, or substituted pair
                 // remains a second attempt and is denied.
                 && retained_activation_agrees
-                && retained_witness_agrees(&frames, cert.intent_frame())
-                && retained_witness_agrees(&frames, cert.completed_frame());
+                && retained_witness_agrees(frames.clone(), cert.intent_frame())
+                && retained_witness_agrees(frames.clone(), cert.completed_frame());
             valid.then_some(Some(TierAuthorization {
                 intent,
                 intent_frame: cert.intent_frame(),
@@ -188,13 +192,13 @@ fn selected_epoch_authorization(
             let intent_digest: [u8; 32] = Sha256::digest(intent.encode()).into();
             let completed_digest: [u8; 32] = Sha256::digest(intent.completed().encode()).into();
             let intent_frame = exact_selected_frame(
-                &frames,
+                frames.clone(),
                 observed.intent_range().start().get(),
                 observed.intent_range().end_exclusive().get(),
                 intent_digest,
             )?;
             let completed_frame = exact_selected_frame(
-                &frames,
+                frames.clone(),
                 completed_range.start().get(),
                 completed_range.end_exclusive().get(),
                 completed_digest,
@@ -222,7 +226,7 @@ fn selected_epoch_authorization(
 }
 
 fn selected_pair_matches_certificate(
-    frames: &[TierEpochWalFrameWitnessV1],
+    frames: impl Iterator<Item = Option<TierEpochWalFrameWitnessV1>> + Clone,
     intent: TierEpochActivationV1,
     intent_frame: TierEpochWalFrameWitnessV1,
     completed_frame: TierEpochWalFrameWitnessV1,
@@ -237,7 +241,7 @@ fn selected_pair_matches_certificate(
     let completed_digest: [u8; 32] = Sha256::digest(intent.completed().encode()).into();
     observed_intent == intent
         && exact_selected_frame(
-            frames,
+            frames.clone(),
             observed_intent_range.0,
             observed_intent_range.1,
             intent_digest,
@@ -247,13 +251,14 @@ fn selected_pair_matches_certificate(
 }
 
 fn exact_selected_frame(
-    frames: &[TierEpochWalFrameWitnessV1],
+    frames: impl Iterator<Item = Option<TierEpochWalFrameWitnessV1>>,
     start: u64,
     end: u64,
     payload_digest: [u8; 32],
 ) -> Option<TierEpochWalFrameWitnessV1> {
     let mut selected = None;
-    for frame in frames.iter().copied() {
+    for frame in frames {
+        let frame = frame?;
         if frame.lsn_start() < end && start < frame.lsn_end_exclusive() {
             if selected.is_some()
                 || frame.lsn_start() != start
@@ -269,11 +274,14 @@ fn exact_selected_frame(
 }
 
 fn retained_witness_agrees(
-    frames: &[TierEpochWalFrameWitnessV1],
+    frames: impl Iterator<Item = Option<TierEpochWalFrameWitnessV1>>,
     witness: TierEpochWalFrameWitnessV1,
 ) -> bool {
     let mut found = false;
-    for frame in frames.iter().copied() {
+    for frame in frames {
+        let Some(frame) = frame else {
+            return false;
+        };
         if frame.lsn_start() < witness.lsn_end_exclusive()
             && witness.lsn_start() < frame.lsn_end_exclusive()
         {
@@ -294,91 +302,4 @@ fn retained_witness_agrees(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn witness(start: u64, end: u64, identity: u8, payload: u8) -> TierEpochWalFrameWitnessV1 {
-        TierEpochWalFrameWitnessV1::new(start, end, [identity; 32], [payload; 32]).unwrap()
-    }
-
-    #[test]
-    fn selected_pair_requires_exact_interval_and_payload_not_an_overlapping_member() {
-        let expected = witness(10, 20, 1, 2);
-        assert_eq!(
-            exact_selected_frame(&[expected], 10, 20, [2; 32]),
-            Some(expected)
-        );
-        assert!(exact_selected_frame(&[witness(10, 19, 1, 2)], 10, 20, [2; 32]).is_none());
-        assert!(exact_selected_frame(&[witness(11, 20, 1, 2)], 10, 20, [2; 32]).is_none());
-        assert!(exact_selected_frame(&[witness(10, 20, 1, 3)], 10, 20, [2; 32]).is_none());
-        assert!(exact_selected_frame(&[expected, expected], 10, 20, [2; 32]).is_none());
-    }
-
-    #[test]
-    fn checkpoint_witness_denies_torn_or_conflicting_retained_c9_member() {
-        let expected = witness(100, 110, 4, 5);
-        assert!(retained_witness_agrees(&[], expected));
-        assert!(retained_witness_agrees(&[expected], expected));
-        assert!(!retained_witness_agrees(
-            &[witness(100, 109, 4, 5)],
-            expected
-        ));
-        assert!(!retained_witness_agrees(
-            &[witness(100, 110, 9, 5)],
-            expected
-        ));
-        assert!(!retained_witness_agrees(
-            &[witness(100, 110, 4, 9)],
-            expected
-        ));
-        assert!(!retained_witness_agrees(&[expected, expected], expected));
-    }
-
-    #[test]
-    fn folded_checkpoint_denies_conflicting_selected_tail_activation() {
-        let intent = TierEpochActivationV1::intent(
-            [1; 16], [2; 16], 3, [4; 32], [5; 32], 7, 4, [6; 32], 4096, 8,
-        )
-        .unwrap();
-        let intent_digest: [u8; 32] = Sha256::digest(intent.encode()).into();
-        let completed_digest: [u8; 32] = Sha256::digest(intent.completed().encode()).into();
-        let first = TierEpochWalFrameWitnessV1::new(10, 20, [1; 32], intent_digest).unwrap();
-        let second = TierEpochWalFrameWitnessV1::new(30, 40, [2; 32], completed_digest).unwrap();
-        let matches = |frames: &[TierEpochWalFrameWitnessV1],
-                       observed_intent,
-                       intent_range,
-                       completed_range| {
-            selected_pair_matches_certificate(
-                frames,
-                intent,
-                first,
-                second,
-                observed_intent,
-                intent_range,
-                completed_range,
-            )
-        };
-        assert!(matches(&[first, second], intent, (10, 20), Some((30, 40))));
-        assert!(!matches(&[first, second], intent, (10, 20), None));
-        assert!(!matches(&[first, second], intent, (10, 20), Some((41, 50))));
-        assert!(!matches(&[first, second], intent, (11, 20), Some((30, 40))));
-        assert!(!matches(
-            &[first, second, second],
-            intent,
-            (10, 20),
-            Some((30, 40))
-        ));
-        assert!(!matches(
-            &[first, witness(30, 40, 9, 9)],
-            intent,
-            (10, 20),
-            Some((30, 40)),
-        ));
-        assert!(!matches(
-            &[first, second],
-            intent.completed(),
-            (10, 20),
-            Some((30, 40)),
-        ));
-    }
-}
+mod tests;

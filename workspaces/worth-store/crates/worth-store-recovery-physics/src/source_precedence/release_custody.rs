@@ -3,8 +3,6 @@
 //! these source-bound claims to its own observed selected media before it may
 //! mint a Serving capability.
 
-use std::sync::Arc;
-
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
     decode_blob_record, BlobReclaimSourceBasisV1, BlobReclaimSourceKind, BlobRecordKind,
@@ -13,7 +11,7 @@ use worth_store_physical_format::{
     ReleaseCheckpointBatchV1, SelectedRecordContentClass,
 };
 use worth_store_physical_integrity::{
-    IntegrityValidatedSelectedExtentPayload, VerifiedCheckpointStream,
+    IntegrityValidatedSelectedExtentPayload, VerifiedCheckpointFacts, VerifiedCheckpointStream,
 };
 
 use super::PhysicalSourceSelection;
@@ -104,7 +102,7 @@ impl WitnessedSelectedControlFrame {
 /// Store custody, not a new independent rewalk of absent media.
 #[derive(Debug)]
 pub struct VerifiedSelectedCheckpointCustody {
-    checkpoint: Arc<VerifiedCheckpointStream>,
+    checkpoint: VerifiedCheckpointFacts,
     source_root_sha256: [u8; 32],
     selected_root: DurablePhysicalRootManifest,
     selected_root_sha256: [u8; 32],
@@ -141,6 +139,7 @@ impl VerifiedSelectedCheckpointCustody {
 
     pub fn admit_selected_release(
         selected: &PhysicalSourceSelection,
+        stream: &VerifiedCheckpointStream,
         descriptor: &WitnessedSelectedControlFrame,
         reservation: &WitnessedSelectedControlFrame,
         manifest: &WitnessedSelectedControlFrame,
@@ -150,7 +149,9 @@ impl VerifiedSelectedCheckpointCustody {
         let checkpoint = selected
             .checkpoint()
             .ok_or(SelectedCustodyDenial::MissingCheckpoint)?;
-        let stream = checkpoint.checkpoint();
+        if stream.facts() != *checkpoint.checkpoint() {
+            return Err(SelectedCustodyDenial::CertificateRoster);
+        }
         let root_sha = checkpoint.source_root_frame_sha256();
         let roster = roster::parse(stream, root_sha)?;
         let accumulator = roster.accumulator;
@@ -199,7 +200,7 @@ impl VerifiedSelectedCheckpointCustody {
             Sha256::digest(selected_root.encode(selected.root().selected().selector().format()))
                 .into();
         Ok(Self {
-            checkpoint: checkpoint.share_checkpoint(),
+            checkpoint: *checkpoint.checkpoint(),
             source_root_sha256: root_sha,
             selected_root,
             selected_root_sha256,
@@ -212,7 +213,7 @@ impl VerifiedSelectedCheckpointCustody {
         })
     }
 
-    pub fn checkpoint(&self) -> &VerifiedCheckpointStream {
+    pub fn checkpoint(&self) -> &VerifiedCheckpointFacts {
         &self.checkpoint
     }
 

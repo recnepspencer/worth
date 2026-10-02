@@ -71,6 +71,20 @@ fn assembly_rejects_footer_basis_substituted_from_another_allocation() {
         denial,
         VerifiedCheckpointStreamAssemblyDenial::FooterBasisMismatch(_)
     ));
+    let denial = VerifiedCheckpointStream::validate_records_with_certificates(
+        UntrustedPhysicalArtifact::from_bounded_bytes(&stale),
+        &header,
+        &[&dirty],
+        &compaction,
+        &[&binding],
+        &[],
+        &footer,
+    )
+    .unwrap_err();
+    assert!(matches!(
+        denial,
+        VerifiedCheckpointStreamAssemblyDenial::FooterBasisMismatch(_)
+    ));
 }
 
 fn complete_stream(binding: [u8; BINDING.len()]) -> Vec<u8> {

@@ -22,7 +22,8 @@ pub use disposition::{
 #[cfg(feature = "recovery-runtime-owner")]
 pub use recovery_wal_admission::{
     IntegrityAdmittedRecoveryWalFrame, IntegrityAdmittedRecoveryWalSegment,
-    RecoveryWalIntegrityAdmissionDenial,
+    IntegrityAdmittedRecoveryWalSegmentBuilder, PhysicalRecoveryWalInventoryBacking,
+    RecoveryWalAllocationDenial, RecoveryWalIntegrityAdmissionDenial,
 };
 pub(in crate::physical_runtime) use resident_admission::denial::ResidentIntegrityAdmissionDenial;
 pub(in crate::physical_runtime) use resident_admission::extent::{

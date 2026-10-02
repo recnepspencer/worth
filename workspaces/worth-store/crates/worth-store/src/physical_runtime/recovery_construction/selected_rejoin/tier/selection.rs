@@ -59,6 +59,7 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn obser
     store: StableStoreIdentity,
     reopen: &CompletedPhysicalRecoveryFreshReopen,
     claim: &VerifiedSelectedTierEpochCustody,
+    checkpoint: &worth_store_physical_integrity::VerifiedCheckpointStream,
 ) -> Result<ObservedTierSelection, Denial> {
     let format = reopen.format();
     let page_limit = u64::from(format.page_size().bytes());
@@ -121,7 +122,7 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn obser
     }
     let source_root = checkpoint_source_root(discovery, format, claim)?;
     let mut tier_certificate = None;
-    for frame in claim.checkpoint().certificate_records() {
+    for frame in checkpoint.certificate_records() {
         let (kind, payload) =
             decode_checkpoint_certificate(frame).map_err(|_| Denial::CertificateRoster)?;
         if kind == CheckpointCertificateKind::TierEpoch {

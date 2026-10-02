@@ -3,6 +3,7 @@
 //! never from the Store-wide tip or a lifetime manifest ancestry scan.
 
 use worth_store_physical_format::ReleasedDropWalFateWitnessV1;
+use worth_store_physical_integrity::VerifiedCheckpointStream;
 
 use super::{
     PendingReleaseCheckpointBase, PendingWalReleaseCustodyDenial, VerifiedPendingWalReleaseCustody,
@@ -20,6 +21,7 @@ impl VerifiedPendingWalReleaseCustody {
     #[allow(clippy::too_many_arguments)]
     pub fn admit_with_head_replay(
         selected: &PhysicalSourceSelection,
+        stream: &VerifiedCheckpointStream,
         head_replay: VerifiedSelectedReleaseHeadReplayV14,
         tier: Option<&VerifiedSelectedTierEpochCustody>,
         projection: &PhysicalRedoProjection,
@@ -31,9 +33,10 @@ impl VerifiedPendingWalReleaseCustody {
         fates: &ReconciledOperationFates,
         policy: [u8; 32],
     ) -> Result<Self, PendingWalReleaseCustodyDenial> {
-        let marker =
-            crate::source_precedence::no_release_custody::selected_checkpoint_marker(selected)
-                .map_err(|_| PendingWalReleaseCustodyDenial::CheckpointMarker)?;
+        let marker = crate::source_precedence::no_release_custody::selected_checkpoint_marker(
+            selected, stream,
+        )
+        .map_err(|_| PendingWalReleaseCustodyDenial::CheckpointMarker)?;
         Self::admit_with_base(
             selected,
             PendingReleaseCheckpointBase::NoRelease(marker),

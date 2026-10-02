@@ -198,7 +198,7 @@ impl VerifiedPendingWalReleaseCustody {
             return Err(Denial::DurableWalFate);
         }
         Ok(Self {
-            checkpoint: checkpoint.share_checkpoint(),
+            checkpoint: *checkpoint.checkpoint(),
             base: base_custody,
             checkpoint_source_root_sha256: checkpoint.source_root_frame_sha256(),
             source_root,

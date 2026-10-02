@@ -20,13 +20,26 @@ mod checkpoint;
 mod construction;
 #[path = "recovered_custody/head_v2.rs"]
 mod head_v2;
+#[cfg(feature = "recovery-runtime-owner")]
+#[path = "recovered_custody/media_freshness.rs"]
+mod media_freshness;
 #[path = "recovered_custody/pending.rs"]
 mod pending;
+#[cfg(feature = "recovery-runtime-owner")]
+pub(in crate::physical_runtime) use media_freshness::FundedMediaVerifiedRecoveredCustodyEvidence;
 #[cfg(feature = "recovery-runtime-owner")]
 #[path = "recovered_custody/resident_memory.rs"]
 mod resident_memory;
 
 pub struct RecoveredPhysicalCheckpointCustody {
+    residency: crate::physical_runtime::instance::PhysicalResidencyOwner,
+    evidence: RecoveredCheckpointCustodyEvidence,
+}
+
+pub(in crate::physical_runtime) struct RecoveredCheckpointCustodyEvidence {
+    #[cfg(feature = "recovery-runtime-owner")]
+    checkpoint_ownership:
+        crate::physical_runtime::recovery_coordination::RecoveryCheckpointOwnership,
     store: StableStoreIdentity,
     recovery_allocation: crate::physical_runtime::PhysicalRecoveryAllocationAdmission,
     root: DurablePhysicalRootManifest,
@@ -45,11 +58,11 @@ pub struct RecoveredPhysicalCheckpointCustody {
 
 /// Verification against the freshly loaded Serving media is a required phase.
 pub(in crate::physical_runtime) struct VerifiedRecoveredCheckpointCustody {
-    seal: RecoveredPhysicalCheckpointCustody,
+    seal: RecoveredCheckpointCustodyEvidence,
 }
 
 impl VerifiedRecoveredCheckpointCustody {
-    pub(in crate::physical_runtime) fn seal(&self) -> &RecoveredPhysicalCheckpointCustody {
+    pub(in crate::physical_runtime) fn seal(&self) -> &RecoveredCheckpointCustodyEvidence {
         &self.seal
     }
 }
@@ -63,26 +76,74 @@ pub(in crate::physical_runtime) enum RecoveredCheckpointCustodyDenial {
 }
 
 impl RecoveredPhysicalCheckpointCustody {
-    pub(in crate::physical_runtime) fn verify_for_serving(
-        self,
-        media: &QualifiedFilesystemMedia,
-        store: StableStoreIdentity,
-        root: &DurablePhysicalRootManifest,
-        free_space: &DurableFreeSpaceManifestHeader,
-        format: PhysicalRecordFormatDeclaration,
-    ) -> Result<VerifiedRecoveredCheckpointCustody, RecoveredCheckpointCustodyDenial> {
-        self.verify_for_open(media, store, root, free_space, format)?;
-        Ok(VerifiedRecoveredCheckpointCustody { seal: self })
+    #[cfg(feature = "recovery-runtime-owner")]
+    pub fn checkpoint(&self) -> Option<&crate::physical_runtime::SharedRecoveryCheckpoint> {
+        self.evidence.checkpoint_ownership.checkpoint()
     }
-    /// Original Store-issued recovery ceiling; this observation mints no new grant.
+
+    pub const fn residency_policy(
+        &self,
+    ) -> crate::physical_runtime::record_serving::AdmittedPhysicalRecordResidencyPolicy {
+        self.residency.admitted_policy()
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub fn certification_residency_allocations(
+        &self,
+    ) -> worth_store_buffer_pool::PhysicalResidencyAllocationEventObserver {
+        self.residency.ports().allocation_events()
+    }
+
+    pub(in crate::physical_runtime) fn into_serving_parts(
+        self,
+    ) -> (
+        crate::physical_runtime::instance::PhysicalResidencyOwner,
+        RecoveredCheckpointCustodyEvidence,
+    ) {
+        (self.residency, self.evidence)
+    }
+
     pub const fn recovery_allocation_admission(
+        &self,
+    ) -> crate::physical_runtime::PhysicalRecoveryAllocationAdmission {
+        self.evidence.recovery_allocation
+    }
+
+    #[cfg(feature = "recovery-runtime-owner")]
+    pub fn retained_heap_bytes(
+        &self,
+    ) -> Result<u64, crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial> {
+        self.evidence.retained_heap_bytes()
+    }
+}
+
+impl RecoveredCheckpointCustodyEvidence {
+    fn checkpoint_stream(
+        &self,
+        facts: &worth_store_physical_integrity::VerifiedCheckpointFacts,
+    ) -> Result<
+        &worth_store_physical_integrity::VerifiedCheckpointStream,
+        RecoveredCheckpointCustodyDenial,
+    > {
+        #[cfg(feature = "recovery-runtime-owner")]
+        if let Some(shared) = self.checkpoint_ownership.checkpoint() {
+            if shared.facts() == *facts {
+                return Ok(shared.stream());
+            }
+        }
+        let _ = facts;
+        Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch)
+    }
+
+    /// Original Store-issued recovery ceiling; this observation mints no new grant.
+    pub(in crate::physical_runtime) const fn recovery_allocation_admission(
         &self,
     ) -> crate::physical_runtime::PhysicalRecoveryAllocationAdmission {
         self.recovery_allocation
     }
 
     #[cfg(feature = "recovery-runtime-owner")]
-    pub(in crate::physical_runtime) fn verify_for_open(
+    fn verify_controls_for_open(
         &self,
         media: &QualifiedFilesystemMedia,
         store: StableStoreIdentity,
@@ -95,9 +156,6 @@ impl RecoveredPhysicalCheckpointCustody {
             return Err(RecoveredCheckpointCustodyDenial::SelectedRootMismatch);
         }
         self.verify_current_checkpoint(media)?;
-        if !self.selected_wal.matches_serving_media(media) {
-            return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
-        }
         if !self
             .selected_controls
             .as_ref()
@@ -170,18 +228,6 @@ impl RecoveredPhysicalCheckpointCustody {
         Ok(())
     }
 
-    #[cfg(not(feature = "recovery-runtime-owner"))]
-    pub(in crate::physical_runtime) fn verify_for_open(
-        &self,
-        _media: &QualifiedFilesystemMedia,
-        _store: StableStoreIdentity,
-        _root: &DurablePhysicalRootManifest,
-        _free_space: &DurableFreeSpaceManifestHeader,
-        _format: PhysicalRecordFormatDeclaration,
-    ) -> Result<(), RecoveredCheckpointCustodyDenial> {
-        Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch)
-    }
-
     fn verify_no_release(
         &self,
         verified: &VerifiedSelectedNoReleaseCustody,
@@ -190,7 +236,7 @@ impl RecoveredPhysicalCheckpointCustody {
         actual_sha256: [u8; 32],
     ) -> Result<(), RecoveredCheckpointCustodyDenial> {
         let marker = verified.marker();
-        let stream = verified.checkpoint();
+        let stream = self.checkpoint_stream(verified.checkpoint())?;
         let source = stream.source();
         if verified.selected_root() != root
             || verified.selected_root_sha256() != actual_sha256

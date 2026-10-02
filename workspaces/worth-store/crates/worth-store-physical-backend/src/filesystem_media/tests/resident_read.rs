@@ -299,3 +299,7 @@ fn extent_relative_range_is_admitted_before_allocator_or_positioned_read() {
     assert_eq!(discovery.counters().bytes_read, 3);
     assert_eq!(discovery.counters().addressed_artifacts_read, 1);
 }
+
+mod record_storage;
+mod wal_context;
+mod wal_path;

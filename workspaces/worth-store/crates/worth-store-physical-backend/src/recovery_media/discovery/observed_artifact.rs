@@ -3,7 +3,7 @@ use worth_store_physical_format::store_namespace::StableStoreIdentity;
 use super::RecoveryDiscoveryArtifact;
 
 /// One bounded C4 read, including the actual owner, locator, and file offset.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct ObservedRecoveryArtifact {
     store: StableStoreIdentity,
     artifact: RecoveryDiscoveryArtifact,

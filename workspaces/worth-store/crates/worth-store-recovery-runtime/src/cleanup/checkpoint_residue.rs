@@ -10,7 +10,7 @@ use crate::progression::ReopenedPhysicalRecovery;
 /// `selected checkpoint sequence + 1` staging candidate under the same
 /// recovery media owner, before closing the fresh-reopen authority.
 pub(super) fn prepare(reopened: &ReopenedPhysicalRecovery) -> RecoveryCheckpointResidueOutcome {
-    let Some(checkpoint) = reopened.state.selection.checkpoint() else {
+    let Some(checkpoint) = reopened.state.coordination.owner().checkpoint() else {
         return RecoveryCheckpointResidueOutcome::Absent;
     };
     let maximum = reopened
@@ -33,7 +33,7 @@ pub(super) fn prepare(reopened: &ReopenedPhysicalRecovery) -> RecoveryCheckpoint
         .owner()
         .remove_unselected_checkpoint_candidate(
             &reopened.state.authority.media,
-            checkpoint.checkpoint(),
+            checkpoint,
             maximum,
         )
 }

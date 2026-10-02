@@ -6,7 +6,7 @@ use worth_store_physical_format::{
     PhysicalCheckpointSource, PhysicalRecordFormatDeclaration, ReleaseCheckpointCertificateV1,
     RootSelectorRole, ROOT_SELECTOR_BYTES,
 };
-use worth_store_physical_integrity::VerifiedCheckpointStream;
+use worth_store_physical_integrity::{VerifiedCheckpointFacts, VerifiedCheckpointStream};
 use worth_store_recovery_physics::{
     VerifiedSelectedCheckpointCustody, VerifiedSelectedReleaseHeadCustodyV2,
 };
@@ -147,7 +147,7 @@ impl ObservedRootCheckpoint {
         reader: &mut RootCheckpointReader<'_, '_>,
         selected_root: &DurablePhysicalRootManifest,
         selected_root_sha256: [u8; 32],
-        checkpoint: &VerifiedCheckpointStream,
+        checkpoint: &VerifiedCheckpointFacts,
         source_root_sha256: [u8; 32],
         releases_match: bool,
         release_record_count: u16,

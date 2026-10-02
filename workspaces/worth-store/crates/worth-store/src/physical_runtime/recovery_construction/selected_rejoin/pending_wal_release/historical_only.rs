@@ -13,8 +13,8 @@ use super::super::{
 };
 use super::{delta, ordered_walk};
 use crate::physical_runtime::{
-    CompletedPhysicalRecoveryFreshReopen, PhysicalRecoveryCoordination,
-    PhysicalRecoveryFreshnessPort,
+    CompletedPhysicalRecoveryFreshReopen, IntegrityAdmittedRecoveryWalFrameView,
+    PhysicalRecoveryCoordination, PhysicalRecoveryFreshnessPort,
 };
 
 #[path = "historical_only/budget.rs"]
@@ -39,35 +39,47 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
     ),
     Denial,
 > {
+    let checkpoint = coordination
+        .require_selected_checkpoint(claim.checkpoint())
+        .map_err(|_| Denial::CheckpointBinding)?;
     let mut first = media
         .bounded_discovery(MAX_DISCOVERY_ENTRIES, MAX_DISCOVERY_BYTES)
         .map_err(Denial::Qualification)?;
-    let selected = selection::observe(&mut first, reopen, claim)?;
-    let inventory = wal_inventory::admit_complete_inventory(&mut first, coordination)?;
+    let selected = selection::observe(&mut first, reopen, claim, checkpoint.stream())?;
+    let inventory =
+        wal_inventory::admit_complete_inventory(&mut first, coordination).map_err(|denial| {
+            denial.at_resident_boundary(
+                crate::physical_runtime::PhysicalRecoveryRejoinResidentBoundary::FirstWalAdmission,
+            )
+        })?;
     let media = first.finish();
     let sample = PhysicalRecoveryFreshnessPort::sample_binding(
         coordination,
         &media,
         claim.checkpoint(),
-        inventory.frames().iter(),
+        IntegrityAdmittedRecoveryWalFrameView::from_frames(inventory.frames()),
         MAX_DISCOVERY_ENTRIES,
         wal_inventory::MAX_WAL_BYTES,
         MAX_CLEANUP_SAMPLE_BYTES,
     )
-    .map_err(|_| Denial::WalFate)?;
+    .map_err(Denial::binding_sampling)?;
     pause_before_final_reread();
     let mut final_read = media
         .bounded_discovery(MAX_DISCOVERY_ENTRIES, MAX_DISCOVERY_BYTES)
         .map_err(Denial::Qualification)?;
-    let reread = selection::observe(&mut final_read, reopen, claim)?;
-    let final_inventory = wal_inventory::admit_complete_inventory(&mut final_read, coordination)?;
+    let reread = selection::observe(&mut final_read, reopen, claim, checkpoint.stream())?;
+    let final_inventory = wal_inventory::admit_complete_inventory(&mut final_read, coordination)
+        .map_err(|denial| {
+            denial.at_resident_boundary(
+                crate::physical_runtime::PhysicalRecoveryRejoinResidentBoundary::FinalWalAdmission,
+            )
+        })?;
     if !selected.same_bytes(&reread) || !inventory.matches_reread(&final_inventory) {
         return Err(Denial::RootBinding);
     }
-    let wal_fingerprint = final_inventory.fingerprint();
     drop(selected);
     drop(inventory);
-    let retained = retained_memory(&reread, claim, &sample)?;
+    let retained = retained_memory(&reread, claim, &sample, checkpoint)?;
     let (media, mut controls_fingerprint) = controls::observe(
         final_read.finish(),
         &reread,
@@ -76,6 +88,7 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
         delta::MAX_TRANSITION_MEMORY
             .checked_sub(retained)
             .ok_or(Denial::BoundExceeded)?,
+        checkpoint.stream(),
     )?;
     let retained_with_controls = retained
         .checked_add(controls_fingerprint.retained_memory_bytes())
@@ -97,6 +110,7 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
     ) {
         return Err(Denial::BoundExceeded);
     }
+    let wal_fingerprint = final_inventory.into_fingerprint();
     Ok((media, wal_fingerprint, controls_fingerprint))
 }
 
@@ -104,12 +118,9 @@ fn retained_memory(
     selected: &selection::Selection,
     claim: &VerifiedOrderedHistoricalReleaseCustody,
     sample: &crate::physical_runtime::StoreRecoveryBindingFreshnessSample,
+    checkpoint: &crate::physical_runtime::SharedRecoveryCheckpoint,
 ) -> Result<u64, Denial> {
-    let checkpoint_bytes = claim
-        .checkpoint()
-        .certificate_records()
-        .iter()
-        .fold(0_u64, |sum, frame| sum.saturating_add(frame.len() as u64));
+    let checkpoint_bytes = checkpoint.owned_heap_bytes().ok_or(Denial::BoundExceeded)?;
     let edge_bytes = claim.history().edges().iter().fold(0_u64, |sum, edge| {
         let projected = match edge {
             worth_store_recovery_physics::VerifiedOrderedRootEdge::Ordinary(_) => 0,
@@ -129,7 +140,7 @@ fn retained_memory(
         .saturating_add(checkpoint_bytes)
         .saturating_add(edge_bytes)
         .saturating_add(batch_bytes)
-        .saturating_add(delta::sample_memory(sample))
+        .saturating_add(delta::sample_memory(sample)?)
         .saturating_add(64 << 20)
         .saturating_add(wal_inventory::MAX_WAL_BYTES + (32 << 20))
         .saturating_add(8 << 20);

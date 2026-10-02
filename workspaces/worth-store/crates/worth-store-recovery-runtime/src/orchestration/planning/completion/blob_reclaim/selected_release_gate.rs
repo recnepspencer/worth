@@ -33,7 +33,14 @@ pub(super) fn verify(
     mut context: PlanningContext,
     basis: &mut ResolvedPlanningBasis,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
-    match checkpoint_posture(&context.selection) {
+    match checkpoint_posture(
+        &context.selection,
+        context
+            .coordination
+            .owner()
+            .checkpoint()
+            .map(|shared| shared.stream()),
+    ) {
         Ok(CheckpointReleasePosture::HeadV2) => {
             if let PlanningCustody::PendingPrepared { claim: pending, .. } = &basis.custody {
                 let admitted = pending.selected_head_v2().is_some_and(|custody| {
@@ -83,8 +90,12 @@ pub(super) fn verify(
             if has_release {
                 return Err(context.redo_block(basis.planning_counters(), None));
             }
+            let Some(shared) = context.coordination.owner().checkpoint() else {
+                return Err(context.redo_block(basis.planning_counters(), None));
+            };
             let claim = match worth_store_recovery_physics::VerifiedSelectedNoReleaseCustody::claim_selected_no_release(
                 &context.selection,
+                shared.stream(),
             ) {
                 Ok(claim) => claim,
                 Err(_) => return Err(context.redo_block(basis.planning_counters(), None)),
@@ -133,11 +144,20 @@ enum CheckpointReleasePosture {
 
 fn checkpoint_posture(
     selected: &worth_store_recovery_physics::PhysicalSourceSelection,
+    stream: Option<&worth_store_physical_integrity::VerifiedCheckpointStream>,
 ) -> Result<CheckpointReleasePosture, ()> {
     let Some(checkpoint) = selected.checkpoint() else {
-        return Ok(CheckpointReleasePosture::Absent);
+        return if stream.is_none() {
+            Ok(CheckpointReleasePosture::Absent)
+        } else {
+            Err(())
+        };
     };
-    checkpoint_records_posture(checkpoint.checkpoint().certificate_records())
+    let stream = stream.ok_or(())?;
+    if stream.facts() != *checkpoint.checkpoint() {
+        return Err(());
+    }
+    checkpoint_records_posture(stream.certificate_records())
 }
 
 fn checkpoint_records_posture(records: &[Box<[u8]>]) -> Result<CheckpointReleasePosture, ()> {

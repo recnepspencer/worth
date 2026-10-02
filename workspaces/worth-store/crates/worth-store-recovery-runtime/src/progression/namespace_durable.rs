@@ -25,7 +25,7 @@ pub struct NamespaceDurablePhysicalRecovery {
 pub(crate) struct NamespaceDurableState<C = crate::progression::PlanningCustody> {
     pub(crate) authority: AdmittedPlatformAuthority,
     pub(crate) coordination: RecoveryCoordination,
-    pub(crate) selection: PhysicalSourceSelection,
+    pub(crate) selection: crate::orchestration::ResidentSourceSelection,
     pub(crate) custody: C,
     pub(crate) verified_selected_tier_custody:
         Option<worth_store_recovery_physics::VerifiedSelectedTierEpochCustody>,
@@ -78,7 +78,7 @@ impl NamespaceDurablePhysicalRecovery {
         &self.state.fates
     }
     pub const fn selected_sources(&self) -> &PhysicalSourceSelection {
-        &self.state.selection
+        self.state.selection.facts()
     }
     pub const fn discovery_counters(&self) -> PhysicalRecoveryDiscoveryCounters {
         self.state.discovery_counters

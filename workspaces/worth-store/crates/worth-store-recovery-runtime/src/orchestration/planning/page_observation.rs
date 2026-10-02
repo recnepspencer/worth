@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use worth_store::physical_runtime::AdmittedRecoveryFilesystemMedia;
 use worth_store::physical_runtime::{
-    IntegrityAdmittedRecoveryWalFrame, StoreRecoveryBindingFreshnessSample,
+    IntegrityAdmittedRecoveryWalFrameView, StoreRecoveryBindingFreshnessSample,
 };
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration,
@@ -50,8 +50,9 @@ pub(super) use selected_basis::{artifact_read_ceiling, ArtifactReadCeilingDenial
 #[derive(Clone, Copy)]
 pub(super) struct TierEvidence<'a> {
     pub(super) selection: &'a PhysicalSourceSelection,
+    pub(super) checkpoint: Option<&'a worth_store_physical_integrity::VerifiedCheckpointStream>,
     pub(super) sample: &'a StoreRecoveryBindingFreshnessSample,
-    pub(super) selected_wal: &'a [&'a IntegrityAdmittedRecoveryWalFrame],
+    pub(super) selected_wal: IntegrityAdmittedRecoveryWalFrameView<'a>,
 }
 
 pub(super) fn observe_selected_pages(

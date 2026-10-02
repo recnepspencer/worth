@@ -24,6 +24,7 @@ use crate::physical_runtime::StoreRecoveryBindingFreshnessSample;
 pub(super) fn verify_claims(
     tier: &VerifiedSelectedTierEpochCustody,
     no_release: &VerifiedSelectedNoReleaseCustody,
+    checkpoint: &worth_store_physical_integrity::VerifiedCheckpointStream,
 ) -> Result<(), Denial> {
     if tier.selected_root() != no_release.selected_root()
         || tier.selected_root_sha256() != no_release.selected_root_sha256()
@@ -34,16 +35,17 @@ pub(super) fn verify_claims(
     {
         return Err(Denial::CertificateRoster);
     }
-    verify_marker_claim(no_release, true)
+    verify_marker_claim(no_release, true, checkpoint)
 }
 
 pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn verify_marker_claim(
     no_release: &VerifiedSelectedNoReleaseCustody,
     allow_tier: bool,
+    checkpoint: &worth_store_physical_integrity::VerifiedCheckpointStream,
 ) -> Result<(), Denial> {
     let mut selected = None;
     let mut tier_seen = false;
-    for frame in no_release.checkpoint().certificate_records() {
+    for frame in checkpoint.certificate_records() {
         let (kind, payload) =
             decode_checkpoint_certificate(frame).map_err(|_| Denial::CertificateRoster)?;
         if kind == CheckpointCertificateKind::TierEpoch {
@@ -151,8 +153,8 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn verif
     Ok(())
 }
 
-fn matches_exact_copy_intent(
-    frames: &[(worth_store_wal::WalLsnRange, Box<[u8]>)],
+fn matches_exact_copy_intent<'a>(
+    frames: impl Iterator<Item = (worth_store_wal::WalLsnRange, &'a [u8])>,
     recipe: worth_store_physical_format::PersistedExtentCopyRecipe,
     format: PhysicalRecordFormatDeclaration,
 ) -> bool {

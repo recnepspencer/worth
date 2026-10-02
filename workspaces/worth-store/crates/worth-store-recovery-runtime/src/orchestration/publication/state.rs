@@ -16,7 +16,7 @@ use crate::progression::{
 pub(super) struct PublicationState {
     authority: AdmittedPlatformAuthority,
     coordination: super::super::RecoveryCoordination,
-    selection: worth_store_recovery_physics::PhysicalSourceSelection,
+    selection: crate::orchestration::ResidentSourceSelection,
     custody: crate::progression::PlanningCustody,
     verified_selected_tier_custody:
         Option<worth_store_recovery_physics::VerifiedSelectedTierEpochCustody>,

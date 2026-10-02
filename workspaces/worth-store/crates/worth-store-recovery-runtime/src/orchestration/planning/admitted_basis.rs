@@ -49,7 +49,7 @@ pub(super) fn admit(
         context
             .integrity
             .admitted_wal()
-            .recoverable_frames(context.selection.wal_tail()),
+            .recoverable_frame_view(context.selection.wal_tail()),
         context.limits.operation_bindings,
         context.limits.redo_bytes,
         context.limits.recovery_memory_bytes,
@@ -58,10 +58,9 @@ pub(super) fn admit(
         Err(failure) => {
             let denial = failure.denial();
             let limit = sample_limit(
-                failure,
+                &failure,
                 context.limits.operation_bindings,
                 context.limits.redo_bytes,
-                context.limits.recovery_memory_bytes,
             );
             let planning_counters =
                 counters::failed_sample(failure.freshness_retained(), failure.freshness_expired());
@@ -70,7 +69,12 @@ pub(super) fn admit(
                 planning_counters,
                 "binding-freshness-sample",
                 limit,
-                PhysicalRecoveryPlanningDenial::BindingFreshness(denial),
+                match failure.allocation_denial() {
+                    Some(cause) => {
+                        PhysicalRecoveryPlanningDenial::BindingSamplingAllocation(cause.clone())
+                    }
+                    None => PhysicalRecoveryPlanningDenial::BindingFreshness(denial),
+                },
             ));
         }
     };

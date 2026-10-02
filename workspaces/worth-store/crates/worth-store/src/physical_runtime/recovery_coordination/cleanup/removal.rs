@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use worth_store_physical_backend::PhysicalRecoveryMediaGeneration;
 use worth_store_physical_format::{
     store_namespace::StableStoreIdentity, PhysicalCheckpointIdentity,
@@ -32,7 +30,7 @@ pub(in crate::physical_runtime) struct PhysicalRecoveryCleanupRemovalCommand {
     byte_count: u64,
     selector_read: worth_store_physical_backend::CompletedScheduledRecoveryReopenRead,
     root_read: worth_store_physical_backend::CompletedScheduledRecoveryReopenRead,
-    checkpoint_stream: Arc<worth_store_physical_integrity::VerifiedCheckpointStream>,
+    checkpoint_stream: crate::physical_runtime::SharedRecoveryCheckpoint,
     admitted_wal: crate::physical_runtime::IntegrityAdmittedRecoveryWalSegment,
 }
 
@@ -92,7 +90,7 @@ impl PhysicalRecoveryCleanupRemovalCommand {
     pub(in crate::physical_runtime) fn from_freshness(
         basis: crate::physical_runtime::recovery_freshness::StoreRecoveryCleanupRemovalBasis,
         selector_read: worth_store_physical_backend::CompletedScheduledRecoveryReopenRead,
-        checkpoint_stream: Arc<worth_store_physical_integrity::VerifiedCheckpointStream>,
+        checkpoint_stream: crate::physical_runtime::SharedRecoveryCheckpoint,
         admitted_wal: crate::physical_runtime::IntegrityAdmittedRecoveryWalSegment,
     ) -> Self {
         let root_read = basis.root_read();

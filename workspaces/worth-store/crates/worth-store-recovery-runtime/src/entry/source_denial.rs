@@ -55,8 +55,68 @@ use worth_store_recovery_physics::{
     PhysicalRootSelectionDenial, PhysicalSourceSelectionDenial, SelectedPhysicalWalTailDenial,
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PhysicalRecoverySourceReadAllocationBoundary {
+    WindowAdmission,
+    ReadBuffer,
+    QualifiedPath(worth_store::physical_runtime::ArtifactTreePathAllocationBoundary),
+    ParserRecords,
+    BindingDecode,
+    BindingBasis,
+    CanonicalValidation,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PhysicalRecoverySourceReadAllocationDenial {
+    Admission(worth_store::physical_runtime::PhysicalRecoveryRejoinResidentAdmissionDenial),
+    Residency(worth_store::physical_runtime::PhysicalRecoveryRejoinResidentDenial),
+    Observation(worth_store::physical_runtime::PhysicalRecoveryObservationAllocationDenial),
+    BindingDecode(worth_store::physical_runtime::StoreRecoveryCheckpointBindingAllocationDenial),
+    BindingBasis(worth_store::physical_runtime::StoreRecoveryCheckpointBindingAllocationDenial),
+    AllocatorExceededReservation { requested: u64, actual: u64 },
+    ReadBufferLengthMismatch { requested: usize, observed: usize },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PhysicalRecoveryWalInventoryAllocationBoundary {
+    CanonicalOrdering,
+    AdmittedSegments,
+    IntegrityObservations,
+    CandidateRoster,
+    CandidateFrameFacts,
+    TailPartition,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PhysicalRecoverySourceDenial {
+    WalRead {
+        failure: worth_store::physical_runtime::FundedRecoveryWalReadFailure,
+    },
+    WalReadAllocation {
+        artifact: RecoveryDiscoveryArtifact,
+        boundary: PhysicalRecoverySourceReadAllocationBoundary,
+        requested: u64,
+        cause: PhysicalRecoverySourceReadAllocationDenial,
+    },
+    WalAdmissionAllocation {
+        cause: worth_store::physical_runtime::RecoveryWalAllocationDenial,
+    },
+    WalInventoryAllocation {
+        boundary: PhysicalRecoveryWalInventoryAllocationBoundary,
+        cause: worth_store::physical_runtime::RecoveryWalAllocationDenial,
+    },
+    CheckpointReadAllocation {
+        artifact: RecoveryDiscoveryArtifact,
+        boundary: PhysicalRecoverySourceReadAllocationBoundary,
+        requested: u64,
+        cause: PhysicalRecoverySourceReadAllocationDenial,
+    },
+    SourceReadAllocation {
+        artifact: PhysicalRecoveryRootProtocolArtifact,
+        boundary: PhysicalRecoverySourceReadAllocationBoundary,
+        requested: u64,
+        cause: PhysicalRecoverySourceReadAllocationDenial,
+    },
     MediaObservation {
         artifact: RecoveryDiscoveryArtifact,
         failure: PhysicalRecoveryMediaObservationFailure,
@@ -77,6 +137,8 @@ pub enum PhysicalRecoverySourceDenial {
     ManifestFacts(PhysicalPageFactDenial),
     CheckpointIntegrity(PhysicalRecoveryCheckpointIntegrityDenial),
     CheckpointBinding(PhysicalCheckpointBaseDenial),
+    CheckpointBacking(worth_store::physical_runtime::SharedCheckpointAdmissionDenial),
+    CheckpointInstallation(worth_store::physical_runtime::SelectedCheckpointInstallationDenial),
     WalIntegrity(PhysicalRecoveryWalIntegrityDenial),
     WalTail(SelectedPhysicalWalTailDenial),
     FinalSelection(PhysicalSourceSelectionDenial),
@@ -85,8 +147,15 @@ pub enum PhysicalRecoverySourceDenial {
 impl PhysicalRecoverySourceDenial {
     pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {
         match self {
+            // The shared Store diagnostic independently retains its native backing.
+            Self::WalRead { .. } => Some(0),
             Self::WalIntegrity(denial) => u64::try_from(denial.artifact.capacity()).ok(),
             Self::MediaObservation { .. }
+            | Self::CheckpointReadAllocation { .. }
+            | Self::WalReadAllocation { .. }
+            | Self::WalAdmissionAllocation { .. }
+            | Self::WalInventoryAllocation { .. }
+            | Self::SourceReadAllocation { .. }
             | Self::RootSlot { .. }
             | Self::RootProtocol { .. }
             | Self::RootSelection(_)
@@ -94,6 +163,8 @@ impl PhysicalRecoverySourceDenial {
             | Self::ManifestFacts(_)
             | Self::CheckpointIntegrity(_)
             | Self::CheckpointBinding(_)
+            | Self::CheckpointBacking(_)
+            | Self::CheckpointInstallation(_)
             | Self::WalTail(_)
             | Self::FinalSelection(_) => Some(0),
         }

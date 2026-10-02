@@ -28,6 +28,7 @@ pub struct QualifiedFilesystemMedia {
     execution_capability: crate::AdmittedBackendCapabilityWitness,
     store_identity: StableStoreIdentity,
     mode: FilesystemQualificationMode,
+    pub(crate) wal_observation_incarnations: std::sync::atomic::AtomicU64,
 }
 
 impl QualifiedFilesystemMedia {
@@ -120,6 +121,7 @@ impl QualifiedFilesystemMedia {
             execution_capability: _,
             store_identity: _,
             mode: _,
+            wal_observation_incarnations: _,
         } = self;
         drop((profile, basis, capabilities));
         owner.close()
@@ -330,6 +332,7 @@ impl FilesystemMediaOwner {
             execution_capability,
             store_identity,
             mode: request.mode,
+            wal_observation_incarnations: std::sync::atomic::AtomicU64::new(0),
         })
         .into()
     }

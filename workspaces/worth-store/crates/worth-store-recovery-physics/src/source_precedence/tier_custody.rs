@@ -2,8 +2,6 @@
 //! It is not a Serving seal: Store must reread the selected root, free header,
 //! checkpoint, and C9 members before installing an anchored owner.
 
-use std::sync::Arc;
-
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
     arena_tier_at_epoch, decode_checkpoint_certificate, durable_artifact_checksum,
@@ -11,7 +9,7 @@ use worth_store_physical_format::{
     DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration, PhysicalTierClass,
     TierEpochActivationV1, TierEpochCheckpointCertificateV1, TierEpochWalFrameWitnessV1,
 };
-use worth_store_physical_integrity::VerifiedCheckpointStream;
+use worth_store_physical_integrity::{VerifiedCheckpointFacts, VerifiedCheckpointStream};
 
 use super::PhysicalSourceSelection;
 
@@ -39,7 +37,7 @@ pub struct VerifiedSelectedTierEpochCustody {
     selected_root_sha256: [u8; 32],
     free_header: DurableFreeSpaceManifestHeader,
     free_header_sha256: [u8; 32],
-    checkpoint: Arc<VerifiedCheckpointStream>,
+    checkpoint: VerifiedCheckpointFacts,
     checkpoint_source_root_sha256: [u8; 32],
     intent: TierEpochActivationV1,
     intent_frame: TierEpochWalFrameWitnessV1,
@@ -84,19 +82,23 @@ impl VerifiedSelectedTierEpochCustody {
 
     pub fn admit_selected_tier(
         selected: &PhysicalSourceSelection,
+        stream: &VerifiedCheckpointStream,
         free_header: &DurableFreeSpaceManifestHeader,
         intent: TierEpochActivationV1,
         intent_frame: TierEpochWalFrameWitnessV1,
         completed_frame: TierEpochWalFrameWitnessV1,
         source: SelectedTierEpochCustodySource,
     ) -> Result<Self, SelectedTierCustodyDenial> {
+        let checkpoint = selected
+            .checkpoint()
+            .ok_or(SelectedTierCustodyDenial::MissingCheckpoint)?;
+        if stream.facts() != *checkpoint.checkpoint() {
+            return Err(SelectedTierCustodyDenial::CertificateRoster);
+        }
         let root = selected.root().selected();
         let manifest = root.manifest();
         let format = root.selector().format();
         let root_sha256: [u8; 32] = Sha256::digest(manifest.encode(format)).into();
-        let Some(checkpoint) = selected.checkpoint() else {
-            return Err(SelectedTierCustodyDenial::MissingCheckpoint);
-        };
         let Some(epoch) = free_header.tier_epoch_start() else {
             return Err(SelectedTierCustodyDenial::RootHeaderBinding);
         };
@@ -128,7 +130,6 @@ impl VerifiedSelectedTierEpochCustody {
                 _ => {}
             }
         }
-        let stream = checkpoint.checkpoint();
         let mut certificate = None;
         for frame in stream.certificate_records() {
             let (kind, payload) = decode_checkpoint_certificate(frame)
@@ -167,7 +168,7 @@ impl VerifiedSelectedTierEpochCustody {
             selected_root_sha256: root_sha256,
             free_header: free_header.clone(),
             free_header_sha256: Sha256::digest(free_header.encode(format)).into(),
-            checkpoint: checkpoint.share_checkpoint(),
+            checkpoint: *checkpoint.checkpoint(),
             checkpoint_source_root_sha256: checkpoint.source_root_frame_sha256(),
             intent,
             intent_frame,
@@ -189,7 +190,7 @@ impl VerifiedSelectedTierEpochCustody {
     pub const fn free_header_sha256(&self) -> [u8; 32] {
         self.free_header_sha256
     }
-    pub fn checkpoint(&self) -> &VerifiedCheckpointStream {
+    pub fn checkpoint(&self) -> &VerifiedCheckpointFacts {
         &self.checkpoint
     }
     pub const fn checkpoint_source_root_sha256(&self) -> [u8; 32] {

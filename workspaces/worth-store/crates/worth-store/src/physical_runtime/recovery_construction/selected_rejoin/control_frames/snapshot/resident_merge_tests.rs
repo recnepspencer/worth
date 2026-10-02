@@ -45,13 +45,13 @@ fn merge_admits_donor_and_old_new_destination_overlap_before_growth() {
     let mut destination = charged_fingerprint(&mut insufficient, 0);
     let donor = charged_fingerprint(&mut insufficient, 1);
     let old_capacity = destination.slices.capacity();
-    assert_eq!(
+    assert!(matches!(
         destination.extend_with_resident(donor, &mut insufficient),
-        Err(PhysicalRecoveryRejoinResidentDenial::BudgetExceeded {
-            required: 4 * slot,
-            admitted: 3 * slot,
-        })
-    );
+        Err(SelectedMediaRejoinDenial::Resident(PhysicalRecoveryRejoinResidentDenial::BudgetExceeded {
+            required,
+            admitted,
+        })) if required == 4 * slot && admitted == 3 * slot
+    ));
     assert_eq!(destination.slices.len(), 1);
     assert_eq!(destination.slices.capacity(), old_capacity);
     assert_eq!(insufficient.peak(), 2 * slot);

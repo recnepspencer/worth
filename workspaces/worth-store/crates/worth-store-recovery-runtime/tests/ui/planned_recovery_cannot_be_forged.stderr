@@ -14,7 +14,7 @@ error[E0308]: mismatched types
  --> tests/ui/planned_recovery_cannot_be_forged.rs:7:20
   |
 7 |         selection: (),
-  |                    ^^ expected `PhysicalSourceSelection`, found `()`
+  |                    ^^ expected `ResidentSourceSelection`, found `()`
 
 error[E0308]: mismatched types
  --> tests/ui/planned_recovery_cannot_be_forged.rs:9:20
@@ -60,7 +60,7 @@ help: you might have meant to use the `new` associated function
 10 -         fates: (),
 11 -         redo: (),
 12 -     }
- 4 +     PlannedPhysicalRecovery::new(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)
+ 4 +     PlannedPhysicalRecovery::new(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)
    |
 
 error[E0308]: mismatched types

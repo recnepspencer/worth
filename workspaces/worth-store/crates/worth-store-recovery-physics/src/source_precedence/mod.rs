@@ -87,7 +87,7 @@ pub use tier_custody::{
 };
 pub use wal_segment_disposition::{
     classify_admitted_wal_segment, AdmittedWalFrameRejectionKind, AdmittedWalSegmentPolicyInput,
-    PhysicalWalSegmentDisposition,
+    PhysicalWalCandidatePreparation, PhysicalWalSegmentDisposition,
 };
 pub use wal_tail::{
     admit_physical_wal_tail, PhysicalWalFrameFacts, PhysicalWalInterruptionFacts,

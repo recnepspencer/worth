@@ -49,7 +49,12 @@ impl RecoveredPhysicalRuntimeHandoff {
         &self.evidence.fates
     }
     pub const fn selected_sources(&self) -> &PhysicalSourceSelection {
-        &self.evidence.selection
+        self.evidence.selection.facts()
+    }
+
+    /// Native backing retained by the WAL selection through this handoff.
+    pub fn wal_selection_charged_bytes(&self) -> u64 {
+        self.evidence.selection.charged_bytes()
     }
     pub const fn discovery_counters(&self) -> PhysicalRecoveryDiscoveryCounters {
         self.evidence.discovery
@@ -61,6 +66,14 @@ impl RecoveredPhysicalRuntimeHandoff {
         &self,
     ) -> &[crate::entry::PhysicalRecoveryWalIntegrityObservation] {
         self.evidence.integrity_observations.wal()
+    }
+
+    /// Immutable WAL diagnostics and their live native backing. Cloning this
+    /// observation owner shares storage; it grants no recovery authority.
+    pub fn wal_integrity_observation_storage(
+        &self,
+    ) -> &crate::entry::PhysicalRecoveryIntegrityObservations {
+        &self.evidence.integrity_observations
     }
     pub const fn freshness_sample(
         &self,

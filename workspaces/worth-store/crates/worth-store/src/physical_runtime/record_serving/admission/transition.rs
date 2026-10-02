@@ -1,20 +1,18 @@
 use worth_proof::TransitionOutcome;
 mod open_serving;
-use open_serving::open_serving;
+use open_serving::{initialize_serving, open_serving};
 #[path = "transition/recovered_custody.rs"]
 mod recovered_custody;
+mod recovered_residency;
 
-use crate::physical_runtime::{
-    instance::PhysicalStoreInstanceFoundation, MediaOwnedPhysicalRuntime,
-};
+use crate::physical_runtime::MediaOwnedPhysicalRuntime;
 
 use super::super::{
     admission::bootstrap::BootstrapTransitionFailure, PhysicalRecordInitialization,
-    PhysicalRecordOpen, RecordAllocationFrontier, RecordBootstrapFailure,
-    RecordServingAdmissionInspectionRequired, RecordServingAdmissionRebindRequired,
-    RecordServingAdmissionStale, RecordServingRebindReason, RecordStoreInitializationDenial,
-    RecordStoreInitializationOutcome, RecordStoreOpenDenial, RecordStoreOpenOutcome,
-    ServingPhysicalRuntime,
+    PhysicalRecordOpen, RecordBootstrapFailure, RecordServingAdmissionInspectionRequired,
+    RecordServingAdmissionRebindRequired, RecordServingAdmissionStale, RecordServingRebindReason,
+    RecordStoreInitializationDenial, RecordStoreInitializationOutcome, RecordStoreOpenDenial,
+    RecordStoreOpenOutcome,
 };
 use super::{initialization, open as record_open};
 
@@ -31,6 +29,16 @@ pub(in crate::physical_runtime) fn initialize(
         work_profile,
         durability,
     } = request;
+    if !residency_policy.matches_format(format) {
+        return TransitionOutcome::denied(RecordStoreInitializationDenial::new(
+            runtime,
+            super::super::RecordBootstrapDenial::ResidencyPolicyFormatMismatch {
+                configured: format.declaration(),
+                admitted: residency_policy.record_format(),
+            },
+        ))
+        .into();
+    }
     let read_protection =
         match crate::physical_runtime::stability::PhysicalReadProtectionOwner::admit(
             read_protection,
@@ -159,6 +167,26 @@ pub(in crate::physical_runtime) fn open(
         work_profile,
         durability,
     } = request;
+    if !residency_policy.matches_format(format) {
+        return TransitionOutcome::denied(RecordStoreOpenDenial::new(
+            runtime,
+            super::super::RecordBootstrapDenial::ResidencyPolicyFormatMismatch {
+                configured: format.declaration(),
+                admitted: residency_policy.record_format(),
+            },
+        ))
+        .into();
+    }
+    let (residency, recovered_checkpoint_custody) = match recovered_residency::admit(
+        recovered_checkpoint_custody,
+        runtime.store_identity(),
+        residency_policy,
+    ) {
+        Ok(parts) => parts,
+        Err(reason) => {
+            return TransitionOutcome::denied(RecordStoreOpenDenial::new(runtime, reason)).into()
+        }
+    };
     let read_protection =
         match crate::physical_runtime::stability::PhysicalReadProtectionOwner::admit(
             read_protection,
@@ -188,32 +216,8 @@ pub(in crate::physical_runtime) fn open(
             .into()
         }
     };
-    let mut residency = match crate::physical_runtime::instance::PhysicalResidencyOwner::admit(
-        runtime.store_identity(),
-        residency_policy,
-    ) {
-        Ok(owner) => owner,
-        Err(reason) => {
-            return TransitionOutcome::denied(RecordStoreOpenDenial::new(
-                runtime,
-                super::super::RecordBootstrapDenial::from_residency(reason),
-            ))
-            .into();
-        }
-    };
-    if let Some(custody) = recovered_checkpoint_custody.as_ref() {
-        if let Err(reason) =
-            residency.bind_recovered_allocation(custody.recovery_allocation_admission())
-        {
-            return TransitionOutcome::denied(RecordStoreOpenDenial::new(
-                runtime,
-                super::super::RecordBootstrapDenial::from_residency(reason),
-            ))
-            .into();
-        }
-    }
     let frame_ports = residency.ports().clone();
-    let bootstrap_allocation =
+    let mut bootstrap_allocation =
         match bootstrap_allocation(&frame_ports, residency.available_recovery_operation_bytes()) {
             Ok(allocation) => allocation,
             Err(reason) => {
@@ -248,7 +252,8 @@ pub(in crate::physical_runtime) fn open(
                 recovered_checkpoint_custody,
                 &runtime,
                 &state,
-                &bootstrap_allocation,
+                &residency,
+                &mut bootstrap_allocation,
             ) {
                 Ok(prepared) => prepared,
                 Err(reason) => {
@@ -287,39 +292,6 @@ fn bootstrap_allocation(
             bytes,
         )
         .map_err(super::super::RecordBootstrapDenial::from_residency)
-}
-
-fn initialize_serving(
-    runtime: MediaOwnedPhysicalRuntime,
-    state: super::super::RecordServingState,
-    residency: crate::physical_runtime::instance::PhysicalResidencyOwner,
-    work_profile: crate::physical_runtime::PhysicalWorkProfileDeclaration,
-    durability: crate::physical_runtime::durability::PhysicalDurabilityRuntimeOwner,
-    read_protection: crate::physical_runtime::stability::PhysicalReadProtectionOwner,
-) -> RecordStoreInitializationOutcome {
-    let frontier = RecordAllocationFrontier::new(&state.free_space);
-    let (termination, media, core) = runtime.into_record_serving_parts();
-    core.progress_to_record_serving();
-    residency
-        .ports()
-        .invalidate_integrity_validation_for_runtime_transition();
-    match ServingPhysicalRuntime::from_admission(PhysicalStoreInstanceFoundation {
-        recovered_checkpoint_custody: None,
-        checkpoint_custody_origin:
-            crate::physical_runtime::durability::CheckpointCustodyOrigin::FreshGenesis,
-        read_protection,
-        termination,
-        media,
-        core,
-        bootstrap: state,
-        allocation_frontier: frontier,
-        residency,
-        work_profile,
-        durability,
-    }) {
-        Ok(serving) => TransitionOutcome::success(serving).into(),
-        Err(failure) => TransitionOutcome::failed(failure).into(),
-    }
 }
 
 fn durability_rebind_reason(

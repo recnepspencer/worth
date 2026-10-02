@@ -44,9 +44,14 @@ impl PoolInner {
         requested: u64,
     ) -> Result<u64, PhysicalResidencyDenial> {
         let scope_current = state.accounting.operation_scope_bytes(scope);
-        let scope_limit = self
+        let native_scope_limit = self
             .limits
             .usable_bytes(scope, self.limits.scope_bytes(scope));
+        let scope_limit = if scope == PhysicalOperationAllocationScope::Recovery {
+            native_scope_limit.min(state.recovery_operation_bytes_ceiling)
+        } else {
+            native_scope_limit
+        };
         let Some(scope_next) = scope_current
             .checked_add(requested)
             .filter(|next| *next <= scope_limit)

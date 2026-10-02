@@ -3,12 +3,11 @@
 
 use crate::handoff::RecoveryCleanupPosture;
 use crate::progression::ReopenedPhysicalRecovery;
-use worth_store_physical_integrity::VerifiedCheckpointStream;
 use worth_store_recovery_physics::VerifiedOrderedRootHistory;
 
 /// Heap-only retained bytes. The enclosing inline values are reported by
-/// `inline_bytes`; Arc-backed checkpoint/history allocations are counted once
-/// by pointer identity even when several typed claims refer to them.
+/// `inline_bytes`; Coordination counts its charged checkpoint backing once,
+/// while shared history is deduplicated by pointer identity.
 pub(super) fn retained_bytes(
     reopened: &ReopenedPhysicalRecovery,
     cleanup: &RecoveryCleanupPosture,
@@ -59,7 +58,6 @@ pub(super) fn retained_bytes(
                 .checked_add(effective_heads.owned_heap_bytes()?)?;
         }
     }
-    bytes = bytes.checked_add(shared_checkpoint_bytes(reopened)?)?;
     bytes.checked_add(shared_history_bytes(reopened)?)
 }
 
@@ -78,67 +76,6 @@ fn vector_bytes<T>(values: &Vec<T>) -> Option<u64> {
     u64::try_from(values.capacity())
         .ok()?
         .checked_mul(u64::try_from(std::mem::size_of::<T>()).ok()?)
-}
-
-fn shared_checkpoint_bytes(reopened: &ReopenedPhysicalRecovery) -> Option<u64> {
-    let state = &reopened.state;
-    let pending = match &state.custody {
-        crate::progression::CustodyState::Pending { claim, .. } => Some(claim),
-        _ => None,
-    };
-    let completed = match &state.custody {
-        crate::progression::CustodyState::OrderedCompleted { claim, .. } => Some(claim),
-        _ => None,
-    };
-    let source_heads = match &state.custody {
-        crate::progression::CustodyState::SourceHeads(claim) => Some(claim),
-        _ => None,
-    };
-    let no_release = match &state.custody {
-        crate::progression::CustodyState::NoRelease(claim) => Some(claim),
-        _ => None,
-    };
-    let checkpoints: [Option<&VerifiedCheckpointStream>; 10] = [
-        state.selection.checkpoint().map(|base| base.checkpoint()),
-        source_heads.map(|claim| claim.checkpoint()),
-        no_release.map(|claim| claim.checkpoint()),
-        pending.map(|claim| claim.checkpoint()),
-        completed.map(|claim| claim.checkpoint()),
-        state
-            .verified_selected_tier_custody
-            .as_ref()
-            .map(|claim| claim.checkpoint()),
-        pending
-            .and_then(|claim| claim.selected_release())
-            .map(|base| base.checkpoint()),
-        pending
-            .and_then(|claim| claim.addressed_release_base())
-            .map(|base| base.checkpoint()),
-        pending
-            .and_then(|claim| claim.selected_head_v2())
-            .map(|base| base.checkpoint()),
-        completed
-            .and_then(|claim| claim.selected_head_v2())
-            .map(|base| base.checkpoint()),
-    ];
-    let mut bytes = 0_u64;
-    for (index, checkpoint) in checkpoints.into_iter().enumerate() {
-        let Some(checkpoint) = checkpoint else {
-            continue;
-        };
-        if checkpoints[..index]
-            .iter()
-            .flatten()
-            .any(|prior| std::ptr::eq(*prior, checkpoint))
-        {
-            continue;
-        }
-        bytes = bytes
-            .checked_add(checkpoint.owned_heap_bytes()?)?
-            .checked_add(u64::try_from(std::mem::size_of_val(checkpoint)).ok()?)?
-            .checked_add(u64::try_from(2 * std::mem::size_of::<usize>()).ok()?)?;
-    }
-    Some(bytes)
 }
 
 fn shared_history_bytes(reopened: &ReopenedPhysicalRecovery) -> Option<u64> {

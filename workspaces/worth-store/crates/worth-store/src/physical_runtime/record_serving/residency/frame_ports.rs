@@ -61,7 +61,7 @@ impl RecordFramePorts {
         )
     }
 
-    pub(in crate::physical_runtime::record_serving) fn store_identity(
+    pub(in crate::physical_runtime) fn store_identity(
         &self,
     ) -> worth_store_physical_format::store_namespace::StableStoreIdentity {
         self.pool.store_identity()
@@ -111,6 +111,13 @@ impl RecordFramePorts {
         bytes: std::num::NonZeroU64,
     ) -> Result<OperationAllocationGrant, PhysicalResidencyDenial> {
         self.pool.begin_operation(scope, bytes)
+    }
+
+    pub(in crate::physical_runtime) fn restrict_recovery_operation_bytes(
+        &self,
+        ceiling: u64,
+    ) -> Result<(), PhysicalResidencyDenial> {
+        self.pool.restrict_recovery_operation_bytes(ceiling)
     }
 
     pub(in crate::physical_runtime) fn begin_foreground_write_operation(

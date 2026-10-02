@@ -6,6 +6,12 @@ mod evidence_projection;
 mod grouping;
 mod lifecycle;
 mod mutation;
+#[cfg(all(
+    test,
+    feature = "recovery-runtime-owner",
+    feature = "certification-test-authority"
+))]
+pub(in crate::physical_runtime) use mutation::with_conflicting_binding_history;
 mod observation;
 mod publication;
 pub use publication::SelectedReleaseHeadDenial;
@@ -167,6 +173,7 @@ pub use mutation::{
 #[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use mutation::{
     DecodedPhysicalMutationBindingRecord, PersistedPhysicalMutationFate,
+    PhysicalBindingCompactionRecordDecodeDenial, PhysicalPersistedBindingDecodeDenial,
 };
 pub use observation::PhysicalMutationObservation;
 pub use observation::{PhysicalDurabilityObservation, PhysicalDurabilityReopenObservation};

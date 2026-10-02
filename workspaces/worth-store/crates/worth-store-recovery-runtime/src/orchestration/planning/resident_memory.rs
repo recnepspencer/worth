@@ -31,7 +31,6 @@ pub(super) fn live_bytes(context: &PlanningContext, basis: &ResolvedPlanningBasi
         .checked_add(vector_bytes(&basis.verified_drops)?)?
         .checked_add(vector_bytes(&basis.verified_historical_release_operations)?)?
         .checked_add(vector_bytes(&basis.verified_historical_release_sources)?)?;
-    bytes = bytes.checked_add(checkpoint_bytes(context, basis)?)?;
     if let Some(consumed) = &basis.historical_consumed {
         bytes = bytes.checked_add(consumed.owned_heap_bytes()?)?;
     }
@@ -81,69 +80,6 @@ fn vector_bytes<T>(values: &Vec<T>) -> Option<u64> {
     u64::try_from(values.capacity())
         .ok()?
         .checked_mul(u64::try_from(std::mem::size_of::<T>()).ok()?)
-}
-
-/// Equal contents are not enough to identify one allocation. Claims normally
-/// borrow the selected checkpoint, but distinct backing must still be charged.
-fn checkpoint_bytes(context: &PlanningContext, basis: &ResolvedPlanningBasis) -> Option<u64> {
-    let pending = match &basis.custody {
-        crate::progression::PlanningCustody::PendingPrepared { claim, .. } => Some(claim),
-        _ => None,
-    };
-    let completed = match &basis.custody {
-        crate::progression::PlanningCustody::OrderedCompleted { claim, .. } => Some(claim),
-        _ => None,
-    };
-    let source_heads = match &basis.custody {
-        crate::progression::PlanningCustody::SourceHeads(claim) => Some(claim),
-        _ => None,
-    };
-    let no_release = match &basis.custody {
-        crate::progression::PlanningCustody::NoRelease(claim) => Some(claim),
-        _ => None,
-    };
-    let checkpoints = [
-        pending
-            .and_then(|claim| claim.selected_release())
-            .map(|base| base.checkpoint()),
-        pending
-            .and_then(|claim| claim.addressed_release_base())
-            .map(|base| base.checkpoint()),
-        pending
-            .and_then(|claim| claim.selected_head_v2())
-            .map(|base| base.checkpoint()),
-        completed
-            .and_then(|claim| claim.selected_head_v2())
-            .map(|base| base.checkpoint()),
-        context.selection.checkpoint().map(|base| base.checkpoint()),
-        source_heads.map(|claim| claim.checkpoint()),
-        no_release.map(|claim| claim.checkpoint()),
-        pending.map(|claim| claim.checkpoint()),
-        completed.map(|claim| claim.checkpoint()),
-        basis
-            .observed_pages
-            .tier_custody
-            .as_ref()
-            .map(|claim| claim.checkpoint()),
-    ];
-    let mut bytes = 0_u64;
-    for (index, stream) in checkpoints.into_iter().enumerate() {
-        let Some(stream) = stream else {
-            continue;
-        };
-        if checkpoints[..index]
-            .iter()
-            .flatten()
-            .any(|other| std::ptr::eq(*other, stream))
-        {
-            continue;
-        }
-        bytes = bytes
-            .checked_add(stream.owned_heap_bytes()?)?
-            .checked_add(u64::try_from(std::mem::size_of_val(stream)).ok()?)?
-            .checked_add(2 * std::mem::size_of::<usize>() as u64)?;
-    }
-    Some(bytes)
 }
 
 /// Final custody owns distinct control/replay/roster buffers, even when they

@@ -1,8 +1,6 @@
 //! Checkpoint-source V2 head roster. The selected checkpoint stream commits
 //! the root reference and roster digest; C.8 still reads every rooted block.
 
-use std::sync::Arc;
-
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration,
@@ -11,7 +9,7 @@ use worth_store_physical_format::{
 };
 use worth_store_physical_integrity::{
     walk_release_custody_head, ReleaseCustodyHeadWalkDenial, ReleaseCustodyHeadWalkLimitsV1,
-    VerifiedCheckpointStream,
+    VerifiedCheckpointFacts, VerifiedCheckpointStream,
 };
 
 use super::{roster_v2, SelectedCustodyDenial};
@@ -19,6 +17,8 @@ use crate::PhysicalSourceSelection;
 
 #[path = "head_v2/controls.rs"]
 mod controls;
+#[path = "head_v2/rebind.rs"]
+mod rebind;
 #[cfg(test)]
 #[path = "head_v2/tests.rs"]
 mod tests;
@@ -30,7 +30,7 @@ pub use controls::AddressedReleaseHeadControlV2;
 /// this claim never infers a tip head from the V1 accumulator fields.
 #[derive(Debug)]
 pub struct VerifiedCheckpointReleaseHeadRosterV2 {
-    checkpoint: Arc<VerifiedCheckpointStream>,
+    checkpoint: VerifiedCheckpointFacts,
     checkpoint_source_root: DurablePhysicalRootManifest,
     source_root_sha256: [u8; 32],
     selected_root: DurablePhysicalRootManifest,
@@ -74,6 +74,7 @@ impl VerifiedCheckpointReleaseHeadRosterV2 {
     #[allow(clippy::too_many_arguments)]
     pub fn admit_checkpoint_source<Read, ReadError>(
         selected: &PhysicalSourceSelection,
+        stream: &VerifiedCheckpointStream,
         checkpoint_source_root: &DurablePhysicalRootManifest,
         format: PhysicalRecordFormatDeclaration,
         walk_limits: ReleaseCustodyHeadWalkLimitsV1,
@@ -88,7 +89,9 @@ impl VerifiedCheckpointReleaseHeadRosterV2 {
         let checkpoint = selected
             .checkpoint()
             .ok_or(SelectedCustodyDenial::MissingCheckpoint)?;
-        let stream = checkpoint.checkpoint();
+        if stream.facts() != *checkpoint.checkpoint() {
+            return Err(SelectedCustodyDenial::CertificateRoster.into());
+        }
         let selected_candidate = selected.root().selected();
         let source = stream.source().root();
         // Root encoding holds its payload and canonical frame together.
@@ -210,7 +213,7 @@ impl VerifiedCheckpointReleaseHeadRosterV2 {
         let selected_root = selected_candidate.manifest().clone();
         let selected_sha = Sha256::digest(selected_root.encode(format)).into();
         Ok(Self {
-            checkpoint: checkpoint.share_checkpoint(),
+            checkpoint: *checkpoint.checkpoint(),
             checkpoint_source_root: checkpoint_source_root.clone(),
             source_root_sha256: source_sha,
             selected_root,
@@ -226,7 +229,7 @@ impl VerifiedCheckpointReleaseHeadRosterV2 {
         })
     }
 
-    pub fn checkpoint(&self) -> &VerifiedCheckpointStream {
+    pub fn checkpoint(&self) -> &VerifiedCheckpointFacts {
         &self.checkpoint
     }
     pub const fn checkpoint_source_root(&self) -> &DurablePhysicalRootManifest {
@@ -263,8 +266,8 @@ impl VerifiedCheckpointReleaseHeadRosterV2 {
         self.head_walk_peak_resident_bytes
     }
 
-    /// Only allocations owned by this claim; the checkpoint Arc and inline
-    /// roots/accumulator are not newly owned heap backing.
+    /// Only allocations owned by this claim; checkpoint facts, roots and the
+    /// accumulator are inline observations, not heap backing.
     pub fn owned_heap_bytes(&self) -> Option<u64> {
         (self.batches.capacity() as u64)
             .checked_mul(std::mem::size_of::<ReleaseCheckpointBatchV1>() as u64)?
@@ -304,32 +307,6 @@ fn require_resident(required: u64, admitted: u64) -> Result<(), SelectedCustodyD
 }
 
 impl VerifiedSelectedReleaseHeadCustodyV2 {
-    /// Rebinds only an ordinary, authenticated publication that leaves the
-    /// release-head tree untouched. V14 root changes require the separate
-    /// C.9-admitted replay token and cannot enter by this method.
-    pub fn rebind_published_root(
-        &mut self,
-        selected: &PhysicalSourceSelection,
-        published: &DurablePhysicalRootManifest,
-        format: PhysicalRecordFormatDeclaration,
-    ) -> Result<(), SelectedCustodyDenial> {
-        let old = &self.roster.selected_root;
-        if old != selected.root().selected().manifest()
-            || format != selected.root().selected().selector().format()
-            || published.tree_identity() != old.tree_identity()
-            || published.tier_epoch_anchor() != old.tier_epoch_anchor()
-            || published.generation() < old.generation()
-            || (published.generation() == old.generation() && published != old)
-            || published.release_custody_head_root() != old.release_custody_head_root()
-            || published.next_release_custody_head_block() != old.next_release_custody_head_block()
-            || published.generation() < self.roster.checkpoint_source_root.generation()
-        {
-            return Err(SelectedCustodyDenial::ReleaseBinding);
-        }
-        self.roster.selected_root_sha256 = Sha256::digest(published.encode(format)).into();
-        self.roster.selected_root = published.clone();
-        Ok(())
-    }
     /// Store independently reads checkpoint-source routes and control frames
     /// and repeats the exact semantic join before installing its ledger.
     pub fn revalidate_controls(
@@ -350,7 +327,7 @@ impl VerifiedSelectedReleaseHeadCustodyV2 {
                 .bytes(),
         )
     }
-    pub fn checkpoint(&self) -> &VerifiedCheckpointStream {
+    pub fn checkpoint(&self) -> &VerifiedCheckpointFacts {
         self.roster.checkpoint()
     }
     pub const fn checkpoint_source_root(&self) -> &DurablePhysicalRootManifest {

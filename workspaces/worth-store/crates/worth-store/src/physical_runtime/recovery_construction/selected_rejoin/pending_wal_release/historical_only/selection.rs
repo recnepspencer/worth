@@ -54,6 +54,7 @@ pub(super) fn observe(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     reopen: &CompletedPhysicalRecoveryFreshReopen,
     claim: &VerifiedOrderedHistoricalReleaseCustody,
+    checkpoint_stream: &worth_store_physical_integrity::VerifiedCheckpointStream,
 ) -> Result<Selection, Denial> {
     if claim.checkpoint().encoded_bytes() > MAX_CHECKPOINT_BYTES {
         return Err(Denial::BoundExceeded);
@@ -132,12 +133,12 @@ pub(super) fn observe(
             if source.identity() == marker.checkpoint()
                 && source.root().generation() == marker.root_generation()
                 && marker.root_sha256() == claim.history().checkpoint_root_frame_sha256()
-                && no_release_roster_matches(claim, marker) => {}
+                && no_release_roster_matches(marker, checkpoint_stream) => {}
         (None, Some(base)) => {
             let (observed, releases, count, bytes) = root_checkpoint::inspect_checkpoint(
                 &checkpoint,
                 source.identity(),
-                claim.checkpoint().certificate_records(),
+                checkpoint_stream.certificate_records(),
             )?;
             let mut expected = base
                 .batches()
@@ -196,10 +197,10 @@ pub(super) fn observe(
 }
 
 fn no_release_roster_matches(
-    claim: &VerifiedOrderedHistoricalReleaseCustody,
     expected: worth_store_physical_format::ReleaseCheckpointNoReleaseV1,
+    checkpoint: &worth_store_physical_integrity::VerifiedCheckpointStream,
 ) -> bool {
-    let [frame] = claim.checkpoint().certificate_records() else {
+    let [frame] = checkpoint.certificate_records() else {
         return false;
     };
     let Ok((CheckpointCertificateKind::ReleasedDrop, payload)) =

@@ -27,6 +27,14 @@ impl PhysicalRecoveryConstructionPort {
         tier: Option<VerifiedSelectedTierEpochCustody>,
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
         if cleanup.live_media_handle_delta() != 0
+            || coordination
+                .require_selected_checkpoint(historical.checkpoint())
+                .is_err()
+            || tier.as_ref().is_some_and(|claim| {
+                coordination
+                    .require_selected_checkpoint(claim.checkpoint())
+                    .is_err()
+            })
             || recovery_allocation.store_identity() != media.store_identity()
             || coordination.recovery_allocation_admission() != Some(recovery_allocation)
             || effective.retained_bytes() > recovery_allocation.byte_limit()

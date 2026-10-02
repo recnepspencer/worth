@@ -20,4 +20,8 @@ impl ArtifactTreeDirectoryEntry {
     pub const fn entry_type(&self) -> NamespaceEntryType {
         self.entry_type
     }
+
+    pub(crate) fn into_parts(self) -> (OsString, NamespaceEntryType) {
+        (self.name, self.entry_type)
+    }
 }

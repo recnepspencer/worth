@@ -1,34 +1,26 @@
-use std::{
-    convert::Infallible,
-    ffi::{OsStr, OsString},
-};
+use std::{convert::Infallible, ffi::OsString};
 
-use worth_store_physical_format::store_namespace::{NamespaceEntryType, StableStoreIdentity};
+use worth_store_physical_format::store_namespace::NamespaceEntryType;
 
+use super::resident_read::map_allocated_failure;
+use super::wal_storage::{allocate_wal_context, allocate_wal_roster, CallbackWalStorage};
 use super::{
-    map_media, ArtifactTreeDirectory, BoundedRecoveryFilesystemDiscovery,
+    map_media, ArtifactTreeDirectory, FilesystemObservation, ObservedWalArtifact,
     RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope,
-    RecoveryDiscoveryFailure,
+    RecoveryDiscoveryFailure, RecoveryWalObservationIdentity,
+};
+use super::{
+    RecoverySelectedWalReadOutcome as Outcome, RecoveryWalReadSelection,
+    RecoveryWalSelectionMismatch,
+};
+use super::{RecoveryWalListingAllocationMode, RecoveryWalReadStorage};
+use crate::filesystem_media::{
+    backed_directory, backed_file, ArtifactTreeAllocatedListingFailure, ArtifactTreeBackedPath,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ObservedWalArtifact {
-    store: StableStoreIdentity,
-    observation: RecoveryWalObservationIdentity,
-    name: OsString,
-    entry_type: NamespaceEntryType,
-    bytes: Option<Vec<u8>>,
-}
+mod selected_file;
 
-/// Opaque identity of one C.4 WAL read within one admitted recovery-media generation.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct RecoveryWalObservationIdentity {
-    media_generation: super::super::PhysicalRecoveryMediaGeneration,
-    discovery_incarnation: u64,
-    sequence: u64,
-}
-
-impl BoundedRecoveryFilesystemDiscovery {
+impl<M: super::DiscoveryMediaBacking> FilesystemObservation<M> {
     pub fn read_wal_artifacts(
         &mut self,
         maximum_segments: u64,
@@ -43,7 +35,7 @@ impl BoundedRecoveryFilesystemDiscovery {
             RecoveryDiscoveryAllocationFailure::Discovery(denial) => denial,
             RecoveryDiscoveryAllocationFailure::Allocation { cause, .. } => match cause {},
             RecoveryDiscoveryAllocationFailure::BufferLengthMismatch { .. } => {
-                unreachable!("the legacy WAL allocator always returns the exact requested length")
+                unreachable!("the built-in WAL allocators return the requested storage")
             }
         })
     }
@@ -55,46 +47,172 @@ impl BoundedRecoveryFilesystemDiscovery {
         &mut self,
         maximum_segments: u64,
         byte_limit: u64,
-        mut allocate: impl FnMut(usize) -> Result<Vec<u8>, E>,
+        allocate: impl FnMut(usize) -> Result<Vec<u8>, E>,
     ) -> Result<Vec<ObservedWalArtifact>, RecoveryDiscoveryAllocationFailure<E>> {
+        self.read_wal_artifacts_with_allocators(
+            maximum_segments,
+            byte_limit,
+            |count| Ok(Vec::with_capacity(count)),
+            allocate,
+            |count| Ok(OsString::with_capacity(count)),
+        )
+    }
+
+    /// Allocate the empty result roster after listing establishes its count,
+    /// before reading any payload. The roster allocator receives a slot count;
+    /// allocation-failure requests and buffer mismatches report backing bytes.
+    ///
+    /// The context allocator supplies empty storage for one diagnostic name;
+    /// C.4 fills it with the listed name before address validation or reading.
+    /// A successful read disposes that context
+    /// before the next callback; a failed read retains it in the failure.
+    /// Provider, listing, original-name, and path allocations remain outside
+    /// this boundary. Listed names move into their observations without a copy.
+    pub fn read_wal_artifacts_with_allocators<E>(
+        &mut self,
+        maximum_segments: u64,
+        byte_limit: u64,
+        allocate_roster: impl FnOnce(usize) -> Result<Vec<ObservedWalArtifact>, E>,
+        allocate_payload: impl FnMut(usize) -> Result<Vec<u8>, E>,
+        allocate_context: impl FnMut(usize) -> Result<OsString, E>,
+    ) -> Result<Vec<ObservedWalArtifact>, RecoveryDiscoveryAllocationFailure<E>> {
+        let mut storage =
+            CallbackWalStorage::new(allocate_roster, allocate_payload, allocate_context);
+        self.read_wal_artifacts_with_storage(maximum_segments, byte_limit, &mut storage)
+    }
+
+    pub fn wal_listing_storage_is_qualified(&self) -> bool {
+        self.parts
+            .artifact_tree()
+            .listing_storage_requirement(1)
+            .is_some()
+    }
+
+    pub fn wal_path_storage_is_qualified(&self) -> bool {
+        self.parts.artifact_tree().path_storage_is_qualified()
+    }
+
+    /// One read algorithm for caller-managed or staged admitted listing storage.
+    /// Admitted mode requires qualified path and listing mechanics before the
+    /// first address allocation. Caller-managed mode retains its raw behavior.
+    pub fn read_wal_artifacts_with_storage<S: RecoveryWalReadStorage>(
+        &mut self,
+        maximum_segments: u64,
+        byte_limit: u64,
+        storage: &mut S,
+    ) -> Result<Vec<ObservedWalArtifact>, RecoveryDiscoveryAllocationFailure<S::Denial>> {
+        match self.read_wal_inventory(maximum_segments, byte_limit, storage, None)? {
+            Outcome::Observed(observed) => Ok(observed),
+            Outcome::Mismatch(_) => unreachable!("unconstrained reads have no selected inventory"),
+        }
+    }
+
+    pub fn read_selected_wal_artifacts_with_storage<S: RecoveryWalReadStorage>(
+        &mut self,
+        maximum_segments: u64,
+        byte_limit: u64,
+        selection: &dyn RecoveryWalReadSelection,
+        storage: &mut S,
+    ) -> Result<Outcome<Vec<ObservedWalArtifact>>, RecoveryDiscoveryAllocationFailure<S::Denial>>
+    {
+        self.read_wal_inventory(maximum_segments, byte_limit, storage, Some(selection))
+    }
+
+    fn read_wal_inventory<S: RecoveryWalReadStorage>(
+        &mut self,
+        maximum_segments: u64,
+        byte_limit: u64,
+        storage: &mut S,
+        selection: Option<&dyn RecoveryWalReadSelection>,
+    ) -> Result<Outcome<Vec<ObservedWalArtifact>>, RecoveryDiscoveryAllocationFailure<S::Denial>>
+    {
         let maximum_segments = admitted_segment_limit(maximum_segments)?;
         let directory_context = RecoveryDiscoveryArtifact::WalDirectory;
-        let directory = ArtifactTreeDirectory::families()
-            .child("wal")
-            .map_err(|_| RecoveryDiscoveryFailure::invalid(directory_context.clone()))?;
-        if !self
-            .parts
-            .artifact_tree()
-            .directory_exists(&directory)
-            .map_err(|failure| map_media(failure, directory_context.clone()))?
-        {
-            return Ok(Vec::new());
+        let native = storage.listing_allocation_mode()
+            == RecoveryWalListingAllocationMode::AdmissionCallbacks;
+        if native && !self.wal_path_storage_is_qualified() {
+            return Err(RecoveryDiscoveryFailure::invalid(directory_context).into());
         }
-        let entries = self
-            .parts
-            .artifact_tree()
-            .list_bounded(&directory, maximum_segments)
-            .map_err(|failure| map_media(failure, directory_context))?;
+        let directory = backed_directory(&ArtifactTreeDirectory::families(), "wal", storage)
+            .map_err(|failure| map_allocated_failure(failure, directory_context.clone(), 0))?;
+        let exists = if native {
+            self.parts
+                .artifact_tree()
+                .directory_exists_with_allocator(directory.get(), storage)
+                .map_err(|failure| map_allocated_failure(failure, directory_context.clone(), 0))?
+        } else {
+            self.parts
+                .artifact_tree()
+                .directory_exists(directory.get())
+                .map_err(|failure| map_media(failure, directory_context.clone()))?
+        };
+        if !exists {
+            return Ok(
+                if selection.is_some_and(|selected| !selected.matches_listing(&mut [])) {
+                    Outcome::Mismatch(RecoveryWalSelectionMismatch::Listing)
+                } else {
+                    Outcome::Observed(Vec::new())
+                },
+            );
+        }
+        let mut entries = match storage.listing_allocation_mode() {
+            RecoveryWalListingAllocationMode::CallerManaged => self
+                .parts
+                .artifact_tree()
+                .list_bounded(directory.get(), maximum_segments)
+                .map_err(|failure| map_media(failure, directory_context))?,
+            RecoveryWalListingAllocationMode::AdmissionCallbacks => self
+                .parts
+                .artifact_tree()
+                .list_bounded_with_allocator(directory.get(), maximum_segments, storage)
+                .map_err(map_listing_failure)?,
+        };
         self.counters.directory_entries_observed += entries.len() as u64;
-        let mut observed = Vec::with_capacity(entries.len());
+        if selection.is_some_and(|selected| !selected.matches_listing(&mut entries)) {
+            return Ok(Outcome::Mismatch(RecoveryWalSelectionMismatch::Listing));
+        }
+        let mut observed =
+            allocate_wal_roster(entries.len(), |count| storage.allocate_wal_roster(count))?;
         let mut remaining_wal_bytes = byte_limit;
         for entry in entries {
-            let name = entry.name().to_owned();
-            let context = RecoveryDiscoveryArtifact::WalArtifact(name.clone());
-            let bytes = if entry.entry_type() == NamespaceEntryType::RegularFile {
-                let file = directory
-                    .file(
-                        name.to_str()
-                            .ok_or_else(|| RecoveryDiscoveryFailure::invalid(context.clone()))?,
-                    )
-                    .map_err(|_| RecoveryDiscoveryFailure::invalid(context.clone()))?;
-                let bytes = self.read_wal_artifact_with_payload_allocator(
+            let (name, entry_type) = entry.into_parts();
+            let expected = match selection {
+                Some(selected) => match selected.expected_file_length(&name) {
+                    Some(length) => Some(length),
+                    None => return Ok(Outcome::Mismatch(RecoveryWalSelectionMismatch::Listing)),
+                },
+                None => None,
+            };
+            let bytes = if entry_type == NamespaceEntryType::RegularFile {
+                let context =
+                    allocate_wal_context(&name, &mut |count| storage.allocate_context(count))?;
+                let file = name.to_str().ok_or(()).and_then(|name| {
+                    ArtifactTreeDirectory::validate_file_component(name)
+                        .map(|()| name)
+                        .map_err(|_| ())
+                });
+                let file_name = match file {
+                    Ok(name) => name,
+                    Err(()) => return Err(RecoveryDiscoveryFailure::invalid(context).into()),
+                };
+                let file = match backed_file(directory.get(), file_name, storage) {
+                    Ok(file) => file,
+                    Err(failure) => return Err(map_allocated_failure(failure, context, 0)),
+                };
+                // Context is created once; successful reads dispose it before
+                // the next callback. The file address drops before metadata.
+                let bytes = match self.read_wal_artifact_with_storage(
                     file,
                     context,
                     remaining_wal_bytes,
                     byte_limit,
-                    &mut allocate,
-                )?;
+                    native,
+                    expected,
+                    storage,
+                )? {
+                    Outcome::Observed(bytes) => bytes,
+                    Outcome::Mismatch(mismatch) => return Ok(Outcome::Mismatch(mismatch)),
+                };
                 remaining_wal_bytes = remaining_wal_bytes.checked_sub(byte_count(&bytes)).ok_or(
                     RecoveryDiscoveryFailure::ByteLimitExceeded {
                         observed: byte_limit,
@@ -116,42 +234,14 @@ impl BoundedRecoveryFilesystemDiscovery {
                 None
             };
             observed.push(ObservedWalArtifact {
-                store: self.parts.store_identity,
+                store: self.parts.store_identity(),
                 observation: self.issue_wal_observation_identity()?,
                 name,
-                entry_type: entry.entry_type(),
+                entry_type,
                 bytes,
             });
         }
-        Ok(observed)
-    }
-
-    fn read_wal_artifact_with_payload_allocator<E>(
-        &mut self,
-        file: crate::filesystem_media::ArtifactTreeFile,
-        context: RecoveryDiscoveryArtifact,
-        remaining_wal_bytes: u64,
-        byte_limit: u64,
-        allocate: &mut impl FnMut(usize) -> Result<Vec<u8>, E>,
-    ) -> Result<Option<Vec<u8>>, RecoveryDiscoveryAllocationFailure<E>> {
-        match self.read_whole(file, context, remaining_wal_bytes, false, allocate) {
-            Ok(artifact) => Ok(artifact.into_bytes()),
-            Err(RecoveryDiscoveryAllocationFailure::Discovery(
-                RecoveryDiscoveryFailure::ByteLimitExceeded {
-                    observed,
-                    admitted: _,
-                    scope: RecoveryDiscoveryByteLimitScope::Requested,
-                },
-            )) => Err(RecoveryDiscoveryFailure::ByteLimitExceeded {
-                observed: byte_limit
-                    .saturating_sub(remaining_wal_bytes)
-                    .saturating_add(observed),
-                admitted: byte_limit,
-                scope: RecoveryDiscoveryByteLimitScope::Requested,
-            }
-            .into()),
-            Err(failure) => Err(failure),
-        }
+        Ok(Outcome::Observed(observed))
     }
 
     fn issue_wal_observation_identity(
@@ -164,39 +254,10 @@ impl BoundedRecoveryFilesystemDiscovery {
             },
         )?;
         Ok(RecoveryWalObservationIdentity {
-            media_generation: self.parts.media_generation,
+            media_generation: self.parts.media_generation(),
             discovery_incarnation: self.discovery_incarnation,
             sequence: self.wal_observations_issued,
         })
-    }
-}
-
-impl ObservedWalArtifact {
-    pub const fn store_identity(&self) -> StableStoreIdentity {
-        self.store
-    }
-
-    pub const fn observation_identity(&self) -> RecoveryWalObservationIdentity {
-        self.observation
-    }
-
-    pub fn matches_media_generation(
-        &self,
-        generation: super::super::PhysicalRecoveryMediaGeneration,
-    ) -> bool {
-        self.observation.media_generation == generation
-    }
-
-    pub fn name(&self) -> &OsStr {
-        &self.name
-    }
-
-    pub const fn entry_type(&self) -> NamespaceEntryType {
-        self.entry_type
-    }
-
-    pub fn bytes(&self) -> Option<&[u8]> {
-        self.bytes.as_deref()
     }
 }
 
@@ -218,4 +279,33 @@ fn admitted_segment_limit(maximum_segments: u64) -> Result<usize, RecoveryDiscov
 
 fn byte_count(bytes: &Option<Vec<u8>>) -> u64 {
     bytes.as_ref().map_or(0, |bytes| bytes.len() as u64)
+}
+
+fn map_listing_failure<E>(
+    failure: ArtifactTreeAllocatedListingFailure<E>,
+) -> RecoveryDiscoveryAllocationFailure<E> {
+    let artifact = RecoveryDiscoveryArtifact::WalDirectory;
+    match failure {
+        ArtifactTreeAllocatedListingFailure::Media(failure) => map_media(failure, artifact).into(),
+        ArtifactTreeAllocatedListingFailure::Allocation { requested, cause } => {
+            match usize::try_from(requested) {
+                Ok(requested) => RecoveryDiscoveryAllocationFailure::Allocation {
+                    artifact,
+                    offset: 0,
+                    requested,
+                    cause,
+                },
+                Err(_) => RecoveryDiscoveryFailure::invalid(artifact).into(),
+            }
+        }
+        ArtifactTreeAllocatedListingFailure::BufferLengthMismatch {
+            requested,
+            observed,
+        } => RecoveryDiscoveryAllocationFailure::BufferLengthMismatch {
+            artifact,
+            offset: 0,
+            requested,
+            observed,
+        },
+    }
 }

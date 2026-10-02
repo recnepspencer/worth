@@ -17,6 +17,9 @@ use super::support::{
     FOOTER_OFFSET,
 };
 
+#[path = "certificate_grammar/prepared_retention.rs"]
+mod prepared_retention;
+
 #[test]
 fn encoded_v2_accumulator_only_footer_is_admitted() {
     assert_certificate_sequence_admitted(&[v2_accumulator_only_frame()]);
@@ -262,6 +265,7 @@ fn assert_certificate_sequence_admitted(frames: &[Vec<u8>]) {
         .0,
         CheckpointFooterIntegrityValidation::Intact(_)
     ));
+    prepared_retention::assert_exact_prepared_retention(frames, &footer);
 }
 
 fn assert_certificate_sequence_denied(frames: &[Vec<u8>]) {

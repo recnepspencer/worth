@@ -15,9 +15,17 @@ mod manifest_pin;
 #[cfg(test)]
 #[path = "binding_compaction/tests.rs"]
 mod tests;
-pub(in crate::physical_runtime) use decoding::DecodedPhysicalMutationBindingRecord;
+pub(in crate::physical_runtime) use decoding::{
+    DecodedPhysicalMutationBindingRecord, PhysicalBindingCompactionRecordDecodeDenial,
+};
 use encoding::{encode_group_sealed, encode_terminal, encode_unsealed, encode_wal_bound};
 pub(in crate::physical_runtime::durability::mutation::idempotency) use manifest_pin::drop_material;
+#[cfg(all(
+    test,
+    feature = "recovery-runtime-owner",
+    feature = "certification-test-authority"
+))]
+pub(in crate::physical_runtime) use tests::with_conflicting_binding_history;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PhysicalMutationBindingCompaction {

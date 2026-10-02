@@ -39,6 +39,7 @@ mod operation_accounting;
 mod pin_lifecycle;
 mod public_api;
 mod range_invalidation;
+mod recovery_admission;
 mod writeback_claim;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -181,6 +182,7 @@ struct PoolState {
     next_loading_ordinal: u64,
     next_resident_generation: PhysicalResidentFrameGeneration,
     active_candidate_publications: u32,
+    recovery_operation_bytes_ceiling: u64,
     dirty_generation: PhysicalDirtyGeneration,
     accepting: bool,
     closed: bool,

@@ -10,6 +10,19 @@ use worth_store_physical_format::{
     ReleaseCustodyHeadEntryV1, ReleaseCustodyHeadKeyV1, BLOB_CONTROL_FRAME_MAX_BYTES,
 };
 
+#[path = "release_capacity_budget/checkpoint_funding.rs"]
+mod checkpoint_funding;
+#[path = "release_capacity_budget/checkpoint_overlap.rs"]
+mod checkpoint_overlap;
+#[path = "release_capacity_budget/checkpoint_read_funding.rs"]
+mod checkpoint_read_funding;
+#[path = "release_capacity_budget/live_admission.rs"]
+mod live_admission;
+#[path = "release_capacity_budget/recovery_pool_handoff.rs"]
+mod recovery_pool_handoff;
+#[path = "release_capacity_budget/source_read_funding.rs"]
+mod source_read_funding;
+
 #[test]
 fn one_head_recovery_scope_rejects_before_manifest_wal_or_root_effect() {
     std::thread::Builder::new()

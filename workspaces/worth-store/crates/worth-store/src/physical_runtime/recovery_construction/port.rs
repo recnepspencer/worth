@@ -200,6 +200,10 @@ impl PhysicalRecoveryConstructionPort {
         selected_wal: Option<selected_rejoin::SelectedWalMediaFingerprint>,
         selected_controls: Option<selected_rejoin::SelectedControlMediaFingerprint>,
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
+        if coordination.require_observed_checkpoint().is_err() {
+            let _ = coordination.shutdown_is_quiescent();
+            return Err(RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch);
+        }
         let observed_root_sha256: [u8; 32] =
             Sha256::digest(reopen.fresh_reopen_occurrence().root().bytes()).into();
         if no_release_custody.as_ref().is_some_and(|verified| {
@@ -235,10 +239,12 @@ impl PhysicalRecoveryConstructionPort {
             let _ = coordination.shutdown_is_quiescent();
             return Err(RecoveredPhysicalRuntimeConstructionDenial::RuntimeIdentityUnavailable);
         };
-        if !coordination.shutdown_is_quiescent() {
-            return Err(RecoveredPhysicalRuntimeConstructionDenial::CoordinationNotQuiescent);
-        }
+        let (residency, checkpoint_ownership) = coordination
+            .into_quiescent_recovery_parts()
+            .ok_or(RecoveredPhysicalRuntimeConstructionDenial::CoordinationNotQuiescent)?;
         Ok(RecoveredPhysicalRuntimeCore {
+            residency,
+            checkpoint_ownership,
             store: media.store_identity(),
             recovery_allocation,
             runtime,

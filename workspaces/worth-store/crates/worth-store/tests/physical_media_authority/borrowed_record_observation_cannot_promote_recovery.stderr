@@ -1,0 +1,5 @@
+error[E0599]: no method named `finish` found for struct `BorrowedRecordFilesystemObservation<'media>` in the current scope
+ --> tests/physical_media_authority/borrowed_record_observation_cannot_promote_recovery.rs:5:39
+  |
+5 |     let _recovery_media = observation.finish();
+  |                                       ^^^^^^ method not found in `BorrowedRecordFilesystemObservation<'_>`

@@ -179,11 +179,16 @@ pub(super) fn resolve(
     let selected_wal = context
         .integrity
         .admitted_wal()
-        .recoverable_frames(context.selection.wal_tail());
+        .recoverable_frame_view(context.selection.wal_tail());
     let tier_evidence = page_observation::TierEvidence {
         selection: &context.selection,
+        checkpoint: context
+            .coordination
+            .owner()
+            .checkpoint()
+            .map(|shared| shared.stream()),
         sample: &admitted.sample,
-        selected_wal: &selected_wal,
+        selected_wal,
     };
     let media = context.authority.media;
     let (media, attempt) = page_observation::observe_selected_pages(

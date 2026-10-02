@@ -7,17 +7,35 @@ use worth_store_physical_format::RecordArtifactFile;
 mod addressed_payload;
 mod addressed_range;
 mod artifact;
+mod borrowed_record;
+mod borrowed_wal;
+mod media_backing;
 mod observed_artifact;
+mod observed_wal;
 mod resident_read;
+mod resident_record;
+mod selected_wal;
 mod wal_artifacts;
+mod wal_storage;
 pub(crate) use artifact::record_artifact;
 pub use artifact::RecoveryDiscoveryArtifact;
+pub use borrowed_record::BorrowedRecordFilesystemObservation;
+pub use borrowed_wal::BorrowedWalFilesystemObservation;
+use media_backing::DiscoveryMediaBacking;
 pub use observed_artifact::ObservedRecoveryArtifact;
+pub use observed_wal::{ObservedWalArtifact, RecoveryWalObservationIdentity};
 pub use resident_read::RecoveryDiscoveryAllocationFailure;
-pub use wal_artifacts::{ObservedWalArtifact, RecoveryWalObservationIdentity};
+pub use selected_wal::{
+    RecoverySelectedWalReadOutcome, RecoveryWalReadSelection, RecoveryWalSelectionMismatch,
+};
+pub use wal_storage::{RecoveryWalListingAllocationMode, RecoveryWalReadStorage};
 
-pub struct BoundedRecoveryFilesystemDiscovery {
-    parts: crate::filesystem_media::recovery_qualification::AdmittedRecoveryParts,
+pub type BoundedRecoveryFilesystemDiscovery =
+    FilesystemObservation<crate::filesystem_media::recovery_qualification::AdmittedRecoveryParts>;
+
+/// Sealed backing mechanics stay below the concrete owned and borrowed facades.
+pub struct FilesystemObservation<M> {
+    parts: M,
     remaining_entries: u64,
     remaining_bytes: u64,
     maximum_bytes: u64,

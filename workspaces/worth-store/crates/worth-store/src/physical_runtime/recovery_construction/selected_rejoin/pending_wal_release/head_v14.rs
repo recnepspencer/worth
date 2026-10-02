@@ -50,17 +50,21 @@ impl ObservedHeadV14<'_> {
             && self.effect.same_bytes(&other.effect)
     }
 
-    pub(super) fn into_fingerprint(self) -> SelectedControlMediaFingerprint {
-        let mut fingerprint = self.checkpoint.into_fingerprint();
-        fingerprint.extend(self.pre_pending.into_fingerprint());
-        fingerprint.extend(self.effective.into_fingerprint());
-        fingerprint.extend(self.effect.into_fingerprint());
-        fingerprint
+    pub(super) fn into_fingerprint(self) -> Result<SelectedControlMediaFingerprint, Denial> {
+        let mut fingerprint = SelectedControlMediaFingerprint::pending_heads(
+            self.checkpoint.into_funded_slices()?,
+            self.pre_pending.into_funded_slices()?,
+            self.effective.into_funded_slices()?,
+        );
+        // Effect witnesses remain the distinct raw owner, not full-tree backing.
+        fingerprint.extend(self.effect.into_fingerprint())?;
+        Ok(fingerprint)
     }
 }
 
 pub(super) fn observe<'claim>(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    window: &crate::physical_runtime::PhysicalRecoveryReadAllocation<'_>,
     selected: &Selection,
     controls: &Controls,
     claim: &'claim VerifiedPendingWalReleaseCustody,
@@ -144,6 +148,7 @@ pub(super) fn observe<'claim>(
     };
     let checkpoint = release_heads::observe(
         discovery,
+        window,
         &selected.checkpoint_source_root,
         format,
         allocation,
@@ -164,6 +169,7 @@ pub(super) fn observe<'claim>(
     }
     let pre_pending = release_heads::observe(
         discovery,
+        window,
         &selected.source_root,
         format,
         allocation,
@@ -198,6 +204,7 @@ pub(super) fn observe<'claim>(
         .ok_or(Denial::BoundExceeded)?;
     let result = release_heads::observe(
         discovery,
+        window,
         &selected.root,
         format,
         allocation,

@@ -27,9 +27,12 @@ pub use cleanup::{
     BackendRecoveryCleanupRemovalOutcome, BackendRecoveryCleanupRemovalRequest,
 };
 pub use discovery::{
+    BorrowedRecordFilesystemObservation, BorrowedWalFilesystemObservation,
     BoundedRecoveryFilesystemDiscovery, ObservedRecoveryArtifact, ObservedWalArtifact,
-    RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryCounters,
-    RecoveryDiscoveryFailure, RecoveryDiscoveryAllocationFailure, RecoveryWalObservationIdentity,
+    RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope,
+    RecoveryDiscoveryCounters, RecoveryDiscoveryFailure, RecoverySelectedWalReadOutcome,
+    RecoveryWalListingAllocationMode, RecoveryWalObservationIdentity, RecoveryWalReadSelection,
+    RecoveryWalReadStorage, RecoveryWalSelectionMismatch,
 };
 pub use generation::PhysicalRecoveryMediaGeneration;
 pub use profile::QualifiedPhysicalBackendProfile;

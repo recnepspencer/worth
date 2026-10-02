@@ -1,5 +1,6 @@
+use crate::orchestration::ResidentSourceSelection;
 use worth_store::physical_runtime::StoreRecoveryBindingFreshnessSample;
-use worth_store_recovery_physics::{PhysicalSourceSelection, RecoveryPlanningCounters};
+use worth_store_recovery_physics::RecoveryPlanningCounters;
 
 use crate::entry::{
     AdmittedPlatformAuthority, PhysicalRecoveryBlock, PhysicalRecoveryBlockEvidence,
@@ -21,7 +22,7 @@ mod execution;
 pub(crate) struct RecoveryStagingInput {
     pub(crate) authority: AdmittedPlatformAuthority,
     pub(crate) coordination: RecoveryCoordination,
-    pub(crate) selection: PhysicalSourceSelection,
+    pub(crate) selection: ResidentSourceSelection,
     pub(crate) custody: crate::progression::PlanningCustody,
     pub(crate) verified_selected_tier_custody:
         Option<worth_store_recovery_physics::VerifiedSelectedTierEpochCustody>,

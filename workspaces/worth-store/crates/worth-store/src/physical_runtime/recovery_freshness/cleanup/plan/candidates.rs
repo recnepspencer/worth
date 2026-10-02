@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use worth_store_physical_backend::AdmittedRecoveryFilesystemMedia;
-use worth_store_physical_integrity::VerifiedCheckpointStream;
+use worth_store_physical_integrity::VerifiedCheckpointFacts;
 use worth_store_wal::{WalLsnRange, WalSegmentArtifactIdentity};
 
 use crate::physical_runtime::{CompletedPhysicalRecoveryFreshReopen, PhysicalRecoveryCoordination};
@@ -13,7 +13,7 @@ pub(super) struct CandidateAdmissionContext<'a> {
     pub(super) coordination: &'a PhysicalRecoveryCoordination,
     pub(super) media: &'a AdmittedRecoveryFilesystemMedia,
     pub(super) reopened: &'a CompletedPhysicalRecoveryFreshReopen,
-    pub(super) checkpoint: &'a VerifiedCheckpointStream,
+    pub(super) checkpoint: &'a VerifiedCheckpointFacts,
     pub(super) descriptive_plan_identity: [u8; 32],
 }
 
@@ -104,8 +104,7 @@ fn admit_terminal_bindings(
     let before = context.coordination.freshness().binding_samples();
     let sampled = super::super::super::binding::sample_binding(
         super::super::super::binding::CheckpointCoveredMembers::Sample,
-        context.coordination.freshness(),
-        context.coordination.checkpoint_binding_basis(),
+        context.coordination,
         context.media,
         context.checkpoint,
         wal_frames,

@@ -9,13 +9,14 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn obser
     selected: &Selection,
     claim: &VerifiedSelectedCheckpointCustody,
     format: PhysicalRecordFormatDeclaration,
+    checkpoint: &VerifiedCheckpointStream,
 ) -> Result<ObservedRootCheckpoint, Denial> {
     let selector =
         DurableRootSelector::decode(&selected.selector).map_err(|_| Denial::RootBinding)?;
     let (source, releases, count, bytes) = inspect_checkpoint(
         &selected.checkpoint_bytes,
         claim.checkpoint().source().identity(),
-        claim.checkpoint().certificate_records(),
+        checkpoint.certificate_records(),
     )?;
     let observed = ObservedRootCheckpoint {
         selector,

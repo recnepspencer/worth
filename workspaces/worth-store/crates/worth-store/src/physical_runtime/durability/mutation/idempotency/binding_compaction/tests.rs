@@ -1,4 +1,6 @@
 use super::decoding::PhysicalBindingCompactionRecordDecodeDenial;
+#[path = "tests/codec.rs"]
+mod codec;
 use super::encoding::COMPACTION_RECORD_DOMAIN;
 use super::*;
 use crate::physical_runtime::durability::mutation::idempotency::persisted_binding::{
@@ -13,6 +15,26 @@ use crate::physical_runtime::durability::mutation::idempotency::test_support::{
 use crate::physical_runtime::{
     PhysicalMutationIdempotencyMaterial, PhysicalMutationProvenNoEffectCause,
 };
+
+#[cfg(all(
+    feature = "recovery-runtime-owner",
+    feature = "certification-test-authority"
+))]
+#[path = "tests/decode_funding.rs"]
+mod decode_funding;
+
+#[cfg(all(
+    feature = "recovery-runtime-owner",
+    feature = "certification-test-authority"
+))]
+#[path = "tests/retained_basis.rs"]
+mod retained_basis;
+
+#[cfg(all(
+    feature = "recovery-runtime-owner",
+    feature = "certification-test-authority"
+))]
+pub(in crate::physical_runtime) use retained_basis::with_conflicting_binding_history;
 
 #[test]
 fn compaction_record_decoder_rejects_unknown_state_trailing_bytes_and_foreign_policy() {

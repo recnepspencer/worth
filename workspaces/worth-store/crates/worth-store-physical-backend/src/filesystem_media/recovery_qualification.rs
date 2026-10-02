@@ -19,7 +19,7 @@ pub(crate) struct QualifiedRecoveryParts {
     media_generation: PhysicalRecoveryMediaGeneration,
 }
 
-pub(crate) struct AdmittedRecoveryParts {
+pub struct AdmittedRecoveryParts {
     pub(crate) owner: FilesystemMediaOwner,
     pub(crate) execution_capability: crate::AdmittedBackendCapabilityWitness,
     pub(crate) store_identity: StableStoreIdentity,

@@ -1,15 +1,13 @@
 //! Positive selected checkpoint custody for a Store with no released drops.
 //! A missing tag-7 certificate is never equivalent to this owner-issued marker.
 
-use std::sync::Arc;
-
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
     decode_checkpoint_certificate, BlobRecordKind, CheckpointCertificateKind,
     DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration, ReleaseCheckpointCertificateV1,
     ReleaseCheckpointNoReleaseV1, SelectedRecordContentClass,
 };
-use worth_store_physical_integrity::VerifiedCheckpointStream;
+use worth_store_physical_integrity::{VerifiedCheckpointFacts, VerifiedCheckpointStream};
 
 use super::PhysicalSourceSelection;
 
@@ -28,7 +26,7 @@ pub enum SelectedNoReleaseCustodyDenial {
 pub struct VerifiedSelectedNoReleaseCustody {
     selected_root: DurablePhysicalRootManifest,
     selected_root_sha256: [u8; 32],
-    checkpoint: Arc<VerifiedCheckpointStream>,
+    checkpoint: VerifiedCheckpointFacts,
     checkpoint_source_root_sha256: [u8; 32],
     marker: ReleaseCheckpointNoReleaseV1,
     marker_payload_sha256: [u8; 32],
@@ -59,11 +57,12 @@ impl VerifiedSelectedNoReleaseCustody {
 
     pub fn claim_selected_no_release(
         selected: &PhysicalSourceSelection,
+        stream: &VerifiedCheckpointStream,
     ) -> Result<Self, SelectedNoReleaseCustodyDenial> {
         let checkpoint = selected
             .checkpoint()
             .ok_or(SelectedNoReleaseCustodyDenial::MissingCheckpoint)?;
-        let marker = selected_checkpoint_marker(selected)?;
+        let marker = selected_checkpoint_marker(selected, stream)?;
         // The C.8 selection has typed routes but no Store-owned same-media
         // frame/source join. V1/V2 failed-ingest controls remain a pending
         // claim; Store must authenticate every one before a Serving seal.
@@ -82,7 +81,7 @@ impl VerifiedSelectedNoReleaseCustody {
         Ok(Self {
             selected_root,
             selected_root_sha256,
-            checkpoint: checkpoint.share_checkpoint(),
+            checkpoint: *checkpoint.checkpoint(),
             checkpoint_source_root_sha256: checkpoint.source_root_frame_sha256(),
             marker,
             marker_payload_sha256: Sha256::digest(marker.encode()).into(),
@@ -95,7 +94,7 @@ impl VerifiedSelectedNoReleaseCustody {
     pub const fn selected_root_sha256(&self) -> [u8; 32] {
         self.selected_root_sha256
     }
-    pub fn checkpoint(&self) -> &VerifiedCheckpointStream {
+    pub fn checkpoint(&self) -> &VerifiedCheckpointFacts {
         &self.checkpoint
     }
     pub const fn checkpoint_source_root_sha256(&self) -> [u8; 32] {
@@ -114,11 +113,14 @@ impl VerifiedSelectedNoReleaseCustody {
 /// root already routes V3 manifest/reservation controls.
 pub(super) fn selected_checkpoint_marker(
     selected: &PhysicalSourceSelection,
+    stream: &VerifiedCheckpointStream,
 ) -> Result<ReleaseCheckpointNoReleaseV1, SelectedNoReleaseCustodyDenial> {
     let checkpoint = selected
         .checkpoint()
         .ok_or(SelectedNoReleaseCustodyDenial::MissingCheckpoint)?;
-    let stream = checkpoint.checkpoint();
+    if stream.facts() != *checkpoint.checkpoint() {
+        return Err(SelectedNoReleaseCustodyDenial::MarkerRoster);
+    }
     let mut marker = None;
     let mut tier_seen = false;
     for frame in stream.certificate_records() {

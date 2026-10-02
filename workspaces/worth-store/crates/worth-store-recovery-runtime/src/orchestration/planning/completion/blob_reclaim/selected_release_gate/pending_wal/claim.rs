@@ -69,19 +69,25 @@ pub(super) fn admit(
                 basis.sample.policy_identity(),
             )
         }
-        PlanningCustody::Unresolved => VerifiedPendingWalReleaseCustody::admit_with_head_replay(
-            &context.selection,
-            head_replay.clone(),
-            basis.observed_pages.tier_custody.as_ref(),
-            projection,
-            &basis.redo,
-            &reservation,
-            &manifest,
-            member.wal_fate,
-            member.canonical_redo_digest,
-            &basis.fates,
-            basis.sample.policy_identity(),
-        ),
+        PlanningCustody::Unresolved => {
+            let Some(shared) = context.coordination.owner().checkpoint() else {
+                return Err(context.redo_block(basis.planning_counters(), None));
+            };
+            VerifiedPendingWalReleaseCustody::admit_with_head_replay(
+                &context.selection,
+                shared.stream(),
+                head_replay.clone(),
+                basis.observed_pages.tier_custody.as_ref(),
+                projection,
+                &basis.redo,
+                &reservation,
+                &manifest,
+                member.wal_fate,
+                member.canonical_redo_digest,
+                &basis.fates,
+                basis.sample.policy_identity(),
+            )
+        }
         _ => return Err(context.redo_block(basis.planning_counters(), None)),
     };
     let mut claim = match admitted {

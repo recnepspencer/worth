@@ -65,7 +65,7 @@ impl<'media> IntegrityAdmittedRootManifest<'media> {
     pub(crate) fn bind_checkpoint_base(
         &self,
         selected: &worth_store_recovery_physics::SelectedPhysicalRoot,
-        checkpoint: worth_store_physical_integrity::VerifiedCheckpointStream,
+        checkpoint: &worth_store_physical_integrity::VerifiedCheckpointStream,
         counters: &mut RecoveryIntegrityIngressCounters,
     ) -> Result<
         worth_store_recovery_physics::PhysicalCheckpointBase,

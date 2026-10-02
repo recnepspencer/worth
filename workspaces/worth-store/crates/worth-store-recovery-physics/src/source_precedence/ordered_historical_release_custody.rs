@@ -7,7 +7,7 @@ use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
     DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest, ReleaseCheckpointNoReleaseV1,
 };
-use worth_store_physical_integrity::VerifiedCheckpointStream;
+use worth_store_physical_integrity::{VerifiedCheckpointFacts, VerifiedCheckpointStream};
 
 use super::{
     no_release_custody::selected_checkpoint_marker, PhysicalSourceSelection,
@@ -25,7 +25,7 @@ pub enum OrderedHistoricalReleaseCustodyDenial {
 
 #[derive(Debug)]
 pub struct VerifiedOrderedHistoricalReleaseCustody {
-    checkpoint: Arc<VerifiedCheckpointStream>,
+    checkpoint: VerifiedCheckpointFacts,
     base: OrderedHistoricalCheckpointBase,
     selected_root: DurablePhysicalRootManifest,
     selected_root_frame_sha256: [u8; 32],
@@ -41,7 +41,7 @@ enum OrderedHistoricalCheckpointBase {
 }
 
 impl VerifiedOrderedHistoricalReleaseCustody {
-    /// The checkpoint and history Arc backing are counted once by the caller.
+    /// History Arc backing is counted once by the caller; checkpoint facts are inline.
     pub fn owned_heap_bytes(&self) -> Option<u64> {
         let base = match &self.base {
             OrderedHistoricalCheckpointBase::NoRelease(_) => 0,
@@ -59,13 +59,15 @@ impl VerifiedOrderedHistoricalReleaseCustody {
 
     pub fn admit_no_release(
         selected: &PhysicalSourceSelection,
+        stream: &VerifiedCheckpointStream,
         selected_free: &DurableFreeSpaceManifestHeader,
         history: Arc<VerifiedOrderedRootHistory>,
         batches: Vec<VerifiedOrderedPendingWalReleaseBatch>,
         maximum_retained_bytes: u64,
     ) -> Result<Self, OrderedHistoricalReleaseCustodyDenial> {
         use OrderedHistoricalReleaseCustodyDenial as Denial;
-        let marker = selected_checkpoint_marker(selected).map_err(|_| Denial::Checkpoint)?;
+        let marker =
+            selected_checkpoint_marker(selected, stream).map_err(|_| Denial::Checkpoint)?;
         Self::admit(
             selected,
             selected_free,
@@ -162,7 +164,7 @@ impl VerifiedOrderedHistoricalReleaseCustody {
             return Err(Denial::Bound);
         }
         Ok(Self {
-            checkpoint: checkpoint.share_checkpoint(),
+            checkpoint: *checkpoint.checkpoint(),
             base,
             selected_root: root.clone(),
             selected_root_frame_sha256: root_sha,
@@ -172,7 +174,7 @@ impl VerifiedOrderedHistoricalReleaseCustody {
         })
     }
 
-    pub fn checkpoint(&self) -> &VerifiedCheckpointStream {
+    pub fn checkpoint(&self) -> &VerifiedCheckpointFacts {
         &self.checkpoint
     }
     pub const fn marker(&self) -> Option<ReleaseCheckpointNoReleaseV1> {

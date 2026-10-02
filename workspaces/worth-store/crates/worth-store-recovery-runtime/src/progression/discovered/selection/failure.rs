@@ -52,10 +52,9 @@ impl SelectionFailure {
 
     pub(super) fn with_integrity_observations(
         mut self,
-        wal: Vec<crate::entry::PhysicalRecoveryWalIntegrityObservation>,
+        wal: crate::entry::PhysicalRecoveryIntegrityObservations,
     ) -> Self {
-        self.evidence.integrity_observations =
-            crate::entry::PhysicalRecoveryIntegrityObservations::new(wal);
+        self.evidence.integrity_observations = wal;
         self
     }
 

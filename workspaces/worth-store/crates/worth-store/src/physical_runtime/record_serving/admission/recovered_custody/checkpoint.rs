@@ -3,7 +3,7 @@
 
 use super::*;
 
-impl RecoveredPhysicalCheckpointCustody {
+impl RecoveredCheckpointCustodyEvidence {
     #[cfg(feature = "recovery-runtime-owner")]
     pub(super) fn verify_current_checkpoint(
         &self,
@@ -26,6 +26,7 @@ impl RecoveredPhysicalCheckpointCustody {
                     .map(|claim| claim.checkpoint())
             })
             .ok_or(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch)?;
+        self.checkpoint_stream(selected)?;
         let length = selected.encoded_bytes();
         if length > MAX_CHECKPOINT_BYTES {
             return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
@@ -68,7 +69,10 @@ impl RecoveredPhysicalCheckpointCustody {
         {
             return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
         }
-        let [frame] = verified.checkpoint().certificate_records() else {
+        let [frame] = self
+            .checkpoint_stream(verified.checkpoint())?
+            .certificate_records()
+        else {
             return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
         };
         let (CheckpointCertificateKind::ReleasedDrop, payload) =

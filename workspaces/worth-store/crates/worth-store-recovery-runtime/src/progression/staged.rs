@@ -7,7 +7,7 @@ use crate::entry::{
     PhysicalRecoveryStagingCounters, PhysicalRecoveryStagingSettlementLedger,
 };
 use crate::handoff::RecoveryOperationFateSet;
-use crate::orchestration::RecoveryCoordination;
+use crate::orchestration::{RecoveryCoordination, ResidentSourceSelection};
 
 use super::{
     PhysicalRecoveryDiscoveryCounters, RecoveryBaseImagePlan, RecoveryIntegrityEvidence,
@@ -25,7 +25,7 @@ pub struct ClosedRecoveryStagingGeneration {
 pub struct StagedPhysicalRecovery {
     pub(crate) authority: AdmittedPlatformAuthority,
     pub(crate) coordination: RecoveryCoordination,
-    pub(crate) selection: PhysicalSourceSelection,
+    pub(crate) selection: ResidentSourceSelection,
     pub(crate) custody: crate::progression::PlanningCustody,
     pub(crate) verified_selected_tier_custody:
         Option<worth_store_recovery_physics::VerifiedSelectedTierEpochCustody>,
@@ -50,7 +50,7 @@ impl StagedPhysicalRecovery {
     pub(crate) const fn new(
         authority: AdmittedPlatformAuthority,
         coordination: RecoveryCoordination,
-        selection: PhysicalSourceSelection,
+        selection: ResidentSourceSelection,
         custody: crate::progression::PlanningCustody,
         verified_selected_tier_custody: Option<
             worth_store_recovery_physics::VerifiedSelectedTierEpochCustody,
@@ -115,7 +115,7 @@ impl StagedPhysicalRecovery {
         &self.base
     }
     pub const fn selected_sources(&self) -> &PhysicalSourceSelection {
-        &self.selection
+        self.selection.facts()
     }
     pub const fn discovery_counters(&self) -> PhysicalRecoveryDiscoveryCounters {
         self.discovery_counters

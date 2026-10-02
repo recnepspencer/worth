@@ -91,8 +91,12 @@ pub(in crate::orchestration::planning::completion::blob_reclaim::selected_releas
             context.limits.staging_bytes,
         )
     } else {
+        let Some(shared) = context.coordination.owner().checkpoint() else {
+            return Err(context.redo_block(basis.planning_counters(), None));
+        };
         VerifiedOrderedHistoricalReleaseCustody::admit_no_release(
             &context.selection,
+            shared.stream(),
             &basis.observed_pages.selected_source.free_space,
             history,
             batches,

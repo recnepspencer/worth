@@ -8,7 +8,12 @@ use crate::integrity_ingress::{
     RecoveryIntegrityIngressRejection, RecoveryIntegrityIngressTrace,
 };
 use crate::progression::PhysicalRecoveryDiscoveryCounters;
-use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
+use worth_store::physical_runtime::{
+    BoundedRecoveryFilesystemDiscovery, PhysicalRecoveryReadAllocation,
+};
+
+mod allocation;
+pub(super) use allocation::window_admission_failure;
 
 #[cfg(test)]
 mod tests;
@@ -19,47 +24,49 @@ pub(super) fn observe_checkpoint(
     remaining_manifest_bytes: &mut u64,
     counters: &mut PhysicalRecoveryDiscoveryCounters,
     ingress_trace: &mut RecoveryIntegrityIngressTrace,
+    allocation: &mut PhysicalRecoveryReadAllocation<'_>,
 ) -> Result<CheckpointDiscovery, DiscoveryFailure> {
     let declaration = limits.declaration();
-    let artifact = discovery
-        .read_current_checkpoint(declaration.observation_bytes)
+    let artifact = allocation
+        .read_checkpoint(discovery, declaration.observation_bytes)
         .map_err(|failure| {
-            map_discovery_failure(
-                failure,
-                PhysicalRecoveryLimitDimension::ObservationBytes,
-                PhysicalRecoveryLimitDimension::ObservationBytes,
-            )
+            allocation::map_read_failure(failure, |failure| {
+                map_discovery_failure(
+                    failure,
+                    PhysicalRecoveryLimitDimension::ObservationBytes,
+                    PhysicalRecoveryLimitDimension::ObservationBytes,
+                )
+            })
         })?;
     let mut trace = RecoveryIntegrityIngressTrace::new();
     let checkpoint = match admit_observed_checkpoint_stream(
-        &artifact,
+        artifact.observed(),
         discovery.store_identity(),
         declaration.dirty_frames,
         declaration.operation_bindings,
         &mut trace,
+        allocation,
     ) {
         Ok(Some(projection)) => {
-            let generation = projection.checkpoint.source().root().generation();
-            if generation == 0 {
-                return Err(DiscoveryFailure::from(crate::entry::PhysicalRecoveryBlockKind::Checkpoint)
-                    .with_root_protocol_denials(&[crate::entry::PhysicalRecoverySourceDenial::CheckpointBinding(
-                        worth_store_recovery_physics::PhysicalCheckpointBaseDenial::RootGenerationMismatch,
-                    )])
-                    .with_integrity_trace(trace));
-            }
-            let source_root = discovery
-                .read_root_manifest(generation, *remaining_manifest_bytes)
+            let generation = projection.checkpoint.facts().source().root().generation();
+            let source_root = allocation
+                .read_checkpoint_source_root(discovery, generation, *remaining_manifest_bytes)
                 .map_err(|failure| {
-                    super::super::map_cumulative_discovery_failure(
-                        failure,
-                        PhysicalRecoveryLimitDimension::ManifestEntries,
-                        PhysicalRecoveryLimitDimension::ManifestBytes,
-                        declaration.manifest_bytes,
-                        *remaining_manifest_bytes,
-                    )
+                    allocation::map_read_failure(failure, |failure| {
+                        super::super::map_cumulative_discovery_failure(
+                            failure,
+                            PhysicalRecoveryLimitDimension::ManifestEntries,
+                            PhysicalRecoveryLimitDimension::ManifestBytes,
+                            declaration.manifest_bytes,
+                            *remaining_manifest_bytes,
+                        )
+                    })
                     .with_integrity_trace(trace.clone())
                 })?;
-            let bytes = source_root.bytes().map_or(0, |bytes| bytes.len() as u64);
+            let bytes = source_root
+                .observed()
+                .bytes()
+                .map_or(0, |bytes| bytes.len() as u64);
             *remaining_manifest_bytes = remaining_manifest_bytes
                 .checked_sub(bytes)
                 .ok_or(crate::entry::PhysicalRecoveryBlockKind::DiscoveryLimit)?;
@@ -68,7 +75,43 @@ pub(super) fn observe_checkpoint(
                 source_root,
             }
         }
-        Ok(None) => CheckpointDiscovery::Absent,
+        Ok(None) => CheckpointDiscovery::Absent(
+            artifact
+                .into_absent()
+                .expect("absent ingress retains no present checkpoint bytes"),
+        ),
+        Err(CheckpointStreamAdmissionFailure::ParserBacking { requested, cause }) => {
+            return Err(allocation::parser_failure(requested, cause).with_integrity_trace(trace));
+        }
+        Err(CheckpointStreamAdmissionFailure::ParserCapacity { requested, actual }) => {
+            return Err(
+                allocation::parser_capacity_failure(requested, actual).with_integrity_trace(trace)
+            );
+        }
+        Err(CheckpointStreamAdmissionFailure::Backing(cause)) => {
+            return Err(DiscoveryFailure::from(
+                crate::entry::PhysicalRecoveryBlockKind::Checkpoint,
+            )
+            .with_root_protocol_denials(&[
+                crate::entry::PhysicalRecoverySourceDenial::CheckpointBacking(cause),
+            ])
+            .with_integrity_trace(trace));
+        }
+        Err(CheckpointStreamAdmissionFailure::BindingDecodeBacking(cause)) => {
+            return Err(allocation::binding_decode_failure(cause).with_integrity_trace(trace));
+        }
+        Err(CheckpointStreamAdmissionFailure::BindingBasisBacking(cause)) => {
+            return Err(allocation::binding_basis_failure(cause).with_integrity_trace(trace));
+        }
+        Err(CheckpointStreamAdmissionFailure::Binding(cause)) => {
+            return Err(DiscoveryFailure::from(
+                crate::entry::PhysicalRecoveryBlockKind::Checkpoint,
+            )
+            .with_root_protocol_denials(&[
+                crate::entry::PhysicalRecoverySourceDenial::CheckpointBinding(cause),
+            ])
+            .with_integrity_trace(trace));
+        }
         Err(CheckpointStreamAdmissionFailure::AllocationRejected) => CheckpointDiscovery::Rejected(
             PhysicalRecoveryCheckpointIntegrityDenial::AllocationRejected,
         ),

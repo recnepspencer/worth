@@ -1,12 +1,11 @@
-use std::sync::Arc;
-
+use crate::physical_runtime::SharedRecoveryCheckpoint;
 use worth_store_physical_backend::{
     AdmittedRecoveryFilesystemMedia, PhysicalRecoveryMediaGeneration,
 };
 use worth_store_physical_format::{
     store_namespace::StableStoreIdentity, PhysicalCheckpointIdentity,
 };
-use worth_store_physical_integrity::VerifiedCheckpointStream;
+use worth_store_physical_integrity::VerifiedCheckpointFacts;
 use worth_store_wal::LogSequenceNumber;
 
 use crate::physical_runtime::{
@@ -36,7 +35,7 @@ pub(in crate::physical_runtime) fn admit(
     coordination: &PhysicalRecoveryCoordination,
     media: &AdmittedRecoveryFilesystemMedia,
     reopened: CompletedPhysicalRecoveryFreshReopen,
-    checkpoint: Arc<VerifiedCheckpointStream>,
+    checkpoint: SharedRecoveryCheckpoint,
     descriptive_plan_identity: [u8; 32],
     wal: impl IntoIterator<Item = crate::physical_runtime::IntegrityAdmittedRecoveryWalSegment>,
 ) -> Result<StoreRecoveryCleanupPlan, StoreRecoveryCleanupPlanAdmissionFailure> {
@@ -52,12 +51,19 @@ pub(in crate::physical_runtime) fn admit(
             failure: invalid(),
         });
     }
+    if coordination.require_checkpoint_owner(&checkpoint).is_err() {
+        return Err(admission_failure(
+            reopened,
+            descriptive_plan_identity,
+            invalid(),
+        ));
+    }
     let admitted = match candidates::admit(
         candidates::CandidateAdmissionContext {
             coordination,
             media,
             reopened: &reopened,
-            checkpoint: &checkpoint,
+            checkpoint: &checkpoint.facts(),
             descriptive_plan_identity,
         },
         wal,
@@ -87,7 +93,7 @@ pub(super) fn common_basis(
     coordination: &PhysicalRecoveryCoordination,
     media: &AdmittedRecoveryFilesystemMedia,
     reopened: &CompletedPhysicalRecoveryFreshReopen,
-    checkpoint: &VerifiedCheckpointStream,
+    checkpoint: &VerifiedCheckpointFacts,
 ) -> Result<CommonBasis, StoreRecoveryCleanupFreshnessFailure> {
     let occurrence = reopened.fresh_reopen_occurrence();
     let root = reopened.root();

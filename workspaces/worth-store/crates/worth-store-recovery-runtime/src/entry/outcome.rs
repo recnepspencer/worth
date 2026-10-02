@@ -155,7 +155,7 @@ impl PhysicalRecoveryPublicationIndeterminate {
             settlement,
             root_protocol_denials,
             root_protocol_counters,
-            integrity_observations: super::PhysicalRecoveryIntegrityObservations::new(Vec::new()),
+            integrity_observations: super::PhysicalRecoveryIntegrityObservations::empty(),
             reopen: None,
             handoff: None,
             checkpoint_residue_indeterminate: false,
@@ -263,6 +263,9 @@ pub enum PhysicalRecoveryPlanningDenial {
         cause: std::collections::TryReserveError,
     },
     BindingFreshness(StoreRecoveryBindingSampleDenial),
+    BindingSamplingAllocation(
+        worth_store::physical_runtime::StoreRecoveryBindingSampleAllocationDenial,
+    ),
     OperationReconciliation(OperationReconciliationDenial),
     Redo(PhysicalRedoPlanningDenial),
     CustodyUnresolved,

@@ -24,8 +24,17 @@ const MAX_DISCOVERY_ENTRIES: u64 = 65_536;
 const MAX_CLEANUP_SAMPLE_BYTES: u64 = 128 << 20;
 
 #[derive(Debug)]
-pub(super) enum SelectedMediaRejoinDenial {
+pub(in crate::physical_runtime) enum SelectedMediaRejoinDenial {
     Resident(PhysicalRecoveryRejoinResidentDenial),
+    WalReadOwnership(crate::physical_runtime::PhysicalRecoveryRejoinResidentAdmissionDenial),
+    WalRead {
+        boundary: Option<crate::physical_runtime::PhysicalRecoveryRejoinResidentBoundary>,
+        cause: crate::physical_runtime::FundedRecoveryWalReadFailure,
+    },
+    WalAdmission {
+        boundary: Option<crate::physical_runtime::PhysicalRecoveryRejoinResidentBoundary>,
+        cause: crate::physical_runtime::RecoveryWalAllocationDenial,
+    },
     ResidentBoundary {
         boundary: crate::physical_runtime::PhysicalRecoveryRejoinResidentBoundary,
         cause: PhysicalRecoveryRejoinResidentDenial,
@@ -43,6 +52,12 @@ pub(super) enum SelectedMediaRejoinDenial {
         offset: u64,
         requested: usize,
         cause: PhysicalRecoveryRejoinResidentDenial,
+    },
+    RecordReadAllocation {
+        artifact: worth_store_physical_backend::RecoveryDiscoveryArtifact,
+        offset: u64,
+        requested: usize,
+        cause: crate::physical_runtime::PhysicalRecoveryObservationAllocationDenial,
     },
     ReadBufferLengthMismatch {
         artifact: worth_store_physical_backend::RecoveryDiscoveryArtifact,
@@ -64,15 +79,52 @@ pub(super) enum SelectedMediaRejoinDenial {
     UnsupportedSelectedPlacement,
     ControlFrame,
     BoundExceeded,
+    BindingSampling {
+        boundary: Option<crate::physical_runtime::PhysicalRecoveryRejoinResidentBoundary>,
+        cause: crate::physical_runtime::StoreRecoveryBindingSampleAllocationDenial,
+    },
     WalFate,
 }
 
 impl SelectedMediaRejoinDenial {
+    pub(super) fn binding_sampling(
+        failure: crate::physical_runtime::StoreRecoveryBindingSampleFailure,
+    ) -> Self {
+        match failure.allocation_denial() {
+            Some(cause) => Self::BindingSampling {
+                boundary: None,
+                cause: cause.clone(),
+            },
+            None => Self::WalFate,
+        }
+    }
+
     pub(super) fn at_resident_boundary(
         self,
         boundary: crate::physical_runtime::PhysicalRecoveryRejoinResidentBoundary,
     ) -> Self {
         match self {
+            Self::WalRead {
+                boundary: existing,
+                cause,
+            } => Self::WalRead {
+                boundary: existing.or(Some(boundary)),
+                cause,
+            },
+            Self::WalAdmission {
+                boundary: existing,
+                cause,
+            } => Self::WalAdmission {
+                boundary: existing.or(Some(boundary)),
+                cause,
+            },
+            Self::BindingSampling {
+                boundary: existing,
+                cause,
+            } => Self::BindingSampling {
+                boundary: existing.or(Some(boundary)),
+                cause,
+            },
             Self::Resident(cause) => Self::ResidentBoundary { boundary, cause },
             Self::WalResident {
                 boundary: existing,

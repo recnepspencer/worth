@@ -1,5 +1,6 @@
+use crate::orchestration::ResidentSourceSelection;
 use worth_store::physical_runtime::StoreRecoveryBindingFreshnessSample;
-use worth_store_recovery_physics::{PhysicalSourceSelection, RecoveryPlanningCounters};
+use worth_store_recovery_physics::RecoveryPlanningCounters;
 
 use crate::entry::{
     PhysicalRecoveryPublicationCounters, PhysicalRecoveryPublicationSettlementLedger,
@@ -18,7 +19,7 @@ pub(crate) struct RecoveredPhysicalRuntimeHandoffEvidence {
     /// boundary, before any independent Store rejoin allocation.
     pub(crate) store_rejoin_retained_bytes: Option<u64>,
     pub(crate) session: RecoveredRecoverySessionReceipt,
-    pub(crate) selection: PhysicalSourceSelection,
+    pub(crate) selection: ResidentSourceSelection,
     pub(crate) discovery: PhysicalRecoveryDiscoveryCounters,
     pub(crate) root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
     pub(crate) integrity_observations: crate::entry::PhysicalRecoveryIntegrityObservations,

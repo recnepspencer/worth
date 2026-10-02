@@ -7,9 +7,9 @@ use worth_store_physical_backend::{
     BackendRecoveryCleanupRemovalRequest,
 };
 use worth_store_physical_format::PhysicalCheckpointIdentity;
-use worth_store_physical_integrity::VerifiedCheckpointStream;
+use worth_store_physical_integrity::VerifiedCheckpointFacts;
 
-use super::PhysicalRecoveryCoordination;
+use super::{PhysicalRecoveryCoordination, SharedRecoveryCheckpoint};
 
 mod execution;
 
@@ -46,10 +46,17 @@ impl PhysicalRecoveryCoordination {
     pub fn remove_unselected_checkpoint_candidate(
         &self,
         media: &AdmittedRecoveryFilesystemMedia,
-        selected: &VerifiedCheckpointStream,
+        selected: &SharedRecoveryCheckpoint,
         maximum_candidate_bytes: u64,
     ) -> RecoveryCheckpointResidueOutcome {
-        let admitted = match admit(self, media, selected, maximum_candidate_bytes) {
+        if !selected.matches_owner(&self.residency)
+            || self.require_selected_checkpoint(&selected.facts()).is_err()
+        {
+            return RecoveryCheckpointResidueOutcome::DeniedBeforeEffect(
+                RecoveryCheckpointResidueDenial::SelectedCheckpointMismatch,
+            );
+        }
+        let admitted = match admit(self, media, &selected.facts(), maximum_candidate_bytes) {
             Ok(Some(admitted)) => admitted,
             Ok(None) => return RecoveryCheckpointResidueOutcome::Absent,
             Err(denial) => return RecoveryCheckpointResidueOutcome::DeniedBeforeEffect(denial),
@@ -61,7 +68,7 @@ impl PhysicalRecoveryCoordination {
 fn admit(
     coordination: &PhysicalRecoveryCoordination,
     media: &AdmittedRecoveryFilesystemMedia,
-    selected: &VerifiedCheckpointStream,
+    selected: &VerifiedCheckpointFacts,
     maximum_candidate_bytes: u64,
 ) -> Result<Option<AdmittedCheckpointResidue>, RecoveryCheckpointResidueDenial> {
     let checkpoint = selected.source().identity();

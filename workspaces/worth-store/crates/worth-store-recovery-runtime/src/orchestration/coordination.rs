@@ -1,8 +1,8 @@
 use crate::entry::{record_coordinator_created, PhysicalRecoveryLimits};
 use worth_store::physical_runtime::{
-    AdmittedRecoveryFilesystemMedia, PhysicalRecoveryCoordination,
-    PhysicalRecoveryCoordinationAdmissionError, PhysicalRecoveryCoordinationCapacity,
-    PhysicalRecoveryRegisteredSessionAuthority,
+    AdmittedPhysicalRecordResidencyPolicy, AdmittedRecoveryFilesystemMedia,
+    PhysicalRecoveryCoordination, PhysicalRecoveryCoordinationAdmissionError,
+    PhysicalRecoveryCoordinationCapacity, PhysicalRecoveryRegisteredSessionAuthority,
 };
 
 pub(crate) struct RecoveryCoordination {
@@ -14,6 +14,7 @@ impl RecoveryCoordination {
         media: &mut AdmittedRecoveryFilesystemMedia,
         session: PhysicalRecoveryRegisteredSessionAuthority,
         limits: PhysicalRecoveryLimits,
+        residency_policy: AdmittedPhysicalRecordResidencyPolicy,
         yieldpoint: Option<worth_store::physical_runtime::PhysicalRecoveryProcessYieldpoint>,
     ) -> Result<Self, PhysicalRecoveryCoordinationAdmissionError> {
         let limits = limits.declaration();
@@ -25,7 +26,7 @@ impl RecoveryCoordination {
         )
         .and_then(|capacity| capacity.with_recovery_allocation_bytes(limits.recovery_memory_bytes))
         .expect("admitted recovery limits are nonzero and fit the platform");
-        let owner = session.admit_coordination(media, capacity, yieldpoint)?;
+        let owner = session.admit_coordination(media, capacity, residency_policy, yieldpoint)?;
         record_coordinator_created();
         Ok(Self { owner })
     }
@@ -145,11 +146,8 @@ impl RecoveryCoordination {
         &self.owner
     }
 
-    pub(crate) fn install_checkpoint_binding_basis(
-        &mut self,
-        basis: worth_store::physical_runtime::StoreRecoveryCheckpointBindingBasis,
-    ) -> bool {
-        self.owner.install_checkpoint_binding_basis(basis)
+    pub(crate) fn owner_mut(&mut self) -> &mut PhysicalRecoveryCoordination {
+        &mut self.owner
     }
 
     pub(crate) fn into_owner(self) -> PhysicalRecoveryCoordination {

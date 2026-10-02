@@ -21,6 +21,8 @@ use worth_store_test_support::harness::physical_residency::PhysicalResidencyStor
 
 use super::super::{admitted_blob_scope, certified_release_serving};
 
+#[path = "shared_reuse_custody/continuation_budget.rs"]
+mod continuation_budget;
 #[path = "shared_reuse_custody/fresh_process.rs"]
 mod fresh_process;
 #[path = "shared_reuse_custody/publication_budget.rs"]

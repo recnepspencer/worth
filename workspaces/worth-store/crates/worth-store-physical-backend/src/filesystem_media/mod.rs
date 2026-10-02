@@ -75,13 +75,20 @@ pub use allocation::{
     AllocationRequest, MediaAllocationMode, MediaAllocationObservation, MediaAllocationOutcome,
     MediaAllocationResult, MediaPhysicalAllocationPosture,
 };
+pub(crate) use artifact_tree::ArtifactTreeAllocatedListingFailure;
+pub(crate) use artifact_tree::ArtifactTreeAllocatedReadFailure;
+pub(crate) use artifact_tree::{backed_directory, backed_file, ArtifactTreeBackedPath};
 pub use artifact_tree::{
     ArtifactAppendOutcome, ArtifactAppendRange, ArtifactNewWriteOutcome, ArtifactNewWriteRange,
     ArtifactRangeReadOutcome, ArtifactRangeWriteDurability,
     ArtifactRangeWriteDurabilityRequirement, ArtifactRangeWriteOutcome, ArtifactTreeAccessLimit,
-    ArtifactTreeDirectory, ArtifactTreeFailure, ArtifactTreeFailureKind, ArtifactTreeFile,
-    ArtifactTreeMedia, ArtifactTreeNewFile, ArtifactTreePathDenial, ArtifactTreePublicationEffect,
-    ArtifactTreePublicationEffectOutcome, ArtifactTreeReplacement, CompletedArtifactAppend,
+    ArtifactTreeDirectory, ArtifactTreeDirectoryEntry, ArtifactTreeFailure,
+    ArtifactTreeFailureKind, ArtifactTreeFile, ArtifactTreeListingAllocationBoundary,
+    ArtifactTreeListingAllocator, ArtifactTreeListingStorageChange,
+    ArtifactTreeListingStorageRequirement, ArtifactTreeMedia, ArtifactTreeNewFile,
+    ArtifactTreePathAllocationBoundary, ArtifactTreePathAllocator, ArtifactTreePathDenial,
+    ArtifactTreePublicationEffect, ArtifactTreePublicationEffectOutcome, ArtifactTreeReadAllocator,
+    ArtifactTreeReplacement, ArtifactTreeStorageAllocator, CompletedArtifactAppend,
     CompletedArtifactMetadataRead, CompletedArtifactNewWrite, CompletedArtifactRangeRead,
     CompletedArtifactRangeWrite, CompletedArtifactTreePublicationEffect,
     CompletedScheduledArtifactAppend, CompletedScheduledArtifactMetadataRead,
@@ -94,7 +101,6 @@ pub use artifact_tree::{
     ScheduledArtifactNewWriteOutcome, ScheduledArtifactRangeReadOutcome,
     ScheduledArtifactRangeWriteOutcome, ScheduledArtifactTreePublicationEffectOutcome,
 };
-pub(crate) use artifact_tree::ArtifactTreeAllocatedReadFailure;
 pub use capability_profile::{
     CapabilityProfileError, CapabilitySupport, FilesystemBackendProfile, FilesystemLocation,
     MediaCapability, MediaCapabilityObservation,

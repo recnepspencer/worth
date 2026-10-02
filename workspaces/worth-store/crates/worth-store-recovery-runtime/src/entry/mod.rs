@@ -17,7 +17,7 @@ mod successor_candidate;
 
 pub use authority::{PhysicalRecoveryPlatformAdmissionError, PhysicalRecoveryPlatformAuthority};
 pub use authority_binding::PhysicalRecoveryEntryBindingDrift;
-pub use configuration::PhysicalRecoveryStaticConfiguration;
+pub use configuration::{PhysicalRecoveryConfigurationDenial, PhysicalRecoveryStaticConfiguration};
 pub use counters::PhysicalRecoveryAdmissionCounters;
 pub use integrity_observations::{
     PhysicalRecoveryIntegrityObservations, PhysicalRecoveryWalIntegrityObservation,
@@ -47,7 +47,8 @@ pub use source_denial::{
     PhysicalManifestObservationDenial, PhysicalRecoveryCheckpointIntegrityDenial,
     PhysicalRecoveryMediaObservationFailure, PhysicalRecoveryRootProtocolArtifact,
     PhysicalRecoveryRootProtocolDenial, PhysicalRecoverySourceDenial,
-    PhysicalRecoveryWalIntegrityDenial,
+    PhysicalRecoverySourceReadAllocationBoundary, PhysicalRecoverySourceReadAllocationDenial,
+    PhysicalRecoveryWalIntegrityDenial, PhysicalRecoveryWalInventoryAllocationBoundary,
 };
 pub use staging::{
     PhysicalRecoveryStagingCounters, PhysicalRecoveryStagingDenial,
@@ -62,4 +63,5 @@ pub(crate) use counters::{
     record_binding_comparison, record_binding_denial, record_coordinator_created,
     snapshot as counter_snapshot,
 };
+pub(crate) use integrity_observations::WalIntegrityObservationBuilder;
 pub(crate) use session::{RecoveredRecoverySessionReceipt, RecoverySession};

@@ -42,14 +42,18 @@ fn copy_fixture() -> (
 #[test]
 fn sampled_copy_publication_requires_one_exact_earlier_durable_intent() {
     let (format, recipe, range, bytes) = copy_fixture();
-    assert!(!matches_exact_copy_intent(&[], recipe, format));
+    assert!(!matches_exact_copy_intent(
+        std::iter::empty(),
+        recipe,
+        format
+    ));
     assert!(matches_exact_copy_intent(
-        &[(range, bytes.clone())],
+        [(range, bytes.as_ref())].into_iter(),
         recipe,
         format
     ));
     assert!(!matches_exact_copy_intent(
-        &[(range, bytes.clone()), (range, bytes.clone())],
+        [(range, bytes.as_ref()), (range, bytes.as_ref())].into_iter(),
         recipe,
         format
     ));
@@ -57,10 +61,14 @@ fn sampled_copy_publication_requires_one_exact_earlier_durable_intent() {
     let mut substituted = bytes.to_vec();
     *substituted.last_mut().unwrap() ^= 1;
     assert!(!matches_exact_copy_intent(
-        &[(range, substituted.into_boxed_slice())],
+        [(range, substituted.as_slice())].into_iter(),
         recipe,
         format
     ));
     let late = WalLsnRange::new(LogSequenceNumber::new(41), LogSequenceNumber::new(43)).unwrap();
-    assert!(!matches_exact_copy_intent(&[(late, bytes)], recipe, format));
+    assert!(!matches_exact_copy_intent(
+        [(late, bytes.as_ref())].into_iter(),
+        recipe,
+        format
+    ));
 }

@@ -26,8 +26,9 @@ pub use checkpoint::{
     CheckpointBindingFrameLengthProjection, CheckpointBindingIntegrityValidation,
     CheckpointDirtyBasisIntegrityValidation, CheckpointFooterEnvelopeIntegrityValidation,
     CheckpointFooterIntegrityValidation, CheckpointFooterValidationBasis,
-    CheckpointStreamHeaderIntegrityValidation, VerifiedCheckpointCompactionCutover,
-    VerifiedCheckpointStream, VerifiedCheckpointStreamAssemblyDenial,
+    CheckpointStreamHeaderIntegrityValidation, ValidatedCheckpointStreamAssembly,
+    VerifiedCheckpointCompactionCutover, VerifiedCheckpointFacts, VerifiedCheckpointStream,
+    VerifiedCheckpointStreamAssemblyDenial,
 };
 pub use extent::{
     validate_extent_chunk, validate_extent_chunk_membership, validate_extent_manifest,

@@ -180,6 +180,7 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn obser
     expected_store: StableStoreIdentity,
     format: PhysicalRecordFormatDeclaration,
     claim: &VerifiedSelectedReleaseHeadCustodyV2,
+    checkpoint: &worth_store_physical_integrity::VerifiedCheckpointStream,
     resident: &mut StoreRejoinResidentLedger,
 ) -> Result<(ObservedRootCheckpoint, ObservedCheckpointSourceRoot), Denial> {
     let mut reader = RootCheckpointReader::resident(discovery, resident);
@@ -188,7 +189,7 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn obser
         expected_store,
         format,
         claim.selected_root(),
-        claim.checkpoint(),
+        checkpoint,
     )?;
     let source = observed.matches_v2_claim(&mut reader, claim)?;
     Ok((observed, source))

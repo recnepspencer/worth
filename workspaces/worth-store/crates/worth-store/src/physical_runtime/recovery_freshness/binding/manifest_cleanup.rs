@@ -3,23 +3,31 @@ use worth_store_wal::WalLsnRange;
 
 use super::StoreRecoveryBindingSampleDenial;
 
-type Observation = (WalLsnRange, BlobManifestResidueCleanup, bool);
+pub(super) type Observation = (WalLsnRange, BlobManifestResidueCleanup, bool);
 
 /// Frames are the sole live collector. Pairing sorts this buffer in place,
 /// then restores LSN order; no second map or uncharged node allocation exists.
 pub(super) struct ManifestCleanupObservations {
     frames: Vec<Observation>,
-    memory_limit: u64,
     peak_bytes: u64,
 }
 
 impl ManifestCleanupObservations {
-    pub(super) fn new(memory_limit: u64) -> Self {
-        Self {
-            frames: Vec::new(),
-            memory_limit,
-            peak_bytes: 0,
+    pub(super) fn prepare(
+        frames: Vec<Observation>,
+        memory_limit: u64,
+    ) -> Result<Self, StoreRecoveryBindingSampleDenial> {
+        if !frames.is_empty() {
+            return Err(StoreRecoveryBindingSampleDenial::InvalidWalMember);
         }
+        let peak_bytes = u64::try_from(frames.capacity())
+            .ok()
+            .and_then(|count| count.checked_mul(std::mem::size_of::<Observation>() as u64))
+            .ok_or(StoreRecoveryBindingSampleDenial::RecoveryMemoryLimit)?;
+        if peak_bytes > memory_limit {
+            return Err(StoreRecoveryBindingSampleDenial::RecoveryMemoryLimit);
+        }
+        Ok(Self { frames, peak_bytes })
     }
 
     pub(super) fn observe(
@@ -42,52 +50,16 @@ impl ManifestCleanupObservations {
         {
             return Err(StoreRecoveryBindingSampleDenial::InvalidWalMember);
         }
-        self.reserve_one(maximum)?;
+        if self.frames.len() == self.frames.capacity() {
+            return Err(StoreRecoveryBindingSampleDenial::RecoveryMemoryLimit);
+        }
         self.frames.push((range, cleanup, false));
-        Ok(())
-    }
-
-    fn reserve_one(&mut self, maximum: u64) -> Result<(), StoreRecoveryBindingSampleDenial> {
-        if self.frames.len() < self.frames.capacity() {
-            return Ok(());
-        }
-        let old = self.frames.capacity();
-        let maximum = usize::try_from(maximum).unwrap_or(usize::MAX);
-        let next = old.max(1).saturating_mul(2).min(maximum);
-        let unit = std::mem::size_of::<Observation>() as u64;
-        // A growth may retain the old buffer while allocating the new one.
-        // Boxing at finish can likewise coexist with the final Vec buffer.
-        let transient = (old as u64)
-            .checked_add(next as u64)
-            .and_then(|count| count.checked_mul(unit))
-            .ok_or(StoreRecoveryBindingSampleDenial::RecoveryMemoryLimit)?;
-        let boxed = (next as u64)
-            .checked_mul(2)
-            .and_then(|count| count.checked_mul(unit))
-            .ok_or(StoreRecoveryBindingSampleDenial::RecoveryMemoryLimit)?;
-        let admitted_peak = transient.max(boxed);
-        if next <= old || admitted_peak > self.memory_limit {
-            return Err(StoreRecoveryBindingSampleDenial::RecoveryMemoryLimit);
-        }
-        self.frames
-            .try_reserve_exact(next - self.frames.len())
-            .map_err(|_| StoreRecoveryBindingSampleDenial::RecoveryMemoryLimit)?;
-        // reserve_exact does not deliberately over-allocate. If the allocator
-        // grants extra capacity, that capacity must also fit the live bound.
-        let actual = (self.frames.capacity() as u64)
-            .checked_mul(2)
-            .and_then(|count| count.checked_mul(unit))
-            .ok_or(StoreRecoveryBindingSampleDenial::RecoveryMemoryLimit)?;
-        if actual > self.memory_limit {
-            return Err(StoreRecoveryBindingSampleDenial::RecoveryMemoryLimit);
-        }
-        self.peak_bytes = self.peak_bytes.max(admitted_peak).max(actual);
         Ok(())
     }
 
     pub(super) fn finish(
         mut self,
-    ) -> Result<(Box<[Observation]>, u64), StoreRecoveryBindingSampleDenial> {
+    ) -> Result<(Vec<Observation>, u64), StoreRecoveryBindingSampleDenial> {
         self.frames.sort_unstable_by_key(|(range, cleanup, _)| {
             (cleanup.reclaim_attempt(), range.start().get())
         });
@@ -123,109 +95,9 @@ impl ManifestCleanupObservations {
         }
         self.frames
             .sort_unstable_by_key(|(range, _, _)| range.start().get());
-        Ok((self.frames.into_boxed_slice(), self.peak_bytes))
+        Ok((self.frames, self.peak_bytes))
     }
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use worth_store_physical_format::PersistedRecordIdentity;
-    use worth_store_wal::{LogSequenceNumber, WalLsnRange};
-
-    fn interval(start: u64) -> WalLsnRange {
-        WalLsnRange::new(
-            LogSequenceNumber::new(start),
-            LogSequenceNumber::new(start + 1),
-        )
-        .unwrap()
-    }
-
-    fn intent(sha: u8) -> BlobManifestResidueCleanup {
-        worth_store_physical_format::BlobManifestResidueCleanupV1::intent(
-            [1; 16],
-            [2; 16],
-            PersistedRecordIdentity::new([3; 16], 4).unwrap(),
-            [sha; 32],
-            [5; 32],
-            [6; 32],
-            [7; 32],
-            8,
-            9,
-            [10; 32],
-            11,
-            12,
-        )
-        .unwrap()
-        .into()
-    }
-
-    #[test]
-    fn observed_intent_and_completion_are_ordered_and_exact() {
-        let mut sample = ManifestCleanupObservations::new(16_384);
-        let first_intent = intent(4);
-        sample
-            .observe(interval(20), first_intent, [1; 16], 2)
-            .unwrap();
-        sample
-            .observe(interval(22), first_intent.completed(), [1; 16], 2)
-            .unwrap();
-        let (frames, peak) = sample.finish().unwrap();
-        assert_eq!(frames.len(), 2);
-        assert!(frames[0].2 && frames[1].2);
-        assert!(peak >= 2 * std::mem::size_of::<Observation>() as u64);
-    }
-
-    #[test]
-    fn covered_intent_may_leave_only_a_completion_in_the_tail() {
-        let mut sample = ManifestCleanupObservations::new(16_384);
-        sample
-            .observe(interval(22), intent(4).completed(), [1; 16], 1)
-            .unwrap();
-        let (frames, _) = sample.finish().unwrap();
-        assert_eq!(frames.len(), 1);
-        assert!(!frames[0].2);
-    }
-
-    #[test]
-    fn duplicates_conflicts_foreign_store_and_reversed_order_are_denied() {
-        let mut sample = ManifestCleanupObservations::new(16_384);
-        let first_intent = intent(4);
-        assert_eq!(
-            sample.observe(interval(20), first_intent, [9; 16], 2),
-            Err(StoreRecoveryBindingSampleDenial::InvalidWalMember)
-        );
-        sample
-            .observe(interval(20), first_intent, [1; 16], 2)
-            .unwrap();
-        sample
-            .observe(interval(21), intent(5).completed(), [1; 16], 2)
-            .unwrap();
-        assert_eq!(
-            sample.finish().err(),
-            Some(StoreRecoveryBindingSampleDenial::InvalidWalMember)
-        );
-        let mut reversed = ManifestCleanupObservations::new(16_384);
-        reversed
-            .observe(interval(20), first_intent.completed(), [1; 16], 2)
-            .unwrap();
-        reversed
-            .observe(interval(21), first_intent, [1; 16], 2)
-            .unwrap();
-        assert_eq!(
-            reversed.finish().err(),
-            Some(StoreRecoveryBindingSampleDenial::InvalidWalMember)
-        );
-    }
-
-    #[test]
-    fn tight_memory_limit_denies_before_any_frame_allocation() {
-        let mut sample =
-            ManifestCleanupObservations::new(2 * std::mem::size_of::<Observation>() as u64 - 1);
-        assert_eq!(
-            sample.observe(interval(20), intent(4), [1; 16], 1),
-            Err(StoreRecoveryBindingSampleDenial::RecoveryMemoryLimit)
-        );
-        assert_eq!(sample.frames.capacity(), 0);
-    }
-}
+mod tests;

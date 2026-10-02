@@ -34,22 +34,22 @@ impl Controls {
 
     pub(in crate::physical_runtime::recovery_construction::selected_rejoin::pending_wal_release) fn into_fingerprint(
         self,
-    ) -> SelectedControlMediaFingerprint {
+    ) -> Result<SelectedControlMediaFingerprint, super::Denial> {
         let mut fingerprint = self.routes.into_media_fingerprint();
-        fingerprint.extend(self.source_routes.into_media_fingerprint());
+        fingerprint.extend(self.source_routes.into_media_fingerprint())?;
         if let Some(routes) = self.checkpoint_routes {
-            fingerprint.extend(routes.into_media_fingerprint());
+            fingerprint.extend(routes.into_media_fingerprint())?;
         }
         if let Some(base) = self.selected_base {
-            fingerprint.extend(base.fingerprint());
+            fingerprint.extend(base.fingerprint())?;
         }
         if let Some(base) = self.selected_head_v2_controls {
-            fingerprint.extend(base.into_fingerprint());
+            fingerprint.extend(base.into_fingerprint())?;
         }
-        fingerprint.extend(SelectedControlMediaFingerprint::observed(self.slices));
+        fingerprint.extend(SelectedControlMediaFingerprint::observed(self.slices))?;
         fingerprint.extend(SelectedControlMediaFingerprint::observed(
             self.checkpoint_slices,
-        ));
-        fingerprint
+        ))?;
+        Ok(fingerprint)
     }
 }

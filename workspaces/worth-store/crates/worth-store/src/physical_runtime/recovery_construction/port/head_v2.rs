@@ -67,6 +67,9 @@ impl PhysicalRecoveryConstructionPort {
         pause_before_final_reread: impl FnOnce(),
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
         if cleanup.live_media_handle_delta() != 0
+            || coordination
+                .require_selected_checkpoint(claim.checkpoint())
+                .is_err()
             || recovery_allocation.store_identity() != media.store_identity()
             || coordination.recovery_allocation_admission() != Some(recovery_allocation)
         {

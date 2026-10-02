@@ -7,6 +7,18 @@ pub(super) fn construction_denial(
     denial: SelectedMediaRejoinDenial,
 ) -> RecoveredPhysicalRuntimeConstructionDenial {
     match denial {
+        SelectedMediaRejoinDenial::WalReadOwnership(cause) => {
+            RecoveredPhysicalRuntimeConstructionDenial::ResidentAdmission(cause)
+        }
+        SelectedMediaRejoinDenial::WalRead { boundary, cause } => {
+            RecoveredPhysicalRuntimeConstructionDenial::RejoinWalRead { boundary, cause }
+        }
+        SelectedMediaRejoinDenial::WalAdmission { boundary, cause } => {
+            RecoveredPhysicalRuntimeConstructionDenial::RejoinWalAdmission { boundary, cause }
+        }
+        SelectedMediaRejoinDenial::BindingSampling { boundary, cause } => {
+            RecoveredPhysicalRuntimeConstructionDenial::RejoinBindingSampling { boundary, cause }
+        }
         SelectedMediaRejoinDenial::Resident(cause) => {
             RecoveredPhysicalRuntimeConstructionDenial::RejoinResident(cause)
         }
@@ -50,6 +62,17 @@ pub(super) fn construction_denial(
             requested,
             observed,
         },
+        SelectedMediaRejoinDenial::RecordReadAllocation {
+            artifact,
+            offset,
+            requested,
+            cause,
+        } => RecoveredPhysicalRuntimeConstructionDenial::RejoinRecordReadAllocation {
+            artifact,
+            offset,
+            requested,
+            cause,
+        },
         _ => RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch,
     }
 }
@@ -86,6 +109,29 @@ mod tests {
         assert_eq!(
             construction_denial(denial),
             RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch
+        );
+    }
+
+    #[test]
+    fn sampling_denial_preserves_native_requirement_and_rejoin_pass() {
+        let cause = crate::physical_runtime::StoreRecoveryBindingSampleAllocationDenial::Backing {
+            requested: 23,
+            cause: Cause::BudgetExceeded {
+                required: 101,
+                admitted: 100,
+            },
+        };
+        let denial = SelectedMediaRejoinDenial::BindingSampling {
+            boundary: None,
+            cause: cause.clone(),
+        }
+        .at_resident_boundary(Boundary::FinalSelectedMediaObservation);
+        assert_eq!(
+            construction_denial(denial),
+            RecoveredPhysicalRuntimeConstructionDenial::RejoinBindingSampling {
+                boundary: Some(Boundary::FinalSelectedMediaObservation),
+                cause,
+            }
         );
     }
 }

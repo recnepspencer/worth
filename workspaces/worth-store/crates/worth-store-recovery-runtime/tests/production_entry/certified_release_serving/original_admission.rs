@@ -1,5 +1,5 @@
-//! A recovered seal retains its original Store-issued recovery ceiling when a
-//! new Serving pool is admitted under a different, larger or smaller policy.
+//! Recovery carries one pool into Serving while retaining its original ceiling.
+//! The larger or smaller target policy is declared before recovery admission.
 
 use std::{
     num::{NonZeroU32, NonZeroU64},
@@ -39,7 +39,7 @@ fn original_recovery_ceiling_survives_seal_checkpoint_and_fresh_reopen() {
         .name("original-recovery-admission-serving".to_owned())
         .stack_size(16 * 1024 * 1024)
         .spawn(move || {
-            let first = recover_seal(&root, store);
+            let first = recover_seal(&root, store, PhysicalRecoveryStaticConfiguration::current());
             let serving = super::admit_serving_with_seal(&root, first);
             let observation = serving.residency_observation();
             let target = observation.admitted_policy().scope_bytes(Scope::Recovery);
@@ -53,6 +53,39 @@ fn original_recovery_ceiling_survives_seal_checkpoint_and_fresh_reopen() {
                 .for_dimension(PhysicalResidencyDimension::OperationBytes);
             assert!(grants.admissions() > 0);
             assert!(grants.admitted_units() >= ORIGINAL_RECOVERY_BYTES);
+            // The original ceiling must constrain the real Serving issuer,
+            // not just a recovery sizing hint. The larger target policy would
+            // admit this competing request without the carried native clamp.
+            let issuer = serving.physical_allocations();
+            let held = issuer
+                .admit_recovery(NonZeroU64::MIN)
+                .expect("one byte fits the genuine recovered pool");
+            let before = serving.residency_observation().allocations();
+            let denial =
+                match issuer.admit_recovery(NonZeroU64::new(ORIGINAL_RECOVERY_BYTES).unwrap()) {
+                    Err(denial) => denial,
+                    Ok(_) => panic!("Serving cannot spend beyond the original aggregate ceiling"),
+                };
+            let pressure = denial
+                .pressure()
+                .expect("original native Recovery pressure");
+            assert_eq!(pressure.scope(), Scope::Recovery);
+            assert_eq!(
+                pressure.dimension(),
+                PhysicalResidencyDimension::OperationScope(Scope::Recovery),
+            );
+            assert_eq!(pressure.requested(), ORIGINAL_RECOVERY_BYTES);
+            assert_eq!(pressure.admitted(), 1);
+            assert_eq!(pressure.limit(), ORIGINAL_RECOVERY_BYTES);
+            assert!(!pressure.effect_may_have_started());
+            let after = serving.residency_observation().allocations();
+            let dimension = PhysicalResidencyDimension::OperationScope(Scope::Recovery);
+            assert_eq!(after.for_dimension(dimension).active_units(), 1);
+            assert_eq!(
+                after.for_dimension(dimension).admitted_units(),
+                before.for_dimension(dimension).admitted_units(),
+            );
+            drop(held);
             checkpoint(&serving, [0xb2; 32]);
             assert_eq!(
                 serving
@@ -64,9 +97,18 @@ fn original_recovery_ceiling_survives_seal_checkpoint_and_fresh_reopen() {
             );
             assert!(!serving.close().residency().requires_inspection());
 
-            // A fresh recovery gets a new C8 seal. The target pool now has a
-            // smaller usable Recovery envelope, so both boundaries must hold.
-            let second = recover_seal(&root, store);
+            // Admit the smaller target pool before fresh C8 recovery. Its
+            // scope and the original recovery ceiling both continue to hold.
+            let format = AdmittedPhysicalRecordFormat::admit(
+                PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
+            );
+            let second = recover_seal(
+                &root,
+                store,
+                PhysicalRecoveryStaticConfiguration::current()
+                    .with_residency_policy(lower_target_policy(format))
+                    .expect("lower target policy admits the configured format"),
+            );
             let serving = open_with_lower_target_policy(&root, second);
             let observation = serving.residency_observation();
             assert_eq!(observation.store_identity(), store);
@@ -94,9 +136,13 @@ fn original_recovery_ceiling_survives_seal_checkpoint_and_fresh_reopen() {
 fn recover_seal(
     root: &Path,
     store: worth_store_physical_format::store_namespace::StableStoreIdentity,
+    configuration: PhysicalRecoveryStaticConfiguration,
 ) -> RecoveredPhysicalCheckpointCustody {
-    let outcome =
-        WorthStoreRecovery::recover(super::request_with_memory(root, ORIGINAL_RECOVERY_BYTES));
+    let outcome = WorthStoreRecovery::recover(super::recovery_request::request_with_configuration(
+        root,
+        ORIGINAL_RECOVERY_BYTES,
+        configuration,
+    ));
     let PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
         panic!("genuine selected release recovery denied: {outcome:?}")
     };

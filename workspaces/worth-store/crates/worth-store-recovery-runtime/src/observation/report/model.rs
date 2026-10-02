@@ -76,7 +76,7 @@ impl RecoveryReportEnvelope {
                 root_generation: None,
                 counters: RecoveryReportCounters::new(refusal.recovery_effects(), 0, 0, 0),
                 denial_cause: Some(RecoveryReportDenialCause::Refused(refusal_cause(
-                    refusal.kind,
+                    &refusal.kind,
                 ))),
             },
             PhysicalRecoveryOutcome::Blocked(block) => Self {
@@ -125,7 +125,7 @@ impl RecoveryReportEnvelope {
     }
 }
 
-fn refusal_cause(kind: PhysicalRecoveryRefusalKind) -> RecoveryReportRefusalCause {
+fn refusal_cause(kind: &PhysicalRecoveryRefusalKind) -> RecoveryReportRefusalCause {
     match kind {
         PhysicalRecoveryRefusalKind::CancelledBeforeDiscovery => {
             RecoveryReportRefusalCause::CancelledBeforeDiscovery
@@ -142,7 +142,8 @@ fn refusal_cause(kind: PhysicalRecoveryRefusalKind) -> RecoveryReportRefusalCaus
         PhysicalRecoveryRefusalKind::PersistedStoreAdmission(_) => {
             RecoveryReportRefusalCause::PersistedStoreAdmission
         }
-        PhysicalRecoveryRefusalKind::CoordinationUnavailable => {
+        PhysicalRecoveryRefusalKind::CoordinationAdmission(_)
+        | PhysicalRecoveryRefusalKind::CoordinationUnavailable => {
             RecoveryReportRefusalCause::CoordinationUnavailable
         }
     }

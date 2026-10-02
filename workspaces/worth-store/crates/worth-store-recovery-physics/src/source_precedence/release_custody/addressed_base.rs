@@ -1,14 +1,12 @@
 //! A tag-7 starting point at the checkpoint source, which may precede the
 //! final selected root after ordinary and released WAL publications.
 
-use std::sync::Arc;
-
 use worth_store_physical_format::{
     BlobReclaimDescriptorV3, BlobReclaimSourceBasisV1, DropSetManifestV3,
     DurablePhysicalRootManifest, OriginalDropReservedV1, PersistedRecordIdentity,
     ReleaseCheckpointAccumulatorV1, ReleaseCheckpointBatchV1, ReleasedGenerationReclaimBasisV1,
 };
-use worth_store_physical_integrity::VerifiedCheckpointStream;
+use worth_store_physical_integrity::VerifiedCheckpointFacts;
 
 use super::WitnessedSelectedControlFrame;
 
@@ -23,7 +21,7 @@ mod prior;
 /// point. Store must independently read this root and all three tip frames.
 #[derive(Debug)]
 pub struct VerifiedAddressedCheckpointReleaseBase {
-    checkpoint: Arc<VerifiedCheckpointStream>,
+    checkpoint: VerifiedCheckpointFacts,
     checkpoint_root: DurablePhysicalRootManifest,
     checkpoint_root_frame_sha256: [u8; 32],
     checkpoint_free_space_frame_sha256: [u8; 32],
@@ -118,7 +116,7 @@ impl VerifiedAddressedCheckpointReleaseBase {
             )
     }
 
-    pub fn checkpoint(&self) -> &VerifiedCheckpointStream {
+    pub fn checkpoint(&self) -> &VerifiedCheckpointFacts {
         &self.checkpoint
     }
     pub const fn checkpoint_root(&self) -> &DurablePhysicalRootManifest {

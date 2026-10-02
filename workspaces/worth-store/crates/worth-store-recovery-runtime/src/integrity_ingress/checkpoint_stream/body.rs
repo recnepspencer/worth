@@ -25,7 +25,7 @@ use super::envelope::CheckpointEnvelopeAdmission;
 use super::{
     bind_binding, bind_compaction, bind_dirty, bind_footer, bounded, physical_range,
     physical_range_u64, record_integrity_rejection, record_recovery_rejection,
-    CheckpointStreamAdmissionFailure,
+    CheckpointStreamAdmissionFailure, RecordEvidenceAllocation,
 };
 
 pub(super) struct CheckpointBodyAdmission<'media> {
@@ -43,10 +43,11 @@ impl<'media> CheckpointBodyAdmission<'media> {
     pub(super) fn admit(
         envelope: CheckpointEnvelopeAdmission<'media>,
         trace: &mut RecoveryIntegrityIngressTrace,
+        allocation: &mut RecordEvidenceAllocation<'_, '_>,
     ) -> Result<Self, CheckpointStreamAdmissionFailure> {
         let identity = envelope.header.checkpoint_identity();
         let mut offset = CHECKPOINT_STREAM_HEADER_RECORD_BYTES;
-        let mut dirty = reserve_record_evidence(envelope.footer.dirty_record_count())?;
+        let mut dirty = allocation.reserve_records(envelope.footer.dirty_record_count())?;
         for _ in 0..envelope.footer.dirty_record_count() {
             let range = physical_range(offset, CHECKPOINT_DIRTY_FRAME_RECORD_BYTES)?;
             let scope = PhysicalArtifactScope::checkpoint_dirty_basis(identity, range);
@@ -101,7 +102,7 @@ impl<'media> CheckpointBodyAdmission<'media> {
         )?;
         offset = compaction_range.end_exclusive() as usize;
 
-        let mut bindings = reserve_record_evidence(envelope.footer.binding_record_count())?;
+        let mut bindings = allocation.reserve_records(envelope.footer.binding_record_count())?;
         for _ in 0..envelope.footer.binding_record_count() {
             let prefix_range = physical_range(offset, CHECKPOINT_BINDING_RECORD_PREFIX_BYTES)?;
             let prefix_scope = PhysicalArtifactScope::checkpoint_binding(identity, prefix_range);
@@ -132,7 +133,8 @@ impl<'media> CheckpointBodyAdmission<'media> {
             )?);
             offset = range.end_exclusive() as usize;
         }
-        let mut certificates = reserve_record_evidence(envelope.footer.certificate_record_count())?;
+        let mut certificates =
+            allocation.reserve_records(envelope.footer.certificate_record_count())?;
         for _ in 0..envelope.footer.certificate_record_count() {
             let prefix_range = physical_range(offset, CHECKPOINT_CERTIFICATE_PREFIX_BYTES)?;
             let prefix = envelope
@@ -188,37 +190,42 @@ impl<'media> CheckpointBodyAdmission<'media> {
     pub(super) fn finish(
         self,
         trace: &mut RecoveryIntegrityIngressTrace,
+        allocation: &mut RecordEvidenceAllocation<'_, '_>,
     ) -> Result<OwnerCheckpointProjection, CheckpointStreamAdmissionFailure> {
         let maximum_binding_records = self.envelope.maximum_binding_records;
-        let mut dirty = reserve_record_evidence(self.dirty.len() as u64)?;
-        dirty.extend(
-            self.dirty
-                .iter()
-                .map(IntegrityAdmittedCheckpointDirtyBasis::validated),
-        );
-        let mut bindings = reserve_record_evidence(self.bindings.len() as u64)?;
-        bindings.extend(
-            self.bindings
-                .iter()
-                .map(IntegrityAdmittedCheckpointBinding::validated),
-        );
-        let validation = validate_checkpoint_footer(
-            bounded(
-                self.envelope.bytes,
-                self.envelope.footer_range,
+        let retained_record_bytes = allocation.live_bytes();
+        let validation = {
+            let mut dirty = allocation.reserve_records(self.dirty.len() as u64)?;
+            dirty.extend(
+                self.dirty
+                    .iter()
+                    .map(IntegrityAdmittedCheckpointDirtyBasis::validated),
+            );
+            let mut bindings = allocation.reserve_records(self.bindings.len() as u64)?;
+            bindings.extend(
+                self.bindings
+                    .iter()
+                    .map(IntegrityAdmittedCheckpointBinding::validated),
+            );
+            validate_checkpoint_footer(
+                bounded(
+                    self.envelope.bytes,
+                    self.envelope.footer_range,
+                    self.envelope.footer_scope,
+                    trace,
+                )?,
                 self.envelope.footer_scope,
-                trace,
-            )?,
-            self.envelope.footer_scope,
-            CheckpointFooterValidationBasis::from_record_references(
-                self.envelope.header.validated(),
-                &dirty,
-                self.compaction.validated(),
-                &bindings,
+                CheckpointFooterValidationBasis::from_record_references(
+                    self.envelope.header.validated(),
+                    &dirty,
+                    self.compaction.validated(),
+                    &bindings,
+                )
+                .with_certificates(&self.certificates),
             )
-            .with_certificates(&self.certificates),
-        )
-        .0;
+            .0
+        };
+        allocation.finish_reference_scope(retained_record_bytes);
         let CheckpointFooterIntegrityValidation::Intact(validated) = validation else {
             let CheckpointFooterIntegrityValidation::Rejected(rejection) = validation else {
                 unreachable!()
@@ -248,29 +255,14 @@ impl<'media> CheckpointBodyAdmission<'media> {
             record_recovery_rejection(self.envelope.footer_scope, rejection, trace)
         })?;
         admitted
-            .into_owner_checkpoint(maximum_binding_records, trace)
-            .map_err(|rejection| {
-                record_recovery_rejection(self.envelope.footer_scope, rejection, trace)
+            .into_owner_checkpoint(maximum_binding_records, trace, allocation)
+            .map_err(|failure| match failure {
+                CheckpointStreamAdmissionFailure::Integrity(rejection) => {
+                    record_recovery_rejection(self.envelope.footer_scope, rejection, trace)
+                }
+                other => other,
             })
     }
-}
-
-fn reserve_record_evidence<T>(count: u64) -> Result<Vec<T>, CheckpointStreamAdmissionFailure> {
-    let count =
-        usize::try_from(count).map_err(|_| CheckpointStreamAdmissionFailure::AllocationRejected)?;
-    let mut records = Vec::new();
-    records
-        .try_reserve_exact(count)
-        .map_err(|_| CheckpointStreamAdmissionFailure::AllocationRejected)?;
-    Ok(records)
-}
-
-#[test]
-fn record_evidence_capacity_overflow_is_a_typed_resource_refusal() {
-    assert!(matches!(
-        reserve_record_evidence::<[u8; 2]>(u64::MAX),
-        Err(CheckpointStreamAdmissionFailure::AllocationRejected)
-    ));
 }
 
 fn layout_rejection(

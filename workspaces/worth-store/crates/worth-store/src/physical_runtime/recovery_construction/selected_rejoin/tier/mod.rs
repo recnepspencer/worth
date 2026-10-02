@@ -23,8 +23,8 @@ use super::{
     wal_inventory, SelectedMediaRejoinDenial as Denial, MAX_DISCOVERY_BYTES, MAX_DISCOVERY_ENTRIES,
 };
 use crate::physical_runtime::{
-    CompletedPhysicalRecoveryFreshReopen, PhysicalRecoveryCoordination,
-    PhysicalRecoveryFreshnessPort,
+    CompletedPhysicalRecoveryFreshReopen, IntegrityAdmittedRecoveryWalFrameView,
+    PhysicalRecoveryCoordination, PhysicalRecoveryFreshnessPort,
 };
 
 pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
@@ -42,14 +42,20 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
     ),
     Denial,
 > {
+    let checkpoint = coordination
+        .require_selected_checkpoint(claim.checkpoint())
+        .map_err(|_| Denial::CheckpointBinding)?;
     if let Some(no_release) = no_release_claim {
-        no_release::verify_claims(claim, no_release)?;
+        coordination
+            .require_selected_checkpoint(no_release.checkpoint())
+            .map_err(|_| Denial::CheckpointBinding)?;
+        no_release::verify_claims(claim, no_release, checkpoint.stream())?;
     }
     let store = media.store_identity();
     let mut first = media
         .bounded_discovery(MAX_DISCOVERY_ENTRIES, MAX_DISCOVERY_BYTES)
         .map_err(Denial::Qualification)?;
-    let selected = selection::observe(&mut first, store, reopen, claim)?;
+    let selected = selection::observe(&mut first, store, reopen, claim, checkpoint.stream())?;
     let controls = routes::verify(
         &mut first,
         selected.root(),
@@ -57,19 +63,24 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
         reopen.format(),
         no_release_claim.map(|claim| claim.checkpoint().source().identity().sequence().get()),
     )?;
-    let selected_wal = wal_inventory::admit_complete_inventory(&mut first, coordination)?;
+    let selected_wal =
+        wal_inventory::admit_complete_inventory(&mut first, coordination).map_err(|denial| {
+            denial.at_resident_boundary(
+                crate::physical_runtime::PhysicalRecoveryRejoinResidentBoundary::FirstWalAdmission,
+            )
+        })?;
     wal::verify(&selected_wal, claim)?;
     let media = first.finish();
     let sample = PhysicalRecoveryFreshnessPort::sample_binding(
         coordination,
         &media,
         claim.checkpoint(),
-        selected_wal.frames().iter(),
+        IntegrityAdmittedRecoveryWalFrameView::from_frames(selected_wal.frames()),
         MAX_DISCOVERY_ENTRIES,
         wal_inventory::MAX_WAL_BYTES,
         super::MAX_CLEANUP_SAMPLE_BYTES,
     )
-    .map_err(|_| Denial::WalFate)?;
+    .map_err(Denial::binding_sampling)?;
     wal::verify_sample(&sample, claim)?;
     if no_release_claim.is_some() {
         no_release::verify_selected_tail(
@@ -84,7 +95,7 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
     let mut final_read = media
         .bounded_discovery(MAX_DISCOVERY_ENTRIES, MAX_DISCOVERY_BYTES)
         .map_err(Denial::Qualification)?;
-    let reread = selection::observe(&mut final_read, store, reopen, claim)?;
+    let reread = selection::observe(&mut final_read, store, reopen, claim, checkpoint.stream())?;
     if !selected.matches_reread(&reread) {
         return Err(Denial::RootBinding);
     }
@@ -98,14 +109,19 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
     if final_controls != controls {
         return Err(Denial::ControlFrame);
     }
-    let final_wal = wal_inventory::admit_complete_inventory(&mut final_read, coordination)?;
+    let final_wal = wal_inventory::admit_complete_inventory(&mut final_read, coordination)
+        .map_err(|denial| {
+            denial.at_resident_boundary(
+                crate::physical_runtime::PhysicalRecoveryRejoinResidentBoundary::FinalWalAdmission,
+            )
+        })?;
     if !selected_wal.matches_reread(&final_wal) {
         return Err(Denial::WalFate);
     }
     wal::verify(&final_wal, claim)?;
     Ok((
         final_read.finish(),
-        final_wal.fingerprint(),
+        final_wal.into_fingerprint(),
         controls.into_media_fingerprint(),
     ))
 }

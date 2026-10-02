@@ -1,16 +1,23 @@
 use worth_store::physical_runtime::{
     recovery_wal::WalSegmentArtifactIdentity, IntegrityAdmittedRecoveryWalFrame,
-    IntegrityAdmittedRecoveryWalSegment,
+    IntegrityAdmittedRecoveryWalFrameView, IntegrityAdmittedRecoveryWalSegment,
 };
 
-#[derive(Default)]
 pub(crate) struct AdmittedWalInventory {
-    segments: Vec<IntegrityAdmittedRecoveryWalSegment>,
+    segments: crate::orchestration::NativeWalRoster<IntegrityAdmittedRecoveryWalSegment>,
+}
+
+impl Default for AdmittedWalInventory {
+    fn default() -> Self {
+        Self {
+            segments: crate::orchestration::NativeWalRoster::empty(0),
+        }
+    }
 }
 
 impl AdmittedWalInventory {
     pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {
-        self.segments.iter().try_fold(
+        self.segments.as_slice().iter().try_fold(
             u64::try_from(self.segments.capacity())
                 .ok()?
                 .checked_mul(std::mem::size_of::<IntegrityAdmittedRecoveryWalSegment>() as u64)?,
@@ -18,49 +25,47 @@ impl AdmittedWalInventory {
         )
     }
 
-    pub(super) fn push(&mut self, segment: IntegrityAdmittedRecoveryWalSegment) {
-        self.segments.push(segment);
+    pub(super) fn prepare(
+        owner: &worth_store::physical_runtime::PhysicalRecoveryCoordination,
+        count: usize,
+    ) -> Result<Self, worth_store::physical_runtime::RecoveryWalAllocationDenial> {
+        Ok(Self {
+            segments: crate::orchestration::NativeWalRoster::with_capacity(owner, count)?,
+        })
     }
 
-    /// Every admitted frame in the retained tail or a checkpoint-covered segment.
-    ///
-    /// The retained tail's selected frames omit the prefix the checkpoint
-    /// already covers. Retirement intents in that prefix are still obligations.
-    pub(crate) fn recoverable_frames<'a>(
-        &'a self,
-        selected: &'a worth_store_recovery_physics::SelectedPhysicalWalTail,
-    ) -> Vec<&'a IntegrityAdmittedRecoveryWalFrame> {
-        self.recoverable_frame_iter(selected).collect()
+    pub(crate) fn roster_charged_bytes(&self) -> u64 {
+        self.segments.charged_bytes()
+    }
+
+    pub(super) fn push(&mut self, segment: IntegrityAdmittedRecoveryWalSegment) {
+        self.segments.push_reserved(segment);
     }
 
     pub(crate) fn recoverable_frame_iter<'a>(
         &'a self,
         selected: &'a worth_store_recovery_physics::SelectedPhysicalWalTail,
-    ) -> impl Iterator<Item = &'a IntegrityAdmittedRecoveryWalFrame> + 'a {
-        self.segments
-            .iter()
-            .filter(move |segment| {
-                let identity = segment.inspection().identity();
-                selected
-                    .segments()
-                    .iter()
-                    .any(|candidate| candidate.identity() == identity)
-                    || selected
-                        .checkpoint_covered()
-                        .iter()
-                        .any(|covered| covered.identity() == identity)
-            })
-            .flat_map(|segment| segment.frames().iter())
+    ) -> impl Iterator<Item = &'a IntegrityAdmittedRecoveryWalFrame> + Clone + 'a {
+        self.recoverable_frame_view(selected).iter()
     }
 
-    pub(crate) fn cleanup_segments(
-        &self,
-        identities: impl IntoIterator<Item = WalSegmentArtifactIdentity>,
-    ) -> Vec<IntegrityAdmittedRecoveryWalSegment> {
+    pub(crate) fn recoverable_frame_view<'a>(
+        &'a self,
+        selected: &'a worth_store_recovery_physics::SelectedPhysicalWalTail,
+    ) -> IntegrityAdmittedRecoveryWalFrameView<'a> {
+        IntegrityAdmittedRecoveryWalFrameView::from_selected_segments(
+            self.segments.as_slice(),
+            selected,
+        )
+    }
+
+    pub(crate) fn cleanup_segments<'a>(
+        &'a self,
+        identities: impl IntoIterator<Item = WalSegmentArtifactIdentity> + 'a,
+    ) -> impl Iterator<Item = IntegrityAdmittedRecoveryWalSegment> + 'a {
         identities
             .into_iter()
-            .map(|identity| self.segment(identity).clone())
-            .collect()
+            .map(move |identity| self.segment(identity).clone())
     }
 
     fn segment(
@@ -68,6 +73,7 @@ impl AdmittedWalInventory {
         identity: WalSegmentArtifactIdentity,
     ) -> &IntegrityAdmittedRecoveryWalSegment {
         self.segments
+            .as_slice()
             .iter()
             .find(|segment| segment.inspection().identity() == identity)
             .expect("C.8 selection consumes a C.9-admitted WAL segment")

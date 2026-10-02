@@ -39,8 +39,9 @@ pub use artifact::{
     ReleaseCustodyHeadWalkDenial, ReleaseCustodyHeadWalkLimitsV1, ReleaseCustodyHeadWalkPort,
     ReleaseCustodyHeadWalkV1, RootManifestIntegrityValidation, RootRoutingBlockIntegrityValidation,
     RootRoutingCoordinateScratchDenial, SegmentMembershipBlockIntegrityValidation,
-    VerifiedCheckpointCompactionCutover, VerifiedCheckpointStream,
-    VerifiedCheckpointStreamAssemblyDenial, WalFrameIntegrityValidation,
+    ValidatedCheckpointStreamAssembly, VerifiedCheckpointCompactionCutover,
+    VerifiedCheckpointFacts, VerifiedCheckpointStream, VerifiedCheckpointStreamAssemblyDenial,
+    WalFrameIntegrityValidation,
 };
 pub use localization::{
     PhysicalBlastRadius, PhysicalByteRange, PhysicalByteRangeDenial, PhysicalDamageCause,

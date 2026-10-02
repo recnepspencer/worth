@@ -1,45 +1,62 @@
-use std::collections::BTreeMap;
 use std::num::NonZeroU64;
 
-use worth_store_physical_format::{
-    store_namespace::StableStoreIdentity, CheckpointSelectiveRecordAggregate,
-    PhysicalCheckpointIdentity, PhysicalCheckpointSource,
-};
+use worth_store_physical_format::CheckpointSelectiveRecordAggregate;
 use worth_store_physical_integrity::{
-    IntegrityValidatedCheckpointBinding, UntrustedPhysicalArtifact, VerifiedCheckpointStream,
+    IntegrityValidatedCheckpointBinding, UntrustedPhysicalArtifact, VerifiedCheckpointFacts,
 };
 
-use crate::physical_runtime::durability::{
-    DecodedPhysicalMutationBindingRecord, PhysicalBindingDecodingContext,
+use crate::physical_runtime::durability::PhysicalBindingDecodingContext;
+use crate::physical_runtime::{
+    PhysicalDurabilityPolicyIdentity, PhysicalIdempotencyPolicy, PhysicalRecoveryReadAllocation,
+    SharedRecoveryCheckpoint,
 };
-use crate::physical_runtime::{PhysicalDurabilityPolicyIdentity, PhysicalIdempotencyPolicy};
+
+mod backing;
+mod decode;
+use super::operations::{RecoveryBindingOperations, RecoveryBindingOperationsCapacity};
+use backing::CheckpointBindingBacking;
+pub use decode::StoreRecoveryCheckpointBindingAllocationDenial;
+
+#[cfg(all(test, feature = "certification-test-authority"))]
+mod tests;
+pub(in crate::physical_runtime) use decode::{
+    checkpoint_binding_decode_peak, decode_checkpoint_evidence,
+};
 
 use super::{
-    checkpoint_evidence, empty_failure, merge_evidence, sample_failure,
-    StoreRecoveryBindingSampleDenial, StoreRecoveryBindingSampleFailure,
-    StoreRecoveryOperationEvidence,
+    empty_failure, sample_failure_from_evidence, StoreRecoveryBindingSampleDenial,
+    StoreRecoveryBindingSampleFailure, StoreRecoveryOperationEvidence,
 };
 
 /// Store-owned semantic checkpoint binding basis. Recovery carries this beside
 /// the verified checkpoint; physical source selection never observes it.
 pub struct StoreRecoveryCheckpointBindingBasis {
-    checkpoint: PhysicalCheckpointIdentity,
-    compaction_generation: u64,
-    checkpoint_stream_bytes: u64,
-    checkpoint_stream_digest: [u8; 32],
-    binding_count: u64,
-    binding_bytes: u64,
-    binding_digest: [u8; 32],
-    outcome: Result<Box<[StoreRecoveryOperationEvidence]>, StoreRecoveryBindingSampleFailure>,
+    facts: VerifiedCheckpointFacts,
+    // Evidence drops before its required native reservation.
+    outcome: Result<Vec<StoreRecoveryOperationEvidence>, StoreRecoveryBindingSampleFailure>,
+    backing: CheckpointBindingBacking,
 }
 
 impl StoreRecoveryCheckpointBindingBasis {
     /// The reusable basis retains operation evidence, not checkpoint stream bytes.
     pub fn owned_heap_bytes(&self) -> Option<u64> {
         match &self.outcome {
-            Ok(operations) => u64::try_from(std::mem::size_of_val(&**operations)).ok(),
+            Ok(operations) => (operations.capacity() as u64)
+                .checked_mul(std::mem::size_of::<StoreRecoveryOperationEvidence>() as u64),
             Err(_) => Some(0),
         }
+    }
+
+    pub fn charged_bytes(&self) -> u64 {
+        self.backing.charged_bytes()
+    }
+
+    pub(in crate::physical_runtime) fn matches_owner(
+        &self,
+        owner: &crate::physical_runtime::instance::PhysicalResidencyOwner,
+    ) -> bool {
+        self.facts.source().identity().store_identity() == owner.ports().store_identity()
+            && self.backing.matches_owner(owner)
     }
 }
 
@@ -47,29 +64,32 @@ impl StoreRecoveryCheckpointBindingBasis {
 /// Only `finish` can produce a reusable basis, and it requires the aggregate-
 /// admitted checkpoint owner projection.
 pub struct StoreRecoveryCheckpointBindingRebuilder {
-    checkpoint: PhysicalCheckpointIdentity,
-    compaction_generation: u64,
-    maximum_operations: u64,
+    facts: VerifiedCheckpointFacts,
     aggregate: CheckpointSelectiveRecordAggregate,
     context: Option<PhysicalBindingDecodingContext>,
-    operations: BTreeMap<[u8; 32], StoreRecoveryOperationEvidence>,
+    operations: RecoveryBindingOperations,
     failure: Option<StoreRecoveryBindingSampleFailure>,
+    backing: CheckpointBindingBacking,
 }
 
 impl StoreRecoveryCheckpointBindingRebuilder {
-    pub fn begin(
-        store: StableStoreIdentity,
-        source: PhysicalCheckpointSource,
-        compaction_generation: u64,
+    pub(in crate::physical_runtime) fn prepare(
+        allocation: &mut PhysicalRecoveryReadAllocation<'_>,
+        checkpoint: &SharedRecoveryCheckpoint,
         maximum_operations: u64,
-    ) -> Self {
+    ) -> Result<Self, StoreRecoveryCheckpointBindingAllocationDenial> {
+        use StoreRecoveryCheckpointBindingAllocationDenial as Denial;
+        let facts = checkpoint.facts();
+        let source = facts.source();
+        let store = allocation.store_identity();
+        if source.identity().store_identity() != store {
+            return Err(Denial::StoreMismatch);
+        }
+        if !allocation.owns_checkpoint(checkpoint) {
+            return Err(Denial::PoolMismatch);
+        }
         let mut failure = None;
-        let context = if source.identity().store_identity() != store {
-            failure = Some(empty_failure(
-                StoreRecoveryBindingSampleDenial::ForeignCheckpoint,
-            ));
-            None
-        } else if let Some(security) = source.security_binding() {
+        let context = if let Some(security) = source.security_binding() {
             if let Some(retention) = NonZeroU64::new(security.idempotency_retention_generations()) {
                 let policy = PhysicalDurabilityPolicyIdentity::from_recovery_binding(
                     security.policy_identity(),
@@ -92,137 +112,162 @@ impl StoreRecoveryCheckpointBindingRebuilder {
             ));
             None
         };
-        Self {
-            checkpoint: source.identity(),
-            compaction_generation,
-            maximum_operations,
+        let capacity = RecoveryBindingOperationsCapacity::for_records(if failure.is_some() {
+            0
+        } else {
+            facts.footer().binding_record_count()
+        })?;
+        // Declare backing first: failed preparation drops partial Vecs before
+        // this grant, and the returned owner declares its storage before backing.
+        let backing = CheckpointBindingBacking::admit(allocation, capacity.requested_bytes())?;
+        let operations = match backing.grant() {
+            Some(grant) => RecoveryBindingOperations::prepare(capacity, maximum_operations, grant)?,
+            None => RecoveryBindingOperations::empty(maximum_operations),
+        };
+        Ok(Self {
+            facts,
             aggregate: CheckpointSelectiveRecordAggregate::new(),
             context,
-            operations: BTreeMap::new(),
+            operations,
             failure,
-        }
+            backing,
+        })
     }
 
     pub fn consume(
         &mut self,
         admitted: &IntegrityValidatedCheckpointBinding<'_>,
         exact_record: UntrustedPhysicalArtifact<'_>,
-    ) {
+        allocation: &mut PhysicalRecoveryReadAllocation<'_>,
+    ) -> Result<(), StoreRecoveryCheckpointBindingAllocationDenial> {
+        if allocation.store_identity() != self.facts.source().identity().store_identity() {
+            self.reject(StoreRecoveryBindingSampleDenial::InvalidCheckpointBinding);
+            return Err(StoreRecoveryCheckpointBindingAllocationDenial::StoreMismatch);
+        }
+        if !self.backing.matches_window(allocation) {
+            self.reject(StoreRecoveryBindingSampleDenial::InvalidCheckpointBinding);
+            return Err(StoreRecoveryCheckpointBindingAllocationDenial::PoolMismatch);
+        }
         if self.aggregate.include(exact_record.bytes()).is_err() {
             self.reject(StoreRecoveryBindingSampleDenial::InvalidCheckpointBinding);
-            return;
+            return Ok(());
+        }
+        if self.aggregate.summary().record_count() > self.facts.footer().binding_record_count() {
+            self.reject(StoreRecoveryBindingSampleDenial::InvalidCheckpointBinding);
+            return Ok(());
         }
         let Some(context) = self.context else {
-            return;
+            return Ok(());
         };
         if self.failure.is_some() {
-            return;
+            return Ok(());
         }
-        let decoded = admitted
-            .project_payload(exact_record, self.checkpoint)
-            .ok()
-            .and_then(|projection| {
-                DecodedPhysicalMutationBindingRecord::decode(
-                    &exact_record.bytes()[projection.payload_range()],
-                    context,
-                )
-                .ok()
-            });
-        let Some(decoded) = decoded else {
+        let Ok(projection) = admitted.project_payload(exact_record, self.facts.source().identity())
+        else {
             self.reject(StoreRecoveryBindingSampleDenial::InvalidCheckpointBinding);
-            return;
+            return Ok(());
         };
-        let evidence = checkpoint_evidence(decoded, self.compaction_generation);
-        if let Err(denial) = merge_evidence(&mut self.operations, evidence, self.maximum_operations)
-        {
+        let decoded = decode_checkpoint_evidence(
+            allocation,
+            &exact_record.bytes()[projection.payload_range()],
+            context,
+            self.facts.compaction_cutover().product_generation(),
+        );
+        let evidence = match decoded {
+            Ok(evidence) => evidence,
+            Err(denial) => {
+                self.reject(StoreRecoveryBindingSampleDenial::InvalidCheckpointBinding);
+                return Err(denial);
+            }
+        };
+        let Some(evidence) = evidence else {
+            self.reject(StoreRecoveryBindingSampleDenial::InvalidCheckpointBinding);
+            return Ok(());
+        };
+        if let Err(denial) = self.operations.merge(evidence) {
             self.reject(denial);
         }
+        Ok(())
     }
 
     pub fn finish(
         self,
-        checkpoint: &VerifiedCheckpointStream,
-    ) -> StoreRecoveryCheckpointBindingBasis {
-        let footer = checkpoint.footer();
+    ) -> Result<StoreRecoveryCheckpointBindingBasis, StoreRecoveryCheckpointBindingAllocationDenial>
+    {
+        let footer = self.facts.footer();
         let summary = self.aggregate.summary();
-        let aggregate_matches = checkpoint.source().identity() == self.checkpoint
-            && checkpoint.compaction_cutover().product_generation() == self.compaction_generation
-            && footer.binding_record_count() == summary.record_count()
+        let aggregate_matches = footer.binding_record_count() == summary.record_count()
             && footer.binding_record_bytes() == summary.encoded_bytes()
             && footer.binding_records_digest() == summary.digest();
+        let mut backing = self.backing;
         let outcome = if !aggregate_matches {
-            Err(sample_failure(
+            let failure = sample_failure_from_evidence(
                 StoreRecoveryBindingSampleDenial::InvalidCheckpointBinding,
-                &self.operations,
+                self.operations.evidence().iter(),
                 0,
                 0,
-            ))
+            );
+            drop(self.operations);
+            Err(failure)
         } else if let Some(failure) = self.failure {
+            drop(self.operations);
             Err(failure)
         } else {
-            Ok(self
-                .operations
-                .into_values()
-                .collect::<Vec<_>>()
-                .into_boxed_slice())
+            Ok(self.operations.into_evidence())
         };
-        StoreRecoveryCheckpointBindingBasis {
-            checkpoint: self.checkpoint,
-            compaction_generation: self.compaction_generation,
-            checkpoint_stream_bytes: checkpoint.encoded_bytes(),
-            checkpoint_stream_digest: checkpoint.encoded_digest(),
-            binding_count: summary.record_count(),
-            binding_bytes: summary.encoded_bytes(),
-            binding_digest: summary.digest(),
+        let retained = match &outcome {
+            Ok(evidence) => (evidence.capacity() as u64)
+                .checked_mul(std::mem::size_of::<StoreRecoveryOperationEvidence>() as u64)
+                .ok_or(StoreRecoveryCheckpointBindingAllocationDenial::SizeOverflow)?,
+            Err(_) => 0,
+        };
+        backing.retain(retained)?;
+        Ok(StoreRecoveryCheckpointBindingBasis {
+            facts: self.facts,
             outcome,
-        }
+            backing,
+        })
     }
 
     fn reject(&mut self, denial: StoreRecoveryBindingSampleDenial) {
         if self.failure.is_none() {
-            self.failure = Some(sample_failure(denial, &self.operations, 0, 0));
+            self.failure = Some(sample_failure_from_evidence(
+                denial,
+                self.operations.evidence().iter(),
+                0,
+                0,
+            ));
         }
     }
 }
 
 impl StoreRecoveryCheckpointBindingBasis {
-    pub(super) fn operations(
+    pub(in crate::physical_runtime) fn matches_checkpoint(
         &self,
-        checkpoint: &VerifiedCheckpointStream,
+        checkpoint: &VerifiedCheckpointFacts,
+    ) -> bool {
+        self.facts == *checkpoint
+    }
+
+    pub(super) fn evidence(
+        &self,
+        checkpoint: &VerifiedCheckpointFacts,
         maximum: u64,
-    ) -> Result<BTreeMap<[u8; 32], StoreRecoveryOperationEvidence>, StoreRecoveryBindingSampleFailure>
-    {
-        let footer = checkpoint.footer();
-        if checkpoint.source().identity() != self.checkpoint
-            || checkpoint.compaction_cutover().product_generation() != self.compaction_generation
-            || checkpoint.encoded_bytes() != self.checkpoint_stream_bytes
-            || checkpoint.encoded_digest() != self.checkpoint_stream_digest
-            || footer.binding_record_count() != self.binding_count
-            || footer.binding_record_bytes() != self.binding_bytes
-            || footer.binding_records_digest() != self.binding_digest
-        {
+    ) -> Result<&[StoreRecoveryOperationEvidence], StoreRecoveryBindingSampleFailure> {
+        if !self.matches_checkpoint(checkpoint) {
             return Err(empty_failure(
                 StoreRecoveryBindingSampleDenial::InvalidCheckpointBinding,
             ));
         }
-        let evidence = self.outcome.as_ref().map_err(|failure| *failure)?;
+        let evidence = self.outcome.as_ref().map_err(Clone::clone)?;
         if evidence.len() as u64 > maximum {
-            let operations = evidence
-                .iter()
-                .cloned()
-                .map(|item| (item.idempotency_identity, item))
-                .collect();
-            return Err(sample_failure(
+            return Err(sample_failure_from_evidence(
                 StoreRecoveryBindingSampleDenial::OperationBindingLimit,
-                &operations,
+                evidence.iter(),
                 0,
                 0,
             ));
         }
-        Ok(evidence
-            .iter()
-            .cloned()
-            .map(|item| (item.idempotency_identity, item))
-            .collect())
+        Ok(evidence)
     }
 }

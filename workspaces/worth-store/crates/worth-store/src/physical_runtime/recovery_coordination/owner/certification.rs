@@ -1,6 +1,27 @@
 use super::PhysicalRecoveryCoordination;
 
 impl PhysicalRecoveryCoordination {
+    /// Read-only allocation events from the actual carried native pool.
+    pub fn certification_residency_allocations(
+        &self,
+    ) -> worth_store_buffer_pool::PhysicalResidencyAllocationEventObserver {
+        self.residency.ports().allocation_events()
+    }
+
+    /// Test-only pressure on the carried pool; no media or Serving authority.
+    pub fn certification_begin_recovery_allocation(
+        &self,
+        bytes: std::num::NonZeroU64,
+    ) -> Result<
+        worth_store_buffer_pool::OperationAllocationGrant,
+        worth_store_buffer_pool::PhysicalResidencyDenial,
+    > {
+        self.residency.ports().begin_operation(
+            worth_store_buffer_pool::PhysicalOperationAllocationScope::Recovery,
+            bytes,
+        )
+    }
+
     pub fn certification_fail_signal_settlement_at(
         &self,
         stage: super::super::PhysicalRecoveryStagingCommandStage,

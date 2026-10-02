@@ -6,6 +6,7 @@ use crate::physical_runtime::PhysicalRecoveryAllocationAdmission;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PhysicalRecoveryRejoinResidentDenial {
     MissingResidentAdmission,
+    OperationAllocation(crate::physical_runtime::PhysicalScopedAllocationFailure),
     SizeOverflow {
         admitted: u64,
     },
@@ -16,6 +17,10 @@ pub enum PhysicalRecoveryRejoinResidentDenial {
     Allocation {
         requested: u64,
         cause: std::collections::TryReserveError,
+    },
+    AllocatorExceededReservation {
+        requested: u64,
+        actual: u64,
     },
 }
 

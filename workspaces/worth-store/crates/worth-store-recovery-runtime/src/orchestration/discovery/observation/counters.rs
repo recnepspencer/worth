@@ -29,7 +29,7 @@ pub(super) fn record_checkpoint_counters(
     counters.checkpoints_admitted = counters.checkpoint_candidates;
     counters.checkpoints_rejected =
         u64::from(matches!(checkpoint, CheckpointDiscovery::Rejected(_)));
-    counters.checkpoints_absent = u64::from(matches!(checkpoint, CheckpointDiscovery::Absent));
+    counters.checkpoints_absent = u64::from(matches!(checkpoint, CheckpointDiscovery::Absent(_)));
 }
 
 pub(super) fn record_wal_counters(

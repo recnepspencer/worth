@@ -3,7 +3,7 @@ use super::{
     SelectedPhysicalPageFacts, SelectedPhysicalRoot, SelectedPhysicalWalTail,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct PhysicalSourceSelection {
     root: SelectedPhysicalRoot,
     page_facts: SelectedPhysicalPageFacts,
@@ -91,7 +91,7 @@ pub fn select_physical_recovery_sources(
 }
 
 impl PhysicalSourceSelection {
-    /// Heap owned by this selection, excluding the shared checkpoint Arc backing.
+    /// Heap owned by this selection; checkpoint facts retain no heap backing.
     pub fn owned_heap_bytes(&self) -> Option<u64> {
         let mut bytes = self
             .page_facts

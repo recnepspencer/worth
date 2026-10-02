@@ -56,6 +56,9 @@ pub(super) fn admit(
             return Err(block(context, basis, denial, limit));
         }
     };
+    let Some(shared) = context.coordination.owner().checkpoint() else {
+        return Err(block(context, basis, Denial::MissingCheckpoint, None));
+    };
     let mut discovery = context
         .authority
         .media
@@ -65,6 +68,7 @@ pub(super) fn admit(
     let claim = observe(
         &mut discovery,
         &context.selection,
+        shared.stream(),
         context.authority.record_format,
         remaining_bytes,
         &mut basis.observed_pages.manifest_budget,
@@ -106,6 +110,7 @@ pub(super) fn admit(
 fn observe(
     discovery: &mut worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery,
     selection: &worth_store_recovery_physics::PhysicalSourceSelection,
+    stream: &worth_store_physical_integrity::VerifiedCheckpointStream,
     format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
     byte_limit: u64,
     budget: &mut crate::orchestration::planning::manifest_entry_budget::ManifestEntryBudget,
@@ -114,6 +119,9 @@ fn observe(
     resident: &mut ResidentAllowance,
 ) -> Result<VerifiedSelectedReleaseHeadCustodyV2, Denial> {
     let checkpoint = selection.checkpoint().ok_or(Denial::MissingCheckpoint)?;
+    if stream.facts() != *checkpoint.checkpoint() {
+        return Err(Denial::Roster(SelectedCustodyDenial::CertificateRoster));
+    }
     let generation = checkpoint.checkpoint().source().root().generation();
     resident
         .transient(
@@ -164,6 +172,7 @@ fn observe(
             .ok_or(Denial::WalkLimits)?;
     let roster = match VerifiedCheckpointReleaseHeadRosterV2::admit_checkpoint_source(
         selection,
+        stream,
         &root,
         format,
         limits,

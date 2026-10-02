@@ -1,0 +1,20 @@
+error[E0599]: no function or associated item named `begin` found for struct `StoreRecoveryCheckpointBindingRebuilder` in the current scope
+ --> tests/ui/checkpoint_binding_basis_has_no_unfunded_constructor.rs:7:54
+  |
+7 |     let _ = StoreRecoveryCheckpointBindingRebuilder::begin;
+  |                                                      ^^^^^ function or associated item not found in `StoreRecoveryCheckpointBindingRebuilder`
+
+error[E0624]: associated function `prepare` is private
+ --> tests/ui/checkpoint_binding_basis_has_no_unfunded_constructor.rs:8:54
+  |
+8 |       let _ = StoreRecoveryCheckpointBindingRebuilder::prepare(window, checkpoint, 1);
+  |                                                        ^^^^^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-store/src/physical_runtime/recovery_freshness/binding/checkpoint_basis.rs
+  |
+  | /     pub(in crate::physical_runtime) fn prepare(
+  | |         allocation: &mut PhysicalRecoveryReadAllocation<'_>,
+  | |         checkpoint: &SharedRecoveryCheckpoint,
+  | |         maximum_operations: u64,
+  | |     ) -> Result<Self, StoreRecoveryCheckpointBindingAllocationDenial> {
+  | |_____________________________________________________________________- private associated function defined here

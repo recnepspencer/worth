@@ -1,0 +1,35 @@
+error[E0277]: the trait bound `PhysicalWalSegmentCandidate: Clone` is not satisfied
+ --> tests/ui/wal_selection_cannot_deep_clone.rs:8:22
+  |
+8 |     requires_clone::<PhysicalWalSegmentCandidate>();
+  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `PhysicalWalSegmentCandidate`
+  |
+note: required by a bound in `requires_clone`
+ --> tests/ui/wal_selection_cannot_deep_clone.rs:5:22
+  |
+5 | fn requires_clone<T: Clone>() {}
+  |                      ^^^^^ required by this bound in `requires_clone`
+
+error[E0277]: the trait bound `SelectedPhysicalWalTail: Clone` is not satisfied
+ --> tests/ui/wal_selection_cannot_deep_clone.rs:9:22
+  |
+9 |     requires_clone::<SelectedPhysicalWalTail>();
+  |                      ^^^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `SelectedPhysicalWalTail`
+  |
+note: required by a bound in `requires_clone`
+ --> tests/ui/wal_selection_cannot_deep_clone.rs:5:22
+  |
+5 | fn requires_clone<T: Clone>() {}
+  |                      ^^^^^ required by this bound in `requires_clone`
+
+error[E0277]: the trait bound `PhysicalSourceSelection: Clone` is not satisfied
+  --> tests/ui/wal_selection_cannot_deep_clone.rs:10:22
+   |
+10 |     requires_clone::<PhysicalSourceSelection>();
+   |                      ^^^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `PhysicalSourceSelection`
+   |
+note: required by a bound in `requires_clone`
+  --> tests/ui/wal_selection_cannot_deep_clone.rs:5:22
+   |
+ 5 | fn requires_clone<T: Clone>() {}
+   |                      ^^^^^ required by this bound in `requires_clone`

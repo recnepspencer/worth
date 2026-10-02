@@ -1,6 +1,4 @@
-use crate::entry::{
-    PhysicalRecoveryIntegrityObservations, PhysicalRecoveryWalIntegrityObservation,
-};
+use crate::entry::PhysicalRecoveryIntegrityObservations;
 use crate::orchestration::AdmittedWalInventory;
 
 pub(crate) struct RecoveryIntegrityEvidence {
@@ -17,11 +15,11 @@ impl RecoveryIntegrityEvidence {
 
     pub(crate) const fn new(
         admitted_wal: AdmittedWalInventory,
-        wal_observations: Vec<PhysicalRecoveryWalIntegrityObservation>,
+        observations: PhysicalRecoveryIntegrityObservations,
     ) -> Self {
         Self {
             admitted_wal,
-            observations: PhysicalRecoveryIntegrityObservations::new(wal_observations),
+            observations,
         }
     }
 
