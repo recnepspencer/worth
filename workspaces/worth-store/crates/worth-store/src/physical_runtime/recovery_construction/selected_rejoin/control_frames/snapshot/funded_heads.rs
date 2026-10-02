@@ -88,7 +88,7 @@ impl SelectedHeadMediaWitness {
 }
 
 impl SelectedArtifactSlice {
-    fn matches_funded_serving_media(
+    pub(super) fn matches_funded_serving_media(
         &self,
         media: &mut worth_store_physical_backend::BorrowedRecordFilesystemObservation<'_>,
         window: &mut PhysicalRecoveryReadAllocation<'_>,

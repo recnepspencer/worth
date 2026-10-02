@@ -95,6 +95,10 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
         .ok_or(Denial::BoundExceeded)?;
     let (media, history_fingerprint) = ordered_walk::verify_historical(
         media,
+        &mut crate::physical_runtime::PhysicalRecoveryReadAllocation::for_coordination(
+            coordination,
+        )
+        .map_err(Denial::WalReadOwnership)?,
         claim,
         effective,
         &sample,
@@ -102,14 +106,12 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
         reopen.format(),
         retained_with_controls,
     )?;
-    if !controls_fingerprint.try_extend_bounded(
+    controls_fingerprint.try_extend_bounded(
         history_fingerprint,
         delta::MAX_TRANSITION_MEMORY
             .checked_sub(retained)
             .ok_or(Denial::BoundExceeded)?,
-    ) {
-        return Err(Denial::BoundExceeded);
-    }
+    )?;
     let wal_fingerprint = final_inventory.into_fingerprint();
     Ok((media, wal_fingerprint, controls_fingerprint))
 }

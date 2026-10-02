@@ -20,6 +20,7 @@ pub(super) use addressed::observe_addressed_base;
 pub(super) use extent_read::read_extent;
 pub(super) use extent_read::read_extent_with_resident;
 use route::selected_route;
+pub(in crate::physical_runtime::recovery_construction) use snapshot::FundedHeadEffectSlices;
 pub(in crate::physical_runtime) use snapshot::SelectedArtifactSlice;
 pub(in crate::physical_runtime) use snapshot::SelectedControlMediaFingerprint;
 

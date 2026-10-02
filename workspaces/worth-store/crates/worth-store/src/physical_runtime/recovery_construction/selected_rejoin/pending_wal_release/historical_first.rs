@@ -120,11 +120,8 @@ pub(super) fn verify(
         .checked_sub(retained_peak_bytes)
         .ok_or(Denial::BoundExceeded)?;
     let mut fingerprint = source_snapshot.fingerprint;
-    if !fingerprint.try_extend_bounded(result_snapshot.fingerprint, maximum_fingerprint)
-        || !fingerprint.try_extend_bounded(controls_fingerprint, maximum_fingerprint)
-    {
-        return Err(Denial::BoundExceeded);
-    }
+    fingerprint.try_extend_bounded(result_snapshot.fingerprint, maximum_fingerprint)?;
+    fingerprint.try_extend_bounded(controls_fingerprint, maximum_fingerprint)?;
     for (artifact, bytes) in [
         (
             RecordArtifactFile::RootManifest {
@@ -151,15 +148,13 @@ pub(super) fn verify(
             result.free.encode(format),
         ),
     ] {
-        if !fingerprint.try_extend_bounded(
+        fingerprint.try_extend_bounded(
             SelectedControlMediaFingerprint::observed(vec![SelectedArtifactSlice::observed(
                 artifact, 0, &bytes, true,
             )
             .ok_or(Denial::BoundExceeded)?]),
             maximum_fingerprint,
-        ) {
-            return Err(Denial::BoundExceeded);
-        }
+        )?;
     }
     Ok((discovery.finish(), fingerprint))
 }

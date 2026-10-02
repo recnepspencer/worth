@@ -63,8 +63,10 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
     )?;
     let first_heads = head_v14::observe(
         &mut discovery,
-        &crate::physical_runtime::PhysicalRecoveryReadAllocation::for_coordination(coordination)
-            .map_err(Denial::WalReadOwnership)?,
+        &mut crate::physical_runtime::PhysicalRecoveryReadAllocation::for_coordination(
+            coordination,
+        )
+        .map_err(Denial::WalReadOwnership)?,
         &selected,
         &controls,
         claim,
@@ -222,8 +224,10 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
     )?;
     let final_heads = head_v14::observe(
         &mut final_discovery,
-        &crate::physical_runtime::PhysicalRecoveryReadAllocation::for_coordination(coordination)
-            .map_err(Denial::WalReadOwnership)?,
+        &mut crate::physical_runtime::PhysicalRecoveryReadAllocation::for_coordination(
+            coordination,
+        )
+        .map_err(Denial::WalReadOwnership)?,
         &final_selected,
         &final_controls,
         claim,
@@ -275,6 +279,10 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
         )?;
         let (media, fingerprint) = ordered_walk::verify(
             final_discovery.finish(),
+            &mut crate::physical_runtime::PhysicalRecoveryReadAllocation::for_coordination(
+                coordination,
+            )
+            .map_err(Denial::WalReadOwnership)?,
             claim,
             effective,
             &final_controls,
@@ -327,14 +335,12 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
                     claim.source_root().node_capacity(),
                     retained,
                 )?;
-                if !history_fingerprint.try_extend_bounded(
+                history_fingerprint.try_extend_bounded(
                     fingerprint,
                     delta::MAX_TRANSITION_MEMORY
                         .checked_sub(retained)
                         .ok_or(Denial::BoundExceeded)?,
-                ) {
-                    return Err(Denial::BoundExceeded);
-                }
+                )?;
                 (media, Some((history_fingerprint, retained)))
             }
             _ => return Err(Denial::CertificateRoster),

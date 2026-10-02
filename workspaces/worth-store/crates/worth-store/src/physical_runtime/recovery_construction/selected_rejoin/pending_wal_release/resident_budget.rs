@@ -32,8 +32,5 @@ pub(super) fn extend_historical(
     let available = delta::MAX_TRANSITION_MEMORY
         .checked_sub(retained)
         .ok_or(Denial::BoundExceeded)?;
-    if !controls.try_extend_bounded(historical, available) {
-        return Err(Denial::BoundExceeded);
-    }
-    Ok(())
+    controls.try_extend_bounded(historical, available)
 }

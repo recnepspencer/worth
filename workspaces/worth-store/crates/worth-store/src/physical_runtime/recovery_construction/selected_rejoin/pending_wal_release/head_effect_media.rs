@@ -1,7 +1,9 @@
 //! Store-owned actual-media witness for one C9 release-head effect.
 //! A borrowed C8 replay is a comparison target, never a media observation.
 
-use worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery;
+use worth_store_physical_backend::{
+    BoundedRecoveryFilesystemDiscovery, RecoveryDiscoveryAllocationFailure,
+};
 use worth_store_physical_format::{
     DurablePhysicalRootManifest, PersistedReleaseCustodyHeadEffectV1,
     PhysicalRecordFormatDeclaration, RecordArtifactFile, ReleaseCustodyHeadBlockReferenceV1,
@@ -10,9 +12,12 @@ use worth_store_physical_format::{
 use worth_store_recovery_physics::VerifiedSelectedReleaseHeadReplayV14;
 
 use super::super::{
-    control_frames::{SelectedArtifactSlice, SelectedControlMediaFingerprint},
+    control_frames::{
+        FundedHeadEffectSlices, SelectedArtifactSlice, SelectedControlMediaFingerprint,
+    },
     SelectedMediaRejoinDenial as Denial,
 };
+use crate::physical_runtime::PhysicalRecoveryReadAllocation;
 
 #[cfg(test)]
 #[path = "head_v14/budget_tests.rs"]
@@ -22,7 +27,7 @@ mod budget_tests;
 mod tests;
 
 pub(super) struct ObservedReleaseHeadEffectV14<'claim> {
-    slices: Vec<SelectedArtifactSlice>,
+    slices: FundedHeadEffectSlices,
     replay: &'claim VerifiedSelectedReleaseHeadReplayV14,
 }
 
@@ -32,20 +37,21 @@ impl ObservedReleaseHeadEffectV14<'_> {
     }
 
     pub(super) fn owned_heap_bytes(&self) -> Option<u64> {
-        effect_slice_heap(&self.slices)
+        self.slices.owned_heap_bytes()
     }
 
     pub(super) fn same_bytes(&self, other: &Self) -> bool {
-        self.slices == other.slices
+        self.slices.same_bytes(&other.slices)
     }
 
     pub(super) fn into_fingerprint(self) -> SelectedControlMediaFingerprint {
-        SelectedControlMediaFingerprint::observed(self.slices)
+        SelectedControlMediaFingerprint::observed_head_effect(self.slices)
     }
 }
 
 pub(super) fn observe<'claim>(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    window: &mut PhysicalRecoveryReadAllocation<'_>,
     replay: &'claim VerifiedSelectedReleaseHeadReplayV14,
     source: &DurablePhysicalRootManifest,
     result: &DurablePhysicalRootManifest,
@@ -67,52 +73,60 @@ pub(super) fn observe<'claim>(
     {
         return Err(Denial::RootBinding);
     }
-    let slices = observe_effect_with_read(
+    let slices = observe_effect_nodes(
+        discovery,
+        window,
         effect,
         source.generation(),
         format,
         remaining,
-        |reference, page| {
-            discovery
-                .read_release_custody_head_block(reference.generation(), reference.block(), page)
-                .map_err(Denial::Discovery)?
-                .into_bytes()
-                .ok_or(Denial::MissingFrame)
-        },
     )?;
     Ok(ObservedReleaseHeadEffectV14 { slices, replay })
 }
 
-/// This read seam is also used by focused tests; it cannot mint C8 authority.
-fn observe_effect_with_read(
+fn observe_effect_nodes(
+    discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    window: &mut PhysicalRecoveryReadAllocation<'_>,
     effect: &PersistedReleaseCustodyHeadEffectV1,
     source_generation: u64,
     format: PhysicalRecordFormatDeclaration,
     remaining: u64,
-    mut read: impl FnMut(ReleaseCustodyHeadBlockReferenceV1, u64) -> Result<Vec<u8>, Denial>,
-) -> Result<Vec<SelectedArtifactSlice>, Denial> {
-    if effect
+) -> Result<FundedHeadEffectSlices, Denial> {
+    let scratch = effect
         .verification_additional_peak_bytes(format)
-        .is_none_or(|bytes| bytes > remaining)
-    {
+        .ok_or(Denial::BoundExceeded)?;
+    if scratch > remaining {
         return Err(Denial::BoundExceeded);
     }
+    // COW recomputation allocates inside the format owner. Own its peak in the
+    // same native Recovery pool while it runs, then release it before reads.
+    let scratch_grant = window.reserve_owned(scratch).map_err(Denial::Resident)?;
     effect
         .verify_exact(source_generation, format)
         .map_err(|_| Denial::CertificateRoster)?;
+    drop(scratch_grant);
     let page = u64::from(format.page_size().bytes());
     let mut slices = prepare_effect_slices(
+        window,
         effect.source_path().len(),
         effect.node_writes().len(),
         page,
         remaining,
     )?;
     for path in effect.source_path() {
-        witness_node(&mut read, path.reference(), path.frame(), page, &mut slices)?;
+        witness_node(
+            discovery,
+            window,
+            path.reference(),
+            path.frame(),
+            page,
+            &mut slices,
+        )?;
     }
     for write in effect.node_writes() {
         witness_node(
-            &mut read,
+            discovery,
+            window,
             write.reference(),
             write.frame(),
             page,
@@ -124,11 +138,12 @@ fn observe_effect_with_read(
 
 /// Admit retained witnesses and one actual node read before any witness read.
 fn prepare_effect_slices(
+    window: &PhysicalRecoveryReadAllocation<'_>,
     paths: usize,
     writes: usize,
     page: u64,
     remaining: u64,
-) -> Result<Vec<SelectedArtifactSlice>, Denial> {
+) -> Result<FundedHeadEffectSlices, Denial> {
     let count = paths.checked_add(writes).ok_or(Denial::BoundExceeded)?;
     let requested = (count as u64)
         .checked_mul(std::mem::size_of::<SelectedArtifactSlice>() as u64)
@@ -139,11 +154,9 @@ fn prepare_effect_slices(
     {
         return Err(Denial::BoundExceeded);
     }
-    let mut slices = Vec::new();
-    slices
-        .try_reserve_exact(count)
-        .map_err(|_| Denial::BoundExceeded)?;
-    if effect_slice_heap(&slices)
+    let slices = FundedHeadEffectSlices::prepare(window, count)?;
+    if slices
+        .owned_heap_bytes()
         .and_then(|bytes| bytes.checked_add(page))
         .is_none_or(|bytes| bytes > remaining)
     {
@@ -152,35 +165,59 @@ fn prepare_effect_slices(
     Ok(slices)
 }
 
-fn effect_slice_heap(slices: &Vec<SelectedArtifactSlice>) -> Option<u64> {
-    (slices.capacity() as u64).checked_mul(std::mem::size_of::<SelectedArtifactSlice>() as u64)
-}
-
 fn witness_node(
-    read: &mut impl FnMut(ReleaseCustodyHeadBlockReferenceV1, u64) -> Result<Vec<u8>, Denial>,
+    discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    window: &mut PhysicalRecoveryReadAllocation<'_>,
     reference: ReleaseCustodyHeadBlockReferenceV1,
     expected: &[u8],
     page: u64,
-    slices: &mut Vec<SelectedArtifactSlice>,
+    slices: &mut FundedHeadEffectSlices,
 ) -> Result<(), Denial> {
-    if slices.len() >= slices.capacity() {
-        return Err(Denial::BoundExceeded);
-    }
-    let bytes = read(reference, page)?;
+    let artifact = RecordArtifactFile::ReleaseCustodyHeadBlock {
+        generation: reference.generation(),
+        block: reference.block(),
+    };
+    let observed = window
+        .read_record(discovery, artifact, page)
+        .map_err(read_denial)?;
+    let bytes = observed.observed().bytes().ok_or(Denial::MissingFrame)?;
     if bytes != expected {
         return Err(Denial::ControlFrame);
     }
     slices.push(
-        SelectedArtifactSlice::observed(
-            RecordArtifactFile::ReleaseCustodyHeadBlock {
-                generation: reference.generation(),
-                block: reference.block(),
-            },
-            0,
-            &bytes,
-            true,
-        )
-        .ok_or(Denial::BoundExceeded)?,
-    );
+        SelectedArtifactSlice::observed(artifact, 0, bytes, true).ok_or(Denial::BoundExceeded)?,
+    )?;
     Ok(())
+}
+
+fn read_denial(
+    failure: RecoveryDiscoveryAllocationFailure<
+        crate::physical_runtime::PhysicalRecoveryObservationAllocationDenial,
+    >,
+) -> Denial {
+    match failure {
+        RecoveryDiscoveryAllocationFailure::Discovery(cause) => Denial::Discovery(cause),
+        RecoveryDiscoveryAllocationFailure::Allocation {
+            artifact,
+            offset,
+            requested,
+            cause,
+        } => Denial::RecordReadAllocation {
+            artifact,
+            offset,
+            requested,
+            cause,
+        },
+        RecoveryDiscoveryAllocationFailure::BufferLengthMismatch {
+            artifact,
+            offset,
+            requested,
+            observed,
+        } => Denial::ReadBufferLengthMismatch {
+            artifact,
+            offset,
+            requested,
+            observed,
+        },
+    }
 }

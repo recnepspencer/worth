@@ -166,6 +166,18 @@ impl PhysicalRecoveryReadAllocation<'_> {
         )
     }
 
+    pub(in crate::physical_runtime) fn read_record(
+        &mut self,
+        discovery: &mut BoundedRecoveryFilesystemDiscovery,
+        artifact: RecordArtifactFile,
+        byte_limit: u64,
+    ) -> Result<
+        FundedRecoveryObservation,
+        RecoveryDiscoveryAllocationFailure<PhysicalRecoveryObservationAllocationDenial>,
+    > {
+        self.read_observation(discovery, byte_limit, SourceRead::Record(artifact))
+    }
+
     fn read_observation(
         &mut self,
         discovery: &mut BoundedRecoveryFilesystemDiscovery,

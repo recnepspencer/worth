@@ -9,6 +9,8 @@ use worth_store::physical_runtime::{
 
 #[path = "recovery_pool_handoff/backing_census.rs"]
 mod backing_census;
+#[path = "recovery_pool_handoff/serving_effect_freshness.rs"]
+mod serving_effect_freshness;
 #[path = "recovery_pool_handoff/serving_head_freshness.rs"]
 mod serving_head_freshness;
 #[path = "recovery_pool_handoff/serving_wal_pressure.rs"]

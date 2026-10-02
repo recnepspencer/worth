@@ -108,14 +108,12 @@ pub(super) fn verify_ordinary_parts(
             .checked_add(fingerprint.retained_memory_bytes())
             .ok_or(Denial::BoundExceeded)?,
     )?;
-    if !fingerprint.try_extend_bounded(
+    fingerprint.try_extend_bounded(
         suffix_fingerprint,
         delta::MAX_TRANSITION_MEMORY
             .checked_sub(retained_peak_bytes)
             .ok_or(Denial::BoundExceeded)?,
-    ) {
-        return Err(Denial::BoundExceeded);
-    }
+    )?;
     Ok((media, fingerprint))
 }
 
@@ -299,11 +297,8 @@ pub(super) fn verify_ordinary_steps(
             .checked_sub(fixed_charge)
             .and_then(|bytes| bytes.checked_sub(matched.retained_scratch_bytes()))
             .ok_or(Denial::BoundExceeded)?;
-        if !fingerprint.try_extend_bounded(source_snapshot.fingerprint, maximum_fingerprint)
-            || !fingerprint.try_extend_bounded(result_snapshot.fingerprint, maximum_fingerprint)
-        {
-            return Err(Denial::BoundExceeded);
-        }
+        fingerprint.try_extend_bounded(source_snapshot.fingerprint, maximum_fingerprint)?;
+        fingerprint.try_extend_bounded(result_snapshot.fingerprint, maximum_fingerprint)?;
         previous_topology = step.result_topology();
         previous_lsn_end = range.end_exclusive().get();
         media = discovery.finish();

@@ -153,11 +153,9 @@ impl PhysicalRecoveryConstructionPort {
                 pause_before_final_reread,
             ) {
                 Ok(value) => value,
-                Err(_) => {
+                Err(denial) => {
                     let _ = coordination.shutdown_is_quiescent();
-                    return Err(
-                        RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch,
-                    );
+                    return Err(super::rejoin_denial::construction_denial(denial));
                 }
             };
         let mut core = Self::construct_inner(

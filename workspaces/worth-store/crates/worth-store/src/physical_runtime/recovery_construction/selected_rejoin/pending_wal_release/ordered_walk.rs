@@ -25,6 +25,7 @@ use crate::physical_runtime::{
 #[allow(clippy::too_many_arguments)]
 pub(super) fn verify(
     media: AdmittedRecoveryFilesystemMedia,
+    window: &mut crate::physical_runtime::PhysicalRecoveryReadAllocation<'_>,
     claim: &VerifiedPendingWalReleaseCustody,
     effective: &VerifiedEffectiveReleaseHeadRosterV14,
     controls: &Controls,
@@ -54,6 +55,7 @@ pub(super) fn verify(
     }
     verify_edges(
         media,
+        window,
         history,
         batches,
         claim.checkpoint().source().root().generation(),
@@ -75,6 +77,7 @@ pub(super) fn verify(
 #[allow(clippy::too_many_arguments)]
 pub(super) fn verify_historical(
     media: AdmittedRecoveryFilesystemMedia,
+    window: &mut crate::physical_runtime::PhysicalRecoveryReadAllocation<'_>,
     claim: &VerifiedOrderedHistoricalReleaseCustody,
     effective: &VerifiedEffectiveReleaseHeadRosterV14,
     sample: &StoreRecoveryBindingFreshnessSample,
@@ -101,6 +104,7 @@ pub(super) fn verify_historical(
     }
     verify_edges(
         media,
+        window,
         claim.history(),
         claim.released_batches(),
         claim.checkpoint().source().root().generation(),
@@ -122,6 +126,7 @@ pub(super) fn verify_historical(
 #[allow(clippy::too_many_arguments)]
 fn verify_edges(
     media: AdmittedRecoveryFilesystemMedia,
+    window: &mut crate::physical_runtime::PhysicalRecoveryReadAllocation<'_>,
     history: &VerifiedOrderedRootHistory,
     batches: &[VerifiedOrderedPendingWalReleaseBatch],
     checkpoint_generation: u64,
@@ -266,6 +271,7 @@ fn verify_edges(
                 release_index += 1;
                 ordered_released::verify(
                     media,
+                    window,
                     step,
                     batch,
                     replay,
@@ -279,14 +285,12 @@ fn verify_edges(
                 )?
             }
         };
-        if !fingerprint.try_extend_bounded(
+        fingerprint.try_extend_bounded(
             part,
             delta::MAX_TRANSITION_MEMORY
                 .checked_sub(retained)
                 .ok_or(Denial::BoundExceeded)?,
-        ) {
-            return Err(Denial::BoundExceeded);
-        }
+        )?;
         media = next;
         generation = generation.checked_add(1).ok_or(Denial::BoundExceeded)?;
         topology = match edge {

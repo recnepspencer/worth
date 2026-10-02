@@ -10,6 +10,8 @@ use super::super::{release_heads::FundedHeadSlices, SelectedMediaRejoinDenial};
 
 mod funded_heads;
 use funded_heads::SelectedHeadMediaWitness;
+mod funded_effects;
+pub(in crate::physical_runtime::recovery_construction) use funded_effects::FundedHeadEffectSlices;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(in crate::physical_runtime) struct SelectedArtifactSlice {
@@ -59,6 +61,7 @@ impl SelectedArtifactSlice {
 pub(in crate::physical_runtime) struct SelectedControlMediaFingerprint {
     slices: Vec<SelectedArtifactSlice>,
     heads: SelectedHeadMediaWitness,
+    effects: Option<FundedHeadEffectSlices>,
 }
 
 impl SelectedControlMediaFingerprint {
@@ -66,6 +69,7 @@ impl SelectedControlMediaFingerprint {
         Self {
             slices,
             heads: SelectedHeadMediaWitness::Absent,
+            effects: None,
         }
     }
 
@@ -73,6 +77,7 @@ impl SelectedControlMediaFingerprint {
         Self {
             slices: Vec::new(),
             heads: SelectedHeadMediaWitness::Selected(heads),
+            effects: None,
         }
     }
 
@@ -88,6 +93,17 @@ impl SelectedControlMediaFingerprint {
                 pre_pending,
                 effective,
             },
+            effects: None,
+        }
+    }
+
+    pub(in crate::physical_runtime::recovery_construction) fn observed_head_effect(
+        effects: FundedHeadEffectSlices,
+    ) -> Self {
+        Self {
+            slices: Vec::new(),
+            heads: SelectedHeadMediaWitness::Absent,
+            effects: Some(effects),
         }
     }
 
@@ -97,10 +113,23 @@ impl SelectedControlMediaFingerprint {
             .ok()?
             .checked_mul(u64::try_from(std::mem::size_of::<SelectedArtifactSlice>()).ok()?)?
             .checked_add(self.heads.owned_heap_bytes()?)
+            .and_then(|bytes| bytes.checked_add(self.effect_heap_bytes()?))
     }
 
     pub(in crate::physical_runtime) fn independently_funded_heap_bytes(&self) -> Option<u64> {
+        self.heads
+            .owned_heap_bytes()?
+            .checked_add(self.effect_heap_bytes()?)
+    }
+
+    pub(in crate::physical_runtime) fn head_walk_heap_bytes(&self) -> Option<u64> {
         self.heads.owned_heap_bytes()
+    }
+
+    pub(in crate::physical_runtime) fn effect_heap_bytes(&self) -> Option<u64> {
+        self.effects
+            .as_ref()
+            .map_or(Some(0), FundedHeadEffectSlices::owned_heap_bytes)
     }
 
     pub(in crate::physical_runtime) fn has_selected_head_walk(&self) -> bool {
@@ -120,7 +149,12 @@ impl SelectedControlMediaFingerprint {
         media: &QualifiedFilesystemMedia,
         window: &mut crate::physical_runtime::PhysicalRecoveryReadAllocation<'_>,
     ) -> Result<bool, crate::physical_runtime::record_serving::RecordBootstrapDenial> {
-        self.heads.verify_serving_media(media, window)
+        if !self.heads.verify_serving_media(media, window)? {
+            return Ok(false);
+        }
+        self.effects.as_ref().map_or(Ok(true), |effects| {
+            effects.verify_serving_media(media, window)
+        })
     }
 
     pub(in crate::physical_runtime) fn matches_serving_media(
@@ -136,9 +170,8 @@ impl SelectedControlMediaFingerprint {
         &mut self,
         other: Self,
     ) -> Result<(), SelectedMediaRejoinDenial> {
-        if !self.heads.can_merge(&other.heads) {
-            return Err(SelectedMediaRejoinDenial::CertificateRoster);
-        }
+        self.admit_merge(&other)?;
+        self.merge_effects(other.effects)?;
         self.slices.extend(other.slices);
         self.heads.merge_admitted(other.heads);
         Ok(())
@@ -152,15 +185,14 @@ impl SelectedControlMediaFingerprint {
         mut other: Self,
         resident: &mut StoreRejoinResidentLedger,
     ) -> Result<(), SelectedMediaRejoinDenial> {
-        if !self.heads.can_merge(&other.heads) {
-            return Err(SelectedMediaRejoinDenial::CertificateRoster);
-        }
+        self.admit_merge(&other)?;
         let donor_bytes = resident
             .vector_bytes(&other.slices)
             .map_err(SelectedMediaRejoinDenial::Resident)?;
         resident
             .grow_vec(&mut self.slices, other.slices.len())
             .map_err(SelectedMediaRejoinDenial::Resident)?;
+        self.merge_effects(other.effects.take())?;
         self.slices.append(&mut other.slices);
         self.heads.merge_admitted(std::mem::replace(
             &mut other.heads,
@@ -180,44 +212,86 @@ impl SelectedControlMediaFingerprint {
                     .unwrap_or(u64::MAX)
                     .saturating_mul(4),
             )
+            .saturating_add(
+                self.effect_heap_bytes()
+                    .unwrap_or(u64::MAX)
+                    .saturating_mul(4),
+            )
     }
 
     pub(in crate::physical_runtime) fn try_extend_bounded(
         &mut self,
         other: Self,
         maximum_retained_bytes: u64,
-    ) -> bool {
-        if !self.heads.can_merge(&other.heads) {
-            return false;
-        }
+    ) -> Result<(), SelectedMediaRejoinDenial> {
+        self.admit_merge(&other)?;
         let head_bytes = match self.heads.owned_heap_bytes().and_then(|bytes| {
             bytes
                 .checked_add(other.heads.owned_heap_bytes()?)?
                 .checked_mul(4)
         }) {
             Some(bytes) => bytes,
-            None => return false,
+            None => return Err(SelectedMediaRejoinDenial::BoundExceeded),
         };
+        let funded_effect_bytes = match (&self.effects, &other.effects) {
+            (Some(destination), Some(donor)) => destination.merged_owned_heap_bytes(donor)?,
+            _ => self
+                .effect_heap_bytes()
+                .and_then(|bytes| bytes.checked_add(other.effect_heap_bytes()?))
+                .ok_or(SelectedMediaRejoinDenial::BoundExceeded)?,
+        }
+        .checked_mul(4)
+        .ok_or(SelectedMediaRejoinDenial::BoundExceeded)?;
         let next_len = match self.slices.len().checked_add(other.slices.len()) {
             Some(next) => next,
-            None => return false,
+            None => return Err(SelectedMediaRejoinDenial::BoundExceeded),
         };
         let needed = match (next_len as u64)
             .checked_mul(4 * std::mem::size_of::<SelectedArtifactSlice>() as u64)
             .and_then(|bytes| bytes.checked_add(head_bytes))
+            .and_then(|bytes| bytes.checked_add(funded_effect_bytes))
         {
             Some(bytes) if bytes <= maximum_retained_bytes => bytes,
-            _ => return false,
+            _ => return Err(SelectedMediaRejoinDenial::BoundExceeded),
         };
         if self.slices.try_reserve_exact(other.slices.len()).is_err()
             || self.retained_memory_bytes() > maximum_retained_bytes
             || needed > maximum_retained_bytes
         {
-            return false;
+            return Err(SelectedMediaRejoinDenial::BoundExceeded);
         }
+        self.merge_effects(other.effects)?;
         self.slices.extend(other.slices);
         self.heads.merge_admitted(other.heads);
-        self.retained_memory_bytes() <= maximum_retained_bytes
+        (self.retained_memory_bytes() <= maximum_retained_bytes)
+            .then_some(())
+            .ok_or(SelectedMediaRejoinDenial::BoundExceeded)
+    }
+
+    fn admit_merge(&self, other: &Self) -> Result<(), SelectedMediaRejoinDenial> {
+        if !self.heads.can_merge(&other.heads) {
+            return Err(SelectedMediaRejoinDenial::CertificateRoster);
+        }
+        if let (Some(destination), Some(donor)) = (&self.effects, &other.effects) {
+            if !destination.can_merge(donor) {
+                return Err(SelectedMediaRejoinDenial::RootBinding);
+            }
+        }
+        Ok(())
+    }
+
+    fn merge_effects(
+        &mut self,
+        other: Option<FundedHeadEffectSlices>,
+    ) -> Result<(), SelectedMediaRejoinDenial> {
+        match (&mut self.effects, other) {
+            (_, None) => Ok(()),
+            (None, Some(effects)) => {
+                self.effects = Some(effects);
+                Ok(())
+            }
+            (Some(destination), Some(donor)) => destination.merge(donor),
+        }
     }
 }
 

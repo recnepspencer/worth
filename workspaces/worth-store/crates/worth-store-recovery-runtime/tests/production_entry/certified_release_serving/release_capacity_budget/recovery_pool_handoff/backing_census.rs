@@ -38,7 +38,10 @@ pub(super) fn retained_fingerprint_bytes(
         head_bytes > 0,
         "genuine released checkpoint retains a rooted head witness"
     );
-    wal_bytes + head_bytes
+    let effect_bytes = core
+        .selected_head_effect_owned_heap_bytes()
+        .expect("actual independent addressed effect fingerprint");
+    wal_bytes + head_bytes + effect_bytes
 }
 
 pub(super) fn retained_evidence_bytes(handoff: &RecoveredPhysicalRuntimeHandoff) -> u64 {

@@ -127,9 +127,12 @@ impl RecoveredPhysicalRuntimeCore {
     /// Actual full-tree witness backing, excluding routing and effect slices.
     #[cfg(feature = "certification-test-authority")]
     pub fn selected_head_walk_owned_heap_bytes(&self) -> Option<u64> {
-        self.selected_controls
-            .as_ref()?
-            .independently_funded_heap_bytes()
+        self.selected_controls.as_ref()?.head_walk_heap_bytes()
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub fn selected_head_effect_owned_heap_bytes(&self) -> Option<u64> {
+        self.selected_controls.as_ref()?.effect_heap_bytes()
     }
 
     pub const fn residency_policy(

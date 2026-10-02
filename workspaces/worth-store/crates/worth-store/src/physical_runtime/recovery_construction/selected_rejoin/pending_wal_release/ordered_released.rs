@@ -29,6 +29,7 @@ mod member_projection;
 #[allow(clippy::too_many_arguments)]
 pub(super) fn verify(
     media: AdmittedRecoveryFilesystemMedia,
+    window: &mut crate::physical_runtime::PhysicalRecoveryReadAllocation<'_>,
     edge: &VerifiedReleasedRootEdge,
     batch: &VerifiedOrderedPendingWalReleaseBatch,
     replay: &VerifiedOrderedReleasedHeadReplayV14,
@@ -114,6 +115,7 @@ pub(super) fn verify(
     }
     let observed_head = head_effect_media::observe(
         &mut discovery,
+        window,
         replay.replay(),
         &source.root,
         &result.root,
@@ -154,12 +156,9 @@ pub(super) fn verify(
         .checked_sub(retained_peak)
         .ok_or(Denial::BoundExceeded)?;
     let mut fingerprint = source_snapshot.fingerprint;
-    if !fingerprint.try_extend_bounded(result_snapshot.fingerprint, maximum)
-        || !fingerprint.try_extend_bounded(observed_head.into_fingerprint(), maximum)
-        || !fingerprint.try_extend_bounded(controls, maximum)
-    {
-        return Err(Denial::BoundExceeded);
-    }
+    fingerprint.try_extend_bounded(result_snapshot.fingerprint, maximum)?;
+    fingerprint.try_extend_bounded(observed_head.into_fingerprint(), maximum)?;
+    fingerprint.try_extend_bounded(controls, maximum)?;
     // Both snapshot fingerprints already include their canonical root and
     // free headers as well as every routed/membership page. Do not retain a
     // second copy of those slices across an arbitrarily long edge sequence.

@@ -56,7 +56,8 @@ impl ObservedHeadV14<'_> {
             self.pre_pending.into_funded_slices()?,
             self.effective.into_funded_slices()?,
         );
-        // Effect witnesses remain the distinct raw owner, not full-tree backing.
+        // Exact effect witnesses retain their distinct native owner; they are
+        // not a substitute for any full-tree roster observation.
         fingerprint.extend(self.effect.into_fingerprint())?;
         Ok(fingerprint)
     }
@@ -64,7 +65,7 @@ impl ObservedHeadV14<'_> {
 
 pub(super) fn observe<'claim>(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
-    window: &crate::physical_runtime::PhysicalRecoveryReadAllocation<'_>,
+    window: &mut crate::physical_runtime::PhysicalRecoveryReadAllocation<'_>,
     selected: &Selection,
     controls: &Controls,
     claim: &'claim VerifiedPendingWalReleaseCustody,
@@ -189,6 +190,7 @@ pub(super) fn observe<'claim>(
         .ok_or(Denial::BoundExceeded)?;
     let effect_observed = head_effect_media::observe(
         discovery,
+        window,
         replay,
         &selected.source_root,
         &selected.root,
