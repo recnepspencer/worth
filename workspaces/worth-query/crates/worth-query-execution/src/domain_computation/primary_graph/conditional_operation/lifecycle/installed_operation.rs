@@ -114,7 +114,8 @@ impl WorthQueryConditionalRetainedResourceCounts {
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPreparedConditionalRuntimeBinding
 {
-    pub(super) pending_direct_delivery: super::direct_delivery::WorthQueryPendingDirectDelivery,
+    pub(super) pending_invalidations:
+        super::pending_invalidations::WorthQueryPendingGranularInvalidations,
     pub(super) lowering: Arc<BridgeInstalledConditionalLowering>,
     pub(super) managed_clock: BridgeManagedClockBinding,
     pub(super) affinity: super::evaluation_affinity::WorthQueryConditionalEvaluationAffinity,
@@ -163,8 +164,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryInstalledTempo
         super::commit_watch::WorthQueryConditionalCommitWatchSet,
     pub(in crate::domain_computation::primary_graph::conditional_operation) operation_totals:
         super::operation_totals::WorthQueryTemporalOperationTotals,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) pending_direct_delivery:
-        super::direct_delivery::WorthQueryPendingDirectDelivery,
+    pub(in crate::domain_computation::primary_graph::conditional_operation) pending_invalidations:
+        super::pending_invalidations::WorthQueryPendingGranularInvalidations,
     pub(in crate::domain_computation::primary_graph::conditional_operation) inactive_bindings:
         BTreeMap<
             crate::basis::WorthQueryProductBranchReadIdentity,

@@ -1,4 +1,4 @@
-//! Historical struct sequences use the same MessagePack carrier as portable snapshots.
+//! Policies cross the same MessagePack carrier as portable snapshots.
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine as _;
 use serde::Serialize;
@@ -6,41 +6,52 @@ use worth_signal::facade::runtime::{ObservationDeliveryMode, ObservationPolicy};
 
 use crate::boundary::serde::{from_portable_wire, to_portable_wire};
 
+/// The pre-Visited policy shape: an unversioned two-field struct sequence.
 #[derive(Serialize)]
-enum LegacyTrigger {
+enum HistoricalTrigger {
     Touched,
     Recomputed,
     MeaningfulChange,
 }
 
 #[derive(Serialize)]
-struct LegacyPolicy {
-    trigger: LegacyTrigger,
+struct HistoricalPolicy {
+    trigger: HistoricalTrigger,
     delivery_mode: ObservationDeliveryMode,
 }
 
+fn historical_policy(trigger: HistoricalTrigger) -> Vec<u8> {
+    rmp_serde::to_vec(&HistoricalPolicy {
+        trigger,
+        delivery_mode: ObservationDeliveryMode::PerCommittedTransaction,
+    })
+    .unwrap()
+}
+
 #[test]
-fn portable_policy_migrates_historical_struct_sequences() {
-    for (trigger, expected) in [
-        (LegacyTrigger::Touched, ObservationPolicy::visited()),
-        (LegacyTrigger::Recomputed, ObservationPolicy::recomputed()),
+fn portable_policy_round_trips_and_refuses_historical_struct_sequences() {
+    for (trigger, current) in [
+        (HistoricalTrigger::Touched, ObservationPolicy::visited()),
         (
-            LegacyTrigger::MeaningfulChange,
+            HistoricalTrigger::Recomputed,
+            ObservationPolicy::recomputed(),
+        ),
+        (
+            HistoricalTrigger::MeaningfulChange,
             ObservationPolicy::meaningful_change(),
         ),
     ] {
-        let historical = rmp_serde::to_vec(&LegacyPolicy {
-            trigger,
-            delivery_mode: ObservationDeliveryMode::PerCommittedTransaction,
-        })
-        .unwrap();
-        let wire = STANDARD.encode(historical);
-        let migrated: ObservationPolicy = from_portable_wire(&wire).unwrap();
-        assert_eq!(migrated, expected);
-        let current_wire = to_portable_wire(&migrated).unwrap();
+        let historical = STANDARD.encode(historical_policy(trigger));
+        assert!(from_portable_wire::<ObservationPolicy>(&historical).is_err());
+        let current_wire = to_portable_wire(&current).unwrap();
         assert_eq!(
             from_portable_wire::<ObservationPolicy>(&current_wire).unwrap(),
-            expected
+            current
+        );
+        let sequence = rmp_serde::to_vec(&current).unwrap();
+        assert_eq!(
+            rmp_serde::from_slice::<ObservationPolicy>(&sequence).unwrap(),
+            current
         );
     }
 }
@@ -49,6 +60,12 @@ fn portable_policy_migrates_historical_struct_sequences() {
 fn portable_policy_rejects_mixed_versions_and_invalid_sequence_shapes() {
     for fields in [
         vec!["Visited", "PerCommittedTransaction"],
+        vec!["Touched", "PerCommittedTransaction"],
+        vec![
+            "worth.signal.observation-policy.v1",
+            "Touched",
+            "PerCommittedTransaction",
+        ],
         vec![
             "worth.signal.observation-policy.v2",
             "Touched",
@@ -80,7 +97,7 @@ fn portable_policy_rejects_mixed_versions_and_invalid_sequence_shapes() {
 }
 
 #[test]
-fn portable_snapshot_restores_after_legacy_observation_policy_migration() {
+fn portable_snapshot_refuses_a_historical_observation_policy() {
     use crate::expression::model::SignalValue;
     use crate::recipe::model::TransactionOp;
     use crate::runtime::core::RuntimeCore;
@@ -108,17 +125,7 @@ fn portable_snapshot_restores_after_legacy_observation_policy_migration() {
     assert!(snapshot.snapshot.diagnostics.latest_observation.is_some());
     let current_wire = to_portable_wire(&snapshot).unwrap();
     let current = STANDARD.decode(&current_wire).unwrap();
-    let roundtrip: RuntimeSnapshotEnvelope = from_portable_wire(&current_wire).unwrap();
-    assert_eq!(
-        roundtrip.snapshot.diagnostics,
-        snapshot.snapshot.diagnostics
-    );
     let current_policy = rmp_serde::to_vec_named(&ObservationPolicy::meaningful_change()).unwrap();
-    let legacy_policy = rmp_serde::to_vec(&LegacyPolicy {
-        trigger: LegacyTrigger::MeaningfulChange,
-        delivery_mode: ObservationDeliveryMode::PerCommittedTransaction,
-    })
-    .unwrap();
     let offsets: Vec<_> = current
         .windows(current_policy.len())
         .enumerate()
@@ -134,15 +141,18 @@ fn portable_snapshot_restores_after_legacy_observation_policy_migration() {
     let mut cursor = 0;
     for offset in offsets {
         historical.extend_from_slice(&current[cursor..offset]);
-        historical.extend_from_slice(&legacy_policy);
+        historical.extend_from_slice(&historical_policy(HistoricalTrigger::MeaningfulChange));
         cursor = offset + current_policy.len();
     }
     historical.extend_from_slice(&current[cursor..]);
-    let migrated: RuntimeSnapshotEnvelope =
-        from_portable_wire(&STANDARD.encode(historical)).unwrap();
-    assert_eq!(migrated.snapshot.diagnostics, snapshot.snapshot.diagnostics);
+    assert!(from_portable_wire::<RuntimeSnapshotEnvelope>(&STANDARD.encode(historical)).is_err());
+    let roundtrip: RuntimeSnapshotEnvelope = from_portable_wire(&current_wire).unwrap();
+    assert_eq!(
+        roundtrip.snapshot.diagnostics,
+        snapshot.snapshot.diagnostics
+    );
     runtime.apply_transaction(edit(11.0)).unwrap();
-    runtime.restore_snapshot(migrated).unwrap();
+    runtime.restore_snapshot(roundtrip).unwrap();
     assert_eq!(
         runtime.read_value("counter").unwrap(),
         SignalValue::Number(7.0)

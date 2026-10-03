@@ -12,6 +12,14 @@ pub use native_writer::{
     native_writer_commit_reconsiders_a_suppressed_wake,
 };
 
+#[path = "courtroom/non_accepted_observation.rs"]
+mod non_accepted_observation;
+pub use non_accepted_observation::{
+    a_duplicate_clock_reading_after_a_foreign_commit_emits_its_invalidation,
+    a_reordered_clock_reading_after_a_foreign_commit_keeps_its_invalidation_for_the_next_accepted_observation,
+    a_stale_clock_reading_after_a_foreign_commit_keeps_its_invalidation_for_the_next_accepted_observation,
+};
+
 use super::courtroom_support::{assert_authoritative_value, observe, wake_evidence};
 use super::schema::{IntentEffectField, IntentLifecycleField};
 use super::world::CourtroomWorld;

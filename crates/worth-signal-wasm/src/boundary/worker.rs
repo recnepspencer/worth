@@ -144,8 +144,7 @@ impl SignalWorkerRuntime {
             .map_err(JsValue::from)?;
         let state = self
             .export_worker_runtime_envelope_for_test()
-            .map(|envelope| envelope.snapshot.state)
-            .map_err(JsValue::from)?;
+            .map(|envelope| envelope.snapshot.state)?;
         let artifact = PortableRuntimeEnvelopeArtifact { definitions, state };
         to_json_wire(&artifact).map_err(JsValue::from)
     }

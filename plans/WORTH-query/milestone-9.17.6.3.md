@@ -1640,76 +1640,105 @@ graph boundary; this refinement creates no additional execution authority.
 
 ### Phase 5: Exact invalidation
 
-The first working public checkpoint uses real A/B/C producer handlers and their
-`current_output` dependencies. One C advance discharges an unchanged-input
-upstream cutoff without another World commit or C producer contact. When A
-actually publishes a replacement, one C advance follows that publication to the
-new World head and keeps C's output entity. The alias full-verification oracle
-and seeded differential scenarios protect this same production path.
-The public Clean-advancement observer also proves that reusing a retained Ready
-skips the source-query kernel and that changed input reenters the kernel.
-
-This checkpoint does not close Phase 5. Preserve it while completing public
-reuse under explicit independent source and producer resource policies, restored output-content proof,
-interrupted successor retry on the same caller, multi-root dependency closure,
-required-queue consumption and retained-custody lifecycle, and the remaining
-locality and differential courtroom requirements. Each next batch must close
-one of these journeys through the public facade before adding machinery for
-another.
-
-Work admission counts named operations and bounded comparison or initialized
-copy payloads; it does not claim to count machine instructions. Constant state
-transitions use their owner's fixed operation granule. A borrowed carrier does
-not pay for hypothetical moves, and destruction visits initialized elements,
-not unused Vec capacity. Conditional continuation installation reserves its
-maximum on the original request meter before Fresh effects and settles only
-the reached installation; other branches refund that reservation without
-refunding nested work. Prepared and retained memory remain separate capacity
-claims with their actual lifetimes. Static diagnostic subjects are borrowed and
-require no speculative String allocation. The contact fixture's 4,096 producer
-allowance remains artifact policy; source currentness has its own host-bounded
-allowance. Exact exhaustion and locality evidence, rather than fitting a chosen
-fixture constant, establish the accounting and scaling contract.
-
-Checkpoint readmission reconstructs the original complete Native output-aspect
-witness from captured facts. It verifies those original revisions and supported
-producer facts against the currently selected World before creating restored
-Ready authority. Missing, unsupported or changed evidence follows Fresh;
-admission exhaustion preserves its resource denial. Public Current may consume
-the verified restored witness, while fact-only restoration remains insufficient.
-The owner proof changes output content while a producer field stays current and
-requires the combined verifier to reject the old witness.
-
-An admitted demand retains the immutable producer entry chosen by the existing
-selector. Advancement consumes that entry after the exact Interest-to-Ready join
-instead of searching again by its copied name. Successor transfer is admitted
-only after the actual successor passes its joins; a Clean result pays its scalar
-contact reset. The displaced certification methods and conversion-only cue
-adapter are removed. Fresh request, principal and policy admission remain on the
-production path.
-
-Source fact preparation resolves each observed field's installed contract once.
-A private prepared materialization carries the validated field observations
-and admitted storage into conversion; conversion consumes that proof without
-another layout lookup. Typed native locators preserve first-occurrence fact
-order and duplicate-conflict semantics, while Work follows each locator's own
-initialized comparison bytes. This keeps publication witness preparation under
-the same request admission rather than introducing another resource policy.
+The touched graph becomes the invalidation cause behind the public facade.
+Proofs use real A/B/C producer handlers and their `current_output`
+dependencies. Each open item closes one journey through the public facade
+before machinery for another lands.
 
 - Emit observable-revision touched records from Relational, with old and new
   index keys, and bump an aspect version only when one of its fields changed.
-- Deliver every committed patch envelope to one Query-owned Bridge subscription,
-  and move conditional operations and workflow coverage onto it.
-- Land the settle-time reverse index with insertion replay, commit-time marking,
-  upstream propagation, selection and lineage marking.
-- Land clean reuse, the input-value reuse key and cutoff, stable republication,
-  the required set and one-call advancement.
+  *Completed.*
+- Deliver every committed patch envelope to one Query-owned Bridge
+  subscription. *Completed.*
+  - Conditional operations read the subscription, so any writer's commit on
+    the branch reaches them. Invalidations an observation consumed are never
+    dropped: after a stale, reordered or failed clock reading they stay on the
+    operation for the next accepted or duplicate observation's batch. Owed
+    invalidations stay bounded: ones Query converges as one keep only the
+    newest commit, a carried dependency that changes differently again
+    escalates to `RefreshAll`, and `RefreshAll` absorbs everything owed. A
+    healed lagging cursor's batch carries `RefreshAll`. *Completed.*
+  - Workflow coverage reads the subscription. *Not completed.*
+- Land the settle-time reverse index with insertion replay, commit-time
+  marking, upstream propagation, selection and lineage marking. *Completed.*
+- Close multi-root (diamond) dependencies: one advance follows every consumed
+  output edge into a shared dependent. *Not completed.*
+- Land clean reuse, the input-value reuse key and cutoff, stable
+  republication, the required set and one-call advancement. *Completed:*
+  - One C advance discharges an unchanged-input upstream cutoff without
+    another World commit or C producer contact.
+  - When A publishes a replacement, one C advance follows it to the new World
+    head and keeps C's output entity.
+  - Reusing a retained Ready skips the source-query kernel, and changed input
+    reenters it.
+- Public reuse holds under explicit, independent source and producer resource
+  policies. *Completed.*
+- Retry an interrupted successor on the same caller: the caller's next advance
+  resumes B. *Not completed:* today C retries, not B.
+- Consume the required-work queue in production advance, and keep retained
+  custody steady across cycles. *Completed.*
 - Land the full-verification fallback and the equivalence-check mode.
-- Rename the Signal `Touched` observation tier to `Visited`.
+  *Completed.* CI runs the checkpoint courtroom with the equivalence check,
+  the execution observer and World operation control.
+- Checkpoint readmission rebuilds the original complete Native output-aspect
+  witness from captured facts. *Completed:*
+  - It verifies those original revisions and supported producer facts against
+    the selected World before creating restored Ready authority.
+  - Missing, unsupported or changed evidence follows Fresh, and admission
+    exhaustion keeps its resource denial.
+  - Public Current may consume the verified restored witness, but fact-only
+    restoration is not enough.
+  - The owner proof changes output content while a producer field stays
+    current, and the combined verifier must reject the old witness.
+- An admitted demand keeps the immutable producer entry chosen by the existing
+  selector. *Completed:*
+  - Advancement consumes that entry after the exact Interest-to-Ready join, with
+    no second search by its copied name.
+  - Successor transfer is admitted only after the actual successor passes its
+    joins, and a Clean result pays its scalar contact reset.
+  - The displaced certification methods and the conversion-only cue adapter are
+    removed.
+  - Fresh request, principal and policy admission stay on the production path.
+- Source fact preparation resolves each observed field's installed contract
+  once. *Completed:*
+  - A private prepared materialization carries the validated field
+    observations and admitted storage into conversion, and conversion consumes
+    that proof without another layout lookup.
+  - Typed native locators keep first-occurrence fact order and
+    duplicate-conflict semantics, and Work follows each locator's own
+    initialized comparison bytes.
+  - Publication witness preparation stays under the same request admission.
+- Rename the Signal `Touched` observation tier to `Visited`, with one
+  spelling: no serde alias and no decoding of the pre-rename policy schema.
+  *Completed.*
 - Restore the public definition, rules and vocabulary in the same change, and
-  point the 9.17.6 plan here.
+  point the 9.17.6 plan here. *Completed:* the rules are in
+  [How WORTH Works §10.5](../../docs/how-it-works.md#105-marking-and-currentness)
+  and the glossary.
 - A neutral application proves the exact-invalidation courtroom with operation
-  counts, including the randomized differential test.
+  counts, locality evidence and the randomized differential test. *Not
+  completed:* the alias full-verification oracle and seeded differential
+  scenarios cover the topology-entry production path only.
+
+Work admission and capacity follow these rules. *Completed.*
+
+- Work admission counts named operations and bounded comparison or
+  initialized-copy payloads. It does not claim to count machine instructions.
+  Constant state transitions use their owner's fixed operation granule.
+- A borrowed carrier does not pay for hypothetical moves. Destruction visits
+  initialized elements, not unused Vec capacity.
+- Conditional continuation installation reserves its maximum on the original
+  request meter before Fresh effects and settles only the installation it
+  reached. The other branches refund that reservation without refunding
+  nested work.
+- Prepared and retained memory stay separate capacity claims, each with its
+  actual lifetime.
+- Static diagnostic subjects are borrowed and need no speculative String
+  allocation.
+- The contact fixture's 4,096 producer allowance stays artifact policy. Source
+  currentness has its own host-bounded allowance. Exact exhaustion and locality
+  evidence establish the accounting and scaling contract, not a constant fitted
+  to a fixture.
 
 The next phase may trust that the touched graph alone decides what recomputes.
 

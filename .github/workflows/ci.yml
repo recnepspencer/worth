@@ -51,12 +51,24 @@ jobs:
   query-checkpoint-recovery:
     name: Query checkpoint recovery court
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      # The default run proves the shipped build. The featured run is not a
+      # superset of it: test-invalidation-equivalence also runs a full
+      # verification under the same admission, so exhaustion behaves
+      # differently. It adds observer, operation-control, delivery-fault and
+      # equivalence courts on top.
       - name: Prove restored accepted outputs avoid producer contact
         run: >-
           cargo test
           --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml
           -p worth-query-topology-entry
+          -- --test-threads=1
+      - name: Prove featured topology courts
+        run: >-
+          cargo test
+          --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml
+          -p worth-query-topology-entry
+          --features test-query-execution-observer,test-world-operation-control,test-invalidation-equivalence,test-output-delivery-faults
           -- --test-threads=1

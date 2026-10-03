@@ -160,8 +160,8 @@ fn stable_dependency_compute_callbacks_recompute_through_runtime_truth() {
     assert_eq!(callback.purity_posture, "signalTracked");
     assert_eq!(callback.current_reads, vec!["count".to_owned()]);
     assert!(callback.registered);
-    assert_eq!(callback.token_slot.is_some(), true);
-    assert_eq!(callback.token_generation.is_some(), true);
+    assert!(callback.token_slot.is_some());
+    assert!(callback.token_generation.is_some());
 
     let summary = runtime.web_performance_summary();
     assert!(summary.active_compute_callback_count >= 1);

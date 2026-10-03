@@ -4,20 +4,15 @@ use serde::de::Deserializer;
 use serde::ser::{SerializeMap, Serializer};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum SignalValue {
+    #[default]
     Null,
     Bool(bool),
     Number(f64),
     String(String),
     Array(Vec<SignalValue>),
     Object(Vec<(String, SignalValue)>),
-}
-
-impl Default for SignalValue {
-    fn default() -> Self {
-        Self::Null
-    }
 }
 
 impl Serialize for SignalValue {

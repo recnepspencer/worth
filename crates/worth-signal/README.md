@@ -132,16 +132,14 @@ value. `recomputed()` observes evaluation, and `meaningful_change()` observes
 the committed change selected by the node's comparison contract. Use the
 semantic commit delta when deciding what changed.
 
-Current policy serialization carries schema identity
+Policy serialization carries schema identity
 `worth.signal.observation-policy.v2` and the `Visited` trigger. The decoder
-accepts the historical v1 `Touched` trigger and unversioned v1 policies,
-including their two-field MessagePack representation. It migrates that trigger
-to `Visited`; mixed version/trigger pairs and unsupported policy versions are
-rejected. New producers always emit v2.
+accepts only that schema and spelling: unversioned or v1 policies, the
+`Touched` trigger, and unsupported versions are rejected.
 
 Committed observation summaries expose `visited`, and scratch summaries expose
-`visited_event_count`. Historical `touched` field aliases are decode-only.
-These observation names do not rename native touched records or commit deltas.
+`visited_event_count`; there is no `touched` spelling. These observation names
+do not rename native touched records or commit deltas.
 
 ## Where It Fits
 

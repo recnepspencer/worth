@@ -24,8 +24,9 @@ pub(super) struct AuthoritativeClockWork<'a, Schema> {
         crate::domain_computation::primary_graph::output_lineage::invalidation::CommitTouchInterest<
             'a,
         >,
-    pub(super) preperformed_deliveries:
-        &'a [worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery],
+    /// Receives every invalidation consumed from the subscription, so a
+    /// later failure or refused reading cannot drop it.
+    pub(super) pending: &'a mut super::WorthQueryPendingGranularInvalidations,
     pub(super) retained_wakes: &'a mut [WorthQueryRetainedConditionalWake],
     pub(super) runtime_binding_identity: &'a str,
     pub(super) runtime_capability_identity: u64,
@@ -36,12 +37,6 @@ pub(super) struct AuthoritativeClockProgress {
     pub(super) commit_count: usize,
     pub(super) work_remaining: bool,
     pub(super) caught_up_to_latest: bool,
-    pub(super) granular_invalidations:
-        Vec<worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery>,
-    /// `RefreshAll` once this observation rebuilt a lagging binding: the
-    /// deliveries then miss the commits inside the overrun gap.
-    pub(super) coverage:
-        crate::domain_computation::primary_graph::WorthQueryGranularInvalidationCoverage,
 }
 
 /// Why authoritative progression stopped before the clock advance.
@@ -81,16 +76,13 @@ pub(super) fn reconsider_authoritative_clock_work<Schema>(
         work.runtime_binding_identity,
         work.runtime_capability_identity,
         work.truth,
-        work.preperformed_deliveries,
+        work.pending,
     )
     .map_err(|detail| AuthoritativeClockStop::Failed(runtime_rejection(detail)))?;
     Ok(AuthoritativeClockProgress {
         commit_count,
         work_remaining: delivered.work_remaining,
         caught_up_to_latest: delivered.caught_up_to_latest,
-        granular_invalidations: delivered.granular_invalidations,
-        coverage:
-            crate::domain_computation::primary_graph::WorthQueryGranularInvalidationCoverage::Exact,
     })
 }
 

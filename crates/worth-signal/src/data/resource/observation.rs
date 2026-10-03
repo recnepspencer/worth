@@ -77,7 +77,6 @@ pub struct ResourceObservationEvent {
     handle_id: ObservationHandleId,
     policy: ObservationPolicy,
     outcome: ObservationBoundaryOutcome,
-    #[serde(alias = "touched")]
     visited: bool,
     recomputed: bool,
     meaningful_change: bool,

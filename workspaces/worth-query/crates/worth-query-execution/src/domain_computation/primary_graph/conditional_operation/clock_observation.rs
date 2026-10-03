@@ -223,15 +223,26 @@ impl<Clock> WorthQueryConditionalClockObservationReceipt<Clock> {
 pub enum WorthQueryConditionalClockObservationOutcome<Clock> {
     /// The reading was accepted and processed.
     Accepted(WorthQueryConditionalClockObservationReceipt<Clock>),
-    /// The reading repeats one already accepted; the receipt describes it.
+    /// The reading repeats one already accepted. Its batch still carries every
+    /// owed granular invalidation, including commits reconsidered during this
+    /// observation; consume it through
+    /// [`WorthQueryConditionalClockObservationReceipt::take_granular_invalidation_batch`]
+    /// exactly as for an accepted reading, or those invalidations are lost.
     Duplicate(WorthQueryConditionalClockObservationReceipt<Clock>),
-    /// The reading is older than one already accepted; nothing was processed.
+    /// The reading's sequence is not newer than one already accepted. The
+    /// clock did not advance and no wake came due, but authoritative commits
+    /// may already have been reconsidered; their granular invalidations stay
+    /// owed to the next accepted or duplicate reading's batch.
     Stale,
-    /// The reading arrived out of order; nothing was processed.
+    /// The reading's coordinate runs behind one already accepted. As for
+    /// [`Self::Stale`], the clock did not advance and any invalidations
+    /// already consumed stay owed to the next accepted or duplicate
+    /// reading's batch.
     Reordered,
     /// The clock binding or source is closed.
     Closed,
-    /// The observation failed.
+    /// The observation failed. Invalidations it already consumed stay owed
+    /// to the next accepted or duplicate reading's batch.
     Failed(WorthQueryConditionalClockObservationFailure),
 }
 

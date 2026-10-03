@@ -12,8 +12,8 @@ use super::super::clock_observation::ErasedClockObservationOutcome;
 use super::super::installation::ConditionalClockLease;
 use super::super::signal_decision_reentry::WorthQueryConditionalTruthBasis;
 use super::{
-    authoritative_clock_progression, bridge_clock_outcome, commit_watch, direct_delivery,
-    due_wake_retention, isolate_clock_source, resource_observation, runtime_rebinding,
+    authoritative_clock_progression, bridge_clock_outcome, commit_watch, due_wake_retention,
+    isolate_clock_source, resource_observation, runtime_rebinding,
     WorthQueryConditionalRetainedResourceCounts, WorthQueryInstalledConditionalOperation,
     WorthQueryInstalledTemporalOperation, WorthQueryPreparedConditionalRuntimeBinding,
 };
@@ -125,10 +125,7 @@ where
         &mut self,
         receipt: &worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt,
     ) {
-        direct_delivery::retain(
-            &mut self.pending_direct_delivery,
-            receipt,
-        )
+        self.pending_invalidations.retain_direct(receipt)
     }
 
     fn select_product_binding(
@@ -199,7 +196,7 @@ where
         &mut self,
         prepared: WorthQueryPreparedConditionalRuntimeBinding,
     ) {
-        self.pending_direct_delivery = prepared.pending_direct_delivery;
+        self.pending_invalidations = prepared.pending_invalidations;
         self.bootstrap_lowering = prepared.lowering;
         self.active_affinity = Some(prepared.affinity);
         self.managed_clock = Some(prepared.managed_clock);
@@ -238,7 +235,8 @@ where
         let sequence = observation.sequence();
         let coordinate = observation.observed_time().nanoseconds();
         let mut rebuilt = false;
-        let mut authoritative = loop {
+        self.pending_invalidations.carry_owed();
+        let authoritative = loop {
             let Some(affinity) = self.active_affinity.as_ref() else {
                 return authoritative_clock_progression::runtime_rejection(
                     "conditional clock observation requires a selected product binding"
@@ -262,7 +260,7 @@ where
                     cursor: &mut self.authoritative_commit_cursor,
                     maximum_commits: self.definition.binding.bounds().maximum_due_wakes_per_observation(),
                     interest,
-                    preperformed_deliveries: direct_delivery::as_slice(&self.pending_direct_delivery),
+                    pending: &mut self.pending_invalidations,
                     retained_wakes: &mut self.retained_wakes,
                     runtime_binding_identity: &self.runtime_binding_identity,
                     runtime_capability_identity: self.runtime_capability_identity,
@@ -289,9 +287,6 @@ where
                 authoritative_clock_progression::AuthoritativeClockStop::Failed(outcome) => return outcome,
             }
         };
-        if rebuilt {
-            authoritative.coverage = crate::domain_computation::primary_graph::WorthQueryGranularInvalidationCoverage::RefreshAll;
-        }
         let signal_basis = self
             .active_affinity
             .as_ref()
@@ -303,17 +298,14 @@ where
             .expect("selected conditional operation retains a managed clock");
         super::super::authoritative_reconsideration::reconsider_retained_wakes_for_deliveries(
             bridge,
-            direct_delivery::as_slice(&self.pending_direct_delivery),
+            self.pending_invalidations.direct(),
             &mut self.retained_wakes,
             signal_basis,
             &self.runtime_binding_identity,
             self.runtime_capability_identity,
             truth,
         );
-        direct_delivery::move_into(
-            &mut self.pending_direct_delivery,
-            &mut authoritative.granular_invalidations,
-        );
+        self.pending_invalidations.owe_direct();
         if authoritative.caught_up_to_latest {
             self.bootstrap_commit_catch_up_pending = false;
         }
@@ -324,12 +316,15 @@ where
             sequence,
             observed_coordinate: coordinate,
         });
+        // Only an accepted or duplicate reading emits what this binding owes;
+        // any other outcome leaves it owed to the next one.
         let retain_and_reenter = |accepted| {
+            let mut released = self.pending_invalidations.release();
             let receipt = due_wake_retention::retain_due(
                 accepted,
                 bridge,
                 truth,
-                &authoritative.granular_invalidations,
+                &released.deliveries,
                 signal_basis,
                 &self.runtime_binding_identity,
                 self.runtime_capability_identity,
@@ -355,15 +350,16 @@ where
                 &mut self.retained_wakes,
                 &self.runtime_canonical_identity,
             );
-            authoritative.granular_invalidations =
+            released.deliveries =
                 super::super::authoritative_reconsideration::promote_performed_signal_deliveries(
-                    std::mem::take(&mut authoritative.granular_invalidations),
+                    std::mem::take(&mut released.deliveries),
                     &mut self.retained_wakes,
                 );
             due_wake_retention::complete_clock_receipt(
                 receipt,
                 counts,
                 authoritative,
+                released,
                 &mut self.retained_wakes,
                 &mut self.operation_totals,
             )

@@ -35,7 +35,6 @@ pub struct WebObservationNotice {
     pub signal_id: String,
     pub branch_id: u64,
     pub policy: ObservationPolicy,
-    #[serde(alias = "touched")]
     pub visited: bool,
     pub recomputed: bool,
     pub meaningful_change: bool,

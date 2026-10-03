@@ -217,12 +217,14 @@ fn collect_unique_callback_reattachments(
     let mut reattachments_by_id = BTreeMap::new();
     let mut duplicate_ids = Vec::new();
     for reattachment in reattachments {
-        let callback_id = reattachment.callback_id.clone();
-        if reattachments_by_id.contains_key(&callback_id) {
-            let _ = compute_callbacks::dispose_compute(reattachment.token);
-            duplicate_ids.push(callback_id);
-        } else {
-            reattachments_by_id.insert(callback_id, reattachment);
+        match reattachments_by_id.entry(reattachment.callback_id.clone()) {
+            std::collections::btree_map::Entry::Occupied(duplicate) => {
+                let _ = compute_callbacks::dispose_compute(reattachment.token);
+                duplicate_ids.push(duplicate.key().clone());
+            }
+            std::collections::btree_map::Entry::Vacant(slot) => {
+                slot.insert(reattachment);
+            }
         }
     }
     if duplicate_ids.is_empty() {

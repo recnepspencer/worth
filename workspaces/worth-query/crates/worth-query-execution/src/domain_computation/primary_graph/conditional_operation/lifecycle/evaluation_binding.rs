@@ -23,7 +23,8 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) struct W
     pub(super) affinity: super::evaluation_affinity::WorthQueryConditionalEvaluationAffinity,
     pub(super) managed_clock: BridgeManagedClockBinding,
     pub(super) retained_wakes: Vec<WorthQueryRetainedConditionalWake>,
-    pub(super) pending_direct_delivery: super::direct_delivery::WorthQueryPendingDirectDelivery,
+    pub(super) pending_invalidations:
+        super::pending_invalidations::WorthQueryPendingGranularInvalidations,
     pub(super) reconstructed_intents:
         BTreeMap<String, WorthQueryReconstructedTemporalIntent<Clock, Input>>,
     pub(super) reconstruction_work: WorthQueryTemporalReconstructionWork,
@@ -158,6 +159,7 @@ where
     /// after its commit cursor fell behind the retained subscription window.
     /// The fresh managed clock re-derives every active wake from that truth;
     /// progress resumes after the newest position the truth already contains.
+    /// The next accepted observation's batch carries `RefreshAll`.
     pub(super) fn rebuild_lagging_evaluation_binding(
         &mut self,
         bridge: &BridgeSealedRuntimeAssembly,
@@ -167,8 +169,10 @@ where
     ) -> Result<(), super::super::installation::WorthQueryConditionalRuntimeInstallationDenial> {
         let mut rebuilt = self.fresh_evaluation_binding(bridge, runtime, truth, None)?;
         rebuilt.authoritative_commit_cursor = resume_after;
-        // Query-commit deliveries still awaiting promotion stay deliverable.
-        rebuilt.pending_direct_delivery = std::mem::replace(&mut self.pending_direct_delivery, super::direct_delivery::empty());
+        // The Query-commit delivery stays deliverable; the gap the rebuild
+        // skipped and everything owed before it are owed as a full refresh.
+        rebuilt.pending_invalidations = std::mem::replace(&mut self.pending_invalidations, super::pending_invalidations::WorthQueryPendingGranularInvalidations::empty());
+        rebuilt.pending_invalidations.refresh_all();
         self.activate_first_evaluation_binding(rebuilt);
         Ok(())
     }
@@ -268,7 +272,7 @@ where
             ),
             managed_clock,
             retained_wakes: Vec::new(),
-            pending_direct_delivery: super::direct_delivery::empty(),
+            pending_invalidations: super::pending_invalidations::WorthQueryPendingGranularInvalidations::empty(),
             reconstructed_intents: intents,
             reconstruction_work: reconstruction.work,
             authoritative_commit_cursor: predecessor
@@ -338,8 +342,8 @@ impl<Binding, Reconstruction, Execution, Clock, Input>
         );
         std::mem::swap(&mut self.retained_wakes, &mut binding.retained_wakes);
         std::mem::swap(
-            &mut self.pending_direct_delivery,
-            &mut binding.pending_direct_delivery,
+            &mut self.pending_invalidations,
+            &mut binding.pending_invalidations,
         );
         std::mem::swap(
             &mut self.reconstructed_intents,
@@ -364,7 +368,7 @@ impl<Binding, Reconstruction, Execution, Clock, Input>
             affinity,
             managed_clock,
             retained_wakes,
-            pending_direct_delivery,
+            pending_invalidations,
             reconstructed_intents,
             reconstruction_work,
             authoritative_commit_cursor,
@@ -373,7 +377,7 @@ impl<Binding, Reconstruction, Execution, Clock, Input>
         self.active_affinity = Some(affinity);
         self.managed_clock = Some(managed_clock);
         self.retained_wakes = retained_wakes;
-        self.pending_direct_delivery = pending_direct_delivery;
+        self.pending_invalidations = pending_invalidations;
         self.reconstructed_intents = reconstructed_intents;
         self.reconstruction_work = reconstruction_work;
         self.authoritative_commit_cursor = authoritative_commit_cursor;

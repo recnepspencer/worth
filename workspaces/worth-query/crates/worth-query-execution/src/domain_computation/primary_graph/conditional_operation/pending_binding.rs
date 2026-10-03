@@ -301,7 +301,8 @@ where
             bootstrap_commit_catch_up_pending: true,
             commit_watch: Default::default(),
             operation_totals: Default::default(),
-            pending_direct_delivery: None,
+            pending_invalidations: super::lifecycle::WorthQueryPendingGranularInvalidations::empty(
+            ),
             inactive_bindings: Default::default(),
             next_evaluation_binding_ordinal: 1,
         }))

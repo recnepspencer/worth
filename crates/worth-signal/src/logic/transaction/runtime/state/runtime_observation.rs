@@ -52,7 +52,6 @@ impl ObservationHandle {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ObservationTrigger {
-    #[serde(alias = "Touched")]
     Visited,
     Recomputed,
     MeaningfulChange,

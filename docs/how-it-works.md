@@ -942,10 +942,14 @@ commit order and synchronously with commit visibility, whoever the writer was.
   consumed (field revisions, index keys, selection and absence facts) in a
   reverse index from fact to settlement. A settlement recorded against an
   older read replays the deliveries since that read before it is indexed.
+  Facts come from native query, adjacency or indexed-selection evidence at
+  the smallest sound scope.
 - **Marking.** A delivered commit looks up only its touched keys. Each match
   marks that settlement dirty. Every settlement that consumed a marked
   output is marked pending-upstream, transitively. No commit scans
-  settlements or waiting work, and marks are per branch lineage.
+  settlements or waiting work, and marks are per branch lineage. A wake or
+  touched set narrows which deliveries reach a settlement, but never
+  replaces admission's currentness proof.
 - **Clean reuse.** On a continuous basis (same lineage, read basis still
   inside the retained commit window, demand at or after that basis), an
   unmarked settlement is current. Nothing is re-read or hashed.

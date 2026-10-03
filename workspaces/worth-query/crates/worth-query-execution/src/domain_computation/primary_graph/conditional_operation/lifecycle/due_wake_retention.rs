@@ -82,6 +82,7 @@ pub(super) fn complete_clock_receipt(
     mut receipt: ErasedClockObservationReceipt,
     counts: WorthQueryTemporalReentryCounts,
     authoritative: AuthoritativeClockProgress,
+    released: super::pending_invalidations::WorthQueryReleasedGranularInvalidations,
     retained_wakes: &mut Vec<
             crate::domain_computation::primary_graph::conditional_operation::signal_decision_reentry::WorthQueryRetainedConditionalWake,
         >,
@@ -90,8 +91,8 @@ pub(super) fn complete_clock_receipt(
     receipt.due_work_remaining |= authoritative.work_remaining;
     receipt.authoritative_commit_count = authoritative.commit_count;
     receipt.authoritative_work_remaining = authoritative.work_remaining;
-    receipt.granular_invalidations = authoritative.granular_invalidations;
-    receipt.granular_invalidation_coverage = authoritative.coverage;
+    receipt.granular_invalidations = released.deliveries;
+    receipt.granular_invalidation_coverage = released.coverage;
     totals.accumulate(counts);
     receipt.execution_provenance =
         super::super::execution_provenance::execution_provenance(retained_wakes);

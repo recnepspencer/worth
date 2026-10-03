@@ -22,7 +22,6 @@ pub struct CommittedObservationEventSummary {
     pub policy: ObservationPolicy,
     pub observed_nodes: ObservedNodeSet,
     pub matched_nodes: ObservedNodeSet,
-    #[serde(alias = "touched")]
     pub visited: bool,
     pub recomputed: bool,
     pub meaningful_change: bool,

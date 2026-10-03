@@ -21,8 +21,6 @@ pub(super) struct WorthQueryRelevantAuthoritativeCommits {
 pub(super) struct WorthQueryDeliveredAuthoritativeCommits {
     pub(super) work_remaining: bool,
     pub(super) caught_up_to_latest: bool,
-    pub(super) granular_invalidations:
-        Vec<worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery>,
 }
 
 impl WorthQueryRelevantAuthoritativeCommits {
@@ -50,6 +48,9 @@ pub(super) fn relevant_authoritative_commits<Schema>(
         .map(|batch| WorthQueryRelevantAuthoritativeCommits { batch })
 }
 
+/// Delivers each relevant commit to Signal-hosted nodes and reconsiders the
+/// wakes it touches. The cursor passes a commit only once its invalidations
+/// are owed on `pending`, so they survive a later failure in this batch.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn deliver_authoritative_commits(
     bridge: &BridgeSealedRuntimeAssembly,
@@ -60,9 +61,8 @@ pub(super) fn deliver_authoritative_commits(
     query_binding_identity: &str,
     query_capability_identity: u64,
     truth: &WorthQueryConditionalTruthBasis,
-    preperformed_deliveries: &[worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery],
+    pending: &mut super::lifecycle::WorthQueryPendingGranularInvalidations,
 ) -> Result<WorthQueryDeliveredAuthoritativeCommits, String> {
-    let mut granular_invalidations = Vec::new();
     let TouchedCommits {
         commits,
         next_cursor,
@@ -77,7 +77,7 @@ pub(super) fn deliver_authoritative_commits(
             signal_basis,
             touched.commit,
             truth,
-            preperformed_deliveries,
+            pending.direct(),
         )?;
         for wake in wakes.iter_mut().filter(|wake| {
             touched.touches(&super::lifecycle::source_entity(
@@ -105,14 +105,13 @@ pub(super) fn deliver_authoritative_commits(
                 triggering_correspondence,
             );
         }
-        granular_invalidations.extend(promote_performed_signal_deliveries(delivered, wakes));
+        pending.owe(promote_performed_signal_deliveries(delivered, wakes));
         *cursor = Some(touched.position);
     }
     *cursor = next_cursor;
     Ok(WorthQueryDeliveredAuthoritativeCommits {
         work_remaining,
         caught_up_to_latest,
-        granular_invalidations,
     })
 }
 
