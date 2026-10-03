@@ -80,3 +80,73 @@ fn bounded_entity_field_selection(
         .ok()?;
     (!outcome.overflowed()).then(|| outcome.candidate_entity_ids().to_vec())
 }
+
+pub(in crate::domain_computation::primary_graph) fn reobserve(
+    fact: &WorthQueryApplicationObservedFact,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+) -> Option<WorthQueryApplicationObservedFact> {
+    let WorthQueryApplicationObservedFact::IndexedEntitySelection {
+        index_id,
+        entity_kind,
+        locator,
+        value,
+        candidate_limit,
+        ..
+    } = fact
+    else {
+        return None;
+    };
+    observe_indexed_entity_selection(
+        runtime,
+        snapshot,
+        *index_id,
+        *entity_kind,
+        locator.clone(),
+        value.clone(),
+        *candidate_limit,
+    )
+}
+
+pub(super) fn currentness(
+    fact: &WorthQueryApplicationObservedFact,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    maximum_work: usize,
+) -> Result<(bool, usize), super::WorthQuerySourceCurrentnessFailure> {
+    use super::WorthQuerySourceCurrentnessFailure as Failure;
+    let WorthQueryApplicationObservedFact::IndexedEntitySelection {
+        index_id,
+        entity_kind,
+        locator,
+        value,
+        candidate_limit,
+        candidates,
+    } = fact
+    else {
+        return Err(Failure::Unavailable);
+    };
+    if candidate_limit
+        .checked_add(1)
+        .is_none_or(|work| work > maximum_work)
+    {
+        return Err(Failure::WorkBudgetExceeded);
+    }
+    let request = BoundedEntityFieldLookupRequest::new(
+        snapshot.clone(),
+        *index_id,
+        *entity_kind,
+        locator.clone(),
+        value.clone(),
+        *candidate_limit,
+    )
+    .map_err(|_| Failure::Unavailable)?;
+    let outcome = runtime
+        .index_access()
+        .execute_bounded_entity_field_lookup(request, BoundedIndexParityMode::Production)
+        .map_err(|_| Failure::Unavailable)?;
+    Ok((
+        !outcome.overflowed() && outcome.candidate_entity_ids() == candidates,
+        1 + outcome.examined_entry_count(),
+    ))
+}

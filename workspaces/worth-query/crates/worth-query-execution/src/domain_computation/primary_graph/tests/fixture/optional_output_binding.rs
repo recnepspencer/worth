@@ -24,6 +24,7 @@ pub(in crate::domain_computation::primary_graph) enum OptionalOutputPlan {
     RequiredAndOptional,
     RequiredAndOptionalTwice,
     OptionalOnly,
+    RequiredAfterIndexedAbsence,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
@@ -121,7 +122,7 @@ pub(super) fn declare(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(operation, 1)
+        .operation_decision_fact_budget(operation, 3)
         .operation_projection_work_budget(operation, 8)
         .operation_requires_ability(operation, ViewAccount::reference())
         .operation_write(operation, AccountStatus::reference())
@@ -147,10 +148,22 @@ impl OperationHandler<IdentityExecutionSchema, OptionalOutputMutationBinding>
         >,
     ) -> HandlerResult<OptionalOutputInput, OptionalOutputInput> {
         // The decision observes the scoped account, so the candidate may target it.
-        match reader.resolve_entity(AccountStatus::reference(), input.status.clone()) {
-            Ok(_) => HandlerResult::Completed(input.clone()),
-            Err(denial) => HandlerResult::ExecutionDenied(denial),
+        if let Err(denial) = reader.resolve_entity(AccountStatus::reference(), input.status.clone())
+        {
+            return HandlerResult::ExecutionDenied(denial);
         }
+        if input.plan == OptionalOutputPlan::RequiredAfterIndexedAbsence {
+            match reader.select_entities(
+                AccountStatus::reference(),
+                "pending-membership".to_owned(),
+                2,
+            ) {
+                Ok(matches) if matches.is_empty() => {}
+                Ok(_) => return HandlerResult::DomainDenied(input.clone()),
+                Err(denial) => return HandlerResult::ExecutionDenied(denial),
+            }
+        }
+        HandlerResult::Completed(input.clone())
     }
 
     fn candidate_requirements(
@@ -172,11 +185,17 @@ impl OperationHandler<IdentityExecutionSchema, OptionalOutputMutationBinding>
             OptionalOutputPlan::RequiredAndOptional => (true, 1),
             OptionalOutputPlan::RequiredAndOptionalTwice => (true, 2),
             OptionalOutputPlan::OptionalOnly => (false, 1),
+            OptionalOutputPlan::RequiredAfterIndexedAbsence => (true, 0),
+        };
+        let replacement = if decision.plan == OptionalOutputPlan::RequiredAfterIndexedAbsence {
+            "pending-membership"
+        } else {
+            "reviewed"
         };
         let bound = writer
             .resolve_entity(AccountStatus::reference(), decision.status.clone())
             .and_then(|account| {
-                writer.write_field(&account, AccountStatus::reference(), "reviewed".to_owned())?;
+                writer.write_field(&account, AccountStatus::reference(), replacement.to_owned())?;
                 if required {
                     writer.preserve_output::<OptionalSubject>(&account)?;
                 }

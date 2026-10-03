@@ -17,7 +17,7 @@ pub use section_bytes::{
 };
 
 const MAGIC: &[u8; 8] = b"WQAPCP01";
-const FORMAT_VERSION: u16 = 6;
+const FORMAT_VERSION: u16 = 7;
 const CHECKSUM_BYTES: usize = 32;
 const BODY_PREFIX_BYTES: usize = 2 + 8 + 8 + 8;
 const HEADER_BYTES: usize = MAGIC.len() + CHECKSUM_BYTES + BODY_PREFIX_BYTES;
@@ -81,7 +81,8 @@ impl WorthQueryApplicationCheckpoint {
             return Err("Query application checkpoint checksum differs".to_owned());
         }
         let version = u16::from_be_bytes([body[0], body[1]]);
-        if version != FORMAT_VERSION && version != 5 && version != 4 && version != 3 {
+        if version != FORMAT_VERSION && version != 6 && version != 5 && version != 4 && version != 3
+        {
             return Err(format!(
                 "Query application checkpoint format {version} is unsupported"
             ));

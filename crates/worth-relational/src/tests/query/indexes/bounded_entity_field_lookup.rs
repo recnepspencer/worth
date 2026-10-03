@@ -1,7 +1,7 @@
 use super::*;
 use crate::facade::indexes::{
     BoundedEntityFieldLookupDenialKind, BoundedEntityFieldLookupRequest, BoundedIndexParityMode,
-    DerivedIndexEntries, MAX_BOUNDED_INDEX_CANDIDATES,
+    DerivedIndexEntries,
 };
 
 #[test]
@@ -116,7 +116,7 @@ fn bounded_lookup_caps_ordinary_work_and_certifies_storage_parity() {
 }
 
 #[test]
-fn bounded_lookup_rejects_unbounded_requests_and_nonexact_generations() {
+fn bounded_lookup_rejects_empty_budgets_and_nonexact_generations() {
     let runtime = runtime_with_index_field_aspects();
     let created = create_entity_outcome(&runtime, "alpha");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
@@ -134,17 +134,17 @@ fn bounded_lookup_rejects_unbounded_requests_and_nonexact_generations() {
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
         });
-    let oversized = BoundedEntityFieldLookupRequest::new(
+    let empty = BoundedEntityFieldLookupRequest::new(
         created.snapshot.clone(),
         index.index_id,
         KindId(1),
         aspect_field_locator(aspect_key("name"), field_key("name")),
         string_aspect_value("alpha"),
-        MAX_BOUNDED_INDEX_CANDIDATES + 1,
+        0,
     )
     .unwrap_err();
     assert_eq!(
-        oversized.kind(),
+        empty.kind(),
         BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
     );
 

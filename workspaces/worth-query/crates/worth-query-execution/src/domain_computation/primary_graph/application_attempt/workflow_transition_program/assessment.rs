@@ -180,7 +180,7 @@ pub(super) fn bind_currentness_facts<Schema, Operation, Input, Scope>(
     ensure_current(read_set, currentness_facts, subject)?;
     let mut merged = std::collections::BTreeMap::new();
     for fact in std::mem::take(&mut read_set.facts) {
-        let locator = fact.locator_identity();
+        let locator = fact.dependency_key();
         match merged.entry(locator) {
             std::collections::btree_map::Entry::Vacant(entry) => {
                 entry.insert(fact);
@@ -195,7 +195,7 @@ pub(super) fn bind_currentness_facts<Schema, Operation, Input, Scope>(
         }
     }
     for fact in currentness_facts {
-        let locator = fact.locator_identity();
+        let locator = fact.dependency_key();
         if merged
             .insert(locator, fact.clone())
             .is_some_and(|existing| existing != *fact)

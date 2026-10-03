@@ -29,6 +29,7 @@ fn is_output_currentness_fact(fact: &WorthQueryApplicationObservedFact) -> bool 
             | WorthQueryApplicationObservedFact::AbsentField { .. }
             | WorthQueryApplicationObservedFact::Relation { .. }
             | WorthQueryApplicationObservedFact::Adjacency { .. }
+            | WorthQueryApplicationObservedFact::IndexedEntitySelection { .. }
     )
 }
 

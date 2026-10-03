@@ -14,6 +14,7 @@ pub(super) fn rebase_output(
     changed_records: &[worth_relational::facade::transactions::RecordRef],
     producer_output: bool,
     maximum_pair_rebase_work: usize,
+    maximum_indexed_rebase_work: usize,
 ) -> Arc<[WorthQueryApplicationObservedFact]> {
     let changed_entities = changed_records
         .iter()
@@ -35,6 +36,7 @@ pub(super) fn rebase_output(
         facts,
         producer_output,
         maximum_pair_rebase_work,
+        maximum_indexed_rebase_work,
     )
 }
 
@@ -44,8 +46,10 @@ pub(super) fn rebase(
     facts: Vec<WorthQueryApplicationObservedFact>,
     producer_output: bool,
     maximum_pair_rebase_work: usize,
+    maximum_indexed_rebase_work: usize,
 ) -> Arc<[WorthQueryApplicationObservedFact]> {
     let mut failed_native_rebase = false;
+    let mut predicate_work_remaining = maximum_indexed_rebase_work;
     let rebased = facts
         .into_iter()
         .map(|fact| match fact {
@@ -125,6 +129,27 @@ pub(super) fn rebase(
             | fact @ WorthQueryApplicationObservedFact::Adjacency { .. } => {
                 rebase_decision_adjacency(runtime, snapshot, fact, maximum_pair_rebase_work)
             }
+            fact @ WorthQueryApplicationObservedFact::IndexedEntitySelection { .. } => {
+                let maximum_work = match &fact {
+                    WorthQueryApplicationObservedFact::IndexedEntitySelection { candidate_limit, .. } =>
+                        candidate_limit.checked_add(1),
+                    _ => unreachable!("indexed selection arm preserves its fact"),
+                };
+                let observed = maximum_work
+                    .and_then(|work| predicate_work_remaining.checked_sub(work))
+                    .and_then(|remaining| {
+                        predicate_work_remaining = remaining;
+                        crate::domain_computation::primary_graph::application_attempt::reobserve_indexed_entity_selection(
+                            &fact, runtime, snapshot,
+                        )
+                    });
+                if let Some(observed) = observed {
+                    observed
+                } else {
+                    failed_native_rebase = true;
+                    fact
+                }
+            }
             fact => fact,
         })
         .collect::<Vec<_>>();
@@ -148,6 +173,7 @@ fn native_output_currentness_fact(fact: &WorthQueryApplicationObservedFact) -> b
             | WorthQueryApplicationObservedFact::SourceFieldRevision { .. }
             | WorthQueryApplicationObservedFact::SourceAdjacencyRevision { .. }
             | WorthQueryApplicationObservedFact::Entity { .. }
+            | WorthQueryApplicationObservedFact::IndexedEntitySelection { .. }
     )
 }
 

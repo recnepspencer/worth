@@ -87,8 +87,10 @@ pub struct WorthQueryApplicationInvariantProjectionSnapshot<Schema> {
     binding_identity: ApplicationSchemaBindingIdentity,
     authority_identity: u64,
     realized_scope: WorthQueryRealizedProjectionScope,
-    dependent_source_facts:
-        BTreeMap<String, application_attempt::WorthQueryApplicationObservedFact>,
+    dependent_source_facts: BTreeMap<
+        application_attempt::WorthQueryApplicationFactStorageKey,
+        application_attempt::WorthQueryApplicationObservedFact,
+    >,
     _schema: PhantomData<fn() -> Schema>,
 }
 

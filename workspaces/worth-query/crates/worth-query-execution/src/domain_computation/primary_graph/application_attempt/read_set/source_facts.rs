@@ -6,6 +6,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationObservedFact,
 };
 
+#[cfg(test)]
+mod indexed_selection;
+
 pub(super) fn validate_source_facts<Schema, Operation, Input, Scope>(
     admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     lease: &WorthQueryApplicationSnapshotLease,
@@ -34,7 +37,7 @@ pub(super) fn merge_source_facts(
 ) -> Result<Vec<WorthQueryApplicationObservedFact>, WorthQueryApplicationAttemptDenial> {
     let mut merged = BTreeMap::new();
     for fact in admitted.into_iter().chain(dependent) {
-        let locator = fact.locator_identity();
+        let locator = fact.dependency_key();
         if merged
             .insert(locator, fact.clone())
             .is_some_and(|existing| existing != fact)

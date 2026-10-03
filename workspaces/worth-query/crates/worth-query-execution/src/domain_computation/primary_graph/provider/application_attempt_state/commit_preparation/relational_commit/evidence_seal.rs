@@ -73,6 +73,7 @@ pub(super) fn seal(
                 .validator_work_admission()
                 .maximum_work()
                 .unwrap_or(0),
+            committed.attempt().indexed_rebase_work_budget(),
         )
     });
     WorthQueryPrimaryGraphCommitEvidence {

@@ -123,7 +123,7 @@ mod tests {
                 }
             ));
             assert_eq!(
-                super::super::rebase(runtime, snapshot, vec![fact], true, 0).len(),
+                super::super::rebase(runtime, snapshot, vec![fact], true, 0, 0).len(),
                 0,
                 "failed relation revision acquisition marks the entire output non-reusable"
             );
@@ -141,11 +141,19 @@ mod tests {
                 vec![stale_revision.clone()],
                 true,
                 64,
+                64,
             )
             .is_empty());
             assert_eq!(
-                super::super::rebase(runtime, snapshot, vec![stale_revision.clone()], false, 64)
-                    .as_ref(),
+                super::super::rebase(
+                    runtime,
+                    snapshot,
+                    vec![stale_revision.clone()],
+                    false,
+                    64,
+                    64
+                )
+                .as_ref(),
                 &[stale_revision],
                 "non-output evidence retains its original comparison posture"
             );

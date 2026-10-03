@@ -294,6 +294,7 @@ fn normal_rebase(world: &AuthorizationWorld, facts: Vec<Fact>) -> std::sync::Arc
                 facts,
                 true,
                 64,
+                64,
             )
         })
 }

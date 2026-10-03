@@ -61,8 +61,10 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
             String,
         )>,
     >,
-    pub(super) dependent_source_facts:
-        BTreeMap<String, super::super::application_attempt::WorthQueryApplicationObservedFact>,
+    pub(super) dependent_source_facts: BTreeMap<
+        super::super::application_attempt::WorthQueryApplicationFactStorageKey,
+        super::super::application_attempt::WorthQueryApplicationObservedFact,
+    >,
     _schema: PhantomData<fn() -> Schema>,
 }
 

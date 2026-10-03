@@ -78,6 +78,8 @@ impl WorthQueryApplicationObservedFact {
                 Ok((comparison.revision() == *native_revision, comparison.work_units()))
             }
             Self::Entity { .. } => Ok((self.remains_equal_in(runtime, snapshot), 1)),
+            Self::IndexedEntitySelection { .. } =>
+                super::indexed_entity_selection::currentness(self, runtime, snapshot, maximum_work),
             // Decision facts are value observations, not native revisions.
             // Output lineage must first rebase them at the committed snapshot.
             Self::Field { .. } | Self::AbsentField { .. } => {

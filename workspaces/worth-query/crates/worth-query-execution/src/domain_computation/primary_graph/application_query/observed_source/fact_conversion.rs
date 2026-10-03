@@ -82,7 +82,7 @@ impl<Query> WorthQueryObservedSource<Query> {
         let mut seen = std::collections::BTreeMap::new();
         let mut unique = Vec::with_capacity(facts.len());
         for fact in facts {
-            let identity = fact.locator_identity();
+            let identity = fact.dependency_key();
             match seen.entry(identity) {
                 std::collections::btree_map::Entry::Vacant(entry) => {
                     entry.insert(unique.len());

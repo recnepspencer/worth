@@ -54,7 +54,7 @@ mod checkpoint_restore;
 mod trusted_time;
 #[path = "host/workflow_runtime.rs"]
 mod workflow_runtime;
-pub use checkpoint_restore::restore_on_first_program;
+pub use checkpoint_restore::{restore, restore_on_first_program};
 pub use trusted_time::{publish_on_first_program_with_trusted_time, CertificationTrustedTime};
 pub use workflow_runtime::DocumentWorkflowRuntime;
 
@@ -217,7 +217,7 @@ pub fn publish_with_foreign_rule_rostered(
     )
 }
 
-fn publish<Initial>(
+pub fn publish<Initial>(
     initial: ValidatedApplicationProgram<DocumentRetentionSchema, Initial>,
     roster: WorthQueryApplicationProgramRoster<'_, DocumentRetentionSchema>,
 ) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryInMemoryApplicationDenial>

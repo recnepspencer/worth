@@ -217,7 +217,7 @@ where
                 for fact in candidate.observed_source_facts.iter().cloned() {
                     self.reader
                         .dependent_source_facts
-                        .insert(fact.locator_identity(), fact);
+                        .insert(fact.dependency_key(), fact);
                 }
                 current.push((candidate.correspondence, candidate.output_role));
             }

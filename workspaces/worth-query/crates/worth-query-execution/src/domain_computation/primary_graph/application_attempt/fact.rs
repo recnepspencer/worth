@@ -3,6 +3,7 @@ use worth_relational::facade::identity::{EntityId, KindId, RelationId};
 use worth_relational::facade::indexes::DerivedIndexId;
 
 mod adjacency;
+mod dependency_key;
 mod entity_touch;
 mod indexed_entity_selection;
 mod locator_identity;
@@ -14,7 +15,9 @@ pub(in crate::domain_computation::primary_graph) use adjacency::observe_adjacenc
 pub(in crate::domain_computation::primary_graph) use adjacency::{
     observe_adjacency_checked, AdjacencyObservationDenial,
 };
+pub(in crate::domain_computation::primary_graph) use dependency_key::WorthQueryApplicationFactStorageKey;
 pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::observe_indexed_entity_selection;
+pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::reobserve as reobserve_indexed_entity_selection;
 pub(in crate::domain_computation::primary_graph) use source_currentness::WorthQuerySourceCurrentnessFailure;
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]

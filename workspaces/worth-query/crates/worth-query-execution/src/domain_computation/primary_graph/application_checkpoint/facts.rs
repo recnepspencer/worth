@@ -1,4 +1,4 @@
-//! Bounded v6 wire for the complete, postcommit-rebased producer fact set.
+//! Bounded v7 wire for the complete, postcommit-rebased producer fact set.
 //! Unsupported decision facts are deliberately not checkpoint-reusable.
 
 use std::sync::Arc;
@@ -13,6 +13,7 @@ use worth_relational::facade::{
 
 use super::CheckpointCursor;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
+mod indexed_selection;
 
 pub(super) const MAXIMUM_FACT_BYTES: usize = 1024 * 1024;
 const MAXIMUM_FACTS: usize = 4096;
@@ -100,6 +101,7 @@ pub(in crate::domain_computation::primary_graph) fn encode(facts: &[Fact]) -> Op
                 put_entity(&mut bytes, *entity_id);
                 put_u32(&mut bytes, kind.as_u32());
             }
+            Fact::IndexedEntitySelection { .. } => indexed_selection::encode(&mut bytes, fact)?,
             _ => return None,
         }
         if bytes.len() > MAXIMUM_FACT_BYTES {
@@ -112,7 +114,7 @@ pub(in crate::domain_computation::primary_graph) fn encode(facts: &[Fact]) -> Op
 pub(in crate::domain_computation::primary_graph) fn decode(
     bytes: &[u8],
 ) -> Result<Arc<[Fact]>, String> {
-    decode_version(bytes, 6)
+    decode_version(bytes, 7)
 }
 
 pub(super) fn decode_version(bytes: &[u8], version: u16) -> Result<Arc<[Fact]>, String> {
@@ -195,6 +197,7 @@ pub(super) fn decode_version(bytes: &[u8], version: u16) -> Result<Arc<[Fact]>, 
                 entity_id: cursor.next_entity()?,
                 kind: KindId(cursor.next_u32()?),
             },
+            7 if version >= 7 => indexed_selection::decode(&mut cursor)?,
             _ => return Err("checkpoint producer fact kind is unsupported".to_owned()),
         };
         facts.push(fact);

@@ -88,7 +88,7 @@ fn field_presence_values_and_relation_sets_are_distinct_dependencies() {
 }
 
 #[test]
-fn unsupported_index_selection_never_becomes_a_partial_reusable_fact_set() {
+fn indexed_selection_remains_in_the_complete_reusable_fact_set() {
     let entity = EntityId::new(PartitionId::main(), 17, 2);
     let comparable = WorthQueryApplicationObservedFact::SourceEntity { entity_id: entity };
     let selection = WorthQueryApplicationObservedFact::IndexedEntitySelection {
@@ -103,12 +103,13 @@ fn unsupported_index_selection_never_becomes_a_partial_reusable_fact_set() {
         candidate_limit: 1,
         candidates: vec![entity],
     };
-    assert!(
+    assert_eq!(
         super::output_postcondition::complete_output_currentness_facts(vec![
             comparable.clone(),
-            selection
+            selection.clone()
         ],)
-        .is_empty()
+        .as_ref(),
+        &[comparable.clone(), selection]
     );
     assert_eq!(
         super::output_postcondition::complete_output_currentness_facts(vec![comparable.clone()])

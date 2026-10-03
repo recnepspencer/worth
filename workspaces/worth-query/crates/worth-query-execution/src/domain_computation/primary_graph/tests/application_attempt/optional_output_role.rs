@@ -6,6 +6,8 @@
 //! Query, and the committed correspondence refuses it.
 
 use super::{authenticated_principal, installed_authorization_world, live_scope, resolved_account};
+#[path = "optional_output_role/indexed_selection.rs"]
+mod indexed_selection;
 use crate::domain_computation::primary_graph::application_attempt::OutputRoleUse;
 use crate::domain_computation::primary_graph::application_entry::mutation::{
     HandlerResult, WorthQueryCompletedMutationCandidate,
@@ -160,6 +162,14 @@ fn execute(
     world: &AuthorizationWorld,
     plan: OptionalOutputPlan,
 ) -> (Execution, WorthQueryApplicationIdempotencyBinding) {
+    execute_with_key(world, plan, "optional-output")
+}
+
+fn execute_with_key(
+    world: &AuthorizationWorld,
+    plan: OptionalOutputPlan,
+    key: &str,
+) -> (Execution, WorthQueryApplicationIdempotencyBinding) {
     let request = live_scope();
     let principal = authenticated_principal(world, &request);
     let account = resolved_account(world, "open", &request);
@@ -178,7 +188,7 @@ fn execute(
             &request,
         )
         .unwrap();
-    let key = "optional-output".to_owned();
+    let key = key.to_owned();
     let input = OptionalOutputInput {
         status: "open".to_owned(),
         plan,

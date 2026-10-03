@@ -86,6 +86,7 @@ fn sealed_rebase(
                 changed,
                 true,
                 64,
+                64,
             )
         })
 }

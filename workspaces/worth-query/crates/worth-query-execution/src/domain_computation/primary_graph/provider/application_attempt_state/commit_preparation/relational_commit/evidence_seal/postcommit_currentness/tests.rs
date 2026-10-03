@@ -201,6 +201,7 @@ fn rebase_at_current(
                 facts,
                 true,
                 64,
+                64,
             )
         })
 }
