@@ -3,6 +3,7 @@ use super::*;
 pub(super) fn resolve_retained_idempotency<Schema, Operation, Input, Scope>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    product: &crate::basis::WorthQueryProductBranchLease,
     idempotency: WorthQueryApplicationIdempotencyBinding,
     aftermath_causality: Option<&WorthQueryPendingAftermathCausality>,
 ) -> Option<WorthQueryApplicationCommitOutcome>
@@ -10,9 +11,6 @@ where
     Schema: ApplicationSchema,
     Input: Clone + Send + Sync + 'static,
 {
-    let Some(product) = admission.graph_work().mutation_product() else {
-        return Some(denied(DenialStage::DecisionReadSet));
-    };
     let product = product.publication_binding();
     let commit_lane = application
         .primary_provider

@@ -85,6 +85,15 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
         RetentionMutationBreadth::Narrow,
     );
 
+    let readmitted_interleave = retained_status_program(
+        &world,
+        &principal,
+        &unrelated,
+        &request,
+        "changed-between",
+        RetentionMutationBreadth::Narrow,
+    );
+
     world.faults.lose_next_commit_response();
     let outcome = world
         .application
@@ -102,34 +111,17 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     let outcome = world
         .application
         .compare_and_commit_application(interleaved, idempotency(83, 84));
-    super::assert_product_basis_stale(
-        outcome,
-        "the preadmitted independent interleave bound to the prior product",
-    );
-    assert_eq!(commit_count(), baseline + 1);
-    assert_eq!(
-        world
-            .application
-            .product_runtime()
-            .admit_product_branch(world.application.product_runtime().default_branch())
-            .unwrap()
-            .selected_commit(),
-        after_original.selected_commit()
-    );
+    let WorthQueryApplicationCommitOutcome::Committed(interleave_receipt) = outcome else {
+        panic!("independent retained decision must commit: {outcome:?}");
+    };
+    assert_eq!(commit_count(), baseline + 2);
+    assert_retained_status(&interleave_receipt, "unrelated");
 
-    let readmitted_interleave = retained_status_program(
-        &world,
-        &principal,
-        &unrelated,
-        &request,
-        "changed-between",
-        RetentionMutationBreadth::Narrow,
-    );
     assert!(matches!(
         world
             .application
             .compare_and_commit_application(readmitted_interleave, idempotency(83, 84)),
-        WorthQueryApplicationCommitOutcome::Committed(_)
+        WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
     ));
     assert_eq!(commit_count(), baseline + 2);
     let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) = world

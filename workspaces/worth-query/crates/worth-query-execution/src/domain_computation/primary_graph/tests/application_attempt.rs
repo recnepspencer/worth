@@ -77,22 +77,11 @@ use program_fixture::{
     admitted_program_with_emit, admitted_program_with_expected_status,
 };
 
-pub(in crate::domain_computation::primary_graph) fn assert_product_basis_stale(
-    outcome: WorthQueryApplicationCommitOutcome,
-    cause: &str,
-) {
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
-        panic!("{cause} must deny before effects: {outcome:?}");
-    };
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationCommitDenialKind::ProductBasisStale
-    );
-    assert_eq!(
-        denial.stage(),
-        WorthQueryApplicationCommitDenialStage::InvariantExecution
-    );
-}
+#[path = "application_attempt/decision_currentness.rs"]
+mod decision_currentness;
+pub(in crate::domain_computation::primary_graph) use decision_currentness::{
+    assert_changed_decision, assert_product_basis_stale,
+};
 
 #[test]
 fn concurrent_equivalent_attempts_publish_one_transaction() {

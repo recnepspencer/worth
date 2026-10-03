@@ -14,6 +14,7 @@ mod affinity_access;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLease;
 
+mod mutation_readmission;
 mod query_read;
 
 #[derive(Clone, Debug, Eq, PartialEq)]

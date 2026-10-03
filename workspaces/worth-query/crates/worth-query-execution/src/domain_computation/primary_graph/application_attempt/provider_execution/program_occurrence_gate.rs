@@ -6,23 +6,11 @@
 //! point-reading the branch program activation record at the attempt's exact
 //! snapshot, before any effect is bound.
 //!
-//! The observation is not carried into the attempt's decision read set.
-//! Decision-read-set admission validates every retained fact against the
-//! families the operation's installed graph contract declares, and the platform
-//! activation kind belongs to none of them, so a fact appended here is refused
-//! for every program-hosted commit. Recording the read therefore needs a
-//! declared platform read family on the graph-work contract, which is owned by
-//! the installation surface rather than by this gate.
-//!
-//! A late activation change is nonetheless fenced, by the product head the
-//! attempt already carries. The snapshot read here is the one the attempt's
-//! lease acquired at its product observation's own Relational basis, and the
-//! publication the attempt ends in expects that same selected occurrence as the
-//! product head. Activation is an ordinary branch entity, so changing it is
-//! itself a published commit on that branch, and any such commit moves the head
-//! World compares. The attempt is then refused `StaleExpectedProductHead`
-//! before it can perform. What is missing is diagnostic, not authoritative: the
-//! refusal names a moved head rather than the program that moved under it.
+//! Activation is a platform-owned dependency outside the operation's declared
+//! graph reads. Ordinary prepared commits may readmit an unchanged decision on
+//! a later product head, so readmission compares the activation rendering on the
+//! original and newly admitted snapshots before minting provider affinity.
+//! A later change is still fenced by the exact Product publication CAS.
 
 use worth_foundational::facade::AspectValue;
 use worth_query_installation::facade::WorthQueryProgramSupportEntry;
@@ -97,19 +85,47 @@ pub(super) fn resolve_occurrence_program<'support, Schema, Operation, Input, Sco
     support: &'support WorthQueryInstalledProgramSupport<Schema>,
     program: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
 ) -> Result<WorthQueryOccurrenceProgram<'support>, WorthQueryApplicationCommitDenial> {
+    resolve_at_lease(support, &program.read_set.lease)
+}
+
+/// Preserve the program selection already checked at the public commit entry.
+pub(super) fn require_readmitted_program_matches<Schema>(
+    support: &WorthQueryInstalledProgramSupport<Schema>,
+    retained: &super::super::snapshot_lease::WorthQueryApplicationSnapshotLease,
+    current: &super::super::snapshot_lease::WorthQueryApplicationSnapshotLease,
+) -> Result<(), WorthQueryApplicationCommitDenial> {
+    let original = resolve_at_lease(support, retained)?;
+    let selected = resolve_at_lease(support, current)?;
+    if original.rendering() != selected.rendering() {
+        return Err(
+            WorthQueryApplicationCommitDenial::program_not_active_on_occurrence(
+                original.entry().identity(),
+                selected.entry().identity(),
+                selected.entry().revision(),
+            ),
+        );
+    }
+    require_selected_program_matches_occurrence(
+        &selected,
+        Some((original.entry().identity(), original.entry().revision())),
+    )
+}
+
+fn resolve_at_lease<'support, Schema>(
+    support: &'support WorthQueryInstalledProgramSupport<Schema>,
+    lease: &super::super::snapshot_lease::WorthQueryApplicationSnapshotLease,
+) -> Result<WorthQueryOccurrenceProgram<'support>, WorthQueryApplicationCommitDenial> {
     let entity_id = support
         .activation()
         .published()
         .ok_or_else(|| unresolved(WorthQueryProgramActivationUnresolved::NeverPublished))?;
-    let layout = program.read_set.lease.layout.program_activation().clone();
-    let rendering = program
-        .read_set
-        .lease
+    let layout = lease.layout.program_activation().clone();
+    let rendering = lease
         .handle()
         .with_runtime(|runtime| {
             super::super::observe_field_value(
                 runtime,
-                program.read_set.lease.snapshot(),
+                lease.snapshot(),
                 entity_id,
                 layout.entity_kind,
                 &layout.program_revision_locator,

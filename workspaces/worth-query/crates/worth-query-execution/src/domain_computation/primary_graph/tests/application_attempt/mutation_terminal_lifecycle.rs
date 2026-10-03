@@ -44,7 +44,7 @@ fn stale_terminal() {
             .compare_and_commit_application(winner, idempotency(62, 62)),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
-    super::assert_product_basis_stale(
+    super::assert_changed_decision(
         world
             .application
             .compare_and_commit_application(stale, idempotency(63, 63)),

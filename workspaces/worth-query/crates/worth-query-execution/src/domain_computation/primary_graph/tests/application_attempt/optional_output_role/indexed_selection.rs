@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::{
     application_checkpoint::{decode_producer_facts, encode_producer_facts},
     output_reuse::{compare_retained_output_dependencies, OutputDependencySelection},
     tests::fixture::{publish_relational_mutation_on_application, restored_world, AccountStatus},
-    WorthQueryApplicationCommitDenialKind, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationScalarValueBinding, StringApplicationValueBinding,
@@ -49,13 +49,7 @@ fn handler_absence_selection_competes_at_the_real_commit_boundary() {
     let outcome = world
         .application
         .compare_and_commit_application(loser, loser_key);
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
-        panic!("a competing stale absence must deny before publication: {outcome:?}");
-    };
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationCommitDenialKind::ProductBasisStale
-    );
+    super::super::assert_changed_decision(outcome, "a competing indexed absence");
     assert_eq!(
         world.selected_product().product().selected_commit(),
         &committed_head

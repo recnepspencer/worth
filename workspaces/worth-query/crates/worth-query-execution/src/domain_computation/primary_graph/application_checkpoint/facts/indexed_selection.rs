@@ -132,7 +132,7 @@ mod tests {
     fn version_seven_preserves_absence_sets_and_exact_scalar_values() {
         for candidates in [vec![], vec![EntityId::new(PartitionId(0), 2, 1)]] {
             let fact = selection(candidates);
-            let bytes = super::super::encode(&[fact.clone()]).unwrap();
+            let bytes = super::super::encode(std::slice::from_ref(&fact)).unwrap();
             assert_eq!(super::super::decode(&bytes).unwrap().as_ref(), &[fact]);
             assert!(
                 super::super::decode_version(&bytes, 6).is_err(),

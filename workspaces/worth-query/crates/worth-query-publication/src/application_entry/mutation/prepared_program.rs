@@ -35,8 +35,10 @@ pub enum WorthQueryApplicationProgramMutationPreparation<
 /// handle discards the candidate. The request remains borrowed so the input and
 /// key cannot change; no branch commit lane is held. The result is private until
 /// `commit` compares the captured basis, current authority and selected program.
-/// Any intervening same-branch commit conservatively invalidates the candidate;
-/// this handle does not claim reuse across unrelated changes.
+/// Ordinary candidates may publish after unrelated edits when their sealed facts,
+/// current authority, selected program, Signal and Correspondence remain equal.
+/// Definition and exact-parent candidates retain their original basis. A further
+/// head change after readmission still fails the native publication comparison.
 ///
 /// An unpublished result cannot be extracted:
 ///
