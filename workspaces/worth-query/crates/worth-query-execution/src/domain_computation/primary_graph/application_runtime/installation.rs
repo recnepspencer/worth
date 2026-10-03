@@ -142,7 +142,12 @@ where
         conditional_evaluation_budget,
     )
     .map_err(super::super::conditional_operation::publication_denial)?;
-    let authoritative_commit_cursor = graph.primary_provider.conditional_commit_sequence();
+    let authoritative_commit_cursor = graph
+        .primary_provider
+        .graph
+        .source_owner
+        .invalidation_owner
+        .latest_position();
     let mut conditional_operations = super::super::conditional_operation::install_pending_bindings(
         bindings,
         graph.bridge.conditional_builder(),

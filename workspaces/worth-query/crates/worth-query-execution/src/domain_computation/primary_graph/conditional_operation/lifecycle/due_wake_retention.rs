@@ -73,6 +73,8 @@ pub(super) fn retain_due(
         retention_capacity_backpressure: false,
         execution_provenance: Vec::new(),
         granular_invalidations: Vec::new(),
+        granular_invalidation_coverage:
+            crate::domain_computation::primary_graph::WorthQueryGranularInvalidationCoverage::Exact,
     }
 }
 
@@ -89,6 +91,7 @@ pub(super) fn complete_clock_receipt(
     receipt.authoritative_commit_count = authoritative.commit_count;
     receipt.authoritative_work_remaining = authoritative.work_remaining;
     receipt.granular_invalidations = authoritative.granular_invalidations;
+    receipt.granular_invalidation_coverage = authoritative.coverage;
     totals.accumulate(counts);
     receipt.execution_provenance =
         super::super::execution_provenance::execution_provenance(retained_wakes);

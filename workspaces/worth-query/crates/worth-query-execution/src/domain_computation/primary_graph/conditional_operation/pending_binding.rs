@@ -247,7 +247,9 @@ where
         bridge: &mut worth_runtime_bridge::facade::BridgeConditionalRuntimeBuilder,
         graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
         affinity: &ConditionalRuntimeAffinity,
-        authoritative_commit_cursor: u64,
+        authoritative_commit_cursor: Option<
+            worth_relational::facade::publication::PatchStreamPosition,
+        >,
     ) -> Result<
         Box<dyn super::lifecycle::WorthQueryInstalledConditionalOperation<Schema>>,
         WorthQueryConditionalRuntimeInstallationDenial,

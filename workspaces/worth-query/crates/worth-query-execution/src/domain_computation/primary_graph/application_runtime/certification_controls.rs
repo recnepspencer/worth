@@ -7,6 +7,8 @@ use worth_foundational::facade::{AspectValue, InternedString};
 
 use super::WorthQueryPrimaryGraphApplicationRuntime;
 #[cfg(feature = "test-primary-graph-faults")]
+mod native_field_write;
+#[cfg(feature = "test-primary-graph-faults")]
 mod workflow_approval;
 #[cfg(feature = "test-primary-graph-faults")]
 mod workflow_definition;

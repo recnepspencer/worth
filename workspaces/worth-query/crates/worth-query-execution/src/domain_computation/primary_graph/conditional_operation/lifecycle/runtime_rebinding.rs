@@ -104,7 +104,7 @@ where
             product,
             signal_basis,
         ),
-        authoritative_commit_cursor: 0,
+        authoritative_commit_cursor: None,
         commit_watch: Default::default(),
         reconstructed_intent_count: 0,
         authoritative_reconstruction: Box::new(()),

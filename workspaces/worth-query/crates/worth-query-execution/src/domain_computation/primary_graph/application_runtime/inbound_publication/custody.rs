@@ -316,16 +316,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 return Resume::Pending(Pending::ProductRecoveryRequired);
             }
         }
-        if !performed.settle_after_conditional_handoff(|| {
-            let relational = performed
-                .publication()
-                .publication()
-                .component_results()
-                .relational_commit_result()
-                .expect("performed transport completion has Relational commit");
-            self.primary_provider
-                .record_conditional_commit(&relational.commit, std::iter::empty());
-        }) {
+        if !performed.settle_fresh_delivery() {
             return Resume::Pending(Pending::TerminalReleaseUnavailable);
         }
         let identity = performed.publication().publication().commit().identity();

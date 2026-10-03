@@ -49,16 +49,6 @@ pub(in crate::domain_computation::primary_graph) trait WorthQueryInstalledCondit
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial>;
 
-    fn authoritative_commit_routes(
-        &self,
-    ) -> (Vec<worth_relational::facade::transactions::RecordRef>, bool) {
-        (Vec::new(), false)
-    }
-
-    fn bootstrap_commit_route_pending(&self) -> bool {
-        false
-    }
-
     fn reconcile_reconstruction(
         &mut self,
         bridge: &mut BridgeSealedRuntimeAssembly,
@@ -128,7 +118,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPreparedCondit
     pub(super) lowering: Arc<BridgeInstalledConditionalLowering>,
     pub(super) managed_clock: BridgeManagedClockBinding,
     pub(super) affinity: super::evaluation_affinity::WorthQueryConditionalEvaluationAffinity,
-    pub(super) authoritative_commit_cursor: u64,
+    pub(super) authoritative_commit_cursor:
+        Option<worth_relational::facade::publication::PatchStreamPosition>,
     pub(super) commit_watch: super::commit_watch::WorthQueryConditionalCommitWatchSet,
     pub(in crate::domain_computation::primary_graph::conditional_operation) reconstructed_intent_count:
         usize,
@@ -165,7 +156,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryInstalledTempo
     pub(in crate::domain_computation::primary_graph::conditional_operation) reconstruction_work:
         crate::domain_computation::primary_graph::conditional_operation::temporal_reconstruction::WorthQueryTemporalReconstructionWork,
     pub(in crate::domain_computation::primary_graph::conditional_operation) authoritative_commit_cursor:
-        u64,
+        Option<worth_relational::facade::publication::PatchStreamPosition>,
     pub(in crate::domain_computation::primary_graph::conditional_operation) bootstrap_commit_catch_up_pending:
         bool,
     pub(in crate::domain_computation::primary_graph::conditional_operation) commit_watch:

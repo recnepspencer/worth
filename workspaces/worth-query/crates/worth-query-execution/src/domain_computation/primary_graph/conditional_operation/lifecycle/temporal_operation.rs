@@ -12,11 +12,10 @@ use super::super::clock_observation::ErasedClockObservationOutcome;
 use super::super::installation::ConditionalClockLease;
 use super::super::signal_decision_reentry::WorthQueryConditionalTruthBasis;
 use super::{
-    authoritative_clock_progression, bridge_clock_outcome, commit_routing, commit_watch,
-    direct_delivery, due_wake_retention, isolate_clock_source, resource_observation,
-    runtime_rebinding, WorthQueryConditionalRetainedResourceCounts,
-    WorthQueryInstalledConditionalOperation, WorthQueryInstalledTemporalOperation,
-    WorthQueryPreparedConditionalRuntimeBinding,
+    authoritative_clock_progression, bridge_clock_outcome, commit_watch, direct_delivery,
+    due_wake_retention, isolate_clock_source, resource_observation, runtime_rebinding,
+    WorthQueryConditionalRetainedResourceCounts, WorthQueryInstalledConditionalOperation,
+    WorthQueryInstalledTemporalOperation, WorthQueryPreparedConditionalRuntimeBinding,
 };
 #[rustfmt::skip]
 impl<
@@ -150,23 +149,6 @@ where
         Ok(())
     }
 
-    fn authoritative_commit_routes(
-        &self,
-    ) -> (
-        Vec<worth_relational::facade::transactions::RecordRef>,
-        bool,
-    ) {
-        commit_routing::authoritative_routes(
-            self.active_affinity.is_some(),
-            &self.commit_watch,
-            &self.inactive_bindings,
-        )
-    }
-
-    fn bootstrap_commit_route_pending(&self) -> bool {
-        self.bootstrap_commit_catch_up_pending
-    }
-
     #[rustfmt::skip]
     fn reconcile_reconstruction(&mut self, bridge: &mut BridgeSealedRuntimeAssembly) -> Result<(), super::super::installation::WorthQueryConditionalRuntimeInstallationDenial> {
         let Some(managed_clock) = self.managed_clock.as_ref() else { return Ok(()); };
@@ -191,7 +173,7 @@ where
             Arc::clone(&self.runtime_binding_identity),
             product,
         )?;
-        prepared.authoritative_commit_cursor = runtime.primary_provider.conditional_commit_sequence();
+        prepared.authoritative_commit_cursor = runtime.primary_provider.graph.source_owner.invalidation_owner.latest_position();
         let reconstruction = super::super::temporal_reconstruction::reconstruct_temporal_intents(
             runtime, &self.definition.binding, &self.definition.reconstruction, self.definition.execution.identity_field,
             product,
@@ -255,48 +237,70 @@ where
         };
         let sequence = observation.sequence();
         let coordinate = observation.observed_time().nanoseconds();
-        let signal_basis = match self.active_affinity.as_ref() {
-            Some(affinity) => affinity.signal_basis(),
-            None => {
+        let mut rebuilt = false;
+        let mut authoritative = loop {
+            let Some(affinity) = self.active_affinity.as_ref() else {
                 return authoritative_clock_progression::runtime_rejection(
                     "conditional clock observation requires a selected product binding"
                         .to_string(),
-                )
+                );
+            };
+            // The owner's retained touches decide relevance: exact watched
+            // entities, or every commit for whole-graph dependencies and until
+            // the bootstrap evaluation first catches up with the branch.
+            let interest = crate::domain_computation::primary_graph::output_lineage::invalidation::CommitTouchInterest {
+                entities: self.commit_watch.entities(),
+                every_commit: self.commit_watch.includes_whole_graph() || self.bootstrap_commit_catch_up_pending,
+            };
+            let stop = match authoritative_clock_progression::reconsider_authoritative_clock_work(
+                authoritative_clock_progression::AuthoritativeClockWork {
+                    runtime,
+                    bridge,
+                    signal_basis: affinity.signal_basis(),
+                    relational_branch: truth.product().relational_basis_descriptor().branch_id(),
+                    relational_commit_ceiling: affinity.relational_commit_ceiling(),
+                    cursor: &mut self.authoritative_commit_cursor,
+                    maximum_commits: self.definition.binding.bounds().maximum_due_wakes_per_observation(),
+                    interest,
+                    preperformed_deliveries: direct_delivery::as_slice(&self.pending_direct_delivery),
+                    retained_wakes: &mut self.retained_wakes,
+                    runtime_binding_identity: &self.runtime_binding_identity,
+                    runtime_capability_identity: self.runtime_capability_identity,
+                    truth,
+                },
+            ) {
+                Ok(progress) => break progress,
+                Err(stop) => stop,
+            };
+            match stop {
+                // A busy branch overran the retained window: heal in place by
+                // rebuilding from the selected truth, then progress once more.
+                authoritative_clock_progression::AuthoritativeClockStop::Lagging { resume_after } if !rebuilt => {
+                    rebuilt = true;
+                    if let Err(denial) = self.rebuild_lagging_evaluation_binding(bridge, runtime, truth, resume_after) {
+                        return authoritative_clock_progression::reconstruction_failure(denial);
+                    }
+                }
+                authoritative_clock_progression::AuthoritativeClockStop::Lagging { .. } => {
+                    return authoritative_clock_progression::runtime_rejection(
+                        "conditional commit cursor lagged again after reconstruction".to_string(),
+                    );
+                }
+                authoritative_clock_progression::AuthoritativeClockStop::Failed(outcome) => return outcome,
             }
         };
-        let relational_commit_ceiling = self
+        if rebuilt {
+            authoritative.coverage = crate::domain_computation::primary_graph::WorthQueryGranularInvalidationCoverage::RefreshAll;
+        }
+        let signal_basis = self
             .active_affinity
             .as_ref()
-            .and_then(|affinity| affinity.relational_commit_ceiling());
+            .expect("progressed conditional operation retains its selected binding")
+            .signal_basis();
         let managed_clock = self
             .managed_clock
             .as_ref()
             .expect("selected conditional operation retains a managed clock");
-        let (watched_records, include_whole_graph) = self.authoritative_commit_routes();
-        let mut authoritative = match authoritative_clock_progression::reconsider_authoritative_clock_work(
-            authoritative_clock_progression::AuthoritativeClockWork {
-                runtime,
-                bridge,
-                signal_basis,
-                relational_branch: truth.product().relational_basis_descriptor().branch_id(),
-                relational_commit_ceiling,
-                cursor: &mut self.authoritative_commit_cursor,
-                maximum_commits: self.definition.binding.bounds().maximum_due_wakes_per_observation(),
-                watched_records,
-                include_whole_graph,
-                bootstrap_identity: self
-                    .bootstrap_commit_catch_up_pending
-                    .then_some(self.definition.binding_identity.support_identity()),
-                preperformed_deliveries: direct_delivery::as_slice(&self.pending_direct_delivery),
-                retained_wakes: &mut self.retained_wakes,
-                runtime_binding_identity: &self.runtime_binding_identity,
-                runtime_capability_identity: self.runtime_capability_identity,
-                truth,
-            },
-        ) {
-            Ok(progress) => progress,
-            Err(outcome) => return outcome,
-        };
         super::super::authoritative_reconsideration::reconsider_retained_wakes_for_deliveries(
             bridge,
             direct_delivery::as_slice(&self.pending_direct_delivery),
@@ -310,15 +314,7 @@ where
             &mut self.pending_direct_delivery,
             &mut authoritative.granular_invalidations,
         );
-        if self.bootstrap_commit_catch_up_pending
-            && authoritative.caught_up_to_latest
-            && runtime
-                .primary_provider
-                .narrow_conditional_bootstrap_route_if_current(
-                    self.definition.binding_identity.support_identity(),
-                    self.authoritative_commit_cursor,
-                )
-        {
+        if authoritative.caught_up_to_latest {
             self.bootstrap_commit_catch_up_pending = false;
         }
         let outcome = bridge.observe_managed_clock(BridgeManagedClockObservationParts {

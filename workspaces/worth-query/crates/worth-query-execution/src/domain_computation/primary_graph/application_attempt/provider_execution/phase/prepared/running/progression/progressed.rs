@@ -65,13 +65,6 @@ where
         if let Some(publication) = workflow_settlement_publication {
             publication.maintain(application, receipt);
         }
-        let touched = receipt
-            .mutation_work()
-            .into_iter()
-            .flat_map(|work| work.touched_records())
-            .map(|identity| identity.record().clone())
-            .collect::<Vec<_>>();
-        application.maintain_conditional_commit(receipt.commit_reference(), touched);
     }
     application.dispatch_committed_external_effect(committed, &request)
 }

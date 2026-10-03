@@ -69,7 +69,7 @@ pub(in crate::domain_computation::primary_graph) fn install_pending_bindings<Sch
     bindings: Vec<Box<dyn WorthQueryPendingConditionalOperation<Schema>>>,
     bridge: &mut worth_runtime_bridge::facade::BridgeConditionalRuntimeBuilder,
     graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
-    authoritative_commit_cursor: u64,
+    authoritative_commit_cursor: Option<worth_relational::facade::publication::PatchStreamPosition>,
     runtime_authority: u64,
     installation_runtime: u64,
     installation_generation: u64,

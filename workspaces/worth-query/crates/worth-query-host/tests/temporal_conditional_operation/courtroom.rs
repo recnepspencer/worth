@@ -5,6 +5,13 @@ pub use clock_affinity::{
     provider_replacement_requires_fresh_runtime_publication,
 };
 
+#[path = "courtroom/native_writer.rs"]
+mod native_writer;
+pub use native_writer::{
+    busy_branch_heals_a_lagging_cursor_inside_observation,
+    native_writer_commit_reconsiders_a_suppressed_wake,
+};
+
 use super::courtroom_support::{assert_authoritative_value, observe, wake_evidence};
 use super::schema::{IntentEffectField, IntentLifecycleField};
 use super::world::CourtroomWorld;

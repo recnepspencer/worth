@@ -49,6 +49,17 @@ impl WorthQueryGranularSourceReadBasis {
     }
 }
 
+/// What one batch's deliveries cover since the producer's previous batch.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum WorthQueryGranularInvalidationCoverage {
+    /// The deliveries are every relevant change since the previous batch.
+    Exact,
+    /// The producer lost subscription continuity and rebuilt from truth, so
+    /// changes inside the gap were never delivered. Every consumer refreshes
+    /// its full scope at the batch's source read basis.
+    RefreshAll,
+}
+
 /// Opaque execution-owned carrier for one clock observation's granular
 /// lower-runtime deliveries.
 ///
@@ -59,6 +70,7 @@ pub struct WorthQueryGranularInvalidationDeliveryBatch {
     deliveries: Vec<worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery>,
     observation: WorthQueryGranularInvalidationObservation,
     source_read_basis: Option<WorthQueryGranularSourceReadBasis>,
+    coverage: WorthQueryGranularInvalidationCoverage,
 }
 
 /// Why two granular invalidation batches could not be merged.
@@ -75,8 +87,15 @@ impl WorthQueryGranularInvalidationDeliveryBatch {
         self.deliveries.len()
     }
 
+    /// A `RefreshAll` batch is never empty: it carries consumer work even
+    /// without deliveries.
     pub const fn is_empty(&self) -> bool {
         self.deliveries.is_empty()
+            && matches!(self.coverage, WorthQueryGranularInvalidationCoverage::Exact)
+    }
+
+    pub const fn coverage(&self) -> WorthQueryGranularInvalidationCoverage {
+        self.coverage
     }
 
     pub const fn observation(&self) -> WorthQueryGranularInvalidationObservation {
@@ -134,6 +153,7 @@ impl WorthQueryGranularInvalidationDeliveryBatch {
             observation: WorthQueryGranularInvalidationObservation::from_deliveries(&deliveries),
             deliveries,
             source_read_basis: self.source_read_basis.clone(),
+            coverage: self.coverage,
         })
     }
 
@@ -154,6 +174,9 @@ impl WorthQueryGranularInvalidationDeliveryBatch {
         if self.source_read_basis != other.source_read_basis {
             return Err(WorthQueryGranularTransportMergeDenial::SourceReadBasisMismatch);
         }
+        if other.coverage == WorthQueryGranularInvalidationCoverage::RefreshAll {
+            self.coverage = WorthQueryGranularInvalidationCoverage::RefreshAll;
+        }
         self.deliveries.extend(other.deliveries);
         self.observation =
             WorthQueryGranularInvalidationObservation::from_deliveries(&self.deliveries);
@@ -165,6 +188,7 @@ pub(in crate::domain_computation::primary_graph) fn collect_granular_invalidatio
     installation: WorthQueryGranularInvalidationInstallation,
     deliveries: Vec<worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery>,
     source_read_basis: Option<WorthQueryGranularSourceReadBasis>,
+    coverage: WorthQueryGranularInvalidationCoverage,
 ) -> WorthQueryGranularInvalidationDeliveryBatch {
     let observation = WorthQueryGranularInvalidationObservation::from_deliveries(&deliveries);
     WorthQueryGranularInvalidationDeliveryBatch {
@@ -172,5 +196,6 @@ pub(in crate::domain_computation::primary_graph) fn collect_granular_invalidatio
         observation,
         deliveries,
         source_read_basis,
+        coverage,
     }
 }

@@ -189,10 +189,10 @@ impl WorthQueryProductPublicationReceipt {
         ))
     }
 
-    /// Called only after the owner hands the performed Relational commit to
-    /// its installed conditional journal. It discharges the one-shot direct
-    /// witness without creating a witness to be dropped.
-    pub(crate) fn settle_fresh_delivery_after_owner_handoff(&self) -> bool {
+    /// Discharges the one-shot direct witness without creating a witness to
+    /// be dropped. Conditional operations observe the performed commit through
+    /// the canonical Relational subscription, whichever writer produced it.
+    pub(crate) fn discharge_fresh_delivery(&self) -> bool {
         let mut available = self
             .custody
             .fresh_delivery_available

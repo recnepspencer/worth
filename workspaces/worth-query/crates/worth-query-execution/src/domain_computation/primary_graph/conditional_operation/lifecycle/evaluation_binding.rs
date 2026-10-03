@@ -27,7 +27,8 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) struct W
     pub(super) reconstructed_intents:
         BTreeMap<String, WorthQueryReconstructedTemporalIntent<Clock, Input>>,
     pub(super) reconstruction_work: WorthQueryTemporalReconstructionWork,
-    pub(super) authoritative_commit_cursor: u64,
+    pub(super) authoritative_commit_cursor:
+        Option<worth_relational::facade::publication::PatchStreamPosition>,
     pub(super) commit_watch: super::commit_watch::WorthQueryConditionalCommitWatchSet,
 }
 
@@ -142,6 +143,43 @@ where
             return Ok(());
         }
 
+        let predecessor = self.predecessor_binding_state(&selected_identity);
+        let mut selected = self.fresh_evaluation_binding(bridge, runtime, truth, predecessor.as_ref())?;
+        if let Some(active_identity) = active_identity {
+            self.swap_evaluation_binding(&mut selected);
+            self.inactive_bindings.insert(active_identity, selected);
+        } else {
+            self.activate_first_evaluation_binding(selected);
+        }
+        Ok(())
+    }
+
+    /// Replaces the active binding with one rebuilt from the selected truth
+    /// after its commit cursor fell behind the retained subscription window.
+    /// The fresh managed clock re-derives every active wake from that truth;
+    /// progress resumes after the newest position the truth already contains.
+    pub(super) fn rebuild_lagging_evaluation_binding(
+        &mut self,
+        bridge: &BridgeSealedRuntimeAssembly,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        truth: &super::super::signal_decision_reentry::WorthQueryConditionalTruthBasis,
+        resume_after: Option<worth_relational::facade::publication::PatchStreamPosition>,
+    ) -> Result<(), super::super::installation::WorthQueryConditionalRuntimeInstallationDenial> {
+        let mut rebuilt = self.fresh_evaluation_binding(bridge, runtime, truth, None)?;
+        rebuilt.authoritative_commit_cursor = resume_after;
+        // Query-commit deliveries still awaiting promotion stay deliverable.
+        rebuilt.pending_direct_delivery = std::mem::replace(&mut self.pending_direct_delivery, super::direct_delivery::empty());
+        self.activate_first_evaluation_binding(rebuilt);
+        Ok(())
+    }
+
+    fn fresh_evaluation_binding(
+        &mut self,
+        bridge: &BridgeSealedRuntimeAssembly,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        truth: &super::super::signal_decision_reentry::WorthQueryConditionalTruthBasis,
+        predecessor: Option<&WorthQueryPredecessorEvaluationState>,
+    ) -> Result<WorthQueryInactiveTemporalEvaluationBinding<Clock, Input>, super::super::installation::WorthQueryConditionalRuntimeInstallationDenial> {
         let lowering_anchor = Arc::clone(&self.bootstrap_lowering);
         let exact = bridge
             .admit_exact_conditional_signal_basis(&lowering_anchor, truth.signal_basis())
@@ -152,22 +190,7 @@ where
                 )
             })?;
         let lowering = exact.installed_lowering();
-        let predecessor = self.predecessor_binding_state(&selected_identity);
-        let mut selected = self.create_evaluation_binding(
-            bridge,
-            runtime,
-            truth,
-            exact,
-            &lowering,
-            predecessor.as_ref(),
-        )?;
-        if let Some(active_identity) = active_identity {
-            self.swap_evaluation_binding(&mut selected);
-            self.inactive_bindings.insert(active_identity, selected);
-        } else {
-            self.activate_first_evaluation_binding(selected);
-        }
-        Ok(())
+        self.create_evaluation_binding(bridge, runtime, truth, exact, &lowering, predecessor)
     }
 
     fn create_evaluation_binding(
@@ -359,6 +382,6 @@ impl<Binding, Reconstruction, Execution, Clock, Input>
 }
 
 struct WorthQueryPredecessorEvaluationState {
-    cursor: u64,
+    cursor: Option<worth_relational::facade::publication::PatchStreamPosition>,
     commit_watch: super::commit_watch::WorthQueryConditionalCommitWatchSet,
 }

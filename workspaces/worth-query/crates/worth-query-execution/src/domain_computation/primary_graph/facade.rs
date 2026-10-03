@@ -185,9 +185,10 @@ pub use super::entity_resolution_denial::{
 };
 pub use super::expression::WorthQueryWorkflowConditionSources;
 pub use super::granular_invalidation::{
-    WorthQueryBridgeGranularDeliveryCounters, WorthQueryGranularInvalidationDeliveryBatch,
-    WorthQueryGranularInvalidationInstallation, WorthQueryGranularInvalidationObservation,
-    WorthQueryGranularSourceReadBasis, WorthQueryGranularTransportMergeDenial,
+    WorthQueryBridgeGranularDeliveryCounters, WorthQueryGranularInvalidationCoverage,
+    WorthQueryGranularInvalidationDeliveryBatch, WorthQueryGranularInvalidationInstallation,
+    WorthQueryGranularInvalidationObservation, WorthQueryGranularSourceReadBasis,
+    WorthQueryGranularTransportMergeDenial,
 };
 pub use super::index_refresh::{
     WorthQueryPrimaryGraphIndexRefreshDenial, WorthQueryPrimaryGraphIndexRefreshDenialKind,

@@ -324,6 +324,16 @@ fn suppressed_wake_is_reconsidered_after_authoritative_truth_changes() {
 }
 
 #[test]
+fn native_writer_commit_reconsiders_a_suppressed_wake() {
+    courtroom::native_writer_commit_reconsiders_a_suppressed_wake();
+}
+
+#[test]
+fn busy_branch_heals_a_lagging_conditional_cursor_inside_observation() {
+    courtroom::busy_branch_heals_a_lagging_cursor_inside_observation();
+}
+
+#[test]
 fn precondition_panic_isolated_and_retry_succeeds() {
     courtroom::precondition_panic_isolated_and_retry_succeeds();
 }

@@ -47,7 +47,6 @@ impl WorthQueryPrimaryGraphProvider {
                     maximum_concurrent_graph_work.get(),
                 ),
             )),
-            conditional_commit_journal: std::sync::Mutex::new(Default::default()),
             fault_port,
             world_history: std::sync::OnceLock::new(),
         });

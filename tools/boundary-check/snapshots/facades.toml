@@ -581,6 +581,7 @@ exports = [
     "WorthQueryGeneratedOutputSuspensionRecoveryStage",
     "WorthQueryGovernedTemporalOperationAuthorization",
     "WorthQueryGovernedTemporalQueryAuthorization",
+    "WorthQueryGranularInvalidationCoverage",
     "WorthQueryGranularInvalidationDeliveryBatch",
     "WorthQueryGranularInvalidationInstallation",
     "WorthQueryGranularInvalidationObservation",

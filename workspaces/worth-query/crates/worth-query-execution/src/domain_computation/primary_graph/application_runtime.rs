@@ -25,7 +25,6 @@ mod certification_controls;
 mod certification_cost;
 mod conditional_cleanup;
 mod external_dispatch_attempt;
-mod inbound_delivery;
 mod inbound_occurrence;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use inbound_occurrence::WorthQueryInboundAdmission;

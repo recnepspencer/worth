@@ -1,6 +1,7 @@
 //! Derived consumed-fact postings and source-position-specific output marks.
 
 mod admission;
+mod commit_touches;
 mod consumed_capacity;
 mod delivery;
 #[cfg(feature = "test-query-execution-observer")]
@@ -38,6 +39,9 @@ mod verified_current;
 #[cfg(test)]
 mod native_journey_tests;
 
+pub(in crate::domain_computation::primary_graph) use commit_touches::{
+    CommitTouchInterest, CommitTouchesStop, TouchedCommits,
+};
 pub(in crate::domain_computation::primary_graph) use consumed_capacity::RetainedConsumedOutputCapacity;
 pub(in crate::domain_computation::primary_graph) use derived::{
     ConsumedOutputCurrentness, CurrentSettlementRegistrationCleanup,

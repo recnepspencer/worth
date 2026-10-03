@@ -13,7 +13,6 @@ mod commit_causality;
 pub(super) mod committed_dispatch_outbox;
 mod completed_evidence_capacity;
 mod completed_observation;
-mod conditional_commit_journal;
 mod decision_facts;
 pub(in crate::domain_computation::primary_graph) mod dispatch_outbox;
 mod evidence_window;
@@ -112,8 +111,6 @@ pub(crate) struct WorthQueryPrimaryGraphProvider {
     inbound_terminal_index: inbound_terminal_index::WorthQueryInboundTerminalIndex,
     pending_application_publications:
         pending_application_publication::registry::WorthQueryPendingApplicationPublicationRegistryOwner,
-    conditional_commit_journal:
-        Mutex<conditional_commit_journal::WorthQueryConditionalCommitJournal>,
     fault_port: Arc<dyn fault_port::WorthQueryPrimaryGraphFaultPort>,
     world_history: std::sync::OnceLock<worth_runtime_world::facade::RuntimeWorldLifecyclePort>,
 }
@@ -157,73 +154,6 @@ impl WorthQueryPrimaryGraphProvider {
     pub(super) fn after_application_candidate_preparation_for_test(&self) {
         self.application_attempt_operation_control
             .after_candidate_preparation();
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn conditional_commit_sequence(&self) -> u64 {
-        self.conditional_commit_journal
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .latest_sequence()
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn replace_conditional_commit_routes(
-        &self,
-        records: impl IntoIterator<Item = worth_relational::facade::transactions::RecordRef>,
-        include_whole_graph: bool,
-        bootstrap_identities: impl IntoIterator<Item = String>,
-    ) {
-        let mut journal = self
-            .conditional_commit_journal
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        journal.replace_routes(records, include_whole_graph);
-        journal.replace_bootstrap_routes(bootstrap_identities);
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn record_conditional_commit(
-        &self,
-        commit: &worth_relational::facade::history::RelationalCommitReceipt,
-        records: impl IntoIterator<Item = worth_relational::facade::transactions::RecordRef>,
-    ) {
-        self.conditional_commit_journal
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .record(commit, records);
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn conditional_commits_after_records(
-        &self,
-        branch: &worth_relational::facade::history::BranchId,
-        commit_ceiling: Option<worth_relational::facade::history::CommitId>,
-        sequence: u64,
-        maximum: usize,
-        records: impl IntoIterator<Item = worth_relational::facade::transactions::RecordRef>,
-        include_whole_graph: bool,
-        bootstrap_identity: Option<&str>,
-    ) -> Result<conditional_commit_journal::WorthQueryConditionalCommitBatch, &'static str> {
-        self.conditional_commit_journal
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .after_records_with_bootstrap(
-                branch,
-                commit_ceiling,
-                sequence,
-                maximum,
-                records,
-                include_whole_graph,
-                bootstrap_identity,
-            )
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn narrow_conditional_bootstrap_route_if_current(
-        &self,
-        identity: &str,
-        expected_frontier: u64,
-    ) -> bool {
-        self.conditional_commit_journal
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .narrow_bootstrap_route_if_current(identity, expected_frontier)
     }
 
     pub(super) fn application_resource_support(

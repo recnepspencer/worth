@@ -70,6 +70,9 @@ pub enum WorthQueryConditionalClockObservationFailureKind {
     RetentionIdentityExhausted,
     /// The runtime ran out of snapshot identities.
     SnapshotIdentityExhausted,
+    /// Rebuilding the operation from truth after its commit cursor fell
+    /// behind the retained subscription window was denied.
+    ReconstructionDenied(super::installation::WorthQueryConditionalRuntimeInstallationDenialKind),
 }
 
 /// A clock observation that failed, with its kind and a detail message.
@@ -119,6 +122,8 @@ pub struct WorthQueryConditionalClockObservationReceipt<Clock> {
     retention_capacity_backpressure: bool,
     execution_provenance: Vec<super::WorthQueryConditionalExecutionProvenance>,
     granular_invalidations: Vec<worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery>,
+    granular_invalidation_coverage:
+        crate::domain_computation::primary_graph::WorthQueryGranularInvalidationCoverage,
 }
 
 impl<Clock> WorthQueryConditionalClockObservationReceipt<Clock> {
@@ -209,6 +214,7 @@ impl<Clock> WorthQueryConditionalClockObservationReceipt<Clock> {
             self.granular_invalidation_installation.clone(),
             std::mem::take(&mut self.granular_invalidations),
             self.granular_source_read_basis.clone(),
+            self.granular_invalidation_coverage,
         )
     }
 }
@@ -256,16 +262,7 @@ where
         let outcome = self
             .operation
             .observe_clock(&bridge, self.runtime, &self.truth);
-        if outcome.routes_changed {
-            let registry = self
-                .runtime
-                .conditional_operations
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .snapshot();
-            registry.synchronize_commit_routes(self.runtime);
-        }
-        outcome.outcome.typed(
+        outcome.typed(
             granular_invalidation_installation,
             Some(granular_source_read_basis),
         )

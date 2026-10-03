@@ -37,6 +37,8 @@ pub(in crate::domain_computation::primary_graph) struct ErasedClockObservationRe
         Vec<super::super::WorthQueryConditionalExecutionProvenance>,
     pub(in crate::domain_computation::primary_graph::conditional_operation) granular_invalidations:
         Vec<worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery>,
+    pub(in crate::domain_computation::primary_graph::conditional_operation) granular_invalidation_coverage:
+        crate::domain_computation::primary_graph::WorthQueryGranularInvalidationCoverage,
 }
 
 pub(in crate::domain_computation::primary_graph) enum ErasedClockObservationOutcome {
@@ -112,6 +114,7 @@ impl ErasedClockObservationReceipt {
             retention_capacity_backpressure: self.retention_capacity_backpressure,
             execution_provenance: self.execution_provenance,
             granular_invalidations: self.granular_invalidations,
+            granular_invalidation_coverage: self.granular_invalidation_coverage,
         }
     }
 }

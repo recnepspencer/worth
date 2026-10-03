@@ -1,20 +1,21 @@
-use std::collections::BTreeSet;
-
 use worth_proof::TransitionOutcome;
+use worth_relational::facade::publication::PatchStreamPosition;
 use worth_runtime_bridge::facade::{
     BridgeConditionalSignalBasisBinding, BridgeSealedRuntimeAssembly,
-    RelationalBridgeRecordIdentityParts, RelationalCommittedPatchRequest, TruthCommitIdentity,
+    RelationalCommittedPatchRequest, TruthCommitIdentity,
 };
 
 use super::signal_decision_reentry::{
     reconsider_retained_wake, WorthQueryConditionalTruthBasis, WorthQueryRetainedConditionalWake,
 };
+use crate::domain_computation::primary_graph::output_lineage::invalidation::{
+    CommitTouchInterest, CommitTouchesStop, TouchedCommits,
+};
 
+/// Commits selected from the canonical subscription's retained touches. Any
+/// writer's commit on the branch is visible here, not only Query's own.
 pub(super) struct WorthQueryRelevantAuthoritativeCommits {
-    commits: Vec<(u64, worth_relational::facade::history::CommitId)>,
-    next_cursor: u64,
-    work_remaining: bool,
-    caught_up_to_latest: bool,
+    batch: TouchedCommits,
 }
 
 pub(super) struct WorthQueryDeliveredAuthoritativeCommits {
@@ -26,11 +27,7 @@ pub(super) struct WorthQueryDeliveredAuthoritativeCommits {
 
 impl WorthQueryRelevantAuthoritativeCommits {
     pub(super) fn commit_count(&self) -> usize {
-        self.commits.len()
-    }
-
-    pub(super) fn work_remaining(&self) -> bool {
-        self.work_remaining
+        self.batch.commits.len()
     }
 }
 
@@ -40,37 +37,24 @@ pub(super) fn relevant_authoritative_commits<Schema>(
     >,
     branch: &worth_relational::facade::history::BranchId,
     commit_ceiling: Option<worth_relational::facade::history::CommitId>,
-    cursor: u64,
+    cursor: Option<PatchStreamPosition>,
     maximum_commits: usize,
-    watched_records: impl IntoIterator<Item = worth_relational::facade::transactions::RecordRef>,
-    include_whole_graph: bool,
-    bootstrap_identity: Option<&str>,
-) -> Result<WorthQueryRelevantAuthoritativeCommits, String> {
-    let batch = runtime
+    interest: CommitTouchInterest<'_>,
+) -> Result<WorthQueryRelevantAuthoritativeCommits, CommitTouchesStop> {
+    runtime
         .primary_provider
-        .conditional_commits_after_records(
-            branch,
-            commit_ceiling,
-            cursor,
-            maximum_commits,
-            watched_records,
-            include_whole_graph,
-            bootstrap_identity,
-        )
-        .map_err(str::to_string)?;
-    Ok(WorthQueryRelevantAuthoritativeCommits {
-        commits: batch.commits,
-        next_cursor: batch.cursor,
-        work_remaining: batch.work_remaining,
-        caught_up_to_latest: batch.caught_up_to_latest,
-    })
+        .graph
+        .source_owner
+        .invalidation_owner
+        .touched_commits_after(branch, cursor, commit_ceiling, maximum_commits, interest)
+        .map(|batch| WorthQueryRelevantAuthoritativeCommits { batch })
 }
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn deliver_authoritative_commits(
     bridge: &BridgeSealedRuntimeAssembly,
     signal_basis: &BridgeConditionalSignalBasisBinding,
-    cursor: &mut u64,
+    cursor: &mut Option<PatchStreamPosition>,
     commits: WorthQueryRelevantAuthoritativeCommits,
     wakes: &mut [WorthQueryRetainedConditionalWake],
     query_binding_identity: &str,
@@ -79,51 +63,55 @@ pub(super) fn deliver_authoritative_commits(
     preperformed_deliveries: &[worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery],
 ) -> Result<WorthQueryDeliveredAuthoritativeCommits, String> {
     let mut granular_invalidations = Vec::new();
-    for (sequence, commit) in &commits.commits {
+    let TouchedCommits {
+        commits,
+        next_cursor,
+        work_remaining,
+        caught_up_to_latest,
+    } = commits.batch;
+    for touched in &commits {
+        // Bridge deliveries only feed Signal-hosted nodes. Which wakes are
+        // reconsidered is decided by the owner's retained touches.
         let delivered = deliver_commit_dependencies(
             bridge,
             signal_basis,
-            *commit,
+            touched.commit,
             truth,
             preperformed_deliveries,
         )?;
         for wake in wakes.iter_mut().filter(|wake| {
-            delivered
-                .changed_records
-                .contains(&wake.due.source_record_identity())
+            touched.touches(&super::lifecycle::source_entity(
+                wake.due.source_record_identity(),
+            ))
         }) {
-            if let Some(triggering_correspondence) = delivered
-                .granular_invalidations
+            let record = wake.due.source_record_identity();
+            let triggering_correspondence = delivered
                 .iter()
                 .map(|delivery| delivery.correspondence_receipt())
                 .find(|receipt| {
-                    receipt.change_set().changes().iter().any(|change| {
-                        change.relational_record_identity()
-                            == Some(wake.due.source_record_identity())
-                    })
-                })
-            {
-                reconsider_retained_wake(
-                    bridge,
-                    wake,
-                    signal_basis,
-                    query_binding_identity,
-                    query_capability_identity,
-                    truth,
-                    triggering_correspondence,
-                );
-            }
+                    receipt
+                        .change_set()
+                        .changes()
+                        .iter()
+                        .any(|change| change.relational_record_identity() == Some(record))
+                });
+            reconsider_retained_wake(
+                bridge,
+                wake,
+                signal_basis,
+                query_binding_identity,
+                query_capability_identity,
+                truth,
+                triggering_correspondence,
+            );
         }
-        granular_invalidations.extend(promote_performed_signal_deliveries(
-            delivered.granular_invalidations,
-            wakes,
-        ));
-        *cursor = *sequence;
+        granular_invalidations.extend(promote_performed_signal_deliveries(delivered, wakes));
+        *cursor = Some(touched.position);
     }
-    *cursor = commits.next_cursor;
+    *cursor = next_cursor;
     Ok(WorthQueryDeliveredAuthoritativeCommits {
-        work_remaining: commits.work_remaining(),
-        caught_up_to_latest: commits.caught_up_to_latest,
+        work_remaining,
+        caught_up_to_latest,
         granular_invalidations,
     })
 }
@@ -179,7 +167,7 @@ pub(super) fn reconsider_retained_wakes_for_deliveries(
                 query_binding_identity,
                 query_capability_identity,
                 truth,
-                receipt,
+                Some(receipt),
             );
         }
     }
@@ -208,19 +196,13 @@ fn retained_decision_evidence_mut(
     }
 }
 
-struct WorthQueryDeliveredCommitDependencies {
-    changed_records: BTreeSet<RelationalBridgeRecordIdentityParts>,
-    granular_invalidations: Vec<worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery>,
-}
-
 fn deliver_commit_dependencies(
     bridge: &BridgeSealedRuntimeAssembly,
     signal_basis: &BridgeConditionalSignalBasisBinding,
     commit: worth_relational::facade::history::CommitId,
     truth: &WorthQueryConditionalTruthBasis,
     preperformed_deliveries: &[worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery],
-) -> Result<WorthQueryDeliveredCommitDependencies, String> {
-    let mut changed_records = BTreeSet::new();
+) -> Result<Vec<worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery>, String> {
     let mut granular_invalidations = Vec::new();
     let lowering = signal_basis.installed_lowering_ref();
     let commit_identity = TruthCommitIdentity::from_relational_commit_id(commit.0);
@@ -266,21 +248,11 @@ fn deliver_commit_dependencies(
                 ))
             }
         };
-        changed_records.extend(
-            receipt
-                .change_set()
-                .changes()
-                .iter()
-                .filter_map(|change| change.relational_record_identity()),
-        );
         if !receipt.change_set().changes().is_empty() {
             granular_invalidations.push(
                 worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery::direct(&receipt),
             );
         }
     }
-    Ok(WorthQueryDeliveredCommitDependencies {
-        changed_records,
-        granular_invalidations,
-    })
+    Ok(granular_invalidations)
 }
