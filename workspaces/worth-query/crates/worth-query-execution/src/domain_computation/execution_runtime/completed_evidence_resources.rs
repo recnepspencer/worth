@@ -15,10 +15,14 @@ impl WorthQueryCompletedEvidenceResourceProfile {
     pub const fn retained_bytes(self) -> usize {
         self.retained_bytes.get()
     }
+
+    pub(crate) const fn standard() -> Self {
+        Self::bounded(NonZeroUsize::new(4 * 1_024 * 1_024).unwrap())
+    }
 }
 
 impl Default for WorthQueryCompletedEvidenceResourceProfile {
     fn default() -> Self {
-        Self::bounded(NonZeroUsize::new(4 * 1_024 * 1_024).unwrap())
+        Self::standard()
     }
 }

@@ -305,6 +305,12 @@ pub(crate) trait RuntimeWorldLifecycleService:
         &self,
         request: CompositeHistoryReclamationRequest,
     ) -> Result<HistoryReclamationOutcome, HistoryReclamationDenial>;
+    /// Retire the unprotected history behind `keep` and reclaim the pins only
+    /// that history held. Returns the retired commits, oldest first.
+    fn retire_unprotected_history(
+        &self,
+        keep: &crate::identity::CompositeCommitIdentity,
+    ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial>;
     fn reclaim_retention(
         &self,
         keys: &[crate::inspection::RuntimeWorldRetentionKey],

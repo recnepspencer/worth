@@ -40,9 +40,7 @@ fn an_unrelated_caller_advances_for_many_cycles_under_tight_custody() {
         let (a, b, c, mut d) = chain_with_unrelated!(application, request);
         let settled_custody = application.required_custody_bytes_for_test();
         let mut steady = None;
-        // Product World keeps every live-branch commit, so the cycle count
-        // stays within the fixture's World retention.
-        for cycle in 0..40_u64 {
+        for cycle in 0..100_u64 {
             change_root_input!(request, application, 2 + cycle % 2, 0x9176_3d00_u64 + cycle);
             settled_in_one_advance!(d, request, "the unrelated required demand");
             assert_steady!(steady, cycle, retained_positions, application, invalidation);
@@ -61,19 +59,22 @@ fn an_unrelated_caller_advances_for_many_cycles_under_tight_custody() {
     }
 }
 
-/// Query-owned bytes one cycle leaves retained: the invalidation index,
-/// required custody and output-lineage history.
-type QueryRetained = (u64, usize, u64);
+/// Query-owned state one cycle leaves retained: invalidation index bytes,
+/// required custody, output-lineage history, and the completed evidence
+/// entries inside the idempotency window with the bytes their tickets hold.
+type QueryRetained = (u64, usize, u64, usize, usize);
+
+/// History one cycle leaves retained: installed World commits, World history
+/// metadata bytes, unique World component pins and Relational retired roots.
+type HistoryRetained = (usize, usize, usize, usize);
 
 /// Runs the full chain at small retention for `cycles` cycles, each settling
 /// every demand in one advance, and reports what each cycle leaves retained.
 fn cycle_chain_at_small_retention(
     cycles: u64,
-    world_journeys: u64,
-    mut retained: impl FnMut(u64, QueryRetained),
+    mut retained: impl FnMut(u64, QueryRetained, HistoryRetained),
 ) {
-    let (application, invalidation) =
-        limited_application_for_journeys(4 * 1_024 * 1_024, 8 * 1_024 * 1_024, 8, world_journeys);
+    let (application, invalidation) = limited_application(4 * 1_024 * 1_024, 8 * 1_024 * 1_024, 8);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let (mut a, mut b, mut c, mut d) = chain_with_unrelated!(application, request);
@@ -83,13 +84,17 @@ fn cycle_chain_at_small_retention(
         settled_in_one_advance!(c, request, "the last consumer");
         settled_in_one_advance!(b, request, "the middle consumer");
         settled_in_one_advance!(a, request, "the open root demand");
+        let (evidence_entries, evidence_bytes) = application.completed_evidence_retained_for_test();
         retained(
             cycle,
             (
                 invalidation.retained_capacity_bytes(),
                 application.required_custody_bytes_for_test(),
                 application.output_lineage_retained_bytes_for_test(),
+                evidence_entries,
+                evidence_bytes,
             ),
+            application.history_retained_for_test(),
         );
     }
     drop((a, b, c, d));
@@ -102,7 +107,7 @@ fn a_refreshed_row_releases_the_custody_of_the_one_it_supersedes() {
     // row; the one before it is superseded, so custody stops growing once
     // both alternating inputs have refreshed the chain.
     let mut steady = None;
-    cycle_chain_at_small_retention(12, 1, |cycle, (_, custody, _)| {
+    cycle_chain_at_small_retention(12, |cycle, (_, custody, ..), _| {
         if cycle >= 2 {
             assert_eq!(
                 *steady.get_or_insert(custody),
@@ -117,20 +122,24 @@ fn a_refreshed_row_releases_the_custody_of_the_one_it_supersedes() {
 fn the_required_chain_stays_live_for_a_hundred_cycles_at_small_retention() {
     let _guard = checkpoint_recovery_test_guard();
     let cycles = 100;
-    // Product World keeps every live-branch commit, with its history and pins
-    // (deferred: "Live-branch history reclamation for Product World"). One
-    // cycle commits the input change and one refreshed output per demand,
-    // fewer commits than the twelve-cycle journey above runs within the
-    // fixture's own World capacity, so World gets that capacity per cycle.
-    let world_journeys = cycles;
+    // World capacity is the fixture's own: history behind the settled head
+    // retires each cycle, and the idempotency window evicts the oldest
+    // completed evidence once full, so World, Relational and Query retention
+    // all stop growing once every one of the eight retained positions has
+    // rotated.
     let mut steady = None;
-    cycle_chain_at_small_retention(cycles, world_journeys, |cycle, retained| {
-        // Every one of the eight retained positions has rotated.
+    let mut steady_history = None;
+    cycle_chain_at_small_retention(cycles, |cycle, retained, history| {
         if cycle >= 16 {
             assert_eq!(
                 *steady.get_or_insert(retained),
                 retained,
                 "cycle {cycle}: Query-owned retained bytes are steady"
+            );
+            assert_eq!(
+                *steady_history.get_or_insert(history),
+                history,
+                "cycle {cycle}: World history, pins and Relational retired roots are steady"
             );
         }
     });

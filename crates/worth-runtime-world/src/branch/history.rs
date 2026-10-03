@@ -74,6 +74,11 @@ impl ProductBranchHistoryTraversal {
         NonZeroUsize::new(maximum.get().min(self.remaining_branch_commits))
     }
 
+    /// Branch generations not yet covered, counted from the next parent.
+    pub(crate) fn remaining_branch_commits(&self) -> usize {
+        self.remaining_branch_commits
+    }
+
     pub(crate) fn selection(
         &self,
         index: usize,
@@ -82,21 +87,24 @@ impl ProductBranchHistoryTraversal {
         ProductBranchReferenceGeneration,
     )> {
         let commit = self.traversal.shared_commit(index)?;
-        let generation = self.first_generation.retreat(index)?;
+        // Retired commits spliced out of the walk still count as generations.
+        let generation = self
+            .first_generation
+            .retreat(self.traversal.generations_to(index)?)?;
         Some((commit, generation))
     }
 
     pub(crate) fn continued(&self, traversal: CompositeHistoryTraversal) -> Option<Self> {
-        let visited = traversal.visited_count();
+        let covered = traversal.covered_generations();
         let first_generation = self
             .first_generation
-            .retreat(self.traversal.visited_count())?;
+            .retreat(self.traversal.covered_generations())?;
         Some(Self::owner_issued(
             self.branch.clone(),
             self.occurrence,
             first_generation,
             traversal,
-            self.remaining_branch_commits.checked_sub(visited)?,
+            self.remaining_branch_commits.checked_sub(covered)?,
         ))
     }
 }

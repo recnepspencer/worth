@@ -49,6 +49,7 @@ impl WorthQueryPrimaryGraphProvider {
             )),
             conditional_commit_journal: std::sync::Mutex::new(Default::default()),
             fault_port,
+            world_history: std::sync::OnceLock::new(),
         });
         let anchor = Arc::new(
             crate::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor::install_invariant_capable::<

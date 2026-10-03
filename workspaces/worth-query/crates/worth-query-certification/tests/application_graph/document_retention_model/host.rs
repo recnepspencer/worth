@@ -125,11 +125,6 @@ pub fn publish_on_first_program() -> DocumentRetentionRuntime<RetentionProgramP0
     publish_on_first_program_with_limits(host_limits())
 }
 
-pub fn publish_on_first_program_for_history_scale() -> DocumentRetentionRuntime<RetentionProgramP0>
-{
-    publish_on_first_program_with_limits(history_limits(16_384, 64 * 1024 * 1024, 32_768))
-}
-
 /// Scheduled 10k publication lane: 200k candidate items, 128 MiB candidate
 /// bytes, 20M candidate work, 200k operation width, and WorkflowScale's
 /// finite Relational publication and integrity ceilings. Ordinary actions retain smaller
@@ -335,18 +330,10 @@ fn seed_document(
 }
 
 fn host_limits() -> WorthQueryInMemoryApplicationLimits {
-    history_limits(256, 4 * 1024 * 1024, 256)
-}
-
-fn history_limits(
-    commits: u64,
-    metadata_bytes: u64,
-    pins: u64,
-) -> WorthQueryInMemoryApplicationLimits {
     // Installation admits the binding's maximum publication shape even though
     // the ordinary Document handler requests its narrow candidate at execution.
     WorthQueryInMemoryApplicationLimits::new(
-        world_resources(commits, metadata_bytes, pins),
+        world_resources(256, 4 * 1024 * 1024, 256),
         runtime::WorthQueryApplicationCandidateResourceProfile::bounded(
             200_000,
             128 * 1024 * 1024,

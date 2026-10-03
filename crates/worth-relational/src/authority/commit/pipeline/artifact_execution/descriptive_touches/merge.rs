@@ -86,11 +86,7 @@ pub(super) fn push(
     budget: &mut TouchBudget<'_, '_, '_, '_>,
 ) -> Result<(), Failure> {
     if touches.len() == touches.capacity() {
-        let new_capacity = touches
-            .capacity()
-            .checked_mul(2)
-            .unwrap_or(usize::MAX)
-            .max(4);
+        let new_capacity = touches.capacity().saturating_mul(2).max(4);
         let growth = new_capacity
             .checked_sub(touches.capacity())
             .and_then(|slots| slots.checked_mul(size_of::<Touch>()))

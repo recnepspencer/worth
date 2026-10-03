@@ -238,6 +238,9 @@ where
         Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::Unavailable)) => {
             Some(progression_denied(DenialStage::Idempotency))
         }
+        Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::WindowExpired)) => Some(WorthQueryProviderProgressionOutcome::Denied(
+            WorthQueryApplicationCommitDenial::idempotency_window_expired(),
+        )),
         Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::RetentionCapacityExhausted)) => {
             Some(WorthQueryProviderProgressionOutcome::Denied(
                 WorthQueryApplicationCommitDenial::retention_capacity_exhausted(

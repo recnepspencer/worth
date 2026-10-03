@@ -1,6 +1,9 @@
 use std::sync::{Arc, Mutex, OnceLock};
 
-use worth_runtime_world::facade::{ConsumedCompositePublication, ProductUnpublishedRecoveryHandle};
+use worth_runtime_world::facade::{
+    ConsumedCompositePublication, ProductUnpublishedRecoveryHandle,
+    RuntimeWorldPerformedPublicationProtection,
+};
 
 use super::{runtime::WorthQueryProductRootIdentity, WorthQueryPerformedRelationalProductChange};
 
@@ -29,10 +32,20 @@ pub(crate) struct WorthQueryReservedProductPublicationReceipt {
 }
 
 /// Named read-only custody shared by committed Query result observers after
-/// the linear World handoff was consumed exactly once.
+/// the linear World handoff was consumed exactly once. The fresh caller's
+/// receipt keeps the commit in World history; completed-commit evidence and
+/// replay copies are detached so that replay outlives the commit's history.
 #[derive(Clone)]
 pub(crate) struct WorthQueryProductPublicationReceipt {
     custody: Arc<WorthQueryProductPublicationCustody>,
+    history: Option<WorthQueryCommitHistoryHold>,
+}
+
+/// What keeps one performed commit in World history, handed from completed
+/// evidence to the fresh caller's receipt exactly once.
+#[derive(Clone)]
+pub(crate) struct WorthQueryCommitHistoryHold {
+    _protection: Arc<RuntimeWorldPerformedPublicationProtection>,
 }
 
 impl WorthQueryReservedProductPublicationReceipt {
@@ -93,6 +106,7 @@ impl WorthQueryReservedProductPublicationReceipt {
         conditional_definition_generation: Option<u64>,
     ) -> WorthQueryProductPublicationReceipt {
         let successor_observation = publication.take_successor_observation();
+        let history = publication.take_history_protection().map(Arc::new);
         if self.custody.retain_live_observation {
             *self
                 .custody
@@ -123,6 +137,9 @@ impl WorthQueryReservedProductPublicationReceipt {
         self.custody.terminal.get_or_init(|| terminal);
         WorthQueryProductPublicationReceipt {
             custody: self.custody,
+            history: history.map(|protection| WorthQueryCommitHistoryHold {
+                _protection: protection,
+            }),
         }
     }
 }
@@ -137,6 +154,16 @@ impl WorthQueryProductPublicationReceipt {
 
     pub(crate) fn publication(&self) -> &ConsumedCompositePublication {
         &self.terminal().publication
+    }
+
+    /// Takes this copy's World history protection, leaving it detached.
+    pub(crate) fn take_history(&mut self) -> Option<WorthQueryCommitHistoryHold> {
+        self.history.take()
+    }
+
+    /// Keeps this copy's commit in World history for as long as it lives.
+    pub(crate) fn hold_history(&mut self, hold: WorthQueryCommitHistoryHold) {
+        self.history = Some(hold);
     }
 
     pub(crate) fn root_identity(&self) -> Arc<WorthQueryProductRootIdentity> {

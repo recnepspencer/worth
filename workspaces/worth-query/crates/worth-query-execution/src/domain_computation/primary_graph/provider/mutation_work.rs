@@ -242,4 +242,10 @@ impl WorthQueryPrimaryMutationWorkEvidence {
     pub fn touched_record_count(&self) -> usize {
         self.touched_records.as_slice().len()
     }
+
+    /// Whether this copy is the last holder of its commit's completed-evidence
+    /// ticket, so dropping it refunds the idempotency window.
+    pub(super) fn holds_last_evidence_ticket(&self) -> bool {
+        std::sync::Arc::strong_count(&self.touched_records) == 1
+    }
 }

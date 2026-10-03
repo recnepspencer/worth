@@ -49,13 +49,10 @@ impl OutstandingDispatchOwner {
             || publication.relational_commit() != original.commit_reference()
             || entry.branch != *publication.product_branch()
             || entry.incarnation != publication.product_incarnation()
-            || entry
-                .performed_world
-                .as_ref()
-                .is_none_or(|(world, attempt)| {
-                    world != publication.composite_commit()
-                        || attempt != publication.publication_attempt()
-                })
+            || entry.performed_world.as_ref().is_none_or(|performed| {
+                performed.composite_commit() != publication.composite_commit()
+                    || performed.publication_attempt() != publication.publication_attempt()
+            })
         {
             return Err(Denial::OriginalMismatch);
         }

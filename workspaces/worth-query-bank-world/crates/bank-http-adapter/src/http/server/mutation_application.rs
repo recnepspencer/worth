@@ -321,6 +321,12 @@ pub(super) fn commit_denial(
                 BankHttpNextAction::CorrectRequest,
             ),
         ),
+        // The original request applied; only its answer left the window. A
+        // dedicated kind keeps clients from resubmitting it under a new key.
+        Denial::IdempotencyWindowExpired => (
+            BankHttpMutationFailureKind::IdempotencyWindowExpired,
+            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
+        ),
         Denial::CandidateValidatorWorkExceeded { .. }
         | Denial::WorkflowSettlementDenied { .. }
         | Denial::PreparedRootBudgetExhausted { .. }

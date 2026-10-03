@@ -193,6 +193,12 @@ where
             candidate.discard();
             progression_denied(DenialStage::Idempotency)
         }
+        Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::WindowExpired) => {
+            candidate.discard();
+            WorthQueryProviderProgressionOutcome::Denied(
+                WorthQueryApplicationCommitDenial::idempotency_window_expired(),
+            )
+        }
         Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::RetentionCapacityExhausted) => {
             candidate.discard();
             WorthQueryProviderProgressionOutcome::Denied(
@@ -235,64 +241,29 @@ fn resolve_equivalent_commit<Schema, Operation, Input, Scope>(
 where
     Input: Clone + Send + Sync + 'static,
 {
-    match resolve_exact_committed_aftermath(
-        authority.provider(),
-        authority.aftermath_causality(),
-        &receipt,
-    ) {
-        Ok(causality) => match WorthQueryCommittedReceiptProjection::resolve(receipt) {
-            Ok(projection) => {
-                let receipt = WorthQueryApplicationCommitReceipt::from_managed_equivalent(
-                    WorthQueryManagedEquivalentCommitReceiptPermit::mint(provider_session),
-                    projection,
-                    recover_equivalent_commit_evidence(
-                        authority.admission().mutation_preconditions(),
-                    ),
-                    authority.admission().canonical_work(),
-                    WorthQueryApplicationCommitAuthorityBinding::from_admission(
-                        authority.admission(),
-                        authority.idempotency(),
-                    ),
-                );
-                WorthQueryProviderProgressionOutcome::AlreadyCommitted(
-                    receipt.with_aftermath_causality(causality),
-                )
-            }
-            Err(_) => progression_denied(DenialStage::Idempotency),
-        },
-        Err(crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::ActiveSnapshotCapacityExhausted {
-            maximum_active_snapshots,
-        }) => WorthQueryProviderProgressionOutcome::Denied(
-            WorthQueryApplicationCommitDenial::active_snapshot_capacity_exhausted(
-                DenialStage::Idempotency,
-                maximum_active_snapshots,
-            ),
-        ),
-        Err(crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::Unavailable) => {
-            WorthQueryProviderProgressionOutcome::Denied(
-                WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
-            )
-        }
-        Err(crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::RetentionCapacityExhausted) => {
-            WorthQueryProviderProgressionOutcome::Denied(
-                WorthQueryApplicationCommitDenial::retention_capacity_exhausted(
-                    DenialStage::Idempotency,
+    let Ok(causality) =
+        resolve_exact_committed_aftermath(authority.aftermath_causality(), &receipt)
+    else {
+        return WorthQueryProviderProgressionOutcome::Denied(
+            WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
+        );
+    };
+    match WorthQueryCommittedReceiptProjection::resolve(receipt) {
+        Ok(projection) => {
+            let receipt = WorthQueryApplicationCommitReceipt::from_managed_equivalent(
+                WorthQueryManagedEquivalentCommitReceiptPermit::mint(provider_session),
+                projection,
+                recover_equivalent_commit_evidence(authority.admission().mutation_preconditions()),
+                authority.admission().canonical_work(),
+                WorthQueryApplicationCommitAuthorityBinding::from_admission(
+                    authority.admission(),
+                    authority.idempotency(),
                 ),
+            );
+            WorthQueryProviderProgressionOutcome::AlreadyCommitted(
+                receipt.with_aftermath_causality(causality),
             )
         }
-        Err(crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::RetentionIdentityExhausted) => {
-            WorthQueryProviderProgressionOutcome::Denied(
-                WorthQueryApplicationCommitDenial::retention_identity_exhausted(
-                    DenialStage::Idempotency,
-                ),
-            )
-        }
-        Err(crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::SnapshotIdentityExhausted) => {
-            WorthQueryProviderProgressionOutcome::Denied(
-                WorthQueryApplicationCommitDenial::snapshot_identity_exhausted(
-                    DenialStage::Idempotency,
-                ),
-            )
-        }
+        Err(_) => progression_denied(DenialStage::Idempotency),
     }
 }

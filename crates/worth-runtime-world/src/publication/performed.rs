@@ -115,6 +115,16 @@ impl ConsumedCompositePublication {
     ) -> Option<crate::branch::ProductBranchObservation> {
         self.delivery.take_successor_observation()
     }
+    /// Moves the commit protection this delivery carried to its product
+    /// owner. Without it, the facts stay readable but no longer keep the
+    /// commit in history.
+    pub fn take_history_protection(
+        &mut self,
+    ) -> Option<crate::history::RuntimeWorldPerformedPublicationProtection> {
+        self.delivery
+            .take_history()
+            .map(crate::history::RuntimeWorldPerformedPublicationProtection::detached_from_delivery)
+    }
     pub fn old_product_head(&self) -> &ProductBranchReferenceSnapshot {
         self.facts().movement.before()
     }

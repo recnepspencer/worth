@@ -90,13 +90,12 @@ impl PreparedTouchedRecords {
             )
             .map_err(super::stops::touched_record_preparation_stop)?;
         let ticket = provider
-            .completed_evidence_capacity
-            .reserve(retained_bytes)
+            .reserve_completed_evidence(retained_bytes)
             .ok_or_else(|| {
                 WorthQueryProviderSessionCommitStop::Deferred(
                     crate::domain_computation::WorthQueryProviderSessionCommitDeferred::new(
                         crate::domain_computation::WorthQueryProviderSessionCommitDeferredKind::RetentionCapacityExhausted,
-                        "completed evidence retention capacity is exhausted",
+                        "completed evidence the idempotency window cannot evict fills its capacity",
                     ),
                 )
             })?;

@@ -37,11 +37,15 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderGuardedW
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderIdempotencyResolutionDenial
 {
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
     Unavailable,
+    /// The commit's evidence left the declared idempotency window.
+    WindowExpired,
 }
 
 impl From<&'static str> for WorthQueryProviderIdempotencyResolutionDenial {
@@ -180,7 +184,7 @@ impl WorthQueryPrimaryGraphProvider {
                 binding,
             );
             crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-            let resolution = resolution.map_err(WorthQueryProviderIdempotencyResolutionDenial::from)?;
+            let resolution = resolution?;
             if let WorthQueryProviderIdempotencyResolution::Equivalent(committed) = &resolution {
                 self.repair_equivalent_publication_settlement(runtime, committed)?;
             }

@@ -78,6 +78,8 @@ pub enum WorthQueryApplicationIdempotencyResolutionDenialKind {
     /// The provider could not answer, the product was unpublished, or the recorded
     /// receipt could not be read back.
     ProviderUnavailable,
+    /// The key's commit left the declared idempotency window.
+    IdempotencyWindowExpired,
 }
 
 /// A refusal to resolve an idempotency key. Nothing took effect.
@@ -130,24 +132,19 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
     pub(super) fn from_provider(
         denial: crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial,
     ) -> Self {
+        use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial as Provider;
+        use WorthQueryApplicationIdempotencyResolutionDenialKind as Kind;
         let kind = match denial {
-            crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::ActiveSnapshotCapacityExhausted {
+            Provider::ActiveSnapshotCapacityExhausted {
                 maximum_active_snapshots,
-            } => WorthQueryApplicationIdempotencyResolutionDenialKind::ActiveSnapshotCapacityExhausted {
+            } => Kind::ActiveSnapshotCapacityExhausted {
                 maximum_active_snapshots,
             },
-            crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::RetentionCapacityExhausted => {
-                WorthQueryApplicationIdempotencyResolutionDenialKind::RetentionCapacityExhausted
-            }
-            crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::RetentionIdentityExhausted => {
-                WorthQueryApplicationIdempotencyResolutionDenialKind::RetentionIdentityExhausted
-            }
-            crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::SnapshotIdentityExhausted => {
-                WorthQueryApplicationIdempotencyResolutionDenialKind::SnapshotIdentityExhausted
-            }
-            crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::Unavailable => {
-                WorthQueryApplicationIdempotencyResolutionDenialKind::ProviderUnavailable
-            }
+            Provider::RetentionCapacityExhausted => Kind::RetentionCapacityExhausted,
+            Provider::RetentionIdentityExhausted => Kind::RetentionIdentityExhausted,
+            Provider::SnapshotIdentityExhausted => Kind::SnapshotIdentityExhausted,
+            Provider::Unavailable => Kind::ProviderUnavailable,
+            Provider::WindowExpired => Kind::IdempotencyWindowExpired,
         };
         Self {
             kind,

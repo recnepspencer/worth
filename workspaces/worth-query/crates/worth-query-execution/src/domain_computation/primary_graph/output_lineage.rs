@@ -238,10 +238,10 @@ impl WorthQueryApplicationOutputLineage {
         let evidence = application.commit_evidence();
         let correspondence = evidence.output_correspondence();
         let scope = evidence.operation_scope();
-        let head = application.product_publication().new_product_head();
+        let publication = application.committed_product_publication();
         let coordinate = ProductCoordinate {
-            occurrence: head.lifecycle_incarnation(),
-            generation: head.reference_generation().get(),
+            occurrence: publication.product_incarnation(),
+            generation: publication.product_generation().get(),
         };
         let output_binding = correspondence.binding_type()?;
         // The performed path borrows the pre-effect source. Constructing a

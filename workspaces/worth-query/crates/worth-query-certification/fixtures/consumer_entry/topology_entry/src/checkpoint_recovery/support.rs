@@ -232,18 +232,6 @@ pub(super) fn limits(
     retained_composite_commits: u64,
     invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
 ) -> WorthQueryInMemoryApplicationLimits {
-    limits_for_journeys(retained_composite_commits, 1, invalidation)
-}
-
-/// [`limits`] with World history and pin capacity for `journeys` of the
-/// fixture's own journeys. Product World keeps every live-branch commit
-/// (deferred: "Live-branch history reclamation for Product World"), so a
-/// journey that commits more than the fixture's own needs more of both.
-pub(super) fn limits_for_journeys(
-    retained_composite_commits: u64,
-    journeys: u64,
-    invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
-) -> WorthQueryInMemoryApplicationLimits {
     WorthQueryInMemoryApplicationLimits::new(
         WorthQueryProductWorldResources::install(
             RuntimeWorldBudgetInstallation {
@@ -252,7 +240,7 @@ pub(super) fn limits_for_journeys(
                 },
                 history: RuntimeWorldHistoryBudgetInstallation {
                     retained_composite_commits,
-                    history_metadata_bytes: 524_288 * journeys,
+                    history_metadata_bytes: 524_288,
                 },
                 observations: RuntimeWorldObservationBudgetInstallation {
                     active_observations: 16,
@@ -265,7 +253,7 @@ pub(super) fn limits_for_journeys(
                     retained_partial_metadata_bytes: 524_288,
                 },
                 retention: RuntimeWorldRetentionBudgetInstallation {
-                    unique_exact_component_pins: 64 * journeys,
+                    unique_exact_component_pins: 64,
                     in_flight_pin_acquisition_reservations: 16,
                 },
                 custody: RuntimeWorldCustodyBudgetInstallation {

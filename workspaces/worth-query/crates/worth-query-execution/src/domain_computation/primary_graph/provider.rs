@@ -16,8 +16,10 @@ mod completed_observation;
 mod conditional_commit_journal;
 mod decision_facts;
 pub(in crate::domain_computation::primary_graph) mod dispatch_outbox;
+mod evidence_window;
 pub(in crate::domain_computation::primary_graph) mod fault_port;
 mod graph_participation;
+mod history_retirement;
 mod idempotency;
 mod inbound_completion;
 mod inbound_cost;
@@ -113,6 +115,7 @@ pub(crate) struct WorthQueryPrimaryGraphProvider {
     conditional_commit_journal:
         Mutex<conditional_commit_journal::WorthQueryConditionalCommitJournal>,
     fault_port: Arc<dyn fault_port::WorthQueryPrimaryGraphFaultPort>,
+    world_history: std::sync::OnceLock<worth_runtime_world::facade::RuntimeWorldLifecyclePort>,
 }
 
 pub(crate) use branch_commit_coordination::{

@@ -2,6 +2,9 @@
 
 use std::sync::Arc;
 
+use worth_runtime_world::facade::CompositeCommitIdentity;
+
+mod aftermath;
 pub(super) mod registry;
 mod stops;
 pub(in crate::domain_computation::primary_graph) use registry::WorthQueryApplicationPublicationRecoveryReservation;
@@ -173,14 +176,14 @@ impl WorthQueryPrimaryGraphProvider {
                 result
             })
             .map_err(failure)?;
-        if result.is_ok() {
-            slot.complete();
-            self.pending_application_publications
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner())
-                .remove_exact(occurrence, &slot);
-        }
-        result
+        let settled = result?;
+        slot.complete();
+        self.pending_application_publications
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .remove_exact(occurrence, &slot);
+        self.retire_history_behind(runtime, &settled);
+        Ok(())
     }
 }
 
@@ -188,7 +191,7 @@ fn resume(
     provider: &WorthQueryPrimaryGraphProvider,
     runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
     pending: &mut WorthQueryPendingApplicationPublication,
-) -> Result<(), WorthQueryProviderSessionFailure> {
+) -> Result<CompositeCommitIdentity, WorthQueryProviderSessionFailure> {
     let commit_id = pending.committed.envelope().commit.commit_id;
     if provider.take_failed_post_commit_snapshot() {
         return Err(snapshot_capacity_failure(
@@ -217,7 +220,7 @@ fn publish_with_snapshot(
     pending: &mut WorthQueryPendingApplicationPublication,
     after: &worth_relational::facade::snapshots::SnapshotHandle,
     commit_id: worth_relational::facade::history::CommitId,
-) -> Result<(), WorthQueryProviderSessionFailure> {
+) -> Result<CompositeCommitIdentity, WorthQueryProviderSessionFailure> {
     if pending.next_basis.observation().commit_id() != Some(commit_id) {
         return Err(failure(
             "application commit basis does not select the published commit",
@@ -241,6 +244,7 @@ fn publish_with_snapshot(
         .graph
         .bind_truth_head_basis_in_runtime(runtime, &pending.next_basis)
         .map_err(bridge_head_failure)?;
+    aftermath::seal(provider, runtime, pending, after)?;
     #[cfg(test)]
     if provider.take_panicked_pending_application_publication() {
         panic!("injected unwind after performed World publication reached terminal cutover");
@@ -351,12 +355,16 @@ fn publish_with_snapshot(
     if let Some(superseded) = superseded {
         superseded.retire(&provider.graph.source_owner.invalidation_owner);
     }
+    let settled = completed
+        .committed_product_publication()
+        .composite_commit()
+        .clone();
     provider
         .completed_commit_evidence
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
         .record(completed);
-    Ok(())
+    Ok(settled)
 }
 
 fn publish_aggregate_projection(

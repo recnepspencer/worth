@@ -763,10 +763,12 @@ exports = [
     "compensate_recovery_handle",
     "dispose_recovery_handle",
     "expire_recovery_handle",
+    "inexact_native_deliveries_on_this_thread_for_test",
     "inspect_recovery_handle",
     "map_ordinary_commit_conflict",
     "query_read_kernel_entries_on_this_thread_for_test",
     "reconcile_recovery_handle",
+    "required_ready_custody_bytes_for_test",
     "resolve_recovery_handle",
     "safe_retry_recovery_handle",
 ]

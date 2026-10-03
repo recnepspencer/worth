@@ -123,28 +123,3 @@ Each plugs into the existing backend port.
 Bring a backend back when a real workload needs it: browser parallelism for a
 shipped web product, a computation that outgrows one machine, or a kernel that
 needs an accelerator.
-
-## WORTH Relational
-
-### Live-branch history reclamation for Product World
-
-Spec: [WORTH_relational_roadmap.md](WORTH-relational/WORTH_relational_roadmap.md),
-Milestone 3, "explicit retention and reclaim product surfaces" and "explicit
-reclaim behavior under pinned readers and retained history".
-
-Product World never reclaims history on a live branch. Each commit keeps its
-component pins and history metadata until the branch itself is retired, so a
-long-running application exhausts World's installed pin or history capacity
-after a number of commits proportional to that capacity, even when no reader
-still needs the old history. Query's completed-commit receipt evidence shares
-that lifetime: it answers idempotent replay for every commit World retains and
-is released with the branch, so it reclaims with World's history.
-
-Query's own retained state (invalidation index, required custody,
-output-lineage history) reaches a steady state as of 9.17.6.3; the remaining
-growth is World's. The 9.17.6.3 hundred-cycle liveness journey sizes World's
-pin and history capacity to the cycles it runs and asserts steady state only
-for Query-owned bytes.
-
-Bring it back with Relational Milestone 3, or sooner if a long-running product
-session approaches World's pin or history capacity.

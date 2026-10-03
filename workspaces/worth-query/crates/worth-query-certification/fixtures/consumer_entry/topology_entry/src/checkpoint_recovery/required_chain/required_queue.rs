@@ -222,28 +222,6 @@ fn limited_application(
     >,
     worth_query_host::facade::runtime::WorthQueryInvalidationResources,
 ) {
-    limited_application_for_journeys(
-        required_custody_bytes,
-        invalidation_bytes,
-        retained_positions,
-        1,
-    )
-}
-
-/// [`limited_application`] with World capacity for `journeys` of the
-/// fixture's own journeys.
-fn limited_application_for_journeys(
-    required_custody_bytes: usize,
-    invalidation_bytes: u64,
-    retained_positions: usize,
-    journeys: u64,
-) -> (
-    application_installation::WorthQueryProgramApplicationRuntime<
-        CheckpointSchema,
-        program::ChainProgram,
-    >,
-    worth_query_host::facade::runtime::WorthQueryInvalidationResources,
-) {
     let profile =
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard()
             .with_registry_required_retained_bytes(
@@ -257,7 +235,13 @@ fn limited_application_for_journeys(
     let application = support::install_program_with_limits::<program::ChainProgram>(
         None,
         profile,
-        support::limits_for_journeys(4_096, journeys, invalidation.clone()),
+        // A small idempotency window fills within a few cycles, so the
+        // steady-retention cycles also prove completed evidence is evicted.
+        support::limits(4_096, invalidation.clone()).with_completed_evidence_resources(
+            worth_query_host::facade::runtime::WorthQueryCompletedEvidenceResourceProfile::bounded(
+                std::num::NonZeroUsize::new(4_096).unwrap(),
+            ),
+        ),
         source_world::seed,
     );
     (application, invalidation)

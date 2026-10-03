@@ -27,6 +27,16 @@ impl CompletedEvidenceCapacity {
         }
     }
 
+    /// Whether `bytes` fit the installed capacity at all.
+    pub(super) fn admits(&self, bytes: usize) -> bool {
+        bytes
+            <= self
+                .inner
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner())
+                .maximum
+    }
+
     pub(super) fn reserve(&self, bytes: usize) -> Option<CompletedEvidenceTicket> {
         let mut state = self
             .inner
@@ -43,7 +53,7 @@ impl CompletedEvidenceCapacity {
         })
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-query-execution-observer"))]
     pub(in crate::domain_computation::primary_graph) fn retained_bytes(&self) -> usize {
         self.inner
             .lock()

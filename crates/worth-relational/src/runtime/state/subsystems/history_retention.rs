@@ -106,6 +106,10 @@ impl HistorySubsystem {
         self.retention_owner.reclaim_retired_roots(maximum_roots)
     }
 
+    pub(crate) fn retired_branch_root_count(&self) -> usize {
+        self.retention_owner.retired_root_count()
+    }
+
     pub(super) fn reset_retention_owner(&mut self, runtime_instance_id: u64) {
         self.try_reset_retention_owner_from(
             crate::history::retention::RelationalBranchRetentionOwner::new(runtime_instance_id),

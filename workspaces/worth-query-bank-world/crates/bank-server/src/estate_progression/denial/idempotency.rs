@@ -12,6 +12,7 @@ pub enum BankEstateIdempotencyResolutionDenial {
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
+    IdempotencyWindowExpired,
     ProviderUnavailable,
 }
 
@@ -41,6 +42,9 @@ pub(super) fn from_query(
         }
         WorthQueryApplicationIdempotencyResolutionDenialKind::SnapshotIdentityExhausted => {
             BankEstateIdempotencyResolutionDenial::SnapshotIdentityExhausted
+        }
+        WorthQueryApplicationIdempotencyResolutionDenialKind::IdempotencyWindowExpired => {
+            BankEstateIdempotencyResolutionDenial::IdempotencyWindowExpired
         }
         WorthQueryApplicationIdempotencyResolutionDenialKind::ProviderUnavailable => {
             BankEstateIdempotencyResolutionDenial::ProviderUnavailable
