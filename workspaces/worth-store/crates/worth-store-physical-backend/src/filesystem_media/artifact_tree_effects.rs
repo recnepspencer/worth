@@ -231,7 +231,7 @@ fn synchronize_file_with_attempt(
         attempt.denied();
         return Err(denied(&error));
     }
-    match file.sync_all() {
+    match super::os_synchronization::synchronize_state(file) {
         Ok(()) if attempt.effect_observation_is_indeterminate() => {
             attempt.indeterminate(0);
             Err(indeterminate())

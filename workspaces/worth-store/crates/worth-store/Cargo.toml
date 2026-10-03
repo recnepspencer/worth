@@ -43,6 +43,7 @@ tracking-allocator = { version = "0.4", default-features = false }
 
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }
+worth-store-physical-backend = { workspace = true, features = ["volatile-sync-for-tests"] }
 stats_alloc = "0.1"
 tempfile = "3"
 trybuild = "1.0"

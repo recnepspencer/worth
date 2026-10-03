@@ -46,6 +46,9 @@ certification-test-authority = [
     "store-runtime-owner",
     "dep:worth-foundational",
 ]
+# Test-only: skip the OS flush inside synchronization media operations. Enable
+# only from dev-dependencies; release builds ignore it.
+volatile-sync-for-tests = []
 
 [lints]
 workspace = true

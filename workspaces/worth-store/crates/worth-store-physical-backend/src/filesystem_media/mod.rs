@@ -45,6 +45,7 @@ mod operation_context;
 mod operation_contract;
 mod operation_counters;
 mod operation_role_metric;
+mod os_synchronization;
 mod outcome;
 mod owner_admission_effect;
 mod owner_local_identity;
