@@ -3,6 +3,10 @@
 mod admission;
 mod consumed_capacity;
 mod delivery;
+#[cfg(feature = "test-query-execution-observer")]
+mod delivery_observation;
+#[cfg(feature = "test-query-execution-observer")]
+pub use delivery_observation::inexact_native_deliveries_on_this_thread_for_test;
 mod derived;
 mod edit_admission;
 mod equality;

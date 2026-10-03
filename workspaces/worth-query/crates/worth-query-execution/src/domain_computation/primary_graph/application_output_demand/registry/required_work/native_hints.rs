@@ -12,6 +12,9 @@ pub(in crate::domain_computation::primary_graph) struct NativeHint {
     pub(super) observer: CompanionPublicationCompletionObserver,
     pub(super) settlement: Arc<RecordedSettlementIdentity>,
     pub(super) branch: Arc<FundedNativeBranch>,
+    // The selection version at which this publication was seen installed
+    // (or aborted) before a head check. Only such a hint is covered.
+    pub(super) seen_settled_at: Option<u64>,
     pub(super) next: Option<Box<NativeHint>>,
     _capacity: Arc<RetainedInvalidationCapacity>,
 }
@@ -69,6 +72,7 @@ impl RequiredWorkMembership {
             observer,
             settlement,
             branch,
+            seen_settled_at: None,
             next: None,
             _capacity: capacity,
         })

@@ -333,4 +333,10 @@ impl WorthQueryOutputDemandInterest {
     ) -> WorthQueryOutputDemandNotifications {
         self.notifications.clone()
     }
+
+    /// Whether this interest's row is a newer source of `older`'s occurrence.
+    pub(in crate::domain_computation::primary_graph) fn replaces(&self, older: &Self) -> bool {
+        self.key.same_occurrence(&older.key)
+            && self.key.replacement_order(&older.key) == Some(std::cmp::Ordering::Greater)
+    }
 }

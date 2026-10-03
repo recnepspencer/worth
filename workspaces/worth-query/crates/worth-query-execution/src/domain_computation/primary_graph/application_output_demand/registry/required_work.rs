@@ -8,6 +8,7 @@ mod pending_readmission;
 mod queue;
 mod refresh_claim;
 mod selection;
+mod subsumed;
 mod successor_join;
 
 pub(in crate::domain_computation::primary_graph) use refresh_claim::SelectedRequiredRefreshClaim;
@@ -242,15 +243,7 @@ impl RequiredWorkMembership {
                 }
             }
         };
-        // A popped member may be requeued and selected again before this
-        // acknowledgement. Retire the selected version so that second
-        // selection cannot consume the next independent cause.
-        bump_version(&mut state);
-        state.marked = state.native_hints.is_some()
-            || state.local_settlement.is_some()
-            || state.discontinuity_pending
-            || state.unresolved_initial;
-        Some((removed, state.marked))
+        Some((removed, finish_acknowledgement(&mut state)))
     }
 }
 
@@ -282,20 +275,38 @@ impl SelectedRequiredWork {
         self,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ReplacedRequiredWorkHint>, WorthQueryOutputDemandDenial> {
-        let work = std::mem::size_of::<MembershipState>()
-            .checked_mul(3)
-            .and_then(|work| {
-                std::mem::size_of::<ReplacedRequiredWorkHint>()
-                    .checked_mul(2)
-                    .and_then(|carrier| work.checked_add(carrier))
-            })
-            .and_then(|work| work.checked_add(std::mem::size_of::<SelectedRequiredWork>() + 16))
-            .ok_or_else(required_ack_work_denial)?;
-        admission
-            .charge_external_work(u64::try_from(work).map_err(|_| required_ack_work_denial())?)
-            .map_err(|_| required_ack_work_denial())?;
+        charge_acknowledgement(admission)?;
         Ok(self.acknowledge())
     }
+}
+
+fn charge_acknowledgement(
+    admission: &mut InvalidationEditAdmission,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    let work = std::mem::size_of::<MembershipState>()
+        .checked_mul(3)
+        .and_then(|work| {
+            std::mem::size_of::<ReplacedRequiredWorkHint>()
+                .checked_mul(2)
+                .and_then(|carrier| work.checked_add(carrier))
+        })
+        .and_then(|work| work.checked_add(std::mem::size_of::<SelectedRequiredWork>() + 16))
+        .ok_or_else(required_ack_work_denial)?;
+    admission
+        .charge_external_work(u64::try_from(work).map_err(|_| required_ack_work_denial())?)
+        .map_err(|_| required_ack_work_denial())
+}
+
+/// A popped member may be requeued and selected again before this
+/// acknowledgement. Retire the selected version so that second selection
+/// cannot consume the next independent cause. Returns whether causes remain.
+fn finish_acknowledgement(state: &mut MembershipState) -> bool {
+    bump_version(state);
+    state.marked = state.native_hints.is_some()
+        || state.local_settlement.is_some()
+        || state.discontinuity_pending
+        || state.unresolved_initial;
+    state.marked
 }
 
 fn required_ack_work_denial() -> WorthQueryOutputDemandDenial {

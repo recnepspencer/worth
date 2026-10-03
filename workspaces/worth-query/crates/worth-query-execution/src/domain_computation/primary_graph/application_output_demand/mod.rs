@@ -4,6 +4,8 @@ mod registry;
 mod settlement;
 
 pub(super) use recovered_outputs::WorthQueryRecoveredOutputs;
+#[cfg(feature = "test-query-execution-observer")]
+pub use registry::required_ready_custody_bytes_for_test;
 pub(in crate::domain_computation::primary_graph) use registry::PreparedPrerequisiteClaims;
 pub(in crate::domain_computation::primary_graph) use registry::ReplacedRequiredWorkHint;
 pub(in crate::domain_computation::primary_graph) use registry::RequiredWorkMembership;

@@ -238,11 +238,12 @@ where
         registry: &WorthQueryOutputDemandRegistry,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedRequiredContinuationSlot<'_, Schema>, WorthQueryOutputDemandDenial> {
+        let old_len = self.entries.len();
+        // Installation compares the new successor with each held entry.
         admission
-            .charge_external_work(3)
+            .charge_external_work(u64::try_from(old_len).map_err(|_| work_denial())? + 3)
             .map_err(|_| work_denial())?;
         let item_bytes = std::mem::size_of::<RequiredFreshProgress<Schema>>();
-        let old_len = self.entries.len();
         let next_len = old_len.checked_add(1).ok_or_else(capacity_denial)?;
         let relocation_work = if old_len < self.entries.capacity() {
             0
@@ -321,6 +322,12 @@ where
             drop(retired_entries);
             drop(retired_capacity);
         }
+        // A newer row of the same occurrence ends the custody of every older
+        // one: dropping its typed demand releases the superseded row.
+        let newest = progress.successor.interest();
+        self.caller
+            .entries
+            .retain(|entry| !newest.replaces(entry.successor.interest()));
         self.caller.entries.push(progress);
         self.caller
             .entries

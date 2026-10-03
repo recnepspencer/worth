@@ -87,6 +87,8 @@ pub use super::application_entry::mutation::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
     MutationHandlerExecutionDenial, OperationHandler, WorthQueryCompletedMutationCandidate,
 };
+#[cfg(feature = "test-query-execution-observer")]
+pub use super::application_output_demand::required_ready_custody_bytes_for_test;
 pub use super::application_output_demand::{
     WorthQueryOutputDemandNotifications, WorthQueryOutputDemandSettlement,
     WorthQueryOutputReadinessDeliveryEvidence, WorthQueryOutputSettlementPosture,
@@ -215,6 +217,8 @@ pub use super::ordinary_read::{
     WorthQueryOrdinaryReadBatch, WorthQueryOrdinaryReadMetadata, WorthQueryOrdinaryReadProjection,
     WorthQueryOrdinaryReadVersion,
 };
+#[cfg(feature = "test-query-execution-observer")]
+pub use super::output_lineage::invalidation::inexact_native_deliveries_on_this_thread_for_test;
 pub use super::output_lineage::{WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind};
 pub use super::principal_key::{
     WorthQueryApplicationPrincipalKey, WorthQueryApplicationPrincipalKeyDenial,

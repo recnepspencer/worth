@@ -12,6 +12,8 @@ mod performed_head_movement;
 mod producer;
 mod program;
 mod readiness;
+#[cfg(feature = "test-query-execution-observer")]
+mod required_queue;
 mod restored_currentness;
 mod source_world;
 mod stable_alias_currentness;

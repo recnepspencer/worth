@@ -178,6 +178,7 @@ pub(in crate::domain_computation::primary_graph) use progression::{
 mod ready_backing;
 mod record_capacity;
 mod refresh_predecessor;
+mod refreshed_rejoin;
 mod required_context;
 mod required_custody;
 mod required_members;
@@ -203,6 +204,8 @@ pub(in crate::domain_computation::primary_graph) use checkpoint::{
     WorthQueryOutputCheckpoint, WorthQueryOutputClaimIdentity, WorthQueryPendingOutputDelivery,
 };
 pub(in crate::domain_computation::primary_graph) use prerequisite_claims::PreparedPrerequisiteClaims;
+#[cfg(feature = "test-query-execution-observer")]
+pub use ready_backing::required_ready_custody_bytes_for_test;
 pub(in crate::domain_computation::primary_graph) use ready_backing::PreparedReadyBacking;
 pub(in crate::domain_computation::primary_graph) use ready_backing::ReadyCompletion;
 pub(in crate::domain_computation::primary_graph) use refresh_predecessor::OutputRefreshPredecessor;

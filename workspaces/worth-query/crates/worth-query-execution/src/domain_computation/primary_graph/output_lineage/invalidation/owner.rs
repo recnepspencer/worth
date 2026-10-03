@@ -154,6 +154,8 @@ impl RelationalPublicationCompanion for SourceInvalidationOwner {
             (budget, &self.resources),
             context,
         )?;
+        #[cfg(feature = "test-query-execution-observer")]
+        super::delivery_observation::record_delivery(&report);
         let delivery_bytes = index_capacity::arc_bytes::<RetainedTouchDelivery>()
             .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
         context.bytes(delivery_bytes)?;

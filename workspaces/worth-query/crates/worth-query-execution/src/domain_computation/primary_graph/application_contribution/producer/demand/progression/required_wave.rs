@@ -38,6 +38,8 @@ pub(super) struct RequiredWaveSelection<'runtime, Schema> {
 }
 
 mod caller;
+mod drive;
+mod queued;
 mod resolved;
 mod selection;
 pub(in crate::domain_computation::primary_graph) use resolved::{

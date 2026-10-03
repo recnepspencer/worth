@@ -15,6 +15,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 
 mod admission;
 mod refresh;
+mod rejoin;
 mod required_fresh;
 mod required_wave;
 mod retained_read;
@@ -45,6 +46,8 @@ where
             .request_admission()
     }
 
+    /// A required caller settles first; the request work it leaves over is
+    /// spent progressing other dirty required records from the shared queue.
     pub fn advance_output_demand<Family>(
         &self,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -213,6 +216,7 @@ where
             .interest
             .as_ref()
             .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::Closed, Family::IDENTITY))?;
+        self.rejoin_refreshed_output(demand, request_admission)?;
         request_admission
             .charge_external_work((std::mem::size_of_val(&demand.installed_entry) + 1) as u64)
             .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;

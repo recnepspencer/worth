@@ -1,7 +1,11 @@
 //! Primary Graph application contracts.
 
 #[cfg(feature = "test-query-execution-observer")]
+pub use crate::domain_computation::primary_graph::inexact_native_deliveries_on_this_thread_for_test;
+#[cfg(feature = "test-query-execution-observer")]
 pub use crate::domain_computation::primary_graph::query_read_kernel_entries_on_this_thread_for_test;
+#[cfg(feature = "test-query-execution-observer")]
+pub use crate::domain_computation::primary_graph::required_ready_custody_bytes_for_test;
 
 pub use worth_relational::facade::{
     lineage::{LineageEventKind, LineageEventRecord},

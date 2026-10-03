@@ -85,7 +85,23 @@ fn installed_alias_full_oracle_preserves_output_and_rejects_later_output_change(
         );
         assert_eq!(alias.producer_contacts_in_this_demand(), 0);
         assert!(alias.application_commit_receipt().is_none());
-        assert_eq!(before.selected_commit(), after.selected_commit());
+        // The same advance consumed B's queued source change. That is the
+        // only commit: B then settles on it without contact or new commit.
+        assert_ne!(before.selected_commit(), after.selected_commit());
+        let WorthQueryApplicationOutputDemandProgress::Settled(consumer) =
+            b.advance(&request).unwrap()
+        else {
+            panic!("B was progressed inside the alias advance");
+        };
+        assert_eq!(consumer.producer_contacts_in_this_demand(), 0);
+        assert_eq!(
+            consumer.posture(),
+            WorthQueryOutputSettlementPosture::Performed
+        );
+        assert_eq!(
+            request.retain_read().unwrap().selected_commit(),
+            after.selected_commit()
+        );
         assert_eq!(
             alias.output_correspondence(),
             performed_receipt.output_correspondence()

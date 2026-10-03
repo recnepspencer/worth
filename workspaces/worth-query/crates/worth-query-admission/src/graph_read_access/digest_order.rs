@@ -38,7 +38,7 @@ pub(crate) fn sort_digest_keys_admitted<T, Stop>(
             let middle = start.saturating_add(width).min(count);
             let end = middle.saturating_add(width).min(count);
             let (mut left, mut right) = (start, middle);
-            for destination in start..end {
+            for slot in &mut scratch[start..end] {
                 let take_left = if left == middle {
                     false
                 } else if right == end {
@@ -60,7 +60,7 @@ pub(crate) fn sort_digest_keys_admitted<T, Stop>(
                 };
                 admit(size_of::<usize>() as u64, 0)
                     .map_err(WorthQueryCanonicalIdentityStop::Admission)?;
-                scratch[destination] = if take_left {
+                *slot = if take_left {
                     let index = order[left];
                     left += 1;
                     index

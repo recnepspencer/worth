@@ -28,6 +28,13 @@ pub(in crate::domain_computation::primary_graph) struct PreparedReadyBacking {
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct ReadyCompletion(Arc<ReadyCell>);
 
+/// The required custody one Ready row declares.
+#[cfg(feature = "test-query-execution-observer")]
+#[doc(hidden)]
+pub fn required_ready_custody_bytes_for_test() -> usize {
+    PreparedReadyBacking::retained_bytes()
+}
+
 impl PreparedReadyBacking {
     pub(super) const fn retained_bytes() -> usize {
         let header = 2 * std::mem::size_of::<usize>();
