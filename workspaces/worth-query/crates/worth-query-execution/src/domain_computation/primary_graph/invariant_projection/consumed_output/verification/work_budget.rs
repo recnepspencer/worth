@@ -26,14 +26,23 @@ pub(in super::super) fn map_admission_stop(
         | CompanionPreflightStop::WorkCounterOverflow => {
             ConsumedOutputVerificationStop::WorkExhausted
         }
-        // A concurrent writer's preflight holds the branch cells; the caller
-        // retries rather than treating momentary contention as missing evidence.
+        // Readers wait for the branch cells, but a carried writer meter can
+        // still meet a concurrent preflight; the caller retries rather than
+        // treating momentary contention as missing evidence.
         CompanionPreflightStop::TopologyPending => {
             ConsumedOutputVerificationStop::RetryCurrentness(
                 worth_relational::facade::mvcc::CompanionCellEditStop::PreflightPending,
             )
         }
-        _ => ConsumedOutputVerificationStop::Unavailable,
+        CompanionPreflightStop::SelectedSourceMismatch
+        | CompanionPreflightStop::SelectedPositionUnavailable { .. }
+        | CompanionPreflightStop::ForeignCell
+        | CompanionPreflightStop::RegistrationChanged
+        | CompanionPreflightStop::CellCapacityExhausted { .. }
+        | CompanionPreflightStop::PreparationMemoryExhausted { .. }
+        | CompanionPreflightStop::PreparationMemoryCounterOverflow
+        | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }
+        | CompanionPreflightStop::Interrupted(_) => ConsumedOutputVerificationStop::Unavailable,
     }
 }
 

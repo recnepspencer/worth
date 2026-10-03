@@ -131,8 +131,10 @@ impl PreparedCanonicalBranchMovement {
                 );
                 let effect = participant
                     .prepare(&mut context)
-                    .map_err(map_companion_stop)?;
-                effect.matches(&binding).map_err(map_companion_stop)?;
+                    .map_err(|stop| companion_stop_outcome(stop, &publication_cell, &expected))?;
+                effect
+                    .matches(&binding)
+                    .map_err(|stop| companion_stop_outcome(stop, &publication_cell, &expected))?;
                 (Some(effect), Some(binding))
             }
         };
@@ -269,4 +271,55 @@ fn map_companion_stop(stop: super::super::CompanionPreflightStop) -> RelationalP
             RelationalPublicationDeferred::CompanionPreflight(other),
         ),
     }
+}
+
+/// A stale expected head wins over a companion deferral. A concurrent
+/// publisher on the same head makes the companion report a held reservation or
+/// a moved root; the branch head is re-observed (briefly, outside the
+/// publication critical section, never waiting on the reservation) and a
+/// moved head is reported as the stale observation the cutover would report.
+/// Only an unchanged head leaves the stop a deferral to retry unchanged.
+fn companion_stop_outcome(
+    stop: super::super::CompanionPreflightStop,
+    publication_cell: &crate::branch::RelationalBranchPublicationCell,
+    expected: &crate::branch::RelationalBranchBasisDescriptor,
+) -> RelationalPublicationOutcome {
+    if follows_concurrent_publication(&stop) {
+        if let Some(observed) = observe_head(publication_cell) {
+            if observed != *expected {
+                return RelationalPublicationOutcome::stale(
+                    super::StaleRelationalBranchObservation::new(expected.clone(), observed),
+                );
+            }
+        }
+    }
+    map_companion_stop(stop)
+}
+
+const fn follows_concurrent_publication(stop: &super::super::CompanionPreflightStop) -> bool {
+    use super::super::CompanionPreflightStop as Stop;
+    match stop {
+        Stop::TopologyPending | Stop::SelectedSourceMismatch => true,
+        Stop::SelectedPositionUnavailable { .. }
+        | Stop::ForeignCell
+        | Stop::RegistrationChanged
+        | Stop::CellCapacityExhausted { .. }
+        | Stop::WorkExhausted { .. }
+        | Stop::WorkCounterOverflow
+        | Stop::PreparationMemoryExhausted { .. }
+        | Stop::PreparationMemoryCounterOverflow
+        | Stop::RetainedCompanionCapacityExhausted { .. }
+        | Stop::Interrupted(_) => false,
+    }
+}
+
+/// The same head observation the cutover makes. A branch without a selected
+/// root or an unreadable descriptor keeps the original stop; the cutover owns
+/// those failures.
+fn observe_head(
+    publication_cell: &crate::branch::RelationalBranchPublicationCell,
+) -> Option<crate::branch::RelationalBranchBasisDescriptor> {
+    let observed_cell = publication_cell.enter_state().snapshot_cell();
+    let observed_root = observed_cell.root()?;
+    crate::branch::descriptor_for_cell(&observed_cell, &observed_root).ok()
 }

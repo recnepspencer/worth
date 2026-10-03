@@ -142,12 +142,18 @@ pub(super) fn insert(
     admission.ordered_edit::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(
         state.settlements.len(),
     )?;
+    // Dirty, pending, epoch-stale or verification-required rows are not clean.
+    let not_clean = replayed_stale
+        || row.delivery_epoch != state.delivery_epoch
+        || row.verification_requirement.is_some()
+        || !row.dirty_ordinals.is_empty()
+        || !row.pending_upstream.is_empty();
     state
         .settlements
         .insert(Arc::clone(identity), Arc::new(row));
-    if replayed_stale {
+    if not_clean {
         // Consumers registered against the earlier row must not stay clean
-        // behind deliveries this registration has just replayed.
+        // behind a replacement that is not itself clean.
         delivery::propagate(
             state,
             OrdSet::unit(Arc::clone(identity)),

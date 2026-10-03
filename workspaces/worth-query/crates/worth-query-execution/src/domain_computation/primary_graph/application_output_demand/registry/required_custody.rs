@@ -109,26 +109,6 @@ impl WorthQueryOutputDemandRegistry {
         peak_bytes: usize,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<RequiredOutputCustodyCapacity, WorthQueryOutputDemandDenial> {
-        // The owned denial subjects below are static and shorter than this
-        // envelope. Its own refusal uses an allocation-free subject.
-        const SUBJECT_BYTES: usize = "required output custody exceeds retained capacity".len();
-        admission
-            .charge_external_work(SUBJECT_BYTES as u64)
-            .map_err(|_| empty_work_denial())?;
-        admission
-            .admit_read_scratch(
-                u64::try_from(SUBJECT_BYTES + std::mem::size_of::<String>())
-                    .map_err(|_| empty_capacity_denial())?,
-            )
-            .map_err(|stop| match stop {
-                worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted {
-                    ..
-                }
-                | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => {
-                    empty_work_denial()
-                }
-                _ => empty_capacity_denial(),
-            })?;
         if peak_bytes < retained_bytes {
             return Err(capacity_denial());
         }
@@ -165,16 +145,5 @@ fn capacity_denial() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(
         WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
         "required output custody exceeds retained capacity",
-    )
-}
-
-fn empty_work_denial() -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, "")
-}
-
-fn empty_capacity_denial() -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(
-        WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-        "",
     )
 }

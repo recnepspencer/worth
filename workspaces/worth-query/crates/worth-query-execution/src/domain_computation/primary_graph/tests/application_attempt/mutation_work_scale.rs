@@ -164,7 +164,7 @@ fn mutation_work(
     unrelated_accounts: usize,
     idempotency_key: u8,
 ) -> super::super::super::provider::WorthQueryPrimaryMutationWorkEvidence {
-    let world = installed_scale_world();
+    let world = installed_authorization_world(true);
     grow_unrelated_accounts(&world, unrelated_accounts);
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
@@ -325,28 +325,4 @@ fn grow_unrelated_accounts(world: &super::super::fixture::AuthorizationWorld, co
         );
         super::super::fixture::publish_relational_mutation(world, batch);
     }
-}
-
-fn installed_scale_world() -> super::super::fixture::AuthorizationWorld {
-    use crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources;
-    use crate::domain_computation::execution_runtime::{
-        WorthQueryInvalidationResourceInstallation, WorthQueryInvalidationResources,
-    };
-    let (budgets, clock, _) =
-        crate::domain_computation::execution_runtime::product_world::test_product_world_resources()
-            .into_parts();
-    // This court measures the local edit after native population. Its cold
-    // population publishes up to 4,000 accounts per batch and 100,000 total;
-    // those declared deltas retain their own bounded selector history.
-    let invalidation =
-        WorthQueryInvalidationResources::install(WorthQueryInvalidationResourceInstallation {
-            maximum_marking_work: 64 * 1024 * 1024,
-            maximum_preparation_bytes: 64 * 1024 * 1024,
-            maximum_retained_bytes: 512 * 1024 * 1024,
-            maximum_retained_positions: 128,
-        })
-        .unwrap();
-    super::super::fixture::installed_authorization_world_with_product_resources(
-        WorthQueryProductWorldResources::new(budgets, clock, invalidation),
-    )
 }

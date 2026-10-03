@@ -35,6 +35,7 @@ pub(super) fn advance_input_cutoff<Schema, Binding, OperationType, Input, Scope>
     matched_predecessor: Option<super::super::demand::MatchedRequiredPredecessor<'_>>,
     resources: super::super::WorthQueryProducerDemandResources,
     admission: &mut InvalidationEditAdmission,
+    currentness: &mut InvalidationEditAdmission,
 ) -> Result<ProducerInputProgression, ProducerExecutionStop>
 where
     Schema: ApplicationSchema + 'static,
@@ -98,6 +99,7 @@ where
                 &basis,
                 source_owner,
                 admission,
+                currentness,
             )
         })
         .map_err(cutoff_denial)?;

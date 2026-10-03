@@ -16,6 +16,8 @@ mod full_verification;
 mod local_requirement;
 #[path = "native_journey_tests/logical_work_scale.rs"]
 mod logical_work_scale;
+#[path = "native_journey_tests/marking_ceiling.rs"]
+mod marking_ceiling;
 // Fixture evidence carries no performed output projection, so the
 // equivalence oracle correctly refuses it; this proof is about metering.
 #[cfg(not(feature = "certification-invalidation-equivalence"))]

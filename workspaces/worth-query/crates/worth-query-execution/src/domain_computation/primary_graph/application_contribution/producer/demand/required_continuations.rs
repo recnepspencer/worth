@@ -331,14 +331,14 @@ where
 }
 
 fn work_denial() -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::with_static_subject(
+    WorthQueryOutputDemandDenial::new(
         super::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
         "required continuation exceeds carried request work",
     )
 }
 
 fn capacity_denial() -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::with_static_subject(
+    WorthQueryOutputDemandDenial::new(
         super::WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
         "required continuation exceeds retained capacity",
     )

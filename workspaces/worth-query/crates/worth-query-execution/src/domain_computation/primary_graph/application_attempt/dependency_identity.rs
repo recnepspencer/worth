@@ -27,7 +27,7 @@ impl<Schema, Operation, Input, Scope>
         >,
         declared_key: [u8; 32],
         successor_of: Option<[u8; 32]>,
-        maximum_lineage_work: usize,
+        request_admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     ) -> Result<([u8; 32], [u8; 32]), WorthQueryProducerIdentityDenial>
     where
         OutputBinding: 'static,
@@ -49,7 +49,8 @@ impl<Schema, Operation, Input, Scope>
         self.read_set
             .admission
             .retain_execution_canonical_work(work);
-        let (head, _) = runtime
+        // The lineage head lookup is framework preparation on the request meter.
+        let (head, lookup_work) = runtime
             .primary_provider
             .graph
             .output_lineage
@@ -62,9 +63,12 @@ impl<Schema, Operation, Input, Scope>
                     .admission
                     .source_partition_identity()
                     .ok_or(WorthQueryProducerIdentityDenial::MissingSourcePartition)?,
-                maximum_lineage_work,
+                request_admission.remaining_work(),
             )
             .map_err(|()| WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded)?;
+        request_admission
+            .charge_external_work(lookup_work as u64)
+            .map_err(|_| WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded)?;
         let force_successor = successor_of.is_some_and(|stale_key| {
             head.is_some_and(|head| head.idempotency_key_identity == stale_key)
         });

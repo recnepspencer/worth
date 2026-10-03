@@ -47,7 +47,7 @@ impl DemandRegistryState {
             .checked_mul(comparison_work)
             .ok_or_else(work_denial)?;
         admission
-            .charge_external_work(u64::try_from(work).map_err(|_| work_denial())?)
+            .charge_ordered_operations(1, u64::try_from(work).map_err(|_| work_denial())?)
             .map_err(admission_denial)
     }
 
@@ -66,7 +66,7 @@ impl DemandRegistryState {
             .and_then(|count| count.checked_mul(node))
             .ok_or_else(work_denial)?;
         admission
-            .charge_external_work(u64::try_from(work).map_err(|_| work_denial())?)
+            .charge_ordered_operations(1, u64::try_from(work).map_err(|_| work_denial())?)
             .map_err(admission_denial)
     }
 }

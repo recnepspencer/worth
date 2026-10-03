@@ -96,7 +96,7 @@ where
         || retained.schema_binding != *query.binding_identity()
         || retained.query_identity != *query.identity()
     {
-        return Err(WorthQueryOutputDemandDenial::with_static_subject(
+        return Err(WorthQueryOutputDemandDenial::new(
             WorthQueryOutputDemandDenialKind::Superseded,
             Binding::IDENTITY,
         )

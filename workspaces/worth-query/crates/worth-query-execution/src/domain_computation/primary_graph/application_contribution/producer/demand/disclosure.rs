@@ -71,7 +71,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     source: WorthQueryApplicationOutputDemandSource<Query, Value>,
     edition: InstalledProducerEdition,
     admission: &mut InvalidationEditAdmission,
-    subject: &str,
+    subject: &'static str,
 ) -> Result<FreshOutputDisclosure<Query, Value>, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
@@ -112,7 +112,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     source: WorthQueryApplicationOutputDemandSource<Query, Value>,
     edition: InstalledProducerEdition,
     admission: &mut InvalidationEditAdmission,
-    subject: &str,
+    subject: &'static str,
 ) -> Result<FreshOutputDisclosure<Query, Value>, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
@@ -178,7 +178,7 @@ fn validate_source<Schema, Query, Value>(
     source: WorthQueryApplicationOutputDemandSource<Query, Value>,
     edition: InstalledProducerEdition,
     mut selection: DisclosureSelection<'_>,
-    subject: &str,
+    subject: &'static str,
 ) -> Result<ValidatedOutputDisclosure<Query, Value>, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
@@ -353,7 +353,7 @@ where
 
 fn denial(
     kind: WorthQueryOutputDemandDenialKind,
-    subject: impl Into<String>,
+    subject: impl Into<std::borrow::Cow<'static, str>>,
 ) -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(kind, subject)
 }

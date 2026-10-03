@@ -420,6 +420,9 @@ notice to its ledger.
 A lost response can therefore leave Query unresolved even when the rail has
 completed the effect; safe retry relies on the rail's idempotent correlation,
 not on Query guessing what happened.
+Once Query's terminal effect owner holds the completion, safe retry makes no new
+physical attempt. It is refused with `WorthQueryRecoveryHandleDenialKind::AlreadyCompleted`
+and the live handle is returned.
 
 ## Publication Settlement Recovery
 

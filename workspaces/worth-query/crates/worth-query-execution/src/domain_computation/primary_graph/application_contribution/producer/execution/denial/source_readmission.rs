@@ -22,10 +22,10 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         | AdmissionKind::ScopeTypeMismatch
         | AdmissionKind::Authorization(_) => request_admission_denied(subject, error),
         AdmissionKind::Cancelled => {
-            request_admission_rejected(denial(DemandKind::Cancelled, subject))
+            request_admission_rejected(denial(DemandKind::Cancelled, subject.to_owned()))
         }
         AdmissionKind::DeadlineExceeded => {
-            request_admission_rejected(denial(DemandKind::TimedOut, subject))
+            request_admission_rejected(denial(DemandKind::TimedOut, subject.to_owned()))
         }
         other => {
             let kind = match other {
@@ -49,10 +49,10 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         | ExecutionKind::StaleScope
         | ExecutionKind::Authorization(_) => request_admission_denied(subject, error),
         ExecutionKind::Cancelled => {
-            request_admission_rejected(denial(DemandKind::Cancelled, subject))
+            request_admission_rejected(denial(DemandKind::Cancelled, subject.to_owned()))
         }
         ExecutionKind::DeadlineExceeded => {
-            request_admission_rejected(denial(DemandKind::TimedOut, subject))
+            request_admission_rejected(denial(DemandKind::TimedOut, subject.to_owned()))
         }
         _ => ProducerExecutionStop::ExecutionStopped(failed(subject, error)),
     }

@@ -13,7 +13,7 @@ pub(super) fn validate_demand_resources<Schema>(
     let resources = executor.resources(source).ok_or_else(|| {
         denial(
             WorthQueryOutputDemandDenialKind::ForeignSource,
-            producer_identity,
+            producer_identity.to_owned(),
         )
     })?;
     validate_retained_resources(resources, producer_identity, limits)?;
@@ -28,14 +28,14 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     if resources.work() > limits.producer_work() {
         return Err(denial(
             WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-            producer_identity,
+            producer_identity.to_owned(),
         )
         .with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable));
     }
     if resources.retained_bytes() > limits.producer_retained_bytes() {
         return Err(denial(
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-            producer_identity,
+            producer_identity.to_owned(),
         )
         .with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable));
     }

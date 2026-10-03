@@ -298,7 +298,7 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
         .and_then(|work| work.checked_add(1))
         .ok_or_else(work_denial)?;
     admission
-        .charge_external_work(u64::try_from(work).map_err(|_| work_denial())?)
+        .charge_ordered_operations(1, u64::try_from(work).map_err(|_| work_denial())?)
         .map_err(|_| work_denial())
 }
 

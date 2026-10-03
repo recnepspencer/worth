@@ -41,11 +41,17 @@ pub(super) fn request_authority_denied(
 ) -> ProducerExecutionStop {
     use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Kind;
     let refusal = match error.kind() {
-        Kind::Cancelled => denial(WorthQueryOutputDemandDenialKind::Cancelled, subject),
-        Kind::DeadlineExceeded => denial(WorthQueryOutputDemandDenialKind::TimedOut, subject),
+        Kind::Cancelled => denial(
+            WorthQueryOutputDemandDenialKind::Cancelled,
+            subject.to_owned(),
+        ),
+        Kind::DeadlineExceeded => denial(
+            WorthQueryOutputDemandDenialKind::TimedOut,
+            subject.to_owned(),
+        ),
         kind => denial(
             WorthQueryOutputDemandDenialKind::RequestAuthorization(kind),
-            subject,
+            subject.to_owned(),
         ),
     };
     request_admission_rejected(refusal)
@@ -76,7 +82,10 @@ pub(super) fn execution_failed(
                     | WorthQueryApplicationAttemptDenialKind::SourceRetired
             )
     ) {
-        denial(WorthQueryOutputDemandDenialKind::Superseded, subject)
+        denial(
+            WorthQueryOutputDemandDenialKind::Superseded,
+            subject.to_owned(),
+        )
     } else {
         failed(subject, error)
     }
@@ -102,7 +111,7 @@ pub(super) fn failed(subject: &str, error: impl std::fmt::Debug) -> WorthQueryOu
 
 pub(super) fn denial(
     kind: WorthQueryOutputDemandDenialKind,
-    subject: impl Into<String>,
+    subject: impl Into<std::borrow::Cow<'static, str>>,
 ) -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(kind, subject)
 }

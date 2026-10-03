@@ -48,7 +48,7 @@ where
     Schema: ApplicationSchema + 'static,
 {
     let selected = runtime.on_branch(branch).select().map_err(|stop| {
-        WorthQueryOutputDemandDenial::with_static_subject(
+        WorthQueryOutputDemandDenial::new(
             WorthQueryOutputDemandDenialKind::ProductSelection(stop),
             "required output Product basis could not be selected",
         )

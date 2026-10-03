@@ -331,7 +331,10 @@ fn retire_stale_records(
             && record.source_scope == Some(scope)
             && key.source.replacement_order(successor) == Some(Ordering::Less)
         {
-            let cause = denial(WorthQueryOutputDemandDenialKind::Superseded, &key.producer);
+            let cause = denial(
+                WorthQueryOutputDemandDenialKind::Superseded,
+                key.producer.clone(),
+            );
             match &mut record.state {
                 DemandState::Output(output) => output.stop(cause),
                 _ => record.state = DemandState::Failed(cause),
@@ -369,7 +372,7 @@ fn retire_stale_records(
 
 fn denial(
     kind: WorthQueryOutputDemandDenialKind,
-    subject: impl Into<String>,
+    subject: impl Into<std::borrow::Cow<'static, str>>,
 ) -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(kind, subject)
 }

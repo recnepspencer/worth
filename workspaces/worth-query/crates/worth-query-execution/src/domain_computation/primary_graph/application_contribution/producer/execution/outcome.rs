@@ -81,28 +81,28 @@ pub(super) fn commit_receipt(
             let crate::domain_computation::primary_graph::WorthQueryApplicationCommitDeferredKind::RequiredPrerequisitePending(kind) = deferred.kind() else {
                 unreachable!("the guarded deferral names required prerequisite custody");
             };
-            Err(denial(kind, identity).with_recovery_posture(
+            Err(denial(kind, identity.to_owned()).with_recovery_posture(
                 crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable,
             ))
         }
         WorthQueryApplicationCommitOutcome::Stale(_)
         | WorthQueryApplicationCommitOutcome::ProductStale(_) => Err(denial(
             WorthQueryOutputDemandDenialKind::PublicationStale,
-            identity,
+            identity.to_owned(),
         )),
         WorthQueryApplicationCommitOutcome::Cancelled => Err(denial(
             WorthQueryOutputDemandDenialKind::Cancelled,
-            identity,
+            identity.to_owned(),
         )),
         WorthQueryApplicationCommitOutcome::TimedOut => {
-            Err(denial(WorthQueryOutputDemandDenialKind::TimedOut, identity))
+            Err(denial(WorthQueryOutputDemandDenialKind::TimedOut, identity.to_owned()))
         }
         WorthQueryApplicationCommitOutcome::NoEffect(no_effect)
             if no_effect.cause() == WorthQueryApplicationNoEffectCause::CapacityExhausted =>
         {
             Err(denial(
                 WorthQueryOutputDemandDenialKind::PublicationCapacityExceeded,
-                identity,
+                identity.to_owned(),
             ))
         }
         WorthQueryApplicationCommitOutcome::Denied(commit_denial)
@@ -110,7 +110,7 @@ pub(super) fn commit_receipt(
         {
             Err(denial(
                 WorthQueryOutputDemandDenialKind::PublicationStale,
-                identity,
+                identity.to_owned(),
             ))
         }
         WorthQueryApplicationCommitOutcome::Denied(commit_denial)
@@ -119,7 +119,7 @@ pub(super) fn commit_receipt(
         {
             Err(denial(
                 WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-                format!("{}: {commit_denial:?}", identity),
+                format!("{identity}: {commit_denial:?}"),
             ))
         }
         outcome => Err(failed(identity, outcome)),

@@ -116,5 +116,8 @@ pub(super) fn reject_older_successor(
 }
 
 fn superseded_denial(subject: &str) -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::Superseded, subject)
+    WorthQueryOutputDemandDenial::new(
+        WorthQueryOutputDemandDenialKind::Superseded,
+        subject.to_owned(),
+    )
 }

@@ -305,7 +305,7 @@ fn denial(
     kind: WorthQueryOutputDemandDenialKind,
     subject: &'static str,
 ) -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::with_static_subject(kind, subject)
+    WorthQueryOutputDemandDenial::new(kind, subject)
 }
 
 fn admission_denial(stop: CompanionPreflightStop) -> WorthQueryOutputDemandDenial {

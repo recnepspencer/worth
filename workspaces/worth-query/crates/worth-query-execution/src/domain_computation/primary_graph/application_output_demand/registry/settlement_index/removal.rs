@@ -17,7 +17,8 @@ impl SettlementIndex {
         let outer = comparison_work::<SemanticSource>(count, 16)?;
         let outer_moves = movement_work::<SemanticSource, SourcePostings>(count)?;
         for identity in identities {
-            charge(admission, outer.checked_add(4).ok_or_else(empty_denial)?)?;
+            navigate(admission, outer)?;
+            charge(admission, 4)?;
             let source = self
                 .sources
                 .get(identity.source())
@@ -36,14 +37,14 @@ impl SettlementIndex {
                 .and_then(|bytes| bytes.checked_add(48))
                 .and_then(|bytes| u64::try_from(bytes).ok())
                 .ok_or_else(empty_denial)?;
-            let remaining = outer
+            let navigation = outer
                 .checked_mul(2)
                 .and_then(|work| work.checked_add(inner))
                 .and_then(|work| work.checked_add(inner_moves))
                 .and_then(|work| work.checked_add(outer_moves))
-                .and_then(|work| work.checked_add(identity_work))
                 .ok_or_else(empty_denial)?;
-            charge(admission, remaining)?;
+            navigate(admission, navigation)?;
+            charge(admission, identity_work)?;
         }
         Ok(())
     }
@@ -95,6 +96,17 @@ fn charge(
 ) -> Result<(), WorthQueryOutputDemandDenial> {
     admission
         .charge_external_work(work)
+        .map_err(|_| empty_denial())
+}
+
+/// Shared-index searches and rebalancing are physical navigation, reported
+/// apart from the request's declared work.
+fn navigate(
+    admission: &mut InvalidationEditAdmission,
+    work: u64,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    admission
+        .charge_ordered_operations(1, work)
         .map_err(|_| empty_denial())
 }
 

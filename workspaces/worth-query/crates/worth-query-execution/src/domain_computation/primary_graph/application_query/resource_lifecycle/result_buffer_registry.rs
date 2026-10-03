@@ -53,7 +53,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationRes
     registry: WorthQueryApplicationResultBufferRegistry,
     limit_bytes: usize,
     retained_bytes: usize,
-    transferred_bytes: usize,
     peak_bytes: usize,
     released: bool,
 }
@@ -84,7 +83,6 @@ impl WorthQueryApplicationResultBufferRegistry {
             registry: self.clone(),
             limit_bytes,
             retained_bytes: 0,
-            transferred_bytes: 0,
             peak_bytes: 0,
             released: false,
         }
@@ -139,11 +137,7 @@ impl WorthQueryApplicationResultBufferReservation {
         &mut self,
         bytes: usize,
     ) -> Result<(), ()> {
-        let Some(claimed) = self
-            .retained_bytes
-            .checked_add(self.transferred_bytes)
-            .and_then(|total| total.checked_add(bytes))
-        else {
+        let Some(claimed) = self.retained_bytes.checked_add(bytes) else {
             self.record_rejected(usize::MAX);
             return Err(());
         };
@@ -164,13 +158,18 @@ impl WorthQueryApplicationResultBufferReservation {
         Ok(())
     }
 
+    /// Disclosed-source custody is retention owned by the source, not result
+    /// bytes. It is recorded on the registry's retained ledger until the source
+    /// drops and never consumes this read's declared inline-result limit, which
+    /// admission already checked against the estimated result.
     pub(in crate::domain_computation::primary_graph::application_query) fn claim_retained_source(
-        &mut self,
+        &self,
         bytes: usize,
     ) -> Result<WorthQueryRetainedSourceCharge, ()> {
-        self.claim(bytes)?;
-        self.retained_bytes -= bytes;
-        self.transferred_bytes += bytes;
+        if acquire(&self.registry.state.retained_bytes, bytes).is_err() {
+            self.record_rejected(usize::MAX);
+            return Err(());
+        }
         Ok(WorthQueryRetainedSourceCharge {
             state: Arc::clone(&self.registry.state),
             bytes,
@@ -278,28 +277,38 @@ mod tests {
         let observed = registry.observer().observe();
         assert_eq!(observed.active_buffers(), 0);
         assert_eq!(observed.retained_bytes(), 19);
-        assert_eq!(receipt.peak_bytes(), 32);
+        assert_eq!(receipt.peak_bytes(), 13);
 
         drop(charge);
         assert_eq!(registry.observer().observe().retained_bytes(), 0);
     }
 
     #[test]
-    fn transferred_sources_share_one_read_limit_and_refund_on_final_drop() {
+    fn disclosed_custody_never_consumes_the_inline_result_limit() {
         let registry = WorthQueryApplicationResultBufferRegistry::default();
-        let mut reservation = registry.reserve(1_024);
-        reservation.claim(100).unwrap();
+        let mut reservation = registry.reserve(128);
+        reservation.claim(128).unwrap();
         let scope = reservation.claim_retained_source(400).unwrap();
         let parameters = reservation.claim_retained_source(500).unwrap();
-        assert!(reservation.claim_retained_source(25).is_err());
-        assert_eq!(registry.observer().observe().retained_bytes(), 1_000);
-        assert_eq!(registry.observer().observe().peak_rejected_bytes(), 1_025);
-        reservation.release_temporary(100);
-        let descriptor = reservation.claim_retained_source(124).unwrap();
+        assert_eq!(reservation.claim(1), Err(()));
+        assert_eq!(registry.observer().observe().retained_bytes(), 1_028);
+        assert_eq!(registry.observer().observe().peak_rejected_bytes(), 129);
         let receipt = reservation.release();
-        assert_eq!(receipt.peak_bytes(), 1_024);
-        assert_eq!(registry.observer().observe().retained_bytes(), 1_024);
-        drop((scope, parameters, descriptor));
+        assert_eq!(receipt.peak_bytes(), 128);
+        assert_eq!(registry.observer().observe().retained_bytes(), 900);
+        drop((scope, parameters));
         assert_eq!(registry.observer().observe().retained_bytes(), 0);
+    }
+
+    #[test]
+    fn disclosed_custody_rejects_ledger_overflow_without_a_charge() {
+        let registry = WorthQueryApplicationResultBufferRegistry::default();
+        registry
+            .state
+            .retained_bytes
+            .store(usize::MAX, Ordering::Release);
+        let reservation = registry.reserve(8);
+        assert!(reservation.claim_retained_source(1).is_err());
+        assert_eq!(registry.observer().observe().retained_bytes(), usize::MAX);
     }
 }

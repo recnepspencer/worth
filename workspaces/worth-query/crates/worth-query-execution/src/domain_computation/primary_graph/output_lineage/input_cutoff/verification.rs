@@ -75,6 +75,7 @@ impl RetainedInputCutoffCandidate {
         basis: &'selected PreparedInputCutoffBasis<'_>,
         owner: &SourceInvalidationOwner,
         admission: &mut InvalidationEditAdmission,
+        currentness: &mut InvalidationEditAdmission,
     ) -> Result<InputCutoffDecision<'selected>, InputCutoffVerificationStop> {
         let (snapshot, selected) = basis.in_runtime(runtime, admission)?;
         let verified_facts = self.eligible_for_reuse(
@@ -86,6 +87,7 @@ impl RetainedInputCutoffCandidate {
             selected,
             owner,
             admission,
+            currentness,
         )?;
         Ok(if let Some(verified_facts) = verified_facts {
             InputCutoffDecision::Reuse(VerifiedInputCutoff {
@@ -113,6 +115,7 @@ impl RetainedInputCutoffCandidate {
         selected: &PositionedRelationalSnapshot,
         owner: &SourceInvalidationOwner,
         admission: &mut InvalidationEditAdmission,
+        currentness: &mut InvalidationEditAdmission,
     ) -> Result<Option<Arc<[WorthQueryApplicationObservedFact]>>, InputCutoffVerificationStop> {
         admission.charge_external_work(1)?;
         let Some(prior_key) = self.prepared_input_key() else {
@@ -146,10 +149,10 @@ impl RetainedInputCutoffCandidate {
         if count > facts.len() {
             return Ok(None);
         }
-        let currentness = owner.currentness(selected, self.settlement_identity(), admission)?;
+        let settlement = owner.currentness(selected, self.settlement_identity(), admission)?;
         let mut verify_full_prefix = requirement.is_some();
         let mut dirty_prefix = None;
-        match currentness {
+        match settlement {
             SourceSettlementCurrentness::Clean => {}
             SourceSettlementCurrentness::Dirty(ordinals) => dirty_prefix = Some(ordinals),
             SourceSettlementCurrentness::PendingUpstream(edges) => {
@@ -195,20 +198,23 @@ impl RetainedInputCutoffCandidate {
                 verify_full_prefix = true;
             }
         }
-        if verify_full_prefix {
-            for fact in facts.iter().take(count) {
-                admission.charge_external_work(1)?;
-                if !fact_is_current(fact, runtime, snapshot, admission)? {
-                    return Ok(None);
-                }
-            }
+        let current = if verify_full_prefix {
+            marked_facts_permit_reuse(facts.iter().take(count), runtime, snapshot, currentness)?
         } else if let Some(ordinals) = dirty_prefix {
-            for ordinal in ordinals.iter().take_while(|ordinal| **ordinal < count) {
-                admission.charge_external_work(1)?;
-                if !fact_is_current(&facts[*ordinal], runtime, snapshot, admission)? {
-                    return Ok(None);
-                }
-            }
+            marked_facts_permit_reuse(
+                ordinals
+                    .iter()
+                    .take_while(|ordinal| **ordinal < count)
+                    .map(|ordinal| &facts[*ordinal]),
+                runtime,
+                snapshot,
+                currentness,
+            )?
+        } else {
+            true
+        };
+        if !current {
+            return Ok(None);
         }
         match ConsumedOutputEvidence::verify_many_with_admission(
             self.consumed_outputs(),
@@ -283,6 +289,45 @@ fn matched_consumed_root(
     Ok(roots[0].identity().as_ref() == matched.old_identity())
 }
 
+/// Whether the marked facts, or the full-verification prefix, still permit
+/// reuse. An exhausted currentness allowance proves nothing about the prior
+/// output, so it answers `false` and the demand executes fresh instead of
+/// stopping; every other stop stays a stop.
+fn marked_facts_permit_reuse<'fact>(
+    facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
+    runtime: &RelationalRuntime,
+    snapshot: &SnapshotHandle,
+    currentness: &mut InvalidationEditAdmission,
+) -> Result<bool, InputCutoffVerificationStop> {
+    match facts_are_current(facts, runtime, snapshot, currentness) {
+        Ok(current) => Ok(current),
+        Err(
+            InputCutoffVerificationStop::WorkExhausted
+            | InputCutoffVerificationStop::Admission(CompanionPreflightStop::WorkExhausted {
+                ..
+            }),
+        ) => Ok(false),
+        Err(stop) => Err(stop),
+    }
+}
+
+/// Re-verifies marked facts, or the full-verification prefix, on the
+/// host-bounded source-currentness allowance.
+fn facts_are_current<'fact>(
+    facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
+    runtime: &RelationalRuntime,
+    snapshot: &SnapshotHandle,
+    currentness: &mut InvalidationEditAdmission,
+) -> Result<bool, InputCutoffVerificationStop> {
+    for fact in facts {
+        currentness.charge_external_work(1)?;
+        if !fact_is_current(fact, runtime, snapshot, currentness)? {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
 fn fact_is_current(
     fact: &WorthQueryApplicationObservedFact,
     runtime: &RelationalRuntime,
@@ -308,3 +353,6 @@ fn fact_is_current(
     admission.charge_external_work(work.saturating_sub(prepaid) as u64)?;
     Ok(current)
 }
+
+#[cfg(test)]
+mod tests;

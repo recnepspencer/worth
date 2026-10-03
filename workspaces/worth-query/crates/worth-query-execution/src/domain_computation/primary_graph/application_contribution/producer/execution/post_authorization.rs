@@ -123,9 +123,15 @@ where
             request_admission,
         )
         .map_err(|error| input_cutoff::source_preparation_denial(Binding::IDENTITY, error))?;
-    required_output
-        .retain_actual_resources(resources, request_admission)
-        .map_err(|stop| source_readmission::ready_resource_denial("", stop))?;
+    required_output.retain_actual_resources(resources);
+    // Only re-verifying marked facts and the full-verification fallback spend
+    // the source-currentness allowance; exhausting it selects Fresh.
+    let mut currentness = runtime
+        .primary_provider
+        .graph
+        .source_owner
+        .invalidation_owner
+        .read_admission(limits.source_currentness_work());
     let (mut required_output, prepared_source, prepared_key, prepared_context) =
         match input_cutoff::advance_input_cutoff::<Schema, Binding, _, _, _>(
             runtime,
@@ -138,6 +144,7 @@ where
             matched_predecessor,
             resources,
             request_admission,
+            &mut currentness,
         )? {
             input_cutoff::ProducerInputProgression::StablePublished(published) => {
                 return Ok(ProducerExecutionOutcome::Stable(published))
@@ -176,7 +183,7 @@ where
             runtime,
             *identities.key_identity(),
             successor_of,
-            limits.source_currentness_work(),
+            request_admission,
         )
         .map_err(|identity_denial| {
             if identity_denial

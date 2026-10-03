@@ -43,6 +43,10 @@ fn nonempty_exact_settlement_lookup_denies_before_pinning_and_retries() {
     assert!(Arc::ptr_eq(&selected, &upstream));
     drop(selected);
     let full_work = measured.charged_work();
+    assert!(
+        measured.charged_navigation() > 0,
+        "both nonempty tree paths are reported as physical navigation"
+    );
     assert!(full_work > 1, "both nonempty tree paths must be visited");
     let pins_before = Arc::strong_count(&upstream);
     let mut short = admission(full_work - 1);

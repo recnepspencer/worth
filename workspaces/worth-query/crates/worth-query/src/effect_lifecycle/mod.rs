@@ -130,6 +130,7 @@ pub use taxonomy::{
 
 pub(crate) use execution::execute_lowered_merge;
 pub(crate) use execution_bridge::execute_lowered_writeback;
+pub(crate) use execution_deferred_kind::companion_stop_is_transient;
 
 #[cfg(test)]
 mod tests;

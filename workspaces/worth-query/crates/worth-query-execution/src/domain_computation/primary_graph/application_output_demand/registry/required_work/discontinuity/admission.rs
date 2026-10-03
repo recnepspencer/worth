@@ -28,7 +28,10 @@ pub(super) fn charge_tree(
         .and_then(|n| n.checked_mul(searches))
         .ok_or_else(work_denial)?;
     admission
-        .charge_external_work(u64::try_from(work).map_err(|_| work_denial())?)
+        .charge_ordered_operations(
+            searches as u64,
+            u64::try_from(work).map_err(|_| work_denial())?,
+        )
         .map_err(|_| work_denial())
 }
 
@@ -41,7 +44,7 @@ pub(super) fn charge_split(
         .and_then(|levels| levels.checked_mul(11))
         .ok_or_else(work_denial)?;
     admission
-        .charge_external_work(u64::try_from(visits).map_err(|_| work_denial())?)
+        .charge_ordered_operations(1, u64::try_from(visits).map_err(|_| work_denial())?)
         .map_err(|_| work_denial())
 }
 
@@ -68,7 +71,7 @@ pub(super) fn charge_outer_retirement(
         .and_then(|n| n.checked_add(2))
         .ok_or_else(work_denial)?;
     admission
-        .charge_external_work(u64::try_from(visits).map_err(|_| work_denial())?)
+        .charge_ordered_operations(1, u64::try_from(visits).map_err(|_| work_denial())?)
         .map_err(|_| work_denial())
 }
 

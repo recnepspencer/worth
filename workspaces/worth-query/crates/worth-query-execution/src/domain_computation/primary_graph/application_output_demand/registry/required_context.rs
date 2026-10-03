@@ -50,18 +50,12 @@ impl RequiredOutputExecution {
 }
 
 impl RequiredOutputDemandContext {
+    /// Fills the slot whose bytes the context reserved when it was issued.
     pub(in crate::domain_computation::primary_graph) fn retain_actual_resources(
         &mut self,
         resources: crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<(), worth_relational::facade::mvcc::CompanionPreflightStop> {
-        admission.charge_external_work(
-            (2 * std::mem::size_of_val(&self.actual_resources)
-                + std::mem::size_of_val(&resources)
-                + 2) as u64,
-        )?;
+    ) {
         assert!(self.actual_resources.replace(resources).is_none());
-        Ok(())
     }
 
     pub(super) fn take_actual_resources(
@@ -215,15 +209,9 @@ impl WorthQueryOutputDemandInterest {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.drain_cancelled_settlement_vacancies(admission)?;
-        admission
-            .charge_external_work(
-                self.key
-                    .producer
-                    .len()
-                    .checked_add(1)
-                    .ok_or_else(work_denial)? as u64,
-            )
-            .map_err(|_| work_denial())?;
+        // Selecting this demand's own record is registry navigation, charged
+        // apart from the work the producer declares for its operation.
+        state.charge_record_lookup(&self.key, admission)?;
         let Some(record) = state.records.get(&self.key) else {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::Closed,
@@ -231,10 +219,16 @@ impl WorthQueryOutputDemandInterest {
             ));
         };
         let work_membership = record.work_membership.clone();
-        // The Arc header and one owned key are held through the producer's
-        // precommit phase. SourceEpoch cloning shares its admitted meaning.
+        // The Arc header, one owned key and the slot for the producer's actual
+        // resources are held through the precommit phase. SourceEpoch cloning
+        // shares its admitted meaning.
         let bytes = std::mem::size_of::<WorthQueryOutputDemandKey>()
             .checked_add(2 * std::mem::size_of::<usize>())
+            .and_then(|bytes| {
+                bytes.checked_add(std::mem::size_of::<
+                    Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>,
+                >())
+            })
             .and_then(|bytes| bytes.checked_add(self.key.producer.len()))
             .ok_or_else(capacity_denial)?;
         let required = state
@@ -248,9 +242,6 @@ impl WorthQueryOutputDemandInterest {
         admission
             .admit_read_scratch(bytes as u64)
             .map_err(|_| capacity_denial())?;
-        admission
-            .charge_external_work(std::mem::size_of::<Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>>() as u64)
-            .map_err(|_| WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
         let request_admission = admission
             .carry_for_publication(source_owner)
             .map_err(|stop| match stop {

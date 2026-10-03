@@ -49,7 +49,7 @@ pub(super) fn clone_published_mode(
         registry.relinquish_execution(interest);
         return Err(denial(
             WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-            producer_identity,
+            producer_identity.to_owned(),
         ));
     }
     Ok(mode.clone())

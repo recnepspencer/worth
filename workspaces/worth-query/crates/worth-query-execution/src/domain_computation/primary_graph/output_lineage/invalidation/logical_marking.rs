@@ -25,6 +25,12 @@ pub(super) struct LogicalMarkingCounts {
 pub(super) enum NativeMarkingPrecision {
     Exact(LogicalMarkingCounts),
     DeclaredChangeUnavailable,
+    /// Matched fan-out exceeded the installed marking ceiling. The commit
+    /// published as a discontinuity; the counts are those spent before it.
+    MarkingCeilingExceeded(LogicalMarkingCounts),
+    /// The marked version exceeded the installed retained capacity. The commit
+    /// published as a discontinuity; the counts are those of the full marking.
+    RetainedCapacityExhausted(LogicalMarkingCounts),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

@@ -47,7 +47,7 @@ pub(in crate::domain_computation) fn installed_composed_capability_world(
 pub(in crate::domain_computation::primary_graph) fn installed_capability_world_with_same_resource_unrelated(
     unrelated: usize,
 ) -> AuthorizationWorld {
-    capability_population_world(
+    capability_world(
         2,
         "primary",
         CapabilityGrantPopulation::CurrentWithSameResourceUnrelated(unrelated),
@@ -57,7 +57,7 @@ pub(in crate::domain_computation::primary_graph) fn installed_capability_world_w
 pub(in crate::domain_computation::primary_graph) fn installed_capability_world_with_exact_pair_population(
     count: usize,
 ) -> AuthorizationWorld {
-    capability_population_world(
+    capability_world(
         1,
         "primary",
         CapabilityGrantPopulation::ExactPairPopulation(count),
@@ -85,7 +85,7 @@ pub(in crate::domain_computation::primary_graph) fn installed_delegated_capabili
 pub(in crate::domain_computation::primary_graph) fn installed_delegated_capability_world_with_unrelated(
     unrelated: usize,
 ) -> AuthorizationWorld {
-    capability_population_world(
+    capability_world(
         2,
         "primary",
         CapabilityGrantPopulation::Delegated {
@@ -131,31 +131,4 @@ fn capability_spec(
         resources: WorthQueryApplicationQueryResourceProfile::default(),
         capability_grants,
     }
-}
-
-/// Funds the cold fixture population independently of the warm authorization
-/// work under test (256 unrelated complete grants, or 65 exact-pair grants).
-/// Ordinary authorization fixtures retain the ordinary host limits.
-fn capability_population_world(
-    principal_count: usize,
-    label: &str,
-    grants: CapabilityGrantPopulation,
-) -> AuthorizationWorld {
-    use crate::domain_computation::execution_runtime::{
-        product_world::{test_product_world_resources, WorthQueryProductWorldResources},
-        WorthQueryInvalidationResourceInstallation, WorthQueryInvalidationResources,
-    };
-    let (budgets, clock, _) = test_product_world_resources().into_parts();
-    let invalidation =
-        WorthQueryInvalidationResources::install(WorthQueryInvalidationResourceInstallation {
-            maximum_marking_work: 16 * 1024 * 1024,
-            maximum_preparation_bytes: 64 * 1024 * 1024,
-            maximum_retained_bytes: 128 * 1024 * 1024,
-            maximum_retained_positions: 128,
-        })
-        .unwrap();
-    super::authorization_world_installation::install_authorization_world_with_product_resources(
-        capability_spec(principal_count, label, grants),
-        WorthQueryProductWorldResources::new(budgets, clock, invalidation),
-    )
 }

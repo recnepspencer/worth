@@ -99,7 +99,7 @@ pub(super) fn prepare(
 
     let required_count = state.required_keys.len();
     let levels = usize::BITS as usize - required_count.max(1).leading_zeros() as usize;
-    charge(
+    navigate(
         admission,
         required_count
             .min(11)
@@ -154,6 +154,20 @@ fn charge(
 ) -> Result<(), WorthQueryOutputDemandDenial> {
     admission
         .charge_external_work(
+            u64::try_from(work.ok_or_else(replacement_work_denial)?)
+                .map_err(|_| replacement_work_denial())?,
+        )
+        .map_err(|_| replacement_work_denial())
+}
+
+/// Physical required-set navigation is reported apart from declared work.
+fn navigate(
+    admission: &mut InvalidationEditAdmission,
+    work: Option<usize>,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    admission
+        .charge_ordered_operations(
+            1,
             u64::try_from(work.ok_or_else(replacement_work_denial)?)
                 .map_err(|_| replacement_work_denial())?,
         )

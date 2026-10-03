@@ -48,6 +48,11 @@ impl IndexAdmission for WorkMeter {
     fn bytes(&mut self, _bytes: u64) -> Result<(), CompanionPreflightStop> {
         Ok(())
     }
+
+    // This court measures every visit, physical or declared.
+    fn navigation(&mut self, units: u64) -> Result<(), CompanionPreflightStop> {
+        self.work(units)
+    }
 }
 
 #[test]

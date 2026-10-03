@@ -139,7 +139,7 @@ where
                 .matches_ready_admitted(selected.completion(), request_admission)
                 .map_err(|stop| source_readmission::ready_resource_denial("", stop))?;
             if !same_ready {
-                return Err(WorthQueryOutputDemandDenial::with_static_subject(
+                return Err(WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::ForeignSettlement,
                     Binding::IDENTITY,
                 )
@@ -150,7 +150,7 @@ where
             .source()
             .downcast_ref::<RetainedOutputReadmissionSource<SourceQuery<Schema, Binding>>>()
             .ok_or_else(|| {
-                WorthQueryOutputDemandDenial::with_static_subject(
+                WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::ForeignSource,
                     Binding::IDENTITY,
                 )
@@ -181,7 +181,7 @@ where
                     .claim_required_ready_refresh(selected, admission)
                     .map_err(ProducerExecutionStop::ExecutionStopped)?
                     .ok_or_else(|| {
-                        WorthQueryOutputDemandDenial::with_static_subject(
+                        WorthQueryOutputDemandDenial::new(
                             WorthQueryOutputDemandDenialKind::Superseded,
                             Binding::IDENTITY,
                         )
@@ -236,22 +236,18 @@ where
         producer_contacts: &mut usize,
     ) -> Result<PreparedProducerExecutionOutcome, ProducerExecutionStop> {
         use super::super::demand::disclosure::FreshDisclosureAdmissionStop;
-        // Fund the typed edition/type checks, the move-only execution split,
-        // and at most one terminal producer subject before any early refusal.
-        let subject_bytes = u64::try_from(Binding::IDENTITY.len())
-            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
+        // Fund the typed edition/type checks and the move-only execution split
+        // before any early refusal. Producer subjects are borrowed statics.
         let entry_work = u64::try_from(
             std::mem::size_of::<RequiredOutputExecution>()
                 .checked_add(std::mem::size_of::<super::super::InstalledProducerEdition>() * 2)
                 .and_then(|work| work.checked_add(std::mem::size_of::<std::any::TypeId>() * 8))
-                .and_then(|work| work.checked_add(Binding::IDENTITY.len()))
                 .and_then(|work| work.checked_add(8))
                 .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?,
         )
         .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
         request_admission
             .charge_external_work(entry_work)
-            .and_then(|()| request_admission.admit_read_scratch(subject_bytes))
             .map_err(|stop| source_readmission::ready_resource_denial("", stop))?;
         let (required_output, ready_backing) = required_output.into_parts();
         if !edition.admits_binding::<Schema, Binding>() {

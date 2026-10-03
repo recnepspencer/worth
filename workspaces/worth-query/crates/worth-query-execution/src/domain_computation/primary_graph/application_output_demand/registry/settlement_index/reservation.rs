@@ -24,7 +24,8 @@ pub(super) fn reserve(
     let sources = &mut state.settlement_keys.sources;
     let source_count = sources.len();
     admission
-        .charge_external_work(
+        .charge_ordered_operations(
+            1,
             tree_lookup_work::<SemanticSource>(source_count).ok_or_else(work_denial)?,
         )
         .map_err(|_| work_denial())?;
@@ -32,7 +33,8 @@ pub(super) fn reserve(
     let (posting, cleanup, growth) = if let Some(source) = sources.get_mut(identity.source()) {
         let address_count = source.len();
         admission
-            .charge_external_work(
+            .charge_ordered_operations(
+                1,
                 tree_lookup_work::<Address>(address_count).ok_or_else(work_denial)?,
             )
             .map_err(|_| work_denial())?;
@@ -62,7 +64,7 @@ pub(super) fn reserve(
             .and_then(|outer| outer.checked_add(tree_lookup_work::<Address>(0)?))
             .ok_or_else(work_denial)?;
         admission
-            .charge_external_work(extra_work)
+            .charge_ordered_operations(1, extra_work)
             .map_err(|_| work_denial())?;
         let growth = admit_growth(
             source_count,

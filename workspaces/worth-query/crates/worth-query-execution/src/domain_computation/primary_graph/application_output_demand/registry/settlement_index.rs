@@ -62,7 +62,8 @@ impl SettlementIndex {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<Arc<WorthQueryOutputDemandKey>>, WorthQueryOutputDemandDenial> {
         admission
-            .charge_external_work(
+            .charge_ordered_operations(
+                1,
                 tree_lookup_work::<SemanticSource>(self.sources.len()).ok_or_else(work_denial)?,
             )
             .map_err(|_| work_denial())?;
@@ -70,7 +71,8 @@ impl SettlementIndex {
             return Ok(None);
         };
         admission
-            .charge_external_work(
+            .charge_ordered_operations(
+                1,
                 tree_lookup_work::<Address>(source.len()).ok_or_else(work_denial)?,
             )
             .map_err(|_| work_denial())?;
@@ -171,7 +173,7 @@ impl DemandRegistryState {
             let outer_work =
                 tree_lookup_work::<SemanticSource>(source_count).ok_or_else(work_denial)?;
             admission
-                .charge_external_work(outer_work)
+                .charge_ordered_operations(1, outer_work)
                 .map_err(|_| work_denial())?;
             let address_count = self
                 .settlement_keys
@@ -186,7 +188,7 @@ impl DemandRegistryState {
                 .and_then(|part| part.checked_add(outer_work))
                 .ok_or_else(work_denial)?;
             admission
-                .charge_external_work(work)
+                .charge_ordered_operations(1, work)
                 .map_err(|_| work_denial())?;
             let mut cancelled = self.settlement_keys.cancelled_head.take().unwrap();
             self.settlement_keys.cancelled_head = cancelled.next.take();

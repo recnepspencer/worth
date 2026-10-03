@@ -66,7 +66,7 @@ where
                         ) {
                             Ok(()) => {}
                             Err(denial)
-                                if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded =>
+                                if current_proof_unavailable(&denial) =>
                             {
                                 let (disclosed_value, disclosed_source) = disclosure.into_parts();
                                 return self.refresh_output_demand(
@@ -128,7 +128,7 @@ where
                         ) {
                             Ok(()) => {}
                             Err(denial)
-                                if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded =>
+                                if current_proof_unavailable(&denial) =>
                             {
                                 let (disclosed_value, disclosed_source) = disclosure.into_parts();
                                 return self.refresh_output_demand(
@@ -159,4 +159,15 @@ where
                     }
                 };
     }
+}
+
+/// A superseded output, or an exhausted source-currentness allowance, leaves
+/// no current proof; the demand refreshes into fresh execution instead of
+/// stopping terminally.
+fn current_proof_unavailable(denial: &WorthQueryOutputDemandDenial) -> bool {
+    matches!(
+        denial.kind(),
+        WorthQueryOutputDemandDenialKind::Superseded
+            | WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
+    )
 }

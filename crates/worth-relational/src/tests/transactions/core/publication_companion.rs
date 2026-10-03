@@ -11,6 +11,7 @@ use crate::mvcc::{
 use crate::tests::support::*;
 
 mod completion_observer;
+mod concurrent_head;
 mod positioned_admission;
 mod preflight_overflow;
 

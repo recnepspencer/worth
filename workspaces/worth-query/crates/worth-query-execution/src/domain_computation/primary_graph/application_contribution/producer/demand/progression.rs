@@ -30,6 +30,21 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
+    /// Framework preparation and every producer one advance runs share this
+    /// structurally bounded request meter. Neither demand lane funds it:
+    /// currentness verification spends the source-currentness lane on its own
+    /// meter, and the producer-work lane bounds each producer's declared work
+    /// and source reads.
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn demand_request_admission(
+        &self,
+    ) -> InvalidationEditAdmission {
+        self.primary_provider
+            .graph
+            .source_owner
+            .invalidation_owner
+            .request_admission()
+    }
+
     pub fn advance_output_demand<Family>(
         &self,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -46,12 +61,7 @@ where
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        let mut admission = self
-            .primary_provider
-            .graph
-            .source_owner
-            .invalidation_owner
-            .read_admission(demand.limits.source_currentness_work());
+        let mut admission = self.demand_request_admission();
         self.advance_output_demand_with_commit_authority(
             demand,
             principal,
@@ -81,12 +91,7 @@ where
                 > + 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        let mut admission = self
-            .primary_provider
-            .graph
-            .source_owner
-            .invalidation_owner
-            .read_admission(demand.limits.source_currentness_work());
+        let mut admission = self.demand_request_admission();
         let limits = demand.limits;
         self.advance_output_demand_with_prepared_source(
             demand,
@@ -125,12 +130,7 @@ where
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        let mut admission = self
-            .primary_provider
-            .graph
-            .source_owner
-            .invalidation_owner
-            .read_admission(demand.limits.source_currentness_work());
+        let mut admission = self.demand_request_admission();
         self.advance_output_demand_with_commit_authority(
             demand,
             principal,
@@ -280,7 +280,7 @@ where
 
 pub(super) fn denial(
     kind: WorthQueryOutputDemandDenialKind,
-    subject: impl Into<String>,
+    subject: impl Into<std::borrow::Cow<'static, str>>,
 ) -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(kind, subject)
 }

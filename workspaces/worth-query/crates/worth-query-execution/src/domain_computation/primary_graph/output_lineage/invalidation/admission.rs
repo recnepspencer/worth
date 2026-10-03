@@ -8,6 +8,11 @@ pub(super) trait IndexAdmission {
     #[track_caller]
     fn work(&mut self, visits: u64) -> Result<(), CompanionPreflightStop>;
     fn bytes(&mut self, bytes: u64) -> Result<(), CompanionPreflightStop>;
+    /// Physical ordered-index navigation grows with index height, which other
+    /// consumers' population changes. It is bounded by height times the
+    /// declared operations that perform it, so each owner reports it apart
+    /// from declared work instead of spending a request's allowance on it.
+    fn navigation(&mut self, units: u64) -> Result<(), CompanionPreflightStop>;
 
     #[track_caller]
     fn key_read(
@@ -31,19 +36,12 @@ pub(super) trait IndexAdmission {
         key: &super::fact_key::FactPostingKey,
         navigation: u64,
     ) -> Result<(), CompanionPreflightStop> {
-        use super::fact_key::FactPostingKey as Key;
-        let traversal = match key {
-            Key::FieldRevision { path, .. }
-            | Key::PredicateField { path, .. }
-            | Key::IndexMembership { path, .. } => path.fields().len() as u64 + 1,
-            _ => 1,
-        };
-        self.work(traversal)?;
-        let work = key
-            .comparison_work_bound()
-            .and_then(|payload| payload.checked_mul(navigation))
-            .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-        self.work(work)
+        self.work(key_traversal_work(key))?;
+        self.navigation(
+            key.comparison_work_bound()
+                .and_then(|payload| payload.checked_mul(navigation))
+                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
+        )
     }
 
     #[track_caller]
@@ -61,7 +59,9 @@ pub(super) trait IndexAdmission {
 
     #[track_caller]
     fn ordered_read(&mut self, entries: usize) -> Result<(), CompanionPreflightStop> {
-        self.work(
+        // One declared unit per ordered operation; its path is navigation.
+        self.work(1)?;
+        self.navigation(
             index_capacity::ordered_navigation_work(entries)
                 .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
         )
@@ -77,7 +77,8 @@ pub(super) trait IndexAdmission {
     }
 
     fn ordered_remove<K, V>(&mut self, entries: usize) -> Result<(), CompanionPreflightStop> {
-        self.work(
+        self.work(1)?;
+        self.navigation(
             index_capacity::ordered_removal_work(entries)
                 .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
         )?;
@@ -102,12 +103,35 @@ pub(super) trait IndexAdmission {
     }
 }
 
+/// A key's own path traversal is logical work on every admission; only the
+/// payload comparisons along the physical index path depend on its height.
+pub(super) fn key_traversal_work(key: &super::fact_key::FactPostingKey) -> u64 {
+    use super::fact_key::FactPostingKey as Key;
+    match key {
+        Key::FieldRevision { path, .. }
+        | Key::PredicateField { path, .. }
+        | Key::IndexMembership { path, .. } => path.fields().len() as u64 + 1,
+        Key::EntityLifecycle(_)
+        | Key::EntityKind(_)
+        | Key::RelationKind(_)
+        | Key::AspectRevision { .. }
+        | Key::RelationMembership { .. }
+        | Key::Adjacency { .. }
+        | Key::IndexDefinition(_) => 1,
+    }
+}
+
 impl IndexAdmission for PublicationCompanionPreflight<'_> {
     fn work(&mut self, visits: u64) -> Result<(), CompanionPreflightStop> {
         self.claim_work(visits)
     }
     fn bytes(&mut self, bytes: u64) -> Result<(), CompanionPreflightStop> {
         self.claim_bytes(bytes)
+    }
+    /// Relational's publication budget admits declared work and bytes; the
+    /// physical path observes interruption without spending either.
+    fn navigation(&mut self, _units: u64) -> Result<(), CompanionPreflightStop> {
+        self.checkpoint()
     }
 }
 

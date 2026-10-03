@@ -29,26 +29,6 @@ impl RequiredSuccessorProvenance {
         installed_edition: &InstalledProducerEdition,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let subject_len = MODE_SUBJECT.len().max(EDITION_SUBJECT.len());
-        let subject_backing = subject_len
-            .checked_add(std::mem::size_of::<String>())
-            .ok_or_else(empty_capacity_denial)?;
-        admission
-            .admit_read_scratch(
-                u64::try_from(subject_backing).map_err(|_| empty_capacity_denial())?,
-            )
-            .map_err(|stop| match stop {
-                worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted {
-                    ..
-                }
-                | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => {
-                    empty_work_denial()
-                }
-                _ => empty_capacity_denial(),
-            })?;
-        admission
-            .charge_external_work(u64::try_from(subject_len).map_err(|_| empty_work_denial())?)
-            .map_err(|_| empty_work_denial())?;
         // Read the two mode tags and the stored edition before selecting the
         // variable-width comparison below.
         admission
@@ -123,11 +103,4 @@ impl RequiredSuccessorProvenance {
 
 fn empty_work_denial() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, "")
-}
-
-fn empty_capacity_denial() -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(
-        WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-        "",
-    )
 }

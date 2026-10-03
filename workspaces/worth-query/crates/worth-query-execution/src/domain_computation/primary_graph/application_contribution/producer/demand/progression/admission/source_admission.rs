@@ -37,9 +37,6 @@ where
             .charge_external_work(1)
             .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
         let selected_product = source_selection.selected_product();
-        if selected_product.is_some() {
-            super::selected_custody::preclaim_family_subject(Family::IDENTITY, registry_admission)?;
-        }
         let limits = self.output_demand_resource_profile().constrain(limits);
         std::num::NonZeroUsize::new(limits.source_currentness_work()).ok_or_else(|| {
             denial(

@@ -103,10 +103,11 @@ where
     {
         Ok(())
     } else {
-        Err(
-            WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::Superseded, family)
-                .with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable),
+        Err(WorthQueryOutputDemandDenial::new(
+            WorthQueryOutputDemandDenialKind::Superseded,
+            family.to_owned(),
         )
+        .with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable))
     }
 }
 
@@ -123,6 +124,9 @@ pub(super) fn source_basis_is_admitted(
 }
 
 pub(super) fn selection_budget_denial(family: &str) -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, family)
-        .with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable)
+    WorthQueryOutputDemandDenial::new(
+        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+        family.to_owned(),
+    )
+    .with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable)
 }

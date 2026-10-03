@@ -123,7 +123,6 @@ where
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        preclaim_terminal_subject(admission)?;
         // Source accessor, selected Ready, program basis and authority are
         // inspected before the borrowed proof is copied or registration runs.
         admission
@@ -202,32 +201,4 @@ fn work_denial() -> WorthQueryOutputDemandDenial {
         WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
         "required Fresh source exceeds carried request work",
     )
-}
-
-fn preclaim_terminal_subject(
-    admission: &mut InvalidationEditAdmission,
-) -> Result<(), WorthQueryOutputDemandDenial> {
-    const SUBJECT_BYTES: usize = "required predecessor has no retained program basis".len();
-    let empty_work = || {
-        WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, "")
-    };
-    let empty_capacity = || {
-        WorthQueryOutputDemandDenial::new(
-            WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-            "",
-        )
-    };
-    admission
-        .charge_external_work(u64::try_from(SUBJECT_BYTES).map_err(|_| empty_work())?)
-        .map_err(|_| empty_work())?;
-    let backing = SUBJECT_BYTES
-        .checked_add(std::mem::size_of::<String>())
-        .ok_or_else(empty_capacity)?;
-    admission
-        .admit_read_scratch(u64::try_from(backing).map_err(|_| empty_capacity())?)
-        .map_err(|stop| match stop {
-            CompanionPreflightStop::WorkExhausted { .. }
-            | CompanionPreflightStop::WorkCounterOverflow => empty_work(),
-            _ => empty_capacity(),
-        })
 }

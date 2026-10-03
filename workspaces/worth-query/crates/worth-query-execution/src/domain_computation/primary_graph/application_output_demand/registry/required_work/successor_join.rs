@@ -6,8 +6,6 @@ use super::super::{WorthQueryOutputDemandInterest, WorthQueryOutputDemandRegistr
 use super::selection::{charge_required_key_lookup, SelectedReadyReadmission};
 use super::*;
 
-const TERMINAL_SUBJECT_BYTES: u64 = 64;
-
 impl WorthQueryOutputDemandRegistry {
     /// A scheduling and custody check only. The caller compares the retained
     /// predecessor Ready pin with its pre-effect pin before this join; the
@@ -19,10 +17,7 @@ impl WorthQueryOutputDemandRegistry {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         admission
-            .admit_read_scratch(TERMINAL_SUBJECT_BYTES)
-            .map_err(empty_preflight_denial)?;
-        admission
-            .charge_external_work(TERMINAL_SUBJECT_BYTES + 4)
+            .charge_external_work(4)
             .map_err(|_| empty_work_denial())?;
         let prior_key = predecessor.membership.key.as_ref();
         let successor_key = &successor.key;
@@ -90,17 +85,4 @@ fn replacement_comparison_work(
 
 fn empty_work_denial() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, "")
-}
-
-fn empty_preflight_denial(
-    stop: worth_relational::facade::mvcc::CompanionPreflightStop,
-) -> WorthQueryOutputDemandDenial {
-    use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
-    let kind = match stop {
-        Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => {
-            WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-        }
-        _ => WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-    };
-    WorthQueryOutputDemandDenial::new(kind, "")
 }

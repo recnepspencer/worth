@@ -71,6 +71,14 @@ impl SourceInvalidationOwner {
         InvalidationEditAdmission::new(self.resources.preflight_budget())
     }
 
+    pub(in crate::domain_computation::primary_graph) fn request_admission(
+        &self,
+    ) -> InvalidationEditAdmission {
+        InvalidationEditAdmission::structurally_bounded_request(
+            self.resources.preflight_budget().maximum_preparation_bytes,
+        )
+    }
+
     pub(in crate::domain_computation::primary_graph) fn read_admission(
         &self,
         remaining_work: usize,
@@ -86,10 +94,13 @@ impl SourceInvalidationOwner {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<CompanionBranchCell<BranchMarkRoot>>, CompanionPreflightStop> {
         admission.work(1)?;
+        // Readers wait for the brief cell-map section, as the writer does: the
+        // writer holds it only to select or insert a cell and never re-enters
+        // a reader, so a read never surfaces as Unavailable.
         let branches = self
             .branches
-            .try_lock()
-            .map_err(|_| CompanionPreflightStop::TopologyPending)?;
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         admission.ordered_read(branches.cells.len())?;
         admission.work(
             (selected.branch_id().0.len() as u64)

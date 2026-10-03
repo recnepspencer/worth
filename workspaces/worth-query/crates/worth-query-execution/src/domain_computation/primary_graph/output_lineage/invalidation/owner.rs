@@ -61,10 +61,13 @@ impl SourceInvalidationOwner {
         &self,
         context: &mut PublicationCompanionPreflight<'_>,
     ) -> Result<CompanionBranchCell<BranchMarkRoot>, CompanionPreflightStop> {
+        // The writer waits for the map like readers do. Every holder only
+        // looks up, or mints and inserts one cell through atomic capacity
+        // counters; none calls out to another lock, so no cycle can form.
         let mut branches = self
             .branches
-            .try_lock()
-            .map_err(|_| CompanionPreflightStop::TopologyPending)?;
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         context.work(
             (context.branch_id().0.len() as u64)
                 .checked_mul(
@@ -134,51 +137,43 @@ impl RelationalPublicationCompanion for SourceInvalidationOwner {
         let cell = self.selected_cell(context)?;
         let reserved = cell.reserve_preflight(context)?;
         let observed = reserved.current();
-        let (keys, retained_key_bytes) = delivery::selectors(context)?;
+        let budget = self.resources.preflight_budget();
+        let delivered = delivery::selectors(context, budget)?;
         let commit = context.canonical_commit().commit.commit_id;
-        context.bytes(
-            index_capacity::arc_bytes::<super::mark_state::MarkState>()
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-        )?;
-        let mut state = (*observed.payload().current).clone();
-        let super::logical_marking::AppliedNativeMarking { affected, report } =
-            delivery::apply(&mut state, keys.as_deref(), commit, context)?;
-        let selected_bytes = affected
-            .len()
-            .checked_mul(std::mem::size_of::<(
-                Arc<crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership>,
-                Arc<super::super::RecordedSettlementIdentity>,
-            )>())
-            .and_then(|bytes| u64::try_from(bytes).ok())
-            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-        context.bytes(selected_bytes)?;
-        let mut selected = Vec::with_capacity(affected.len());
-        for identity in &affected {
-            context.work(2)?;
-            context.ordered_read(state.settlements.len())?;
-            if let Some(membership) = state
-                .settlements
-                .get(identity)
-                .and_then(|row| row.work_membership.as_ref())
-            {
-                selected.push((Arc::clone(membership), Arc::clone(identity)));
-            }
-        }
-        retention::admit_state(&mut state, &self.resources, context)?;
-        context.bytes(
-            index_capacity::arc_bytes::<RetainedTouchDelivery>()
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-        )?;
-        let key_capacity = retention::reserve(
-            &self.resources,
-            retained_key_bytes
-                .checked_add(
-                    index_capacity::arc_bytes::<RetainedTouchDelivery>()
-                        .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-                )
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
+        let delivery::MarkedDelivery {
+            state,
+            report,
+            selected,
+            mut hint_allowance,
+            keys,
+            retained_key_bytes,
+        } = delivery::mark(
+            &observed.payload().current,
+            delivered,
+            commit,
+            (budget, &self.resources),
             context,
         )?;
+        let delivery_bytes = index_capacity::arc_bytes::<RetainedTouchDelivery>()
+            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+        context.bytes(delivery_bytes)?;
+        let key_bytes = retained_key_bytes
+            .checked_add(delivery_bytes)
+            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+        // Retained keys only sharpen late settlement replay. Without room for
+        // them, replay through this commit is a declared-change discontinuity.
+        let (keys, key_capacity) = match retention::reserve(&self.resources, key_bytes, context) {
+            Ok(capacity) => (keys, capacity),
+            Err(CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. })
+                if keys.is_some() =>
+            {
+                (
+                    None,
+                    retention::reserve(&self.resources, delivery_bytes, context)?,
+                )
+            }
+            Err(stop) => return Err(stop),
+        };
         let delivered = Arc::new(RetainedTouchDelivery {
             keys,
             _capacity: key_capacity,
@@ -215,11 +210,13 @@ impl RelationalPublicationCompanion for SourceInvalidationOwner {
                 context,
             )?;
             let observer = effect.attach_completion_observer(context, retained)?;
+            // Each hint's preparation was admitted with the marking that
+            // selected it; construction draws down exactly that allowance.
             let prepared_bytes = u64::try_from(selected.len())
                 .ok()
                 .and_then(|count| count.checked_mul((2 * std::mem::size_of::<usize>()) as u64))
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-            context.bytes(prepared_bytes)?;
+            hint_allowance.bytes(prepared_bytes)?;
             let mut prepared = Vec::with_capacity(selected.len());
             for (membership, identity) in selected {
                 let branch_bytes = u64::try_from(context.branch_id().0.len())
@@ -229,16 +226,20 @@ impl RelationalPublicationCompanion for SourceInvalidationOwner {
                     context.branch_id().0.len(),
                 )
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-                context.bytes(hint_bytes)?;
-                context.bytes(retained_branch_bytes)?;
-                context.work(
+                hint_allowance.bytes(hint_bytes)?;
+                hint_allowance.bytes(retained_branch_bytes)?;
+                hint_allowance.work(
                     branch_bytes
                         .checked_add(7)
                         .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
                 )?;
-                let hint_capacity = retention::reserve(&self.resources, hint_bytes, context)?;
-                let branch_capacity =
-                    retention::reserve(&self.resources, retained_branch_bytes, context)?;
+                let hint_capacity =
+                    retention::reserve(&self.resources, hint_bytes, &mut hint_allowance)?;
+                let branch_capacity = retention::reserve(
+                    &self.resources,
+                    retained_branch_bytes,
+                    &mut hint_allowance,
+                )?;
                 let branch = RequiredWorkMembership::prepared_native_branch(
                     context.branch_id().clone(),
                     branch_capacity,

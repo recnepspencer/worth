@@ -212,8 +212,7 @@ impl CourtroomWorld {
             .unwrap();
         let query_resources = runtime::WorthQueryApplicationQueryResourceProfile::bounded(
             5_120,
-            // One row plus the source custody its observed sources retain.
-            4_096,
+            2_048,
             usize::MAX,
             maximum_concurrent_graph_work.unwrap_or(128),
         )

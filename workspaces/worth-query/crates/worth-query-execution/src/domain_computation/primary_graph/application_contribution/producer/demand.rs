@@ -155,29 +155,18 @@ impl WorthQueryOutputDemandDenial {
 
     pub(in crate::domain_computation::primary_graph) fn new(
         kind: WorthQueryOutputDemandDenialKind,
-        subject: impl Into<String>,
+        subject: impl Into<std::borrow::Cow<'static, str>>,
     ) -> Self {
         Self {
             kind,
-            subject: std::borrow::Cow::Owned(subject.into()),
-            recovery_posture: kind.default_recovery_posture(),
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn with_static_subject(
-        kind: WorthQueryOutputDemandDenialKind,
-        subject: &'static str,
-    ) -> Self {
-        Self {
-            kind,
-            subject: std::borrow::Cow::Borrowed(subject),
+            subject: subject.into(),
             recovery_posture: kind.default_recovery_posture(),
         }
     }
 
     pub(in crate::domain_computation::primary_graph) fn product_selection(
         denial: crate::basis::WorthQueryProductBranchAdmissionDenial,
-        subject: impl Into<String>,
+        subject: impl Into<std::borrow::Cow<'static, str>>,
     ) -> Self {
         Self::new(
             WorthQueryOutputDemandDenialKind::ProductSelection(denial),

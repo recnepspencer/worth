@@ -32,7 +32,7 @@ pub(super) fn read_retained_source<Schema, Family>(
     request: &WorthQueryRequestScope,
     branch: crate::basis::WorthQueryProductBranch,
     limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
-    _currentness_admission: &mut InvalidationEditAdmission,
+    _request_admission: &mut InvalidationEditAdmission,
 ) -> Result<
     WorthQueryApplicationOutputDemandSource<
         FamilySourceQuery<Schema, Family>,

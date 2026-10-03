@@ -218,17 +218,7 @@ where
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        let maximum_work = limits.source_currentness_work().min(
-            self.output_demand_resource_profile()
-                .limits()
-                .source_currentness_work(),
-        );
-        let mut admission = self
-            .primary_provider
-            .graph
-            .source_owner
-            .invalidation_owner
-            .read_admission(maximum_work);
+        let mut admission = self.demand_request_admission();
         self.admit_output_demand_with_source_admitted::<Family>(
             &source,
             observed_source,

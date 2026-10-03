@@ -25,13 +25,17 @@ fn undeclared_key_consumption_prevents_input_cutoff_even_when_the_declared_input
 }
 
 #[test]
-fn bounded_currentness_work_preserves_performed_provenance_and_selects_fresh_execution() {
+fn one_unit_of_currentness_work_still_reuses_when_exact_marks_miss_the_handler_prefix() {
+    // One unit is smaller than re-verifying any marked fact (one visit plus its
+    // probe). Framework preparation spends the installed request meter, and the
+    // successor edit marks only the source suffix, so neither demand verifies
+    // currentness and the edited demand still reuses at this bound.
     exercise(
         "anchor-a",
         "anchor-b",
         2,
-        false,
-        controls().source_currentness_work(NonZeroUsize::new(8_192).unwrap()),
+        true,
+        controls().source_currentness_work(NonZeroUsize::MIN),
     );
 }
 

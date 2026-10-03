@@ -63,7 +63,7 @@ fn assert_locality(populations: &[usize]) {
 
 fn run_locality(count: usize) -> LocalityRun {
     let installation_start = Instant::now();
-    let world = installed_scale_world();
+    let world = installed_authorization_world(true);
     let installation = installation_start.elapsed();
     let population_start = Instant::now();
     grow_unrelated_accounts(&world, count);

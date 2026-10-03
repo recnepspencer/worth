@@ -1,7 +1,7 @@
 use super::*;
 
 pub(super) fn ready_work_denial(subject: &'static str) -> ProducerExecutionStop {
-    WorthQueryOutputDemandDenial::with_static_subject(
+    WorthQueryOutputDemandDenial::new(
         WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
         subject,
     )
@@ -13,7 +13,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     stop: worth_relational::facade::mvcc::CompanionPreflightStop,
 ) -> ProducerExecutionStop {
     use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
-    WorthQueryOutputDemandDenial::with_static_subject(
+    WorthQueryOutputDemandDenial::new(
         match stop {
             Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => {
                 WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
@@ -51,5 +51,5 @@ pub(super) fn ready_currentness_denial(
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
         }
     };
-    WorthQueryOutputDemandDenial::with_static_subject(kind, subject).into()
+    WorthQueryOutputDemandDenial::new(kind, subject).into()
 }

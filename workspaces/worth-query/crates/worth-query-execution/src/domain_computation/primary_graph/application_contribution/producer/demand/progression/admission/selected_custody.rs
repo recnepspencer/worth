@@ -10,25 +10,6 @@ use crate::domain_computation::primary_graph::{
 
 use super::super::{denial, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
 
-pub(super) fn preclaim_family_subject(
-    family: &str,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<(), WorthQueryOutputDemandDenial> {
-    admission
-        .charge_external_work(1)
-        .map_err(|_| empty_work())?;
-    let backing = family
-        .len()
-        .checked_add(std::mem::size_of::<String>())
-        .ok_or_else(empty_capacity)?;
-    admission
-        .charge_external_work(u64::try_from(family.len()).map_err(|_| empty_work())?)
-        .map_err(|_| empty_work())?;
-    admission
-        .admit_read_scratch(u64::try_from(backing).map_err(|_| empty_capacity())?)
-        .map_err(empty_stop)
-}
-
 pub(super) fn preclaim_temporary_key(
     producer: &str,
     admission: &mut InvalidationEditAdmission,

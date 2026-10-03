@@ -17,6 +17,7 @@ pub(in crate::domain_computation) struct InvalidationEditAdmission {
 struct AdmissionTotals {
     work: u64,
     bytes: u64,
+    navigation: u64,
 }
 
 enum AdmissionCounters {
@@ -87,6 +88,29 @@ impl InvalidationEditAdmission {
         Self {
             budget,
             counters: AdmissionCounters::Local(AdmissionTotals::default()),
+        }
+    }
+
+    /// One request advance: framework preparation (principal capture,
+    /// admitted lookup, Query readmission and validation) and the producers it
+    /// runs. Its work has no aggregate ceiling because every part is already
+    /// bounded where it is declared: preparation by the installed program,
+    /// each producer by its own producer-work lane, and each Query read by its
+    /// declared maximum. Work is still counted at every charge; bytes stay
+    /// limited by the installed preparation-bytes allowance.
+    pub(in crate::domain_computation::primary_graph) const fn structurally_bounded_request(
+        maximum_preparation_bytes: u64,
+    ) -> Self {
+        Self {
+            budget: CompanionPreflightBudget {
+                maximum_work_visits: u64::MAX,
+                maximum_preparation_bytes,
+            },
+            counters: AdmissionCounters::Local(AdmissionTotals {
+                work: 0,
+                bytes: 0,
+                navigation: 0,
+            }),
         }
     }
 
@@ -181,6 +205,39 @@ impl InvalidationEditAdmission {
         self.work(units)
     }
 
+    /// Physical ordered-index navigation over shared registries is admitted
+    /// and reported separately from the declared logical work. Its height is
+    /// bounded by the owning registry's installed record ledger, so another
+    /// consumer's population never spends this request's declared allowance.
+    pub(in crate::domain_computation) fn charge_navigation(
+        &mut self,
+        units: u64,
+    ) -> Result<(), CompanionPreflightStop> {
+        self.with_totals_mut(|totals| {
+            totals.navigation = totals
+                .navigation
+                .checked_add(units)
+                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
+            Ok(())
+        })
+    }
+
+    /// Ordered-index operations over a shared registry: one declared unit per
+    /// operation, with their height-dependent paths reported as navigation.
+    pub(in crate::domain_computation) fn charge_ordered_operations(
+        &mut self,
+        operations: u64,
+        navigation: u64,
+    ) -> Result<(), CompanionPreflightStop> {
+        self.work(operations)?;
+        self.charge_navigation(navigation)
+    }
+
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) fn charged_navigation(&self) -> u64 {
+        self.with_totals(|totals| totals.navigation)
+    }
+
     /// Reserve the Query read's admitted maximum against the same counter
     /// before it performs work. Other carried claimants see the reserved
     /// amount until this custody settles its actual spent work.
@@ -228,6 +285,10 @@ impl IndexAdmission for InvalidationEditAdmission {
             totals.work = required;
             Ok(())
         })
+    }
+
+    fn navigation(&mut self, units: u64) -> Result<(), CompanionPreflightStop> {
+        self.charge_navigation(units)
     }
 
     fn bytes(&mut self, bytes: u64) -> Result<(), CompanionPreflightStop> {
