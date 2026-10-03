@@ -5,11 +5,10 @@ use worth_store_blob_chunks::certification_test_authority::blob_backup_artifact_
 use worth_store_offline_verifier::checkpoint_backup_frontier_digest;
 use worth_store_physical_backend::observe_physical_backup_artifact;
 use worth_store_physical_format::{
-    BackupBundleArtifactFormat, BTreeNodeCellV1, BTreeNodeV1, CheckpointBackupArtifact,
-    CheckpointBackupArtifactInput,
-    InMemoryPhysicalFormatModel, PageGenerationCell, PersistedExtentBytes, PersistedPageBytes,
-    PhysicalGeneration, PhysicalGenerationAuthority, PhysicalReferenceAuthority,
-    PlatformPhysicalRootPublicationReport, RootPublicationCell,
+    BTreeNodeCellV1, BTreeNodeV1, BackupBundleArtifactFormat, CheckpointBackupArtifact,
+    CheckpointBackupArtifactInput, InMemoryPhysicalFormatModel, PageGenerationCell,
+    PersistedExtentBytes, PersistedPageBytes, PhysicalGeneration, PhysicalGenerationAuthority,
+    PhysicalReferenceAuthority, PlatformPhysicalRootPublicationReport, RootPublicationCell,
 };
 use worth_store_physical_isolation::{
     BackupArtifactCoverage, BackupArtifactFamily, BackupArtifactReference,
@@ -240,7 +239,7 @@ fn index_artifact(source: &Path, generation: PhysicalGeneration) -> BackupArtifa
         UntrustedBackupArtifactClaim {
             family: BackupArtifactFamily::Index,
             format: BackupBundleArtifactFormat::BTreeNodeV1,
-            identity: format!("index:sha256:{}", hex(&Sha256::digest(bytes))),
+            identity: format!("index:sha256:{}", hex(&Sha256::digest(&bytes))),
             generation: reference.generation().get(),
             coverage: BackupArtifactCoverage::physical_reachability(),
         },

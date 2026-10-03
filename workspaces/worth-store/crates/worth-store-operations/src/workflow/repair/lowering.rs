@@ -2,8 +2,8 @@ use super::integrity_classification::{
     IntegrityOperationalRepairOwner, IntegrityRepairClassificationDenial,
     IntegrityRepairClassificationPlan,
 };
-use sha2::{Digest, Sha256};
 use super::{DerivedIndexRepairPlan, DerivedIndexRepairPlanDenial};
+use sha2::{Digest, Sha256};
 
 use crate::authorization::{
     authorize_lowered_plan, AuthorizationReplayPolicy, AuthorizedOperationalPlan,
@@ -104,9 +104,7 @@ fn lower_derived(
         .try_reserve_exact(plan.requests.len())
         .map_err(|_| RepairLoweringDenial::CounterOverflow)?;
     for request in plan.requests {
-        layout_plans.push(
-            request.lower().map_err(RepairLoweringDenial::Layout)?,
-        );
+        layout_plans.push(request.lower().map_err(RepairLoweringDenial::Layout)?);
     }
     layout_plans.sort_by_key(DerivedIndexRepairPlan::fingerprint);
     if layout_plans

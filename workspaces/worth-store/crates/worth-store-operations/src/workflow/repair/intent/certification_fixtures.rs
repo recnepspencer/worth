@@ -2,9 +2,9 @@ use super::super::integrity_classification::{
     IntegrityRepairArtifactFamily, IntegrityRepairOwnerBinding, IntegrityRepairRegion,
     IntegrityRepairRegionClass,
 };
+use super::super::DerivedIndexRepairRequest;
 use sha2::{Digest, Sha256};
 use worth_store_authority::StoreCurrentAuthorityIdentity;
-use super::super::DerivedIndexRepairRequest;
 use worth_store_physical_format::BackupBundleArtifactFamily;
 
 use crate::{

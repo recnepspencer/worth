@@ -57,7 +57,10 @@ fn store_blob_ingest_uses_buffered_media_without_claiming_async_io() {
 #[test]
 fn store_blob_reclaim_uses_buffered_media_and_its_own_pressure_class() {
     let buffered = BackgroundIoPressureShape::buffered_file_blob_reclaim_pressure();
-    assert_eq!(buffered.class(), BackgroundIoPressureClass::BlobReclaimPressure);
+    assert_eq!(
+        buffered.class(),
+        BackgroundIoPressureClass::BlobReclaimPressure
+    );
     assert_eq!(
         buffered.backend_requirement(),
         IoSchedulerBackendCapabilityRequirement::BufferedFile

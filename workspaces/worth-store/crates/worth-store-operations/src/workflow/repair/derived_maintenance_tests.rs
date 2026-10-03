@@ -2,8 +2,8 @@ use super::integrity_classification::{
     IntegrityRepairArtifactFamily, IntegrityRepairOwnerBinding, IntegrityRepairRegion,
     IntegrityRepairRegionClass,
 };
-use sha2::{Digest, Sha256};
 use super::DerivedIndexRepairRequest;
+use sha2::{Digest, Sha256};
 
 use super::intent::physical_target_identity;
 use super::{RepairCandidateSet, RepairResolutionDenial};
@@ -143,7 +143,7 @@ fn derived_index_rebuild_must_enter_the_store_owner() {
     assert!(matches!(
         denial,
         super::RepairReadinessDenial::StoreDerivedIndexRebuildRequired
-    );
+    ));
 }
 
 struct ExactRepairAuthorization;

@@ -4,8 +4,8 @@ use super::integrity_classification::{
     IntegrityRepairArtifactFamily, IntegrityRepairOwnerBinding, IntegrityRepairRegion,
     IntegrityRepairRegionClass,
 };
-use sha2::{Digest, Sha256};
 use super::DerivedIndexRepairRequest;
+use sha2::{Digest, Sha256};
 
 use super::intent::physical_target_identity;
 use super::RepairCandidateSet;
@@ -15,8 +15,7 @@ use crate::{
     AuthorizationReplayPolicy, AuthorizationRevocationObservation, OperationalOperationId,
     OperationalSecurityScope, OperationalTransitionId, OwnerPlanNodeIdentity,
     RepairExecutionBoundary, RepairExecutionBoundaryMoment, RepairExecutionControlPort,
-    RepairExecutionInterrupted, RepairRecoveryDisposition,
-    StoreOwnerKind,
+    RepairExecutionInterrupted, RepairRecoveryDisposition, StoreOwnerKind,
 };
 
 #[test]

@@ -6,8 +6,8 @@ mod authority_receipt_persistence;
 mod authority_staging_artifacts;
 #[cfg(any(test, feature = "certification-test-authority"))]
 mod certification_control_store;
-mod execution;
 mod derived_index_rebuild_request;
+mod execution;
 mod execution_control;
 mod integrity_classification;
 mod intent;
@@ -26,12 +26,12 @@ mod crash_recovery_tests;
 #[cfg(test)]
 mod derived_maintenance_tests;
 
+pub(super) use derived_index_rebuild_request::DerivedIndexRepairPlan;
+pub use derived_index_rebuild_request::{DerivedIndexRepairPlanDenial, DerivedIndexRepairRequest};
 pub use execution::{
     ExecutedRepair, ExecutedRepairOwnerReceipt, ExecutedRepairOwnerReceiptDag,
     ExecutionReadyRepair, RepairExecutionDenial, RepairReadinessDenial,
 };
-pub use derived_index_rebuild_request::{DerivedIndexRepairPlanDenial, DerivedIndexRepairRequest};
-pub(super) use derived_index_rebuild_request::DerivedIndexRepairPlan;
 pub use execution_control::{
     RepairExecutionBoundary, RepairExecutionBoundaryMoment, RepairExecutionControlPort,
     RepairExecutionInterrupted, RepairExecutionInterruptionCause, UninterruptedRepairExecution,
