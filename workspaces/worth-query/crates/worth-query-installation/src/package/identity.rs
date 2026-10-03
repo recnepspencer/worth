@@ -342,7 +342,12 @@ mod tests {
         let mut fixture = WorthQueryPortableDomainPackage::new(
             WorthQueryPortableDomainIdentity::new("worth.entry-budget", 1, 0),
         );
-        for index in 0..279_621 {
+        let maximum = CanonicalDigestWorkBudget::for_encoded_byte_ceiling(
+            INSTALLATION_MAXIMUM_CANONICAL_BYTES,
+        )
+        .unwrap()
+        .maximum_entry_count();
+        for index in 0..=maximum {
             fixture = fixture.permits_contribution(format!("category-{index}"));
         }
         let denial = fixture.validate().unwrap_err();
@@ -350,7 +355,7 @@ mod tests {
             denial.kind(),
             super::super::WorthQueryPortablePackageValidationDenialKind::CanonicalEntryBudgetExceeded,
         );
-        assert_eq!(denial.maximum_canonical_entries(), Some(279_620));
-        assert_eq!(denial.attempted_canonical_entries(), Some(279_624));
+        assert_eq!(denial.maximum_canonical_entries(), Some(maximum));
+        assert_eq!(denial.attempted_canonical_entries(), Some(maximum + 4));
     }
 }
