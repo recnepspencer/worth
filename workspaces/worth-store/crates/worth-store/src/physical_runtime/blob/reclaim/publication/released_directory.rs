@@ -3,32 +3,31 @@
 //! roots and quarantine watermark are copied, while only the watermark naming
 //! the released publication is cleared. The root's own latest hints are kept.
 
-use std::num::NonZeroU64;
-
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
     DerivedFamilyRootDirectoryV1, SelectedRecordContentClass, MAX_DERIVED_FAMILY_ROOTS,
 };
 
 use crate::physical_runtime::{
-    durability::AdmittedReleasedGenerationDrop, layout::PhysicalLayoutPagePort,
-    record_serving::PreparedReleasedDirectoryRebinding, BlobPhysicalAllocation, PhysicalRecordId,
-    ServingPhysicalRuntime,
+    durability::AdmittedReleasedGenerationDrop,
+    layout::{PhysicalLayoutPagePort, PhysicalLayoutPageReadFailure},
+    record_serving::PreparedReleasedDirectoryRebinding,
+    PhysicalRecordId, ServingPhysicalRuntime,
 };
 
-use super::super::BlobReclaimFailure;
+use super::super::{contracts::RELEASED_DIRECTORY_REBINDING_BYTES, BlobReclaimFailure};
 
 const MAX_DIRECTORY_FRAME_BYTES: usize = 101 + MAX_DERIVED_FAMILY_ROOTS * 26;
-const REBINDING_HEAP_CHARGE_BYTES: u64 = 16 * 1024;
-const _: () = assert!(MAX_DIRECTORY_FRAME_BYTES * 4 < REBINDING_HEAP_CHARGE_BYTES as usize);
+// The reclaim envelope covers the decoded source directory and the new
+// canonical frame, which overlap until the Drop member consumes the frame.
+const _: () = assert!(MAX_DIRECTORY_FRAME_BYTES * 4 < RELEASED_DIRECTORY_REBINDING_BYTES as usize);
 
-pub(super) struct PlannedReleasedDirectoryRebinding<'runtime> {
+pub(super) struct PlannedReleasedDirectoryRebinding {
     basis: PreparedReleasedDirectoryRebinding,
     encoded: Vec<u8>,
-    _charge: BlobPhysicalAllocation<'runtime>,
 }
 
-impl PlannedReleasedDirectoryRebinding<'_> {
+impl PlannedReleasedDirectoryRebinding {
     pub(super) const fn basis(&self) -> PreparedReleasedDirectoryRebinding {
         self.basis
     }
@@ -42,10 +41,10 @@ impl PlannedReleasedDirectoryRebinding<'_> {
     }
 }
 
-pub(super) fn prepare_before_first_effect<'runtime>(
-    runtime: &'runtime ServingPhysicalRuntime,
+pub(super) fn prepare_before_first_effect(
+    runtime: &ServingPhysicalRuntime,
     admitted: &AdmittedReleasedGenerationDrop,
-) -> Result<Option<PlannedReleasedDirectoryRebinding<'runtime>>, BlobReclaimFailure> {
+) -> Result<Option<PlannedReleasedDirectoryRebinding>, BlobReclaimFailure> {
     let reader = admitted.protected_reader();
     if Some(reader.protected_root().root()) != admitted.attempt().expected_root() {
         return Err(BlobReclaimFailure::FenceLost);
@@ -72,22 +71,18 @@ pub(super) fn prepare_before_first_effect<'runtime>(
     {
         return Err(BlobReclaimFailure::ConflictingSelectedFate);
     }
-    // This grant overlaps the decoded source directory and new canonical
-    // frame, and remains live until the Drop member has consumed that frame.
-    let charge = runtime
-        .physical_allocations()
-        .admit_blob(NonZeroU64::new(REBINDING_HEAP_CHARGE_BYTES).expect("positive charge"))
-        .map_err(BlobReclaimFailure::Allocation)?;
+    // The read itself is capped at the canonical directory maximum, so the
+    // envelope constant bounds the source bytes before they are buffered.
     let old_frame = PhysicalLayoutPagePort::read_node_from_protected_reader(
         runtime,
         reader,
-        runtime.maximum_inline_record_bytes(),
+        MAX_DIRECTORY_FRAME_BYTES as u32,
         old_binding.directory_record(),
     )
-    .map_err(BlobReclaimFailure::ReleasedDirectoryRead)?;
-    if old_frame.bytes().len() > MAX_DIRECTORY_FRAME_BYTES {
-        return Err(BlobReclaimFailure::ConflictingSelectedFate);
-    }
+    .map_err(|failure| match failure {
+        PhysicalLayoutPageReadFailure::NodeTooWide => BlobReclaimFailure::ConflictingSelectedFate,
+        failure => BlobReclaimFailure::ReleasedDirectoryRead(failure),
+    })?;
     let old = DerivedFamilyRootDirectoryV1::decode(old_frame.bytes())
         .map_err(|_| BlobReclaimFailure::ConflictingSelectedFate)?;
     if old.indexed_through_blob_publication() != Some(indexed) {
@@ -110,30 +105,5 @@ pub(super) fn prepare_before_first_effect<'runtime>(
             old.indexed_through_quarantine(),
         ),
         encoded,
-        _charge: charge,
     }))
-}
-
-pub(super) fn revalidate_before_drop(
-    runtime: &ServingPhysicalRuntime,
-    admitted: &AdmittedReleasedGenerationDrop,
-    basis: PreparedReleasedDirectoryRebinding,
-) -> Result<(), BlobReclaimFailure> {
-    let reader = admitted.protected_reader();
-    if admitted.attempt().expected_root().is_none()
-        || reader.selected_derived_family_directory() != Some(basis.expected_previous())
-    {
-        return Err(BlobReclaimFailure::FenceLost);
-    }
-    let frame = PhysicalLayoutPagePort::read_node_from_protected_reader(
-        runtime,
-        reader,
-        runtime.maximum_inline_record_bytes(),
-        basis.expected_previous().directory_record(),
-    )
-    .map_err(BlobReclaimFailure::ReleasedDirectoryRead)?;
-    if <[u8; 32]>::from(Sha256::digest(frame.bytes())) != basis.expected_previous_payload_sha256() {
-        return Err(BlobReclaimFailure::ConflictingSelectedFate);
-    }
-    Ok(())
 }

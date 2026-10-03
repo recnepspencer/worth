@@ -4,7 +4,8 @@ mod plan;
 mod record;
 
 pub use cursor::{
-    HistoricalReleasedDropTargetWitness, RecoveryPageObservation, RecoveryPageSource,
+    HistoricalReleasedDropTargetWitness, HistoricalRetiredTargetWitness, RecoveryPageObservation,
+    RecoveryPageSource,
 };
 pub use denial::PhysicalRedoPlanningDenial;
 pub use plan::{

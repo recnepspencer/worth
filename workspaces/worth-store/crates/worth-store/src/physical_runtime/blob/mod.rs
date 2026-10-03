@@ -13,8 +13,9 @@ mod reuse_proof;
 mod scrub;
 pub use dedupe::BlobDedupeFailure;
 pub(in crate::physical_runtime) use dedupe::{
-    verify_selected_claim_source_with_selected_chunk, verify_selected_quarantine, verify_source,
-    verify_source_with_selected_chunk, DedupeIndexKey, DedupeIndexValue, VerifiedDedupeSource,
+    source_publication_unrouted, verify_selected_claim_source_with_selected_chunk,
+    verify_selected_quarantine, verify_source, verify_source_with_selected_chunk, DedupeIndexKey,
+    DedupeIndexValue, VerifiedDedupeSource,
 };
 pub(in crate::physical_runtime) use reuse_proof::{
     verify_selected_reuse_source, verify_selected_reuse_source_v1,

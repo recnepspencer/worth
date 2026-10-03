@@ -5,7 +5,8 @@ mod allocation_test_ports;
 mod insertion;
 mod replacements;
 pub(in crate::physical_runtime) use insertion::{
-    insert_registered_node, InsertedLayoutTree, InsertionSource,
+    insert_registered_node, write_registered_cell, InsertedLayoutTree, InsertionSource,
+    LayoutCellWrite,
 };
 use replacements::ReplacementPath;
 mod retirement;
@@ -55,6 +56,8 @@ pub(super) struct TreeWriter<'a, 'runtime> {
     family: DurableArtifactFamilyId,
     family_code: u16,
     expected_shape: (usize, usize),
+    /// The exact stale leaf value this insertion may replace under its key.
+    superseded: Option<Vec<u8>>,
     _allocation: MaintenancePhysicalAllocation<'a>,
 }
 
@@ -86,6 +89,7 @@ impl<'a, 'runtime> TreeWriter<'a, 'runtime> {
             family,
             family_code: registered.family_code(),
             expected_shape: registered.cell_shape(),
+            superseded: None,
             _allocation: allocation,
         })
     }
@@ -160,10 +164,7 @@ impl<'a, 'runtime> TreeWriter<'a, 'runtime> {
     ) -> Result<InsertedNode, PhysicalLayoutMaintenanceFailure> {
         let mut cells = node.cells().to_vec();
         match cells.binary_search_by(|cell| cell.key().cmp(key)) {
-            Ok(index) => {
-                if cells[index].leaf_value() != Some(value) {
-                    return Err(PhysicalLayoutMaintenanceFailure::ConflictingKey);
-                }
+            Ok(index) if cells[index].leaf_value() == Some(value) => {
                 return Ok(InsertedNode {
                     root: old_record,
                     level: 0,
@@ -172,6 +173,10 @@ impl<'a, 'runtime> TreeWriter<'a, 'runtime> {
                     replaced: ReplacementPath::empty(),
                 });
             }
+            Ok(index) if cells[index].leaf_value() == self.superseded.as_deref() => {
+                cells[index] = BTreeNodeCellV1::leaf(key.to_vec(), value.to_vec());
+            }
+            Ok(_) => return Err(PhysicalLayoutMaintenanceFailure::ConflictingKey),
             Err(index) => cells.insert(index, BTreeNodeCellV1::leaf(key.to_vec(), value.to_vec())),
         }
         let candidate = BTreeNodeV1::leaf(self.family_code, cells.clone(), None, None)

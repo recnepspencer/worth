@@ -266,6 +266,7 @@ fn artifact_directory(artifact: RecordArtifactFile) -> Option<ArtifactTreeDirect
         RecordArtifactFile::RootManifest { .. }
         | RecordArtifactFile::RootRoutingBlock { .. }
         | RecordArtifactFile::ReleaseCustodyHeadBlock { .. } => records.child("roots").ok(),
+        RecordArtifactFile::Segment { .. } => records.child("segments").ok(),
         RecordArtifactFile::SegmentMembershipBlock { .. } => {
             records.child("segment-manifests").ok()
         }

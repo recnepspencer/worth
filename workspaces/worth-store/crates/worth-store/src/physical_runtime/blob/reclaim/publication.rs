@@ -222,12 +222,10 @@ impl ReclaimPublication<'_, '_> {
             request_binding,
         )?;
 
+        // The Drop's root rebase compares the current directory binding with
+        // the selected predecessor under the reclaim fence; directory records
+        // are immutable, so the binding pins the bytes the rebinding copied.
         let stage = BlobReclaimPublicationStage::Drop;
-        if let (ReclaimSource::Released(admitted), Some(rebinding)) =
-            (self.admitted, directory_rebinding.as_ref())
-        {
-            released_directory::revalidate_before_drop(self.runtime, admitted, rebinding.basis())?;
-        }
         let request = PhysicalMutationRequest::platform_durable(drop_key, self.deadline);
         let prepared = match (self.admitted, descriptor) {
             (ReclaimSource::Failed(admitted), ReclaimDescriptor::Failed(descriptor)) => self

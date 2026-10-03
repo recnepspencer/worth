@@ -7,6 +7,8 @@ use super::*;
 use worth_store_physical_format::{DurablePhysicalRootManifest, RecordArtifactFile};
 use worth_store_recovery_runtime::{PhysicalRecoveryOutcome, WorthStoreRecovery};
 
+#[path = "pending_wal_fold/directory_media.rs"]
+mod directory_media;
 #[path = "pending_wal_fold/memory_budget.rs"]
 mod memory_budget;
 

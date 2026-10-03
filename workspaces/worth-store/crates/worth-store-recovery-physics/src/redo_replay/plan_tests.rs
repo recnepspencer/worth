@@ -15,6 +15,8 @@ mod fixtures;
 mod group_atomic;
 #[path = "plan_tests/historical_consumed.rs"]
 mod historical_consumed;
+#[path = "plan_tests/historical_retired.rs"]
+mod historical_retired;
 #[path = "plan_tests/observation_membership.rs"]
 mod observation_membership;
 #[path = "plan_tests/projection_mutants.rs"]

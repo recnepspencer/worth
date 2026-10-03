@@ -88,6 +88,12 @@ pub(super) fn project_successor_root(
         ) {
             return Err(damaged());
         }
+    } else if drop_keeps_invalid_directory(
+        context.current_root.derived_family_directory(),
+        prepared.derived_updates.directory.is_some(),
+        &prepared.drop_records,
+    ) {
+        return Err(damaged());
     }
     let free_space = project_free_space(context, prepared, generation)?;
     let FreeSpacePublicationPlan {
@@ -170,6 +176,19 @@ fn directory_rebase_matches(
         && current_quarantine == proposed_quarantine
 }
 
+/// Dropping the publication a directory watermark names requires the
+/// same-member replacement directory; never keep the invalid binding.
+fn drop_keeps_invalid_directory(
+    current_directory: Option<DerivedFamilyRootDirectoryBinding>,
+    publishes_directory: bool,
+    drops: &std::collections::BTreeSet<PersistedRecordIdentity>,
+) -> bool {
+    !publishes_directory
+        && current_directory
+            .and_then(|binding| binding.indexed_through_blob_publication())
+            .is_some_and(|indexed| drops.contains(&indexed.record()))
+}
+
 #[cfg(test)]
 mod directory_rebase_tests {
     use super::*;
@@ -210,6 +229,35 @@ mod directory_rebase_tests {
             Some(record(5)),
             false,
             &std::collections::BTreeSet::new(),
+        ));
+    }
+
+    #[test]
+    fn dropping_the_watermark_publication_requires_a_replacement_directory() {
+        let record = |ordinal| PersistedRecordIdentity::new([7; 16], ordinal).unwrap();
+        let watermark = IndexedThroughBlobPublication::new(4, record(1), [8; 32]).unwrap();
+        let directory = DerivedFamilyRootDirectoryBinding::new(record(2), Some(watermark));
+        let drops_watermark = std::collections::BTreeSet::from([record(1), record(9)]);
+        let drops_other = std::collections::BTreeSet::from([record(9)]);
+        assert!(drop_keeps_invalid_directory(
+            Some(directory),
+            false,
+            &drops_watermark
+        ));
+        assert!(!drop_keeps_invalid_directory(
+            Some(directory),
+            true,
+            &drops_watermark
+        ));
+        assert!(!drop_keeps_invalid_directory(
+            Some(directory),
+            false,
+            &drops_other
+        ));
+        assert!(!drop_keeps_invalid_directory(
+            Some(DerivedFamilyRootDirectoryBinding::new(record(2), None)),
+            false,
+            &drops_watermark
         ));
     }
 }

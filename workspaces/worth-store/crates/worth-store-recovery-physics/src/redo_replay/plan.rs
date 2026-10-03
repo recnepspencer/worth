@@ -65,6 +65,7 @@ mod group_admission;
 mod head_replay;
 mod historical_consumed;
 mod historical_drop;
+mod historical_retired;
 mod projection_admission;
 mod projection_materialization;
 mod projection_validation;
@@ -165,6 +166,7 @@ pub enum PhysicalRedoDecisionKind {
     SkipPageAlreadyAtOrBeyondLsn,
     SkipOperationAlreadyMaterialized,
     SkipHistoricallyReleasedTarget,
+    SkipHistoricallyRetiredTarget,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -174,6 +176,7 @@ pub struct PhysicalRedoPlanCounters {
     apply: u64,
     skip_page_lsn: u64,
     skip_historical_drop: u64,
+    skip_historical_retired: u64,
     skip_operation: u64,
 }
 
@@ -234,28 +237,16 @@ fn decide(
         }
         RecoveryOperationFate::Indeterminate => {
             let observation = page_cursor.observe_record(target.identity(), record_lsn)?;
-            if let RecoveryPageSource::HistoricalReleasedDrop {
-                coordinate,
-                old_operation,
-                wal_target_digest,
-                ..
-            } = observation.source()
-            {
-                if observation.target() != target.identity()
-                    || old_operation != operation
-                    || wal_target_digest != target.resulting_digest()
-                    || Some(coordinate)
-                        != worth_store_physical_format::RecordFrameCoordinate::new(
-                            target.artifact(),
-                            target.artifact_offset(),
-                            target.artifact_length(),
-                        )
-                {
-                    return Err(PhysicalRedoPlanningDenial::GenerationMismatch);
-                }
-                counters.skip_historical_drop = checked(counters.skip_historical_drop)?;
+            if let Some(kind) = historical_skip(observation, operation, target)? {
+                let counter = match kind {
+                    PhysicalRedoDecisionKind::SkipHistoricallyReleasedTarget => {
+                        &mut counters.skip_historical_drop
+                    }
+                    _ => &mut counters.skip_historical_retired,
+                };
+                *counter = checked(*counter)?;
                 return Ok(PhysicalRedoDecision {
-                    kind: PhysicalRedoDecisionKind::SkipHistoricallyReleasedTarget,
+                    kind,
                     prior: PhysicalRedoDecisionPrior::Page(observation),
                     operation,
                     record_index,
@@ -288,6 +279,53 @@ fn decide(
             }
         }
     }
+}
+
+/// A historical classification must name this exact older WAL image; any
+/// other page source falls through to ordinary page-LSN comparison.
+fn historical_skip(
+    observation: RecoveryPageObservation,
+    operation: [u8; 32],
+    target: &PhysicalRedoTarget,
+) -> Result<Option<PhysicalRedoDecisionKind>, PhysicalRedoPlanningDenial> {
+    let (kind, coordinate, old_operation, wal_target_digest) = match observation.source() {
+        RecoveryPageSource::HistoricalReleasedDrop {
+            coordinate,
+            old_operation,
+            wal_target_digest,
+            ..
+        } => (
+            PhysicalRedoDecisionKind::SkipHistoricallyReleasedTarget,
+            coordinate,
+            old_operation,
+            wal_target_digest,
+        ),
+        RecoveryPageSource::HistoricalRetiredTarget {
+            coordinate,
+            old_operation,
+            wal_target_digest,
+            ..
+        } => (
+            PhysicalRedoDecisionKind::SkipHistoricallyRetiredTarget,
+            coordinate,
+            old_operation,
+            wal_target_digest,
+        ),
+        _ => return Ok(None),
+    };
+    if observation.target() != target.identity()
+        || old_operation != operation
+        || wal_target_digest != target.resulting_digest()
+        || Some(coordinate)
+            != worth_store_physical_format::RecordFrameCoordinate::new(
+                target.artifact(),
+                target.artifact_offset(),
+                target.artifact_length(),
+            )
+    {
+        return Err(PhysicalRedoPlanningDenial::GenerationMismatch);
+    }
+    Ok(Some(kind))
 }
 
 #[cfg(test)]

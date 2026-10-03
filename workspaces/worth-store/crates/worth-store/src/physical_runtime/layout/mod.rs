@@ -13,8 +13,9 @@ pub use btree::{
 pub use facade::{PhysicalLayoutAccess, PhysicalLayoutDenial};
 pub(in crate::physical_runtime) use maintenance::publish_derived_directory;
 pub(in crate::physical_runtime) use maintenance::{
-    admit_directory_retirement, insert_registered_node, inspect_selected_tree_retirement,
-    AdmittedDirectoryRetirement, InsertedLayoutTree, InsertionSource, SelectedTreeRetirement,
+    admit_directory_retirement, inspect_selected_tree_retirement, write_registered_cell,
+    AdmittedDirectoryRetirement, InsertedLayoutTree, InsertionSource, LayoutCellWrite,
+    SelectedTreeRetirement,
 };
 pub use maintenance::{
     DeferredDerivedRetirementCause, PhysicalLayoutAppendFailure, PhysicalLayoutMaintenanceFailure,

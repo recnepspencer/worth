@@ -68,7 +68,7 @@ pub(super) fn source_first() {
     assert!(source_first.remaining_payload_records() > 0);
     assert_invisible(&serving, &scope, original);
     assert_eq!(assert_bytes_exact(&serving, &scope, reused, &payload), 4);
-    stale_new_reuse::assert_denied_after_source_release(&serving, &scope, &payload);
+    stale_new_reuse::assert_fresh_ingest_replaces_stale_cells(&serving, &scope, &payload);
     crate::blob_expiry::completed_checkpoint(&serving, 0xd6);
     serving.close();
 

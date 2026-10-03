@@ -7,9 +7,9 @@ use worth_store_physical_format::{
 use crate::physical_runtime::{
     blob::{verify_source, DedupeIndexKey, DedupeIndexValue},
     layout::{
-        admit_directory_retirement, insert_registered_node, inspect_selected_tree_retirement,
-        publish_derived_directory, DeferredDerivedRetirementCause, InsertedLayoutTree,
-        InsertionSource, PhysicalBTreeIndex, PhysicalIndexPointKey, PhysicalLayoutPagePort,
+        admit_directory_retirement, inspect_selected_tree_retirement, publish_derived_directory,
+        write_registered_cell, DeferredDerivedRetirementCause, InsertedLayoutTree, InsertionSource,
+        LayoutCellWrite, PhysicalBTreeIndex, PhysicalIndexPointKey, PhysicalLayoutPagePort,
         SelectedTreeRetirement,
     },
     AdmittedRecordPlacementPolicy, PhysicalMutationDeadline, ServingPhysicalRuntime,
@@ -118,8 +118,11 @@ pub(in crate::physical_runtime) fn rebuild_blob_derived_indexes(
                 Some(chain) => InsertionSource::Continue(chain),
                 None => InsertionSource::Root(catalog_root),
             },
-            key.canonical_bytes().to_vec(),
-            encode_record(selected.record).to_vec(),
+            LayoutCellWrite {
+                key: key.canonical_bytes().to_vec(),
+                value: encode_record(selected.record).to_vec(),
+                superseded: None,
+            },
             placement,
             deadline,
         )?;
@@ -159,8 +162,11 @@ pub(in crate::physical_runtime) fn rebuild_blob_derived_indexes(
                         Some(chain) => InsertionSource::Continue(chain),
                         None => InsertionSource::Root(dedupe_root),
                     },
-                    key.bytes().to_vec(),
-                    value.encode().to_vec(),
+                    LayoutCellWrite {
+                        key: key.bytes().to_vec(),
+                        value: value.encode().to_vec(),
+                        superseded: None,
+                    },
                     placement,
                     deadline,
                 )?;
@@ -302,8 +308,7 @@ pub(in crate::physical_runtime) fn insert_cell<'runtime>(
     runtime: &'runtime ServingPhysicalRuntime,
     family: DurableArtifactFamilyId,
     source: InsertionSource<'runtime>,
-    key: Vec<u8>,
-    value: Vec<u8>,
+    cell: LayoutCellWrite,
     placement: AdmittedRecordPlacementPolicy,
     deadline: PhysicalMutationDeadline,
 ) -> Result<InsertedLayoutTree<'runtime>, LayoutRebuildFailure> {
@@ -316,10 +321,8 @@ pub(in crate::physical_runtime) fn insert_cell<'runtime>(
         runtime.maximum_inline_record_bytes(),
     )
     .map_err(LayoutRebuildFailure::LayoutRead)?;
-    let inserted = insert_registered_node(
-        runtime, &port, family, source, key, value, placement, deadline,
-    )
-    .map_err(LayoutRebuildFailure::LayoutMutation)?;
+    let inserted = write_registered_cell(runtime, &port, family, source, cell, placement, deadline)
+        .map_err(LayoutRebuildFailure::LayoutMutation)?;
     Ok(inserted)
 }
 

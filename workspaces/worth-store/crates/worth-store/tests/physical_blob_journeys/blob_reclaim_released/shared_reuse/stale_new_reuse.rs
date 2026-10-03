@@ -1,64 +1,62 @@
-use std::num::NonZeroU64;
-
 use worth_store::physical_runtime::{
-    AdmittedBlobScope, BlobCheckpointLimit, BlobDedupeFailure, BlobIngestDeclaration,
-    BlobIngestFailure, BlobReadLimits, PhysicalMutationDeadline, RecordReadDenial,
-    ServingPhysicalRuntime,
+    AdmittedBlobScope, PhysicalIndexPointKey, PublishedBlobGeneration, ServingPhysicalRuntime,
 };
-use worth_store_blob_chunks::BlobChunkSize;
-use worth_store_physical_format::{decode_blob_record, BlobRecordV1};
+use worth_store_contracts::DurableArtifactFamilyId;
+use worth_store_physical_format::{decode_blob_record, BlobRecordV1, PersistedRecordIdentity};
 
-use super::super::{shared_placement, SHARED_CHUNK as CHUNK};
+use super::super::publish_one;
+use super::{assert_bytes_exact, marker};
 
-pub(super) fn assert_denied_after_source_release(
+/// A release retains the dedupe cells naming the released source. A fresh
+/// ingest of the same bytes must miss those stale cells, publish its own
+/// chunks, and replace the cells so later ingests reuse the new publication.
+pub(super) fn assert_fresh_ingest_replaces_stale_cells(
     serving: &ServingPhysicalRuntime,
     scope: &AdmittedBlobScope,
     payload: &[u8],
 ) {
-    let blobs = serving.blobs().unwrap();
-    let limits = BlobReadLimits::new(NonZeroU64::new(256).unwrap());
-    let object = blobs.issue_object_id(limits).unwrap();
-    let declaration = BlobIngestDeclaration::new(
-        object,
-        BlobChunkSize::from_bytes(CHUNK as u64).unwrap(),
-        payload.len() as u64,
-        scope,
-        BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-        PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
-    )
-    .unwrap();
-    let mut ingest = blobs
-        .begin_ingest(declaration, shared_placement(), (CHUNK / 2) as u64, limits)
-        .unwrap();
-    let session = ingest.session_id().bytes();
-    for piece in payload.chunks(CHUNK / 2) {
-        match ingest.push(piece) {
-            Ok(()) => {}
-            Err(BlobIngestFailure::Dedupe(BlobDedupeFailure::SourceRead(error)))
-                if error.denial() == RecordReadDenial::RecordNotFound =>
-            {
-                assert_no_reuse_claim_for(serving, session);
-                return;
-            }
-            Err(error) => panic!("unexpected fresh ingest result after source release: {error:?}"),
-        }
-    }
-    match ingest.finish() {
-        Ok(_) | Err(BlobIngestFailure::PublishedIndexPending { .. }) => {}
-        Err(error) => panic!("unexpected fresh ingest finish after source release: {error:?}"),
-    }
-    assert_no_reuse_claim_for(serving, session);
+    let fresh = publish_one(serving, scope, payload);
+    let fresh_marker = marker(serving);
+    assert_catalog_selects(serving, fresh, fresh_marker.record());
+    assert_eq!(assert_bytes_exact(serving, scope, fresh, payload), 0);
+    assert_eq!(claims_sourced_from(serving, fresh_marker.record()), 0);
+
+    crate::blob_expiry::completed_checkpoint(serving, 0xd7);
+    let successor = publish_one(serving, scope, payload);
+    assert_eq!(
+        claims_sourced_from(serving, fresh_marker.record()),
+        2,
+        "replaced dedupe cells must route later reuse to the fresh publication",
+    );
+    assert!(assert_bytes_exact(serving, scope, successor, payload) > 0);
 }
 
-fn assert_no_reuse_claim_for(serving: &ServingPhysicalRuntime, session: [u8; 16]) {
-    assert!(
-        !super::super::super::blob_frontier::selected_blob_records(serving)
-            .iter()
-            .any(|(_, bytes)| match decode_blob_record(bytes) {
-                Ok(BlobRecordV1::ChunkReuseClaim(value)) => value.destination_session() == session,
-                Ok(BlobRecordV1::ChunkReuseClaimV2(value)) =>
-                    value.claim().destination_session() == session,
-                _ => false,
-            })
-    );
+fn assert_catalog_selects(
+    serving: &ServingPhysicalRuntime,
+    published: PublishedBlobGeneration,
+    expected: PersistedRecordIdentity,
+) {
+    let key =
+        PhysicalIndexPointKey::blob_catalog(published.object(), published.generation().sequence())
+            .unwrap();
+    let point = serving
+        .layouts()
+        .unwrap()
+        .btree(DurableArtifactFamilyId::BlobCatalog)
+        .unwrap()
+        .point(key)
+        .unwrap();
+    assert_eq!(point.selected_record(), Some(expected));
+}
+
+fn claims_sourced_from(serving: &ServingPhysicalRuntime, source: PersistedRecordIdentity) -> usize {
+    super::super::super::blob_frontier::selected_blob_records(serving)
+        .iter()
+        .filter(|(_, bytes)| match decode_blob_record(bytes) {
+            Ok(BlobRecordV1::ChunkReuseClaimV2(value)) => {
+                value.claim().source_publication() == source
+            }
+            _ => false,
+        })
+        .count()
 }

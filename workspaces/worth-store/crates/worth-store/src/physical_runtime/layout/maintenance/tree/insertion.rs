@@ -39,6 +39,36 @@ pub(in crate::physical_runtime) fn insert_registered_node<'runtime>(
     placement: AdmittedRecordPlacementPolicy,
     deadline: PhysicalMutationDeadline,
 ) -> Result<InsertedLayoutTree<'runtime>, PhysicalLayoutMaintenanceFailure> {
+    let cell = LayoutCellWrite {
+        key,
+        value,
+        superseded: None,
+    };
+    write_registered_cell(runtime, port, family, source, cell, placement, deadline)
+}
+
+/// One leaf cell to write. `superseded` names the exact stale value the cell
+/// may replace under its key; any other existing value is a conflict.
+pub(in crate::physical_runtime) struct LayoutCellWrite {
+    pub(in crate::physical_runtime) key: Vec<u8>,
+    pub(in crate::physical_runtime) value: Vec<u8>,
+    pub(in crate::physical_runtime) superseded: Option<Vec<u8>>,
+}
+
+pub(in crate::physical_runtime) fn write_registered_cell<'runtime>(
+    runtime: &'runtime ServingPhysicalRuntime,
+    port: &PhysicalLayoutPagePort<'_>,
+    family: DurableArtifactFamilyId,
+    source: InsertionSource<'runtime>,
+    cell: LayoutCellWrite,
+    placement: AdmittedRecordPlacementPolicy,
+    deadline: PhysicalMutationDeadline,
+) -> Result<InsertedLayoutTree<'runtime>, PhysicalLayoutMaintenanceFailure> {
+    let LayoutCellWrite {
+        key,
+        value,
+        superseded,
+    } = cell;
     let registered = runtime
         .registered_btree_family(family)
         .map_err(|_| PhysicalLayoutMaintenanceFailure::UnregisteredFamily(family))?;
@@ -57,7 +87,8 @@ pub(in crate::physical_runtime) fn insert_registered_node<'runtime>(
     // Continuation capacity belongs to this insertion: deny before even
     // unreachable COW appends, and retain its grant after writer scratch drops.
     replaced.prepare_insertion()?;
-    let writer = TreeWriter::new(runtime, port, family, placement, deadline, 10)?;
+    let mut writer = TreeWriter::new(runtime, port, family, placement, deadline, 10)?;
+    writer.superseded = superseded;
     let new_root = match root {
         None => {
             let node = BTreeNodeV1::leaf(

@@ -14,7 +14,7 @@ use worth_store_physical_format::{
 };
 
 use crate::physical_runtime::{
-    blob::{verify_source, DedupeIndexKey, DedupeIndexValue},
+    blob::{source_publication_unrouted, verify_source, DedupeIndexKey, DedupeIndexValue},
     layout::{
         rebuild::{
             insert_cell, point_temporary, traverse_publication_direct, LayoutRebuildLimits,
@@ -32,8 +32,8 @@ use append::{append_layout_record, LayoutAppendKind};
 pub use tree::DeferredDerivedRetirementCause;
 pub(in crate::physical_runtime) use tree::{
     admit_directory_retirement, insert_registered_node, inspect_selected_tree_retirement,
-    retire_selected_tree, AdmittedDirectoryRetirement, InsertedLayoutTree, InsertionSource,
-    SelectedTreeRetirement,
+    retire_selected_tree, write_registered_cell, AdmittedDirectoryRetirement, InsertedLayoutTree,
+    InsertionSource, LayoutCellWrite, SelectedTreeRetirement,
 };
 
 pub(in crate::physical_runtime) fn publish_derived_directory(
@@ -259,40 +259,50 @@ impl ServingPhysicalRuntime {
                 return Ok(());
             }
             let key = DedupeIndexKey::from_digest(publication.key_scope(), chunk.digest);
-            if let Some(existing) = point_temporary(
+            let existing = point_temporary(
                 self,
                 DurableArtifactFamilyId::DedupeIndex,
                 dedupe_root,
                 &key.bytes(),
-            )? {
-                let locator = DedupeIndexValue::decode(&existing)
+            )?;
+            if let Some(existing) = &existing {
+                let locator = DedupeIndexValue::decode(existing)
                     .ok_or(LayoutRebuildFailure::InvalidDerivedLocator)?;
-                verify_source(
-                    port.reader(),
-                    locator,
-                    publication.key_scope(),
-                    chunk.digest,
-                    chunk.bytes,
-                    publication.chunk_size(),
-                )
-                .map_err(LayoutRebuildFailure::ReuseAuthority)?;
-            } else {
-                let value = DedupeIndexValue::new(source.record(), chunk.ordinal, chunk.record);
-                let inserted = insert_cell(
-                    self,
-                    DurableArtifactFamilyId::DedupeIndex,
-                    match dedupe_chain.take() {
-                        Some(chain) => InsertionSource::Continue(chain),
-                        None => InsertionSource::Root(dedupe_root),
-                    },
-                    key.bytes().to_vec(),
-                    value.encode().to_vec(),
-                    placement,
-                    deadline,
-                )?;
-                dedupe_root = Some(inserted.root());
-                dedupe_chain = Some(inserted);
+                if !source_publication_unrouted(port.reader(), locator)
+                    .map_err(LayoutRebuildFailure::ReuseAuthority)?
+                {
+                    verify_source(
+                        port.reader(),
+                        locator,
+                        publication.key_scope(),
+                        chunk.digest,
+                        chunk.bytes,
+                        publication.chunk_size(),
+                    )
+                    .map_err(LayoutRebuildFailure::ReuseAuthority)?;
+                    return Ok(());
+                }
             }
+            // Absent, or stale: a retained cell whose source the selected
+            // root no longer routes is replaced by this publication's locator.
+            let value = DedupeIndexValue::new(source.record(), chunk.ordinal, chunk.record);
+            let inserted = insert_cell(
+                self,
+                DurableArtifactFamilyId::DedupeIndex,
+                match dedupe_chain.take() {
+                    Some(chain) => InsertionSource::Continue(chain),
+                    None => InsertionSource::Root(dedupe_root),
+                },
+                LayoutCellWrite {
+                    key: key.bytes().to_vec(),
+                    value: value.encode().to_vec(),
+                    superseded: existing,
+                },
+                placement,
+                deadline,
+            )?;
+            dedupe_root = Some(inserted.root());
+            dedupe_chain = Some(inserted);
             Ok(())
         })
         .map_err(|failure| PhysicalLayoutMaintenanceFailure::FullAuthority(Box::new(failure)))?;

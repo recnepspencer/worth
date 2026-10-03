@@ -33,6 +33,15 @@ pub enum RecoveryPageSource {
         old_operation: [u8; 32],
         wal_target_digest: [u8; 32],
     },
+    /// A later ordered root edge removed the record this older WAL image
+    /// wrote; the selected root no longer routes it.
+    HistoricalRetiredTarget {
+        coordinate: RecordFrameCoordinate,
+        selected_root_identity: [u8; 32],
+        retiring_operation: [u8; 32],
+        old_operation: [u8; 32],
+        wal_target_digest: [u8; 32],
+    },
     PlannedResult {
         coordinate: RecordFrameCoordinate,
         causal_identity: [u8; 32],
@@ -355,6 +364,10 @@ const fn generation(identity: PhysicalRedoTargetIdentity) -> u64 {
         | PhysicalRedoTargetIdentity::ExtentChunk { generation, .. } => generation,
     }
 }
+
+#[path = "cursor/historical_retired.rs"]
+mod historical_retired;
+pub use historical_retired::HistoricalRetiredTargetWitness;
 
 #[cfg(test)]
 #[path = "cursor_tests.rs"]

@@ -10,7 +10,7 @@ use crate::physical_runtime::{
 
 use super::{
     key::{DedupeIndexKey, DedupeIndexValue},
-    source::{verify_source, VerifiedDedupeSource},
+    source::{source_publication_unrouted, verify_source, VerifiedDedupeSource},
 };
 
 #[derive(Debug)]
@@ -75,5 +75,8 @@ fn lookup_charged(
     let Some(value) = found else { return Ok(None) };
     let locator = DedupeIndexValue::decode(&value).ok_or(BlobDedupeFailure::InvalidDerivedValue)?;
     let reader = layouts.into_reader();
+    if source_publication_unrouted(&reader, locator)? {
+        return Ok(None);
+    }
     verify_source(&reader, locator, scope, key.digest(), bytes, chunk_size).map(Some)
 }

@@ -10,8 +10,8 @@ use worth_store_physical_format::{
 use super::*;
 use crate::{
     HistoricalReleasedDropTargetWitness, PhysicalSourceSelection,
-    VerifiedAddressedReleasedControlFrame, VerifiedHistoricalReleaseRootChain,
-    VerifiedOrderedRootEdge, VerifiedOrderedRootHistory, WitnessedSelectedControlFrame,
+    VerifiedAddressedReleasedControlFrame, VerifiedOrderedRootEdge, VerifiedOrderedRootHistory,
+    VerifiedReleasedRootEdge,
 };
 
 struct ControlFrames<'a> {
@@ -22,63 +22,6 @@ struct ControlFrames<'a> {
 }
 
 impl AdmittedPhysicalRedoMembers {
-    pub fn admit_historical_released_drop_target(
-        &self,
-        selection: &PhysicalSourceSelection,
-        target: &PhysicalRedoTarget,
-        descriptor_operation: [u8; 32],
-        descriptor_frame: &WitnessedSelectedControlFrame,
-        manifest_frame: &WitnessedSelectedControlFrame,
-    ) -> Option<HistoricalReleasedDropTargetWitness> {
-        let controls = ControlFrames {
-            descriptor_bytes: descriptor_frame
-                .selected(selection, BlobRecordKind::ReclaimDescriptorV3)
-                .ok()?,
-            descriptor_record: descriptor_frame.selected_placement().record(),
-            manifest_bytes: manifest_frame
-                .selected(selection, BlobRecordKind::DropSetManifestV3)
-                .ok()?,
-            manifest_record: manifest_frame.selected_placement().record(),
-        };
-        self.admit_historical_released_drop_target_inner(
-            selection,
-            target,
-            descriptor_operation,
-            controls,
-            None,
-            None,
-        )
-    }
-
-    pub fn admit_historical_released_drop_target_with_chain(
-        &self,
-        selection: &PhysicalSourceSelection,
-        target: &PhysicalRedoTarget,
-        descriptor_operation: [u8; 32],
-        descriptor_frame: &WitnessedSelectedControlFrame,
-        manifest_frame: &WitnessedSelectedControlFrame,
-        chain: &VerifiedHistoricalReleaseRootChain,
-    ) -> Option<HistoricalReleasedDropTargetWitness> {
-        let controls = ControlFrames {
-            descriptor_bytes: descriptor_frame
-                .selected(selection, BlobRecordKind::ReclaimDescriptorV3)
-                .ok()?,
-            descriptor_record: descriptor_frame.selected_placement().record(),
-            manifest_bytes: manifest_frame
-                .selected(selection, BlobRecordKind::DropSetManifestV3)
-                .ok()?,
-            manifest_record: manifest_frame.selected_placement().record(),
-        };
-        self.admit_historical_released_drop_target_inner(
-            selection,
-            target,
-            descriptor_operation,
-            controls,
-            Some(chain),
-            None,
-        )
-    }
-
     pub fn admit_historical_released_drop_target_with_ordered_history(
         &self,
         selection: &PhysicalSourceSelection,
@@ -116,8 +59,8 @@ impl AdmittedPhysicalRedoMembers {
             target,
             descriptor_operation,
             controls,
-            None,
-            Some(history),
+            edge,
+            history,
         )
     }
 
@@ -127,8 +70,8 @@ impl AdmittedPhysicalRedoMembers {
         target: &PhysicalRedoTarget,
         descriptor_operation: [u8; 32],
         controls: ControlFrames<'_>,
-        chain: Option<&VerifiedHistoricalReleaseRootChain>,
-        history: Option<&VerifiedOrderedRootHistory>,
+        edge: &VerifiedReleasedRootEdge,
+        history: &VerifiedOrderedRootHistory,
     ) -> Option<HistoricalReleasedDropTargetWitness> {
         let old_operation = unique_indeterminate_target_operation(&self.members, target)?;
         let mut descriptors = self
@@ -136,56 +79,24 @@ impl AdmittedPhysicalRedoMembers {
             .iter()
             .filter(|member| member.operation == descriptor_operation);
         let descriptor_member = descriptors.next()?;
-        if descriptors.next().is_some()
-            || descriptor_member.fate == RecoveryOperationFate::ProvenNoEffect
-            || descriptor_member.records.is_empty()
-        {
-            return None;
-        }
-        let PersistedPhysicalRecoveryOperation::RecordsDropped { binding, .. } =
-            descriptor_member.projection.operation()
+        let PersistedPhysicalRecoveryOperation::RecordsDropped {
+            binding,
+            directory_replacement,
+            ..
+        } = descriptor_member.projection.operation()
         else {
             return None;
         };
-        let selected = selection.root().selected();
-        let direct = chain.is_none() && history.is_none();
-        let ordered_match = history.is_none_or(|history| {
-            let mut edges = history.edges().iter().filter_map(|edge| match edge {
-                VerifiedOrderedRootEdge::Released(edge)
-                    if edge.operation() == descriptor_operation =>
-                {
-                    Some(edge)
-                }
-                _ => None,
-            });
-            let Some(edge) = edges.next() else {
-                return false;
-            };
-            edges.next().is_none()
-                && edge.descriptor_record() == binding.record()
-                && edge.descriptor_frame_sha256() == binding.record_payload_sha256()
-                && edge.candidate_root_generation() == binding.candidate_root_generation()
-                && history.checkpoint_root_frame_sha256()
-                    == selection
-                        .checkpoint()
-                        .map(|checkpoint| checkpoint.source_root_frame_sha256())
-                        .unwrap_or([0; 32])
-                && history.selected_root_frame_sha256()
-                    == <[u8; 32]>::from(Sha256::digest(
-                        selected.manifest().encode(selected.selector().format()),
-                    ))
-        });
-        if (direct && binding.candidate_root_generation() != selected.manifest().generation())
-            || !ordered_match
-            || chain.is_some_and(|chain| {
-                chain.descriptor_operation() != descriptor_operation
-                    || chain.checkpoint_root_frame_sha256().is_none()
-                    || chain.first_result_generation() != binding.candidate_root_generation()
-                    || chain.selected_root_frame_sha256()
-                        != <[u8; 32]>::from(Sha256::digest(
-                            selected.manifest().encode(selected.selector().format()),
-                        ))
-            })
+        // The descriptor record, plus exactly one replacement directory frame
+        // when this drop rebinds a derived directory.
+        let expected_records = 1 + usize::from(directory_replacement.is_some());
+        let selected_root_identity = history_anchors_selection(history, selection)?;
+        if descriptors.next().is_some()
+            || descriptor_member.fate == RecoveryOperationFate::ProvenNoEffect
+            || descriptor_member.records.len() != expected_records
+            || edge.descriptor_record() != binding.record()
+            || edge.descriptor_frame_sha256() != binding.record_payload_sha256()
+            || edge.candidate_root_generation() != binding.candidate_root_generation()
             || descriptor_member
                 .projection
                 .source_root_generation()
@@ -238,8 +149,6 @@ impl AdmittedPhysicalRedoMembers {
         {
             return None;
         }
-        let selected_root_identity =
-            Sha256::digest(selected.manifest().encode(selected.selector().format())).into();
         Some(HistoricalReleasedDropTargetWitness {
             selected_root_identity,
             descriptor_operation,
@@ -255,7 +164,50 @@ impl AdmittedPhysicalRedoMembers {
     }
 }
 
-fn unique_indeterminate_target_operation(
+/// The ordered walk must start at the selected checkpoint and end at the
+/// selected root; returns that selected root's frame identity.
+pub(super) fn history_anchors_selection(
+    history: &VerifiedOrderedRootHistory,
+    selection: &PhysicalSourceSelection,
+) -> Option<[u8; 32]> {
+    let selected = selection.root().selected();
+    let selected_root_identity: [u8; 32] =
+        Sha256::digest(selected.manifest().encode(selected.selector().format())).into();
+    let checkpoint = selection
+        .checkpoint()
+        .map(|checkpoint| checkpoint.source_root_frame_sha256())
+        .unwrap_or([0; 32]);
+    anchored_root_identity(
+        RootAnchors {
+            checkpoint_root_frame_sha256: history.checkpoint_root_frame_sha256(),
+            selected_root_frame_sha256: history.selected_root_frame_sha256(),
+        },
+        RootAnchors {
+            checkpoint_root_frame_sha256: checkpoint,
+            selected_root_frame_sha256: selected_root_identity,
+        },
+    )
+}
+
+/// The checkpoint a root walk starts from and the root it ends at.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct RootAnchors {
+    pub(super) checkpoint_root_frame_sha256: [u8; 32],
+    pub(super) selected_root_frame_sha256: [u8; 32],
+}
+
+/// The selected root identity, only when the history's walk starts at the
+/// selection's checkpoint and ends at its selected root.
+pub(super) fn anchored_root_identity(
+    history: RootAnchors,
+    selection: RootAnchors,
+) -> Option<[u8; 32]> {
+    (history.checkpoint_root_frame_sha256 == selection.checkpoint_root_frame_sha256
+        && history.selected_root_frame_sha256 == selection.selected_root_frame_sha256)
+        .then_some(selection.selected_root_frame_sha256)
+}
+
+pub(super) fn unique_indeterminate_target_operation(
     members: &[AdmittedPhysicalRedoMember],
     target: &PhysicalRedoTarget,
 ) -> Option<[u8; 32]> {
@@ -270,7 +222,7 @@ fn unique_indeterminate_target_operation(
     matching.next().is_none().then_some(first.operation)
 }
 
-fn target_record(target: &PhysicalRedoTarget) -> Option<PersistedRecordIdentity> {
+pub(super) fn target_record(target: &PhysicalRedoTarget) -> Option<PersistedRecordIdentity> {
     let PhysicalRedoTargetIdentity::ExtentChunk { .. } = target.identity() else {
         return None;
     };

@@ -9,6 +9,10 @@ use crate::physical_runtime::{
     RecordReadError, RecordScanError, RecordStreamFailure,
 };
 
+/// A released Drop's decoded source directory plus its canonical successor
+/// frame, admitted once inside the reclaim envelope.
+pub(super) const RELEASED_DIRECTORY_REBINDING_BYTES: u64 = 16 * 1024;
+
 /// Bounds each selected-root pass and the combined payload inspection work.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BlobReclaimLimits {
@@ -73,7 +77,9 @@ impl BlobReclaimLimits {
                         ) as u64,
                 )
             })
-            .and_then(|bytes| bytes.checked_add(2 * 1024 * 1024))
+            .and_then(|bytes| {
+                bytes.checked_add(2 * 1024 * 1024 + RELEASED_DIRECTORY_REBINDING_BYTES)
+            })
             .and_then(NonZeroU64::new)
             .ok_or(BlobReclaimLimitDenial::MetadataSizeOverflow)
     }

@@ -41,7 +41,9 @@ pub fn map_redo_execution(plan: &ImmutablePhysicalRedoPlan) -> Vec<DurabilityRec
         |(applied, skipped), decision| match decision.kind() {
             PhysicalRedoDecisionKind::Apply => (true, skipped),
             PhysicalRedoDecisionKind::SkipPageAlreadyAtOrBeyondLsn
-            | PhysicalRedoDecisionKind::SkipOperationAlreadyMaterialized => (applied, true),
+            | PhysicalRedoDecisionKind::SkipOperationAlreadyMaterialized
+            | PhysicalRedoDecisionKind::SkipHistoricallyReleasedTarget
+            | PhysicalRedoDecisionKind::SkipHistoricallyRetiredTarget => (applied, true),
         },
     );
     if applied {

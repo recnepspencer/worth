@@ -178,7 +178,7 @@ fn read_selected<S: RouteWalkStorage + ExtentReadStorage>(
             selected.extend_from_slice(&bytes[payload]);
             storage.grow_vec(slices, 1)?;
             slices.push(
-                SelectedArtifactSlice::observed(artifact, offset, bytes, true)
+                SelectedArtifactSlice::observed(artifact, offset, bytes, false)
                     .ok_or(Denial::BoundExceeded)?,
             );
             RouteWalkStorage::discard_frame(storage, frame)?;

@@ -278,6 +278,7 @@ impl ImmutablePhysicalRedoPlan {
                             decision.kind,
                             PhysicalRedoDecisionKind::SkipPageAlreadyAtOrBeyondLsn
                                 | PhysicalRedoDecisionKind::SkipOperationAlreadyMaterialized
+                                | PhysicalRedoDecisionKind::SkipHistoricallyRetiredTarget
                         )
                     })
             })
@@ -359,6 +360,9 @@ impl PhysicalRedoPlanCounters {
     }
     pub const fn skip_historical_drop(self) -> u64 {
         self.skip_historical_drop
+    }
+    pub const fn skip_historical_retired(self) -> u64 {
+        self.skip_historical_retired
     }
     pub const fn skip_operation(self) -> u64 {
         self.skip_operation

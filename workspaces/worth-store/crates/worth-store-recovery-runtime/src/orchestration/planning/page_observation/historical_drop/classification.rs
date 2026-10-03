@@ -206,6 +206,20 @@ pub(in crate::orchestration::planning::page_observation) fn classify<'target>(
             ordered_history: history,
         });
     }
+    // A target published by an ordered edge and removed by a later ordinary
+    // retirement edge (for example a V3 drop's replacement directory frame
+    // superseded by a derived-directory retirement) is classified from the
+    // already-verified history; no further media is read.
+    if let Some(history) = ordered.as_deref() {
+        remaining.retain(|target| {
+            redo.admit_historical_retired_target_with_ordered_history(selection, target, history)
+                .and_then(|witness| {
+                    RecoveryPageObservation::historical_retired_target(target, witness)
+                })
+                .map(|observation| observations.push(observation))
+                .is_none()
+        });
+    }
     Ok((
         observations,
         remaining,

@@ -28,6 +28,21 @@ pub(in crate::physical_runtime) struct VerifiedDedupeSource {
     pub(in crate::physical_runtime::blob) source_publication_frame_sha256: [u8; 32],
 }
 
+/// A release retains surviving derived cells. A cell whose source publication
+/// the selected root no longer routes is stale: lookup misses and maintenance
+/// replaces it. Every other outcome, including a missing chunk or node under a
+/// still-routed publication, is decided by [`verify_source`].
+pub(in crate::physical_runtime) fn source_publication_unrouted(
+    reader: &PhysicalRecordReader,
+    locator: DedupeIndexValue,
+) -> Result<bool, BlobDedupeFailure> {
+    match reader.selected_content_class(PhysicalRecordId::from_persisted(locator.publication())) {
+        Ok(_) => Ok(false),
+        Err(error) if error.denial() == RecordReadDenial::RecordNotFound => Ok(true),
+        Err(error) => Err(BlobDedupeFailure::SourceRead(error)),
+    }
+}
+
 pub(in crate::physical_runtime) fn verify_source(
     reader: &PhysicalRecordReader,
     locator: DedupeIndexValue,
