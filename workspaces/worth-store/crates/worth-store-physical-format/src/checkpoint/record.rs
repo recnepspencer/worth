@@ -44,16 +44,58 @@ pub enum CheckpointStreamDecodeDenial {
     AggregateDigestMismatch,
 }
 
-pub(super) fn encode_record_schema(schema: u8, kind: u8, payload: &[u8]) -> Vec<u8> {
-    let mut record = vec![0; PREFIX_BYTES + payload.len() + CHECKSUM_BYTES];
+/// Encoding can reject caller-owned backing independently of wire-format validity.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CheckpointStreamEncodingDenial {
+    Format(CheckpointStreamDecodeDenial),
+    InsufficientReservedCapacity { required: usize, capacity: usize },
+}
+
+impl From<CheckpointStreamDecodeDenial> for CheckpointStreamEncodingDenial {
+    fn from(denial: CheckpointStreamDecodeDenial) -> Self {
+        Self::Format(denial)
+    }
+}
+
+impl CheckpointStreamEncodingDenial {
+    pub(super) fn into_format(self) -> Option<CheckpointStreamDecodeDenial> {
+        match self {
+            Self::Format(denial) => Some(denial),
+            Self::InsufficientReservedCapacity { .. } => None,
+        }
+    }
+}
+
+pub(super) fn encode_record_schema_in_reserved(
+    schema: u8,
+    kind: u8,
+    payload: &[u8],
+    record: &mut Vec<u8>,
+) -> Result<(), CheckpointStreamEncodingDenial> {
+    let payload_bytes =
+        u32::try_from(payload.len()).map_err(|_| CheckpointStreamDecodeDenial::LengthMismatch)?;
+    let required = PREFIX_BYTES
+        .checked_add(payload.len())
+        .and_then(|bytes| bytes.checked_add(CHECKSUM_BYTES))
+        .ok_or(CheckpointStreamDecodeDenial::LengthMismatch)?;
+    if record.capacity() < required {
+        return Err(
+            CheckpointStreamEncodingDenial::InsufficientReservedCapacity {
+                required,
+                capacity: record.capacity(),
+            },
+        );
+    }
+    record.clear();
+    record.resize(required, 0);
     record[..8].copy_from_slice(&MAGIC);
     record[8] = schema;
     record[9] = kind;
-    record[12..16].copy_from_slice(&(payload.len() as u32).to_le_bytes());
+    record[12..16].copy_from_slice(&payload_bytes.to_le_bytes());
     record[PREFIX_BYTES..PREFIX_BYTES + payload.len()].copy_from_slice(payload);
     let checksum = crc32c::checksum(&[&record[..PREFIX_BYTES], payload]);
     record[PREFIX_BYTES + payload.len()..].copy_from_slice(&checksum.to_le_bytes());
-    record
+    Ok(())
 }
 
 pub(super) fn decode_record(

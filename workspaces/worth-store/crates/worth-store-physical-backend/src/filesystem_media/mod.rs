@@ -75,8 +75,11 @@ pub use allocation::{
     AllocationRequest, MediaAllocationMode, MediaAllocationObservation, MediaAllocationOutcome,
     MediaAllocationResult, MediaPhysicalAllocationPosture,
 };
+#[cfg(feature = "recovery-runtime-owner")]
 pub(crate) use artifact_tree::ArtifactTreeAllocatedListingFailure;
+#[cfg(feature = "recovery-runtime-owner")]
 pub(crate) use artifact_tree::ArtifactTreeAllocatedReadFailure;
+#[cfg(feature = "recovery-runtime-owner")]
 pub(crate) use artifact_tree::{backed_directory, backed_file, ArtifactTreeBackedPath};
 pub use artifact_tree::{
     ArtifactAppendOutcome, ArtifactAppendRange, ArtifactNewWriteOutcome, ArtifactNewWriteRange,

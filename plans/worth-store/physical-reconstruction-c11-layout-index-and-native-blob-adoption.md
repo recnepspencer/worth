@@ -1402,19 +1402,18 @@ following obligations identify their concrete Phase 6 enforcement boundaries.
 | --- | --- | --- |
 | Architecture 1, 3, 4, 16 | Store consumes admitted semantic release proof and lowers exact selected-source, head, control, allocation and root effects before execution. C.7 publishes; C.9 validates exact redo; C.8 reconstructs; Store independently rejoins before its one-shot Serving transition. Observation, routed bytes, digests and generic completion grant no authority. | Public compiler boundaries reject forged/skipped progression; no-proof, wrong-object and stale-source twins deny before new effects; exact WAL/media observation distinguishes admitted from performed work. |
 | Architecture 5, 7, 14, 22 | Root preparation and every failure translation preserve the typed underlying cause, responsible boundary, proven/maybe-started effect posture, retained authority and recovery disposition. Cancellation never erases durable work. | Inject preparation, resource, WAL, root and namespace failures; assert exact cause and fate, selected artifacts and recovery result, not merely `is_err()`. A published generation with pending indexing must remain a typed partial outcome, not fixture success or rollback. |
-| Architecture 9, 11, 19, 22; performance allocation and memory laws | One owner-carried aggregate admission accounts for simultaneously live planning state, retained custody, scratch, decoded controls, roster storage and replay copies. Acquire capacity before allocation/growth and before irreversible effects; carry or lawfully transfer the live charge across C.8, Store rejoin, Serving, mutation and disposal. A numeric ceiling or a post-allocation aggregate check is not a live reservation. | Exercise the actual bounded production world and overlapping grants; measure peak and retained charges through handoff and mutable growth. Denial leaves no new forbidden allocation/effect; disposal releases the exact charge. Reconcile `canonical_store_metadata_envelope` against actual retained metadata rather than raising its budget to conceal overhead. |
+| Architecture 9, 11, 19, 22; performance allocation and memory laws | Recovery, rejoin, Serving handoff and each drop derive one worst-case memory envelope from their admitted bounds (WAL bytes, checkpoint size, head population `H`, roster size) and admit it once before any effect; exceeding the budget is a typed denial before effects. Allocations inside an admitted operation need no individual reservation, and no per-allocation reservation plumbing is added. Retained custody keeps one charge that is carried across C.8, Store rejoin, Serving, mutation and disposal. | A memory-counting test allocator over the production journeys checks that measured peak stays within the envelope; an undersized budget denies before effects and disposal releases the retained charge. Reconcile `canonical_store_metadata_envelope` against actual retained metadata rather than raising its budget to conceal overhead. |
 | Architecture 8, 10, 17, 18 | Selected checkpoint custody, pending-WAL claims, checkpoint-source roster, effective post-WAL roster and per-object predecessor are distinct owner facts. Ordinary visibility still comes from selected C.5 routes, never a retained catalog cell or the global release tip. | Pruned A/B continuation, post-checkpoint updates, unchanged-entry and stale-seal twins; ordinary surviving-object reads and independent offline observation. No old checkpoint, heap ledger or writer state crosses the fresh-process boundary. |
 | Architecture 21; DX 7 | Durable head, root, metadata effect and checkpoint families declare current-only supported grammars and typed states under the explicitly permitted undeployed Store policy. Keep identity/version checks, never reinterpret old bytes, and reject historical formats without migration. | Current NoRelease advances through a genuine first release; missing current heads and unsupported versions deny; C.9/C.8 and independent Store/observer consumers admit the same current grammar and reject incompatible or altered metadata before promotion. |
 | Architecture 6, 13, 15, 23 | Effects remain in the existing Store work/scheduler/executor/publication path. Physical reachability cannot issue semantic liveness, holds or non-reissue proof. Admission and recovery guarantees cannot be traded for throughput or easier review. | Real held-reader, retirement, movement and interference journeys; compile-fail movement substitutes; media observations expose executor bypass or half-publication. |
 | Composition 1-9, 13-15; domain structure 1-3, 7-11, 17 | Keep proof decisions, execution, replay, diagnostic translation and independent rejoin in their existing semantic owners. Facades export contracts only. Orchestration names proof-building steps; line-count extraction cannot substitute for responsibility boundaries. | Bounded independent structural review, dependency/visibility checks, scoped 400-line guard and judgment of function advisories. New growth enters the destination tree below without phase-named buckets or a second authority lane. |
 
-Resource admission is a cross-cutting spine, not a later cleanup milestone.
-Submilestone 6.1 repairs the immediate publication blocker; each later
-submilestone must establish continuously owned charges for the actual paths
-it introduces or changes before admitting their effects. No blanket resource
-PASS may precede those paths. The complete retained closure and checkpoint/
-recovery capacity are prerequisites of the first admitted drop, even though
-6.4 completes the population and retirement campaign.
+Resource admission is one envelope per operation, not per-allocation plumbing.
+Each submilestone sizes the envelope for the paths it introduces or changes
+and proves it with the counting allocator. Existing per-allocation funding
+code is frozen: no new additions, and it may be removed where the envelope
+covers it. The retained closure and checkpoint/recovery envelope are
+prerequisites of the first admitted drop.
 
 #### 6.1: Bounded ordinary publication and diagnostic foundation
 
@@ -1554,6 +1553,10 @@ rebaseline of that seam and dependencies, not parallel patch accumulation;
 elapsed time is neither proof nor permission to weaken the contract. Preserve
 settled design and accepted evidence unless concrete invalidating evidence
 requires reopening them.
+
+If three consecutive slices are the same kind of fix (for example funding,
+scratch accounting or proof plumbing for one seam), stop and propose a
+structural fix to that seam before landing another.
 
 ### Phase 7: LSM strategy, compaction, and export/import
 

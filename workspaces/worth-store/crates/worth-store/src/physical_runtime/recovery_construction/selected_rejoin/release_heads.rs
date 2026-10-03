@@ -37,9 +37,11 @@ impl ObservedReleaseHeads {
     pub(super) fn entries(&self) -> &[ReleaseCustodyHeadEntryV1] {
         &self.entries
     }
+    #[cfg(test)]
     pub(super) fn count(&self) -> u64 {
         self.count
     }
+    #[cfg(test)]
     pub(super) fn digest(&self) -> [u8; 32] {
         self.digest
     }

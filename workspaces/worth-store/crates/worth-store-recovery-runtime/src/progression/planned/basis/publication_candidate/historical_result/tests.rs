@@ -34,6 +34,7 @@ impl Fixture {
             &self.dropped,
             &self.projected,
             None,
+            None,
             PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
             16,
             1 << 20,

@@ -2,8 +2,9 @@ use std::num::{NonZeroU16, NonZeroU64};
 
 use worth_proof::AdmittedBlobReleaseProof;
 use worth_store::physical_runtime::{
-    BlobCheckpointLimit, BlobIngestDeclaration, BlobReadLimits, BlobReclaimDisposition,
-    BlobReclaimLimits, BlobReclaimRequest, PhysicalIndexPointKey, PhysicalMutationDeadline,
+    BlobCheckpointLimit, BlobIngestDeclaration, BlobReadFailure, BlobReadLimits,
+    BlobReadOpenFailure, BlobReclaimDisposition, BlobReclaimLimits, BlobReclaimRequest,
+    PhysicalIndexPointKey, PhysicalMutationDeadline, RecordReadDenial,
 };
 use worth_store_blob_chunks::BlobChunkSize;
 use worth_store_contracts::DurableArtifactFamilyId;
@@ -200,6 +201,18 @@ fn released_indexed_publication_invalidates_selected_catalog_directory() {
         .expect("stale directory binding must not break layout admission")
         .point(key)
         .unwrap();
-    assert_eq!(after.selected_record(), None);
+    // The replacement directory retains the catalog root, so the released
+    // publication's cell is residue; resolution cannot route it.
+    assert_eq!(after.selected_record(), Some(selected.record()));
+    assert!(matches!(
+        serving.blobs().unwrap().resolve_publication(
+            object.bytes(),
+            published.generation().sequence(),
+            &scope,
+            limits,
+        ),
+        Err(BlobReadOpenFailure::Read(BlobReadFailure::RecordRead(error)))
+            if error.denial() == RecordReadDenial::RecordNotFound
+    ));
     serving.close();
 }

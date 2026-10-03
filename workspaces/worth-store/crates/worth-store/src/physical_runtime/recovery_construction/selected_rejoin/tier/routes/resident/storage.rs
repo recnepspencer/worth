@@ -31,6 +31,13 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) trait Ro
         artifact: RecordArtifactFile,
         limit: u64,
     ) -> Result<ObservedRecoveryArtifact, Denial>;
+    fn read_page_range(
+        &mut self,
+        discovery: &mut BoundedRecoveryFilesystemDiscovery,
+        artifact: RecordArtifactFile,
+        offset: u64,
+        length: u32,
+    ) -> Result<ObservedRecoveryArtifact, Denial>;
     fn discard_frame(&mut self, frame: ObservedRecoveryArtifact) -> Result<(), Denial>;
     fn overflow(&self) -> Denial;
 }
@@ -85,6 +92,26 @@ impl RouteWalkStorage for () {
         drop(frame);
         Ok(())
     }
+    fn read_page_range(
+        &mut self,
+        discovery: &mut BoundedRecoveryFilesystemDiscovery,
+        artifact: RecordArtifactFile,
+        offset: u64,
+        length: u32,
+    ) -> Result<ObservedRecoveryArtifact, Denial> {
+        discovery.read_record_range_with_allocator(artifact, offset, length, u64::from(length), |size| {
+            let mut bytes = Vec::new();
+            bytes.try_reserve_exact(size).map_err(|_| Denial::BoundExceeded)?;
+            bytes.resize(size, 0);
+            Ok(bytes)
+        }).map_err(|failure| match failure {
+            worth_store_physical_backend::RecoveryDiscoveryAllocationFailure::Discovery(cause) => Denial::Discovery(cause),
+            worth_store_physical_backend::RecoveryDiscoveryAllocationFailure::Allocation { cause, .. } => cause,
+            worth_store_physical_backend::RecoveryDiscoveryAllocationFailure::BufferLengthMismatch {
+                artifact, offset, requested, observed,
+            } => Denial::ReadBufferLengthMismatch { artifact, offset, requested, observed },
+        })
+    }
     fn overflow(&self) -> Denial {
         Denial::BoundExceeded
     }
@@ -133,6 +160,21 @@ impl RouteWalkStorage for StoreRejoinResidentLedger {
         drop(frame);
         self.release(bytes);
         Ok(())
+    }
+    fn read_page_range(
+        &mut self,
+        discovery: &mut BoundedRecoveryFilesystemDiscovery,
+        artifact: RecordArtifactFile,
+        offset: u64,
+        length: u32,
+    ) -> Result<ObservedRecoveryArtifact, Denial> {
+        self.transient(u64::from(length))
+            .map_err(Denial::Resident)?;
+        discovery
+            .read_record_range_with_allocator(artifact, offset, length, u64::from(length), |size| {
+                self.reserve_bytes(size)
+            })
+            .map_err(discovery_allocation_denial)
     }
     fn overflow(&self) -> Denial {
         overflow(self)

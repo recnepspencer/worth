@@ -44,7 +44,7 @@ pub(super) fn admits_indeterminate(
         {
             return false;
         }
-        let Some(bytes) = basis.redo.blob_semantic_record_bytes(operation_id) else {
+        let Some(bytes) = basis.redo.admitted_projection_record_bytes(projection, 0) else {
             return false;
         };
         <[u8; 32]>::from(Sha256::digest(bytes)) == binding.record_payload_sha256()

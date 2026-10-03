@@ -183,7 +183,7 @@ fn the_same_valid_member_admits_with_sufficient_grant_and_denies_with_one_entry_
     let payload = redo.len() as u64 * 4;
     assert!(decode_metadata(&redo, range_lsn(), format, payload + per_entry * 4).is_ok());
     let mut unsupported = redo.clone();
-    let domain = b"store.physical.recovery-projection.v15";
+    let domain = b"store.physical.recovery-projection.v16";
     let domain_offset = unsupported
         .windows(domain.len())
         .position(|window| window == domain)

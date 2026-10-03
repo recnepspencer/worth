@@ -90,9 +90,12 @@ impl RecordPublicationDirector {
         let runtime = self.runtime.upgrade().ok_or(RecordAppendError::Denied(
             RecordAppendDenial::PublicationAuthorityReleased,
         ))?;
-        let release_head_basis = prepared.released_head_basis();
+        let released_drop_basis = prepared.released_drop_basis();
+        let release_head_basis = released_drop_basis.map(|basis| basis.head());
         if (prepared.blob_record_kind() == Some(BlobRecordKind::ReclaimDescriptorV3))
             != release_head_basis.is_some()
+            || prepared.released_directory_record()
+                != released_drop_basis.is_some_and(|basis| basis.directory().is_some())
         {
             return Err(RecordAppendError::Denied(
                 RecordAppendDenial::ReclaimFenceUnavailable,
@@ -174,6 +177,7 @@ impl RecordPublicationDirector {
             prepared.placement(),
             prepared.blob_record_kind(),
             prepared.selected_content_class(),
+            prepared.released_directory_record(),
             prepared.inline_only(),
             admitted,
         )?;
@@ -255,16 +259,48 @@ impl RecordPublicationDirector {
         if let Some(basis) = release_head_basis {
             self.plan_released_head_for_wal(&allocation, &current_root, basis, &mut root)?;
         }
+        if let Some(rebinding) = released_drop_basis.and_then(|basis| basis.directory()) {
+            if current_root.derived_family_directory() != Some(rebinding.expected_previous()) {
+                return Err(RecordAppendError::Denied(
+                    RecordAppendDenial::DerivedDirectorySourceChanged,
+                ));
+            }
+            let mut records = root.recovery_record_identities();
+            let Some(_) = records.next() else {
+                return Err(RecordAppendError::Denied(
+                    RecordAppendDenial::ReclaimFenceUnavailable,
+                ));
+            };
+            let Some(directory_record) = records.next() else {
+                return Err(RecordAppendError::Denied(
+                    RecordAppendDenial::ReclaimFenceUnavailable,
+                ));
+            };
+            let exact_roster = records.next().is_none();
+            drop(records);
+            if !exact_roster
+                || root
+                    .set_released_directory_rebinding(directory_record, rebinding)
+                    .is_none()
+            {
+                return Err(RecordAppendError::Denied(
+                    RecordAppendDenial::ReclaimFenceUnavailable,
+                ));
+            }
+        }
         for (artifact, growth_bytes) in data.retained_growth() {
             self.root_owner
                 .hold_rewrite_candidate(prepared.mutation_identity(), artifact, growth_bytes)
                 .map_err(|()| RecordAppendError::Denied(RecordAppendDenial::RetentionPressure))?;
         }
-        if prepared.released_control_placement().is_some() {
+        if let Some(claims) = prepared
+            .released_control_placement()
+            .map(|placement| placement.claim_count())
+        {
             let requested = root
                 .arena_reservations
                 .len()
-                .checked_add(1)
+                .checked_add(claims)
                 .and_then(|count| {
                     count.checked_mul(std::mem::size_of::<
                         crate::physical_runtime::record_serving::arena::ArenaReservation,
@@ -275,19 +311,19 @@ impl RecordPublicationDirector {
                     RecordAppendDenial::PhysicalPressure,
                 ))?;
             root.arena_reservations
-                .try_reserve_exact(1)
+                .try_reserve_exact(claims)
                 .map_err(|cause| {
                     RecordAppendError::Denied(RecordAppendDenial::PlanningAllocationUnavailable {
                         requested,
                         cause,
                     })
                 })?;
-            root.arena_reservations.push(
-                prepared
-                    .take_released_control_placement()
-                    .expect("a checked prepared release claim remains owned")
-                    .into_reservation(),
-            );
+            let (control, directory) = prepared
+                .take_released_control_placement()
+                .expect("a checked prepared release claim remains owned")
+                .into_reservations();
+            root.arena_reservations.push(control);
+            root.arena_reservations.extend(directory);
         }
         Ok((data, root))
     }

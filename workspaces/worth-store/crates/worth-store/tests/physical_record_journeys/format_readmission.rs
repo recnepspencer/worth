@@ -9,6 +9,9 @@ use worth_store_physical_format::PhysicalRecordFormatDenial;
 
 use super::{configuration, media, serving_from_initialization};
 
+#[path = "format_readmission/residency_geometry.rs"]
+mod residency_geometry;
+
 #[test]
 fn poisoned_root_is_rejected_before_ordinary_interpretation_entry() {
     let parent = tempfile::tempdir().unwrap();

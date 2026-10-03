@@ -2,6 +2,8 @@
 
 use std::num::NonZeroU64;
 
+use sha2::{Digest, Sha256};
+
 use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
     BlobCheckpointLimit, BlobIngestDeclaration, BlobReadLimits, PhysicalMutationDeadline,
@@ -11,7 +13,8 @@ use worth_store::physical_runtime::{
 };
 use worth_store_blob_chunks::BlobChunkSize;
 use worth_store_physical_format::{
-    decode_blob_record, BlobChunkReuseClaimV1, BlobRecordV1, PersistedRecordIdentity,
+    decode_blob_record, BlobChunkReuseClaimV1, BlobChunkReuseClaimV2, BlobGenerationPublicationV1,
+    BlobRecordV1, PersistedRecordIdentity,
 };
 
 use super::{
@@ -50,7 +53,7 @@ fn classified_reuse_claim_denies_wrong_selected_destination_before_effect() {
     let selected = selected_blob_records(&serving);
     let mut source_chunk = None;
     let mut source_publication = None;
-    let mut source_scope = None;
+    let mut source_publication_frame = None;
     let mut digest = None;
     for (record, bytes) in &selected {
         let Ok(blob) = decode_blob_record(bytes) else {
@@ -63,7 +66,7 @@ fn classified_reuse_claim_denies_wrong_selected_destination_before_effect() {
             }
             BlobRecordV1::GenerationPublished(publication) => {
                 source_publication = Some(persisted(*record));
-                source_scope = Some(publication.key_scope());
+                source_publication_frame = Some(publication);
             }
             _ => {}
         }
@@ -94,8 +97,28 @@ fn classified_reuse_claim_denies_wrong_selected_destination_before_effect() {
     .unwrap();
     let declaration_digest: [u8; 32] = token[64..96].try_into().unwrap();
     let destination_session: [u8; 16] = token[24..40].try_into().unwrap();
+    let publication = source_publication_frame.unwrap();
+    // A claim's scope must agree with the source frame it carries, so a
+    // foreign-scope claim carries a correspondingly rescoped source frame.
+    let rescoped = |scope| {
+        BlobGenerationPublicationV1::new(
+            publication.store(),
+            publication.session(),
+            publication.object(),
+            publication.generation(),
+            publication.root_record(),
+            publication.root_digest(),
+            publication.total_bytes(),
+            publication.logical_digest(),
+            publication.chunk_size(),
+            scope,
+        )
+        .unwrap()
+    };
     let claim = |session, ordinal, scope| {
-        BlobChunkReuseClaimV1::new(
+        let source = rescoped(scope);
+        let source_sha256 = Sha256::digest(source.encode()).into();
+        let base = BlobChunkReuseClaimV1::new(
             serving.store_identity().bytes(),
             session,
             ordinal,
@@ -107,11 +130,13 @@ fn classified_reuse_claim_denies_wrong_selected_destination_before_effect() {
             source_publication.unwrap(),
             0,
         )
-        .unwrap()
-        .encode()
+        .unwrap();
+        BlobChunkReuseClaimV2::new(base, source, source_sha256)
+            .unwrap()
+            .encode()
     };
     let submission = serving.certification_record_submission();
-    let valid = claim(destination_session, 0, source_scope.unwrap());
+    let valid = claim(destination_session, 0, publication.key_scope());
     assert_eq!(
         submission.verify_blob_reuse_claim_before_append(
             valid.clone(),
@@ -121,8 +146,8 @@ fn classified_reuse_claim_denies_wrong_selected_destination_before_effect() {
         Ok(())
     );
     for encoded in [
-        claim([0x7f; 16], 0, source_scope.unwrap()),
-        claim(destination_session, 1, source_scope.unwrap()),
+        claim([0x7f; 16], 0, publication.key_scope()),
+        claim(destination_session, 1, publication.key_scope()),
         claim(destination_session, 0, [0x7e; 32]),
     ] {
         assert_eq!(

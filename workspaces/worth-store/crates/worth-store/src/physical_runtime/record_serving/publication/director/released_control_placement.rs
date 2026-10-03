@@ -21,6 +21,7 @@ impl RecordPublicationDirector {
         manifest: &DropSetManifestV3,
         placement: AdmittedRecordPlacementPolicy,
         allocation: &BlobPhysicalAllocation<'_>,
+        directory_encoded_bytes: Option<u64>,
     ) -> Result<ReleasedControlArenaReservations, PhysicalMutationPreparationOutcome> {
         self.require_preparation_health()?;
         self.validate_released_reclaim_manifest(admitted, manifest)
@@ -41,6 +42,7 @@ impl RecordPublicationDirector {
             admitted.attempt().bytes(),
             self.format.declaration(),
             manifest.encoded_frame_bytes() as u64,
+            directory_encoded_bytes,
         )
         .map_err(|cause| map_record_denial(RecordAppendDenial::ArenaAllocationUnavailable(cause)))
     }

@@ -60,10 +60,12 @@ impl ResidentWalCandidates {
         self.candidates.capacity()
     }
 
+    #[cfg(test)]
     pub(crate) fn iter(&self) -> std::slice::Iter<'_, PhysicalWalSegmentCandidate> {
         self.candidates.iter()
     }
 
+    #[cfg(test)]
     pub(crate) fn charged_bytes(&self) -> u64 {
         self.allocation.charged_bytes()
     }

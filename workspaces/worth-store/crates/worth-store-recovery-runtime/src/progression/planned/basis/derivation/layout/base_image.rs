@@ -12,14 +12,17 @@ pub(super) fn assemble(
     source_artifacts: Box<[RecordArtifactFile]>,
     verified_drops: &[PersistedRecordIdentity],
     cleanup: Option<crate::orchestration::ValidatedManifestResidueCleanup>,
-    release_head_replay: Option<
-        &worth_store_recovery_physics::VerifiedSelectedReleaseHeadReplayV14,
-    >,
+    release_head_replay: Option<&crate::progression::PendingReleaseReplay>,
     allowance: &mut PlanningResidentAllowance,
 ) -> Result<RecoveryBaseImagePlan, ExecutionBasisDenial> {
     super::super::release_head::require_exact_pending_replay(pending, release_head_replay)?;
     let (latest_blob_publication, derived_family_directory, latest_blob_quarantine) =
-        super::derived_binding::projected_derived_binding(selection, pending, verified_drops)?;
+        super::derived_binding::projected_derived_binding(
+            selection,
+            pending,
+            verified_drops,
+            release_head_replay,
+        )?;
     let selected = selection.page_facts().placements();
     let count = selected
         .len()

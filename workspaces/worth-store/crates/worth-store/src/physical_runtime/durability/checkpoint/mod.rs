@@ -1,4 +1,8 @@
 mod capture;
+mod command_buffer;
+pub(in crate::physical_runtime) use command_buffer::{
+    FundedCheckpointCommandBuffer, FundedCheckpointCommandFrame,
+};
 mod failure;
 mod handle;
 mod outcome;

@@ -79,6 +79,8 @@ pub(in crate::physical_runtime::record_serving) fn merge_settled_root_projection
                 projection.derived_updates.expected_previous_directory;
             merged.derived_updates.indexed_through_quarantine =
                 projection.derived_updates.indexed_through_quarantine;
+            merged.derived_updates.released_directory_rebinding =
+                projection.derived_updates.released_directory_rebinding;
         }
         merged
             .arena_reservations

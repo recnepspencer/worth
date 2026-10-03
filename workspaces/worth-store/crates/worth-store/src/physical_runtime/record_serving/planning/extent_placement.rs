@@ -25,19 +25,24 @@ pub(in crate::physical_runtime::record_serving) fn lower_extents(
     manifests: &mut Vec<(RecordFrameCoordinate, Vec<u8>)>,
     placements: &mut BTreeMap<PersistedRecordIdentity, CurrentPhysicalRecordPlacement>,
 ) -> Result<Vec<ArenaReservation>, RecordAppendError> {
-    if released_control_placement.is_some() && extents.len() != 1 {
+    if released_control_placement.is_some_and(|claims| extents.len() != claims.claim_count()) {
         return Err(RecordAppendError::Denied(
             RecordAppendDenial::ReclaimFenceUnavailable,
         ));
     }
     let mut reservations = Vec::new();
-    for extent in extents {
+    for (index, extent) in extents.into_iter().enumerate() {
+        let claim = released_control_placement.map(|claims| {
+            claims
+                .claim(index)
+                .expect("the claim count was matched to the extent count")
+        });
         if let Some(reservation) = lower_extent(
             format,
             frontier,
             arena_owner,
             extent,
-            released_control_placement,
+            claim,
             data,
             manifests,
             placements,
@@ -53,7 +58,7 @@ fn lower_extent(
     frontier: &mut RecordAllocationFrontier,
     arena_owner: &SharedArenaAllocationOwner,
     extent: ExtentInput,
-    released_control_placement: Option<&ReleasedControlArenaPlacement>,
+    released_control_claim: Option<(u64, &ArenaReservation)>,
     data: &mut Vec<CandidateDataArtifact>,
     manifests: &mut Vec<(RecordFrameCoordinate, Vec<u8>)>,
     placements: &mut BTreeMap<PersistedRecordIdentity, CurrentPhysicalRecordPlacement>,
@@ -86,11 +91,10 @@ fn lower_extent(
         .ok_or(RecordAppendError::Denied(
             RecordAppendDenial::RecordTooLarge,
         ))?;
-    let (reservation, range) = if let Some(prepared) = released_control_placement {
-        let claim = prepared.reservation();
+    let (reservation, range) = if let Some((encoded_bytes, claim)) = released_control_claim {
         if !claim.belongs_to(arena_owner)
             || !claim.is_live()
-            || prepared.encoded_bytes() != extent.length
+            || encoded_bytes != extent.length
             || claim.range().length() != bytes
         {
             return Err(RecordAppendError::Denied(

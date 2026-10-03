@@ -24,5 +24,4 @@ impl crate::planning::AccessPlanningFacade {
             ),
         )
     }
-
 }

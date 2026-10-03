@@ -27,7 +27,9 @@ pub(super) struct CheckedRetirement {
 }
 
 impl SelectedReleaseCustodyLedger {
-    pub(super) fn pending_drop_count(&self) -> usize {
+    pub(in crate::physical_runtime::durability::publication::current_root_owner) fn pending_drop_count(
+        &self,
+    ) -> usize {
         self.pending_events
             .iter()
             .filter(|event| matches!(**event, PendingReleaseEvent::Drop(_)))

@@ -5,11 +5,15 @@ use worth_store_physical_format::{
 
 mod directory_basis;
 mod released_control;
+mod released_directory_basis;
 mod released_head_basis;
 mod resource_shape;
 mod reuse_basis;
 pub(in crate::physical_runtime) use directory_basis::PreparedDerivedDirectoryBasis;
-pub(in crate::physical_runtime) use released_head_basis::PreparedReleaseHeadBasis;
+pub(in crate::physical_runtime) use released_directory_basis::PreparedReleasedDirectoryRebinding;
+pub(in crate::physical_runtime) use released_head_basis::{
+    PreparedReleaseHeadBasis, PreparedReleasedDropBasis,
+};
 pub use resource_shape::PhysicalMutationResourceShape;
 pub(in crate::physical_runtime) use reuse_basis::PreparedReuseDeclarationBasis;
 
@@ -57,7 +61,8 @@ pub struct PreparedPhysicalMutation {
     selected_content_class: SelectedRecordContentClass,
     inline_only: bool,
     derived_directory_basis: Option<PreparedDerivedDirectoryBasis>,
-    released_head_basis: Option<PreparedReleaseHeadBasis>,
+    released_drop_basis: Option<PreparedReleasedDropBasis>,
+    released_directory_record: bool,
     released_control_placement:
         Option<crate::physical_runtime::record_serving::arena::ReleasedControlArenaPlacement>,
     reuse_declaration_basis: Option<PreparedReuseDeclarationBasis>,
@@ -135,7 +140,8 @@ impl PreparedPhysicalMutation {
             selected_content_class: context.selected_content_class,
             inline_only: context.inline_only,
             derived_directory_basis: context.derived_directory_basis,
-            released_head_basis: None,
+            released_drop_basis: None,
+            released_directory_record: false,
             released_control_placement: None,
             reuse_declaration_basis: context.reuse_declaration_basis,
         }
@@ -244,12 +250,6 @@ impl PreparedPhysicalMutation {
 
     pub(in crate::physical_runtime) const fn inline_only(&self) -> bool {
         self.inline_only
-    }
-
-    pub(in crate::physical_runtime) fn derived_directory_basis(
-        &self,
-    ) -> Option<PreparedDerivedDirectoryBasis> {
-        self.derived_directory_basis.clone()
     }
 
     pub(in crate::physical_runtime) const fn reuse_declaration_basis(
@@ -392,7 +392,8 @@ impl PreparedPhysicalMutation {
             reuse_declaration_basis: parts.context.reuse_declaration_basis,
             // The immutable planned root now owns the exact WAL head effect.
             // This derivation basis is only needed before data planning.
-            released_head_basis: None,
+            released_drop_basis: None,
+            released_directory_record: false,
             released_control_placement: None,
         }
     }

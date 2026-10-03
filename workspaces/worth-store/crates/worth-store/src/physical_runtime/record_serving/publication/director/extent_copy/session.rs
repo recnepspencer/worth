@@ -2,7 +2,6 @@ use super::evidence::CopyWriteAccumulator;
 use crate::physical_runtime::durability::DurableMaintenanceReceipt;
 use crate::physical_runtime::record_serving::{
     access::extent_rewrite_source::ExtentRewriteCursor, arena::ArenaReservation,
-    AdmittedRecordPlacementPolicy,
 };
 use crate::physical_runtime::{stability::PhysicalRootReadLease, PreparedPhysicalMutation};
 use sha2::{Digest, Sha256};
@@ -13,7 +12,6 @@ use worth_store_physical_format::{
 
 pub(in crate::physical_runtime::record_serving::publication::director) struct ExtentCopySession {
     pub(super) producer: CopyProducer,
-    pub(super) placement: AdmittedRecordPlacementPolicy,
     pub(super) prepared: PreparedPhysicalMutation,
     pub(super) operation: [u8; 32],
     pub(super) source_root: u64,

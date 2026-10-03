@@ -67,20 +67,4 @@ impl PhysicalMutationIdempotencyRuntimeAuthority {
             .discover_original_drop_no_effect(store, attempt);
         result
     }
-
-    pub(in crate::physical_runtime) fn reconcile_original_drop_no_effect(
-        &self,
-        store: [u8; 16],
-        attempt: [u8; 16],
-        idempotency: [u8; 32],
-        fingerprint: [u8; 32],
-    ) -> Option<super::super::PhysicalOriginalDropNoEffect> {
-        let owner = self.owner.upgrade()?;
-        let result = owner
-            .registry
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .reconcile_original_drop_no_effect(store, attempt, idempotency, fingerprint);
-        result
-    }
 }

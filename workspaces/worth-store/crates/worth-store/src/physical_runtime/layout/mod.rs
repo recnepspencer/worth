@@ -14,7 +14,7 @@ pub use facade::{PhysicalLayoutAccess, PhysicalLayoutDenial};
 pub(in crate::physical_runtime) use maintenance::publish_derived_directory;
 pub(in crate::physical_runtime) use maintenance::{
     admit_directory_retirement, insert_registered_node, inspect_selected_tree_retirement,
-    AdmittedDirectoryRetirement, InsertedLayoutTree, SelectedTreeRetirement,
+    AdmittedDirectoryRetirement, InsertedLayoutTree, InsertionSource, SelectedTreeRetirement,
 };
 pub use maintenance::{
     DeferredDerivedRetirementCause, PhysicalLayoutAppendFailure, PhysicalLayoutMaintenanceFailure,

@@ -11,7 +11,9 @@ use crate::physical_runtime::{
     CompletedPhysicalMutation,
 };
 
-use super::{failure, one_record, ReclaimDescriptor, ReclaimPublication, ReclaimSource};
+use super::{
+    failure, released_descriptor_record, ReclaimDescriptor, ReclaimPublication, ReclaimSource,
+};
 use crate::physical_runtime::blob::reclaim::{
     released, BlobReclaimDeferral, BlobReclaimFailure, BlobReclaimPublicationStage,
 };
@@ -114,14 +116,16 @@ impl ReclaimPublication<'_, '_> {
         reserved: OriginalDropReservedV1,
         manifest_record: PersistedRecordIdentity,
         completed: &CompletedPhysicalMutation,
+        has_directory_replacement: bool,
     ) -> Result<(), BlobReclaimFailure> {
-        let descriptor_record = one_record(completed).map_err(|cause| {
-            failure(
-                BlobReclaimPublicationStage::Drop,
-                Some(manifest_record),
-                cause,
-            )
-        })?;
+        let descriptor_record = released_descriptor_record(completed, has_directory_replacement)
+            .map_err(|cause| {
+                failure(
+                    BlobReclaimPublicationStage::Drop,
+                    Some(manifest_record),
+                    cause,
+                )
+            })?;
         let selected = released::observe_selected_descriptor(
             self.runtime,
             admitted.attempt(),

@@ -90,7 +90,7 @@ fn checkpoint_completed_history(serving: &worth_store::physical_runtime::Serving
     );
 }
 
-fn selected_root_heads(root: &Path) -> Vec<ReleaseCustodyHeadEntryV1> {
+pub(super) fn selected_root_heads(root: &Path) -> Vec<ReleaseCustodyHeadEntryV1> {
     let records = root.join("families/records/roots");
     let bytes = fs::read(
         records.join(

@@ -11,8 +11,9 @@ use crate::physical_runtime::instance::{
 };
 use crate::physical_runtime::record_serving::RecordWorkAdmission;
 use crate::physical_runtime::work::{
-    CompletedPhysicalCheckpointAction, PhysicalCheckpointRecoveryAction,
-    PhysicalCheckpointWorkAction, PhysicalCheckpointWorkScope, PhysicalWorkAdmissionAuthority,
+    CompletedPhysicalCheckpointAction, PhysicalCheckpointCommandPayload,
+    PhysicalCheckpointRecoveryAction, PhysicalCheckpointWorkAction, PhysicalCheckpointWorkScope,
+    PhysicalWorkAdmissionAuthority,
 };
 use crate::physical_runtime::{
     PhysicalExecutorCommand, PhysicalMutationWorkRequest, PhysicalSchedulerDemand,
@@ -27,6 +28,7 @@ pub(in crate::physical_runtime) enum PhysicalCheckpointActionFailure {
     SubmissionStale,
     SubmissionFailed,
     PreEffect,
+    CheckpointCommandBackingUnavailable,
     DependencyBlocked,
     SchedulerCapacityUnavailable,
     BackgroundYielded,
@@ -102,7 +104,7 @@ impl PhysicalCheckpointWorkPort {
         &self,
         checkpoint: worth_store_physical_format::PhysicalCheckpointIdentity,
         action: PhysicalCheckpointWorkAction,
-        payload: Option<Box<[u8]>>,
+        payload: Option<PhysicalCheckpointCommandPayload>,
         foreground_pressure_events: u64,
     ) -> Result<CompletedPhysicalCheckpointAction, PhysicalCheckpointActionFailure> {
         let command =
@@ -133,7 +135,7 @@ impl PhysicalCheckpointWorkPort {
         &self,
         checkpoint: worth_store_physical_format::PhysicalCheckpointIdentity,
         action: PhysicalCheckpointWorkAction,
-        payload: Option<Box<[u8]>>,
+        payload: Option<PhysicalCheckpointCommandPayload>,
         foreground_pressure_events: u64,
     ) -> Result<PhysicalExecutorCommand, PhysicalCheckpointActionFailure> {
         let runtime = self

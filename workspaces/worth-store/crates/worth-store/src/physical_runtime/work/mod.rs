@@ -111,8 +111,9 @@ pub(in crate::physical_runtime) use declaration::PhysicalWorkIntentParts;
 pub(in crate::physical_runtime) use execution::{
     IndeterminatePhysicalCheckpointAction, IndeterminatePhysicalPublicationEffect,
     IndeterminatePhysicalWalBarrier, IndeterminatePhysicalWalReclamationAction,
-    PhysicalCheckpointExecutorCommand, PhysicalEffectRecoveryObligation, PhysicalExecutorDispatch,
-    PhysicalExecutorOutcome, PhysicalMetadataExecutorCommand, PhysicalPublicationExecutorCommand,
+    PhysicalCheckpointCommandPayload, PhysicalCheckpointExecutorCommand,
+    PhysicalEffectRecoveryObligation, PhysicalExecutorDispatch, PhysicalExecutorOutcome,
+    PhysicalMetadataExecutorCommand, PhysicalPublicationExecutorCommand,
     PhysicalReadExecutorCommand, PhysicalResidencyWritebackCompletion,
     PhysicalResidencyWritebackExecutorCommand, PhysicalRetryPayload,
     PhysicalWalAppendExecutorCommand, PhysicalWalBarrierExecutorCommand,

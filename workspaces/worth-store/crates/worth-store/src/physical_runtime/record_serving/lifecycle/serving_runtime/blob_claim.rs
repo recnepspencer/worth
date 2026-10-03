@@ -283,7 +283,12 @@ impl ServingPhysicalRuntime {
         self.parts
             .publication
             .require_release_certificate_for_attempt(admitted.attempt())
-            .map_err(|_| Denial::AlreadyFenced)?;
+            .map_err(|cause| match cause {
+                crate::physical_runtime::durability::ReleaseCertificateCapacityDenial::Resident(
+                    cause,
+                ) => Denial::ReleaseCertificateBacking(cause),
+                _ => Denial::AlreadyFenced,
+            })?;
         Ok(admitted)
     }
 

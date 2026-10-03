@@ -1,7 +1,10 @@
+#[cfg(feature = "recovery-runtime-owner")]
 mod allocated_listing;
+#[cfg(feature = "recovery-runtime-owner")]
 mod allocated_open;
 mod artifact_append;
 mod artifact_append_outcome;
+#[cfg(feature = "recovery-runtime-owner")]
 mod backed_path;
 mod bounded_listing;
 mod directory_listing;
@@ -29,6 +32,7 @@ mod range_read;
 mod range_write;
 mod range_write_outcome;
 mod read_allocator;
+#[cfg(feature = "recovery-runtime-owner")]
 mod resident_read;
 mod storage_allocator;
 
@@ -36,9 +40,11 @@ pub use artifact_append_outcome::{
     ArtifactAppendOutcome, ArtifactAppendRange, CompletedArtifactAppend,
     CompletedScheduledArtifactAppend, IndeterminateArtifactAppend, ScheduledArtifactAppendOutcome,
 };
+#[cfg(feature = "recovery-runtime-owner")]
 pub(crate) use backed_path::{backed_directory, backed_file, ArtifactTreeBackedPath};
 pub use bounded_listing::ArtifactTreeDirectoryEntry;
 pub use failure::{ArtifactTreeAccessLimit, ArtifactTreeFailure, ArtifactTreeFailureKind};
+#[cfg(feature = "recovery-runtime-owner")]
 pub(crate) use listing_admission::ArtifactTreeAllocatedListingFailure;
 pub use listing_admission::{
     ArtifactTreeListingAllocationBoundary, ArtifactTreeListingAllocator,
@@ -74,5 +80,6 @@ pub use range_write_outcome::{
     IndeterminateArtifactRangeWrite, ScheduledArtifactRangeWriteOutcome,
 };
 pub use read_allocator::ArtifactTreeReadAllocator;
+#[cfg(feature = "recovery-runtime-owner")]
 pub(crate) use resident_read::ArtifactTreeAllocatedReadFailure;
 pub use storage_allocator::ArtifactTreeStorageAllocator;

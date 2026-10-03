@@ -17,6 +17,8 @@ use super::{
     PhysicalLayoutMaintenanceFailure,
 };
 
+mod continuation_allocation;
+
 const FAMILY_CODE: u16 = 1;
 
 impl ServingPhysicalRuntime {

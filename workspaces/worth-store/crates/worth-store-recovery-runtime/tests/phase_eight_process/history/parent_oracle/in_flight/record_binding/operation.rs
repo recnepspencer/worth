@@ -47,11 +47,14 @@ pub(super) fn inspect_operation(
         return Err("parent oracle found trailing operation binding".to_owned());
     }
     match tag {
-        5 => match projection.byte()? {
-            0 => {}
-            1 if !projection.field()?.is_empty() => {}
-            _ => return Err("parent oracle found invalid head effect framing".to_owned()),
-        },
+        5 => {
+            match projection.byte()? {
+                0 => {}
+                1 if !projection.field()?.is_empty() => {}
+                _ => return Err("parent oracle found invalid head effect framing".to_owned()),
+            }
+            inspect_directory_replacement(projection)?;
+        }
         6 => match projection.byte()? {
             0 => {}
             1 => {
@@ -96,4 +99,45 @@ pub(super) fn inspect_operation(
         _ => {}
     }
     Ok(Some((record, candidate_root)))
+}
+
+/// A released drop may carry its atomic directory replacement: the expected
+/// previous binding, its payload digest, and the next directory binding.
+fn inspect_directory_replacement(projection: &mut Cursor<'_>) -> Result<(), String> {
+    match projection.byte()? {
+        0 => return Ok(()),
+        1 => {}
+        _ => return Err("parent oracle found invalid directory replacement tag".to_owned()),
+    }
+    if projection.byte()? != 1 {
+        return Err("parent oracle found a replacement without its previous directory".to_owned());
+    }
+    projection.raw_record()?;
+    inspect_publication(projection)?;
+    projection.take(32)?;
+    projection.raw_record()?;
+    projection.take(32)?;
+    if projection.u64()? == 0 {
+        return Err("parent oracle found zero replacement root".to_owned());
+    }
+    inspect_publication(projection)?;
+    match projection.byte()? {
+        0 | 1 => Ok(()),
+        2 => projection.raw_record().map(|_| ()),
+        _ => Err("parent oracle found invalid replacement quarantine tag".to_owned()),
+    }
+}
+
+fn inspect_publication(projection: &mut Cursor<'_>) -> Result<(), String> {
+    match projection.byte()? {
+        0 => Ok(()),
+        1 => {
+            projection.raw_record()?;
+            if projection.u64()? == 0 {
+                return Err("parent oracle found zero publication root".to_owned());
+            }
+            projection.take(32).map(|_| ())
+        }
+        _ => Err("parent oracle found invalid publication tag".to_owned()),
+    }
 }

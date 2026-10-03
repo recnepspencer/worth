@@ -75,6 +75,17 @@ pub(super) fn one_record(
     }
 }
 
+pub(super) fn released_descriptor_record(
+    completed: &CompletedPhysicalMutation,
+    has_directory_replacement: bool,
+) -> Result<PersistedRecordIdentity, BlobAppendFailure> {
+    match (completed.persisted_records(), has_directory_replacement) {
+        ([descriptor], false) | ([descriptor, _], true) => Ok(*descriptor),
+        ([], _) => Err(BlobAppendFailure::MissingRecordIdentity),
+        _ => Err(BlobAppendFailure::ExtraRecordIdentities),
+    }
+}
+
 pub(super) fn failure(
     stage: BlobReclaimPublicationStage,
     manifest_record: Option<PersistedRecordIdentity>,

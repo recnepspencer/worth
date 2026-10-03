@@ -1,12 +1,24 @@
-//! Mandatory publication backing acquired by the pre-effect lease. Re-census
-//! retained capacities on every admission, including canceled spare backing.
+//! Mandatory publication backing funded by the Store's real Recovery pool.
+//! Re-census retained capacities, including spare backing after cancellation.
 
-use worth_store_physical_format::{DurablePhysicalRootManifest, ReleaseCustodyHeadKeyV1};
+mod live_allocation;
+mod window;
+pub(in crate::physical_runtime) use live_allocation::ReleasePublicationAllocationOwner;
+pub(in crate::physical_runtime::durability::publication::current_root_owner) use live_allocation::{
+    FundedRootFrame, LiveReleaseAllocation,
+};
+pub(super) use live_allocation::SHARED_CUSTODY_BYTES;
+pub(super) use window::LiveBackingWindow;
 
 use super::{ReleaseCertificateCapacityDenial as Denial, SelectedReleaseCustodyLedger};
 use crate::physical_runtime::{
-    recovery_residency::StoreRejoinResidentLedger, PhysicalRecoveryAllocationAdmission,
+    PhysicalRecoveryAllocationAdmission, PhysicalRecoveryRejoinResidentDenial,
 };
+use std::sync::Arc;
+use worth_store_physical_format::{DurablePhysicalRootManifest, ReleaseCustodyHeadKeyV1};
+
+const PENDING_CONTROL_BYTES: u64 =
+    std::mem::size_of::<super::super::certificate_capacity::CheckpointCustodyState>() as u64;
 
 impl SelectedReleaseCustodyLedger {
     pub(super) fn publication_backing_bytes(&self) -> Option<u64> {
@@ -16,48 +28,59 @@ impl SelectedReleaseCustodyLedger {
             .checked_add(vector_heap_bytes(&self.pending_events)?)
     }
 
+    pub(super) fn retained_requirement(
+        &self,
+        ceiling: PhysicalRecoveryAllocationAdmission,
+        closure: u64,
+        fence: u64,
+    ) -> Result<u64, Denial> {
+        self.publication_backing_bytes()
+            .and_then(|bytes| bytes.checked_add(closure))
+            .and_then(|bytes| bytes.checked_add(fence))
+            .and_then(|bytes| bytes.checked_add(PENDING_CONTROL_BYTES))
+            .and_then(|bytes| bytes.checked_add(SHARED_CUSTODY_BYTES))
+            .ok_or(Denial::Resident(
+                PhysicalRecoveryRejoinResidentDenial::SizeOverflow {
+                    admitted: ceiling.byte_limit(),
+                },
+            ))
+    }
+
+    pub(super) fn prepare_control_backing(
+        &mut self,
+        owner: &ReleasePublicationAllocationOwner,
+        ceiling: PhysicalRecoveryAllocationAdmission,
+        fence_bytes: u64,
+    ) -> Result<(), Denial> {
+        let required = self.retained_requirement(ceiling, 0, fence_bytes)?;
+        owner.fund(&mut self.allocation_custody, ceiling, required)
+    }
+
     pub(super) fn prepare_publication_backing(
         &mut self,
-        allocation: PhysicalRecoveryAllocationAdmission,
+        owner: &ReleasePublicationAllocationOwner,
+        ceiling: PhysicalRecoveryAllocationAdmission,
         closure_bytes: u64,
         fence_bytes: u64,
         key: ReleaseCustodyHeadKeyV1,
-    ) -> Result<Vec<u8>, Denial> {
-        let already_live = self
-            .publication_backing_bytes()
-            .and_then(|bytes| bytes.checked_add(closure_bytes))
-            .and_then(|bytes| bytes.checked_add(fence_bytes))
-            .ok_or_else(|| {
-                Denial::Resident(
-                    crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial::SizeOverflow {
-                        admitted: allocation.byte_limit(),
-                    },
-                )
-            })?;
-        let mut resident = StoreRejoinResidentLedger::from_retained_with_limit(
-            allocation,
-            already_live,
-            allocation.byte_limit(),
-        )
-        .map_err(Denial::Resident)?;
-        resident
-            .grow_vec(&mut self.pending_events, 1)
-            .map_err(Denial::Resident)?;
+    ) -> Result<FundedRootFrame, Denial> {
+        let already_live = self.retained_requirement(ceiling, closure_bytes, fence_bytes)?;
+        let mut window =
+            LiveBackingWindow::new(owner, &mut self.allocation_custody, ceiling, already_live)?;
+        window.grow_vec(&mut self.pending_events, 1)?;
         self.effective_heads
-            .reserve_for_key(key, &mut resident)
-            .map_err(|denial| match denial {
-                super::reopen::RecoveredReleaseLedgerDenial::Resident(cause) => {
-                    Denial::Resident(cause)
-                }
-                super::reopen::RecoveredReleaseLedgerDenial::SelectedFactMismatch => {
-                    Denial::SelectedFactMismatch
-                }
-            })?;
-        // This bound also covers the first transition into the HEAD-bound
-        // wire shape. The frame belongs to the pending fence until commit.
-        resident
-            .reserve_vec(DurablePhysicalRootManifest::maximum_encoding_scratch_bytes())
-            .map_err(Denial::Resident)
+            .reserve_for_key_live(key, &mut window)?;
+        let bytes =
+            window.reserve_vec(DurablePhysicalRootManifest::maximum_encoding_scratch_bytes())?;
+        drop(window);
+        Ok(FundedRootFrame::new(
+            bytes,
+            Arc::clone(
+                self.allocation_custody
+                    .as_ref()
+                    .expect("live funding precedes every allocation"),
+            ),
+        ))
     }
 }
 
@@ -70,60 +93,5 @@ pub(in super::super) fn vector_heap_bytes<T>(values: &Vec<T>) -> Option<u64> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use worth_store_physical_format::store_namespace::{
-        ProposedStoreIdentity, StoreNamespaceIdentityRecord, StoreNamespaceVersion,
-    };
-
-    fn admission(bytes: u64) -> PhysicalRecoveryAllocationAdmission {
-        let identity = StoreNamespaceIdentityRecord::new(
-            StoreNamespaceVersion::CURRENT,
-            ProposedStoreIdentity::from_nonzero_bytes([1; 16]).unwrap(),
-        )
-        .published_identity();
-        PhysicalRecoveryAllocationAdmission::new(identity, bytes)
-    }
-
-    #[test]
-    fn canceled_scratch_does_not_forget_retained_publication_capacity() {
-        let mut ledger = SelectedReleaseCustodyLedger::trusted_genesis();
-        let key = ReleaseCustodyHeadKeyV1::new([1; 16], 1).unwrap();
-        let scratch = ledger
-            .prepare_publication_backing(admission(1 << 20), 128, 64, key)
-            .unwrap();
-        assert!(
-            scratch.capacity() >= DurablePhysicalRootManifest::maximum_encoding_scratch_bytes()
-        );
-        let retained = ledger.publication_backing_bytes().unwrap();
-        assert!(retained > 0);
-        drop(scratch); // A proven pre-effect cancellation drops only lease scratch.
-        assert_eq!(ledger.publication_backing_bytes(), Some(retained));
-        assert!(matches!(
-            ledger.prepare_publication_backing(admission(retained + 192), 128, 64, key),
-            Err(Denial::Resident(
-                crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial::BudgetExceeded { .. }
-            ))
-        ));
-        assert_eq!(ledger.publication_backing_bytes(), Some(retained));
-        assert!(ledger.pending_events.is_empty());
-        assert_eq!(ledger.cumulative_dropped, 0);
-    }
-
-    #[test]
-    fn backing_denial_preserves_selected_facts_before_growth() {
-        let mut ledger = SelectedReleaseCustodyLedger::trusted_genesis();
-        let key = ReleaseCustodyHeadKeyV1::new([1; 16], 1).unwrap();
-        let bytes = std::mem::size_of::<super::super::PendingReleaseEvent>() as u64;
-        assert!(matches!(
-            ledger.prepare_publication_backing(admission(128 + bytes - 1), 128, 0, key),
-            Err(Denial::Resident(
-                crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial::BudgetExceeded { .. }
-            ))
-        ));
-        assert_eq!(ledger.publication_backing_bytes(), Some(0));
-        assert_eq!(ledger.effective_heads.root(), None);
-        assert_eq!(ledger.cumulative_dropped, 0);
-        assert_eq!(ledger.cumulative_digest, [0; 32]);
-    }
-}
+#[path = "backing/tests.rs"]
+mod tests;

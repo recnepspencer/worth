@@ -13,19 +13,6 @@ pub(super) struct RoutedExtent {
 
 /// Literal C11 root-tree leaf walker for the crash oracle. It does not use
 /// recovery's placement decoder or infer a file from an extent generation.
-pub(super) fn selected_route(root: &Path, record: PersistedRecordIdentity) -> RoutedExtent {
-    let matching = selected_routes(root)
-        .into_iter()
-        .filter(|route| route.record == record)
-        .collect::<Vec<_>>();
-    assert_eq!(
-        matching.len(),
-        1,
-        "selected root has one addressed extent for the record"
-    );
-    matching[0]
-}
-
 pub(super) fn selected_routes(root: &Path) -> Vec<RoutedExtent> {
     let catalog = std::fs::read(root.join("families/records/bootstrap.catalog")).unwrap();
     let generation = number(&catalog, 64);

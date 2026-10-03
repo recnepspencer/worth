@@ -12,7 +12,7 @@ use super::super::{
     control_frames::{SelectedArtifactSlice, SelectedControlMediaFingerprint},
     SelectedMediaRejoinDenial as Denial, MAX_DISCOVERY_BYTES, MAX_DISCOVERY_ENTRIES,
 };
-use super::{addressed_root, delta};
+use super::{addressed_root, delta, directory_media};
 use crate::physical_runtime::{
     IntegrityAdmittedRecoveryWalFrame, StoreRecoveryBindingFreshnessSample,
 };
@@ -116,12 +116,25 @@ pub(super) fn verify(
         format,
         remaining,
     )?;
+    let directory = directory_media::verify_edge_with_storage(
+        &mut discovery,
+        &source.root,
+        &source_snapshot,
+        &result.root,
+        &result_snapshot,
+        chain.first_transition(),
+        format,
+        &mut (),
+    )?;
     let maximum_fingerprint = delta::MAX_TRANSITION_MEMORY
         .checked_sub(retained_peak_bytes)
         .ok_or(Denial::BoundExceeded)?;
     let mut fingerprint = source_snapshot.fingerprint;
     fingerprint.try_extend_bounded(result_snapshot.fingerprint, maximum_fingerprint)?;
     fingerprint.try_extend_bounded(controls_fingerprint, maximum_fingerprint)?;
+    if let Some(directory) = directory {
+        fingerprint.try_extend_bounded(directory, maximum_fingerprint)?;
+    }
     for (artifact, bytes) in [
         (
             RecordArtifactFile::RootManifest {
@@ -211,6 +224,7 @@ fn verify_delta(
         format,
         delta::MAX_TRANSITION_ENTRIES,
         maximum_scratch,
+        expected.directory_replacement(),
     )
     .map_err(|_| Denial::RoutingFrame)?;
     if &actual != expected {

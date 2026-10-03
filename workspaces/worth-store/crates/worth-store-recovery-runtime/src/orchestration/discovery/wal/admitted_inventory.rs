@@ -34,6 +34,7 @@ impl AdmittedWalInventory {
         })
     }
 
+    #[cfg(test)]
     pub(crate) fn roster_charged_bytes(&self) -> u64 {
         self.segments.charged_bytes()
     }

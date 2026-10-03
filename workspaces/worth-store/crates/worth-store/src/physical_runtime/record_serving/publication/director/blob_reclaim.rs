@@ -224,10 +224,19 @@ impl RecordPublicationDirector {
         &self,
         attempt: &crate::physical_runtime::durability::PhysicalReclaimAttempt,
         descriptor: worth_store_physical_format::BlobReclaimDescriptorV3,
+        directory_rebinding: Option<(
+            crate::physical_runtime::record_serving::PreparedReleasedDirectoryRebinding,
+            Vec<u8>,
+        )>,
         placement: AdmittedRecordPlacementPolicy,
         request: PhysicalMutationRequest,
     ) -> PhysicalMutationPreparationOutcome {
-        let outcome = self.prepare_released_descriptor_append(descriptor, placement, request);
+        let outcome = self.prepare_released_descriptor_append(
+            descriptor,
+            directory_rebinding,
+            placement,
+            request,
+        );
         self.register_fenced_reclaim_preparation(attempt, outcome)
     }
 

@@ -13,9 +13,7 @@ pub(super) fn assemble(
     selected_source: &RecoverySelectedSourceInventory,
     verified_drops: &[worth_store_physical_format::PersistedRecordIdentity],
     validated_manifest_cleanup: Option<crate::orchestration::ValidatedManifestResidueCleanup>,
-    release_head_replay: Option<
-        &worth_store_recovery_physics::VerifiedSelectedReleaseHeadReplayV14,
-    >,
+    release_head_replay: Option<&crate::progression::PendingReleaseReplay>,
     pending: &PendingProjectionBasis<'_>,
     materialization: ProjectedMaterializationBasis<'_>,
     actions: StagingActionBasis,

@@ -22,7 +22,9 @@ use tamper::{
 };
 #[path = "certified_release_serving/request.rs"]
 mod recovery_request;
-pub(super) use recovery_request::{request, request_with_memory, request_with_memory_and_format};
+pub(super) use recovery_request::{
+    request, request_with_configuration, request_with_memory, request_with_memory_and_format,
+};
 #[path = "certified_release_serving/plain_serving.rs"]
 mod plain_serving;
 pub(super) use plain_serving::assert_plain_serving_denied;
@@ -134,8 +136,27 @@ pub(super) fn admit_serving_with_seal_and_format(
         false,
         NonZeroU64::new(16 << 20).unwrap(),
         format,
+        None,
     )
     .expect("verified C8 custody must produce format-matched Serving")
+}
+
+pub(super) fn admit_serving_with_seal_format_and_policy(
+    root: &Path,
+    seal: worth_store::physical_runtime::RecoveredPhysicalCheckpointCustody,
+    format: worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    policy: worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy,
+) -> worth_store::physical_runtime::ServingPhysicalRuntime {
+    open_serving_inner_with_format(
+        root,
+        Some(seal),
+        None,
+        false,
+        NonZeroU64::new(16 << 20).unwrap(),
+        format,
+        Some(policy),
+    )
+    .expect("verified C8 custody must produce policy-matched Serving")
 }
 
 pub(super) fn admit_serving_with_seal_and_wal_segment_bytes(
@@ -189,6 +210,7 @@ fn open_serving_inner_with_wal_segment_bytes(
         require_checkpoint,
         wal_segment_bytes,
         format,
+        None,
     )
 }
 
@@ -199,6 +221,7 @@ fn open_serving_inner_with_format(
     require_checkpoint: bool,
     wal_segment_bytes: NonZeroU64,
     format: worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    policy: Option<worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy>,
 ) -> Option<worth_store::physical_runtime::ServingPhysicalRuntime> {
     use std::num::NonZeroU32;
     use worth_store::physical_runtime::{
@@ -244,6 +267,10 @@ fn open_serving_inner_with_format(
         panic!("serving durability after C8 must admit")
     };
     let open = PhysicalRecordOpen::new(format, access, durability);
+    let open = match policy {
+        Some(policy) => open.with_residency_policy(policy),
+        None => open,
+    };
     let open = match seal {
         Some(seal) => open.with_recovered_checkpoint_custody(seal),
         None => open,

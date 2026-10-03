@@ -33,6 +33,15 @@ fn sample() -> TierEpochCheckpointCertificateV1 {
 #[test]
 fn tier_certificate_binds_checkpoint_root_anchor_and_selected_wal_members() {
     let selected = sample();
+    assert!(selected.encode_in_reserved(Vec::new()).is_none());
+    let mut reserved = Vec::with_capacity(crate::TIER_EPOCH_CHECKPOINT_CERTIFICATE_WIRE_BYTES);
+    reserved.extend_from_slice(&[0xa5; 3]);
+    let capacity = reserved.capacity();
+    let pointer = reserved.as_ptr();
+    let emitted = selected.encode_in_reserved(reserved).unwrap();
+    assert_eq!(emitted, selected.encode());
+    assert_eq!(emitted.capacity(), capacity);
+    assert_eq!(emitted.as_ptr(), pointer);
     assert_eq!(
         TierEpochCheckpointCertificateV1::decode(&selected.encode()),
         Ok(selected)

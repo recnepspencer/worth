@@ -73,9 +73,9 @@ pub(in crate::physical_runtime::record_serving) fn prepare_payload_plan(
         arena_owner,
         released_control_placement,
     } = context;
-    if released_control_placement.is_some()
-        && (!classified.inline.is_empty() || classified.extents.len() != 1)
-    {
+    if released_control_placement.is_some_and(|claims| {
+        !classified.inline.is_empty() || classified.extents.len() != claims.claim_count()
+    }) {
         return Err(RecordAppendError::Denied(
             RecordAppendDenial::ReclaimFenceUnavailable,
         ));

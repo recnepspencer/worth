@@ -9,6 +9,7 @@ pub(super) fn projected_derived_binding(
     selection: &PhysicalSourceSelection,
     pending: &PendingProjectionBasis<'_>,
     verified_drops: &[PersistedRecordIdentity],
+    release_replay: Option<&crate::progression::PendingReleaseReplay>,
 ) -> Result<
     (
         Option<IndexedThroughBlobPublication>,
@@ -63,6 +64,22 @@ pub(super) fn projected_derived_binding(
                     return Err(ExecutionBasisDenial::Invalid);
                 }
                 quarantine = Some(binding.record());
+            }
+            Semantic::RecordsDropped {
+                directory_replacement: Some(replacement),
+                ..
+            } => {
+                let proof = release_replay
+                    .and_then(|replay| replay.directory())
+                    .ok_or(ExecutionBasisDenial::Invalid)?;
+                if proof.operation() != projection.operation()
+                    || proof.source_binding() != replacement.expected_previous()
+                    || directory != Some(proof.source_binding())
+                    || proof.candidate_generation() != pending.staging_generation
+                {
+                    return Err(ExecutionBasisDenial::Invalid);
+                }
+                directory = Some(proof.result_binding());
             }
             _ => {}
         }

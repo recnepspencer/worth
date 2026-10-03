@@ -193,9 +193,9 @@ fn record_artifact_path(root: &Path, artifact: RecordArtifactFile) -> PathBuf {
         | RecordArtifactFile::PreviousRootSelector => records,
         RecordArtifactFile::RootSelectorCandidate { .. }
         | RecordArtifactFile::CatalogCandidate { .. } => root.join("staging/records"),
-        RecordArtifactFile::RootManifest { .. } | RecordArtifactFile::RootRoutingBlock { .. } => {
-            records.join("roots")
-        }
+        RecordArtifactFile::RootManifest { .. }
+        | RecordArtifactFile::RootRoutingBlock { .. }
+        | RecordArtifactFile::ReleaseCustodyHeadBlock { .. } => records.join("roots"),
         RecordArtifactFile::Segment { .. } => records.join("segments"),
         RecordArtifactFile::SegmentManifest { .. }
         | RecordArtifactFile::SegmentMembershipBlock { .. } => records.join("segment-manifests"),

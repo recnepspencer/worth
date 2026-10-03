@@ -273,8 +273,7 @@ fn observe_checkpoint(
                 maximum,
                 walk.counters_mut(),
             );
-            let evidence =
-                checkpoint_evidence::validate(root, selected_root, &stream, &acquired.bytes, walk);
+            let evidence = checkpoint_evidence::validate(root, selected_root, &stream, walk);
             if sequence.is_none() {
                 checkpoint_evidence::localize_dependency_failure(&mut stream, &evidence);
             }

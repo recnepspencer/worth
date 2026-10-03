@@ -22,9 +22,8 @@ pub(crate) use manifest_residue::ValidatedManifestResidueCleanup;
 
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
-    BlobAbandonmentReasonV1, BlobReclaimDescriptorV1, BlobRecordV1, BlobSessionAbandonedV1,
-    BlobSessionDeclarationV1, DropSetManifestV1, PersistedPhysicalRecoveryOperation,
-    PersistedRecordIdentity, BLOB_CONTROL_FRAME_MAX_BYTES,
+    BlobAbandonmentReasonV1, BlobRecordV1, PersistedPhysicalRecoveryOperation,
+    BLOB_CONTROL_FRAME_MAX_BYTES,
 };
 
 use super::super::context::PlanningContext;
@@ -45,10 +44,7 @@ pub(super) fn verify(
             continue;
         };
         let binding = *binding;
-        let Some(bytes) = basis
-            .redo
-            .blob_semantic_record_bytes(projection.operation())
-        else {
+        let Some(bytes) = basis.redo.admitted_projection_record_bytes(projection, 0) else {
             return Err(context.redo_block(basis.planning_counters(), None));
         };
         if <[u8; 32]>::from(Sha256::digest(bytes)) != binding.record_payload_sha256() {
@@ -293,7 +289,10 @@ pub(super) fn verify(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use worth_store_physical_format::{BlobAbandonmentReasonV1, FailedIngestReclaimBasisV1};
+    use worth_store_physical_format::{
+        BlobReclaimDescriptorV1, BlobSessionAbandonedV1, BlobSessionDeclarationV1,
+        DropSetManifestV1, FailedIngestReclaimBasisV1, PersistedRecordIdentity,
+    };
 
     fn record(ordinal: u64) -> PersistedRecordIdentity {
         PersistedRecordIdentity::new([7; 16], ordinal).unwrap()

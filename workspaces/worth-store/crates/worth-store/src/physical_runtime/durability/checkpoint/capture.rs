@@ -127,6 +127,11 @@ impl PhysicalCheckpointCaptureOwner {
         let identity = self.next_identity()?;
         let (root, custody) = match publication.checkpoint_custody_snapshot(identity) {
             Ok(snapshot) => (snapshot.root().clone(), Some(snapshot)),
+            Err(crate::physical_runtime::durability::CheckpointCustodyDenial::Backing(cause)) => {
+                return Err(PhysicalCheckpointCaptureFailure::before_candidate(
+                    PhysicalCheckpointCaptureFailureKind::CheckpointCustodyBacking(cause),
+                ));
+            }
             Err(crate::physical_runtime::durability::CheckpointCustodyDenial::Unavailable) => {
                 return Err(PhysicalCheckpointCaptureFailure::before_candidate(
                     PhysicalCheckpointCaptureFailureKind::CheckpointCustodyUnavailable,

@@ -1,9 +1,4 @@
-use std::num::NonZeroU64;
-
-use crate::physical_runtime::{
-    layout::{PhysicalLayoutMaintenanceFailure, PhysicalLayoutPagePort},
-    ServingPhysicalRuntime,
-};
+use crate::physical_runtime::layout::{PhysicalLayoutMaintenanceFailure, PhysicalLayoutPagePort};
 
 use super::super::MAXIMUM_RETIREMENT_RECORDS;
 
@@ -23,21 +18,8 @@ impl RetirementRecordBudget {
         }
     }
 
-    pub(super) fn charge(
-        self,
-        runtime: &ServingPhysicalRuntime,
-    ) -> Result<NonZeroU64, PhysicalLayoutMaintenanceFailure> {
-        // BTreeSet nodes, a concurrent Vec/Arc copy, and decoded path nodes
-        // may coexist. Preserve the established per-record and page geometry.
-        (self.maximum as u64)
-            .checked_mul(160)
-            .and_then(|bytes| {
-                u64::from(runtime.maximum_inline_record_bytes())
-                    .checked_mul(8)
-                    .and_then(|headroom| bytes.checked_add(headroom))
-            })
-            .and_then(NonZeroU64::new)
-            .ok_or(PhysicalLayoutMaintenanceFailure::RetirementLimit)
+    pub(super) const fn maximum(self) -> usize {
+        self.maximum
     }
 
     pub(super) fn before_unique_insert(

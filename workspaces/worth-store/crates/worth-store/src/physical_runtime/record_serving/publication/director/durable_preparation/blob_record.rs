@@ -1,8 +1,9 @@
+use sha2::Digest;
 use worth_store_physical_format::{
     decode_blob_record, BlobRecordKind, BlobRecordV1, PersistedRecordIdentity,
 };
 
-use super::{map_record_denial, RecordPublicationDirector};
+use super::{map_record_denial, ProtectedAppendKind, RecordPublicationDirector};
 use crate::physical_runtime::{
     record_serving::{
         publication::{
@@ -17,6 +18,49 @@ use crate::physical_runtime::{
 const BLOB_MAGIC: &[u8; 8] = b"WRC11BLB";
 
 impl RecordPublicationDirector {
+    /// A V3 custody frame embeds the already-reserved drop fingerprint. The
+    /// idempotency preimage must therefore remain its exact V2 base frame;
+    /// the selected payload and WAL still bind the full V3 frame separately.
+    pub(in crate::physical_runtime::record_serving::publication::director) fn prepare_released_descriptor_append(
+        &self,
+        descriptor: worth_store_physical_format::BlobReclaimDescriptorV3,
+        directory_rebinding: Option<(
+            crate::physical_runtime::record_serving::PreparedReleasedDirectoryRebinding,
+            Vec<u8>,
+        )>,
+        placement: AdmittedRecordPlacementPolicy,
+        request: PhysicalMutationRequest,
+    ) -> PhysicalMutationPreparationOutcome {
+        let mut builder = RecordAppendBatch::builder().push_owned(descriptor.encode());
+        let directory = directory_rebinding.is_some();
+        if let Some((basis, bytes)) = directory_rebinding {
+            let Ok(decoded) =
+                worth_store_physical_format::DerivedFamilyRootDirectoryV1::decode(&bytes)
+            else {
+                return map_record_denial(RecordAppendDenial::InvalidDerivedDirectory);
+            };
+            if decoded.indexed_through_blob_publication().is_some()
+                || decoded.indexed_through_quarantine() != basis.quarantined_through()
+                || <[u8; 32]>::from(sha2::Sha256::digest(&bytes)) != basis.next_payload_sha256()
+            {
+                return map_record_denial(RecordAppendDenial::InvalidDerivedDirectory);
+            }
+            builder = builder.push_owned(bytes);
+        }
+        let batch = match builder.build() {
+            Ok(batch) => batch,
+            Err(denial) => return map_record_denial(denial),
+        };
+        self.prepare_durable_append_with_released_fingerprint(
+            batch,
+            placement,
+            crate::physical_runtime::PhysicalManifestCapacityTransition::PreserveCurrent,
+            request,
+            ProtectedAppendKind::ReleasedDrop { directory },
+            Some(descriptor),
+        )
+    }
+
     pub(in crate::physical_runtime::record_serving::publication::director) fn prepare_blob_record_append(
         &self,
         encoded: Vec<u8>,

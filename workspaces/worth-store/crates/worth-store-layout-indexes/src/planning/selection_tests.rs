@@ -43,25 +43,33 @@ fn btree_planning_denies_without_store_observed_cost_basis() {
         ),
         StoreCustodyPosture::InternalStoreCustody,
     );
-    let page_key = || crate::keyspace::admit_page_key(
-                key_domain,
-                worth_store_physical_format::PhysicalSegmentId::from_raw(1).unwrap(),
-                worth_store_physical_format::PhysicalPageId::from_raw(1).unwrap(),
-            )
-            .expect("page identity");
+    let page_key = || {
+        crate::keyspace::admit_page_key(
+            key_domain,
+            worth_store_physical_format::PhysicalSegmentId::from_raw(1).unwrap(),
+            worth_store_physical_format::PhysicalPageId::from_raw(1).unwrap(),
+        )
+        .expect("page identity")
+    };
     for shape in [
         access_planning().point_access(),
         access_planning().range_access(),
         access_planning().prefix_access(),
     ] {
         let request = crate::planning::AccessPlanSelector
-            .admit_read_request(lifecycle, page_key(), root_materialization(lifecycle, 7), shape)
+            .admit_read_request(
+                lifecycle,
+                page_key(),
+                root_materialization(lifecycle, 7),
+                shape,
+            )
             .expect("read request");
-        let result = deterministic_plan_selection().select_admitted_with_budget(
-            request,
-            PreExecutionBudgetEnvelope::foreground_default(),
+        let result = deterministic_plan_selection()
+            .select_admitted_with_budget(request, PreExecutionBudgetEnvelope::foreground_default());
+        assert_eq!(
+            result.unwrap_err(),
+            AccessPlanSelectionDenied::NoEligibleAlternative
         );
-        assert_eq!(result.unwrap_err(), AccessPlanSelectionDenied::NoEligibleAlternative);
     }
     let recovery = crate::planning::AccessPlanSelector
         .admit_recovery_request(
@@ -73,11 +81,12 @@ fn btree_planning_denies_without_store_observed_cost_basis() {
                 .expect("rebuild shape"),
         )
         .expect("recovery request");
-    let result = deterministic_plan_selection().select_admitted_with_budget(
-        recovery,
-        PreExecutionBudgetEnvelope::maintenance_default(),
+    let result = deterministic_plan_selection()
+        .select_admitted_with_budget(recovery, PreExecutionBudgetEnvelope::maintenance_default());
+    assert_eq!(
+        result.unwrap_err(),
+        AccessPlanSelectionDenied::NoEligibleAlternative
     );
-    assert_eq!(result.unwrap_err(), AccessPlanSelectionDenied::NoEligibleAlternative);
 }
 #[test]
 fn deterministic_selection_selects_lsm_for_exact_wal_point_paths() {

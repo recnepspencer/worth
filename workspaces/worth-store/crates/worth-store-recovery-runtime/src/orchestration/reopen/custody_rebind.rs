@@ -1,6 +1,5 @@
 //! Published-root custody rebind and the sole planning-to-final state conversion.
 
-use super::*;
 use crate::entry::PhysicalRecoveryPublicationSettlement;
 use crate::progression::{CustodyState, PlanningCustody};
 
@@ -170,7 +169,7 @@ pub(super) fn rebind_selected_custody(
         (PlanningCustody::PendingPrepared { claim, replay }, Some(effective_heads)) => {
             CustodyState::Pending {
                 claim,
-                replay,
+                replay: replay.into_head(),
                 effective_heads,
             }
         }

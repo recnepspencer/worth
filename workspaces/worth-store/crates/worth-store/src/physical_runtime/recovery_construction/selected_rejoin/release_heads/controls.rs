@@ -67,9 +67,6 @@ impl ObservedReleaseHeadControls {
                 bytes.saturating_add(frame.owned_heap_bytes().unwrap_or(u64::MAX))
             })
     }
-    pub(super) fn catalog(&self) -> &[AddressedReleaseHeadControlV2] {
-        &self.catalog
-    }
 
     pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn attempt_for_descriptor(
         &self,
@@ -189,7 +186,7 @@ fn observe_control_closure(
     source_routes: &BTreeMap<PersistedRecordIdentity, CurrentPhysicalRecordPlacement>,
     tier_epoch_start: Option<u64>,
     claim: &VerifiedSelectedReleaseHeadCustodyV2,
-    mut allocation: ControlClosureAllocation<'_>,
+    allocation: ControlClosureAllocation<'_>,
 ) -> Result<ObservedReleaseHeadControls, Denial> {
     observe_control_closure_on_lookup(
         discovery,

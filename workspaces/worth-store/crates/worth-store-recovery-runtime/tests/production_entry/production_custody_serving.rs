@@ -68,7 +68,7 @@ fn production_two_distinct_releases_open_serving_after_carryforward() {
 
 #[test]
 fn production_mixed_failed_ingest_and_release_open_serving() {
-    let (world, _) = release_reopen::mixed_failed_ingest::world();
+    let world = release_reopen::mixed_failed_ingest::world();
     checkpoint(&world, 0xc3);
     recover_and_open(world);
 }

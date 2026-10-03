@@ -14,11 +14,11 @@ use crate::{
     ReleaseCustodyHeadTransitionV1, ReleasedGenerationReclaimBasisV1, CANONICAL_REDO_V3_DOMAIN,
 };
 
-fn record(ordinal: u64) -> PersistedRecordIdentity {
+pub(super) fn record(ordinal: u64) -> PersistedRecordIdentity {
     PersistedRecordIdentity::new([1; 16], ordinal).unwrap()
 }
 
-fn upsert_projection() -> (
+pub(super) fn upsert_projection() -> (
     PersistedPhysicalRecoveryProjection,
     PhysicalRecordFormatDeclaration,
 ) {
@@ -115,6 +115,7 @@ fn upsert_projection() -> (
         PersistedPhysicalRecoveryOperation::RecordsDropped {
             binding,
             head_effect: Some(effect),
+            directory_replacement: None,
         },
     )
     .unwrap();
@@ -122,7 +123,7 @@ fn upsert_projection() -> (
 }
 
 #[test]
-fn v15_head_upsert_round_trips_and_rejects_substituted_node_bytes() {
+fn v16_head_upsert_round_trips_and_rejects_substituted_node_bytes() {
     let (projection, format) = upsert_projection();
     let bytes = projection.encode();
     let limits = PhysicalRecoveryProjectionDecodeLimits {
@@ -159,7 +160,7 @@ fn v15_head_upsert_round_trips_and_rejects_substituted_node_bytes() {
 }
 
 #[test]
-fn canonical_redo_decodes_v15_only_with_its_actual_record_format() {
+fn canonical_redo_decodes_v16_only_with_its_actual_record_format() {
     let (projection, format) = upsert_projection();
     let field = |target: &mut Vec<u8>, bytes: &[u8]| {
         target.extend_from_slice(&(bytes.len() as u64).to_le_bytes());
@@ -278,7 +279,7 @@ fn assert_funded_canonical_decode(
 }
 
 #[test]
-fn v15_rejects_unrelated_key_and_missing_or_extra_node() {
+fn v16_rejects_unrelated_key_and_missing_or_extra_node() {
     let (projection, format) = upsert_projection();
     let PersistedPhysicalRecoveryOperation::RecordsDropped {
         head_effect: Some(effect),

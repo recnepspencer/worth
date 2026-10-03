@@ -1,6 +1,42 @@
 use super::*;
 
 impl PoolInner {
+    /// Selects and reserves one capture window atomically with every live pool
+    /// allocation. A minimum-window shortage uses the ordinary native denial.
+    pub(super) fn reserve_dirty_capture_window(
+        self: &Arc<Self>,
+        maximum: u64,
+        basis_bytes: u64,
+    ) -> Result<u64, PhysicalResidencyDenial> {
+        let mut state = self.lock();
+        if !state.accepting {
+            return Err(Self::deny(&mut state, PhysicalResidencyDenial::PoolClosed));
+        }
+        let scope = PhysicalOperationAllocationScope::Maintenance;
+        let available = [
+            self.limits
+                .usable_bytes(scope, self.limits.scope_bytes(scope))
+                .saturating_sub(state.accounting.operation_scope_bytes(scope)),
+            self.limits
+                .usable_bytes(scope, self.limits.operation_bytes())
+                .saturating_sub(state.accounting.active_operation_bytes()),
+            self.limits
+                .usable_bytes(scope, self.limits.total_bytes())
+                .saturating_sub(self.current_admitted_bytes(&state)),
+        ]
+        .into_iter()
+        .min()
+        .expect("capture has three native limits");
+        // Whole entries keep the native reservation equal to the actual slice
+        // storage. A shortage requests one entry through native admission.
+        let bytes = (maximum.min(available) / basis_bytes * basis_bytes).max(basis_bytes);
+        self.admit_scope_bytes(&mut state, scope, bytes)?;
+        self.admit_operation_bytes(&mut state, scope, bytes)?;
+        self.admit_total_bytes(&mut state, scope, bytes)?;
+        state.accounting.admit_operation(scope, bytes);
+        Ok(bytes)
+    }
+
     pub(in crate::physical_residency) fn begin_speculative_admission(
         self: &Arc<Self>,
         kind: crate::PhysicalSpeculativeWorkKind,

@@ -1,7 +1,5 @@
 use super::owner_case::{sealed, ObserveOwnerCase, OwnerCaseObservation};
-use crate::access::execution::{
-    DegradedScanReadinessCaseId, DegradedScanReadinessOutcome,
-};
+use crate::access::execution::{DegradedScanReadinessCaseId, DegradedScanReadinessOutcome};
 use crate::planning::{ImportedBlobReadAdmissionCaseId, ImportedBlobReadAdmissionOutcome};
 use crate::strategy::registry::{LayoutAdmissionCaseId, LayoutAdmissionOutcome};
 use crate::{

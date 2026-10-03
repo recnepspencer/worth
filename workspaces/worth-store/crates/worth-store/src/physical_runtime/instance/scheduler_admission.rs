@@ -9,7 +9,6 @@ use worth_store_physical_backend::QualifiedFilesystemMedia;
 mod background_dispatch;
 mod background_head;
 mod blob_ingest;
-pub(in crate::physical_runtime) use blob_ingest::BlobIngestFrameAdmission;
 mod blob_movement;
 pub(in crate::physical_runtime) use blob_movement::BlobMovementFrameAdmission;
 mod blob_reclaim;

@@ -21,10 +21,7 @@ use worth_store_recovery_runtime::{
 };
 
 #[path = "synthetic_topology.rs"]
-mod synthetic_topology;
-pub(crate) use synthetic_topology::{
-    publish_synthetic_branched_genesis, publish_synthetic_nonempty_genesis,
-};
+pub(crate) mod synthetic_topology;
 
 pub(crate) fn expect_blocked(
     outcome: worth_store_recovery_runtime::PhysicalRecoveryOutcome,

@@ -15,6 +15,7 @@ mod page_lsn_skip_apply;
 mod pending_wal_release_custody;
 mod physical_source;
 mod release_custody;
+mod released_directory_replacement;
 mod released_v3_inventory_transition;
 mod residue;
 mod selection;
@@ -71,6 +72,9 @@ pub use release_custody::{
     SelectedHeadRosterAdmissionDenial, VerifiedAddressedCheckpointReleaseBase,
     VerifiedCheckpointReleaseHeadRosterV2, VerifiedSelectedCheckpointCustody,
     VerifiedSelectedReleaseHeadCustodyV2, WitnessedSelectedControlFrame,
+};
+pub use released_directory_replacement::{
+    ReleasedDirectoryReplacementDenial, VerifiedReleasedDirectoryReplacement,
 };
 pub use released_v3_inventory_transition::{
     ReleasedInventoryView, ReleasedV3InventoryTransitionDenial,

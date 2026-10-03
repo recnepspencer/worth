@@ -43,6 +43,7 @@ pub(super) struct Accumulator {
 }
 
 impl Accumulator {
+    #[cfg(test)]
     pub(super) fn tip_descriptor(&self) -> [u8; 24] {
         self.tip[..24].try_into().expect("fixed tip")
     }

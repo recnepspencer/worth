@@ -94,7 +94,7 @@ pub(super) fn admit(
         trace,
         &mut control_resident,
     )?;
-    let control_live = control_resident.used();
+    let mut control_live = control_resident.used();
     retained.peak_scratch = retained
         .peak_scratch
         .max(control_base.checked_add(control_resident.peak())?);
@@ -141,6 +141,57 @@ pub(super) fn admit(
         .checked_mul(std::mem::size_of::<PersistedRecordIdentity>() as u64)?;
     let head_limit = dropped_limit.checked_sub(dropped_bytes)?;
 
+    let mut directory_resident = ResidentAllowance::new(head_limit);
+    let directory_replacement = match member.materialization().operation() {
+        worth_store_physical_format::PersistedPhysicalRecoveryOperation::RecordsDropped {
+            directory_replacement: Some(replacement),
+            ..
+        } => {
+            let route = step
+                .source
+                .routes
+                .iter()
+                .find(|route| route.record() == replacement.expected_previous().directory_record())
+                .copied()?;
+            let bytes = crate::orchestration::planning::released_directory::read(
+                discovery,
+                route,
+                step.source_inventory,
+                format,
+                budget,
+                trace,
+                &mut directory_resident,
+            )
+            .ok()?;
+            directory_resident.transient(
+                worth_store_recovery_physics::VerifiedReleasedDirectoryReplacement::maximum_decode_heap_bytes(),
+            ).ok()?;
+            let proof = worth_store_recovery_physics::VerifiedReleasedDirectoryReplacement::admit(
+                &member,
+                source_root,
+                route,
+                &bytes,
+                &dropped,
+                format,
+            )
+            .ok()?;
+            let backing = bytes.capacity() as u64;
+            drop(bytes);
+            directory_resident.release(backing).ok()?;
+            Some(proof)
+        }
+        _ => None,
+    };
+    retained.peak_scratch = retained.peak_scratch.max(
+        step.maximum_scratch_bytes
+            .checked_sub(head_limit)?
+            .checked_add(directory_resident.peak())?,
+    );
+    let directory_trace_growth = directory_resident.used();
+    control_resident.bytes(directory_trace_growth).ok()?;
+    control_live = control_live.checked_add(directory_trace_growth)?;
+    let head_limit = head_limit.checked_sub(directory_trace_growth)?;
+
     // The addressed reader's observed frame and its owned Vec copy coexist.
     // Debit that window with the controls and dropped vector still resident.
     let read_overlap = u64::from(format.page_size().bytes()).checked_mul(2)?;
@@ -175,6 +226,7 @@ pub(super) fn admit(
         &dropped,
         member.materialization().placements(),
         Some(&selected_replay),
+        directory_replacement.as_ref(),
         format,
         step.maximum_entries,
         matcher_limit,

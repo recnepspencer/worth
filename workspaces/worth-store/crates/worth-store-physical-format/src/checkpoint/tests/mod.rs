@@ -2,6 +2,7 @@ mod backup_artifact;
 mod certificate;
 mod golden;
 mod hostile;
+mod reserved_encoding;
 mod roundtrip;
 mod tier_certificate;
 

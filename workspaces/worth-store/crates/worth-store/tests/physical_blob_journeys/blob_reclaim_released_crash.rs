@@ -11,18 +11,19 @@ use std::{
 use worth_proof::AdmittedBlobReleaseProof;
 use worth_store::physical_runtime::{
     production::PhysicalMutationCheckpoint, BlobCheckpointLimit, BlobIngestDeclaration,
-    BlobReadLimits, BlobReclaimFailure, BlobReclaimLimits, BlobReclaimRequest,
-    PhysicalMutationDeadline, PhysicalRetirementDenial,
+    BlobReadLimits, BlobReclaimLimits, BlobReclaimRequest, PhysicalMutationDeadline,
 };
 use worth_store_blob_chunks::BlobChunkSize;
-use worth_store_physical_format::{decode_blob_record, BlobReclaimSourceBasisV1, BlobRecordV1};
+use worth_store_physical_format::{BlobRecordKind, SelectedRecordContentClass};
 
 use super::{
     blob_crash::{
         establish_recovery_frontier, kill_at, marker_path, recover_closed_store, write_marker,
     },
-    blob_frontier::selected_blob_records,
-    fixture::{admitted_blob_scope, placement, serving_from_initialization, serving_from_open},
+    fixture::{
+        admitted_blob_scope, assert_released_open_requires_recovered_custody, configuration,
+        placement, serving_from_initialization,
+    },
 };
 
 #[path = "blob_reclaim_released_crash/derived_witness.rs"]
@@ -59,104 +60,70 @@ fn durable_released_v3_descriptor_replays_exact_publication_drop_and_retirement(
         after_root.requires_maintenance_protocol(),
         "C8 drop root must retain displaced native extent retirement protocol"
     );
-    let serving = serving_from_open(&world.root);
+    // A released drop leaves a release-custody head, so the only path to
+    // Serving is C8's handoff; an ordinary reopen must deny before effects.
+    assert_released_open_requires_recovered_custody(&world.root, configuration().0);
+    let placements = retirement_witness::selected_placements(&world.root, &after_root);
     for retired_directory in retired_directories {
         assert!(
-            !serving.certification_selected_layout_record(retired_directory.record),
+            placements
+                .iter()
+                .all(|placement| placement.record() != retired_directory.record),
             "physically witnessed retired inline slot {:?}/{:?} must not become a live route",
             retired_directory.page,
             retired_directory.slot,
         );
     }
-    let selected = selected_blob_records(&serving);
-    let mut publication = 0;
-    let mut chunks = 0;
-    let mut tree = 0;
-    let mut manifest = None;
-    let mut descriptor = None;
-    for (record, bytes) in &selected {
-        if !bytes.starts_with(b"WRC11BLB") {
-            continue;
-        }
-        match decode_blob_record(bytes).expect("selected Blob frame") {
-            BlobRecordV1::GenerationPublished(value) if value.session() == world.session => {
-                publication += 1;
-            }
-            BlobRecordV1::Chunk(value) if value.occurrence().session() == world.session => {
-                chunks += 1;
-            }
-            BlobRecordV1::TreeNode(value) if value.occurrence().session() == world.session => {
-                tree += 1;
-            }
-            BlobRecordV1::DropSetManifestV3(value)
-                if matches!(value.source_basis(),
-                    BlobReclaimSourceBasisV1::ReleasedGeneration(source)
-                        if source.session() == world.session) =>
-            {
-                assert!(manifest.replace((*record, value)).is_none());
-            }
-            BlobRecordV1::ReclaimDescriptorV3(value) => {
-                assert!(descriptor.replace((*record, value)).is_none());
-            }
-            _ => {}
-        }
-    }
-    assert_eq!(publication, 0, "redo must unroute the released publication");
+    let count = |kind| {
+        placements
+            .iter()
+            .filter(|placement| placement.content_class() == SelectedRecordContentClass::Blob(kind))
+            .count()
+    };
+    assert!(
+        placements
+            .iter()
+            .all(|placement| placement.record() != publication_record),
+        "redo must unroute the released publication"
+    );
+    assert_eq!(count(BlobRecordKind::GenerationPublished), 0);
     assert_eq!(
-        (chunks, tree),
+        (
+            count(BlobRecordKind::Chunk),
+            count(BlobRecordKind::TreeNode)
+        ),
         (2, 1),
         "first bounded batch keeps payload selected"
     );
-    let (_, manifest) = manifest.expect("selected V3 manifest survives the drop");
-    let (_, descriptor) = descriptor.expect("C8 must publish the durable V3 descriptor");
-    assert_eq!(manifest.count(), 1);
-    assert_eq!(descriptor.base().manifest_count(), 1);
-    assert_eq!(manifest.dropped().len(), 1);
-    assert!(selected.iter().all(|(record, _)| {
-        record.allocation_epoch() != manifest.dropped()[0].allocation_epoch()
-            || record.ordinal() != manifest.dropped()[0].ordinal()
-    }));
-    let BlobReclaimSourceBasisV1::ReleasedGeneration(source) = manifest.source_basis() else {
-        panic!("released first batch requires release basis")
-    };
-    assert_eq!(source.publication_record(), publication_record);
-    let selected_before_denial = selected_blob_records(&serving);
-    let stale_issuer = AdmittedBlobReleaseProof::certification_admit(
-        serving.store_identity().bytes(),
-        world.object,
-        source.generation(),
-        source.publication_record().allocation_epoch(),
-        source.publication_record().ordinal(),
-        source.publication_frame_sha256(),
-        [0x72; 32],
-    )
-    .unwrap();
-    assert!(matches!(
-        serving
-            .blobs()
-            .unwrap()
-            .reclaim(BlobReclaimRequest::released(
-                stale_issuer,
-                placement(),
-                PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
-                BlobReclaimLimits::new(
-                    NonZeroU64::new(128).unwrap(),
-                    NonZeroU64::new(32 << 20).unwrap(),
-                    NonZeroU16::new(1).unwrap(),
-                )
-                .unwrap(),
-            )),
-        Err(BlobReclaimFailure::DeclarationMismatch)
-    ));
-    assert_eq!(selected_blob_records(&serving), selected_before_denial);
-    let before = serving.certification_charged_growth_bytes();
+    assert_eq!(count(BlobRecordKind::DropSetManifestV3), 1);
     assert_eq!(
-        serving.retire_displaced_segment(),
-        Err(PhysicalRetirementDenial::Checkpoint),
-        "the recovered native obligation reaches checkpoint admission, but this raw Serving open lacks C8 custody"
+        count(BlobRecordKind::ReclaimDescriptorV3),
+        1,
+        "C8 must publish the durable V3 descriptor"
     );
-    assert_eq!(serving.certification_charged_growth_bytes(), before);
-    serving.close();
+    // The dropped publication was the indexed watermark: the same root binds a
+    // replacement directory that no longer names it, rather than clearing it.
+    let before_directory = before_root
+        .derived_family_directory()
+        .expect("released publication is indexed by the selected directory");
+    assert_eq!(
+        before_directory
+            .indexed_through_blob_publication()
+            .map(|publication| publication.record()),
+        Some(publication_record)
+    );
+    let after_directory = after_root
+        .derived_family_directory()
+        .expect("C8 drop root binds the replacement directory");
+    assert_ne!(
+        after_directory.directory_record(),
+        before_directory.directory_record()
+    );
+    assert_eq!(after_directory.indexed_through_blob_publication(), None);
+    assert!(placements
+        .iter()
+        .any(|placement| placement.record() == after_directory.directory_record()));
+    assert_eq!(after_root.latest_blob_publication(), None);
 }
 
 pub(super) fn child(root: &Path, role: &str) {

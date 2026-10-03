@@ -5,7 +5,7 @@ use crate::filesystem_media::recovery_qualification::AdmittedRecoveryParts;
 use crate::filesystem_media::{ArtifactTreeMedia, QualifiedFilesystemMedia};
 use worth_store_physical_format::store_namespace::StableStoreIdentity;
 
-pub(crate) trait DiscoveryMediaBacking {
+pub trait DiscoveryMediaBacking {
     fn artifact_tree(&self) -> ArtifactTreeMedia<'_>;
     fn store_identity(&self) -> StableStoreIdentity;
     fn media_generation(&self) -> PhysicalRecoveryMediaGeneration;

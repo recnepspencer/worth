@@ -158,6 +158,10 @@ impl RecordPublicationDirector {
         control_placement: ReleasedControlArenaPlacement,
         reservation_record: PersistedRecordIdentity,
         reservation_frame_sha256: [u8; 32],
+        directory_rebinding: Option<(
+            crate::physical_runtime::record_serving::PreparedReleasedDirectoryRebinding,
+            Vec<u8>,
+        )>,
         placement: AdmittedRecordPlacementPolicy,
         request: PhysicalMutationRequest,
     ) -> PhysicalMutationPreparationOutcome {
@@ -190,7 +194,11 @@ impl RecordPublicationDirector {
             admitted.attempt().bytes(),
             BlobRecordKind::ReclaimDescriptorV3,
             descriptor.encode().len() as u64,
-        ) {
+        ) || control_placement.directory_encoded_bytes()
+            != directory_rebinding
+                .as_ref()
+                .map(|(_, encoded)| encoded.len() as u64)
+        {
             return map_record_denial(RecordAppendDenial::ReclaimFenceUnavailable);
         }
         if binding.idempotency() != key.identity().bytes()
@@ -225,9 +233,11 @@ impl RecordPublicationDirector {
         {
             return map_record_denial(RecordAppendDenial::ReclaimFenceUnavailable);
         }
+        let directory_basis = directory_rebinding.as_ref().map(|(basis, _)| *basis);
         let outcome = self.prepare_fenced_released_descriptor(
             admitted.attempt(),
             descriptor,
+            directory_rebinding,
             placement,
             request,
         );
@@ -235,14 +245,19 @@ impl RecordPublicationDirector {
         match outcome.into_raw() {
             TransitionOutcome::Success(PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
                 TransitionOutcome::success(PhysicalMutationPreparationSuccess::Prepared(
-                    prepared.with_released_head_basis(PreparedReleaseHeadBasis::new(
-                        head_key,
-                        admitted.basis(),
-                        prior,
-                        descriptor,
-                        reservation_record,
-                        reservation_frame_sha256,
-                    )),
+                    prepared.with_released_drop_basis(
+                        crate::physical_runtime::record_serving::PreparedReleasedDropBasis::new(
+                            PreparedReleaseHeadBasis::new(
+                                head_key,
+                                admitted.basis(),
+                                prior,
+                                descriptor,
+                                reservation_record,
+                                reservation_frame_sha256,
+                            ),
+                            directory_basis,
+                        ),
+                    ),
                 ))
                 .into()
             }

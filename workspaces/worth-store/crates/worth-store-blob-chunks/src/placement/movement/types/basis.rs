@@ -27,34 +27,6 @@ impl BlobPlacementMovementBasis {
             security_metadata: receipt.declaration().security_metadata(),
         }
     }
-
-    pub(crate) const fn object_id(&self) -> &BlobObjectId {
-        &self.object_id
-    }
-
-    pub(crate) const fn generation(&self) -> BlobGeneration {
-        self.generation
-    }
-
-    pub(crate) const fn chunk_tree_root(&self) -> &ChunkTreeRoot {
-        &self.chunk_tree_root
-    }
-
-    pub(crate) const fn logical_content_digest(&self) -> &LogicalContentDigest {
-        &self.logical_content_digest
-    }
-
-    pub(crate) const fn stored_digest(&self) -> &StoredChunkDigest {
-        &self.stored_digest
-    }
-
-    pub(crate) const fn authenticated_frame_digest(&self) -> &AuthenticatedFrameDigest {
-        &self.authenticated_frame_digest
-    }
-
-    pub(crate) const fn security_metadata(&self) -> BlobChunkSecurityMetadataWitness {
-        self.security_metadata
-    }
 }
 
 #[allow(dead_code)]

@@ -157,7 +157,7 @@ impl PhysicalWalAppendPort {
                     synchronization,
                 ))
             }
-            Err(MaintenanceBarrierDenial::Waiting(_)) => {
+            Err(MaintenanceBarrierDenial::Waiting) => {
                 Err(ScheduledMaintenanceDenial::WrittenAwaitingBarrier { interval })
             }
             Err(MaintenanceBarrierDenial::Failed) => {
@@ -251,7 +251,7 @@ pub(super) fn prepare_wal_frame_command(
 }
 
 pub(super) enum MaintenanceBarrierDenial {
-    Waiting(PhysicalSchedulerDenial),
+    Waiting,
     Failed,
 }
 

@@ -6,11 +6,11 @@ use worth_store_physical_format::{
     SelectedRecordContentClass, SelectedRecordRouteMetadata,
 };
 
-fn record(number: u64) -> PersistedRecordIdentity {
+pub(super) fn record(number: u64) -> PersistedRecordIdentity {
     PersistedRecordIdentity::new([4; 16], number).unwrap()
 }
 
-fn route(number: u64, extent: u64, offset: u64) -> CurrentPhysicalRecordPlacement {
+pub(super) fn route(number: u64, extent: u64, offset: u64) -> CurrentPhysicalRecordPlacement {
     let cell = PhysicalGenerationAuthority::for_canonical_physical_format()
         .record_extent_cell(PhysicalExtentId::from_raw(extent).unwrap())
         .with_extent_generation(PhysicalGeneration::from_raw(1).unwrap());
@@ -23,7 +23,11 @@ fn route(number: u64, extent: u64, offset: u64) -> CurrentPhysicalRecordPlacemen
     )
 }
 
-fn free_entry(offset: u64, length: u64, generation: u64) -> RecordFreeSpaceManifestEntry {
+pub(super) fn free_entry(
+    offset: u64,
+    length: u64,
+    generation: u64,
+) -> RecordFreeSpaceManifestEntry {
     RecordFreeSpaceManifestEntry::arena_range(
         ExtentArenaRange::new(ExtentArenaId::new(1).unwrap(), offset, length).unwrap(),
         generation,
@@ -31,7 +35,7 @@ fn free_entry(offset: u64, length: u64, generation: u64) -> RecordFreeSpaceManif
     .unwrap()
 }
 
-fn snapshot(
+pub(super) fn snapshot(
     generation: u64,
     routes: &[CurrentPhysicalRecordPlacement],
     free_entry: RecordFreeSpaceManifestEntry,
@@ -156,6 +160,7 @@ fn checked_transition_rejects_self_consistent_same_count_route_and_free_forgery(
         format,
         16,
         1 << 20,
+        None,
     )
     .expect("canonical release transition");
     assert_ne!(honest.source_topology(), honest.result_topology());
@@ -171,12 +176,13 @@ fn checked_transition_rejects_self_consistent_same_count_route_and_free_forgery(
             &projected,
             format,
             16,
-            exact_peak - 1
+            exact_peak - 1,
+            None,
         ),
         Err(ReleasedV3InventoryTransitionDenial::BoundExceeded)
     );
     let exact = VerifiedReleasedV3InventoryTransition::admit(
-        source, result, &dropped, &projected, format, 16, exact_peak,
+        source, result, &dropped, &projected, format, 16, exact_peak, None,
     )
     .unwrap();
     assert_eq!(exact, honest);
@@ -214,6 +220,7 @@ fn checked_transition_rejects_self_consistent_same_count_route_and_free_forgery(
             format,
             16,
             1 << 20,
+            None,
         ),
         Err(ReleasedV3InventoryTransitionDenial::InvalidDelta),
     );
@@ -244,6 +251,7 @@ fn checked_transition_rejects_self_consistent_same_count_route_and_free_forgery(
             format,
             16,
             1 << 20,
+            None,
         ),
         Err(ReleasedV3InventoryTransitionDenial::InvalidDelta),
     );
@@ -300,6 +308,7 @@ fn streamed_subtraction_preserves_untouched_generation_and_rejects_overlapping_r
         format,
         16,
         1 << 20,
+        None,
     )
     .unwrap();
     assert_eq!(admitted.projected(), &projected);
@@ -315,7 +324,8 @@ fn streamed_subtraction_preserves_untouched_generation_and_rejects_overlapping_r
             &projected,
             format,
             16,
-            1 << 20
+            1 << 20,
+            None,
         ),
         Err(ReleasedV3InventoryTransitionDenial::InvalidDelta)
     );

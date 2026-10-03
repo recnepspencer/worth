@@ -62,13 +62,13 @@ fn qualified_requirement(_: usize) -> Option<ArtifactTreeListingStorageRequireme
     None
 }
 
-#[cfg(windows)]
+#[cfg(all(windows, feature = "recovery-runtime-owner"))]
 pub(super) const fn provider_path_construction_bytes() -> u64 {
     // The fixed winx UTF-16 buffer coexists with its WTF-8 conversion growth.
     14 * 0x7fff
 }
 
-#[cfg(windows)]
+#[cfg(all(windows, feature = "recovery-runtime-owner"))]
 pub(super) fn provider_iterator_storage(path: &std::path::PathBuf) -> Option<(u64, u64)> {
     use std::{
         alloc::Layout,

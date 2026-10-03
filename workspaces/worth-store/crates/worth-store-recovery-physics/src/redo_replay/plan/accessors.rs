@@ -19,6 +19,10 @@ impl<'a> AdmittedRootStepMemberView<'a> {
     pub const fn materialization(self) -> &'a PersistedPhysicalRecoveryProjection {
         self.materialization
     }
+    /// Bytes of a record in this exact C.9-admitted member's ordered roster.
+    pub fn record_bytes(self, index: usize) -> Option<&'a [u8]> {
+        self.records.get(index).map(PhysicalRedoRecord::bytes)
+    }
 }
 
 impl ImmutablePhysicalRedoPlan {
@@ -38,6 +42,34 @@ impl ImmutablePhysicalRedoPlan {
                 && member.group() == projection.group()
                 && member.semantics_admitted_redo_sha256() == Some(digest)
         }) && members.next().is_none()
+    }
+
+    /// The plan retains admitted records in the same order as its exact
+    /// projection roster. Pointer and digest closure must be checked first.
+    pub fn admitted_projection_record_bytes(
+        &self,
+        projection: &PhysicalRedoProjection,
+        index: usize,
+    ) -> Option<&[u8]> {
+        let digest = projection.semantics_admitted_redo_sha256()?;
+        if !self.admits_exact_member_redo_digest(projection, digest) {
+            return None;
+        }
+        let mut offset = 0usize;
+        for member in self.projections.iter() {
+            if std::ptr::eq(member, projection) {
+                return (index < member.materialization().record_identities().len())
+                    .then(|| {
+                        offset
+                            .checked_add(index)
+                            .and_then(|at| self.records.get(at))
+                    })
+                    .flatten()
+                    .map(PhysicalRedoRecord::bytes);
+            }
+            offset = offset.checked_add(member.materialization().record_identities().len())?;
+        }
+        None
     }
 
     /// Conservative peak charge for retained descriptors and historical-skip planning.

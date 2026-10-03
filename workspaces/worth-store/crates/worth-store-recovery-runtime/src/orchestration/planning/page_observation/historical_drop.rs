@@ -5,9 +5,7 @@ use std::sync::Arc;
 use worth_store_physical_format::{
     BlobReclaimDescriptorV3, DropSetManifestV3, PersistedRecordIdentity,
 };
-use worth_store_recovery_physics::{
-    VerifiedHistoricalReleaseRootChain, VerifiedOrderedRootHistory,
-};
+use worth_store_recovery_physics::VerifiedOrderedRootHistory;
 
 #[path = "historical_drop/classification.rs"]
 mod classification;
@@ -23,6 +21,5 @@ pub(in crate::orchestration::planning) struct HistoricalDropEvidence {
     pub(in crate::orchestration::planning) descriptor_record: PersistedRecordIdentity,
     pub(in crate::orchestration::planning) descriptor: BlobReclaimDescriptorV3,
     pub(in crate::orchestration::planning) manifest: DropSetManifestV3,
-    pub(in crate::orchestration::planning) chain: Option<VerifiedHistoricalReleaseRootChain>,
-    pub(in crate::orchestration::planning) ordered_history: Option<Arc<VerifiedOrderedRootHistory>>,
+    pub(in crate::orchestration::planning) ordered_history: Arc<VerifiedOrderedRootHistory>,
 }

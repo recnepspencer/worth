@@ -1,5 +1,6 @@
-//! Genuine released-drop controls must acquire their complete arena window
-//! before the first control's WAL or root effect.
+//! Genuine released-drop controls must acquire their complete arena window,
+//! including the replacement directory frame when the dropped publication is
+//! the directory watermark, before the first control's WAL or root effect.
 
 use std::num::{NonZeroU16, NonZeroU64};
 
@@ -18,8 +19,10 @@ use super::super::fixture::{
 };
 
 #[test]
-fn three_control_arena_window_denies_before_effect_and_completes_when_admitted() {
-    for maximum_ranges in [3_u32, 4] {
+fn released_control_arena_window_denies_before_effect_and_completes_when_admitted() {
+    // The ingest extent holds one range; Manifest, Reservation, Descriptor and
+    // the replacement directory frame need four more.
+    for maximum_ranges in [4_u32, 5] {
         let directory = tempfile::tempdir().unwrap();
         let (format, _, _) = configuration();
         let placement = PhysicalRecordPlacementPolicy::builder()
@@ -86,22 +89,22 @@ fn three_control_arena_window_denies_before_effect_and_completes_when_admitted()
             ))
             .expect("genuine publication/release authority must reach execution")
             .wait();
-        if maximum_ranges == 3 {
+        if maximum_ranges == 4 {
             let Err(BlobReclaimFailure::Publication {
                 stage: BlobReclaimPublicationStage::Manifest,
                 manifest_record: None,
                 cause: BlobAppendFailure::Preparation(outcome),
             }) = result
             else {
-                panic!("third control must reject before Manifest effects: {result:?}")
+                panic!("the directory claim must reject before Manifest effects: {result:?}")
             };
             assert!(matches!(
                 outcome.into_raw(),
                 TransitionOutcome::Denied(PhysicalMutationPreparationDenial::RecordAppend(
                     RecordAppendDenial::ArenaAllocationUnavailable(
                         ArenaAllocationDenial::RangeBudget {
-                            required: 4,
-                            maximum: 3,
+                            required: 5,
+                            maximum: 4,
                         }
                     )
                 ))
@@ -126,7 +129,7 @@ fn three_control_arena_window_denies_before_effect_and_completes_when_admitted()
             );
         } else {
             let receipt =
-                result.expect("the exact four-entry window must complete the genuine drop");
+                result.expect("the exact five-entry window must complete the genuine drop");
             assert_eq!(receipt.disposition(), BlobReclaimDisposition::Dropped);
             assert_eq!(receipt.dropped_records(), &[marker.record()]);
             assert_eq!(receipt.remaining_payload_records(), 2);

@@ -21,7 +21,7 @@ pub use admitted::AdmittedPhysicalRecovery;
 pub use completion::RecoveryCompletion;
 #[cfg(feature = "certification-test-authority")]
 pub use completion::{complete_recovery, RecoveryCompletionDenial};
-pub(crate) use custody::{CustodyState, PlanningCustody};
+pub(crate) use custody::{CustodyState, PendingReleaseReplay, PlanningCustody};
 pub use discovered::{DiscoveredPhysicalRecovery, PhysicalRecoveryDiscoveryCounters};
 pub(crate) use integrity_evidence::RecoveryIntegrityEvidence;
 pub use namespace_durable::NamespaceDurablePhysicalRecovery;

@@ -28,7 +28,7 @@ pub(crate) fn request_with_memory_and_format(
     )
 }
 
-pub(super) fn request_with_configuration(
+pub(crate) fn request_with_configuration(
     root: &Path,
     recovery_memory_bytes: u64,
     configuration: PhysicalRecoveryStaticConfiguration,

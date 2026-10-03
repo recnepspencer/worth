@@ -65,7 +65,7 @@ fn basis(object: u8, cumulative: u64) -> SelectedReleaseBatchBasis {
     }
 }
 
-fn snapshot(root: Option<ReleaseCustodyHeadBlockReferenceV1>) -> SelectedCheckpointCustodySnapshot {
+fn snapshot(root: Option<ReleaseCustodyHeadBlockReferenceV1>) -> CheckpointPrefixTarget {
     let store = StoreNamespaceIdentityRecord::new(
         StoreNamespaceVersion::CURRENT,
         ProposedStoreIdentity::from_nonzero_bytes([9; 16]).unwrap(),
@@ -76,10 +76,11 @@ fn snapshot(root: Option<ReleaseCustodyHeadBlockReferenceV1>) -> SelectedCheckpo
         .release_custody_head_root(root)
         .admit()
         .unwrap();
-    SelectedCheckpointCustodySnapshot::VerifiedLegacy {
+    CheckpointPrefixTarget {
         checkpoint: PhysicalCheckpointIdentity::new(store, NonZeroU64::new(1).unwrap()),
-        root: manifest,
+        root_generation: manifest.generation(),
         root_sha256: [9; 32],
+        head_root: manifest.release_custody_head_root(),
     }
 }
 
@@ -137,16 +138,16 @@ fn events() -> (
 fn drop_retirement_drop_prefix_requires_root_and_authenticated_drop_count() {
     let (mut ledger, second_root) = events();
     let no_head = snapshot(None);
-    let first = expected_batch(&no_head, 0, basis(1, 1)).unwrap();
-    let (heads, prefix_len) = checkpoint_prefix(&ledger, &no_head, &[first]).unwrap();
+    let first = expected_batch(no_head, 0, basis(1, 1)).unwrap();
+    let (heads, prefix_len) = checkpoint_prefix(&ledger, no_head, &[first]).unwrap();
     assert_eq!(heads.root(), None);
     assert_eq!(prefix_len, 2); // The root recurs only after the retirement.
     ledger.pending_events.drain(..prefix_len);
     assert_eq!(ledger.pending_drop_count(), 1);
     assert_eq!(ledger.pending_events.len(), 1);
     let after = snapshot(Some(second_root));
-    let second = expected_batch(&after, 0, basis(2, 2)).unwrap();
-    let (heads, consumed) = checkpoint_prefix(&ledger, &after, &[second]).unwrap();
+    let second = expected_batch(after, 0, basis(2, 2)).unwrap();
+    let (heads, consumed) = checkpoint_prefix(&ledger, after, &[second]).unwrap();
     assert_eq!(heads.root(), Some(second_root));
     assert_eq!(consumed, 1);
 }
@@ -155,16 +156,16 @@ fn drop_retirement_drop_prefix_requires_root_and_authenticated_drop_count() {
 fn reordered_or_missing_tag_seven_batch_never_drains_selected_events() {
     let (ledger, second_root) = events();
     let target = snapshot(Some(second_root));
-    let first = expected_batch(&target, 0, basis(1, 1)).unwrap();
-    let second = expected_batch(&target, 1, basis(2, 2)).unwrap();
+    let first = expected_batch(target, 0, basis(1, 1)).unwrap();
+    let second = expected_batch(target, 1, basis(2, 2)).unwrap();
     let original = ledger.pending_events.len();
     for incorrect in [&[second, first][..], &[first][..]] {
-        assert!(checkpoint_prefix(&ledger, &target, incorrect).is_err());
+        assert!(checkpoint_prefix(&ledger, target, incorrect).is_err());
         assert_eq!(ledger.pending_events.len(), original);
         assert_eq!(ledger.checkpoint_heads.root(), None);
     }
     assert_eq!(
-        checkpoint_prefix(&ledger, &target, &[first, second])
+        checkpoint_prefix(&ledger, target, &[first, second])
             .unwrap()
             .1,
         3
@@ -213,7 +214,7 @@ fn event_constructors_reject_wrong_mutation_and_nonterminal_retirement() {
 fn prefix_rejects_wrong_source_and_result_key_before_any_drain() {
     let (mut ledger, _) = events();
     let target = snapshot(None);
-    let certificate = expected_batch(&target, 0, basis(1, 1)).unwrap();
+    let certificate = expected_batch(target, 0, basis(1, 1)).unwrap();
     let first = entry(1, true);
     let wrong_source = root(first, 3);
     ledger.pending_events[0] = PendingReleaseEvent::for_drop(
@@ -228,7 +229,7 @@ fn prefix_rejects_wrong_source_and_result_key_before_any_drain() {
         ),
     )
     .unwrap();
-    assert!(checkpoint_prefix(&ledger, &target, &[certificate]).is_err());
+    assert!(checkpoint_prefix(&ledger, target, &[certificate]).is_err());
     assert_eq!(ledger.pending_events.len(), 3);
     assert_eq!(ledger.checkpoint_heads.root(), None);
 
@@ -245,7 +246,7 @@ fn prefix_rejects_wrong_source_and_result_key_before_any_drain() {
         ),
     )
     .unwrap();
-    assert!(checkpoint_prefix(&ledger, &target, &[certificate]).is_err());
+    assert!(checkpoint_prefix(&ledger, target, &[certificate]).is_err());
     assert_eq!(ledger.pending_events.len(), 3);
 }
 
@@ -270,7 +271,7 @@ fn zero_batch_retirement_preserves_prior_ratchet_and_later_drop() {
     let mut ledger = SelectedReleaseCustodyLedger::trusted_genesis();
     ledger.checkpoint_heads =
         SelectedReleaseHeadRoster::from_selected(Some(prior_root), [prior]).unwrap();
-    ledger.checkpoint = Some(snapshot(Some(prior_root)).checkpoint());
+    ledger.checkpoint = Some(snapshot(Some(prior_root)).checkpoint);
     ledger.prior_cumulative_dropped = 7;
     ledger.cumulative_dropped = 7;
     ledger.prior_cumulative_digest = [7; 32];
@@ -304,7 +305,7 @@ fn zero_batch_retirement_preserves_prior_ratchet_and_later_drop() {
         .unwrap(),
     );
     let target = snapshot(None);
-    let (folded, consumed) = checkpoint_prefix(&ledger, &target, &[]).unwrap();
+    let (folded, consumed) = checkpoint_prefix(&ledger, target, &[]).unwrap();
     assert_eq!(folded.root(), None);
     assert_eq!(consumed, 1);
     ledger.pending_events.drain(..consumed);
@@ -315,9 +316,9 @@ fn zero_batch_retirement_preserves_prior_ratchet_and_later_drop() {
     assert_eq!(ledger.selected_tip, Some(tip));
     assert_eq!(ledger.prior_tip, Some(tip));
     let later_checkpoint = snapshot(Some(later_root));
-    let later_batch = expected_batch(&later_checkpoint, 0, basis(2, 8)).unwrap();
+    let later_batch = expected_batch(later_checkpoint, 0, basis(2, 8)).unwrap();
     assert_eq!(
-        checkpoint_prefix(&ledger, &later_checkpoint, &[later_batch])
+        checkpoint_prefix(&ledger, later_checkpoint, &[later_batch])
             .unwrap()
             .1,
         1

@@ -176,6 +176,9 @@ fn admission_failure(cause: PhysicalBlobReclaimAdmissionDenial) -> BlobReclaimFa
     use PhysicalBlobReclaimAdmissionDenial as Denial;
     let deferred = match cause {
         Denial::Claim(cause) => return BlobReclaimFailure::Claim(cause.into()),
+        Denial::ReleaseCertificateBacking(cause) => {
+            return BlobReclaimFailure::ReleaseCertificateBacking(cause)
+        }
         Denial::ExternalProtectedReader => BlobReclaimDeferral::ProtectedReader,
         Denial::PendingPublication => BlobReclaimDeferral::PendingPublication,
         Denial::AlreadyFenced => BlobReclaimDeferral::CompetingReclaim,

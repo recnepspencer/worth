@@ -1,6 +1,7 @@
 //! One canonical, bounded V3 source-to-result inventory predicate shared by
 //! C.8 and Store. A transcript of two valid trees alone is not a legal drop.
 
+use super::VerifiedReleasedDirectoryReplacement;
 use crate::VerifiedSelectedReleaseHeadReplayV14;
 
 #[path = "released_v3_inventory_transition/delta.rs"]
@@ -61,6 +62,7 @@ pub struct VerifiedReleasedV3InventoryTransition {
     result: PhysicalInventoryTranscriptV1,
     scratch_bytes: u64,
     projected: Box<[CurrentPhysicalRecordPlacement]>,
+    directory_replacement: Option<VerifiedReleasedDirectoryReplacement>,
 }
 
 impl VerifiedReleasedV3InventoryTransition {
@@ -113,6 +115,7 @@ impl VerifiedReleasedV3InventoryTransition {
         format: PhysicalRecordFormatDeclaration,
         maximum_entries: u64,
         maximum_scratch_bytes: u64,
+        directory_replacement: Option<&VerifiedReleasedDirectoryReplacement>,
     ) -> Result<Self, ReleasedV3InventoryTransitionDenial> {
         Self::admit_inner(
             source,
@@ -120,6 +123,7 @@ impl VerifiedReleasedV3InventoryTransition {
             dropped,
             projected,
             None,
+            directory_replacement,
             format,
             maximum_entries,
             maximum_scratch_bytes,
@@ -138,6 +142,7 @@ impl VerifiedReleasedV3InventoryTransition {
         format: PhysicalRecordFormatDeclaration,
         maximum_entries: u64,
         maximum_scratch_bytes: u64,
+        directory_replacement: Option<&VerifiedReleasedDirectoryReplacement>,
     ) -> Result<Self, ReleasedV3InventoryTransitionDenial> {
         Self::admit_inner(
             source,
@@ -145,6 +150,7 @@ impl VerifiedReleasedV3InventoryTransition {
             dropped,
             projected,
             Some(head_replay),
+            directory_replacement,
             format,
             maximum_entries,
             maximum_scratch_bytes,
@@ -158,6 +164,7 @@ impl VerifiedReleasedV3InventoryTransition {
         dropped: &[PersistedRecordIdentity],
         projected: &[CurrentPhysicalRecordPlacement],
         head_replay: Option<&VerifiedSelectedReleaseHeadReplayV14>,
+        directory_replacement: Option<&VerifiedReleasedDirectoryReplacement>,
         format: PhysicalRecordFormatDeclaration,
         maximum_entries: u64,
         maximum_scratch_bytes: u64,
@@ -179,8 +186,14 @@ impl VerifiedReleasedV3InventoryTransition {
                     other => other,
                 },
             )?;
-        if !root_semantics_match(source, result, dropped, projected, head_replay)
-            || dropped.is_empty()
+        if !root_semantics_match(
+            source,
+            result,
+            dropped,
+            projected,
+            head_replay,
+            directory_replacement,
+        ) || dropped.is_empty()
             || projected.is_empty()
             || dropped.len() as u64 > maximum_entries
             || projected.len() as u64 > maximum_entries
@@ -244,6 +257,8 @@ impl VerifiedReleasedV3InventoryTransition {
             result: result_topology,
             scratch_bytes: scratch_bytes.max(conversion_peak),
             projected: retained_projected.into_boxed_slice(),
+            directory_replacement: directory_replacement
+                .map(|proof| proof.bind_result_root(result.root)),
         })
     }
 
@@ -258,6 +273,9 @@ impl VerifiedReleasedV3InventoryTransition {
     }
     pub fn projected(&self) -> &[CurrentPhysicalRecordPlacement] {
         &self.projected
+    }
+    pub const fn directory_replacement(&self) -> Option<&VerifiedReleasedDirectoryReplacement> {
+        self.directory_replacement.as_ref()
     }
 }
 
@@ -357,6 +375,9 @@ fn transcript_reserved(
     builder.finish().map_err(|_| Denial::InvalidSource)
 }
 
+#[cfg(test)]
+#[path = "released_v3_inventory_transition/directory_tests.rs"]
+mod directory_tests;
 #[cfg(test)]
 #[path = "released_v3_inventory_transition/tests.rs"]
 mod tests;

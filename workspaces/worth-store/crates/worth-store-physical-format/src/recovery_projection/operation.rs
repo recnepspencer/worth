@@ -1,9 +1,12 @@
 use crate::{
-    CurrentPhysicalRecordPlacement, IndexedThroughBlobPublication, PersistedRecordIdentity,
-    ReleaseCustodyHeadMutationV1,
+    BlobRecordKind, CurrentPhysicalRecordPlacement, IndexedThroughBlobPublication,
+    PersistedRecordIdentity, ReleaseCustodyHeadMutationV1, SelectedRecordContentClass,
 };
 
-use super::{PersistedDerivedDirectoryRetirement, PersistedReleaseCustodyHeadEffectV1};
+use super::{
+    PersistedDerivedDirectoryRetirement, PersistedReleaseCustodyHeadEffectV1,
+    PersistedReleasedDirectoryReplacementV1,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PersistedDerivedDirectoryRecordBinding {
@@ -64,6 +67,7 @@ pub enum PersistedPhysicalRecoveryOperation {
     RecordsDropped {
         binding: PersistedBlobSemanticRecordBinding,
         head_effect: Option<PersistedReleaseCustodyHeadEffectV1>,
+        directory_replacement: Option<PersistedReleasedDirectoryReplacementV1>,
     },
     DerivedDirectory {
         binding: PersistedDerivedDirectoryRecordBinding,
@@ -139,6 +143,7 @@ impl PersistedPhysicalRecoveryOperation {
             Self::RecordsDropped {
                 binding,
                 head_effect,
+                directory_replacement,
             } => {
                 if head_effect.as_ref().is_some_and(|effect| {
                     !matches!(effect.mutation(), ReleaseCustodyHeadMutationV1::Upsert { next, .. }
@@ -146,6 +151,36 @@ impl PersistedPhysicalRecoveryOperation {
                             && next.source_root_generation() == source_root_generation)
                 }) {
                     return false;
+                }
+                if let Some(replacement) = directory_replacement {
+                    let next = replacement.next().record();
+                    let [descriptor, directory] = records else {
+                        return false;
+                    };
+                    let [CurrentPhysicalRecordPlacement::Extent(first), CurrentPhysicalRecordPlacement::Extent(second)] =
+                        placements
+                    else {
+                        return false;
+                    };
+                    let a = first.arena_range();
+                    let b = second.arena_range();
+                    return head_effect.is_some()
+                        && *descriptor == binding.record()
+                        && *directory == next.record()
+                        && first.record() == *descriptor
+                        && second.record() == *directory
+                        && first.content_class()
+                            == SelectedRecordContentClass::Blob(
+                                BlobRecordKind::ReclaimDescriptorV3,
+                            )
+                        && second.content_class() == SelectedRecordContentClass::DerivedDirectory
+                        && first.extent() != second.extent()
+                        && (a.arena() != b.arena()
+                            || a.end() <= b.offset()
+                            || b.end() <= a.offset())
+                        && source_root_generation.checked_add(1)
+                            == Some(binding.candidate_root_generation())
+                        && next.candidate_root_generation() == binding.candidate_root_generation();
                 }
                 *binding
             }

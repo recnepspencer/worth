@@ -53,9 +53,10 @@ pub(in crate::physical_runtime) use admission::{
     ReopenedPhysicalDurabilityRuntimeOwner,
 };
 pub(in crate::physical_runtime) use checkpoint::{
-    reopen_binding_compaction, CompletedDurableCheckpointWitness,
-    NamespaceDurableCheckpointPublication, PhysicalCheckpointCaptureFoundation,
-    PhysicalCheckpointRuntimeOwner, PhysicalCheckpointWorkPort, ReopenedPhysicalBindingCompaction,
+    reopen_binding_compaction, CompletedDurableCheckpointWitness, FundedCheckpointCommandBuffer,
+    FundedCheckpointCommandFrame, NamespaceDurableCheckpointPublication,
+    PhysicalCheckpointCaptureFoundation, PhysicalCheckpointRuntimeOwner,
+    PhysicalCheckpointWorkPort, ReopenedPhysicalBindingCompaction,
 };
 pub use checkpoint::{
     CompletedPhysicalCheckpoint, ContiguousRetainedWalTail, IndeterminatePhysicalCheckpoint,
@@ -103,7 +104,7 @@ pub use evidence_projection::{
     PhysicalQueuePerformanceExpectation, PhysicalTrafficPerformanceExpectation,
     ProvenNoEffectPhysicalMutationEvidence, StorePhysicalDurabilityPerformanceReceiptEvidence,
 };
-#[cfg(feature = "recovery-runtime-owner")]
+#[cfg(all(test, feature = "recovery-runtime-owner"))]
 pub(in crate::physical_runtime) use grouping::reopened_membership_digest;
 pub(in crate::physical_runtime) use grouping::reopened_membership_digest_fields;
 pub use grouping::{
@@ -185,7 +186,8 @@ pub(in crate::physical_runtime) use publication::{
     publish_manifest_residue_candidate, publish_retirement_candidate, publish_tier_epoch_candidate,
     replace_root_candidate, synchronize_root_namespace, AdmittedFailedIngestDrop,
     AdmittedManifestResidueRetirement, AdmittedReleasedGenerationDrop, CheckpointCustodyDenial,
-    CheckpointCustodyOrigin, ManifestResidueDisplacement, ManifestResidueProof,
+    CheckpointCustodyOrigin, FundedCheckpointBufferPreparation, FundedCheckpointCommandBufferLease,
+    FundedCheckpointFrame, ManifestResidueDisplacement, ManifestResidueProof,
     NamespaceDurableManifestResidueRoot, NamespaceDurableRetirementRoot,
     NamespaceDurableTierEpochRoot, PhysicalBlobReclaimAdmissionDenial, PhysicalBlobSessionClaim,
     PhysicalBlobSessionClaimDenial, PhysicalBlobTerminalAdmissionDenial, PhysicalCurrentRootOwner,
@@ -196,8 +198,7 @@ pub(in crate::physical_runtime) use publication::{
     PreparedRecoveredCheckpointCustody, RecoveredReleaseLedgerDenial,
     ReleaseCertificateCapacityDenial, ReleaseCertificateCapacityLease, ReleaseHeadCapacityCharge,
     ReleasedDropSourceCaptureDenial, RootCandidateSynchronizationFailure,
-    SelectedCheckpointCertificate, SelectedCheckpointCustodySnapshot, SelectedOriginalDropProof,
-    SelectedReleaseCustodyLedger, SelectedReleaseHeadBasis,
+    SelectedCheckpointCustodySnapshot, SelectedOriginalDropProof, SelectedReleaseHeadBasis,
 };
 #[cfg(feature = "certification-test-authority")]
 pub use publication::{CertificationReadRootCapturePauseGate, CertificationReadRootCaptureStage};

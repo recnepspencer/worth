@@ -5,7 +5,7 @@ use worth_store::physical_runtime::{
 };
 use worth_store_physical_format::{
     DurablePhysicalRootManifest, FreeSpaceBlockReference, FreeSpaceKey,
-    PhysicalRecordFormatDeclaration, RecordAllocationClass, RecordArtifactFile,
+    PhysicalRecordFormatDeclaration, RecordArtifactFile,
 };
 use worth_store_physical_integrity::{PhysicalDamageCause, PhysicalIntegrityRejection};
 

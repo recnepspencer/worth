@@ -55,7 +55,7 @@ pub(super) fn prepare_wal_barrier_command(
         .wal_durability_barrier(port.record.scheduler_security())
         .map_err(|denial| match denial {
             RecordSchedulerReservationDenial::OwedBackgroundTurn => {
-                MaintenanceBarrierDenial::Waiting(PhysicalSchedulerDenial::OwedBackgroundTurn)
+                MaintenanceBarrierDenial::Waiting
             }
             RecordSchedulerReservationDenial::Admission(_) => MaintenanceBarrierDenial::Failed,
         })?;
@@ -63,9 +63,7 @@ pub(super) fn prepare_wal_barrier_command(
         |denial| match denial {
             PhysicalSchedulerDenial::OwedBackgroundTurn
             | PhysicalSchedulerDenial::EffectConflict
-            | PhysicalSchedulerDenial::EffectSlotsExhausted => {
-                MaintenanceBarrierDenial::Waiting(denial)
-            }
+            | PhysicalSchedulerDenial::EffectSlotsExhausted => MaintenanceBarrierDenial::Waiting,
             _ => MaintenanceBarrierDenial::Failed,
         },
     )?;
@@ -77,9 +75,7 @@ pub(super) fn prepare_wal_barrier_command(
         .map_err(|denial| match denial {
             PhysicalSchedulerDenial::OwedBackgroundTurn
             | PhysicalSchedulerDenial::EffectConflict
-            | PhysicalSchedulerDenial::EffectSlotsExhausted => {
-                MaintenanceBarrierDenial::Waiting(denial)
-            }
+            | PhysicalSchedulerDenial::EffectSlotsExhausted => MaintenanceBarrierDenial::Waiting,
             _ => MaintenanceBarrierDenial::Failed,
         })?;
     let binding = maintenance_barrier_identity(

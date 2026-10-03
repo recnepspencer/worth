@@ -119,14 +119,7 @@ fn declared_selection_cases_equal_cases_emitted_by_ordinary_requests() {
                 access_planning().point_access(),
             )
             .expect("LSM budget denial must follow ordinary request admission"),
-        PreExecutionBudgetEnvelope::new(
-            PreExecutionBudgetScope::Foreground,
-            0,
-            0,
-            0,
-            0,
-            0,
-        ),
+        PreExecutionBudgetEnvelope::new(PreExecutionBudgetScope::Foreground, 0, 0, 0, 0, 0),
     ));
     observed.insert(select_case(
         AccessPlanSelector

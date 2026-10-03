@@ -55,12 +55,9 @@ mod root_preparation;
 mod root_progression;
 mod selected_manifest_pins;
 mod selected_segment_rewrite;
-pub(in crate::physical_runtime) use selected_manifest_pins::{
-    SelectedBlobManifestPin, SelectedBlobManifestPinDenial, SelectedBlobManifestPins,
-};
+pub(in crate::physical_runtime) use selected_manifest_pins::SelectedBlobManifestPins;
 mod submission;
 mod tier_epoch;
-pub(in crate::physical_runtime) use tier_epoch::TierEpochActivationFailure;
 mod wal_data_planning;
 
 pub use artifact_scope::{InlineArtifactRewritePlanDenial, PlannedInlineRewriteArtifact};
@@ -189,6 +186,9 @@ impl RecordPublicationDirector {
             foundation.read_protection,
             foundation.publication_retention.into_admission(),
             foundation.recovery_allocation,
+            foundation.frame_ports.clone(),
+            foundation.generation,
+            Arc::clone(&foundation.lifecycle),
         );
         for charge in &displaced {
             root_owner.restore_displaced(charge.source_root, charge.artifact, charge.bytes);

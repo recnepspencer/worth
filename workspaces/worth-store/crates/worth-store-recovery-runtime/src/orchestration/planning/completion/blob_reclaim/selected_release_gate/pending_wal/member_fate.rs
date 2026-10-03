@@ -19,9 +19,7 @@ pub(super) fn witness(
     basis: &ResolvedPlanningBasis,
     projection: &PhysicalRedoProjection,
 ) -> Option<PendingMemberFate> {
-    let descriptor_bytes = basis
-        .redo
-        .blob_semantic_record_bytes(projection.operation())?;
+    let descriptor_bytes = basis.redo.admitted_projection_record_bytes(projection, 0)?;
     let BlobRecordV1::ReclaimDescriptorV3(descriptor) =
         decode_blob_record(descriptor_bytes).ok()?
     else {

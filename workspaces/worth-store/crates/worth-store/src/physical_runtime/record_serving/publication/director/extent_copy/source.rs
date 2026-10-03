@@ -22,7 +22,6 @@ impl RecordPublicationDirector {
                 residency: self.residency.clone(),
                 store: self.durability.store_identity(),
                 format: self.format,
-                access: self.access,
                 generation: self.generation,
                 allocation,
             },

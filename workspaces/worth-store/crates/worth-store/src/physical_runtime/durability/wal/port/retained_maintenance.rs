@@ -51,7 +51,7 @@ impl PhysicalWalAppendPort {
         let interval = intent.interval();
         let synchronization = synchronize_maintenance_interval(self, intent.artifact(), interval)
             .map_err(|denial| match denial {
-            MaintenanceBarrierDenial::Waiting(_) => {
+            MaintenanceBarrierDenial::Waiting => {
                 ScheduledMaintenanceDenial::WrittenAwaitingBarrier { interval }
             }
             MaintenanceBarrierDenial::Failed => ScheduledMaintenanceDenial::Sync,

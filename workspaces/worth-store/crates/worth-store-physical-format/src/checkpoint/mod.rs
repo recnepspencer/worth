@@ -18,8 +18,10 @@ mod tier_certificate;
 
 pub use certificate::{
     checkpoint_certificate_frame_bytes, decode_checkpoint_certificate,
-    encode_checkpoint_certificate, CheckpointCertificateKind, CHECKPOINT_CERTIFICATE_PREFIX_BYTES,
-    MAX_CHECKPOINT_CERTIFICATE_BYTES, MAX_CHECKPOINT_CERTIFICATE_RECORDS,
+    encode_checkpoint_certificate, encode_checkpoint_certificate_in_reserved,
+    CheckpointCertificateKind, CHECKPOINT_CERTIFICATE_PREFIX_BYTES,
+    CHECKPOINT_CERTIFICATE_RECORD_OVERHEAD_BYTES, MAX_CHECKPOINT_CERTIFICATE_BYTES,
+    MAX_CHECKPOINT_CERTIFICATE_RECORDS,
 };
 pub use dirty_basis::{CheckpointDirtyFrameBasis, CHECKPOINT_DIRTY_FRAME_RECORD_BYTES};
 pub use encoded_digest::checkpoint_stream_encoded_digest;
@@ -30,7 +32,7 @@ pub use footer::{
 pub use identity::PhysicalCheckpointIdentity;
 #[cfg(test)]
 pub(crate) use inspection::inspect_checkpoint_stream;
-pub use record::CheckpointStreamDecodeDenial;
+pub use record::{CheckpointStreamDecodeDenial, CheckpointStreamEncodingDenial};
 pub const CHECKPOINT_CERTIFIED_SCHEMA: u8 = record::CERTIFIED_CHECKPOINT_SCHEMA;
 pub use release_certificate::{
     release_checkpoint_batch_records_digest_v1, ReleaseCheckpointAccumulatorV1,

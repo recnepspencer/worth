@@ -14,7 +14,6 @@ use worth_store_recovery_physics::{
 
 mod allocation_truth;
 mod failure;
-mod historical_chain;
 mod historical_drop;
 mod materialized;
 mod ordered_history;
@@ -40,7 +39,7 @@ pub(super) struct ObservedPageBasis {
     pub(super) tier_custody: Option<worth_store_recovery_physics::VerifiedSelectedTierEpochCustody>,
     pub(super) historical_drops: Vec<historical_drop::HistoricalDropEvidence>,
     pub(super) ordered_releases: Option<Vec<ordered_history::OrderedReleasedObservation>>,
-    pub(super) historical_chain_peak_scratch_bytes: u64,
+    pub(super) ordered_history_peak_scratch_bytes: u64,
 }
 pub(super) use historical_drop::HistoricalDropEvidence;
 pub(super) use ordered_history::OrderedReleasedObservation;
@@ -236,7 +235,7 @@ fn observe(
         historical_observations,
         absent_targets,
         historical_drops,
-        chain_scratch,
+        history_scratch,
         ordered_releases,
     ) = historical_drop::classify(
         discovery,
@@ -271,7 +270,7 @@ fn observe(
         tier_custody,
         historical_drops,
         ordered_releases,
-        historical_chain_peak_scratch_bytes: chain_scratch,
+        ordered_history_peak_scratch_bytes: history_scratch,
     })
 }
 

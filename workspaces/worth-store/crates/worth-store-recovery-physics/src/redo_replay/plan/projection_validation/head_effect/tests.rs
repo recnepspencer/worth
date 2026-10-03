@@ -158,6 +158,7 @@ fn fixture() -> (
         PersistedPhysicalRecoveryOperation::RecordsDropped {
             binding,
             head_effect: Some(effect),
+            directory_replacement: None,
         },
     )
     .unwrap();

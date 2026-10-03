@@ -31,6 +31,8 @@ pub enum PhysicalRecoveryPlanningDenial {
     Redo(PhysicalRedoPlanningDenial),
     CustodyUnresolved,
     SelectedReleaseHead(PhysicalRecoverySelectedReleaseHeadDenial),
+    ReleasedDirectorySource(super::PhysicalRecoverySelectedRecordReadDenial),
+    ReleasedDirectoryProof(worth_store_recovery_physics::ReleasedDirectoryReplacementDenial),
     OrderedRelease(PhysicalRecoveryOrderedReleaseDenial),
     Page(PhysicalRecoveryPageAdmissionDenial),
     SuccessorCandidate(super::super::PhysicalRecoverySuccessorCandidateDenial),

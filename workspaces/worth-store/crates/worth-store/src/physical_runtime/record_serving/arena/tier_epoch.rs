@@ -32,6 +32,7 @@ impl ArenaTierEpochFence {
         })
     }
 
+    #[cfg(test)]
     pub(in crate::physical_runtime::record_serving) const fn epoch(&self) -> u64 {
         self.epoch
     }

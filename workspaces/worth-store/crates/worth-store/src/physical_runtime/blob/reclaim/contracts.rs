@@ -146,6 +146,7 @@ pub enum BlobReclaimFailure {
     Format(BlobRecordDenial),
     ReadProtection(PhysicalReadProtectionDenial),
     Read(RecordReadError),
+    ReleasedDirectoryRead(crate::physical_runtime::layout::PhysicalLayoutPageReadFailure),
     Stream(RecordStreamFailure),
     Scan(RecordScanError),
     Deferred(super::BlobReclaimDeferral),

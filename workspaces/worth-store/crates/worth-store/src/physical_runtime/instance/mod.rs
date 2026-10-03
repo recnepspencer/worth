@@ -20,7 +20,6 @@ pub use executor::{
 };
 pub(in crate::physical_runtime) use parts::PhysicalStoreInstanceParts;
 pub(in crate::physical_runtime) use residency_owner::PhysicalResidencyOwner;
-pub(in crate::physical_runtime) use scheduler_admission::BlobIngestFrameAdmission;
 pub(in crate::physical_runtime) use scheduler_admission::BlobMovementFrameAdmission;
 pub(in crate::physical_runtime) use scheduler_admission::CompactionFrameAdmission;
 pub(in crate::physical_runtime) use scheduler_admission::PhysicalSchedulerAdmissionOwner;

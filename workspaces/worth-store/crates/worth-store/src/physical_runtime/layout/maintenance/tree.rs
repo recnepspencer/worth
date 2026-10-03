@@ -1,5 +1,13 @@
 use std::num::NonZeroU64;
 
+#[cfg(test)]
+mod allocation_test_ports;
+mod insertion;
+mod replacements;
+pub(in crate::physical_runtime) use insertion::{
+    insert_registered_node, InsertedLayoutTree, InsertionSource,
+};
+use replacements::ReplacementPath;
 mod retirement;
 pub use retirement::DeferredDerivedRetirementCause;
 pub(in crate::physical_runtime) use retirement::{
@@ -35,41 +43,7 @@ struct InsertedNode {
     level: u8,
     split: Option<(Vec<u8>, PersistedRecordIdentity)>,
     changed: bool,
-    replaced: Vec<PersistedRecordIdentity>,
-}
-
-pub(in crate::physical_runtime) struct InsertedLayoutTree {
-    family: DurableArtifactFamilyId,
-    source_root: Option<PersistedRecordIdentity>,
-    root: PersistedRecordIdentity,
-    replaced: Vec<PersistedRecordIdentity>,
-}
-
-impl InsertedLayoutTree {
-    pub(in crate::physical_runtime) const fn root(&self) -> PersistedRecordIdentity {
-        self.root
-    }
-
-    pub(in crate::physical_runtime) fn chain(
-        mut self,
-        next: Self,
-    ) -> Result<Self, PhysicalLayoutMaintenanceFailure> {
-        if self.family != next.family || Some(self.root) != next.source_root {
-            return Err(PhysicalLayoutMaintenanceFailure::TreeTopologyDamaged);
-        }
-        let count = self
-            .replaced
-            .len()
-            .checked_add(next.replaced.len())
-            .filter(|count| *count <= MAXIMUM_RETIREMENT_RECORDS)
-            .ok_or(PhysicalLayoutMaintenanceFailure::RetirementLimit)?;
-        self.replaced
-            .try_reserve(count - self.replaced.len())
-            .map_err(|_| PhysicalLayoutMaintenanceFailure::RetirementLimit)?;
-        self.root = next.root;
-        self.replaced.extend(next.replaced);
-        Ok(self)
-    }
+    replaced: ReplacementPath,
 }
 
 pub(super) struct TreeWriter<'a, 'runtime> {
@@ -82,70 +56,6 @@ pub(super) struct TreeWriter<'a, 'runtime> {
     family_code: u16,
     expected_shape: (usize, usize),
     _allocation: MaintenancePhysicalAllocation<'a>,
-}
-
-pub(in crate::physical_runtime) fn insert_registered_node(
-    runtime: &ServingPhysicalRuntime,
-    port: &PhysicalLayoutPagePort<'_>,
-    family: DurableArtifactFamilyId,
-    root: Option<PersistedRecordIdentity>,
-    key: Vec<u8>,
-    value: Vec<u8>,
-    placement: AdmittedRecordPlacementPolicy,
-    deadline: PhysicalMutationDeadline,
-) -> Result<InsertedLayoutTree, PhysicalLayoutMaintenanceFailure> {
-    let registered = runtime
-        .registered_btree_family(family)
-        .map_err(|_| PhysicalLayoutMaintenanceFailure::UnregisteredFamily(family))?;
-    if (key.len(), value.len()) != registered.cell_shape() {
-        return Err(PhysicalLayoutMaintenanceFailure::InvalidFamilyCell);
-    }
-    // Five retained path nodes, COW clones, split halves, and encoding can
-    // overlap; reserve a bounded ten-page mutation window.
-    let writer = TreeWriter::new(runtime, port, family, placement, deadline, 10)?;
-    let Some(root) = root else {
-        let node = BTreeNodeV1::leaf(
-            writer.family_code,
-            vec![BTreeNodeCellV1::leaf(key, value)],
-            None,
-            None,
-        )
-        .map_err(PhysicalLayoutMaintenanceFailure::NodeFormat)?;
-        return Ok(InsertedLayoutTree {
-            family,
-            source_root: None,
-            root: writer.append_node(&node)?,
-            replaced: Vec::new(),
-        });
-    };
-    let result = writer.insert_at(root, &key, &value, None, 0)?;
-    if let Some((separator, right)) = result.split {
-        if result.level + 1 >= MAXIMUM_HEIGHT {
-            return Err(PhysicalLayoutMaintenanceFailure::TreeHeightLimit);
-        }
-        let node = BTreeNodeV1::interior(
-            writer.family_code,
-            result.level + 1,
-            result.root,
-            vec![BTreeNodeCellV1::interior(separator, right)],
-            None,
-            None,
-        )
-        .map_err(PhysicalLayoutMaintenanceFailure::NodeFormat)?;
-        Ok(InsertedLayoutTree {
-            family,
-            source_root: Some(root),
-            root: writer.append_node(&node)?,
-            replaced: result.replaced,
-        })
-    } else {
-        Ok(InsertedLayoutTree {
-            family,
-            source_root: Some(root),
-            root: result.root,
-            replaced: result.replaced,
-        })
-    }
 }
 
 impl<'a, 'runtime> TreeWriter<'a, 'runtime> {
@@ -259,7 +169,7 @@ impl<'a, 'runtime> TreeWriter<'a, 'runtime> {
                     level: 0,
                     split: None,
                     changed: false,
-                    replaced: Vec::new(),
+                    replaced: ReplacementPath::empty(),
                 });
             }
             Err(index) => cells.insert(index, BTreeNodeCellV1::leaf(key.to_vec(), value.to_vec())),
@@ -272,7 +182,7 @@ impl<'a, 'runtime> TreeWriter<'a, 'runtime> {
                 level: 0,
                 split: None,
                 changed: true,
-                replaced: vec![old_record],
+                replaced: ReplacementPath::one(old_record),
             });
         }
         let right_cells = cells.split_off(cells.len() / 2);
@@ -288,7 +198,7 @@ impl<'a, 'runtime> TreeWriter<'a, 'runtime> {
             level: 0,
             split: Some((separator, right_record)),
             changed: true,
-            replaced: vec![old_record],
+            replaced: ReplacementPath::one(old_record),
         })
     }
 
@@ -320,7 +230,7 @@ impl<'a, 'runtime> TreeWriter<'a, 'runtime> {
                 level,
                 split: None,
                 changed: false,
-                replaced: Vec::new(),
+                replaced: ReplacementPath::empty(),
             });
         }
         let mut replaced = inserted.replaced;

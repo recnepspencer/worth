@@ -17,7 +17,7 @@ use super::super::{
     control_frames::SelectedControlMediaFingerprint, SelectedMediaRejoinDenial as Denial,
     MAX_DISCOVERY_BYTES, MAX_DISCOVERY_ENTRIES,
 };
-use super::{addressed_root, delta, head_effect_media};
+use super::{addressed_root, delta, directory_media, head_effect_media};
 use crate::physical_runtime::{
     IntegrityAdmittedRecoveryWalFrame, StoreRecoveryBindingFreshnessSample,
 };
@@ -156,11 +156,24 @@ pub(super) fn verify(
         format,
         remaining,
     )?;
+    let directory = directory_media::verify_edge_with_storage(
+        &mut discovery,
+        &source.root,
+        &source_snapshot,
+        &result.root,
+        &result_snapshot,
+        edge.transition(),
+        format,
+        &mut (),
+    )?;
     let maximum = delta::MAX_TRANSITION_MEMORY
         .checked_sub(retained_peak)
         .ok_or(Denial::BoundExceeded)?;
     let mut fingerprint = source_snapshot.fingerprint;
     fingerprint.try_extend_bounded(result_snapshot.fingerprint, maximum)?;
+    if let Some(directory) = directory {
+        fingerprint.try_extend_bounded(directory, maximum)?;
+    }
     fingerprint.try_extend_bounded(observed_head.into_fingerprint(), maximum)?;
     fingerprint.try_extend_bounded(controls, maximum)?;
     // Both snapshot fingerprints already include their canonical root and
@@ -268,6 +281,7 @@ fn verify_delta_with_storage<S: RouteWalkStorage>(
         maximum_scratch
             .checked_sub(dropped_bytes)
             .ok_or(Denial::BoundExceeded)?,
+        edge.transition().directory_replacement(),
     )
     .map_err(|_| Denial::RoutingFrame)?;
     if &actual != edge.transition() {

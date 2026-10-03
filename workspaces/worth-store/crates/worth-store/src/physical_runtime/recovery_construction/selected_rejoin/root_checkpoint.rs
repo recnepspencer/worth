@@ -66,18 +66,6 @@ impl ObservedRootCheckpoint {
     pub(super) fn root_bytes(&self) -> &[u8] {
         &self.root_bytes
     }
-    pub(super) const fn root_sha256(&self) -> [u8; 32] {
-        self.root_sha256
-    }
-    pub(super) fn checkpoint_bytes(&self) -> &[u8] {
-        &self.checkpoint_bytes
-    }
-    pub(super) const fn checkpoint_source(&self) -> PhysicalCheckpointSource {
-        self.checkpoint_source
-    }
-    pub(super) fn release_certificates(&self) -> &[ReleaseCheckpointCertificateV1] {
-        &self.release_certificates
-    }
 
     /// A public recovery claim is only a transcript. Its checkpoint must be
     /// byte-identical to the Store-owned observation, with exactly the selected
@@ -109,7 +97,7 @@ impl ObservedRootCheckpoint {
         .map(|_| ())
     }
 
-    pub(super) fn matches_v2_claim(
+    fn matches_v2_claim(
         &self,
         reader: &mut RootCheckpointReader<'_, '_>,
         claim: &VerifiedSelectedReleaseHeadCustodyV2,
@@ -268,45 +256,4 @@ fn observe_parts(
         release_encoded_bytes,
     };
     Ok(observed)
-}
-
-/// Recheck the same selected slots after control reads, before any seal is minted.
-pub(super) fn revalidate_selected_root(
-    discovery: &mut BoundedRecoveryFilesystemDiscovery,
-    observed: &ObservedRootCheckpoint,
-) -> Result<(), Denial> {
-    let selector = discovery
-        .read_current_selector(ROOT_SELECTOR_BYTES as u64)
-        .map_err(Denial::Discovery)?
-        .into_bytes()
-        .ok_or(Denial::MissingSelector)?;
-    if selector != observed.selector_bytes {
-        return Err(Denial::RootBinding);
-    }
-    let root = discovery
-        .read_root_manifest(observed.root.generation(), observed.root_bytes.len() as u64)
-        .map_err(Denial::Discovery)?
-        .into_bytes()
-        .ok_or(Denial::MissingRoot)?;
-    if root != observed.root_bytes
-        || <[u8; 32]>::from(Sha256::digest(&root)) != observed.root_sha256
-    {
-        return Err(Denial::RootBinding);
-    }
-    Ok(())
-}
-
-pub(super) fn revalidate_selected_checkpoint(
-    discovery: &mut BoundedRecoveryFilesystemDiscovery,
-    observed: &ObservedRootCheckpoint,
-) -> Result<(), Denial> {
-    let checkpoint = discovery
-        .read_current_checkpoint(observed.checkpoint_bytes.len() as u64)
-        .map_err(Denial::Discovery)?
-        .into_bytes()
-        .ok_or(Denial::MissingCheckpoint)?;
-    if checkpoint != observed.checkpoint_bytes {
-        return Err(Denial::CheckpointBinding);
-    }
-    Ok(())
 }

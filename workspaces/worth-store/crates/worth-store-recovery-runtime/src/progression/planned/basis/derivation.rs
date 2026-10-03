@@ -18,9 +18,7 @@ pub(crate) fn derive_execution_basis(
     selected_source: &RecoverySelectedSourceInventory,
     verified_drops: &[worth_store_physical_format::PersistedRecordIdentity],
     validated_manifest_cleanup: Option<crate::orchestration::ValidatedManifestResidueCleanup>,
-    release_head_replay: Option<
-        &worth_store_recovery_physics::VerifiedSelectedReleaseHeadReplayV14,
-    >,
+    release_head_replay: Option<&crate::progression::PendingReleaseReplay>,
     successor_candidate: Option<RecoveryObservedSuccessorCandidate>,
     maximum_manifest_entries: u64,
     maximum_staging_bytes: u64,

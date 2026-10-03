@@ -36,7 +36,7 @@ fn three_controls_acquire_exact_named_claims_before_competing_allocation() {
     let attempt = [7; 16];
     let manifest_bytes = 600_u64;
     let bundle =
-        ReleasedControlArenaReservations::reserve(&owner, attempt, format(), manifest_bytes)
+        ReleasedControlArenaReservations::reserve(&owner, attempt, format(), manifest_bytes, None)
             .unwrap();
     let (manifest, reservation, descriptor) = bundle.into_parts();
     let controls = [
@@ -82,7 +82,7 @@ fn third_claim_denial_cancels_both_pre_effect_claims_under_owner_lock() {
         .unwrap()
         .restore_free_range(whole_first_arena())
         .unwrap();
-    let denial = ReleasedControlArenaReservations::reserve(&owner, [7; 16], format(), 600)
+    let denial = ReleasedControlArenaReservations::reserve(&owner, [7; 16], format(), 600, None)
         .err()
         .unwrap();
     assert_eq!(
@@ -114,12 +114,12 @@ fn unused_claims_cancel_but_wal_exposed_claim_remains_quarantined() {
         .restore_free_range(whole_first_arena())
         .unwrap();
     let (manifest, reservation, descriptor) =
-        ReleasedControlArenaReservations::reserve(&owner, [7; 16], format(), 600)
+        ReleasedControlArenaReservations::reserve(&owner, [7; 16], format(), 600, None)
             .unwrap()
             .into_parts();
     let manifest_range = manifest.reservation().range();
     let obligation = manifest.reservation().retain_obligation();
-    let exposed = manifest.into_reservation();
+    let (exposed, _) = manifest.into_reservations();
     exposed.expose_to_wal();
     drop(exposed);
     drop(reservation);
@@ -134,4 +134,62 @@ fn unused_claims_cancel_but_wal_exposed_claim_remains_quarantined() {
             .range(),
         manifest_range
     );
+}
+
+#[test]
+fn directory_claim_rides_the_descriptor_and_is_all_or_nothing() {
+    let owner = owner(8);
+    owner
+        .lock()
+        .unwrap()
+        .restore_free_range(whole_first_arena())
+        .unwrap();
+    let (manifest, reservation, descriptor) =
+        ReleasedControlArenaReservations::reserve(&owner, [7; 16], format(), 600, Some(900))
+            .unwrap()
+            .into_parts();
+    assert_eq!((manifest.claim_count(), reservation.claim_count()), (1, 1));
+    assert_eq!(manifest.directory_encoded_bytes(), None);
+    assert_eq!(descriptor.claim_count(), 2);
+    assert_eq!(descriptor.directory_encoded_bytes(), Some(900));
+    let (control_bytes, control) = descriptor.claim(0).unwrap();
+    let (directory_bytes, directory) = descriptor.claim(1).unwrap();
+    assert!(descriptor.claim(2).is_none());
+    assert_eq!(control_bytes, descriptor.encoded_bytes());
+    assert_eq!(directory_bytes, 900);
+    assert!(directory.belongs_to(&owner));
+    assert!(control.range().end() <= directory.range().offset());
+
+    // One range short of the fourth claim: every claim is cancelled.
+    let owner = owner_with_ranges(4);
+    let denial =
+        ReleasedControlArenaReservations::reserve(&owner, [7; 16], format(), 600, Some(900))
+            .err()
+            .unwrap();
+    assert_eq!(
+        denial,
+        ArenaAllocationDenial::RangeBudget {
+            required: 5,
+            maximum: 4,
+        }
+    );
+    assert_eq!(
+        owner
+            .lock()
+            .unwrap()
+            .reserve(ExtentArenaCapacity::DEFAULT.get())
+            .unwrap()
+            .1,
+        whole_first_arena(),
+    );
+}
+
+fn owner_with_ranges(maximum_ranges: usize) -> SharedArenaAllocationOwner {
+    let owner = owner(maximum_ranges);
+    owner
+        .lock()
+        .unwrap()
+        .restore_free_range(whole_first_arena())
+        .unwrap();
+    owner
 }

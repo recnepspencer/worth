@@ -4,6 +4,7 @@ use std::{
     process::Command,
 };
 
+#[cfg(not(feature = "certification-test-authority"))]
 use sha2::{Digest, Sha256};
 use worth_store::physical_runtime::{
     BlobCheckpointLimit, BlobIngestDeclaration, BlobReadLimits, PhysicalMutationDeadline,
@@ -26,7 +27,9 @@ const READ_START: usize = 128 * 1024;
 const READ_END: usize = 1_152 * 1024;
 const SELECTED_SCAN_LIMIT: u64 = 512;
 const SCOPE_KEY: &str = "c11.blob.process.scope";
+#[cfg(not(feature = "certification-test-authority"))]
 const ROLE_ENV: &str = "WORTH_STORE_C11_BLOB_CHILD_ROLE";
+#[cfg(not(feature = "certification-test-authority"))]
 const ROOT_ENV: &str = "WORTH_STORE_C11_BLOB_CHILD_ROOT";
 const PUBLICATION_ENV: &str = "WORTH_STORE_C11_BLOB_PUBLICATION";
 const PUBLICATION_PREFIX: &str = "C11_BLOB_PUBLICATION ";
@@ -156,6 +159,7 @@ pub(super) fn allocator_negative_control() {
     println!("{NEGATIVE_PREFIX}{peak}");
 }
 
+#[cfg(not(feature = "certification-test-authority"))]
 fn run_child(role: &str, root: &Path, publication: Option<&str>) -> String {
     let mut command = Command::new(std::env::current_exe().unwrap());
     command
@@ -180,6 +184,7 @@ fn run_child(role: &str, root: &Path, publication: Option<&str>) -> String {
     String::from_utf8(output.stdout).unwrap()
 }
 
+#[cfg(not(feature = "certification-test-authority"))]
 pub(super) fn observe_closed_store(root: &Path) -> serde_json::Value {
     observe_closed_store_named(root, "c11-blob-8mib", "fresh-reopen-and-offline-observe")
 }
@@ -257,6 +262,7 @@ pub(super) fn observe_closed_store_with_limits(
     serde_json::from_slice(&output.stdout).unwrap()
 }
 
+#[cfg(not(feature = "certification-test-authority"))]
 fn marked_line<'a>(stdout: &'a str, prefix: &str) -> &'a str {
     stdout
         .lines()
@@ -265,6 +271,7 @@ fn marked_line<'a>(stdout: &'a str, prefix: &str) -> &'a str {
         .unwrap_or_else(|| panic!("missing {prefix:?} in child output: {stdout}"))
 }
 
+#[cfg(not(feature = "certification-test-authority"))]
 fn expected_range_digest() -> String {
     let mut digest = Sha256::new();
     let mut source = vec![0_u8; 64 * 1024];

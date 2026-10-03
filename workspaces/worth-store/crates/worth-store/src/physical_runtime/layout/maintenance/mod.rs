@@ -32,7 +32,8 @@ use append::{append_layout_record, LayoutAppendKind};
 pub use tree::DeferredDerivedRetirementCause;
 pub(in crate::physical_runtime) use tree::{
     admit_directory_retirement, insert_registered_node, inspect_selected_tree_retirement,
-    retire_selected_tree, AdmittedDirectoryRetirement, InsertedLayoutTree, SelectedTreeRetirement,
+    retire_selected_tree, AdmittedDirectoryRetirement, InsertedLayoutTree, InsertionSource,
+    SelectedTreeRetirement,
 };
 
 pub(in crate::physical_runtime) fn publish_derived_directory(
@@ -227,7 +228,7 @@ impl ServingPhysicalRuntime {
             self,
             &port,
             DurableArtifactFamilyId::BlobCatalog,
-            old_root,
+            InsertionSource::Root(old_root),
             key.canonical_bytes().to_vec(),
             encode_record(source.record()),
             placement,
@@ -252,7 +253,7 @@ impl ServingPhysicalRuntime {
         if previous_source.is_some() && dedupe_root.is_none() {
             return Err(PhysicalLayoutMaintenanceFailure::DedupeRequiresRebuild);
         }
-        let mut dedupe_chain: Option<InsertedLayoutTree> = None;
+        let mut dedupe_chain: Option<InsertedLayoutTree<'_>> = None;
         traverse_publication_direct(self, port.reader(), selected, |chunk| {
             if !chunk.original_occurrence {
                 return Ok(());
@@ -280,19 +281,17 @@ impl ServingPhysicalRuntime {
                 let inserted = insert_cell(
                     self,
                     DurableArtifactFamilyId::DedupeIndex,
-                    dedupe_root,
+                    match dedupe_chain.take() {
+                        Some(chain) => InsertionSource::Continue(chain),
+                        None => InsertionSource::Root(dedupe_root),
+                    },
                     key.bytes().to_vec(),
                     value.encode().to_vec(),
                     placement,
                     deadline,
                 )?;
                 dedupe_root = Some(inserted.root());
-                dedupe_chain = Some(match dedupe_chain.take() {
-                    Some(chain) => chain
-                        .chain(inserted)
-                        .map_err(LayoutRebuildFailure::LayoutMutation)?,
-                    None => inserted,
-                });
+                dedupe_chain = Some(inserted);
             }
             Ok(())
         })

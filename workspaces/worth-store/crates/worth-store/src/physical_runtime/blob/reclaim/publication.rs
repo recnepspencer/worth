@@ -1,8 +1,9 @@
 use sha2::{Digest, Sha256};
 mod release_certificate;
+mod released_directory;
 mod result;
 mod source;
-use result::{failure, one_record};
+use result::{failure, one_record, released_descriptor_record};
 use source::ReclaimDescriptor;
 pub(super) use source::ReclaimSource;
 use worth_proof::TransitionOutcome;
@@ -34,6 +35,12 @@ pub(super) struct ReclaimPublication<'a, 'runtime> {
 impl ReclaimPublication<'_, '_> {
     pub(super) fn publish(&self) -> Result<u64, BlobReclaimFailure> {
         let mut release_capacity = self.reserve_release_capacity()?;
+        let mut directory_rebinding = match self.admitted {
+            ReclaimSource::Released(admitted) => {
+                released_directory::prepare_before_first_effect(self.runtime, admitted)?
+            }
+            ReclaimSource::Failed(_) => None,
+        };
         let mut released_reservation = None;
         let mut released_descriptor = None;
         let source = self
@@ -84,6 +91,9 @@ impl ReclaimPublication<'_, '_> {
                         &manifest,
                         self.placement,
                         self.allocation,
+                        directory_rebinding
+                            .as_ref()
+                            .map(|rebind| rebind.encoded_bytes()),
                     )
                     .map_err(|cause| failure(stage, None, BlobAppendFailure::Preparation(cause)))?;
                 let (manifest_placement, reservation_placement, descriptor_placement) =
@@ -213,6 +223,11 @@ impl ReclaimPublication<'_, '_> {
         )?;
 
         let stage = BlobReclaimPublicationStage::Drop;
+        if let (ReclaimSource::Released(admitted), Some(rebinding)) =
+            (self.admitted, directory_rebinding.as_ref())
+        {
+            released_directory::revalidate_before_drop(self.runtime, admitted, rebinding.basis())?;
+        }
         let request = PhysicalMutationRequest::platform_durable(drop_key, self.deadline);
         let prepared = match (self.admitted, descriptor) {
             (ReclaimSource::Failed(admitted), ReclaimDescriptor::Failed(descriptor)) => self
@@ -233,6 +248,9 @@ impl ReclaimPublication<'_, '_> {
                         .expect("released Manifest admitted all three placements"),
                     reserved_record,
                     reservation_sha256,
+                    directory_rebinding
+                        .as_mut()
+                        .map(|rebind| (rebind.basis(), rebind.take_encoded())),
                     self.placement,
                     request,
                 ),
@@ -249,6 +267,7 @@ impl ReclaimPublication<'_, '_> {
                 reserved,
                 manifest_record,
                 &completed,
+                directory_rebinding.is_some(),
             )?;
         }
         self.runtime

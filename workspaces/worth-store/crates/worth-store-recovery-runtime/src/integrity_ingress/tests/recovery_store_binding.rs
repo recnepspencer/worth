@@ -5,7 +5,7 @@ use worth_store::physical_runtime::{
 };
 use worth_store_physical_format::{
     store_namespace::StableStoreIdentity, DurablePhysicalRootManifest, FreeSpaceBlockReference,
-    FreeSpaceKey, PhysicalRecordFormatDeclaration, RecordAllocationClass,
+    FreeSpaceKey, PhysicalRecordFormatDeclaration,
 };
 use worth_store_physical_integrity::{
     validate_root_manifest, PhysicalArtifactScope, PhysicalByteRange, UntrustedPhysicalArtifact,

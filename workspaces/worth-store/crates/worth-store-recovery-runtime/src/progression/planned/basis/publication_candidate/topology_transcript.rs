@@ -105,6 +105,7 @@ pub(super) fn mint(
             format,
             maximum_entries,
             matcher_budget,
+            base.release_directory_replacement(),
         ),
         None => VerifiedReleasedV3InventoryTransition::admit(
             source_view,
@@ -114,6 +115,7 @@ pub(super) fn mint(
             format,
             maximum_entries,
             matcher_budget,
+            base.release_directory_replacement(),
         ),
     }
     .map_err(|denial| match denial {

@@ -1,9 +1,12 @@
-use super::{path::validate_component, ArtifactTreeDirectory, ArtifactTreeMedia};
+use super::ArtifactTreeMedia;
+#[cfg(feature = "recovery-runtime-owner")]
+use super::{path::validate_component, ArtifactTreeDirectory};
 
 pub(super) fn qualified() -> bool {
     cfg!(windows) && env!("WORTH_STORE_MEDIA_PATH_PROFILE") == "qualified"
 }
 
+#[cfg(feature = "recovery-runtime-owner")]
 pub(super) fn child_bytes(directory: &ArtifactTreeDirectory, component: &str) -> Option<u64> {
     validate_component(component).ok()?;
     let count = directory.components.len();
@@ -26,6 +29,7 @@ pub(super) fn child_bytes(directory: &ArtifactTreeDirectory, component: &str) ->
         .and_then(|bytes| u64::try_from(bytes).ok())
 }
 
+#[cfg(feature = "recovery-runtime-owner")]
 pub(super) fn file_bytes(directory: &ArtifactTreeDirectory, component: &str) -> Option<u64> {
     validate_component(component).ok()?;
     directory
@@ -42,6 +46,7 @@ pub(super) fn file_bytes(directory: &ArtifactTreeDirectory, component: &str) -> 
         .and_then(|bytes| u64::try_from(bytes).ok())
 }
 
+#[cfg(feature = "recovery-runtime-owner")]
 pub(super) fn open_bytes(component: &str) -> Option<u64> {
     if !qualified() {
         return None;

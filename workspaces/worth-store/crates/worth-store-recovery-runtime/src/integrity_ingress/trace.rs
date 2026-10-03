@@ -31,17 +31,6 @@ impl RecoveryIntegrityIngressTrace {
             .checked_mul(std::mem::size_of::<RecoveryIntegrityIngressObservation>() as u64)
     }
 
-    pub(crate) fn reserve_observations(&mut self, additional: usize) -> Option<u64> {
-        let old = self.owned_heap_bytes()?;
-        let capacity = self.next_observation_capacity(additional)?;
-        if capacity > self.observations.capacity() {
-            self.observations
-                .try_reserve_exact(capacity.checked_sub(self.observations.len())?)
-                .ok()?;
-        }
-        self.owned_heap_bytes()?.checked_sub(old)
-    }
-
     pub(crate) fn try_reserve_observation_capacity(
         &mut self,
         capacity: usize,

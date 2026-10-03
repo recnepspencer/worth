@@ -1,4 +1,6 @@
-use super::{ArtifactTreeDirectoryEntry, ArtifactTreeFailure, ArtifactTreeStorageAllocator};
+#[cfg(feature = "recovery-runtime-owner")]
+use super::ArtifactTreeFailure;
+use super::{ArtifactTreeDirectoryEntry, ArtifactTreeStorageAllocator};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ArtifactTreeListingAllocationBoundary {
@@ -32,6 +34,7 @@ pub trait ArtifactTreeListingAllocator: ArtifactTreeStorageAllocator {
     ) -> Result<Vec<ArtifactTreeDirectoryEntry>, Self::Denial>;
 }
 
+#[cfg(feature = "recovery-runtime-owner")]
 #[derive(Debug)]
 pub(crate) enum ArtifactTreeAllocatedListingFailure<E> {
     Media(ArtifactTreeFailure),
@@ -39,12 +42,14 @@ pub(crate) enum ArtifactTreeAllocatedListingFailure<E> {
     BufferLengthMismatch { requested: usize, observed: usize },
 }
 
+#[cfg(feature = "recovery-runtime-owner")]
 impl<E> From<ArtifactTreeFailure> for ArtifactTreeAllocatedListingFailure<E> {
     fn from(failure: ArtifactTreeFailure) -> Self {
         Self::Media(failure)
     }
 }
 
+#[cfg(feature = "recovery-runtime-owner")]
 pub(super) fn change<A: ArtifactTreeListingAllocator>(
     allocator: &mut A,
     change: ArtifactTreeListingStorageChange,

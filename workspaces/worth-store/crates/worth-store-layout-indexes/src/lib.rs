@@ -138,10 +138,9 @@ pub use access::shape::{
     AccessShapeUnsupportedDenial, FullDeclaredScanBasis, FullDeclaredScanCaseId,
     FullDeclaredScanOutcome, FullDeclaredScanView,
 };
-pub(crate) use catalog::{
-    ArtifactFamilyAuthorityWitness, ArtifactFamilyDenial, ArtifactFamilyLifecycleAdmission,
-    PhysicalArtifactFamily, PhysicalArtifactFamilyDeclaration,
-};
+#[cfg(test)]
+pub(crate) use catalog::PhysicalArtifactFamilyDeclaration;
+pub(crate) use catalog::{ArtifactFamilyDenial, PhysicalArtifactFamily};
 #[cfg(test)]
 pub(crate) use integrity::LayoutCorruptionView;
 pub(crate) use keyspace::{CanonicalKeyBytes, PhysicalKeyDomain, PhysicalKeyDomainWitness};

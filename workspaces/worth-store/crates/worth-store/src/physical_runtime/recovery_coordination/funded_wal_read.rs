@@ -67,6 +67,7 @@ impl PhysicalRecoveryReadAllocation<'_> {
         )
     }
 
+    #[cfg(test)]
     pub(in crate::physical_runtime) fn read_serving_wal_payloads(
         &mut self,
         media: &worth_store_physical_backend::QualifiedFilesystemMedia,

@@ -2,9 +2,9 @@ use std::io::Write;
 
 use cap_std::fs::Dir;
 mod directory_open;
-pub(super) use directory_open::{
-    open_directory, open_directory_with_backing, open_optional_directory,
-};
+#[cfg(feature = "recovery-runtime-owner")]
+pub(super) use directory_open::open_directory_with_backing;
+pub(super) use directory_open::{open_directory, open_optional_directory};
 
 use super::{
     ArtifactTreeFailure, ArtifactTreeFailureKind, FilesystemMediaOwner, MediaOperationRole,

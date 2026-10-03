@@ -25,6 +25,7 @@ const BTREE_MAGIC: &[u8; 8] = b"WRC11BTN";
 pub(in crate::physical_runtime::record_serving::publication::director) enum ProtectedAppendKind {
     Ordinary,
     Blob(BlobRecordKind),
+    ReleasedDrop { directory: bool },
     BlobReuseClaim(PreparedReuseDeclarationBasis),
     BlobDedupeQuarantine(PreparedReuseDeclarationBasis),
     Directory(PreparedDerivedDirectoryBasis),
@@ -36,6 +37,9 @@ impl ProtectedAppendKind {
         match self {
             Self::Ordinary => SelectedRecordContentClass::Opaque,
             Self::Blob(kind) => SelectedRecordContentClass::Blob(*kind),
+            Self::ReleasedDrop { .. } => {
+                SelectedRecordContentClass::Blob(BlobRecordKind::ReclaimDescriptorV3)
+            }
             Self::BlobReuseClaim(_) => {
                 SelectedRecordContentClass::Blob(BlobRecordKind::ChunkReuseClaimV2)
             }
@@ -52,6 +56,7 @@ impl ProtectedAppendKind {
     pub(super) const fn blob_kind(&self) -> Option<BlobRecordKind> {
         match self {
             Self::Blob(kind) => Some(*kind),
+            Self::ReleasedDrop { .. } => Some(BlobRecordKind::ReclaimDescriptorV3),
             Self::BlobReuseClaim(_) => Some(BlobRecordKind::ChunkReuseClaimV2),
             Self::BlobDedupeQuarantine(_) => Some(BlobRecordKind::DedupeQuarantine),
             _ => None,
@@ -80,6 +85,7 @@ impl ProtectedAppendKind {
         match self {
             Self::Ordinary => PhysicalMutationOperationFamily::RecordAppend,
             Self::Blob(_) => PhysicalMutationOperationFamily::BlobRecordAppend,
+            Self::ReleasedDrop { .. } => PhysicalMutationOperationFamily::BlobRecordAppend,
             Self::BlobReuseClaim(_) => PhysicalMutationOperationFamily::BlobRecordAppend,
             Self::BlobDedupeQuarantine(_) => PhysicalMutationOperationFamily::BlobRecordAppend,
             Self::Directory(_) => PhysicalMutationOperationFamily::DerivedDirectoryAppend,
@@ -118,6 +124,22 @@ pub(super) fn validate_prepared_payload(
                 return Err(RecordAppendDenial::BlobRecordRequiresStoreOwner);
             }
             blob_record::validate_prepared_payload(batch, Some(*kind))
+        }
+        ProtectedAppendKind::ReleasedDrop { directory } => {
+            let [RecordAppendInput::Bytes(descriptor), rest @ ..] = batch.records.as_slice() else {
+                return Err(RecordAppendDenial::ReclaimFenceUnavailable);
+            };
+            worth_store_physical_format::BlobReclaimDescriptorV3::decode(descriptor)
+                .map_err(|_| RecordAppendDenial::ReclaimFenceUnavailable)?;
+            match (*directory, rest) {
+                (false, []) => Ok(()),
+                (true, [RecordAppendInput::Bytes(bytes)]) => {
+                    DerivedFamilyRootDirectoryV1::decode(bytes)
+                        .map_err(|_| RecordAppendDenial::InvalidDerivedDirectory)?;
+                    Ok(())
+                }
+                _ => Err(RecordAppendDenial::ReclaimFenceUnavailable),
+            }
         }
         ProtectedAppendKind::BlobReuseClaim(_) => {
             blob_record::validate_prepared_payload(batch, Some(BlobRecordKind::ChunkReuseClaimV2))

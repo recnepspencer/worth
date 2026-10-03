@@ -11,7 +11,7 @@ use super::{verification::verify_fate, PendingWalReleaseCustodyDenial as Denial}
 use crate::{
     ReconciledOperationFates, RecoveryOperationFate, VerifiedAddressedCheckpointReleaseBase,
     VerifiedAddressedReleasedControlFrame, VerifiedOrderedRootEdge, VerifiedOrderedRootHistory,
-    VerifiedSelectedReleaseHeadCustodyV2,
+    VerifiedReleasedDirectoryReplacement, VerifiedSelectedReleaseHeadCustodyV2,
 };
 
 #[derive(Debug)]
@@ -27,6 +27,7 @@ pub struct VerifiedOrderedPendingWalReleaseBatch {
     raw_fate: RecoveryOperationFate,
     operation_fate: RecoveryOperationFate,
     retained_bytes: u64,
+    directory_replacement: Option<VerifiedReleasedDirectoryReplacement>,
 }
 
 impl VerifiedOrderedPendingWalReleaseBatch {
@@ -231,11 +232,15 @@ impl VerifiedOrderedPendingWalReleaseBatch {
             raw_fate: edge.fate(),
             operation_fate,
             retained_bytes,
+            directory_replacement: edge.transition().directory_replacement().cloned(),
         })
     }
 
     pub const fn edge_index(&self) -> usize {
         self.edge_index
+    }
+    pub const fn directory_replacement(&self) -> Option<&VerifiedReleasedDirectoryReplacement> {
+        self.directory_replacement.as_ref()
     }
     pub const fn descriptor_frame(&self) -> &VerifiedAddressedReleasedControlFrame {
         &self.descriptor_frame

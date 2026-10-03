@@ -4,6 +4,9 @@ mod phase_three_support;
 #[path = "phase_three_discovery/checkpoint_wal_join.rs"]
 mod checkpoint_wal_join;
 
+use phase_three_support::synthetic_topology::{
+    publish_synthetic_branched_genesis, publish_synthetic_nonempty_genesis,
+};
 use phase_three_support::*;
 use worth_store_recovery_runtime::{
     PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension, PhysicalRecoveryLimits,

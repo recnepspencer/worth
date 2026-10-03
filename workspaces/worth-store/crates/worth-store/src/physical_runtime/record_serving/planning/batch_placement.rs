@@ -89,6 +89,7 @@ pub(in crate::physical_runtime::record_serving) fn classify_batch(
     placement: AdmittedRecordPlacementPolicy,
     blob_record_kind: Option<BlobRecordKind>,
     selected_content_class: SelectedRecordContentClass,
+    released_directory_record: bool,
     inline_only: bool,
     batch: AdmittedRecordAppendBatch,
 ) -> Result<ClassifiedBatch, RecordAppendError> {
@@ -100,8 +101,16 @@ pub(in crate::physical_runtime::record_serving) fn classify_batch(
     let route_metadata = SelectedRecordRouteMetadata::primary(selected_content_class).ok_or(
         RecordAppendError::Denied(RecordAppendDenial::PublishedLayoutDamaged),
     )?;
-    for (record, admitted) in identities.iter().copied().zip(batch.records) {
+    for (index, (record, admitted)) in identities.iter().copied().zip(batch.records).enumerate() {
         let length = admitted.declared_length;
+        let route_metadata = if released_directory_record && index == 1 {
+            SelectedRecordRouteMetadata::primary(SelectedRecordContentClass::DerivedDirectory)
+                .ok_or(RecordAppendError::Denied(
+                    RecordAppendDenial::PublishedLayoutDamaged,
+                ))?
+        } else {
+            route_metadata
+        };
         match placement_class(length, placement, blob_record_kind, inline_only) {
             RecordPlacementClass::ExtentBacked => {
                 let source: Box<dyn RecordWriteSource> = match admitted.input {

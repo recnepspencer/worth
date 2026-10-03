@@ -4,7 +4,7 @@ use std::num::NonZeroU64;
 
 use worth_store_buffer_pool::{
     OperationAllocationGrant, PhysicalOperationAllocationScope, PhysicalResidencyDenial,
-    PhysicalResidencyDimension, PhysicalResidencyIncarnation,
+    PhysicalResidencyDimension,
 };
 
 use crate::physical_runtime::{
@@ -75,9 +75,7 @@ impl<'coordination> SamplingAllocation<'coordination> {
 
     pub(super) fn reserve(&self, requested: u64) -> Result<SamplingBacking, Denial> {
         let Some(bytes) = NonZeroU64::new(requested) else {
-            return Ok(SamplingBacking::Inline(
-                self.owner.ports().allocation_events().snapshot().pool(),
-            ));
+            return Ok(SamplingBacking::Inline);
         };
         let grant = self
             .owner
@@ -118,7 +116,7 @@ impl<'coordination> SamplingAllocation<'coordination> {
 
 #[derive(Debug)]
 pub(in crate::physical_runtime::recovery_freshness::binding) enum SamplingBacking {
-    Inline(PhysicalResidencyIncarnation),
+    Inline,
     Reserved {
         grant: OperationAllocationGrant,
         generation: LifecycleGeneration,
@@ -128,7 +126,7 @@ pub(in crate::physical_runtime::recovery_freshness::binding) enum SamplingBackin
 impl SamplingBacking {
     pub(super) fn grant(&self) -> Option<&OperationAllocationGrant> {
         match self {
-            Self::Inline(_) => None,
+            Self::Inline => None,
             Self::Reserved { grant, .. } => Some(grant),
         }
     }
@@ -140,13 +138,12 @@ impl SamplingBacking {
     /// Scratch must already be disposed; only result capacities remain live.
     pub(super) fn shrink_to(&mut self, retained: u64) -> Result<(), Denial> {
         match self {
-            Self::Inline(_) if retained == 0 => Ok(()),
-            Self::Inline(_) => Err(Denial::BackingMismatch),
+            Self::Inline if retained == 0 => Ok(()),
+            Self::Inline => Err(Denial::BackingMismatch),
             Self::Reserved { grant, generation } => {
                 if retained > grant.bytes() {
                     return Err(Denial::BackingMismatch);
                 }
-                let pool = grant.observation().pool();
                 grant
                     .try_resize(retained)
                     .map_err(|cause| Denial::Backing {
@@ -156,7 +153,7 @@ impl SamplingBacking {
                         ),
                     })?;
                 if retained == 0 {
-                    *self = Self::Inline(pool);
+                    *self = Self::Inline;
                 }
                 Ok(())
             }

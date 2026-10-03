@@ -23,6 +23,7 @@ impl PhysicalRecordSubmission {
         manifest: &DropSetManifestV3,
         placement: AdmittedRecordPlacementPolicy,
         allocation: &crate::physical_runtime::BlobPhysicalAllocation<'_>,
+        directory_encoded_bytes: Option<u64>,
     ) -> Result<ReleasedControlArenaReservations, PhysicalMutationPreparationOutcome> {
         let Some(director) = self.director.upgrade() else {
             return Err(TransitionOutcome::stale(
@@ -30,7 +31,13 @@ impl PhysicalRecordSubmission {
             )
             .into());
         };
-        director.reserve_released_control_placements(admitted, manifest, placement, allocation)
+        director.reserve_released_control_placements(
+            admitted,
+            manifest,
+            placement,
+            allocation,
+            directory_encoded_bytes,
+        )
     }
 
     pub(in crate::physical_runtime) fn prepare_released_reclaim_manifest(
@@ -97,6 +104,10 @@ impl PhysicalRecordSubmission {
         control_placement: ReleasedControlArenaPlacement,
         reservation_record: PersistedRecordIdentity,
         reservation_frame_sha256: [u8; 32],
+        directory_rebinding: Option<(
+            crate::physical_runtime::record_serving::PreparedReleasedDirectoryRebinding,
+            Vec<u8>,
+        )>,
         placement: AdmittedRecordPlacementPolicy,
         request: PhysicalMutationRequest,
     ) -> PhysicalMutationPreparationOutcome {
@@ -112,6 +123,7 @@ impl PhysicalRecordSubmission {
             control_placement,
             reservation_record,
             reservation_frame_sha256,
+            directory_rebinding,
             placement,
             request,
         )

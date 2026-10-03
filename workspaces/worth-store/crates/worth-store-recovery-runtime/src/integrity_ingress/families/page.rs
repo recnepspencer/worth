@@ -26,6 +26,38 @@ pub(crate) fn admit_page_projection(
     expected_segment: worth_store_physical_format::RecordArtifactFile,
     trace: &mut super::super::RecoveryIntegrityIngressTrace,
 ) -> Result<PageFrameProjection, RecoveryIntegrityIngressRejection> {
+    let admitted = admit_page_frame(observed, scope, expected_segment, trace)?;
+    Ok(admitted.project(trace.counters_mut()))
+}
+
+/// Extract only the exact selected record from the integrity-admitted page.
+pub(crate) fn admit_inline_record_payload<'media>(
+    observed: &'media ObservedRecoveryArtifact,
+    scope: PhysicalArtifactScope,
+    expected_segment: worth_store_physical_format::RecordArtifactFile,
+    placement: worth_store_physical_format::DurableInlineRecordPlacement,
+    trace: &mut super::super::RecoveryIntegrityIngressTrace,
+) -> Result<&'media [u8], RecoveryIntegrityIngressRejection> {
+    let admitted = admit_page_frame(observed, scope, expected_segment, trace)?;
+    let input = admitted
+        .source
+        .input()
+        .map_err(|rejection| trace.reject(scope, rejection))?;
+    let record = admitted
+        .validated
+        .project_record(input, placement)
+        .map_err(|_| trace.reject(scope, RecoveryIntegrityIngressRejection::ScopeMismatch))?;
+    trace.counters_mut().record_owner_projection();
+    trace.counters_mut().record_owner_decoder();
+    Ok(&input.bytes()[record.payload_range()])
+}
+
+fn admit_page_frame<'media>(
+    observed: &'media ObservedRecoveryArtifact,
+    scope: PhysicalArtifactScope,
+    expected_segment: worth_store_physical_format::RecordArtifactFile,
+    trace: &mut super::super::RecoveryIntegrityIngressTrace,
+) -> Result<IntegrityAdmittedPageFrame<'media>, RecoveryIntegrityIngressRejection> {
     if observed.artifact()
         != &worth_store::physical_runtime::RecoveryDiscoveryArtifact::Record(expected_segment)
     {
@@ -43,9 +75,7 @@ pub(crate) fn admit_page_projection(
     );
     trace.retain(attempt.observation());
     match attempt.into_outcome()? {
-        super::super::IntegrityAdmittedRecoveryArtifact::PageFrame(admitted) => {
-            Ok(admitted.project(trace.counters_mut()))
-        }
+        super::super::IntegrityAdmittedRecoveryArtifact::PageFrame(admitted) => Ok(admitted),
         _ => unreachable!("page ingress returns its family-specific admitted variant"),
     }
 }

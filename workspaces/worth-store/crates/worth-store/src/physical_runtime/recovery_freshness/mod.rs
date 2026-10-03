@@ -5,6 +5,7 @@ mod port;
 mod registration;
 
 pub use authority::PhysicalRecoveryFreshnessAuthority;
+#[cfg(test)]
 pub(in crate::physical_runtime) use binding::{
     checkpoint_binding_decode_peak, decode_checkpoint_evidence,
 };

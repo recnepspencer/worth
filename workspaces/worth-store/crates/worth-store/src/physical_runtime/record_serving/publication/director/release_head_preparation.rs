@@ -47,7 +47,10 @@ impl RecordPublicationDirector {
         basis: PreparedReleaseHeadBasis,
         prepared_root: &mut PreparedPhysicalRootProjection,
     ) -> Result<(), RecordAppendError> {
-        let [descriptor_record] = prepared_root.records.as_slice() else {
+        // The descriptor leads the batch; a replacement directory frame, when
+        // present, follows it and is bound by the released rebinding below.
+        let ([descriptor_record] | [descriptor_record, _]) = prepared_root.records.as_slice()
+        else {
             return Err(damaged());
         };
         if prepared_root.source_root != *current_root

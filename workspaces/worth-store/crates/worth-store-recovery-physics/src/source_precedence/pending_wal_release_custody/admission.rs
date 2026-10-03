@@ -85,7 +85,7 @@ impl VerifiedPendingWalReleaseCustody {
             return Err(Denial::DurableWalFate);
         };
         let descriptor_bytes = redo
-            .blob_semantic_record_bytes(projection.operation())
+            .admitted_projection_record_bytes(projection, 0)
             .ok_or(Denial::DurableWalFate)?;
         let BlobRecordV1::ReclaimDescriptorV3(descriptor) =
             decode_blob_record(descriptor_bytes).map_err(|_| Denial::ControlBinding)?

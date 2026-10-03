@@ -71,10 +71,33 @@ pub(super) fn write_operation(
     };
     write_binding(&mut binding_bytes, binding);
     field(target, &binding_bytes);
-    if let PersistedPhysicalRecoveryOperation::RecordsDropped { head_effect, .. } = operation {
+    if let PersistedPhysicalRecoveryOperation::RecordsDropped {
+        head_effect,
+        directory_replacement,
+        ..
+    } = operation
+    {
         if let Some(effect) = head_effect {
             target.push(1);
             field(target, &encode_head_effect(effect));
+        } else {
+            target.push(0);
+        }
+        if let Some(replacement) = directory_replacement {
+            target.push(1);
+            write_previous(target, Some(replacement.expected_previous()));
+            target.extend_from_slice(&replacement.expected_previous_payload_sha256());
+            let next = replacement.next();
+            write_binding(target, next.record());
+            write_publication(target, next.indexed_through());
+            match next.indexed_through_quarantine() {
+                None => target.push(0),
+                Some(None) => target.push(1),
+                Some(Some(record)) => {
+                    target.push(2);
+                    write_record(target, record);
+                }
+            }
         } else {
             target.push(0);
         }
@@ -114,9 +137,49 @@ pub(super) fn read_operation<S: PhysicalRecoveryDecodeStorage>(
                         )?),
                         _ => return Err(PhysicalRecoveryProjectionDenial::Malformed.into()),
                     };
+                    let directory_replacement = match cursor.byte()? {
+                        0 => None,
+                        1 => {
+                            let previous = read_previous(cursor)?
+                                .ok_or(PhysicalRecoveryProjectionDenial::Malformed)?;
+                            let previous_digest = cursor
+                                .take(32)?
+                                .try_into()
+                                .map_err(|_| PhysicalRecoveryProjectionDenial::Malformed)?;
+                            let next_record = read_binding(cursor)?;
+                            let publication = read_publication(cursor)?;
+                            let next = match cursor.byte()? {
+                                0 => PersistedDerivedDirectoryRecordBinding::new(
+                                    next_record,
+                                    publication,
+                                ),
+                                1 => PersistedDerivedDirectoryRecordBinding::new_with_quarantine(
+                                    next_record,
+                                    publication,
+                                    None,
+                                ),
+                                2 => PersistedDerivedDirectoryRecordBinding::new_with_quarantine(
+                                    next_record,
+                                    publication,
+                                    Some(read_record(cursor)?),
+                                ),
+                                _ => return Err(PhysicalRecoveryProjectionDenial::Malformed.into()),
+                            };
+                            Some(
+                                PersistedReleasedDirectoryReplacementV1::new(
+                                    previous,
+                                    previous_digest,
+                                    next,
+                                )
+                                .ok_or(PhysicalRecoveryProjectionDenial::Malformed)?,
+                            )
+                        }
+                        _ => return Err(PhysicalRecoveryProjectionDenial::Malformed.into()),
+                    };
                     PersistedPhysicalRecoveryOperation::RecordsDropped {
                         binding: value,
                         head_effect,
+                        directory_replacement,
                     }
                 }
                 7 => PersistedPhysicalRecoveryOperation::ChunkReused(value),

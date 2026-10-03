@@ -4,7 +4,6 @@ pub(in crate::physical_runtime) struct DurableMaintenanceReceipt {
     payload_digest: [u8; 32],
     interval: (u64, u64, u64, u64, u64, u64),
     frame_digests: Option<([u8; 32], [u8; 32])>,
-    synchronization: crate::physical_runtime::CompletedPhysicalWalBarrier,
 }
 
 impl DurableMaintenanceReceipt {
@@ -12,13 +11,14 @@ impl DurableMaintenanceReceipt {
         payload_digest: [u8; 32],
         interval: (u64, u64, u64, u64, u64, u64),
         frame_digests: Option<([u8; 32], [u8; 32])>,
-        synchronization: crate::physical_runtime::CompletedPhysicalWalBarrier,
+        // Construction requires the completed barrier; the receipt itself
+        // carries only the settled identities.
+        _synchronization: crate::physical_runtime::CompletedPhysicalWalBarrier,
     ) -> Self {
         Self {
             payload_digest,
             interval,
             frame_digests,
-            synchronization,
         }
     }
     pub(in crate::physical_runtime) const fn payload_digest(&self) -> [u8; 32] {
@@ -31,10 +31,5 @@ impl DurableMaintenanceReceipt {
     /// Exact encoded C9 header identity and payload digests after synchronization.
     pub(in crate::physical_runtime) const fn frame_digests(&self) -> Option<([u8; 32], [u8; 32])> {
         self.frame_digests
-    }
-    pub(in crate::physical_runtime) const fn synchronization(
-        &self,
-    ) -> &crate::physical_runtime::CompletedPhysicalWalBarrier {
-        &self.synchronization
     }
 }

@@ -48,8 +48,7 @@ pub use outcome::{
 };
 pub use report::{
     OfflineArtifactDuplicateEvidence, OfflineArtifactFamily, OfflineArtifactObservation,
-    OfflineBlobReclaimSourceKind,
-    OfflineIntegrityReport, OfflineIntegrityReportCompleteness,
+    OfflineBlobReclaimSourceKind, OfflineIntegrityReport, OfflineIntegrityReportCompleteness,
 };
 pub use report_boundary::{
     OfflineIntegrityReportBoundaryDenial, OfflineIntegrityReportDestination,

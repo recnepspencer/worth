@@ -7,5 +7,5 @@ mod windows;
 pub(super) use capability_entries::open;
 #[cfg(windows)]
 pub(super) use windows::open;
-#[cfg(windows)]
+#[cfg(all(windows, feature = "recovery-runtime-owner"))]
 pub(super) use windows::open_with_allocator;

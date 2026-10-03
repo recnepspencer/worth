@@ -6,7 +6,7 @@ use super::super::canonical_membership::ExpectedCanonicalRecord;
 use super::super::canonical_membership_placement::RecordIdentity;
 
 const REDO_DOMAIN: &[u8] = b"store.physical.wal.canonical-redo.v3";
-const CURRENT_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v15";
+const CURRENT_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v16";
 
 #[path = "record_binding/operation.rs"]
 mod operation;

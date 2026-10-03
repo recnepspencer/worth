@@ -81,6 +81,7 @@ impl SelectedWalMediaFingerprint {
     pub(in crate::physical_runtime) fn owned_heap_bytes(&self) -> Option<u64> {
         self.artifacts.owned_heap_bytes()
     }
+    #[cfg(test)]
     pub(in crate::physical_runtime) fn charged_bytes(&self) -> u64 {
         self.artifacts.charged_bytes()
     }

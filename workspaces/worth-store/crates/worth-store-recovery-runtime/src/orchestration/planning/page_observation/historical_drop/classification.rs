@@ -4,9 +4,8 @@ use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
 use worth_store_physical_format::{
-    decode_blob_record, BlobReclaimSourceBasisV1, BlobRecordKind, BlobRecordV1,
-    CurrentPhysicalRecordPlacement, PersistedPhysicalRecoveryOperation,
-    PhysicalRecordFormatDeclaration,
+    decode_blob_record, BlobReclaimSourceBasisV1, BlobRecordV1, CurrentPhysicalRecordPlacement,
+    PersistedPhysicalRecoveryOperation, PhysicalRecordFormatDeclaration,
 };
 use worth_store_recovery_physics::{
     AdmittedPhysicalRedoMembers, PhysicalRedoTarget, PhysicalSourceSelection,
@@ -14,12 +13,10 @@ use worth_store_recovery_physics::{
 };
 
 use crate::integrity_ingress::RecoveryIntegrityIngressTrace;
-use crate::orchestration::planning::{
-    manifest_entry_budget::ManifestEntryBudget, selected_source_inventory::ResidentAllowance,
-};
+use crate::orchestration::planning::manifest_entry_budget::ManifestEntryBudget;
 
-use super::super::{historical_chain, ordered_history, PageObservationFailure};
-use super::{selected_control, source_root, target_record, HistoricalDropEvidence};
+use super::super::{ordered_history, PageObservationFailure};
+use super::{source_root, target_record, HistoricalDropEvidence};
 use crate::entry::HistoricalDropAdmissionStage as Stage;
 use crate::progression::RecoverySelectedSourceInventory;
 
@@ -50,8 +47,7 @@ pub(in crate::orchestration::planning::page_observation) fn classify<'target>(
     let mut remaining = targets.to_vec();
     let mut observations = Vec::new();
     let mut evidence = Vec::new();
-    let mut chain_scratch = 0;
-    let mut control_resident = None;
+    let mut history_scratch = 0;
     let historical_count = redo
         .admitted_drop_members()
         .filter(|(_, fate, projection, _)| {
@@ -61,15 +57,6 @@ pub(in crate::orchestration::planning::page_observation) fn classify<'target>(
                     if binding.candidate_root_generation() <= selected_root.generation())
         })
         .count();
-    let ordered_required = historical_count > 1
-        || redo
-            .admitted_drop_members()
-            .any(|(_, fate, projection, _)| {
-                fate != RecoveryOperationFate::ProvenNoEffect
-                    && matches!(projection.operation(),
-                    PersistedPhysicalRecoveryOperation::RecordsDropped { binding, .. }
-                        if binding.candidate_root_generation() < selected_root.generation())
-            });
     let mut ordered = None;
     let mut ordered_releases = None;
     for (operation, fate, projection, wal_record) in redo.admitted_drop_members() {
@@ -103,8 +90,8 @@ pub(in crate::orchestration::planning::page_observation) fn classify<'target>(
         {
             return Err(invalid(Stage::DescriptorBinding));
         }
-        if ordered_required && ordered.is_none() {
-            let (history, releases, scratch) = ordered_history::admit(
+        if ordered.is_none() {
+            let (admitted, releases, scratch) = ordered_history::admit(
                 discovery,
                 selection,
                 selected_root,
@@ -122,100 +109,37 @@ pub(in crate::orchestration::planning::page_observation) fn classify<'target>(
             if releases.len() != historical_count {
                 return Err(invalid(Stage::OrderedHistory));
             }
-            chain_scratch = chain_scratch.max(scratch);
-            ordered = Some(Arc::new(history));
+            history_scratch = history_scratch.max(scratch);
+            ordered = Some(Arc::new(admitted));
             ordered_releases = Some(releases);
         }
-        let (selected_descriptor, selected_manifest, manifest) = if ordered_required {
-            let release = ordered_releases
-                .as_ref()
-                .and_then(
-                    |releases: &Vec<ordered_history::OrderedReleasedObservation>| {
-                        let mut matches = releases
-                            .iter()
-                            .filter(|release| release.operation == operation);
-                        let value = matches.next()?;
-                        matches.next().is_none().then_some(value)
-                    },
-                )
-                .ok_or_else(|| invalid(Stage::OrderedHistory))?;
-            if release.descriptor != descriptor
-                || release.descriptor_frame.bytes() != wal_record
-                || release.descriptor_frame.record() != binding.record()
-                || release.manifest_frame.record() != base.manifest_record()
-            {
-                return Err(invalid(Stage::OrderedHistory));
-            }
-            (None, None, release.manifest.clone())
-        } else {
-            if control_resident.is_none() {
-                let routes_bytes = u64::try_from(routes.len())
-                    .ok()
-                    .and_then(|count| {
-                        count.checked_mul(
-                            std::mem::size_of::<CurrentPhysicalRecordPlacement>() as u64
-                        )
-                    })
-                    .ok_or_else(|| invalid(Stage::SelectedControls))?;
-                let live = selected_inventory
-                    .owned_heap_bytes()
-                    .and_then(|bytes| bytes.checked_add(routes_bytes))
-                    .and_then(|bytes| bytes.checked_add(trace.owned_heap_bytes()?))
-                    .ok_or_else(|| invalid(Stage::SelectedControls))?;
-                let mut allowance = ResidentAllowance::new(maximum_staging_bytes);
-                allowance
-                    .bytes(live)
-                    .map_err(|_| invalid(Stage::SelectedControls))?;
-                control_resident = Some(allowance);
-            }
-            let resident = control_resident
-                .as_mut()
-                .ok_or_else(|| invalid(Stage::SelectedControls))?;
-            let descriptor_frame = selected_control(
-                discovery,
-                routes,
-                binding.record(),
-                BlobRecordKind::ReclaimDescriptorV3,
-                format,
-                budget,
-                trace,
-                resident,
-            )
-            .ok_or_else(|| invalid(Stage::SelectedControls))?;
-            if descriptor_frame.bytes() != wal_record {
-                return Err(invalid(Stage::SelectedControls));
-            }
-            let manifest_frame = selected_control(
-                discovery,
-                routes,
-                base.manifest_record(),
-                BlobRecordKind::DropSetManifestV3,
-                format,
-                budget,
-                trace,
-                resident,
-            )
-            .ok_or_else(|| invalid(Stage::SelectedControls))?;
-            let Ok(BlobRecordV1::DropSetManifestV3(manifest)) =
-                decode_blob_record(manifest_frame.bytes())
-            else {
-                return Err(invalid(Stage::SelectedControls));
-            };
-            (Some(descriptor_frame), Some(manifest_frame), manifest)
-        };
-        let observed_manifest_sha = if let Some(frame) = selected_manifest.as_ref() {
-            <[u8; 32]>::from(Sha256::digest(frame.bytes()))
-        } else {
-            ordered_releases
-                .as_ref()
-                .and_then(|releases| {
-                    releases
+        // Every historical V3 drop changed the release-custody head, whose
+        // exact effect only the ordered checkpoint-to-selected walk replays.
+        let release = ordered_releases
+            .as_ref()
+            .and_then(
+                |releases: &Vec<ordered_history::OrderedReleasedObservation>| {
+                    let mut matches = releases
                         .iter()
-                        .find(|release| release.operation == operation)
-                })
-                .map(|release| release.manifest_frame.payload_sha256())
-                .ok_or_else(|| invalid(Stage::OrderedHistory))?
-        };
+                        .filter(|release| release.operation == operation);
+                    let value = matches.next()?;
+                    matches.next().is_none().then_some(value)
+                },
+            )
+            .ok_or_else(|| invalid(Stage::OrderedHistory))?;
+        if release.descriptor != descriptor
+            || release.descriptor_frame.bytes() != wal_record
+            || release.descriptor_frame.record() != binding.record()
+            || release.manifest_frame.record() != base.manifest_record()
+            || release.candidate_root_generation != binding.candidate_root_generation()
+        {
+            return Err(invalid(Stage::OrderedHistory));
+        }
+        let history = ordered
+            .clone()
+            .ok_or_else(|| invalid(Stage::OrderedHistory))?;
+        let manifest = release.manifest.clone();
+        let observed_manifest_sha = release.manifest_frame.payload_sha256();
         if manifest.store() != base.store()
             || manifest.reclaim_attempt() != base.reclaim_attempt()
             || manifest.source_basis_digest() != base.source_basis_digest()
@@ -244,65 +168,6 @@ pub(in crate::orchestration::planning::page_observation) fn classify<'target>(
         {
             return Err(invalid(Stage::SourceRoot));
         }
-        let chain = if ordered_required {
-            if ordered_releases.as_ref().is_none_or(
-                |releases: &Vec<ordered_history::OrderedReleasedObservation>| {
-                    releases
-                        .iter()
-                        .filter(|release| {
-                            release.operation == operation
-                                && release.descriptor == descriptor
-                                && release.manifest == manifest
-                                && release.candidate_root_generation
-                                    == binding.candidate_root_generation()
-                        })
-                        .count()
-                        != 1
-                },
-            ) {
-                return Err(invalid(Stage::SourceResultHistory));
-            }
-            None
-        } else if selected_root.generation() > binding.candidate_root_generation() {
-            let mut members = redo
-                .admitted_root_step_members()
-                .filter(|member| member.operation() == operation);
-            let first_member = members
-                .next()
-                .ok_or_else(|| invalid(Stage::SourceResultHistory))?;
-            if members.next().is_some() {
-                return Err(invalid(Stage::SourceResultHistory));
-            }
-            let (chain, scratch) = historical_chain::admit(
-                discovery,
-                selection,
-                selected_root,
-                selected_inventory,
-                routes,
-                first_member,
-                &manifest,
-                redo,
-                format,
-                budget,
-                byte_limit,
-                maximum_entries,
-                maximum_staging_bytes,
-                trace,
-            )
-            .ok_or_else(|| invalid(Stage::SourceResultHistory))?;
-            chain_scratch = chain_scratch.max(scratch);
-            Some(chain)
-        } else {
-            if source
-                .record_count()
-                .checked_sub(u64::from(manifest.count()))
-                .and_then(|count| count.checked_add(1))
-                != Some(selected_root.record_count())
-            {
-                return Err(invalid(Stage::SourceResultHistory));
-            }
-            None
-        };
         let mut matching = Vec::new();
         remaining.retain(|target| {
             let dropped = target_record(target)
@@ -318,42 +183,16 @@ pub(in crate::orchestration::planning::page_observation) fn classify<'target>(
                 stage: Stage::TargetWitness,
                 target: Some(target.identity()),
             };
-            let witness = if let Some(history) = ordered.as_ref() {
-                let release = ordered_releases
-                    .as_ref()
-                    .and_then(|releases| {
-                        releases
-                            .iter()
-                            .find(|release| release.operation == operation)
-                    })
-                    .ok_or_else(invalid_target)?;
-                redo.admit_historical_released_drop_target_with_ordered_history(
+            let witness = redo
+                .admit_historical_released_drop_target_with_ordered_history(
                     selection,
                     target,
                     operation,
                     &release.descriptor_frame,
                     &release.manifest_frame,
-                    history,
+                    &history,
                 )
-            } else if let Some(chain) = chain.as_ref() {
-                redo.admit_historical_released_drop_target_with_chain(
-                    selection,
-                    target,
-                    operation,
-                    selected_descriptor.as_ref().ok_or_else(invalid_target)?,
-                    selected_manifest.as_ref().ok_or_else(invalid_target)?,
-                    chain,
-                )
-            } else {
-                redo.admit_historical_released_drop_target(
-                    selection,
-                    target,
-                    operation,
-                    selected_descriptor.as_ref().ok_or_else(invalid_target)?,
-                    selected_manifest.as_ref().ok_or_else(invalid_target)?,
-                )
-            }
-            .ok_or_else(invalid_target)?;
+                .ok_or_else(invalid_target)?;
             observations.push(
                 RecoveryPageObservation::historical_released_drop(target, witness)
                     .ok_or_else(invalid_target)?,
@@ -364,15 +203,14 @@ pub(in crate::orchestration::planning::page_observation) fn classify<'target>(
             descriptor_record: binding.record(),
             descriptor,
             manifest,
-            chain,
-            ordered_history: ordered.clone(),
+            ordered_history: history,
         });
     }
     Ok((
         observations,
         remaining,
         evidence,
-        chain_scratch,
+        history_scratch,
         ordered_releases,
     ))
 }

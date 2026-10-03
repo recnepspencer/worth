@@ -53,8 +53,7 @@ fn killed_extent_rewrite_before_wal_keeps_the_source_generation() {
     assert_eq!(first, (payload(), 1));
     assert_eq!(settled, first);
     assert_eq!(
-        arena_route::selected_route(&root, c10_phase_five_read::load_identity(parent.path()))
-            .generation,
+        selected_route(&root, c10_phase_five_read::load_identity(parent.path())).generation,
         1
     );
     drop(parent);
@@ -73,8 +72,7 @@ fn killed_wal_durable_extent_rewrite_publishes_the_next_generation_once() {
     );
     assert_eq!(settled, (payload(), 2));
     assert_ne!(killed, directory_snapshot(&root, ARENAS));
-    let route =
-        arena_route::selected_route(&root, c10_phase_five_read::load_identity(parent.path()));
+    let route = selected_route(&root, c10_phase_five_read::load_identity(parent.path()));
     assert_eq!(route.generation, 2);
     assert!(arena_path(&root, route.range).exists());
     drop(parent);
@@ -96,8 +94,7 @@ fn killed_extent_rewrite_after_candidate_data_settles_one_generation() {
         assert_eq!(first, (payload(), selected), "{seam}");
         assert_eq!(settled, (payload(), 2), "{seam}");
         assert_eq!(
-            arena_route::selected_route(&root, c10_phase_five_read::load_identity(parent.path()))
-                .generation,
+            selected_route(&root, c10_phase_five_read::load_identity(parent.path())).generation,
             2
         );
         drop(parent);
@@ -109,8 +106,7 @@ fn a_damaged_recovered_extent_generation_blocks_recovery() {
     let (parent, root) = kill_child("after-wal");
     let (_, settled) = recover_until_settled(parent.path(), &root);
     assert_eq!(settled.1, 2);
-    let route =
-        arena_route::selected_route(&root, c10_phase_five_read::load_identity(parent.path()));
+    let route = selected_route(&root, c10_phase_five_read::load_identity(parent.path()));
     flip_arena_byte(&root, route.range);
     let outcome =
         WorthStoreRecovery::recover(recovery_request_with_limits(&root, ordinary_limits()));
@@ -121,8 +117,7 @@ fn a_damaged_recovered_extent_generation_blocks_recovery() {
 #[test]
 fn a_damaged_source_generation_blocks_recovery_without_a_successor() {
     let (parent, root) = kill_child("after-wal");
-    let route =
-        arena_route::selected_route(&root, c10_phase_five_read::load_identity(parent.path()));
+    let route = selected_route(&root, c10_phase_five_read::load_identity(parent.path()));
     flip_arena_byte(&root, route.range);
     assert_blocked_without_successor(parent.path(), &root);
     drop(parent);
@@ -143,7 +138,7 @@ fn assert_blocked_without_successor(marker: &Path, root: &Path) {
         WorthStoreRecovery::recover(recovery_request_with_limits(root, ordinary_limits()));
     assert!(matches!(outcome, PhysicalRecoveryOutcome::Blocked(_)));
     assert_eq!(
-        arena_route::selected_route(root, c10_phase_five_read::load_identity(marker)).generation,
+        selected_route(root, c10_phase_five_read::load_identity(marker)).generation,
         1
     );
 }
@@ -360,4 +355,21 @@ fn selected(
         extent_payload(root, placement),
         placement.extent_generation(),
     )
+}
+
+/// The one addressed extent the selected root routes for `record`.
+fn selected_route(
+    root: &std::path::Path,
+    record: worth_store_physical_format::PersistedRecordIdentity,
+) -> arena_route::RoutedExtent {
+    let matching = arena_route::selected_routes(root)
+        .into_iter()
+        .filter(|route| route.record == record)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        matching.len(),
+        1,
+        "selected root has one addressed extent for the record"
+    );
+    matching[0]
 }

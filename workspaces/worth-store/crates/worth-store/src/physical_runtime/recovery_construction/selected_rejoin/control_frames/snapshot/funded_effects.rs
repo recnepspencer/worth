@@ -59,6 +59,7 @@ impl FundedHeadEffectSlices {
         Ok(())
     }
 
+    #[cfg(test)]
     pub(in crate::physical_runtime::recovery_construction) fn slices(
         &self,
     ) -> &[SelectedArtifactSlice] {

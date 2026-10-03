@@ -21,6 +21,9 @@ pub(in crate::physical_runtime) struct AdmittedReleasedGenerationDrop {
 }
 
 impl AdmittedReleasedGenerationDrop {
+    pub(in crate::physical_runtime) fn protected_reader(&self) -> &PhysicalRecordReader {
+        &self._reader
+    }
     #[allow(clippy::too_many_arguments)]
     pub(in crate::physical_runtime) fn new(
         reader: PhysicalRecordReader,

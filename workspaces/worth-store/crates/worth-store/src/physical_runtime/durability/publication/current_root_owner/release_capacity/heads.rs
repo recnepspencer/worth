@@ -8,6 +8,7 @@ use worth_store_physical_format::{
     ReleaseCustodyHeadRosterDigestV1, ReleasedDropPredecessorV1,
 };
 
+mod checkpoint_fold;
 mod selection;
 #[cfg(test)]
 #[path = "heads/tests.rs"]
@@ -55,23 +56,28 @@ impl SelectedReleaseHeadStep {
     pub(super) fn mutation(self) -> ReleaseCustodyHeadMutationV1 {
         self.mutation
     }
-
-    pub(super) fn apply(
-        self,
-        roster: &mut SelectedReleaseHeadRoster,
-    ) -> Result<(), ReleaseCertificateCapacityDenial> {
-        roster.apply_transition(self.source_root, self.result_root, self.mutation)
-    }
 }
 
-#[derive(Clone)]
-pub(super) struct SelectedReleaseHeadRoster {
+pub(in crate::physical_runtime::durability::publication::current_root_owner) struct SelectedReleaseHeadRoster
+{
     root: Option<ReleaseCustodyHeadBlockReferenceV1>,
     /// Canonical key order is also the checkpoint roster digest order.
     entries: Vec<ReleaseCustodyHeadEntryV1>,
+    allocation_custody: Option<std::sync::Arc<super::backing::LiveReleaseAllocation>>,
 }
 
 impl SelectedReleaseHeadRoster {
+    pub(super) fn reserve_for_key_live(
+        &mut self,
+        key: ReleaseCustodyHeadKeyV1,
+        window: &mut super::backing::LiveBackingWindow<'_>,
+    ) -> Result<(), ReleaseCertificateCapacityDenial> {
+        if self.head(key).is_none() {
+            window.grow_vec(&mut self.entries, 1)?;
+        }
+        Ok(())
+    }
+
     pub(super) fn len(&self) -> u64 {
         self.entries.len() as u64
     }
@@ -80,6 +86,7 @@ impl SelectedReleaseHeadRoster {
         Self {
             root: None,
             entries: Vec::new(),
+            allocation_custody: None,
         }
     }
 
@@ -103,6 +110,7 @@ impl SelectedReleaseHeadRoster {
             .ok()
     }
 
+    #[cfg(test)]
     pub(super) fn reserve_for_key(
         &mut self,
         key: ReleaseCustodyHeadKeyV1,
@@ -114,6 +122,7 @@ impl SelectedReleaseHeadRoster {
         Ok(())
     }
 
+    #[cfg(test)]
     pub(super) fn from_selected(
         root: Option<ReleaseCustodyHeadBlockReferenceV1>,
         entries: impl IntoIterator<Item = ReleaseCustodyHeadEntryV1>,
@@ -121,6 +130,7 @@ impl SelectedReleaseHeadRoster {
         let mut roster = Self {
             root,
             entries: Vec::new(),
+            allocation_custody: None,
         };
         let mut prior_key = None;
         for entry in entries {
@@ -163,6 +173,7 @@ impl SelectedReleaseHeadRoster {
         let roster = Self {
             root,
             entries: selected,
+            allocation_custody: None,
         };
         roster
             .commitment()
@@ -179,6 +190,7 @@ impl SelectedReleaseHeadRoster {
         Ok(Self {
             root: self.root,
             entries,
+            allocation_custody: None,
         })
     }
 
@@ -229,6 +241,7 @@ impl SelectedReleaseHeadRoster {
         Ok(digest.finish())
     }
 
+    #[cfg(test)]
     pub(super) fn apply_transition(
         &mut self,
         source_root: Option<ReleaseCustodyHeadBlockReferenceV1>,

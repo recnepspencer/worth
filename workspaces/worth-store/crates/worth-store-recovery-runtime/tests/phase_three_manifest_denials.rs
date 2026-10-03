@@ -1,6 +1,7 @@
 #[allow(dead_code)]
 mod phase_three_support;
 
+use phase_three_support::synthetic_topology::publish_synthetic_nonempty_genesis;
 use phase_three_support::*;
 use worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily;
 use worth_store_physical_integrity::{PhysicalDamageCause, PhysicalIntegrityRejection};

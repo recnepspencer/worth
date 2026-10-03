@@ -235,7 +235,7 @@ pub(super) fn resolve(
             source_copy_peak_scratch_bytes: 0,
             historical_publication_reads: 0,
             historical_publication_bytes_read: 0,
-            historical_publication_peak_scratch_bytes: observed.historical_chain_peak_scratch_bytes,
+            historical_publication_peak_scratch_bytes: observed.ordered_history_peak_scratch_bytes,
             candidate_artifact_reads: 0,
             candidate_bytes_read: 0,
             candidate_peak_materialization_bytes: 0,

@@ -17,10 +17,7 @@ pub(crate) enum SelectedCheckpointEvidence {
     Absent,
     Validated {
         sequence: u64,
-        wal_frontier: u64,
-        wal_cutoff: u64,
-        source_root: u64,
-        checkpoint_stream_sha256: [u8; 32],
+        #[cfg(test)]
         release_claim: Option<
             crate::integrity_observation::families::checkpoint::ObservedCheckpointReleaseClaim,
         >,
@@ -32,7 +29,6 @@ pub(super) fn validate(
     root: &Path,
     selected: Option<&OfflineRootManifestFacts>,
     stream: &CheckpointStreamObservation,
-    exact_stream_bytes: &[u8],
     walk: &mut BoundedMediaWalk,
 ) -> SelectedCheckpointEvidence {
     let result = validate_source_root(root, selected, stream, walk);
@@ -51,15 +47,7 @@ pub(super) fn validate(
             }
             SelectedCheckpointEvidence::Validated {
                 sequence,
-                wal_frontier: stream.completed_source.expect("validated source").wal_end,
-                wal_cutoff: stream.completed_cutoff.expect("validated cutoff"),
-                source_root: stream
-                    .completed_source
-                    .expect("validated source")
-                    .root_generation,
-                checkpoint_stream_sha256: crate::integrity_observation::sha256::sha256(
-                    exact_stream_bytes,
-                ),
+                #[cfg(test)]
                 release_claim: stream.completed_release_claim.clone(),
             }
         }

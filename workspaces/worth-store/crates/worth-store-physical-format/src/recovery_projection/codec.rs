@@ -12,6 +12,9 @@ use head_effect::{decode_head_effect, encode_head_effect};
 #[path = "codec/head_effect_tests.rs"]
 mod head_effect_tests;
 mod manifest;
+#[cfg(test)]
+#[path = "codec/released_directory_replacement_tests.rs"]
+mod released_directory_replacement_tests;
 use manifest::{read_manifest, write_manifest};
 mod operation;
 use operation::{read_operation, write_operation};

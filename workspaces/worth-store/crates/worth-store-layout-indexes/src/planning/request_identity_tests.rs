@@ -18,11 +18,14 @@ fn concrete_request_identity_changes_plan_binding_for_equal_shaped_wal_reads() {
     let catalog = crate::bootstrap::test_support::bootstrap_catalog_read_admission();
     let shape = access_planning().point_access();
     let materialization = persisted_lsm_materialization(lifecycle, &catalog).0;
-    let wal_key = |id| crate::keyspace::admit_wal_key(
-        key_domain,
-        WalRecordFamily::DurableMutationIntent,
-        StoreWalRecordIdentity::new(id),
-    ).unwrap();
+    let wal_key = |id| {
+        crate::keyspace::admit_wal_key(
+            key_domain,
+            WalRecordFamily::DurableMutationIntent,
+            StoreWalRecordIdentity::new(id),
+        )
+        .unwrap()
+    };
     let first_key = wal_key(7);
     let second_key = wal_key(8);
 

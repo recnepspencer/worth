@@ -138,7 +138,6 @@ impl RecordPublicationDirector {
         )));
         let session = ExtentCopySession {
             producer,
-            placement,
             prepared: prepared.mark_extent_copy(root.generation(), selected),
             operation,
             source_root: root.generation(),

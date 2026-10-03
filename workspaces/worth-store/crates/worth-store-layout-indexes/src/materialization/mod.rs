@@ -17,20 +17,19 @@ mod watermark;
 
 pub use admission::{
     btree_publication_materialization_admission_cases,
-    catalog_root_materialization_admission_cases,
-    imported_blob_materialization_admission_cases, lsm_lookup_materialization_admission_cases,
-    lsm_publication_materialization_admission_cases, lsm_replay_materialization_admission_cases,
-    AdmittedLayoutMaterialization,
+    catalog_root_materialization_admission_cases, imported_blob_materialization_admission_cases,
+    lsm_lookup_materialization_admission_cases, lsm_publication_materialization_admission_cases,
+    lsm_replay_materialization_admission_cases, AdmittedLayoutMaterialization,
     BTreePublicationMaterializationAdmissionCaseId,
     BTreePublicationMaterializationAdmissionOutcome, BTreePublicationMaterializationAdmissionView,
-    CatalogRootMaterializationAdmissionCaseId,
-    CatalogRootMaterializationAdmissionOutcome, CatalogRootMaterializationAdmissionView,
-    ImportedBlobMaterializationAdmissionCaseId, ImportedBlobMaterializationAdmissionOutcome,
-    ImportedBlobMaterializationAdmissionView, LsmLookupMaterializationAdmissionCaseId,
-    LsmLookupMaterializationAdmissionOutcome, LsmLookupMaterializationAdmissionView,
-    LsmPublicationMaterializationAdmissionCaseId, LsmPublicationMaterializationAdmissionOutcome,
-    LsmPublicationMaterializationAdmissionView, LsmReplayMaterializationAdmissionCaseId,
-    LsmReplayMaterializationAdmissionOutcome, LsmReplayMaterializationAdmissionView,
+    CatalogRootMaterializationAdmissionCaseId, CatalogRootMaterializationAdmissionOutcome,
+    CatalogRootMaterializationAdmissionView, ImportedBlobMaterializationAdmissionCaseId,
+    ImportedBlobMaterializationAdmissionOutcome, ImportedBlobMaterializationAdmissionView,
+    LsmLookupMaterializationAdmissionCaseId, LsmLookupMaterializationAdmissionOutcome,
+    LsmLookupMaterializationAdmissionView, LsmPublicationMaterializationAdmissionCaseId,
+    LsmPublicationMaterializationAdmissionOutcome, LsmPublicationMaterializationAdmissionView,
+    LsmReplayMaterializationAdmissionCaseId, LsmReplayMaterializationAdmissionOutcome,
+    LsmReplayMaterializationAdmissionView,
 };
 pub(crate) use coverage::LayoutCoverageWitness;
 pub use coverage_basis::AdmittedCoverageBasis;

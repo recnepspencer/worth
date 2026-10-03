@@ -124,11 +124,10 @@ pub use publication::CertificationPhysicalRecordSubmission;
 pub use publication::RecordPublicationStage;
 pub(in crate::physical_runtime) use publication::{
     AdmittedPublicationRetention, AdoptedExtentCopy, CompletedExtentCopy,
-    ExtentCopySynchronization, ExtentCopyWriteEvidence, PlannedPhysicalMutationParts,
-    PreparedDerivedDirectoryBasis, PreparedPhysicalMutationContext, PreparedPhysicalRootCandidate,
-    PreparedRecordCompletionProjection, RecordPublicationDirector, RecordPublicationFoundation,
-    SelectedBlobManifestPin, SelectedBlobManifestPinDenial, SelectedBlobManifestPins,
-    WrittenRootPublicationCandidate,
+    PlannedPhysicalMutationParts, PreparedDerivedDirectoryBasis, PreparedPhysicalMutationContext,
+    PreparedPhysicalRootCandidate, PreparedRecordCompletionProjection,
+    PreparedReleasedDirectoryRebinding, PreparedReleasedDropBasis, RecordPublicationDirector,
+    RecordPublicationFoundation, SelectedBlobManifestPins, WrittenRootPublicationCandidate,
 };
 pub use publication::{
     InlineArtifactRewritePlanDenial, PhysicalArenaEvacuationPreparationOutcome,

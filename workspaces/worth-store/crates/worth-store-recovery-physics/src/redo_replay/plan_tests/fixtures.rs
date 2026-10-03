@@ -294,7 +294,7 @@ pub(super) fn replace_projection_domain(bytes: &mut Vec<u8>, replacement: &[u8])
     let domain_len = usize::try_from(declared).expect("fixture domain length fits usize");
     assert_eq!(
         &bytes[8..8 + domain_len],
-        b"store.physical.recovery-projection.v15"
+        b"store.physical.recovery-projection.v16"
     );
     bytes.splice(8..8 + domain_len, replacement.iter().copied());
     bytes[..8].copy_from_slice(&(replacement.len() as u64).to_le_bytes());

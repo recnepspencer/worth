@@ -21,6 +21,7 @@ pub(crate) struct ObservedCheckpointReleaseClaim {
 #[derive(Clone)]
 enum ReleaseClaimKind {
     Released {
+        #[cfg(test)]
         batches: Vec<Batch>,
         accumulator: Accumulator,
     },
@@ -188,6 +189,7 @@ impl CertificateState {
                 }
                 Ok(Some(ObservedCheckpointReleaseClaim {
                     kind: ReleaseClaimKind::Released {
+                        #[cfg(test)]
                         batches: self.batches,
                         accumulator,
                     },

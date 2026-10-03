@@ -21,6 +21,7 @@ impl ArtifactTreeDirectoryEntry {
         self.entry_type
     }
 
+    #[cfg(any(test, feature = "recovery-runtime-owner"))]
     pub(crate) fn into_parts(self) -> (OsString, NamespaceEntryType) {
         (self.name, self.entry_type)
     }

@@ -22,7 +22,7 @@ use super::super::super::{
     SelectedMediaRejoinDenial as Denial, MAX_DISCOVERY_BYTES, MAX_DISCOVERY_ENTRIES,
 };
 use super::super::{addressed_root, delta, head_effect_media};
-use super::{controls, member_projection, verify_delta_with_storage};
+use super::{controls, directory_media, member_projection, verify_delta_with_storage};
 use crate::physical_runtime::{
     IntegrityAdmittedRecoveryWalFrame, PhysicalRecoveryReadAllocation,
     StoreRecoveryBindingFreshnessSample,
@@ -205,8 +205,21 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn verif
             source: &source.root,
             result: &result.root,
         })?;
+        let directory = directory_media::verify_edge_with_storage(
+            &mut discovery,
+            &source.root,
+            &source_snapshot,
+            &result.root,
+            &result_snapshot,
+            edge.transition(),
+            format,
+            &mut storage,
+        )?;
         let mut fingerprint = source.fingerprint;
         fingerprint.extend_with_storage(result.fingerprint, &mut storage)?;
+        if let Some(directory) = directory {
+            fingerprint.extend_with_storage(directory, &mut storage)?;
+        }
         fingerprint.extend_with_storage(source_snapshot.fingerprint, &mut storage)?;
         fingerprint.extend_with_storage(result_snapshot.fingerprint, &mut storage)?;
         fingerprint.extend_with_storage(observed_head.into_fingerprint(), &mut storage)?;

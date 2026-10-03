@@ -16,7 +16,7 @@ use worth_store_blob_chunks::BlobChunkSize;
 use worth_store_physical_format::{decode_blob_record, BlobAbandonmentReasonV1, BlobRecordV1};
 
 #[path = "../physical_record_journeys/durability_admission/independent_wal_oracle/segment_inventory.rs"]
-mod wal_oracle;
+pub(crate) mod wal_oracle;
 
 use super::{
     blob_abort::assert_resume_abandoned,

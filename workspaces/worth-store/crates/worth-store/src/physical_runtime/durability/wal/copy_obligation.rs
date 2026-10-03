@@ -29,6 +29,7 @@ impl RetainedExtentCopyObligation {
     pub(in crate::physical_runtime) fn intent_lsn(self) -> u64 {
         self.start
     }
+    #[cfg(test)]
     pub(in crate::physical_runtime) fn wal_interval(self) -> (u64, u64, u64, u64) {
         (self.segment, self.generation, self.start, self.end)
     }

@@ -2,8 +2,10 @@
 //! empty counter on reopen. The pre-effect lease cutover waits for C8's sealed
 //! checkpoint-plus-tail ledger and the typed tag7 encoded-size contract.
 
+mod admission;
 pub(super) mod backing;
 mod charge;
+pub(super) mod checkpoint_backing;
 mod checkpoint_commit;
 mod commit;
 mod event;
@@ -25,12 +27,12 @@ use worth_store_physical_format::{
 
 use super::certificate_capacity::CheckpointCustodyOrigin;
 use super::reclaim::{PhysicalReclaimAttempt, ReclaimFenceState};
-use super::PhysicalCurrentRootOwner;
+
 pub(in crate::physical_runtime) use charge::ReleaseHeadCapacityCharge;
 use event::PendingReleaseEvent;
 pub(in crate::physical_runtime) use heads::SelectedReleaseHeadBasis;
 pub use heads::SelectedReleaseHeadDenial;
-use heads::{SelectedReleaseHeadRoster, SelectedReleaseHeadStep};
+use heads::SelectedReleaseHeadRoster;
 
 const CERTIFICATE_FRAME_OVERHEAD: u64 = 20;
 
@@ -62,7 +64,7 @@ pub(super) struct SelectedReleaseBatchBasis {
 
 pub(super) struct ReleaseCertificatePending {
     pub(super) key: ReleaseCustodyHeadKeyV1,
-    pub(super) root_frame: Vec<u8>,
+    pub(super) root_frame: backing::FundedRootFrame,
     pub(super) needed_records: u16,
     pub(super) worst_case_encoded_bytes: u32,
     pub(super) effect_may_exist: bool,
@@ -172,6 +174,9 @@ pub(in crate::physical_runtime) struct SelectedReleaseCustodyLedger {
     prior_cumulative_digest: [u8; 32],
     prior_tip: Option<ReleasedDropTipProvenanceV1>,
     prior_terminal: bool,
+    // Declared after owned vectors: their backing dies before its grant.
+    allocation_custody: Option<Arc<backing::LiveReleaseAllocation>>,
+    pub(super) checkpoint_backing: Option<Arc<checkpoint_backing::ReusableCheckpointSlot>>,
 }
 
 impl SelectedReleaseCustodyLedger {
@@ -196,30 +201,9 @@ impl SelectedReleaseCustodyLedger {
             prior_cumulative_digest: [0; 32],
             prior_tip: None,
             prior_terminal: false,
+            allocation_custody: None,
+            checkpoint_backing: None,
         }
-    }
-
-    pub(in crate::physical_runtime) const fn used_certificate_records(&self) -> u16 {
-        self.used_records
-    }
-    pub(in crate::physical_runtime) const fn used_certificate_bytes(&self) -> u32 {
-        self.used_bytes
-    }
-    pub(in crate::physical_runtime) const fn cumulative_dropped(&self) -> u64 {
-        self.cumulative_dropped
-    }
-    pub(in crate::physical_runtime) const fn cumulative_digest(&self) -> [u8; 32] {
-        self.cumulative_digest
-    }
-    pub(in crate::physical_runtime) const fn selected_tip(
-        &self,
-    ) -> Option<ReleasedDropTipProvenanceV1> {
-        self.selected_tip
-    }
-    pub(in crate::physical_runtime) const fn checkpoint_identity(
-        &self,
-    ) -> Option<PhysicalCheckpointIdentity> {
-        self.checkpoint
     }
 
     pub(super) fn admits_worst_case(
@@ -277,92 +261,6 @@ impl ReleaseLedgerState {
             Self::Unavailable => None,
             Self::Selected(ledger) => Some(ledger),
         }
-    }
-}
-
-impl PhysicalCurrentRootOwner {
-    /// Released-generation custody needs a selected tag7 basis before any
-    /// subsequent checkpoint. Mark it while the admitted reclaim attempt is
-    /// still pre-effect; no ordinary legacy capture may bypass this handoff.
-    pub(in crate::physical_runtime) fn require_release_certificate_for_attempt(
-        &self,
-        attempt: &PhysicalReclaimAttempt,
-    ) -> Result<(), ReleaseCertificateCapacityDenial> {
-        let mut state = self.lock_publication_state();
-        let fence = self.lock_reclaim();
-        if !fence.as_ref().is_some_and(|active| {
-            active.matches_attempt(attempt.bytes()) && active.is_pre_effect_payload_drop()
-        }) {
-            return Err(ReleaseCertificateCapacityDenial::ReclaimFenceMismatch);
-        }
-        if state.release_ledger.selected().is_none() {
-            return Err(ReleaseCertificateCapacityDenial::SelectedLedgerUnavailable);
-        }
-        if !state
-            .checkpoint_custody
-            .require_release_certificate(attempt.bytes())
-        {
-            return Err(ReleaseCertificateCapacityDenial::ReclaimFenceMismatch);
-        }
-        Ok(())
-    }
-
-    /// Admits the complete release closure and acquires mandatory publication
-    /// backing before the manifest, reservation, descriptor, or root effects.
-    pub(in crate::physical_runtime) fn reserve_release_certificate_capacity(
-        &self,
-        attempt: &PhysicalReclaimAttempt,
-        key: ReleaseCustodyHeadKeyV1,
-        needed_records: u16,
-        worst_case_encoded_bytes: u32,
-        head_charge: ReleaseHeadCapacityCharge,
-    ) -> Result<ReleaseCertificateCapacityLease, ReleaseCertificateCapacityDenial> {
-        let mut state = self.lock_publication_state();
-        let mut fence = self.lock_reclaim();
-        let active = fence
-            .as_mut()
-            .filter(|active| active.matches_attempt(attempt.bytes()))
-            .ok_or(ReleaseCertificateCapacityDenial::ReclaimFenceMismatch)?;
-        if !active.is_pre_effect_payload_drop() || active.release_certificate_pending.is_some() {
-            return Err(ReleaseCertificateCapacityDenial::ReclaimFenceMismatch);
-        }
-        let anchored = state.current_root.tier_epoch_anchor().is_some();
-        let current_head_root = state.current_root.release_custody_head_root();
-        let ledger = state
-            .release_ledger
-            .selected_mut()
-            .ok_or(ReleaseCertificateCapacityDenial::SelectedLedgerUnavailable)?;
-        if !ledger.admits_worst_case(anchored, needed_records, worst_case_encoded_bytes) {
-            return Err(ReleaseCertificateCapacityDenial::CapacityExhausted);
-        }
-        if ledger.effective_heads.root() != current_head_root {
-            return Err(ReleaseCertificateCapacityDenial::SelectedFactMismatch);
-        }
-        let closure_bytes = ledger.head_closure_bytes(key, head_charge)?;
-        let fence_bytes = active.owned_heap_bytes().ok_or_else(|| {
-            ReleaseCertificateCapacityDenial::Resident(
-                crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial::SizeOverflow {
-                    admitted: self.recovery_allocation.byte_limit(),
-                },
-            )
-        })?;
-        let root_frame = ledger.prepare_publication_backing(
-            self.recovery_allocation,
-            closure_bytes,
-            fence_bytes,
-            key,
-        )?;
-        active.release_certificate_pending = Some(ReleaseCertificatePending {
-            key,
-            root_frame,
-            needed_records,
-            worst_case_encoded_bytes,
-            effect_may_exist: false,
-        });
-        Ok(ReleaseCertificateCapacityLease {
-            fence: attempt.certificate_fence(),
-            attempt: attempt.bytes(),
-        })
     }
 }
 

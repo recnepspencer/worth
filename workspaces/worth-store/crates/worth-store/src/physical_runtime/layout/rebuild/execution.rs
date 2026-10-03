@@ -9,7 +9,8 @@ use crate::physical_runtime::{
     layout::{
         admit_directory_retirement, insert_registered_node, inspect_selected_tree_retirement,
         publish_derived_directory, DeferredDerivedRetirementCause, InsertedLayoutTree,
-        PhysicalBTreeIndex, PhysicalIndexPointKey, PhysicalLayoutPagePort, SelectedTreeRetirement,
+        InsertionSource, PhysicalBTreeIndex, PhysicalIndexPointKey, PhysicalLayoutPagePort,
+        SelectedTreeRetirement,
     },
     AdmittedRecordPlacementPolicy, PhysicalMutationDeadline, ServingPhysicalRuntime,
 };
@@ -100,8 +101,8 @@ pub(in crate::physical_runtime) fn rebuild_blob_derived_indexes(
     }
     let mut catalog_root = None;
     let mut dedupe_root = None;
-    let mut catalog_chain: Option<InsertedLayoutTree> = None;
-    let mut dedupe_chain: Option<InsertedLayoutTree> = None;
+    let mut catalog_chain: Option<InsertedLayoutTree<'_>> = None;
+    let mut dedupe_chain: Option<InsertedLayoutTree<'_>> = None;
     for selected in &authority.publications {
         let publication = selected.publication;
         let key = PhysicalIndexPointKey::selected_blob_catalog(
@@ -113,19 +114,17 @@ pub(in crate::physical_runtime) fn rebuild_blob_derived_indexes(
         let inserted_catalog = insert_cell(
             runtime,
             DurableArtifactFamilyId::BlobCatalog,
-            catalog_root,
+            match catalog_chain.take() {
+                Some(chain) => InsertionSource::Continue(chain),
+                None => InsertionSource::Root(catalog_root),
+            },
             key.canonical_bytes().to_vec(),
             encode_record(selected.record).to_vec(),
             placement,
             deadline,
         )?;
         catalog_root = Some(inserted_catalog.root());
-        catalog_chain = Some(match catalog_chain.take() {
-            Some(chain) => chain
-                .chain(inserted_catalog)
-                .map_err(LayoutRebuildFailure::LayoutMutation)?,
-            None => inserted_catalog,
-        });
+        catalog_chain = Some(inserted_catalog);
         traverse_publication(runtime, &authority, *selected, |chunk| {
             if !chunk.original_occurrence {
                 return Ok(());
@@ -156,19 +155,17 @@ pub(in crate::physical_runtime) fn rebuild_blob_derived_indexes(
                 let inserted_dedupe = insert_cell(
                     runtime,
                     DurableArtifactFamilyId::DedupeIndex,
-                    dedupe_root,
+                    match dedupe_chain.take() {
+                        Some(chain) => InsertionSource::Continue(chain),
+                        None => InsertionSource::Root(dedupe_root),
+                    },
                     key.bytes().to_vec(),
                     value.encode().to_vec(),
                     placement,
                     deadline,
                 )?;
                 dedupe_root = Some(inserted_dedupe.root());
-                dedupe_chain = Some(match dedupe_chain.take() {
-                    Some(chain) => chain
-                        .chain(inserted_dedupe)
-                        .map_err(LayoutRebuildFailure::LayoutMutation)?,
-                    None => inserted_dedupe,
-                });
+                dedupe_chain = Some(inserted_dedupe);
             }
             Ok(())
         })?;
@@ -301,15 +298,15 @@ pub(in crate::physical_runtime) fn rebuild_blob_derived_indexes(
     })
 }
 
-pub(in crate::physical_runtime) fn insert_cell(
-    runtime: &ServingPhysicalRuntime,
+pub(in crate::physical_runtime) fn insert_cell<'runtime>(
+    runtime: &'runtime ServingPhysicalRuntime,
     family: DurableArtifactFamilyId,
-    root: Option<PersistedRecordIdentity>,
+    source: InsertionSource<'runtime>,
     key: Vec<u8>,
     value: Vec<u8>,
     placement: AdmittedRecordPlacementPolicy,
     deadline: PhysicalMutationDeadline,
-) -> Result<InsertedLayoutTree, LayoutRebuildFailure> {
+) -> Result<InsertedLayoutTree<'runtime>, LayoutRebuildFailure> {
     let reader = runtime
         .records()
         .map_err(LayoutRebuildFailure::RootProtection)?;
@@ -320,7 +317,7 @@ pub(in crate::physical_runtime) fn insert_cell(
     )
     .map_err(LayoutRebuildFailure::LayoutRead)?;
     let inserted = insert_registered_node(
-        runtime, &port, family, root, key, value, placement, deadline,
+        runtime, &port, family, source, key, value, placement, deadline,
     )
     .map_err(LayoutRebuildFailure::LayoutMutation)?;
     Ok(inserted)

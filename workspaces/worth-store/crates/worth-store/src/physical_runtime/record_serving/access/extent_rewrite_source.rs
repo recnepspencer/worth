@@ -9,8 +9,7 @@ use crate::physical_runtime::record_serving::residency::record_frame_reader::Rec
 use crate::physical_runtime::record_serving::residency::PhysicalResidencyWorkPort;
 use crate::physical_runtime::record_serving::work_semantics::integrity_admission::admit_extent_manifest;
 use crate::physical_runtime::record_serving::{
-    AdmittedPhysicalRecordFormat, AdmittedRecordAccessPolicy, PhysicalRecordId,
-    RecordReadObservation,
+    AdmittedPhysicalRecordFormat, PhysicalRecordId, RecordReadObservation,
 };
 use crate::physical_runtime::LifecycleGeneration;
 
@@ -26,7 +25,6 @@ pub(in crate::physical_runtime::record_serving) struct ExtentRewriteSourceReques
     pub(in crate::physical_runtime::record_serving) residency: PhysicalResidencyWorkPort,
     pub(in crate::physical_runtime::record_serving) store: StableStoreIdentity,
     pub(in crate::physical_runtime::record_serving) format: AdmittedPhysicalRecordFormat,
-    pub(in crate::physical_runtime::record_serving) access: AdmittedRecordAccessPolicy,
     pub(in crate::physical_runtime::record_serving) generation: LifecycleGeneration,
     pub(in crate::physical_runtime::record_serving) allocation:
         &'request worth_store_buffer_pool::OperationAllocationGrant,

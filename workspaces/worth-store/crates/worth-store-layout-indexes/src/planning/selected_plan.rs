@@ -1,9 +1,8 @@
 use super::candidates::EligibleStrategyOperation;
 use super::cost::derive_access_plan_cost;
 use super::decision::{
-    DegradedScanSelectionGrant,
-    LsmCompactionSelectionGrant, LsmLookupSelectionGrant, LsmPublicationSelectionGrant,
-    LsmReplaySelectionGrant,
+    DegradedScanSelectionGrant, LsmCompactionSelectionGrant, LsmLookupSelectionGrant,
+    LsmPublicationSelectionGrant, LsmReplaySelectionGrant,
 };
 use super::plan_identity::AccessPlanIdentityBasis;
 use super::{

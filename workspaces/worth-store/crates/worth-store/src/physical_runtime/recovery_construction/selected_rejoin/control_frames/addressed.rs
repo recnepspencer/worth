@@ -173,7 +173,6 @@ fn read_one(
         kind,
         bytes,
         frame_sha256,
-        witness,
         slices,
     })
 }

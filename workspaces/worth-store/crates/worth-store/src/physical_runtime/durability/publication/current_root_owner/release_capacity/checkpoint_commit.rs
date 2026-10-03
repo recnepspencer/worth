@@ -19,6 +19,29 @@ use crate::physical_runtime::{
 
 mod prefix;
 
+/// The selected checkpoint identity that an authenticated release prefix
+/// folds toward. Only these facts bind the expected tag-7 batches.
+#[derive(Clone, Copy)]
+struct CheckpointPrefixTarget {
+    checkpoint: worth_store_physical_format::PhysicalCheckpointIdentity,
+    root_generation: u64,
+    root_sha256: [u8; 32],
+    head_root: Option<worth_store_physical_format::ReleaseCustodyHeadBlockReferenceV1>,
+}
+
+impl CheckpointPrefixTarget {
+    fn selected(
+        snapshot: &crate::physical_runtime::durability::SelectedCheckpointCustodySnapshot,
+    ) -> Self {
+        Self {
+            checkpoint: snapshot.checkpoint(),
+            root_generation: snapshot.root().generation(),
+            root_sha256: snapshot.root_sha256(),
+            head_root: snapshot.root().release_custody_head_root(),
+        }
+    }
+}
+
 impl PhysicalCurrentRootOwner {
     pub(in crate::physical_runtime) fn commit_selected_checkpoint_custody(
         &self,
@@ -42,29 +65,36 @@ impl PhysicalCurrentRootOwner {
             .release_ledger
             .selected_mut()
             .ok_or(CheckpointCustodyDenial::Unavailable)?;
-        let mut batches = Vec::new();
+        let mut fold_lease = snapshot
+            .storage()
+            .lease_fold()
+            .ok_or(CheckpointCustodyDenial::ReleaseCertificateUnavailable)?;
+        let fold = fold_lease.workspace_mut();
+        fold.batches.clear();
+        let batches = &mut fold.batches;
         let mut accumulator_v2 = None;
         let mut no_release = None;
-        if let Some(certificates) = snapshot.certificates() {
-            for certificate in certificates.iter() {
-                if certificate.kind() != CheckpointCertificateKind::ReleasedDrop {
-                    continue;
+        for certificate in snapshot.certificates().iter() {
+            if certificate.kind() != CheckpointCertificateKind::ReleasedDrop {
+                continue;
+            }
+            match ReleaseCheckpointCertificateV1::decode(certificate.payload())
+                .map_err(|_| CheckpointCustodyDenial::ReleaseCertificateUnavailable)?
+            {
+                ReleaseCheckpointCertificateV1::Batch(batch) if accumulator_v2.is_none() => {
+                    if batches.len() == batches.capacity() {
+                        return Err(CheckpointCustodyDenial::ReleaseCertificateUnavailable);
+                    }
+                    batches.push(batch)
                 }
-                match ReleaseCheckpointCertificateV1::decode(certificate.payload())
-                    .map_err(|_| CheckpointCustodyDenial::ReleaseCertificateUnavailable)?
+                ReleaseCheckpointCertificateV1::AccumulatorV2(value)
+                    if accumulator_v2.is_none() =>
                 {
-                    ReleaseCheckpointCertificateV1::Batch(batch) if accumulator_v2.is_none() => {
-                        batches.push(batch)
-                    }
-                    ReleaseCheckpointCertificateV1::AccumulatorV2(value)
-                        if accumulator_v2.is_none() =>
-                    {
-                        accumulator_v2 = Some(value)
-                    }
-                    ReleaseCheckpointCertificateV1::NoRelease(value)
-                        if no_release.replace(value).is_none() => {}
-                    _ => return Err(CheckpointCustodyDenial::ReleaseCertificateUnavailable),
+                    accumulator_v2 = Some(value)
                 }
+                ReleaseCheckpointCertificateV1::NoRelease(value)
+                    if no_release.replace(value).is_none() => {}
+                _ => return Err(CheckpointCustodyDenial::ReleaseCertificateUnavailable),
             }
         }
         let Some(accumulator_v2) = accumulator_v2 else {
@@ -93,7 +123,10 @@ impl PhysicalCurrentRootOwner {
             if marker != expected {
                 return Err(CheckpointCustodyDenial::ReleaseCertificateUnavailable);
             }
-            let marker_payload_sha256: [u8; 32] = Sha256::digest(marker.encode()).into();
+            fold.scratch = marker
+                .encode_in_reserved(std::mem::take(&mut fold.scratch))
+                .ok_or(CheckpointCustodyDenial::ReleaseCertificateUnavailable)?;
+            let marker_payload_sha256: [u8; 32] = Sha256::digest(&fold.scratch).into();
             ledger.no_release_marker = Some(SelectedNoReleaseMarkerBasis::Selected {
                 checkpoint: snapshot.checkpoint(),
                 root_sha256: snapshot.root_sha256(),
@@ -101,7 +134,7 @@ impl PhysicalCurrentRootOwner {
             });
             ledger.used_records = 1;
             ledger.used_bytes =
-                u32::try_from(marker.encode().len() as u64 + CERTIFICATE_FRAME_OVERHEAD)
+                u32::try_from(fold.scratch.len() as u64 + CERTIFICATE_FRAME_OVERHEAD)
                     .expect("fixed no-release certificate fits bounded bytes");
             return Ok(());
         };
@@ -109,15 +142,20 @@ impl PhysicalCurrentRootOwner {
             return Err(CheckpointCustodyDenial::ReleaseCertificateUnavailable);
         }
         let accumulator = accumulator_v2.base();
-        let (checkpoint_heads, selected_events) =
-            prefix::checkpoint_prefix(ledger, snapshot, &batches)?;
+        let selected_events = prefix::checkpoint_prefix_into(
+            ledger,
+            CheckpointPrefixTarget::selected(snapshot),
+            batches,
+            &mut fold.heads,
+        )?;
+        let checkpoint_heads = &fold.heads;
         let (head_count, head_roster_digest) = checkpoint_heads
             .commitment()
             .map_err(|_| CheckpointCustodyDenial::ReleaseCertificateUnavailable)?;
         let batch_digest = if batches.is_empty() {
             [0; 32]
         } else {
-            release_checkpoint_batch_records_digest_v1(&batches)
+            release_checkpoint_batch_records_digest_v1(batches)
                 .map_err(|_| CheckpointCustodyDenial::ReleaseCertificateUnavailable)?
         };
         let (tip, count, digest, terminal) = match batches.last().copied() {
@@ -169,7 +207,22 @@ impl PhysicalCurrentRootOwner {
         if accumulator_v2 != expected_v2 {
             return Err(CheckpointCustodyDenial::ReleaseCertificateUnavailable);
         }
-        let digest: [u8; 32] = Sha256::digest(accumulator_v2.encode()).into();
+        fold.scratch = accumulator_v2
+            .encode_in_reserved(std::mem::take(&mut fold.scratch))
+            .ok_or(CheckpointCustodyDenial::ReleaseCertificateUnavailable)?;
+        let digest: [u8; 32] = Sha256::digest(&fold.scratch).into();
+        // Only after every independent join succeeds does the roster change owners.
+        let mut funded = fold_lease.into_workspace();
+        funded.heads.retain_fold_charge(std::sync::Arc::clone(
+            funded
+                .custody
+                .as_ref()
+                .ok_or(CheckpointCustodyDenial::ReleaseCertificateUnavailable)?,
+        ));
+        let checkpoint_heads =
+            std::mem::replace(&mut funded.heads, super::SelectedReleaseHeadRoster::empty());
+        // The decoded batches and scratch die now; their grant remains with the roster.
+        drop(funded);
         ledger.pending_events.drain(..selected_events);
         ledger.checkpoint_heads = checkpoint_heads;
         ledger.prior_head_count = head_count;
@@ -194,14 +247,14 @@ impl PhysicalCurrentRootOwner {
 }
 
 fn expected_batch(
-    snapshot: &crate::physical_runtime::durability::SelectedCheckpointCustodySnapshot,
+    target: CheckpointPrefixTarget,
     ordinal: usize,
     basis: SelectedReleaseBatchBasis,
 ) -> Result<ReleaseCheckpointBatchV1, CheckpointCustodyDenial> {
     ReleaseCheckpointBatchV1::new(
-        snapshot.checkpoint(),
-        snapshot.root().generation(),
-        snapshot.root_sha256(),
+        target.checkpoint,
+        target.root_generation,
+        target.root_sha256,
         u16::try_from(ordinal).expect("bounded batch ordinal"),
         basis.descriptor_record,
         basis.descriptor_frame_sha256,

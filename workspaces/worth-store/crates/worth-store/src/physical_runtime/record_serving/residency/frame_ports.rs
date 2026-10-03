@@ -149,6 +149,15 @@ impl RecordFramePorts {
             .capture_next_dirty_generation_slice(session, allocation)
     }
 
+    pub(in crate::physical_runtime) fn checkpoint_capture_window(
+        &self,
+        session: &PhysicalDirtyGenerationCaptureSession,
+        maximum: std::num::NonZeroU64,
+    ) -> Result<MaintenanceAllocationGrant, PhysicalResidencyDenial> {
+        self.pool
+            .begin_dirty_generation_capture_allocation(session, maximum)
+    }
+
     #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime::record_serving) fn begin_foreground_read_operation(
         &self,

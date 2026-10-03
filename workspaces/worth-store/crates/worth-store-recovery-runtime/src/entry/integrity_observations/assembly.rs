@@ -36,6 +36,7 @@ impl WalIntegrityObservationBuilder {
         self.roster.push_reserved(observation);
     }
 
+    #[cfg(test)]
     pub(crate) fn len(&self) -> usize {
         self.roster.len()
     }

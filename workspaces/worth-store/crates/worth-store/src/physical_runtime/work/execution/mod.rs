@@ -5,9 +5,9 @@ mod outcome;
 pub(super) mod settlement;
 
 pub(in crate::physical_runtime) use command::{
-    PhysicalCheckpointExecutorCommand, PhysicalMetadataExecutorCommand,
-    PhysicalPublicationExecutorCommand, PhysicalReadExecutorCommand,
-    PhysicalResidencyWritebackExecutorCommand, PhysicalRetryPayload,
+    PhysicalCheckpointCommandPayload, PhysicalCheckpointExecutorCommand,
+    PhysicalMetadataExecutorCommand, PhysicalPublicationExecutorCommand,
+    PhysicalReadExecutorCommand, PhysicalResidencyWritebackExecutorCommand, PhysicalRetryPayload,
     PhysicalWalAppendExecutorCommand, PhysicalWalBarrierExecutorCommand,
     PhysicalWalFrameCompletionBinding, PhysicalWalReclamationExecutorCommand,
     PhysicalWalSegmentCreateExecutorCommand, PhysicalWriteExecutorCommand,

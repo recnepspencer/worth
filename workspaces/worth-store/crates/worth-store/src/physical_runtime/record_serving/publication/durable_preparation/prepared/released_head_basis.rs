@@ -5,6 +5,32 @@ use worth_store_physical_format::{
 };
 
 use super::PreparedPhysicalMutation;
+use super::PreparedReleasedDirectoryRebinding;
+
+#[derive(Clone, Copy)]
+pub(in crate::physical_runtime) struct PreparedReleasedDropBasis {
+    head: PreparedReleaseHeadBasis,
+    directory: Option<PreparedReleasedDirectoryRebinding>,
+}
+
+impl PreparedReleasedDropBasis {
+    pub(in crate::physical_runtime) const fn new(
+        head: PreparedReleaseHeadBasis,
+        directory: Option<PreparedReleasedDirectoryRebinding>,
+    ) -> Self {
+        Self { head, directory }
+    }
+
+    pub(in crate::physical_runtime) const fn head(self) -> PreparedReleaseHeadBasis {
+        self.head
+    }
+
+    pub(in crate::physical_runtime) const fn directory(
+        self,
+    ) -> Option<PreparedReleasedDirectoryRebinding> {
+        self.directory
+    }
+}
 
 /// Fenced Store facts that must survive preparation until the descriptor has
 /// its reserved physical identity and the head transition can be fixed for WAL.
@@ -55,14 +81,6 @@ impl PreparedReleaseHeadBasis {
         self.descriptor
     }
 
-    pub(in crate::physical_runtime) const fn reservation_record(self) -> PersistedRecordIdentity {
-        self.reservation_record
-    }
-
-    pub(in crate::physical_runtime) const fn reservation_frame_sha256(self) -> [u8; 32] {
-        self.reservation_frame_sha256
-    }
-
     /// The descriptor identity is allocated by the existing Store publication
     /// owner. The head entry can then be fixed before its WAL member is encoded.
     pub(in crate::physical_runtime) fn next_entry(
@@ -88,17 +106,22 @@ impl PreparedReleaseHeadBasis {
 }
 
 impl PreparedPhysicalMutation {
-    pub(in crate::physical_runtime) fn with_released_head_basis(
+    pub(in crate::physical_runtime) fn with_released_drop_basis(
         mut self,
-        basis: PreparedReleaseHeadBasis,
+        basis: PreparedReleasedDropBasis,
     ) -> Self {
-        self.released_head_basis = Some(basis);
+        self.released_directory_record = basis.directory().is_some();
+        self.released_drop_basis = Some(basis);
         self
     }
 
-    pub(in crate::physical_runtime) const fn released_head_basis(
+    pub(in crate::physical_runtime) const fn released_drop_basis(
         &self,
-    ) -> Option<PreparedReleaseHeadBasis> {
-        self.released_head_basis
+    ) -> Option<PreparedReleasedDropBasis> {
+        self.released_drop_basis
+    }
+
+    pub(in crate::physical_runtime) const fn released_directory_record(&self) -> bool {
+        self.released_directory_record
     }
 }

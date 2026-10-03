@@ -15,6 +15,8 @@ use worth_store_recovery_runtime::{PhysicalRecoveryOutcome, WorthStoreRecovery};
 mod completed_freshness;
 #[path = "historical_release_only/completed_tip.rs"]
 mod completed_tip;
+#[path = "historical_release_only/head_checkpoint_base.rs"]
+mod head_checkpoint_base;
 
 #[test]
 fn two_released_batches_then_ordinary_append_reopen_with_historical_seal() {

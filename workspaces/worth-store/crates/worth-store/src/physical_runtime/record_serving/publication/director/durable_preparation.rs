@@ -78,34 +78,6 @@ impl RecordPublicationDirector {
         )
     }
 
-    /// A V3 custody frame embeds the already-reserved drop fingerprint. The
-    /// idempotency preimage must therefore remain its exact V2 base frame;
-    /// the selected payload and WAL still bind the full V3 frame separately.
-    pub(super) fn prepare_released_descriptor_append(
-        &self,
-        descriptor: worth_store_physical_format::BlobReclaimDescriptorV3,
-        placement: AdmittedRecordPlacementPolicy,
-        request: PhysicalMutationRequest,
-    ) -> PhysicalMutationPreparationOutcome {
-        let batch = match RecordAppendBatch::builder()
-            .push_owned(descriptor.encode())
-            .build()
-        {
-            Ok(batch) => batch,
-            Err(denial) => return map_record_denial(denial),
-        };
-        self.prepare_durable_append_with_released_fingerprint(
-            batch,
-            placement,
-            crate::physical_runtime::PhysicalManifestCapacityTransition::PreserveCurrent,
-            request,
-            ProtectedAppendKind::Blob(
-                worth_store_physical_format::BlobRecordKind::ReclaimDescriptorV3,
-            ),
-            Some(descriptor),
-        )
-    }
-
     fn prepare_durable_append_with_released_fingerprint(
         &self,
         batch: RecordAppendBatch,

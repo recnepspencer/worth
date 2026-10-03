@@ -222,6 +222,7 @@ fn matched_projection_inner(
     let PersistedPhysicalRecoveryOperation::RecordsDropped {
         binding,
         head_effect,
+        directory_replacement: _,
     } = projection.operation()
     else {
         return Err(Denial::WalFate);

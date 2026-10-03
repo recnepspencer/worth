@@ -138,7 +138,7 @@ impl AdmittedPhysicalRedoMembers {
         let descriptor_member = descriptors.next()?;
         if descriptors.next().is_some()
             || descriptor_member.fate == RecoveryOperationFate::ProvenNoEffect
-            || descriptor_member.records.len() != 1
+            || descriptor_member.records.is_empty()
         {
             return None;
         }

@@ -6,7 +6,7 @@ use worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery;
 use worth_store_physical_format::{
     decode_blob_record, BlobRecordV1, CurrentPhysicalRecordPlacement, PersistedRecordIdentity,
     PhysicalInventoryTranscriptBuilderV1, PhysicalInventoryTranscriptV1,
-    PhysicalRecordFormatDeclaration, RecordArtifactFile,
+    PhysicalRecordFormatDeclaration,
 };
 use worth_store_recovery_physics::VerifiedPendingWalReleaseCustody;
 

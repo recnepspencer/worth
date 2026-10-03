@@ -187,7 +187,7 @@ fn canonical_source_root(mut body: &[u8]) -> u64 {
 
 fn projection_source_root(projection: &[u8]) -> u64 {
     let (domain, body) = field(projection).expect("projection domain");
-    assert_eq!(domain, b"store.physical.recovery-projection.v15");
+    assert_eq!(domain, b"store.physical.recovery-projection.v16");
     let (source, _) = take_u64(body);
     assert_ne!(source, 0);
     source

@@ -1,6 +1,4 @@
-use worth_store_physical_format::{
-    BlobReclaimDescriptorV1, BlobReclaimDescriptorV2, PersistedRecordIdentity,
-};
+use worth_store_physical_format::{BlobReclaimDescriptorV1, BlobReclaimDescriptorV2};
 
 use crate::physical_runtime::durability::{
     AdmittedFailedIngestDrop, AdmittedReleasedGenerationDrop, PhysicalReclaimAttempt,
@@ -17,13 +15,6 @@ impl ReclaimSource<'_> {
         match self {
             Self::Failed(value) => value.attempt(),
             Self::Released(value) => value.attempt(),
-        }
-    }
-
-    pub(super) fn dropped(&self) -> &[PersistedRecordIdentity] {
-        match self {
-            Self::Failed(value) => value.dropped(),
-            Self::Released(value) => value.dropped(),
         }
     }
 }

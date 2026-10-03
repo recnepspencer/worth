@@ -3,21 +3,23 @@
 
 use worth_store_physical_format::ReleaseCheckpointBatchV1;
 
-use super::expected_batch;
+use super::{expected_batch, CheckpointPrefixTarget};
 use crate::physical_runtime::durability::publication::current_root_owner::release_capacity::{
     SelectedReleaseCustodyLedger, SelectedReleaseHeadRoster,
 };
-use crate::physical_runtime::durability::{
-    CheckpointCustodyDenial, SelectedCheckpointCustodySnapshot,
-};
+use crate::physical_runtime::durability::CheckpointCustodyDenial;
 
-pub(super) fn checkpoint_prefix(
+pub(super) fn checkpoint_prefix_into(
     ledger: &SelectedReleaseCustodyLedger,
-    snapshot: &SelectedCheckpointCustodySnapshot,
+    target: CheckpointPrefixTarget,
     batches: &[ReleaseCheckpointBatchV1],
-) -> Result<(SelectedReleaseHeadRoster, usize), CheckpointCustodyDenial> {
-    let mut heads = ledger.checkpoint_heads.clone();
-    let target_root = snapshot.root().release_custody_head_root();
+    heads: &mut SelectedReleaseHeadRoster,
+) -> Result<usize, CheckpointCustodyDenial> {
+    ledger
+        .checkpoint_heads
+        .copy_into_preallocated(heads)
+        .map_err(CheckpointCustodyDenial::from)?;
+    let target_root = target.head_root;
     let mut event_count = 0;
     let mut drop_count = 0;
     while heads.root() != target_root || drop_count != batches.len() {
@@ -30,18 +32,32 @@ pub(super) fn checkpoint_prefix(
             let actual = batches
                 .get(drop_count)
                 .ok_or(CheckpointCustodyDenial::ReleaseCertificateUnavailable)?;
-            if *actual != expected_batch(snapshot, drop_count, basis)? {
+            if *actual != expected_batch(target, drop_count, basis)? {
                 return Err(CheckpointCustodyDenial::ReleaseCertificateUnavailable);
             }
             drop_count += 1;
         }
         event
             .head_step()
-            .apply(&mut heads)
+            .apply_preallocated(heads)
             .map_err(|_| CheckpointCustodyDenial::ReleaseCertificateUnavailable)?;
         event_count += 1;
     }
-    Ok((heads, event_count))
+    Ok(event_count)
+}
+
+// Synthetic semantic fixtures exercise prefix joins, not production admission.
+#[cfg(test)]
+fn checkpoint_prefix(
+    ledger: &SelectedReleaseCustodyLedger,
+    target: CheckpointPrefixTarget,
+    batches: &[ReleaseCheckpointBatchV1],
+) -> Result<(SelectedReleaseHeadRoster, usize), CheckpointCustodyDenial> {
+    let mut heads = ledger
+        .checkpoint_heads
+        .prefix_fixture(ledger.pending_events.len());
+    let count = checkpoint_prefix_into(ledger, target, batches, &mut heads)?;
+    Ok((heads, count))
 }
 
 #[cfg(test)]

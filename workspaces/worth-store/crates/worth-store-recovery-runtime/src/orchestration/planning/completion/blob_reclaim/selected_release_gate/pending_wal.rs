@@ -7,6 +7,8 @@ use crate::progression::PlanningCustody;
 
 #[path = "pending_wal/claim.rs"]
 mod claim;
+#[path = "pending_wal/directory.rs"]
+mod directory;
 #[path = "pending_wal/head_replay.rs"]
 mod head_replay;
 #[path = "pending_wal/historical.rs"]
@@ -80,6 +82,15 @@ pub(super) fn admit(
     } else {
         None
     };
+    let directory_replacement = directory::admit(
+        &context.selection,
+        basis,
+        projection_index,
+        format,
+        &mut context.integrity_trace,
+        &mut discovery,
+        &mut resident,
+    );
     let counters = discovery.counters();
     context.authority.media = discovery.finish();
     observation::record_selected_reads(
@@ -97,6 +108,28 @@ pub(super) fn admit(
         let limit = resident_basis::limit_failure(&context, &resident);
         return Err(context.redo_block(basis.planning_counters(), limit));
     };
+    let directory_replacement = match directory_replacement {
+        Ok(proof) => proof,
+        Err(denial) => {
+            let limit = resident_basis::limit_failure(&context, &resident);
+            return Err(context.block_with_planning_attempt_denial(
+                crate::entry::PhysicalRecoveryBlockKind::RedoPlanning,
+                basis
+                    .planning_counters()
+                    .with_peak_recovery_bytes(resident.peak()),
+                "released-directory-replacement",
+                limit,
+                denial,
+            ));
+        }
+    };
+    let Some(replay) = crate::progression::PendingReleaseReplay::new(
+        &basis.redo.projections()[projection_index],
+        head_replay,
+        directory_replacement,
+    ) else {
+        return Err(context.redo_block(basis.planning_counters(), None));
+    };
     claim::admit(
         context,
         basis,
@@ -104,7 +137,7 @@ pub(super) fn admit(
         member,
         manifest,
         reservation,
-        head_replay,
+        replay,
         resident,
     )
 }

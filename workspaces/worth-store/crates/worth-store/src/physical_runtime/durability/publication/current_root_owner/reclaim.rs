@@ -29,9 +29,10 @@ use crate::physical_runtime::{
     PhysicalMutationIdentity, PhysicalProtectedRootObservation, PhysicalRecordReader,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(in crate::physical_runtime) enum PhysicalBlobReclaimAdmissionDenial {
     Claim(PhysicalBlobSessionClaimDenial),
+    ReleaseCertificateBacking(crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial),
     SourceRootChanged,
     ExternalProtectedReader,
     PendingPublication,
@@ -179,7 +180,9 @@ impl ReclaimFenceState {
             .checked_add(
                 self.release_certificate_pending
                     .as_ref()
-                    .map_or(Some(0), |pending| vector_heap_bytes(&pending.root_frame))?,
+                    .map_or(Some(0), |pending| {
+                        vector_heap_bytes(&pending.root_frame.bytes)
+                    })?,
             )
     }
 

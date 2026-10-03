@@ -1,3 +1,4 @@
+#[cfg(feature = "recovery-runtime-owner")]
 use super::super::{
     listing_admission::change,
     listing_storage::{provider_iterator_storage, provider_path_construction_bytes},
@@ -44,6 +45,7 @@ fn require_extended_absolute_path(path: &Path) -> io::Result<()> {
     }
 }
 
+#[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::filesystem_media::artifact_tree) fn open_with_allocator<
     A: ArtifactTreeListingAllocator,
 >(
@@ -92,6 +94,7 @@ pub(in crate::filesystem_media::artifact_tree) fn open_with_allocator<
     ))
 }
 
+#[cfg(feature = "recovery-runtime-owner")]
 fn provider_failure(error: io::Error) -> ArtifactTreeFailure {
     ArtifactTreeFailure::io(ArtifactTreeFailureKind::DeniedBeforeEffect, &error)
 }

@@ -21,10 +21,10 @@ pub(super) fn validate_release_head_effect(
     else {
         return Ok(());
     };
-    let [record] = records else {
+    let Some(record) = records.first() else {
         return invalid();
     };
-    let [identity] = projection.record_identities() else {
+    let Some(identity) = projection.record_identities().first() else {
         return invalid();
     };
     validate_head_descriptor(record.bytes(), *identity, projection, store, format, effect)

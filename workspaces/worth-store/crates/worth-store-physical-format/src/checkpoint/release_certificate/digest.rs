@@ -45,7 +45,7 @@ pub fn release_checkpoint_batch_records_digest_v1(
                 return Err(ReleaseCheckpointCertificateDenial::InvalidBinding);
             }
         }
-        let encoded = batch.encode();
+        let encoded = batch.encode_fixed();
         digest.update((encoded.len() as u32).to_le_bytes());
         digest.update(encoded);
     }

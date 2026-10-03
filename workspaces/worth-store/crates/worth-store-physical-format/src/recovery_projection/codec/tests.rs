@@ -72,7 +72,7 @@ fn current_domain_roundtrips_frames_and_rejects_retired_domains_before_body() {
         PersistedPhysicalRecoveryProjection::decode(&bytes, limits(), format()),
         Ok(projection),
     );
-    for version in 1..=14 {
+    for version in 1..=15 {
         let retired = with_domain(
             &bytes,
             format!("store.physical.recovery-projection.v{version}").as_bytes(),
@@ -105,6 +105,7 @@ fn current_operation_variants_preserve_exact_binding_and_explicit_unknown_route(
         PersistedPhysicalRecoveryOperation::RecordsDropped {
             binding,
             head_effect: None,
+            directory_replacement: None,
         },
         PersistedPhysicalRecoveryOperation::ChunkReused(binding),
         PersistedPhysicalRecoveryOperation::DedupeQuarantined(binding),

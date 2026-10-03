@@ -30,6 +30,7 @@ pub enum ArtifactTreePathDenial {
 }
 
 impl ArtifactTreeDirectory {
+    #[cfg(feature = "recovery-runtime-owner")]
     pub(crate) fn validate_file_component(component: &str) -> Result<(), ArtifactTreePathDenial> {
         validate_component(component)
     }

@@ -17,8 +17,7 @@ use worth_store_physical_format::{
     decode_blob_record, BlobRecordKind, BlobRecordV1, PersistedRecordIdentity,
 };
 
-#[path = "../physical_record_journeys/durability_admission/independent_wal_oracle/segment_inventory.rs"]
-mod wal_oracle;
+use super::blob_expiry::wal_oracle;
 
 use super::{
     blob_crash::{establish_recovery_frontier, recover_closed_store},

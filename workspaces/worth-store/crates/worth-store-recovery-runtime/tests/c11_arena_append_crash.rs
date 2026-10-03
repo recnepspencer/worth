@@ -13,7 +13,7 @@ use worth_store_recovery_runtime::{PhysicalRecoveryOutcome, WorthStoreRecovery};
 
 const CHILD: &str = "arena_append_after_data_child";
 const MARKER: &str = "C11_ARENA_APPEND_CRASH_MARKER";
-#[path = "c11_arena_crash_support.rs"]
+#[path = "c11_arena_crash_support/mod.rs"]
 mod support;
 use support::*;
 #[path = "c11_arena_append_crash/observation.rs"]

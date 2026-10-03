@@ -84,24 +84,33 @@ impl TierEpochActivationV1 {
     }
 
     pub fn encode(self) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(TIER_EPOCH_ACTIVATION_WIRE_BYTES);
-        bytes.extend_from_slice(&(TIER_EPOCH_ACTIVATION_DOMAIN.len() as u64).to_le_bytes());
-        bytes.extend_from_slice(TIER_EPOCH_ACTIVATION_DOMAIN);
-        bytes.push(match self.phase {
+        self.encode_fixed().to_vec()
+    }
+
+    pub fn encode_fixed(self) -> [u8; TIER_EPOCH_ACTIVATION_WIRE_BYTES] {
+        let mut bytes = [0; TIER_EPOCH_ACTIVATION_WIRE_BYTES];
+        let mut cursor = 0;
+        let mut write = |value: &[u8]| {
+            bytes[cursor..cursor + value.len()].copy_from_slice(value);
+            cursor += value.len();
+        };
+        write(&(TIER_EPOCH_ACTIVATION_DOMAIN.len() as u64).to_le_bytes());
+        write(TIER_EPOCH_ACTIVATION_DOMAIN);
+        write(&[match self.phase {
             TierEpochActivationPhaseV1::Intent => 1,
             TierEpochActivationPhaseV1::Completed => 2,
-        });
-        bytes.extend_from_slice(&self.store);
-        bytes.extend_from_slice(&self.attempt);
-        bytes.extend_from_slice(&self.source_root_generation.to_le_bytes());
-        bytes.extend_from_slice(&self.source_root_sha256);
-        bytes.extend_from_slice(&self.source_free_sha256);
-        bytes.extend_from_slice(&self.tier_epoch_start.to_le_bytes());
-        bytes.extend_from_slice(&self.candidate_root_generation.to_le_bytes());
-        bytes.extend_from_slice(&self.candidate_root_sha256);
-        bytes.extend_from_slice(&self.retained_metadata_bytes.to_le_bytes());
-        bytes.extend_from_slice(&self.publication.to_le_bytes());
-        debug_assert_eq!(bytes.len(), TIER_EPOCH_ACTIVATION_WIRE_BYTES);
+        }]);
+        write(&self.store);
+        write(&self.attempt);
+        write(&self.source_root_generation.to_le_bytes());
+        write(&self.source_root_sha256);
+        write(&self.source_free_sha256);
+        write(&self.tier_epoch_start.to_le_bytes());
+        write(&self.candidate_root_generation.to_le_bytes());
+        write(&self.candidate_root_sha256);
+        write(&self.retained_metadata_bytes.to_le_bytes());
+        write(&self.publication.to_le_bytes());
+        debug_assert_eq!(cursor, TIER_EPOCH_ACTIVATION_WIRE_BYTES);
         bytes
     }
 
@@ -243,6 +252,11 @@ mod tests {
             [1; 16], [2; 16], 3, [4; 32], [5; 32], 7, 4, [6; 32], 4096, 8,
         )
         .unwrap();
+        assert_eq!(intent.encode_fixed().as_slice(), intent.encode());
+        assert_eq!(
+            intent.completed().encode_fixed().as_slice(),
+            intent.completed().encode()
+        );
         assert_eq!(TierEpochActivationV1::decode(&intent.encode()), Ok(intent));
         assert_eq!(
             TierEpochActivationV1::decode(&intent.completed().encode()),

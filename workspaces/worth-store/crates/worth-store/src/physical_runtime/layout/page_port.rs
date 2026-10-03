@@ -42,6 +42,20 @@ impl PhysicalLayoutNodeRead {
 }
 
 impl<'runtime> PhysicalLayoutPagePort<'runtime> {
+    pub(in crate::physical_runtime) fn read_node_from_protected_reader(
+        runtime: &ServingPhysicalRuntime,
+        reader: &PhysicalRecordReader,
+        maximum_node_bytes: u32,
+        record: PersistedRecordIdentity,
+    ) -> Result<PhysicalLayoutNodeRead, PhysicalLayoutPageReadFailure> {
+        let charge = NonZeroU64::new(u64::from(maximum_node_bytes) * 6)
+            .ok_or(PhysicalLayoutPageReadFailure::NodeTooWide)?;
+        let _allocation = runtime
+            .physical_allocations()
+            .admit_layout_read(charge)
+            .map_err(PhysicalLayoutPageReadFailure::Allocation)?;
+        read_node_from_reader(reader, maximum_node_bytes, record)
+    }
     pub(in crate::physical_runtime) fn from_protected_reader(
         runtime: &'runtime ServingPhysicalRuntime,
         reader: PhysicalRecordReader,
@@ -85,34 +99,41 @@ impl<'runtime> PhysicalLayoutPagePort<'runtime> {
         &self,
         record: PersistedRecordIdentity,
     ) -> Result<PhysicalLayoutNodeRead, PhysicalLayoutPageReadFailure> {
-        let limit = RecordByteLimit::new(self.maximum_node_bytes)
-            .expect("an admitted node byte maximum is nonzero");
-        let mut read = self
-            .reader
-            .open(
-                PhysicalRecordId::from_persisted(record),
-                RecordReadLimits::new(limit),
-            )
-            .map_err(PhysicalLayoutPageReadFailure::Read)?;
-        let mut bytes = Vec::new();
-        bytes
-            .try_reserve_exact(self.maximum_node_bytes as usize)
-            .map_err(|_| PhysicalLayoutPageReadFailure::ScratchUnavailable)?;
-        let mut scratch = [0_u8; 8192];
-        loop {
-            let count = read
-                .read_next(&mut scratch)
-                .map_err(PhysicalLayoutPageReadFailure::Stream)?;
-            if count == 0 {
-                return Ok(PhysicalLayoutNodeRead {
-                    bytes,
-                    observation: read.observation(),
-                });
-            }
-            if bytes.len() + count > self.maximum_node_bytes as usize {
-                return Err(PhysicalLayoutPageReadFailure::NodeTooWide);
-            }
-            bytes.extend_from_slice(&scratch[..count]);
+        read_node_from_reader(&self.reader, self.maximum_node_bytes, record)
+    }
+}
+
+fn read_node_from_reader(
+    reader: &PhysicalRecordReader,
+    maximum_node_bytes: u32,
+    record: PersistedRecordIdentity,
+) -> Result<PhysicalLayoutNodeRead, PhysicalLayoutPageReadFailure> {
+    let limit =
+        RecordByteLimit::new(maximum_node_bytes).expect("an admitted node byte maximum is nonzero");
+    let mut read = reader
+        .open(
+            PhysicalRecordId::from_persisted(record),
+            RecordReadLimits::new(limit),
+        )
+        .map_err(PhysicalLayoutPageReadFailure::Read)?;
+    let mut bytes = Vec::new();
+    bytes
+        .try_reserve_exact(maximum_node_bytes as usize)
+        .map_err(|_| PhysicalLayoutPageReadFailure::ScratchUnavailable)?;
+    let mut scratch = [0_u8; 8192];
+    loop {
+        let count = read
+            .read_next(&mut scratch)
+            .map_err(PhysicalLayoutPageReadFailure::Stream)?;
+        if count == 0 {
+            return Ok(PhysicalLayoutNodeRead {
+                bytes,
+                observation: read.observation(),
+            });
         }
+        if bytes.len() + count > maximum_node_bytes as usize {
+            return Err(PhysicalLayoutPageReadFailure::NodeTooWide);
+        }
+        bytes.extend_from_slice(&scratch[..count]);
     }
 }

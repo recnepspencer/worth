@@ -5,7 +5,7 @@ mod completion_projection;
 mod data_image;
 mod director;
 pub(in crate::physical_runtime) use director::extent_copy::{
-    AdoptedExtentCopy, CompletedExtentCopy, ExtentCopySynchronization, ExtentCopyWriteEvidence,
+    AdoptedExtentCopy, CompletedExtentCopy,
 };
 pub use director::extent_copy::{
     PhysicalExtentCopyPhase, PhysicalExtentCopyProgress, PhysicalExtentCopyResolutionProgress,
@@ -27,7 +27,7 @@ pub(in crate::physical_runtime::record_serving) use data_image::ExistingDataFram
 pub use director::CertificationPhysicalRecordSubmission;
 pub(in crate::physical_runtime) use director::{
     AdmittedPublicationRetention, RecordPublicationDirector, RecordPublicationFoundation,
-    SelectedBlobManifestPin, SelectedBlobManifestPinDenial, SelectedBlobManifestPins,
+    SelectedBlobManifestPins,
 };
 pub use director::{
     InlineArtifactRewritePlanDenial, PhysicalArenaEvacuationPreparationOutcome,
@@ -49,7 +49,8 @@ pub use durable_preparation::{
 };
 pub(in crate::physical_runtime) use durable_preparation::{
     PlannedPhysicalMutationParts, PreparedDerivedDirectoryBasis, PreparedPhysicalMutationContext,
-    PreparedReleaseHeadBasis, PreparedReuseDeclarationBasis,
+    PreparedReleaseHeadBasis, PreparedReleasedDirectoryRebinding, PreparedReleasedDropBasis,
+    PreparedReuseDeclarationBasis,
 };
 pub(in crate::physical_runtime::record_serving) use plan::{
     CandidateDataArtifact, PublicationPlan,

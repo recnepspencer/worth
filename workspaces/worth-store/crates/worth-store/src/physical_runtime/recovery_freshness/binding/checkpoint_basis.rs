@@ -19,9 +19,9 @@ pub use decode::StoreRecoveryCheckpointBindingAllocationDenial;
 
 #[cfg(all(test, feature = "certification-test-authority"))]
 mod tests;
-pub(in crate::physical_runtime) use decode::{
-    checkpoint_binding_decode_peak, decode_checkpoint_evidence,
-};
+#[cfg(test)]
+pub(in crate::physical_runtime) use decode::checkpoint_binding_decode_peak;
+pub(in crate::physical_runtime) use decode::decode_checkpoint_evidence;
 
 use super::{
     empty_failure, sample_failure_from_evidence, StoreRecoveryBindingSampleDenial,

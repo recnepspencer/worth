@@ -147,7 +147,11 @@ fn rewrite_expiry_frame(
     let PersistedPhysicalDataFrameSubject::ExtentChunk(coordinate) = old_frame.subject() else {
         panic!("Store blob controls are extent-resident");
     };
-    let (old_payload, format) = decode_extent_chunk(old_frame.bytes(), coordinate).unwrap();
+    let (old_payload, frame_format) = decode_extent_chunk(old_frame.bytes(), coordinate).unwrap();
+    assert_eq!(
+        frame_format, format,
+        "the frame uses the selected root format"
+    );
     assert_eq!(
         old_payload, old_control,
         "projection carries exact terminal bytes"

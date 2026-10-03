@@ -9,8 +9,11 @@ pub(crate) struct NoRelease {
     pub(crate) checkpoint: [u8; 24],
     pub(crate) root_generation: u64,
     pub(crate) root_sha: [u8; 32],
+    #[cfg(test)]
     pub(crate) prior_sequence: u64,
+    #[cfg(test)]
     pub(crate) prior_root_sha: [u8; 32],
+    #[cfg(test)]
     pub(crate) prior_marker_payload_sha: [u8; 32],
 }
 
@@ -35,8 +38,11 @@ pub(super) fn read(cursor: &mut Cursor<'_>) -> Option<NoRelease> {
         checkpoint,
         root_generation,
         root_sha,
+        #[cfg(test)]
         prior_sequence,
+        #[cfg(test)]
         prior_root_sha,
+        #[cfg(test)]
         prior_marker_payload_sha,
     })
 }

@@ -10,6 +10,9 @@ use worth_store_physical_format::{
 use super::inline_segment_plan::InlineSegmentAllocation;
 use crate::physical_runtime::record_serving::publication::append_observation::PublicationObservation;
 
+#[path = "prepared_root_projection/released_directory_rebinding.rs"]
+mod released_directory_rebinding;
+
 /// Record-serving meaning required to project one successor physical root.
 ///
 /// Durability progression carries this value opaquely. Only record-serving
@@ -68,6 +71,8 @@ pub(in crate::physical_runtime::record_serving) struct DerivedRootUpdates {
         Option<Option<DerivedFamilyRootDirectoryBinding>>,
     pub(in crate::physical_runtime::record_serving) indexed_through_quarantine:
         Option<Option<PersistedRecordIdentity>>,
+    pub(in crate::physical_runtime::record_serving) released_directory_rebinding:
+        Option<crate::physical_runtime::record_serving::PreparedReleasedDirectoryRebinding>,
 }
 
 impl PreparedPhysicalRootProjection {
@@ -89,6 +94,12 @@ impl PreparedPhysicalRootProjection {
         &self,
     ) -> Option<&worth_store_physical_format::PersistedReleaseCustodyHeadEffectV1> {
         self.release_head_effect.as_ref()
+    }
+
+    pub(in crate::physical_runtime) const fn recovery_released_directory_rebinding(
+        &self,
+    ) -> Option<crate::physical_runtime::record_serving::PreparedReleasedDirectoryRebinding> {
+        self.derived_updates.released_directory_rebinding
     }
 
     pub(in crate::physical_runtime) fn set_latest_blob_publication(

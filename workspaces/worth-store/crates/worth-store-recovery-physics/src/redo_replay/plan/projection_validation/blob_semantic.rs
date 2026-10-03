@@ -101,7 +101,29 @@ pub(super) fn validate_blob_semantic(
             }
             *binding
         }
-        PersistedPhysicalRecoveryOperation::RecordsDropped { binding, .. } => {
+        PersistedPhysicalRecoveryOperation::RecordsDropped {
+            binding,
+            directory_replacement,
+            ..
+        } => {
+            if let Some(replacement) = directory_replacement {
+                let next = replacement.next();
+                if identity == next.record().record() {
+                    if payload_kind.is_some() {
+                        return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
+                    }
+                    let decoded = DerivedFamilyRootDirectoryV1::decode(bytes)
+                        .map_err(|_| PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
+                    if decoded.indexed_through_blob_publication().is_some()
+                        || next.indexed_through_quarantine().is_some_and(|expected| {
+                            decoded.indexed_through_quarantine() != expected
+                        })
+                    {
+                        return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
+                    }
+                    return validate_binding(next.record(), identity, bytes, projection);
+                }
+            }
             if !matches!(
                 payload_kind,
                 Some(
@@ -132,6 +154,15 @@ pub(super) fn validate_blob_semantic(
             directory.record()
         }
     };
+    validate_binding(binding, identity, bytes, projection)
+}
+
+fn validate_binding(
+    binding: worth_store_physical_format::PersistedBlobSemanticRecordBinding,
+    identity: PersistedRecordIdentity,
+    bytes: &[u8],
+    projection: &PersistedPhysicalRecoveryProjection,
+) -> Result<(), PhysicalRedoPlanningDenial> {
     if binding.record() != identity
         || projection.source_root_generation().checked_add(1)
             != Some(binding.candidate_root_generation())

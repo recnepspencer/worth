@@ -65,11 +65,11 @@ fn tier_basis_is_rebound_to_exact_checkpoint_identity_and_root() {
     .published_identity();
     let first = PhysicalCheckpointIdentity::new(store, NonZeroU64::new(1).unwrap());
     let second = PhysicalCheckpointIdentity::new(store, NonZeroU64::new(2).unwrap());
-    let first_payload = basis.bind(first, &root, [8; 32]).unwrap();
-    let second_payload = basis.bind(second, &root, [8; 32]).unwrap();
-    assert_ne!(first_payload.payload(), second_payload.payload());
+    let first_payload = basis.bind(first, &root, [8; 32]).unwrap().encode();
+    let second_payload = basis.bind(second, &root, [8; 32]).unwrap().encode();
+    assert_ne!(first_payload, second_payload);
     assert_eq!(
-        TierEpochCheckpointCertificateV1::decode(first_payload.payload())
+        TierEpochCheckpointCertificateV1::decode(&first_payload)
             .unwrap()
             .checkpoint(),
         first

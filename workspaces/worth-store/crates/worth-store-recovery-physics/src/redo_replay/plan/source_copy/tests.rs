@@ -76,7 +76,7 @@ fn borrowed_current_copy_admission_keeps_exact_member_and_shape() {
 fn copy_rejects_foreign_operation_final_lsn_and_unbounded_memory() {
     let (format, member) = fixture(RecoveryOperationFate::Indeterminate);
     let mut unsupported = member.clone();
-    let domain = b"store.physical.recovery-projection.v15";
+    let domain = b"store.physical.recovery-projection.v16";
     let domain_offset = unsupported
         .canonical_redo
         .windows(domain.len())

@@ -99,8 +99,9 @@ impl TierEpochCheckpointCertificateV1 {
         intent_frame: TierEpochWalFrameWitnessV1,
         completed_frame: TierEpochWalFrameWitnessV1,
     ) -> Result<Self, TierEpochCheckpointCertificateDenial> {
-        let intent_payload_digest: [u8; 32] = Sha256::digest(intent.encode()).into();
-        let completed_payload_digest: [u8; 32] = Sha256::digest(intent.completed().encode()).into();
+        let intent_payload_digest: [u8; 32] = Sha256::digest(intent.encode_fixed()).into();
+        let completed_payload_digest: [u8; 32] =
+            Sha256::digest(intent.completed().encode_fixed()).into();
         if checkpoint.store_identity().bytes() != intent.store()
             || root_generation < intent.candidate_root_generation()
             || root_sha256 == [0; 32]
@@ -129,7 +130,16 @@ impl TierEpochCheckpointCertificateV1 {
     }
 
     pub fn encode(self) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(WIRE_BYTES);
+        self.encode_in_reserved(Vec::with_capacity(WIRE_BYTES))
+            .expect("fixed tier certificate wire capacity")
+    }
+
+    /// Reuses caller-admitted backing; insufficient capacity performs no write.
+    pub fn encode_in_reserved(self, mut bytes: Vec<u8>) -> Option<Vec<u8>> {
+        if bytes.capacity() < WIRE_BYTES {
+            return None;
+        }
+        bytes.clear();
         bytes.extend_from_slice(&(DOMAIN.len() as u64).to_le_bytes());
         bytes.extend_from_slice(DOMAIN);
         let mut identity = [0; 24];
@@ -138,11 +148,11 @@ impl TierEpochCheckpointCertificateV1 {
         bytes.extend_from_slice(&self.root_generation.to_le_bytes());
         bytes.extend_from_slice(&self.root_sha256);
         bytes.extend_from_slice(&self.anchor);
-        bytes.extend_from_slice(&self.intent.encode());
+        bytes.extend_from_slice(&self.intent.encode_fixed());
         self.intent_frame.encode_into(&mut bytes);
         self.completed_frame.encode_into(&mut bytes);
         debug_assert_eq!(bytes.len(), WIRE_BYTES);
-        bytes
+        Some(bytes)
     }
 
     pub fn decode(bytes: &[u8]) -> Result<Self, TierEpochCheckpointCertificateDenial> {

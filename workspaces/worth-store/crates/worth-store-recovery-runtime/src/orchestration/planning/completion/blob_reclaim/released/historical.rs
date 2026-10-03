@@ -110,8 +110,12 @@ pub(super) fn verify_v3_result(
     descriptor: BlobReclaimDescriptorV3,
     descriptor_record: PersistedRecordIdentity,
     manifest: &DropSetManifestV3,
+    directory_replaced: bool,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     let base = descriptor.base();
+    // The descriptor, plus the replacement directory frame when the drop
+    // invalidated the directory watermark.
+    let published_records = 1 + u64::from(directory_replaced);
     let encoded = descriptor.encode();
     let format = context.authority.record_format;
     let (next, result_count) = historical_publication::observe(
@@ -158,7 +162,7 @@ pub(super) fn verify_v3_result(
     context = next;
     if source_count
         .checked_sub(u64::from(manifest.count()))
-        .and_then(|count| count.checked_add(1))
+        .and_then(|count| count.checked_add(published_records))
         != Some(result_count)
     {
         return Err(context.redo_block(basis.planning_counters(), None));

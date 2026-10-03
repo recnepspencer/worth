@@ -45,11 +45,11 @@ impl PhysicalCurrentRootOwner {
         let request = reservation.request();
         let current = &state.current_root;
         let mut root_frame = current
-            .encode_in_reserved(format, std::mem::take(&mut pending.root_frame))
+            .encode_in_reserved(format, std::mem::take(&mut pending.root_frame.bytes))
             .ok_or(ReleaseCertificateCapacityDenial::CapacityExhausted)?;
         let root_sha256: [u8; 32] = Sha256::digest(&root_frame).into();
         root_frame.clear();
-        pending.root_frame = root_frame;
+        pending.root_frame.bytes = root_frame;
         let reserved_key = pending.key;
         let worst_case_encoded_bytes = pending.worst_case_encoded_bytes;
         let current_generation = current.generation();
@@ -76,7 +76,7 @@ impl PhysicalCurrentRootOwner {
             || base.reclaim_attempt() != attempt.bytes()
             || base.candidate_root_generation() != current_generation
             || completed.completed_breadth().current_root_generation() != current_generation
-            || completed.persisted_records() != [selected.record()]
+            || !drop_roster_matches(completed.persisted_records(), selected.record(), current)
             || completed.idempotency_identity().bytes() != request.idempotency()
             || completed.request_fingerprint().bytes() != request.fingerprint()
             || descriptor.custody().request() != request
@@ -197,5 +197,25 @@ impl PhysicalCurrentRootOwner {
             .fulfill_selected_release_certificate(attempt.bytes()));
         active.release_certificate_pending = None;
         Ok(())
+    }
+}
+
+/// The Drop member is the descriptor, optionally followed by the replacement
+/// directory frame the candidate root now binds without a watermark.
+fn drop_roster_matches(
+    records: &[worth_store_physical_format::PersistedRecordIdentity],
+    descriptor: worth_store_physical_format::PersistedRecordIdentity,
+    current: &worth_store_physical_format::DurablePhysicalRootManifest,
+) -> bool {
+    match records {
+        [record] => *record == descriptor,
+        [record, directory] => {
+            *record == descriptor
+                && current.derived_family_directory().is_some_and(|binding| {
+                    binding.directory_record() == *directory
+                        && binding.indexed_through_blob_publication().is_none()
+                })
+        }
+        _ => false,
     }
 }

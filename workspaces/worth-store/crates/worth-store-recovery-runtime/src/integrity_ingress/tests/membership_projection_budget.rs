@@ -6,8 +6,8 @@ use worth_store::physical_runtime::{
 use worth_store_physical_format::{
     durable_artifact_checksum, PhysicalFreeSpaceMembershipBlock, PhysicalGeneration,
     PhysicalGenerationAuthority, PhysicalPageId, PhysicalRecordFormatDeclaration,
-    PhysicalSegmentId, PhysicalSegmentMembershipBlock, PhysicalTreeIdentity, RecordAllocationClass,
-    RecordArtifactFile, RecordFreeSpaceManifestEntry, RecordSegmentPageManifestEntry,
+    PhysicalSegmentId, PhysicalSegmentMembershipBlock, PhysicalTreeIdentity, RecordArtifactFile,
+    RecordFreeSpaceManifestEntry, RecordSegmentPageManifestEntry,
 };
 
 use super::super::projection::{

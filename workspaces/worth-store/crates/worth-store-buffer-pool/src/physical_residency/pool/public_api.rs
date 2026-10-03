@@ -6,16 +6,16 @@ impl PhysicalResidencyPool {
         limits: PhysicalResidencyLimits,
     ) -> Result<Self, PhysicalResidencyDenial> {
         let frame_count = limits.frame_entries() as usize;
-        let minimum_metadata = frame_table::FrameTable::minimum_metadata_bytes(frame_count)
-            .and_then(|bytes| bytes.checked_add(std::mem::size_of::<PoolState>()))
-            .ok_or(PhysicalResidencyDenial::MetadataBudgetExceeded)?
-            as u64;
+        let minimum_metadata =
+            frame_table::FrameTable::minimum_accounted_metadata_bytes(frame_count)
+                .and_then(|bytes| bytes.checked_add(std::mem::size_of::<PoolState>()))
+                .ok_or(PhysicalResidencyDenial::MetadataBudgetExceeded)? as u64;
         if minimum_metadata > limits.metadata_bytes() {
             return Err(PhysicalResidencyDenial::MetadataBudgetExceeded);
         }
         let frames = frame_table::FrameTable::open(frame_count)?;
         let metadata = frames
-            .allocated_metadata_bytes()
+            .accounted_metadata_bytes()
             .and_then(|bytes| bytes.checked_add(std::mem::size_of::<PoolState>()))
             .ok_or(PhysicalResidencyDenial::MetadataBudgetExceeded)? as u64;
         if metadata > limits.metadata_bytes() {

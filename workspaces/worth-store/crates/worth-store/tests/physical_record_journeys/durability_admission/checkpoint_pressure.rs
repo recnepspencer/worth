@@ -169,9 +169,11 @@ fn whole_store_checkpoint_stays_bounded_during_32x_foreground_mutation() {
 
     let artifact = fs::read(store_root.join("families/checkpoint.current")).unwrap();
     let records = checkpoint_records(&artifact);
+    assert_eq!(records.iter().filter(|record| record[9] == 7).count(), 1);
     assert_eq!(
         records.len() as u64,
-        resident_dirty_frames + completed.binding_compaction().binding_count() + 3
+        // Header, compaction header, positive NoRelease custody, and footer.
+        resident_dirty_frames + completed.binding_compaction().binding_count() + 4
     );
     assert_checkpoint_io(media_before_checkpoint, serving.media_counters(), &records);
 

@@ -27,15 +27,20 @@ pub fn selected_wal_tail(range: WalLsnRange) -> SelectedPhysicalWalTail {
     let inspection = inspect_verified_wal_segment(identity, frame.encoded_frame())
         .expect("recovery tail fixture frame is verifiable")
         .inspection();
+    let candidates = vec![PhysicalWalSegmentCandidate::from_frame_facts(
+        inspection,
+        None,
+        vec![PhysicalWalFrameFacts::new(range, inspection.byte_count()).unwrap()],
+    )
+    .unwrap()];
+    let covered = Vec::with_capacity(candidates.len());
+    let retained = Vec::with_capacity(candidates.len());
     admit_physical_wal_tail(
         range.start().get(),
         Some(range.start().get()),
-        vec![PhysicalWalSegmentCandidate::from_frame_facts(
-            inspection,
-            None,
-            vec![PhysicalWalFrameFacts::new(range, inspection.byte_count()).unwrap()],
-        )
-        .unwrap()],
+        candidates,
+        covered,
+        retained,
     )
     .expect("verified recovery tail fixture is contiguous from its frontier")
 }

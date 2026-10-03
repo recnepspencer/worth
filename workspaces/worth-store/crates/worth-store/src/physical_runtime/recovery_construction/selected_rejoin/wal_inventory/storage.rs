@@ -34,6 +34,7 @@ impl<T> WalRoster<T> {
     pub(super) fn owned_heap_bytes(&self) -> Option<u64> {
         bytes::<T>(self.capacity()).ok()
     }
+    #[cfg(test)]
     pub(super) fn charged_bytes(&self) -> u64 {
         self.backing
             .as_ref()

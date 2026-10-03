@@ -19,6 +19,7 @@
 //! let _ = PersistedPhysicalRecoveryOperation::SessionDeclared {
 //!     binding,
 //!     head_effect: Some(head),
+//!     directory_replacement: None,
 //! };
 //! ```
 //! A directory retirement can be attached only to a DerivedDirectory operation:

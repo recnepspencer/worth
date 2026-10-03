@@ -116,6 +116,7 @@ impl AdmittedPhysicalRedoMembers {
                 fate: member.fate,
                 canonical_redo_sha256: member.canonical_redo_sha256,
                 materialization: &member.projection,
+                records: &member.records,
             })
     }
 
@@ -137,9 +138,12 @@ impl AdmittedPhysicalRedoMembers {
                 worth_store_physical_format::PersistedPhysicalRecoveryOperation::RecordsDropped { .. }
             )
             .then(|| {
-                let [record] = member.records.as_ref() else {
+                let Some(record) = member.records.first() else {
                     return None;
                 };
+                if member.records.len() != member.projection.record_identities().len() {
+                    return None;
+                }
                 Some((
                     member.operation,
                     member.fate,

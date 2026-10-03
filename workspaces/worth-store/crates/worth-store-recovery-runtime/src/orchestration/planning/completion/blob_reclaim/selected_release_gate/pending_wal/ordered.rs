@@ -131,9 +131,9 @@ pub(super) fn admit_roster(
         .observed_pages
         .historical_drops
         .iter()
-        .filter_map(|evidence| evidence.ordered_history.as_ref());
+        .map(|evidence| &evidence.ordered_history);
     let mut histories = histories.peekable();
-    let Some(history) = histories.next().cloned() else {
+    let Some(history) = histories.next().map(Arc::clone) else {
         return Err(denial::block(context, basis, Denial::MissingHistory, None));
     };
     if releases.len() < minimum_releases

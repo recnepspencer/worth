@@ -26,6 +26,28 @@ pub(crate) use rewrite_redo::produced_rewrite_payloads;
 pub(super) use segment_inventory::inspect_wal_inventory;
 pub(super) use target_claim::{independent_target_claim, IndependentRedoTargetClaim};
 
+// Record journeys read the full census; blob journeys share only the core.
+impl segment_inventory::IndependentWalInventory {
+    pub(super) fn segments(&self) -> &[(u64, u64)] {
+        &self.segments
+    }
+    pub(super) const fn frame_count(&self) -> u64 {
+        self.frame_count
+    }
+    pub(super) const fn byte_count(&self) -> u64 {
+        self.byte_count
+    }
+    pub(super) const fn peak_segment_bytes(&self) -> u64 {
+        self.peak_segment_bytes
+    }
+}
+
+impl segment_inventory::IndependentWalSegment {
+    pub(super) const fn byte_count(self) -> u64 {
+        self.byte_count
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct ExpectedAttemptBinding {
     pub(super) key: [u8; 32],

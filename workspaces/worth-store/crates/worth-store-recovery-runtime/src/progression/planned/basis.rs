@@ -127,7 +127,7 @@ pub struct RecoveryBaseImagePlan {
     segment_updates: Box<[RecoverySegmentRoutingAction]>,
     manifests: Box<[RecoveryPayloadManifestAction]>,
     root_states: Box<[PersistedPhysicalRecoveryRootState]>,
-    release_head_replay: Option<worth_store_recovery_physics::VerifiedSelectedReleaseHeadReplayV14>,
+    release_head_replay: Option<crate::progression::PendingReleaseReplay>,
     source_artifacts: Box<[RecordArtifactFile]>,
 }
 

@@ -272,7 +272,12 @@ fn isolated_range_index_pressure_keeps_exact_reclaim_retirement_pending() {
     }
     serving.close();
 
-    recover_closed_store(directory.path());
+    // Seventeen chunk/checkpoint pairs exceed the three-chunk crash profile's
+    // rejoin envelope; this world is admitted by the multilevel profile.
+    super::super::blob_crash::recover_closed_store_with_profile(
+        directory.path(),
+        "c11-blob-multilevel-v1",
+    );
     let reopened = serving_from_open(directory.path());
     assert_eq!(
         reopened

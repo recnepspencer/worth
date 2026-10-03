@@ -142,10 +142,6 @@ impl BlobReclaimSourceBasisV1 {
         }
     }
 
-    pub(super) fn encode_into(self, target: &mut Vec<u8>) {
-        self.visit_bytes(&mut |part| target.extend_from_slice(part));
-    }
-
     pub(super) fn encoded_len(self) -> usize {
         match self {
             Self::FailedIngest(_) => 128,

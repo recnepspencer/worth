@@ -16,6 +16,13 @@ struct ChargedDirectoryRetirement {
     _charge: MaintenanceRetainedDirectoryCharge,
 }
 
+// The retirement owner's 256-byte retained control allowance must cover
+// this allocation, including Arc's two reference-count words. Keep growth
+// of the shared prepared owner visible to the compiler, not just a comment.
+const _: () = assert!(
+    std::mem::size_of::<ChargedDirectoryRetirement>() + 2 * std::mem::size_of::<usize>() <= 256
+);
+
 #[derive(Debug, Clone)]
 enum DirectoryRetirementRecords {
     Empty,

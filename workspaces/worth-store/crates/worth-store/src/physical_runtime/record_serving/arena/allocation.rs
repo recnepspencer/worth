@@ -22,6 +22,7 @@ pub(in crate::physical_runtime::record_serving) struct ExtentArenaAllocationOwne
 }
 
 impl ExtentArenaAllocationOwner {
+    #[cfg(test)]
     pub(in crate::physical_runtime::record_serving) fn new(
         capacity: ExtentArenaCapacity,
         alignment: u64,
@@ -91,6 +92,7 @@ impl ExtentArenaAllocationOwner {
         self.capacity
     }
 
+    #[cfg(test)]
     pub(in crate::physical_runtime::record_serving) fn reserve(
         &mut self,
         bytes: u64,

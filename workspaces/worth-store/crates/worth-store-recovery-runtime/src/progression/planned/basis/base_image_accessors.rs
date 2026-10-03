@@ -46,7 +46,16 @@ impl RecoveryBaseImagePlan {
     pub(crate) fn release_head_replay(
         &self,
     ) -> Option<&worth_store_recovery_physics::VerifiedSelectedReleaseHeadReplayV14> {
-        self.release_head_replay.as_ref()
+        self.release_head_replay
+            .as_ref()
+            .map(crate::progression::PendingReleaseReplay::head)
+    }
+    pub(crate) fn release_directory_replacement(
+        &self,
+    ) -> Option<&worth_store_recovery_physics::VerifiedReleasedDirectoryReplacement> {
+        self.release_head_replay
+            .as_ref()
+            .and_then(crate::progression::PendingReleaseReplay::directory)
     }
     pub fn source_artifacts(&self) -> &[RecordArtifactFile] {
         &self.source_artifacts

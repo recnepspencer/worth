@@ -27,6 +27,8 @@ mod addressed_root;
 mod controls;
 #[path = "pending_wal_release/delta.rs"]
 pub(super) mod delta;
+#[path = "pending_wal_release/directory_media.rs"]
+mod directory_media;
 #[path = "pending_wal_release/head_effect_media.rs"]
 mod head_effect_media;
 #[path = "pending_wal_release/head_v14.rs"]

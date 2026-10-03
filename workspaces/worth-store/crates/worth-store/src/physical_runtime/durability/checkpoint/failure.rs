@@ -1,13 +1,16 @@
 use super::PhysicalCheckpointActionFailure;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PhysicalCheckpointCaptureFailureKind {
     SequenceExhausted,
     CheckpointCustodyUnavailable,
+    CheckpointCustodyBacking(crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial),
+    CheckpointCommandBackingUnavailable,
     RuntimeUnavailable,
     NoDurableWalSource,
     SourceAuthorityMismatch,
     ResidencyUnavailable,
+    ResidencyAdmission(worth_store_buffer_pool::PhysicalResidencyDenial),
     RetainedWalTailUnavailable,
     RetainedWalTailLimitExceeded,
     BindingCompactionUnavailable,
@@ -35,7 +38,7 @@ pub(super) enum PhysicalCheckpointCaptureFailurePosture {
     CandidateInspectionRequired,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct PhysicalCheckpointCaptureFailure {
     kind: PhysicalCheckpointCaptureFailureKind,
     posture: PhysicalCheckpointCaptureFailurePosture,
@@ -61,6 +64,9 @@ impl PhysicalCheckpointCaptureFailure {
     pub(super) fn from_initial_action(failure: PhysicalCheckpointActionFailure) -> Self {
         use PhysicalCheckpointActionFailure as Action;
         let kind = match failure {
+            Action::CheckpointCommandBackingUnavailable => {
+                PhysicalCheckpointCaptureFailureKind::CheckpointCommandBackingUnavailable
+            }
             Action::RuntimeReleased => PhysicalCheckpointCaptureFailureKind::RuntimeUnavailable,
             Action::SubmissionDenied
             | Action::SubmissionDeferred
@@ -99,11 +105,11 @@ impl PhysicalCheckpointCaptureFailure {
         Self::before_candidate(kind)
     }
 
-    pub(super) const fn kind(self) -> PhysicalCheckpointCaptureFailureKind {
-        self.kind
+    pub(super) fn kind(&self) -> PhysicalCheckpointCaptureFailureKind {
+        self.kind.clone()
     }
 
-    pub(super) const fn requires_inspection(self) -> bool {
+    pub(super) const fn requires_inspection(&self) -> bool {
         matches!(
             self.posture,
             PhysicalCheckpointCaptureFailurePosture::CandidateInspectionRequired

@@ -1,8 +1,7 @@
 //! Final pending V14 claim construction and optional historical release join.
 
 use worth_store_recovery_physics::{
-    VerifiedPendingWalReleaseCustody, VerifiedSelectedReleaseHeadReplayV14,
-    WitnessedSelectedControlFrame,
+    VerifiedPendingWalReleaseCustody, WitnessedSelectedControlFrame,
 };
 
 use super::super::resident_basis;
@@ -17,9 +16,10 @@ pub(super) fn admit(
     member: PendingMemberFate,
     manifest: WitnessedSelectedControlFrame,
     reservation: WitnessedSelectedControlFrame,
-    head_replay: VerifiedSelectedReleaseHeadReplayV14,
+    replay: crate::progression::PendingReleaseReplay,
     mut resident: ResidentAllowance,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
+    let head_replay = replay.head();
     let clone_bytes = head_replay.owned_heap_bytes().unwrap_or(u64::MAX);
     let assembly = u64::try_from(std::mem::size_of::<
         worth_store_recovery_physics::VerifiedSelectedReleaseHeadCustodyV2,
@@ -141,9 +141,6 @@ pub(super) fn admit(
         .observed_pages
         .historical_publication_peak_scratch_bytes
         .max(resident.peak());
-    basis.custody = PlanningCustody::PendingPrepared {
-        claim,
-        replay: head_replay,
-    };
+    basis.custody = PlanningCustody::PendingPrepared { claim, replay };
     Ok(context)
 }

@@ -62,8 +62,8 @@ mod tests {
     };
     use worth_store_physical_format::{
         DurablePhysicalRootManifest, DurableRootSelector, FreeSpaceBlockReference, FreeSpaceKey,
-        PhysicalRecordFormatDeclaration, RecordAllocationClass, RecordArtifactFile,
-        RootSelectorIdentity, RootSelectorRole,
+        PhysicalRecordFormatDeclaration, RecordArtifactFile, RootSelectorIdentity,
+        RootSelectorRole,
     };
 
     use super::*;

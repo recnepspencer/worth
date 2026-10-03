@@ -6,24 +6,15 @@ use worth_store::physical_runtime::BlobTerminalLimits;
 
 const CHUNK: usize = 64 << 10;
 
-#[derive(Clone, Copy)]
-pub(crate) struct MixedControlIds {
-    pub(crate) failed_manifest: PersistedRecordIdentity,
-    pub(crate) failed_descriptor: PersistedRecordIdentity,
-    pub(crate) released_manifest: PersistedRecordIdentity,
-    pub(crate) released_reservation: PersistedRecordIdentity,
-    pub(crate) released_descriptor: PersistedRecordIdentity,
-}
-
 pub(crate) fn run() {
-    let (world, _) = world();
+    let world = world();
     let retained = world.retained_root();
     let root = retained.path().to_path_buf();
     drop(world);
     two_batch::recover(root);
 }
 
-pub(crate) fn world() -> (PhysicalResidencyStoreWorld, MixedControlIds) {
+pub(crate) fn world() -> PhysicalResidencyStoreWorld {
     let world = initialized_recovery_world("mixed-failed-and-released");
     let failed_scope = admitted_blob_scope("c11.recovery.mixed.failed.scope");
     let blobs = world.serving().blobs().expect("blob owner");
@@ -145,8 +136,8 @@ pub(crate) fn world() -> (PhysicalResidencyStoreWorld, MixedControlIds) {
         accumulator.base().tip(),
         batches[0].tip_provenance().unwrap()
     );
-    let ids = selected_controls(world.serving());
-    (world, ids)
+    assert_controls_selected(world.serving());
+    world
 }
 
 fn checkpoint(world: &PhysicalResidencyStoreWorld, key: [u8; 32]) {
@@ -165,7 +156,10 @@ fn checkpoint(world: &PhysicalResidencyStoreWorld, key: [u8; 32]) {
     ));
 }
 
-fn selected_controls(serving: &ServingPhysicalRuntime) -> MixedControlIds {
+/// Both histories keep every control record selected: the failed-ingest
+/// manifest and descriptor, and the released manifest, reservation, and
+/// descriptor.
+fn assert_controls_selected(serving: &ServingPhysicalRuntime) {
     let mut scan = serving
         .records()
         .unwrap()
@@ -203,7 +197,7 @@ fn selected_controls(serving: &ServingPhysicalRuntime) -> MixedControlIds {
                 Ok(BlobRecordV1::DropSetManifestV3(_)) => released_manifest = Some(record),
                 Ok(BlobRecordV1::ReclaimDescriptorV3(_)) => released_descriptor = Some(record),
                 Ok(BlobRecordV1::OriginalDropReserved(value)) => {
-                    reservations.push((record, value.manifest_record()))
+                    reservations.push(value.manifest_record())
                 }
                 _ => {}
             }
@@ -213,16 +207,17 @@ fn selected_controls(serving: &ServingPhysicalRuntime) -> MixedControlIds {
         }
     }
     let released_manifest = released_manifest.expect("selected released manifest");
-    let released_reservation = reservations
-        .into_iter()
-        .find(|(_, manifest)| *manifest == released_manifest)
-        .map(|(record, _)| record)
-        .expect("selected released reservation");
-    MixedControlIds {
-        failed_manifest: failed_manifest.expect("selected failed-ingest manifest"),
-        failed_descriptor: failed_descriptor.expect("selected failed-ingest descriptor"),
-        released_manifest,
-        released_reservation,
-        released_descriptor: released_descriptor.expect("selected released descriptor"),
-    }
+    assert!(
+        reservations.contains(&released_manifest),
+        "selected released reservation"
+    );
+    assert!(failed_manifest.is_some(), "selected failed-ingest manifest");
+    assert!(
+        failed_descriptor.is_some(),
+        "selected failed-ingest descriptor"
+    );
+    assert!(
+        released_descriptor.is_some(),
+        "selected released descriptor"
+    );
 }

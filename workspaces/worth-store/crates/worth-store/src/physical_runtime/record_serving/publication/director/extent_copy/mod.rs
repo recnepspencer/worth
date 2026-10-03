@@ -60,18 +60,6 @@ impl CompletedExtentCopy {
     pub(in crate::physical_runtime) const fn intent(&self) -> PhysicalExtentCopyIntent {
         self.intent
     }
-    pub(in crate::physical_runtime) fn durable_intent_lsn(&self) -> u64 {
-        self.durable.interval().2
-    }
-    pub(in crate::physical_runtime) fn intent_digest(&self) -> [u8; 32] {
-        self.durable.payload_digest()
-    }
-    pub(in crate::physical_runtime) fn writes(&self) -> &ExtentCopyWriteEvidence {
-        &self.writes
-    }
-    pub(in crate::physical_runtime) fn synchronization(&self) -> &ExtentCopySynchronization {
-        &self.synchronization
-    }
     pub(in crate::physical_runtime) fn validate_adoption(
         &self,
         current: worth_store_physical_format::DurableExtentRecordPlacement,

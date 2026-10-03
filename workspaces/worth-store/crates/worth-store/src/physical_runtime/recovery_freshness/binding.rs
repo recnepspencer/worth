@@ -25,6 +25,7 @@ mod wal_payload;
 pub use sampling::allocation::StoreRecoveryBindingSampleAllocationDenial;
 pub use wal_frame_view::IntegrityAdmittedRecoveryWalFrameView;
 
+#[cfg(test)]
 pub(in crate::physical_runtime) use checkpoint_basis::{
     checkpoint_binding_decode_peak, decode_checkpoint_evidence,
 };

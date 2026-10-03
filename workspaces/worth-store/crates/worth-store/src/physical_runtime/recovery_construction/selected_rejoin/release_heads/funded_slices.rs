@@ -22,6 +22,7 @@ impl FundedHeadSlices {
     pub(in crate::physical_runtime) fn owned_heap_bytes(&self) -> Option<u64> {
         vector_bytes(&self.slices).ok()
     }
+    #[cfg(test)]
     pub(in crate::physical_runtime) fn charged_bytes(&self) -> u64 {
         self.backing.charged_bytes()
     }

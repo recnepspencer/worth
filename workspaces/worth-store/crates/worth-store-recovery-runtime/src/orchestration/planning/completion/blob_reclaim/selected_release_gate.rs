@@ -128,8 +128,9 @@ fn pending_replay_matches(basis: &ResolvedPlanningBasis) -> bool {
             claim: pending,
             replay,
         } => {
-            pending.selected_head_replay() == Some(replay)
-                && replay.operation() == pending.descriptor().custody().request().idempotency()
+            pending.selected_head_replay() == Some(replay.head())
+                && replay.head().operation()
+                    == pending.descriptor().custody().request().idempotency()
         }
         _ => false,
     }

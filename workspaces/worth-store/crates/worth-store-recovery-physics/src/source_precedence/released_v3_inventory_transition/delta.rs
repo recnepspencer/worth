@@ -187,8 +187,21 @@ pub(super) fn root_semantics_match(
     dropped: &[PersistedRecordIdentity],
     projected: &[CurrentPhysicalRecordPlacement],
     head_replay: Option<&VerifiedSelectedReleaseHeadReplayV14>,
+    directory_replacement: Option<&VerifiedReleasedDirectoryReplacement>,
 ) -> bool {
     let removed = |record| dropped.binary_search(&record).is_ok();
+    let invalidates_directory_watermark =
+        source
+            .root
+            .derived_family_directory()
+            .is_some_and(|binding| {
+                binding
+                    .indexed_through_blob_publication()
+                    .is_some_and(|publication| removed(publication.record()))
+            });
+    if invalidates_directory_watermark != directory_replacement.is_some() {
+        return false;
+    }
     let latest = source
         .root
         .latest_blob_publication()
@@ -199,6 +212,34 @@ pub(super) fn root_semantics_match(
                 .indexed_through_blob_publication()
                 .is_none_or(|publication| !removed(publication.record()))
     });
+    let directory = match directory_replacement {
+        None => directory,
+        Some(proof) => {
+            if source.root != proof.source_root()
+                || result.root.generation() != proof.candidate_generation()
+                || source.root.derived_family_directory() != Some(proof.previous())
+                || source.routes.binary_search_by_key(&proof.source_route().record(), |route| route.record())
+                    .ok().is_none_or(|index| source.routes[index] != proof.source_route())
+                || projected.binary_search_by_key(&proof.next_route().record(), |route| route.record())
+                    .ok().is_none_or(|index| projected[index] != proof.next_route())
+                || result.routes.binary_search_by_key(&proof.next_route().record(), |route| route.record())
+                    .ok().is_none_or(|index| result.routes[index] != proof.next_route())
+                // The replacement belongs to this drop: its descriptor is a
+                // record this transition publishes, and a head effect, when
+                // the drop has one, names the same operation and descriptor.
+                || projected.binary_search_by_key(&proof.descriptor_record(), |route| route.record())
+                    .is_err()
+                || head_replay.is_some_and(|head| {
+                    let worth_store_physical_format::ReleaseCustodyHeadMutationV1::Upsert { next, .. } = head.effect().mutation() else { return true; };
+                    head.operation() != proof.operation()
+                        || next.descriptor_record() != proof.descriptor_record()
+                })
+            {
+                return false;
+            }
+            Some(proof.next())
+        }
+    };
     let quarantine = source
         .root
         .latest_blob_quarantine()

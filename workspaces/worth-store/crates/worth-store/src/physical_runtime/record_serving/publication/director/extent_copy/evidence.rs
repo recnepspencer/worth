@@ -146,12 +146,6 @@ impl ExtentCopySynchronization {
             parent_work,
         })
     }
-    pub(in crate::physical_runtime) fn file(&self) -> &CompletedPhysicalPublicationEffect {
-        &self.file
-    }
-    pub(in crate::physical_runtime) fn parent(&self) -> &CompletedPhysicalPublicationEffect {
-        &self.parent
-    }
     pub(in crate::physical_runtime) fn matches_writes(
         &self,
         writes: &ExtentCopyWriteEvidence,

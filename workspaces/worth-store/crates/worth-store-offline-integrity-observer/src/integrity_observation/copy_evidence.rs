@@ -8,7 +8,7 @@ use super::{
 const INTENT_DOMAIN: &[u8] = b"store.physical.extent-copy.v1";
 const CLASSIFIED_INTENT_DOMAIN: &[u8] = b"store.physical.extent-copy.v2";
 const FINAL_DOMAIN: &[u8] = b"store.physical.extent-copy-publication.v1";
-const CURRENT_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v15";
+const CURRENT_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v16";
 const BINDING_DOMAIN: &[u8] = b"store.physical.mutation-attempt-binding.v1";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

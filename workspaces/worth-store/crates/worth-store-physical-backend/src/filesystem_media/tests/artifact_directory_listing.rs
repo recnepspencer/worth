@@ -5,6 +5,7 @@ use super::super::*;
 use worth_proof::TransitionOutcome;
 use worth_store_physical_format::store_namespace::NamespaceEntryType;
 
+#[cfg(feature = "recovery-runtime-owner")]
 mod admitted_storage;
 
 #[test]

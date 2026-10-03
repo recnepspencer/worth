@@ -83,18 +83,22 @@ impl RegisteredDerivedFamily {
         self.family_code
     }
 
+    #[cfg(test)]
     pub(in crate::physical_runtime) const fn physical_layout(self) -> RegisteredPhysicalLayout {
         self.physical_layout
     }
 
+    #[cfg(test)]
     pub(in crate::physical_runtime) const fn frame_version(self) -> u8 {
         self.frame_version
     }
 
+    #[cfg(test)]
     pub(in crate::physical_runtime) const fn frame_kind(self) -> RegisteredFrameKind {
         self.frame_kind
     }
 
+    #[cfg(test)]
     pub(in crate::physical_runtime) const fn source_authority(self) -> RegisteredSourceAuthority {
         self.source_authority
     }
@@ -103,22 +107,27 @@ impl RegisteredDerivedFamily {
         self.cell_shape
     }
 
+    #[cfg(test)]
     pub(in crate::physical_runtime) const fn integrity_class(self) -> RegisteredIntegrityClass {
         self.integrity_class
     }
 
+    #[cfg(test)]
     pub(in crate::physical_runtime) const fn retention(self) -> RegisteredRetention {
         self.retention
     }
 
+    #[cfg(test)]
     pub(in crate::physical_runtime) const fn recovery(self) -> RegisteredRecoveryParticipation {
         self.recovery
     }
 
+    #[cfg(test)]
     pub(in crate::physical_runtime) const fn live_writer(self) -> bool {
         self.live_writer
     }
 
+    #[cfg(test)]
     pub(in crate::physical_runtime) const fn rebuild_basis(self) -> DerivedFamilyRebuildBasis {
         self.rebuild_basis
     }

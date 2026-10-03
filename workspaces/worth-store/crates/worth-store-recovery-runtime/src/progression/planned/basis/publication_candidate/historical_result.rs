@@ -24,6 +24,9 @@ pub(crate) fn verified_historical_release_transition(
     dropped: &[PersistedRecordIdentity],
     projected: &[CurrentPhysicalRecordPlacement],
     head_replay: Option<&VerifiedSelectedReleaseHeadReplayV14>,
+    directory_replacement: Option<
+        &worth_store_recovery_physics::VerifiedReleasedDirectoryReplacement,
+    >,
     format: PhysicalRecordFormatDeclaration,
     maximum_entries: u64,
     maximum_scratch_bytes: u64,
@@ -76,6 +79,7 @@ pub(crate) fn verified_historical_release_transition(
             format,
             maximum_entries,
             matcher_budget,
+            directory_replacement,
         ),
         None => VerifiedReleasedV3InventoryTransition::admit(
             source_view,
@@ -85,6 +89,7 @@ pub(crate) fn verified_historical_release_transition(
             format,
             maximum_entries,
             matcher_budget,
+            directory_replacement,
         ),
     }
     .ok()?;

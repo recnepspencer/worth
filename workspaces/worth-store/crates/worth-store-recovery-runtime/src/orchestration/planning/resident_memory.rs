@@ -43,20 +43,15 @@ pub(super) fn live_bytes(context: &PlanningContext, basis: &ResolvedPlanningBasi
     for (index, drop) in basis.observed_pages.historical_drops.iter().enumerate() {
         bytes = bytes
             .checked_add(u64::try_from(std::mem::size_of_val(drop.manifest.dropped())).ok()?)?;
-        if let Some(chain) = &drop.chain {
-            bytes = bytes.checked_add(chain.owned_heap_bytes()?)?;
-        }
-        if let Some(history) = &drop.ordered_history {
-            let already_counted = basis.observed_pages.historical_drops[..index]
-                .iter()
-                .filter_map(|prior| prior.ordered_history.as_ref())
-                .any(|prior| Arc::ptr_eq(prior, history));
-            if !already_counted {
-                bytes = bytes
-                    .checked_add(history.owned_heap_bytes()?)?
-                    .checked_add(u64::try_from(std::mem::size_of_val(&**history)).ok()?)?
-                    .checked_add(2 * std::mem::size_of::<usize>() as u64)?;
-            }
+        let history = &drop.ordered_history;
+        let already_counted = basis.observed_pages.historical_drops[..index]
+            .iter()
+            .any(|prior| Arc::ptr_eq(&prior.ordered_history, history));
+        if !already_counted {
+            bytes = bytes
+                .checked_add(history.owned_heap_bytes()?)?
+                .checked_add(u64::try_from(std::mem::size_of_val(&**history)).ok()?)?
+                .checked_add(2 * std::mem::size_of::<usize>() as u64)?;
         }
     }
     if let Some(ordered) = &basis.observed_pages.ordered_releases {
@@ -110,7 +105,7 @@ fn final_custody_bytes(basis: &ResolvedPlanningBasis) -> Option<u64> {
             .observed_pages
             .historical_drops
             .iter()
-            .filter_map(|drop| drop.ordered_history.as_deref())
+            .map(|drop| &*drop.ordered_history)
             .any(|other| std::ptr::eq(other, history));
         let same_pending =
             index == 1 && pending_history.is_some_and(|other| std::ptr::eq(other, history));

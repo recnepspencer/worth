@@ -7,7 +7,6 @@ use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DropSetManifestV3, DurableExtentRecordPlacement,
     PersistedRecordIdentity, PhysicalRecordFormatDeclaration, SelectedRecordContentClass,
 };
-use worth_store_physical_integrity::IntegrityValidatedSelectedExtentPayload;
 use worth_store_recovery_physics::VerifiedSelectedCheckpointCustody;
 
 use super::{root_checkpoint::ObservedRootCheckpoint, SelectedMediaRejoinDenial as Denial};
@@ -34,7 +33,6 @@ pub(super) struct ObservedSelectedControlFrame {
     kind: BlobRecordKind,
     bytes: Vec<u8>,
     frame_sha256: [u8; 32],
-    witness: IntegrityValidatedSelectedExtentPayload,
     slices: Vec<SelectedArtifactSlice>,
 }
 
@@ -53,9 +51,6 @@ impl ObservedSelectedControlFrame {
     }
     pub(super) const fn frame_sha256(&self) -> [u8; 32] {
         self.frame_sha256
-    }
-    pub(super) const fn witness(&self) -> IntegrityValidatedSelectedExtentPayload {
-        self.witness
     }
 }
 
@@ -108,15 +103,6 @@ impl ObservedSelectedControls {
                 .flat_map(|frame| frame.slices.iter().cloned())
                 .collect(),
         )
-    }
-    pub(super) fn descriptor(&self) -> &ObservedSelectedControlFrame {
-        &self.descriptor
-    }
-    pub(super) fn reservation(&self) -> &ObservedSelectedControlFrame {
-        &self.reservation
-    }
-    pub(super) fn manifest(&self) -> &ObservedSelectedControlFrame {
-        &self.manifest
     }
 
     pub(super) fn attempt_for_descriptor(
@@ -323,7 +309,6 @@ fn observe_one(
         kind,
         bytes,
         frame_sha256,
-        witness,
         slices,
     })
 }

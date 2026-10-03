@@ -13,18 +13,24 @@ use worth_store::physical_runtime::{
     PhysicalCheckpointIdempotencyKey, PhysicalCheckpointOutcome, PhysicalCheckpointRequest,
     PhysicalMutationDeadline, PhysicalOperationAllocationScope as Scope, PhysicalPageSizeClass,
     PhysicalRecordFormatDeclaration, PublishedBlobGeneration, RecordReadDenial,
-    ServingPhysicalRuntime,
+    RecoveredPhysicalCheckpointCustody, ServingPhysicalRuntime,
 };
 use worth_store_physical_format::IndexedThroughBlobPublication;
-use worth_store_recovery_runtime::{PhysicalRecoveryOutcome, WorthStoreRecovery};
+use worth_store_recovery_runtime::{
+    PhysicalRecoveryOpenRequest, PhysicalRecoveryOutcome, WorthStoreRecovery,
+};
 use worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld;
 
 use super::super::{admitted_blob_scope, certified_release_serving};
 
 #[path = "shared_reuse_custody/continuation_budget.rs"]
 mod continuation_budget;
+#[path = "shared_reuse_custody/destination_first.rs"]
+mod destination_first;
 #[path = "shared_reuse_custody/fresh_process.rs"]
 mod fresh_process;
+#[path = "shared_reuse_custody/lagging_watermark.rs"]
+mod lagging_watermark;
 #[path = "shared_reuse_custody/publication_budget.rs"]
 mod publication_budget;
 #[path = "shared_reuse_custody/world.rs"]
@@ -99,7 +105,7 @@ fn run() {
         original.object().bytes(),
         destination.object().bytes(),
         recovery_bytes,
-        fresh_process::ExpectedReopen::SurvivingDestination,
+        fresh_process::ExpectedReopen::Surviving { reuse_reads: 4 },
     );
     let serving = recover_serving(&root, format, recovery_bytes);
     assert_absent(&serving, &scope, original.object().bytes());
@@ -150,9 +156,16 @@ fn recover_serving(
     format: AdmittedPhysicalRecordFormat,
     recovery_bytes: u64,
 ) -> ServingPhysicalRuntime {
-    let outcome = WorthStoreRecovery::recover(
-        certified_release_serving::request_with_memory_and_format(root, recovery_bytes, format),
-    );
+    let seal = recover_custody(certified_release_serving::request_with_memory_and_format(
+        root,
+        recovery_bytes,
+        format,
+    ));
+    certified_release_serving::admit_serving_with_seal_and_format(root, seal, format)
+}
+
+fn recover_custody(request: PhysicalRecoveryOpenRequest) -> RecoveredPhysicalCheckpointCustody {
+    let outcome = WorthStoreRecovery::recover(request);
     let PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
         match outcome {
             PhysicalRecoveryOutcome::Blocked(block) => panic!(
@@ -175,11 +188,10 @@ fn recover_serving(
             other => panic!("shared-reuse recovery did not produce custody: {other:?}"),
         }
     };
-    let seal = handoff
+    handoff
         .into_core()
         .into_checkpoint_custody()
-        .expect("C8-issued Store custody");
-    certified_release_serving::admit_serving_with_seal_and_format(root, seal, format)
+        .expect("C8-issued Store custody")
 }
 
 fn selected_marker(serving: &ServingPhysicalRuntime) -> IndexedThroughBlobPublication {
@@ -287,10 +299,11 @@ fn checkpoint(serving: &ServingPhysicalRuntime, key: [u8; 32]) {
     let TransitionOutcome::Success(handle) = serving.checkpoints().start(request).into_raw() else {
         panic!("source-first checkpoint must admit")
     };
-    assert!(matches!(
-        handle.wait(),
-        PhysicalCheckpointOutcome::Completed(_)
-    ));
+    let outcome = handle.wait();
+    assert!(
+        matches!(outcome, PhysicalCheckpointOutcome::Completed(_)),
+        "checkpoint {key:02x?}: {outcome:?}"
+    );
 }
 
 fn assert_absent(serving: &ServingPhysicalRuntime, scope: &AdmittedBlobScope, object: [u8; 16]) {

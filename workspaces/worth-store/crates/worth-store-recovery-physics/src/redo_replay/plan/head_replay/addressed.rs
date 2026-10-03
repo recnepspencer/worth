@@ -33,6 +33,7 @@ impl VerifiedSelectedReleaseHeadReplayV14 {
         let PersistedPhysicalRecoveryOperation::RecordsDropped {
             binding,
             head_effect: Some(effect),
+            ..
         } = projection.operation()
         else {
             return Err(SelectedReleaseHeadReplayDenial::NotAdmittedUpsert);

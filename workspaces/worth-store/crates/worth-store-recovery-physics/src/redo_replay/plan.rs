@@ -54,6 +54,7 @@ pub struct AdmittedRootStepMemberView<'a> {
     fate: RecoveryOperationFate,
     canonical_redo_sha256: [u8; 32],
     materialization: &'a PersistedPhysicalRecoveryProjection,
+    records: &'a [PhysicalRedoRecord],
 }
 use worth_store_wal::WalLsnRange;
 

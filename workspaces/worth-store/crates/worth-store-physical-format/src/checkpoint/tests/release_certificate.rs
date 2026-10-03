@@ -113,6 +113,16 @@ fn tip() -> ReleasedDropTipProvenanceV1 {
 fn batch_and_accumulator_are_exact_bounded_roundtrips() {
     let batch = batch();
     let encoded_batch = ReleaseCheckpointCertificateV1::Batch(batch).encode();
+    assert!(batch.encode_in_reserved(Vec::new()).is_none());
+    let mut reserved = Vec::with_capacity(RELEASE_CHECKPOINT_BATCH_WIRE_BYTES);
+    reserved.extend_from_slice(&[0xa5; 3]);
+    let capacity = reserved.capacity();
+    let pointer = reserved.as_ptr();
+    let emitted = batch.encode_in_reserved(reserved).unwrap();
+    assert_eq!(emitted, encoded_batch);
+    assert_eq!(emitted.as_slice(), batch.encode_fixed());
+    assert_eq!(emitted.capacity(), capacity);
+    assert_eq!(emitted.as_ptr(), pointer);
     assert_eq!(encoded_batch.len(), RELEASE_CHECKPOINT_BATCH_WIRE_BYTES);
     assert_eq!(
         ReleaseCheckpointCertificateV1::decode(&encoded_batch),

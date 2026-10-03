@@ -10,8 +10,8 @@ use worth_store_physical_format::{
     PersistedPhysicalDataFrameSubject, PersistedPhysicalRecoveryFrame,
     PersistedPhysicalRecoveryProjection, PersistedPhysicalRecoveryRootState,
     PersistedRecordIdentity, PhysicalGeneration, PhysicalGenerationAuthority, PhysicalPageId,
-    PhysicalRecordSlot, PhysicalSegmentId, RecordAllocationClass, RecordArtifactFile,
-    RecordFrameCoordinate, RecordFreeSpaceManifestEntry, RecordSegmentPageManifestEntry,
+    PhysicalRecordSlot, PhysicalSegmentId, RecordArtifactFile, RecordFrameCoordinate,
+    RecordFreeSpaceManifestEntry, RecordSegmentPageManifestEntry,
 };
 use worth_store_recovery_physics::{decode_physical_redo_records, PhysicalRedoTarget};
 use worth_store_test_support::harness::physical_residency::{

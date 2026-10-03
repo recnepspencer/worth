@@ -42,11 +42,9 @@ pub use imported_blob::{
 };
 pub use plan_identity::AccessPlanIdentity;
 pub use selected_plan::{
-    SelectedDegradedExactScan, SelectedLsmCompaction, SelectedLsmLookup,
-    SelectedLsmReplayRecovery, SelectedLsmRunPublication,
+    SelectedDegradedExactScan, SelectedLsmCompaction, SelectedLsmLookup, SelectedLsmReplayRecovery,
+    SelectedLsmRunPublication,
 };
-#[cfg(test)]
-pub(crate) use selection_basis::PlanningCapabilityGrant;
 pub use selection_basis::{DeterministicSelectionRule, SelectionCandidateEligibility};
 pub use selection_outcome::{
     access_plan_selection_cases, AccessPlanSelectionOutcome, AccessPlanSelectionView,

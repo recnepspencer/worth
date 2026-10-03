@@ -7,6 +7,7 @@ mod blob_claim;
 #[cfg(feature = "certification-test-authority")]
 mod capture_pause;
 mod certificate_capacity;
+mod construction;
 mod displaced;
 mod maintenance;
 mod pending_publication;
@@ -42,8 +43,8 @@ pub(in crate::physical_runtime) use blob_claim::{
     PhysicalBlobSessionClaim, PhysicalBlobSessionClaimDenial, PhysicalBlobTerminalAdmissionDenial,
 };
 pub(in crate::physical_runtime) use certificate_capacity::{
-    CheckpointCustodyDenial, CheckpointCustodyOrigin, SelectedCheckpointCertificate,
-    SelectedCheckpointCustodySnapshot,
+    CheckpointCustodyDenial, CheckpointCustodyOrigin, FundedCheckpointBufferPreparation,
+    FundedCheckpointCommandBufferLease, FundedCheckpointFrame, SelectedCheckpointCustodySnapshot,
 };
 pub(in crate::physical_runtime) use reclaim::{
     AdmittedFailedIngestDrop, AdmittedManifestResidueRetirement, AdmittedReleasedGenerationDrop,
@@ -52,12 +53,13 @@ pub(in crate::physical_runtime) use reclaim::{
 };
 pub(in crate::physical_runtime) use release_capacity::{
     ReleaseCertificateCapacityDenial, ReleaseCertificateCapacityLease, ReleaseHeadCapacityCharge,
-    SelectedReleaseCustodyLedger, SelectedReleaseHeadBasis,
+    SelectedReleaseHeadBasis,
 };
 
 pub(in crate::physical_runtime) struct PhysicalCurrentRootOwner {
     runtime_identity: crate::physical_runtime::RuntimeIdentity,
     recovery_allocation: crate::physical_runtime::PhysicalRecoveryAllocationAdmission,
+    release_allocation: release_capacity::backing::ReleasePublicationAllocationOwner,
     #[cfg(feature = "certification-test-authority")]
     capture_pause: Mutex<Option<std::sync::Arc<capture_pause::ReadRootCapturePause>>>,
     read_protection: std::sync::Arc<crate::physical_runtime::stability::RootProtectionRegistry>,
@@ -122,58 +124,6 @@ pub enum PhysicalCurrentRootAdvanceFailureCause {
 }
 
 impl PhysicalCurrentRootOwner {
-    pub(in crate::physical_runtime) fn new(
-        runtime: &std::sync::Arc<crate::physical_runtime::instance::PhysicalStoreWorkRuntime>,
-        checkpoint_custody_origin: CheckpointCustodyOrigin,
-        recovered_checkpoint_custody: Option<PreparedRecoveredCheckpointCustody>,
-        current_root: DurablePhysicalRootManifest,
-        previous_root: Option<DurablePhysicalRootManifest>,
-        free_space: DurableFreeSpaceManifestHeader,
-        read_protection: std::sync::Arc<crate::physical_runtime::stability::RootProtectionRegistry>,
-        publication: std::sync::Arc<
-            crate::physical_runtime::durability::PhysicalPublicationAdmission,
-        >,
-        recovery_allocation: crate::physical_runtime::PhysicalRecoveryAllocationAdmission,
-    ) -> Self {
-        let blob_claim_capacity = read_protection.acquisition_capacity();
-        let checkpoint_custody = certificate_capacity::CheckpointCustodyState::from_origin(
-            checkpoint_custody_origin,
-            &current_root,
-        );
-        let owner = Self {
-            runtime_identity: runtime.submission.runtime_identity(),
-            recovery_allocation,
-            #[cfg(feature = "certification-test-authority")]
-            capture_pause: Mutex::new(None),
-            blob_claims: std::sync::Arc::new(blob_claim::BlobClaimRegistry::new(
-                blob_claim_capacity,
-            )),
-            reclaim: std::sync::Arc::new(Mutex::new(None)),
-            read_protection,
-            state: std::sync::Arc::new(Mutex::new(PhysicalCurrentRootState {
-                namespace_evidence:
-                    crate::physical_runtime::PhysicalRootNamespaceDurabilityEvidence::ReopenedCurrentRoot {
-                        root: current_root.root_cell(),
-                    },
-                current_root,
-                previous_root: previous_root.map(RetainedPhysicalRoot::from_manifest),
-                free_space,
-                checkpoint_custody,
-                release_ledger: release_capacity::ReleaseLedgerState::from_origin(
-                    checkpoint_custody_origin,
-                ),
-            })),
-            transition: PhysicalRootPublicationTransitionOwner::new(runtime),
-            publication,
-            rewrite_growth: Mutex::new(HashMap::new()),
-            displaced: Mutex::new(HashMap::new()),
-        };
-        if let Some(recovered) = recovered_checkpoint_custody {
-            owner.install_recovered_checkpoint_custody(recovered);
-        }
-        owner
-    }
-
     #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn charged_growth_bytes(&self) -> u64 {
         self.publication.charged_growth_bytes()

@@ -11,6 +11,7 @@ pub(crate) mod decode_storage;
 mod frame;
 mod head_effect;
 mod operation;
+mod released_directory_replacement;
 mod retained_storage;
 mod root_state;
 mod source_copy;
@@ -20,11 +21,12 @@ pub use operation::{
     PersistedBlobSemanticRecordBinding, PersistedDerivedDirectoryRecordBinding,
     PersistedPhysicalRecoveryOperation,
 };
+pub use released_directory_replacement::PersistedReleasedDirectoryReplacementV1;
 pub use root_state::{PersistedInlineSegmentAllocation, PersistedPhysicalRecoveryRootState};
 pub use source_copy::PersistedExtentCopyRecipe;
 
 const PROJECTION_DOMAIN_PREFIX: &[u8] = b"store.physical.recovery-projection.v";
-const CURRENT_RECOVERY_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v15";
+const CURRENT_RECOVERY_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v16";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PersistedDerivedDirectoryRetirement {

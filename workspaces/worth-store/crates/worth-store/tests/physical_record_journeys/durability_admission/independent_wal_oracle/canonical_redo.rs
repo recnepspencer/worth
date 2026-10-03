@@ -1,7 +1,7 @@
 use super::{BindingField, BindingInspectionDenial, ByteCursor, IndependentRedoTargetClaim};
 
 const REDO_DOMAIN: &[u8] = b"store.physical.wal.canonical-redo.v3";
-const CURRENT_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v15";
+const CURRENT_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v16";
 
 pub(super) fn independent_canonical_redo(
     records: &[&[u8]],
@@ -171,8 +171,44 @@ fn inspect_operation(
             [1] if !cursor.field(BindingField::RedoPayload)?.is_empty() => {}
             _ => return Err(BindingInspectionDenial::InvalidFrame),
         }
+        inspect_directory_replacement(cursor)?;
     }
     Ok(())
+}
+
+/// A released drop may carry its atomic directory replacement: the expected
+/// previous binding, its payload digest, and the next directory binding.
+fn inspect_directory_replacement(
+    cursor: &mut ByteCursor<'_>,
+) -> Result<(), BindingInspectionDenial> {
+    match cursor.take(BindingField::RedoPayload, 1)? {
+        [0] => return Ok(()),
+        [1] => {}
+        _ => return Err(BindingInspectionDenial::InvalidFrame),
+    }
+    if cursor.take(BindingField::RedoPayload, 1)? != [1] {
+        return Err(BindingInspectionDenial::InvalidFrame);
+    }
+    cursor.take(BindingField::RedoPayload, 24)?; // previous directory record
+    inspect_publication(cursor)?;
+    cursor.take(BindingField::RedoPayload, 32)?; // previous payload digest
+    cursor.take(BindingField::RedoPayload, 64)?; // next directory binding
+    inspect_publication(cursor)?;
+    match cursor.take(BindingField::RedoPayload, 1)? {
+        [0 | 1] => Ok(()),
+        [2] => cursor.take(BindingField::RedoPayload, 24).map(|_| ()),
+        _ => Err(BindingInspectionDenial::InvalidFrame),
+    }
+}
+
+fn inspect_publication(cursor: &mut ByteCursor<'_>) -> Result<(), BindingInspectionDenial> {
+    match cursor.take(BindingField::RedoPayload, 1)? {
+        [0] => Ok(()),
+        [1] => cursor
+            .take(BindingField::RedoPayload, 24 + 8 + 32)
+            .map(|_| ()),
+        _ => Err(BindingInspectionDenial::InvalidFrame),
+    }
 }
 
 fn write_field(target: &mut Vec<u8>, field: &[u8]) {

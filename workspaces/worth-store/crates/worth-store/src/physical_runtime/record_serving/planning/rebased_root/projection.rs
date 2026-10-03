@@ -80,6 +80,11 @@ pub(super) fn project_successor_root(
                 .indexed_through_quarantine
                 .flatten(),
             context.current_root.latest_blob_quarantine(),
+            prepared
+                .derived_updates
+                .released_directory_rebinding
+                .is_some(),
+            &prepared.drop_records,
         ) {
             return Err(damaged());
         }
@@ -146,9 +151,22 @@ fn directory_rebase_matches(
     expected_previous: Option<DerivedFamilyRootDirectoryBinding>,
     proposed_quarantine: Option<PersistedRecordIdentity>,
     current_quarantine: Option<PersistedRecordIdentity>,
+    released_rebinding: bool,
+    drops: &std::collections::BTreeSet<PersistedRecordIdentity>,
 ) -> bool {
+    if current_directory != expected_previous {
+        return false;
+    }
+    if released_rebinding {
+        // A released rebinding only clears the watermark naming a dropped
+        // publication; the directory may lag a newer surviving publication
+        // and quarantine, which stay the root's own latest hints.
+        return proposed_indexed_through.is_none()
+            && expected_previous
+                .and_then(|binding| binding.indexed_through_blob_publication())
+                .is_some_and(|indexed| drops.contains(&indexed.record()));
+    }
     current_blob_publication == proposed_indexed_through
-        && current_directory == expected_previous
         && current_quarantine == proposed_quarantine
 }
 
@@ -170,6 +188,8 @@ mod directory_rebase_tests {
             Some(originally_selected),
             None,
             None,
+            false,
+            &std::collections::BTreeSet::new(),
         ));
         assert!(!directory_rebase_matches(
             Some(watermark),
@@ -178,6 +198,8 @@ mod directory_rebase_tests {
             Some(originally_selected),
             None,
             None,
+            false,
+            &std::collections::BTreeSet::new(),
         ));
         assert!(!directory_rebase_matches(
             Some(watermark),
@@ -186,6 +208,8 @@ mod directory_rebase_tests {
             Some(originally_selected),
             Some(record(4)),
             Some(record(5)),
+            false,
+            &std::collections::BTreeSet::new(),
         ));
     }
 }

@@ -83,6 +83,8 @@ impl ReleaseLedgerState {
             prior_cumulative_digest: accumulator.cumulative_digest(),
             prior_tip: Some(tip),
             prior_terminal: accumulator.terminal(),
+            allocation_custody: None,
+            checkpoint_backing: None,
         }))
     }
 }

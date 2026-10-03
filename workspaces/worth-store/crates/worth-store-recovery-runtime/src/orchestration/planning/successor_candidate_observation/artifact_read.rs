@@ -121,32 +121,3 @@ pub(super) fn observed(
         .map_err(|failure| memory_failure(artifact, allowance, failure))?;
     Ok(RecoveryObservedCandidateArtifact { artifact, bytes })
 }
-
-pub(super) fn required_source(
-    result: Result<ObservedRecoveryArtifact, RecoveryDiscoveryFailure>,
-    artifact: RecordArtifactFile,
-) -> Result<ObservedRecoveryArtifact, PhysicalRecoverySuccessorCandidateDenial> {
-    match result {
-        Ok(observed) => Ok(observed),
-        Err(failure) => Err(PhysicalRecoverySuccessorCandidateDenial::Discovery {
-            artifact,
-            generation: artifact_generation(artifact),
-            failure,
-        }),
-    }
-}
-
-pub(super) fn optional_source(
-    result: Result<ObservedRecoveryArtifact, RecoveryDiscoveryFailure>,
-    artifact: RecordArtifactFile,
-) -> Result<Option<ObservedRecoveryArtifact>, PhysicalRecoverySuccessorCandidateDenial> {
-    match result {
-        Ok(observed) if observed.bytes().is_some() => Ok(Some(observed)),
-        Ok(_) => Ok(None),
-        Err(failure) => Err(PhysicalRecoverySuccessorCandidateDenial::Discovery {
-            artifact,
-            generation: artifact_generation(artifact),
-            failure,
-        }),
-    }
-}

@@ -36,8 +36,4 @@ impl AdmittedBlobPlacementMovementPlan {
     pub const fn cold_outcome(&self) -> BlobPlacementMovementColdOutcome {
         self.cold_outcome
     }
-
-    pub(crate) const fn basis(&self) -> &BlobPlacementMovementBasis {
-        &self.basis
-    }
 }

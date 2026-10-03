@@ -84,6 +84,7 @@ impl<'scope, 'owner> HeadWalkStorage<'scope, 'owner> {
         Ok(values)
     }
 
+    #[cfg(test)]
     pub(super) fn reserve_bytes(&mut self, count: usize) -> Result<Vec<u8>, Denial> {
         let mut values = self.reserve_vec(count)?;
         values.resize(count, 0);

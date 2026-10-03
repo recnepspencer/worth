@@ -103,6 +103,15 @@ pub(in crate::physical_runtime) struct MaintenanceRetainedDirectoryCharge {
 }
 
 impl MaintenancePhysicalAllocation<'_> {
+    pub(in crate::physical_runtime) fn try_resize(
+        &mut self,
+        bytes: u64,
+    ) -> Result<(), super::PhysicalScopedAllocationFailure> {
+        self.allocation.grant.try_resize(bytes).map_err(|denial| {
+            super::PhysicalScopedAllocationFailure::from_denial(denial, self.allocation.generation)
+        })
+    }
+
     pub(in crate::physical_runtime) fn into_retained_directory_charge(
         self,
     ) -> MaintenanceRetainedDirectoryCharge {

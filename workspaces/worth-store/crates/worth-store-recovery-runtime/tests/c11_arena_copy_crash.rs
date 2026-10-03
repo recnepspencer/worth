@@ -1,4 +1,4 @@
-#[path = "c11_arena_crash_support.rs"]
+#[path = "c11_arena_crash_support/mod.rs"]
 mod support;
 
 use std::{

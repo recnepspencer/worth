@@ -232,6 +232,23 @@ impl RouteWalkStorage for HistoricalWalkStorage<'_, '_> {
             .read_record_artifact_with_storage(artifact, limit, self)
             .map_err(read_denial)
     }
+    fn read_page_range(
+        &mut self,
+        discovery: &mut worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery,
+        artifact: RecordArtifactFile,
+        offset: u64,
+        length: u32,
+    ) -> Result<ObservedRecoveryArtifact, Denial> {
+        discovery
+            .read_record_artifact_range_with_storage(
+                artifact,
+                offset,
+                length,
+                u64::from(length),
+                self,
+            )
+            .map_err(read_denial)
+    }
     fn discard_frame(&mut self, frame: ObservedRecoveryArtifact) -> Result<(), Denial> {
         let bytes = frame.owned_heap_bytes().ok_or_else(|| self.overflow())?;
         drop(frame);

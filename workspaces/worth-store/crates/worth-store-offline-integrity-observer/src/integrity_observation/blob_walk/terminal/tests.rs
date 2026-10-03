@@ -65,10 +65,6 @@ fn expiry_requires_completed_current_checkpoint_crossing_original_maximum() {
                 5,
                 &SelectedCheckpointEvidence::Validated {
                     sequence: current,
-                    wal_frontier: 2,
-                    wal_cutoff: 1,
-                    source_root: 1,
-                    checkpoint_stream_sha256: [0; 32],
                     release_claim: None,
                 }
             ) == Outcome::Intact,
@@ -109,10 +105,6 @@ fn expiry_graph_uses_authenticated_declaration_maximum() {
         &records,
         &SelectedCheckpointEvidence::Validated {
             sequence: 20,
-            wal_frontier: 2,
-            wal_cutoff: 1,
-            source_root: 1,
-            checkpoint_stream_sha256: [0; 32],
             release_claim: None,
         },
     );

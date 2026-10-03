@@ -68,6 +68,11 @@ fn corrupt_extent_recovery_frame_stops_before_owner_projection() {
         let mut manifest_bytes = [0_u8; EXTENT_ARENA_MANIFEST_FRAME_BYTES];
         file.read_exact(&mut manifest_bytes).unwrap();
         let (manifest, format) = DurableExtentManifest::decode(&manifest_bytes).unwrap();
+        // The literal root-tree route and the addressed manifest bind one extent.
+        assert_eq!(manifest.record(), route.record);
+        assert_eq!(manifest.extent().get(), route.extent);
+        assert_eq!(manifest.extent_cell().generation().get(), route.generation);
+        assert_eq!(manifest.logical_bytes(), route.payload_bytes);
         let chunk_offset = ExtentArenaFrameLayout::new(format, manifest.alignment())
             .unwrap()
             .chunk_offset(1)

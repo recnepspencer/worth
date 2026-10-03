@@ -1,9 +1,9 @@
 use crate::{OriginalDropReservationRequestV1, PersistedRecordIdentity, ReleasedDropPredecessorV1};
 
 use super::{
-    read_checkpoint, read_record, write_checkpoint, write_prefix, write_record, Cursor,
-    PhysicalCheckpointIdentity, ReleaseCheckpointCertificateDenial, ReleasedDropTipProvenanceV1,
-    ReleasedDropWalFateWitnessV1, BATCH_KIND, PREFIX_BYTES,
+    read_checkpoint, read_record, Cursor, PhysicalCheckpointIdentity,
+    ReleaseCheckpointCertificateDenial, ReleasedDropTipProvenanceV1, ReleasedDropWalFateWitnessV1,
+    BATCH_KIND, PREFIX_BYTES,
 };
 
 pub const RELEASE_CHECKPOINT_BATCH_WIRE_BYTES: usize =
@@ -94,34 +94,64 @@ impl ReleaseCheckpointBatchV1 {
     }
 
     pub fn encode(self) -> Vec<u8> {
-        let mut out = Vec::with_capacity(RELEASE_CHECKPOINT_BATCH_WIRE_BYTES);
-        write_prefix(&mut out, BATCH_KIND);
-        write_checkpoint(&mut out, self.checkpoint);
-        out.extend_from_slice(&self.root_generation.to_le_bytes());
-        out.extend_from_slice(&self.root_sha256);
-        out.extend_from_slice(&self.ordinal.to_le_bytes());
-        write_record(&mut out, self.descriptor_record);
-        out.extend_from_slice(&self.descriptor_frame_sha256);
-        out.extend_from_slice(&self.custody_digest);
-        write_record(&mut out, self.reservation_record);
-        out.extend_from_slice(&self.reservation_frame_sha256);
-        out.extend_from_slice(&self.request.idempotency());
-        out.extend_from_slice(&self.request.fingerprint());
-        out.extend_from_slice(&self.request.lease_issuance_generation().to_le_bytes());
-        out.extend_from_slice(&self.request.lease_expiry_generation().to_le_bytes());
-        self.fate.write(&mut out);
-        out.extend_from_slice(&self.candidate_root_generation.to_le_bytes());
-        out.extend_from_slice(&self.candidate_root_sha256);
-        if let Some(prior) = self.predecessor {
-            write_record(&mut out, prior.descriptor_record());
-            out.extend_from_slice(&prior.descriptor_frame_sha256());
-        } else {
-            out.extend_from_slice(&[0; 56]);
+        self.encode_in_reserved(Vec::with_capacity(RELEASE_CHECKPOINT_BATCH_WIRE_BYTES))
+            .expect("fixed release batch wire capacity")
+    }
+
+    /// Reuses caller-admitted backing; insufficient capacity performs no write.
+    pub fn encode_in_reserved(self, mut out: Vec<u8>) -> Option<Vec<u8>> {
+        if out.capacity() < RELEASE_CHECKPOINT_BATCH_WIRE_BYTES {
+            return None;
         }
-        out.extend_from_slice(&self.cumulative_dropped.to_le_bytes());
-        out.extend_from_slice(&self.cumulative_digest);
-        out.push(u8::from(self.terminal));
-        debug_assert_eq!(out.len(), RELEASE_CHECKPOINT_BATCH_WIRE_BYTES);
+        out.clear();
+        out.extend_from_slice(&self.encode_fixed());
+        Some(out)
+    }
+
+    pub fn encode_fixed(self) -> [u8; RELEASE_CHECKPOINT_BATCH_WIRE_BYTES] {
+        let mut out = [0; RELEASE_CHECKPOINT_BATCH_WIRE_BYTES];
+        let mut checkpoint = [0; 24];
+        super::encode_identity(&mut checkpoint, self.checkpoint);
+        let mut cursor = 0;
+        let mut write = |value: &[u8]| {
+            out[cursor..cursor + value.len()].copy_from_slice(value);
+            cursor += value.len();
+        };
+        write(&(super::DOMAIN.len() as u64).to_le_bytes());
+        write(super::DOMAIN);
+        write(&[super::VERSION, BATCH_KIND]);
+        write(&checkpoint);
+        write(&self.root_generation.to_le_bytes());
+        write(&self.root_sha256);
+        write(&self.ordinal.to_le_bytes());
+        write(&self.descriptor_record.allocation_epoch());
+        write(&self.descriptor_record.ordinal().to_le_bytes());
+        write(&self.descriptor_frame_sha256);
+        write(&self.custody_digest);
+        write(&self.reservation_record.allocation_epoch());
+        write(&self.reservation_record.ordinal().to_le_bytes());
+        write(&self.reservation_frame_sha256);
+        write(&self.request.idempotency());
+        write(&self.request.fingerprint());
+        write(&self.request.lease_issuance_generation().to_le_bytes());
+        write(&self.request.lease_expiry_generation().to_le_bytes());
+        write(&self.fate.lsn_start().to_le_bytes());
+        write(&self.fate.lsn_end_exclusive().to_le_bytes());
+        write(&self.fate.identity_digest());
+        write(&self.fate.payload_digest());
+        write(&self.candidate_root_generation.to_le_bytes());
+        write(&self.candidate_root_sha256);
+        if let Some(prior) = self.predecessor {
+            write(&prior.descriptor_record().allocation_epoch());
+            write(&prior.descriptor_record().ordinal().to_le_bytes());
+            write(&prior.descriptor_frame_sha256());
+        } else {
+            write(&[0; 56]);
+        }
+        write(&self.cumulative_dropped.to_le_bytes());
+        write(&self.cumulative_digest);
+        write(&[u8::from(self.terminal)]);
+        debug_assert_eq!(cursor, RELEASE_CHECKPOINT_BATCH_WIRE_BYTES);
         out
     }
 

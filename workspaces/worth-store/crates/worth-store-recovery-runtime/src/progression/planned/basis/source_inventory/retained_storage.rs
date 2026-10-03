@@ -2,19 +2,7 @@
 
 use super::*;
 
-impl RecoveryObservedSuccessorCandidate {
-    pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {
-        let arrays = u64::try_from(std::mem::size_of_val(&*self.placements))
-            .ok()?
-            .checked_add(u64::try_from(std::mem::size_of_val(&*self.segment_entries)).ok()?)?
-            .checked_add(u64::try_from(std::mem::size_of_val(&*self.free_entries)).ok()?)?
-            .checked_add(u64::try_from(std::mem::size_of_val(&*self.referenced_artifacts)).ok()?)?
-            .checked_add(u64::try_from(std::mem::size_of_val(&*self.artifacts)).ok()?)?;
-        self.artifacts.iter().try_fold(arrays, |bytes, artifact| {
-            bytes.checked_add(u64::try_from(artifact.bytes.len()).ok()?)
-        })
-    }
-}
+impl RecoveryObservedSuccessorCandidate {}
 
 impl RecoverySelectedSourceInventory {
     pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {

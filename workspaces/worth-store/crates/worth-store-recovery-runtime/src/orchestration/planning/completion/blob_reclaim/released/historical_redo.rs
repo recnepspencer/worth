@@ -19,16 +19,11 @@ pub(in crate::orchestration::planning::completion) fn verify_historical(
     let descriptor = evidence.descriptor;
     let base = descriptor.base();
     let custody = descriptor.custody();
-    let selected_generation = context
-        .selection
-        .root()
-        .selected()
-        .selector()
-        .root_generation();
-    let advanced_chain = evidence.chain.as_ref();
-    let ordered_history = evidence.ordered_history.as_deref();
-    let ordered_edge = ordered_history.and_then(|history| {
-        let mut matching = history.edges().iter().filter_map(|edge| match edge {
+    let ordered_history = &*evidence.ordered_history;
+    let mut matching = ordered_history
+        .edges()
+        .iter()
+        .filter_map(|edge| match edge {
             worth_store_recovery_physics::VerifiedOrderedRootEdge::Released(edge)
                 if edge.operation() == evidence.operation =>
             {
@@ -36,47 +31,22 @@ pub(in crate::orchestration::planning::completion) fn verify_historical(
             }
             _ => None,
         });
-        let first = matching.next()?;
-        matching.next().is_none().then_some(first)
-    });
+    let (Some(ordered_edge), None) = (matching.next(), matching.next()) else {
+        return Err(context.redo_block(basis.planning_counters(), None));
+    };
+    let selected_root_sha = <[u8; 32]>::from(Sha256::digest(
+        context
+            .selection
+            .root()
+            .selected()
+            .manifest()
+            .encode(context.authority.record_format),
+    ));
     if base.store() != context.authority.media.store_identity().bytes()
         || base.source_root_generation().checked_add(1) != Some(base.candidate_root_generation())
-        || advanced_chain.map_or_else(
-            || {
-                ordered_history.map_or_else(
-                    || base.candidate_root_generation() != selected_generation,
-                    |history| {
-                        ordered_edge.is_none_or(|edge| {
-                            edge.candidate_root_generation() != base.candidate_root_generation()
-                                || edge.descriptor_record() != evidence.descriptor_record
-                        }) || history.selected_root_frame_sha256()
-                            != <[u8; 32]>::from(Sha256::digest(
-                                context
-                                    .selection
-                                    .root()
-                                    .selected()
-                                    .manifest()
-                                    .encode(context.authority.record_format),
-                            ))
-                    },
-                )
-            },
-            |chain| {
-                chain.descriptor_operation() != evidence.operation
-                    || chain.source_root_generation() != base.source_root_generation()
-                    || chain.first_result_generation() != base.candidate_root_generation()
-                    || chain.checkpoint_root_frame_sha256().is_none()
-                    || chain.selected_root_frame_sha256()
-                        != <[u8; 32]>::from(Sha256::digest(
-                            context
-                                .selection
-                                .root()
-                                .selected()
-                                .manifest()
-                                .encode(context.authority.record_format),
-                        ))
-            },
-        )
+        || ordered_edge.candidate_root_generation() != base.candidate_root_generation()
+        || ordered_edge.descriptor_record() != evidence.descriptor_record
+        || ordered_history.selected_root_frame_sha256() != selected_root_sha
         || custody.request().idempotency() != evidence.operation
         || base.manifest_record() == evidence.descriptor_record
     {
@@ -247,112 +217,76 @@ pub(in crate::orchestration::planning::completion) fn verify_historical(
         .observed_pages
         .historical_publication_peak_scratch_bytes
         .max(scratch_bytes);
-    let candidate = if advanced_chain.is_some() || ordered_edge.is_some() {
-        let (next, candidate) = historical_publication::observe(
-            context,
-            basis,
-            base.candidate_root_generation(),
-            evidence.descriptor_record,
-            |discovery, root, route, budget, trace, _| {
-                if route.is_none() {
-                    return Err(HistoricalFailure::Invalid);
-                }
-                let inventory = selected_source_inventory::observe_with_budget(
-                    discovery,
-                    root,
-                    format,
-                    budget,
-                    u64::from(format.page_size().bytes()),
-                    trace,
-                )
-                .map_err(|_| HistoricalFailure::Invalid)?;
-                Ok((root.clone(), inventory))
-            },
-        )?;
-        context = next;
-        let (next, routes) = historical_publication::observe_all_routes(
-            context,
-            basis,
-            base.candidate_root_generation(),
-            evidence.descriptor_record,
-        )?;
-        context = next;
-        Some((candidate.0, candidate.1, routes))
-    } else {
-        None
-    };
-    let head_replay = if let Some(edge) = ordered_edge {
-        let mut matching = basis
-            .observed_pages
-            .ordered_releases
-            .iter()
-            .flatten()
-            .filter(|release| release.operation == evidence.operation);
-        let Some(release) = matching.next() else {
-            return Err(context.redo_block(basis.planning_counters(), None));
-        };
-        if matching.next().is_some()
-            || release.descriptor != descriptor
-            || release.head_replay.source_root_frame_sha256() != edge.source_root_frame_sha256()
-            || release.head_replay.result_root_frame_sha256() != edge.result_root_frame_sha256()
-        {
-            return Err(context.redo_block(basis.planning_counters(), None));
-        }
-        Some(release.head_replay.replay())
-    } else {
-        None
-    };
-    let transition = if let Some((root, inventory, routes)) = candidate.as_ref() {
-        verified_historical_release_transition(
-            &historical_source.0,
-            &historical_source.1,
-            &source_routes,
-            root,
-            inventory,
-            routes,
-            &removed,
-            &projected,
-            head_replay,
-            format,
-            context.limits.manifest_entries,
-            context.limits.staging_bytes,
-        )
-    } else {
-        verified_historical_release_transition(
-            &historical_source.0,
-            &historical_source.1,
-            &source_routes,
-            context.selection.root().selected().manifest(),
-            &basis.observed_pages.selected_source,
-            context.selection.page_facts().placements(),
-            &removed,
-            &projected,
-            head_replay,
-            format,
-            context.limits.manifest_entries,
-            context.limits.staging_bytes,
-        )
-    };
-    let Some((transition, input_scratch)) = transition else {
+    let (next, candidate) = historical_publication::observe(
+        context,
+        basis,
+        base.candidate_root_generation(),
+        evidence.descriptor_record,
+        |discovery, root, route, budget, trace, _| {
+            if route.is_none() {
+                return Err(HistoricalFailure::Invalid);
+            }
+            let inventory = selected_source_inventory::observe_with_budget(
+                discovery,
+                root,
+                format,
+                budget,
+                u64::from(format.page_size().bytes()),
+                trace,
+            )
+            .map_err(|_| HistoricalFailure::Invalid)?;
+            Ok((root.clone(), inventory))
+        },
+    )?;
+    context = next;
+    let (next, candidate_routes) = historical_publication::observe_all_routes(
+        context,
+        basis,
+        base.candidate_root_generation(),
+        evidence.descriptor_record,
+    )?;
+    context = next;
+    // Ordered history joined the replacement to its historical source bytes.
+    let directory_replacement = ordered_edge.transition().directory_replacement();
+    let mut matching = basis
+        .observed_pages
+        .ordered_releases
+        .iter()
+        .flatten()
+        .filter(|release| release.operation == evidence.operation);
+    let (Some(release), None) = (matching.next(), matching.next()) else {
         return Err(context.redo_block(basis.planning_counters(), None));
     };
-    if advanced_chain.is_some_and(|chain| {
-        chain.first_transition() != &transition
-            || !chain.selected_topology().matches_headers(
-                context.selection.root().selected().manifest(),
-                &basis.observed_pages.selected_source.free_space,
-                format,
-            )
-    }) || ordered_edge.is_some_and(|edge| {
-        edge.transition() != &transition
-            || ordered_history.is_none_or(|history| {
-                !history.selected_topology().matches_headers(
-                    context.selection.root().selected().manifest(),
-                    &basis.observed_pages.selected_source.free_space,
-                    format,
-                )
-            })
-    }) {
+    if release.descriptor != descriptor
+        || release.head_replay.source_root_frame_sha256() != ordered_edge.source_root_frame_sha256()
+        || release.head_replay.result_root_frame_sha256() != ordered_edge.result_root_frame_sha256()
+    {
+        return Err(context.redo_block(basis.planning_counters(), None));
+    }
+    let Some((transition, input_scratch)) = verified_historical_release_transition(
+        &historical_source.0,
+        &historical_source.1,
+        &source_routes,
+        &candidate.0,
+        &candidate.1,
+        &candidate_routes,
+        &removed,
+        &projected,
+        Some(release.head_replay.replay()),
+        directory_replacement,
+        format,
+        context.limits.manifest_entries,
+        context.limits.staging_bytes,
+    ) else {
+        return Err(context.redo_block(basis.planning_counters(), None));
+    };
+    if ordered_edge.transition() != &transition
+        || !ordered_history.selected_topology().matches_headers(
+            context.selection.root().selected().manifest(),
+            &basis.observed_pages.selected_source.free_space,
+            format,
+        )
+    {
         return Err(context.redo_block(basis.planning_counters(), None));
     }
     basis
@@ -371,6 +305,7 @@ pub(in crate::orchestration::planning::completion) fn verify_historical(
         descriptor,
         evidence.descriptor_record,
         &manifest,
+        directory_replacement.is_some(),
     )?;
     basis
         .verified_historical_release_operations

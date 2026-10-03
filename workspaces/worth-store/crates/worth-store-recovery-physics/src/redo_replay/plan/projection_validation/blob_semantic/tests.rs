@@ -52,6 +52,7 @@ fn released_drop_replay_requires_exact_selected_descriptor_binding() {
         PersistedPhysicalRecoveryOperation::RecordsDropped {
             binding,
             head_effect: None,
+            directory_replacement: None,
         },
     );
     assert_eq!(
@@ -78,6 +79,7 @@ fn released_drop_replay_requires_exact_selected_descriptor_binding() {
                 PersistedPhysicalRecoveryOperation::RecordsDropped {
                     binding: wrong,
                     head_effect: None,
+                    directory_replacement: None,
                 }
             ),
         ),

@@ -153,5 +153,4 @@ impl LayoutMaterializationSourceIdentity {
     pub const fn kind(&self) -> LayoutMaterializationSourceKind {
         self.kind
     }
-
 }

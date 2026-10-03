@@ -1,5 +1,5 @@
-use worth_store_budgets::{PreExecutionBudgetEnvelope, PreExecutionBudgetScope};
 use super::AccessPlanSelector;
+use worth_store_budgets::{PreExecutionBudgetEnvelope, PreExecutionBudgetScope};
 
 #[test]
 fn selected_read_authority_is_a_compact_handle_to_native_plan_identity() {
@@ -24,7 +24,8 @@ fn selected_read_authority_is_a_compact_handle_to_native_plan_identity() {
 fn plan_identity_equality_includes_exact_admitted_budget_posture() {
     let (family, domain) = crate::strategy::tests_support::admit_persisted_lsm_scope();
     let catalog = crate::bootstrap::test_support::bootstrap_catalog_read_admission();
-    let materialization = crate::strategy::tests_support::persisted_lsm_materialization(family, &catalog).0;
+    let materialization =
+        crate::strategy::tests_support::persisted_lsm_materialization(family, &catalog).0;
     let select = |budget| {
         let key = crate::keyspace::admit_wal_key(
             domain,

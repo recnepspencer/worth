@@ -2,16 +2,17 @@
 //! remain owned by the tier and released-drop authorities respectively.
 
 use super::record::{
-    decode_bounded_record, decode_bounded_record_frame_bytes, encode_record_schema,
-    CheckpointStreamDecodeDenial, CERTIFIED_CHECKPOINT_SCHEMA, RELEASE_CUSTODY_CERTIFICATE_KIND,
-    TIER_EPOCH_CERTIFICATE_KIND,
+    decode_bounded_record, decode_bounded_record_frame_bytes, encode_record_schema_in_reserved,
+    CheckpointStreamDecodeDenial, CheckpointStreamEncodingDenial, CERTIFIED_CHECKPOINT_SCHEMA,
+    RELEASE_CUSTODY_CERTIFICATE_KIND, TIER_EPOCH_CERTIFICATE_KIND,
 };
 
 pub const MAX_CHECKPOINT_CERTIFICATE_RECORDS: u64 = 64;
 pub const MAX_CHECKPOINT_CERTIFICATE_BYTES: u64 = 65_536;
 pub const CHECKPOINT_CERTIFICATE_PREFIX_BYTES: usize = 16;
-const RECORD_OVERHEAD: usize = 20;
-const MAX_PAYLOAD_BYTES: usize = MAX_CHECKPOINT_CERTIFICATE_BYTES as usize - RECORD_OVERHEAD;
+pub const CHECKPOINT_CERTIFICATE_RECORD_OVERHEAD_BYTES: usize = 20;
+const MAX_PAYLOAD_BYTES: usize =
+    MAX_CHECKPOINT_CERTIFICATE_BYTES as usize - CHECKPOINT_CERTIFICATE_RECORD_OVERHEAD_BYTES;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CheckpointCertificateKind {
@@ -40,17 +41,35 @@ pub fn encode_checkpoint_certificate(
     kind: CheckpointCertificateKind,
     payload: &[u8],
 ) -> Result<Vec<u8>, CheckpointStreamDecodeDenial> {
+    validate_payload(payload)?;
+    let mut record =
+        Vec::with_capacity(CHECKPOINT_CERTIFICATE_RECORD_OVERHEAD_BYTES + payload.len());
+    encode_checkpoint_certificate_in_reserved(kind, payload, &mut record).map_err(|denial| {
+        denial
+            .into_format()
+            .expect("allocated certificate frame capacity")
+    })?;
+    Ok(record)
+}
+
+/// Writes canonical framing without growing caller-owned backing.
+pub fn encode_checkpoint_certificate_in_reserved(
+    kind: CheckpointCertificateKind,
+    payload: &[u8],
+    record: &mut Vec<u8>,
+) -> Result<(), CheckpointStreamEncodingDenial> {
+    validate_payload(payload)?;
+    encode_record_schema_in_reserved(CERTIFIED_CHECKPOINT_SCHEMA, kind.code(), payload, record)
+}
+
+fn validate_payload(payload: &[u8]) -> Result<(), CheckpointStreamDecodeDenial> {
     if payload.is_empty() {
         return Err(CheckpointStreamDecodeDenial::EmptyBindingRecord);
     }
     if payload.len() > MAX_PAYLOAD_BYTES {
         return Err(CheckpointStreamDecodeDenial::BindingRecordTooLarge);
     }
-    Ok(encode_record_schema(
-        CERTIFIED_CHECKPOINT_SCHEMA,
-        kind.code(),
-        payload,
-    ))
+    Ok(())
 }
 
 pub fn checkpoint_certificate_frame_bytes(
@@ -69,7 +88,7 @@ pub fn checkpoint_certificate_frame_bytes(
 pub fn decode_checkpoint_certificate(
     record: &[u8],
 ) -> Result<(CheckpointCertificateKind, &[u8]), CheckpointStreamDecodeDenial> {
-    if record.len() < RECORD_OVERHEAD {
+    if record.len() < CHECKPOINT_CERTIFICATE_RECORD_OVERHEAD_BYTES {
         return Err(CheckpointStreamDecodeDenial::Truncated);
     }
     if record[8] != CERTIFIED_CHECKPOINT_SCHEMA {
