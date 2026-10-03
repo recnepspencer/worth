@@ -170,7 +170,7 @@ where
         if !selected_owns_action && !application.contains_action::<Intent::Binding>() {
             return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
         }
-        match self.prepare_candidate(|request, identities, staged| {
+        match self.prepare_candidate(move |request, identities, staged| {
             super::authorization::prepare_selected(request, identities, staged, &selected)
         })? {
             CandidatePreparation::Prepared(candidate) => {
