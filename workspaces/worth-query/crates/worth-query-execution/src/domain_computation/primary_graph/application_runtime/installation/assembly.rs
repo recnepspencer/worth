@@ -84,6 +84,30 @@ where
             std::sync::Arc::clone(&authorization_clock),
         ),
     );
+    let obligation_budget = graph
+        .runtime
+        .output_demand_resource_profile()
+        .registry_obligation_retained_bytes();
+    let required_budget = graph
+        .runtime
+        .output_demand_resource_profile()
+        .registry_required_retained_bytes();
+    let record_budget = graph
+        .runtime
+        .output_demand_resource_profile()
+        .registry_record_retained_bytes();
+    graph
+        .primary_provider
+        .graph
+        .output_lineage
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .set_lineage_retention_maximum(
+            graph
+                .runtime
+                .output_demand_resource_profile()
+                .lineage_retained_bytes(),
+        );
     Ok(WorthQueryPrimaryGraphApplicationRuntime {
         runtime: graph.runtime,
         installed_schema,
@@ -119,7 +143,7 @@ where
         output_readiness_routes,
         next_output_producer_attempt: std::sync::atomic::AtomicU64::new(1),
         next_application_mutation_partition: std::sync::atomic::AtomicU32::new(1),
-        output_demands: Default::default(),
+        output_demands: super::super::super::application_output_demand::WorthQueryOutputDemandRegistry::with_budgets(obligation_budget, record_budget, required_budget),
         recovered_outputs: Default::default(),
         program_required_bindings,
         program_required_operations,

@@ -4,6 +4,8 @@ mod aspect_versions;
 mod context;
 mod diagnostics;
 mod kind_scan_visibility;
+mod native_output_probe;
+mod positioned_snapshot;
 mod query_execution;
 mod query_fragment_scratch;
 mod query_fragment_work;
@@ -68,6 +70,9 @@ use super::ProjectionAspectFilter;
 const TARGET_TRAVERSAL_SEEDS_PER_PACKET: usize = 4;
 pub use context::VisibilityReadContext;
 pub(crate) use kind_scan_visibility::KindScanVisibility;
+pub use positioned_snapshot::{
+    PositionedRelationalSnapshot, RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial,
+};
 pub use query_execution::{QueryLeasedReadOutcome, QueryReadExecutionStop, QueryReadPacketDenial};
 use query_fragment_scratch::QueryFragmentScratch;
 pub use truth_adjacency::{AdjacencyTruthReadLimitExceeded, BoundedAdjacencyTruthRead};

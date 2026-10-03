@@ -37,7 +37,8 @@ pub use publication_outcome::{
     RelationalBridgePublicationStale,
 };
 pub use runtime_source::{
-    RelationalBridgeBranchHeadLease, RelationalBridgeBranchHeadReleaseReceipt,
+    PendingRelationalBridgeCanonicalSubscription, RelationalBridgeBranchHeadLease,
+    RelationalBridgeBranchHeadReleaseReceipt, RelationalBridgeCanonicalSubscription,
     RelationalBridgeObservationLease, RelationalBridgeObservationReleaseReceipt,
     RelationalBridgeRetainedSnapshot, RelationalBridgeSourceConfigurationError,
     RuntimeBridgeRelationalSource,

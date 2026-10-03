@@ -17,6 +17,16 @@ where
     let commit_lane = application
         .primary_provider
         .application_branch_commit_lane(product.observation());
+    let commit_lane = match commit_lane {
+        Ok(lane) => lane,
+        Err(_) => {
+            return Some(WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::retention_capacity_exhausted(
+                    DenialStage::DecisionReadSet,
+                ),
+            ));
+        }
+    };
     let coordination = commit_lane.enter();
     let proof = match application.authorize_retained_idempotency(admission, &coordination) {
         Ok(proof) => proof,

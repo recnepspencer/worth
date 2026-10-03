@@ -1,4 +1,4 @@
-//! Bounded v5 wire for the complete, postcommit-rebased producer fact set.
+//! Bounded v6 wire for postcommit producer facts and native output expectations.
 //! Unsupported decision facts are deliberately not checkpoint-reusable.
 
 use std::sync::Arc;
@@ -14,16 +14,22 @@ use worth_relational::facade::{
 use super::CheckpointCursor;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 
+mod indexed_selection;
+
 pub(super) const MAXIMUM_FACT_BYTES: usize = 1024 * 1024;
-const MAXIMUM_FACTS: usize = 4096;
+pub(super) const MAXIMUM_FACTS: usize = 4096;
 const MAXIMUM_TEXT: usize = 4096;
 const MAXIMUM_FIELD_DEPTH: usize = 32;
 
 pub(in crate::domain_computation::primary_graph) fn encode(facts: &[Fact]) -> Option<Vec<u8>> {
+    encode_with_capacity(facts, 0)
+}
+
+pub(super) fn encode_with_capacity(facts: &[Fact], capacity: usize) -> Option<Vec<u8>> {
     if facts.is_empty() || facts.len() > MAXIMUM_FACTS {
         return None;
     }
-    let mut bytes = Vec::new();
+    let mut bytes = Vec::with_capacity(capacity);
     put_u32(&mut bytes, u32::try_from(facts.len()).ok()?);
     for fact in facts {
         match fact {
@@ -86,6 +92,10 @@ pub(in crate::domain_computation::primary_graph) fn encode(facts: &[Fact]) -> Op
                 put_entity(&mut bytes, *entity_id);
                 put_u32(&mut bytes, kind.as_u32());
             }
+            Fact::IndexedEntitySelection { .. } => {
+                bytes.push(6);
+                indexed_selection::encode(&mut bytes, fact)?;
+            }
             _ => return None,
         }
         if bytes.len() > MAXIMUM_FACT_BYTES {
@@ -95,9 +105,21 @@ pub(in crate::domain_computation::primary_graph) fn encode(facts: &[Fact]) -> Op
     Some(bytes)
 }
 
+#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) fn decode(
     bytes: &[u8],
 ) -> Result<Arc<[Fact]>, String> {
+    decode_for_wire_version(bytes, 6)?
+        .ok_or_else(|| "producer facts require verification".to_owned())
+}
+
+pub(in crate::domain_computation::primary_graph) fn decode_for_wire_version(
+    bytes: &[u8],
+    wire_version: u16,
+) -> Result<Option<Arc<[Fact]>>, String> {
+    if !matches!(wire_version, 5 | 6) {
+        return Err("checkpoint producer fact wire version is unsupported".to_owned());
+    }
     if bytes.len() < 5 || bytes.len() > MAXIMUM_FACT_BYTES {
         return Err("checkpoint producer fact payload length is invalid".to_owned());
     }
@@ -108,19 +130,26 @@ pub(in crate::domain_computation::primary_graph) fn decode(
         return Err("checkpoint producer fact count is invalid".to_owned());
     }
     let mut facts = Vec::with_capacity(count);
+    let mut ambiguous_legacy_absence = false;
     for _ in 0..count {
         let fact = match cursor.next_byte()? {
             1 => Fact::SourceEntity {
                 entity_id: cursor.next_entity()?,
             },
-            2 => Fact::SourceAspectRevision {
-                entity_id: cursor.next_entity()?,
-                aspect: AspectKey::new(
+            2 => {
+                let entity_id = cursor.next_entity()?;
+                let aspect = AspectKey::new(
                     cursor.next_bounded_text(MAXIMUM_TEXT, "checkpoint fact aspect")?,
                 )
-                .ok_or_else(|| "checkpoint fact aspect is invalid".to_owned())?,
-                native_revision: next_optional_version(&mut cursor)?.map(VersionId::as_u64),
-            },
+                .ok_or_else(|| "checkpoint fact aspect is invalid".to_owned())?;
+                let native_revision = next_optional_version(&mut cursor)?.map(VersionId::as_u64);
+                ambiguous_legacy_absence |= wire_version == 5 && native_revision.is_none();
+                Fact::SourceAspectRevision {
+                    entity_id,
+                    aspect,
+                    native_revision,
+                }
+            }
             3 => {
                 let entity_id = cursor.next_entity()?;
                 let locator = next_locator(&mut cursor)?;
@@ -145,6 +174,7 @@ pub(in crate::domain_computation::primary_graph) fn decode(
                     _ => return Err("checkpoint adjacency direction is invalid".to_owned()),
                 };
                 let native_revision = next_optional_version(&mut cursor)?;
+                ambiguous_legacy_absence |= wire_version == 5 && native_revision.is_none();
                 let comparison_work_limit = usize::try_from(cursor.next_u64()?)
                     .map_err(|_| "checkpoint adjacency work limit exceeds host".to_owned())?;
                 let endpoint_count = usize::try_from(cursor.next_u32()?)
@@ -169,6 +199,7 @@ pub(in crate::domain_computation::primary_graph) fn decode(
                 entity_id: cursor.next_entity()?,
                 kind: KindId(cursor.next_u32()?),
             },
+            6 if wire_version >= 6 => indexed_selection::decode(&mut cursor)?,
             _ => return Err("checkpoint producer fact kind is unsupported".to_owned()),
         };
         facts.push(fact);
@@ -176,7 +207,7 @@ pub(in crate::domain_computation::primary_graph) fn decode(
     if !cursor.is_empty() {
         return Err("checkpoint producer fact payload length differs".to_owned());
     }
-    Ok(facts.into())
+    Ok((!ambiguous_legacy_absence).then(|| facts.into()))
 }
 
 fn put_locator(bytes: &mut Vec<u8>, locator: &AspectFieldLocator) -> Option<()> {

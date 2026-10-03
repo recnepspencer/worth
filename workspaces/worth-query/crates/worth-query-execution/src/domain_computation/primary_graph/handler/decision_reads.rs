@@ -39,7 +39,7 @@ where
         Entity:
             ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation> + 'static,
     {
-        self.reader()
+        self.reader
             .current_output(producer, role)
             .map_err(HandlerExecutionDenial::new)
     }
@@ -55,7 +55,7 @@ where
             ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation> + 'static,
         Action: super::super::WorthQueryApplicationOutputAction,
     {
-        self.reader()
+        self.reader
             .prior_output(role)
             .map_err(HandlerExecutionDenial::new)
     }
@@ -72,7 +72,7 @@ where
             ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation> + 'static,
         Action: super::super::WorthQueryApplicationOutputAction,
     {
-        self.reader()
+        self.reader
             .prior_output_if_present(role)
             .map_err(HandlerExecutionDenial::new)
     }
@@ -116,7 +116,7 @@ where
         Entity:
             ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation> + 'static,
     {
-        self.reader()
+        self.reader
             .prior_output_family(family)
             .map_err(HandlerExecutionDenial::new)
     }
@@ -134,7 +134,7 @@ where
         Entity:
             ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation> + 'static,
     {
-        self.reader()
+        self.reader
             .prior_output_family_if_present(family)
             .map_err(HandlerExecutionDenial::new)
     }
@@ -162,10 +162,10 @@ where
         Unit: ApplicationFieldUnit,
     {
         let identity = self
-            .reader()
+            .reader
             .resolve_entity(field, value)
             .map_err(HandlerExecutionDenial::new)?;
-        self.reader()
+        self.reader
             .require_decision_field(&identity, field)
             .map_err(HandlerExecutionDenial::new)?;
         Ok(identity)
@@ -194,11 +194,11 @@ where
         Unit: ApplicationFieldUnit,
     {
         let identity = self
-            .reader()
+            .reader
             .resolve_optional_entity(field, value)
             .map_err(HandlerExecutionDenial::new)?;
         if let Some(ref identity) = identity {
-            self.reader()
+            self.reader
                 .require_decision_field(identity, field)
                 .map_err(HandlerExecutionDenial::new)?;
         }
@@ -217,7 +217,7 @@ where
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
-        self.reader()
+        self.reader
             .decision_field(identity, field)
             .map_err(HandlerExecutionDenial::new)
     }
@@ -235,7 +235,7 @@ where
     where
         Relation: OperationReads<Binding::Operation>,
     {
-        self.reader().decision_relations_from(relation, source)
+        self.reader.decision_relations_from(relation, source)
     }
 
     /// Read the complete admitted incoming adjacency and retain absence as a
@@ -251,7 +251,7 @@ where
     where
         Relation: OperationReads<Binding::Operation>,
     {
-        self.reader().decision_relations_to(relation, target)
+        self.reader.decision_relations_to(relation, target)
     }
 
     /// Read the one target promised by an exactly-one outgoing cardinality
@@ -328,7 +328,7 @@ where
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
     ) -> Result<WorthQueryInvariantMutationTarget<Schema, Entity>, HandlerExecutionDenial> {
-        self.reader()
+        self.reader
             .mutation_target(identity)
             .map_err(HandlerExecutionDenial::new)
     }

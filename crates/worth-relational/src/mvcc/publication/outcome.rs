@@ -216,18 +216,14 @@ pub enum RelationalPublicationDenial {
 /// differs between variants is which bound was met, and therefore what the
 /// caller must do next.
 ///
-/// The variants do not share one entry surface. A
-/// `RelationalPublicationOutcome::Deferred` from
-/// `RelationalPublicationPort::compare_and_publish` can only ever be
-/// `PatchPositionReservationContended`, `RetentionBackpressure`, or
-/// `CandidateLifetimeExpired`. `CandidateCapacityExhausted` and
-/// `PublishedSnapshotCapacityExhausted` are raised only while a candidate is
-/// being prepared, so they reach a caller as
-/// `TransactionCommitError::PublicationDeferred` and never as a publication
-/// outcome. All five can surface from `commit_branch_transaction`, which
-/// prepares and publishes in one call.
+/// Candidate and published-snapshot capacity are checked during preparation;
+/// publication and required companion stops are checked by the publication port.
+/// `commit_branch_transaction` can expose either phase's typed deferral.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RelationalPublicationDeferred {
+    CompanionRegistrationPending,
+    CompanionRebindRequired,
+    CompanionPreflight(crate::mvcc::CompanionPreflightStop),
     /// Another publisher holds the runtime's single patch-position reservation.
     ///
     /// The reservation is one runtime-wide, nonblocking slot, held for the
@@ -279,7 +275,9 @@ pub enum RelationalPublicationDeferred {
     /// drops, so no path keeps the slot.
     ///
     /// Prepare again. An expired candidate cannot be renewed.
-    CandidateLifetimeExpired { maximum_lifetime_millis: u64 },
+    CandidateLifetimeExpired {
+        maximum_lifetime_millis: u64,
+    },
     /// The prepared-candidate population is full at `PublicationConfig`'s
     /// `max_prepared_candidates`, echoed here as `maximum_candidates`.
     ///
@@ -289,7 +287,9 @@ pub enum RelationalPublicationDeferred {
     ///
     /// Free a slot before preparing again by publishing a candidate, by
     /// `discard_prepared_candidate`, or by `reap_expired_prepared_candidates`.
-    CandidateCapacityExhausted { maximum_candidates: usize },
+    CandidateCapacityExhausted {
+        maximum_candidates: usize,
+    },
     /// The published snapshot handle population is full at
     /// `PublicationConfig`'s `max_published_snapshot_handles`, echoed here as
     /// `maximum_handles`.
@@ -308,7 +308,9 @@ pub enum RelationalPublicationDeferred {
     /// `release_snapshot` on `snapshots()` with the handle named by the commit
     /// result. A settlement record that is never claimed also closes its handle
     /// when it drops, but that is not on a schedule the caller controls.
-    PublishedSnapshotCapacityExhausted { maximum_handles: usize },
+    PublishedSnapshotCapacityExhausted {
+        maximum_handles: usize,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

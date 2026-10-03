@@ -31,7 +31,7 @@ fn async_keyed_node_historical_parity_report_preserves_family_identity_and_runti
         .expect("declared keyed node should surface capability handle");
 
     runtime.observe_nodes(
-        ObservationPolicy::touched(),
+        ObservationPolicy::visited(),
         [binding.node()],
         Box::new(NoopAsyncNodeObservationListener),
     );
@@ -210,7 +210,7 @@ fn async_node_hierarchy_historical_parity_report_preserves_restore_honesty() {
         .expect("grandchild capability should attach");
 
     runtime.observe_nodes(
-        ObservationPolicy::touched(),
+        ObservationPolicy::visited(),
         [parent],
         Box::new(NoopAsyncNodeObservationListener),
     );

@@ -1,12 +1,18 @@
 use crate::basis::{WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease};
 use crate::domain_computation::primary_graph::{
     application_query::{
-        resource_lifecycle::WorthQueryApplicationBasisLease, WorthQueryApplicationQueryBasisCustody,
+        resource_lifecycle::WorthQueryApplicationBasisLease, PreparedSelectedReadIndexes,
+        WorthQueryApplicationQueryBasisCustody,
     },
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::ProductBranchObservation;
+
+mod matching_head;
+pub(in crate::domain_computation::primary_graph) use matching_head::{
+    SelectedPermissionSecurityStop, SelectedPreparedReadSecurityBasis,
+};
 
 pub(in crate::domain_computation) trait WorthQueryProductObservationSource {
     fn product_observation(&self) -> &ProductBranchObservation;
@@ -48,6 +54,30 @@ enum SecurityApplicationBasis<'basis> {
     Reused(&'basis worth_relational::facade::snapshots::SnapshotHandle),
 }
 
+/// Selected Product security custody before graph-index preparation. Query
+/// permission may inspect this exact snapshot; a graph-read session cannot
+/// accept it as an indexed security basis.
+pub(in crate::domain_computation::primary_graph) struct WorthQuerySelectedPermissionSecurityBasis<
+    'basis,
+> {
+    basis: WorthQueryProductSecurityBasis<'basis>,
+}
+
+impl WorthQuerySelectedPermissionSecurityBasis<'_> {
+    pub(in crate::domain_computation::primary_graph) fn snapshot_handle(
+        &self,
+    ) -> &worth_relational::facade::snapshots::SnapshotHandle {
+        self.basis.snapshot_handle()
+    }
+}
+
+#[derive(Clone, Copy)]
+enum SecurityIndexCurrency<'a> {
+    GraphRead,
+    PreparedSelectedGraphRead(&'a PreparedSelectedReadIndexes),
+    PermissionOnly,
+}
+
 impl WorthQueryProductSecurityBasis<'_> {
     pub(in crate::domain_computation) fn snapshot_handle(
         &self,
@@ -60,10 +90,11 @@ impl WorthQueryProductSecurityBasis<'_> {
 }
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    fn retain_indexed_security_basis<'basis>(
+    fn retain_security_basis<'basis>(
         &self,
         observation: &ProductBranchObservation,
         query_basis: Option<&'basis WorthQueryApplicationQueryBasisCustody>,
+        index_currency: SecurityIndexCurrency<'_>,
     ) -> Result<
         (
             SecurityApplicationBasis<'basis>,
@@ -71,23 +102,35 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         ),
         WorthQueryProductBranchAdmissionDenial,
     > {
-        let graph = self
-            .runtime
-            .primary_graph()
-            .ok_or(WorthQueryProductBranchAdmissionDenial::ObservationRejected)?
-            .integration_handle();
-        graph
-            .with_runtime_mut(|runtime| {
-                graph.ensure_primary_indexes_for_basis(
-                    runtime,
-                    observation.basis().relational_basis(),
-                )
-            })
-            .map_err(|_| WorthQueryProductBranchAdmissionDenial::ObservationRejected)?;
+        if let SecurityIndexCurrency::PreparedSelectedGraphRead(prepared) = index_currency {
+            if !prepared.matches_basis(observation.basis().relational_basis()) {
+                return Err(WorthQueryProductBranchAdmissionDenial::IncarnationChanged);
+            }
+        }
+        if matches!(index_currency, SecurityIndexCurrency::GraphRead) {
+            let graph = self
+                .runtime
+                .primary_graph()
+                .ok_or(WorthQueryProductBranchAdmissionDenial::ObservationRejected)?
+                .integration_handle();
+            graph
+                .with_runtime_mut(|runtime| {
+                    graph.ensure_primary_indexes_for_basis(
+                        runtime,
+                        observation.basis().relational_basis(),
+                    )
+                })
+                .map_err(|_| WorthQueryProductBranchAdmissionDenial::ObservationRejected)?;
+        }
         let relational = observation.basis().relational_basis();
         if let Some(query_basis) =
             query_basis.filter(|basis| basis.can_reuse_security_snapshot_at(observation))
         {
+            if matches!(index_currency, SecurityIndexCurrency::PermissionOnly) {
+                if let Some(snapshot) = query_basis.reusable_permission_snapshot() {
+                    return Ok((SecurityApplicationBasis::Reused(snapshot), None));
+                }
+            }
             let (_, interpretation) = self
                 .retain_selected_program_interpretation(relational)?
                 .into_parts();
@@ -106,7 +149,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         product: &impl WorthQueryProductObservationSource,
     ) -> Result<WorthQueryProductSecurityBasis<'static>, WorthQueryProductBranchAdmissionDenial>
     {
-        self.admit_product_security_basis_with_query_basis(product, None)
+        self.admit_product_security_basis_with_query_basis(
+            product,
+            None,
+            SecurityIndexCurrency::GraphRead,
+        )
     }
 
     pub(in crate::domain_computation::primary_graph) fn admit_query_product_security_basis<
@@ -117,13 +164,57 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         query_basis: &'basis WorthQueryApplicationQueryBasisCustody,
     ) -> Result<WorthQueryProductSecurityBasis<'basis>, WorthQueryProductBranchAdmissionDenial>
     {
-        self.admit_product_security_basis_with_query_basis(product, Some(query_basis))
+        self.admit_product_security_basis_with_query_basis(
+            product,
+            Some(query_basis),
+            SecurityIndexCurrency::GraphRead,
+        )
+    }
+
+    /// Reobserve Product security with the ordinary graph-read program and
+    /// snapshot path after the exact selected native indexes were prepared.
+    /// A newer native basis refuses this proof before using its old currency.
+    pub(in crate::domain_computation::primary_graph) fn admit_query_prepared_read_security_basis<
+        'basis,
+    >(
+        &self,
+        product: &impl WorthQueryProductObservationSource,
+        query_basis: &'basis WorthQueryApplicationQueryBasisCustody,
+        prepared: &PreparedSelectedReadIndexes,
+    ) -> Result<WorthQueryProductSecurityBasis<'basis>, WorthQueryProductBranchAdmissionDenial>
+    {
+        self.admit_product_security_basis_with_query_basis(
+            product,
+            Some(query_basis),
+            SecurityIndexCurrency::PreparedSelectedGraphRead(prepared),
+        )
+    }
+
+    /// Permission uses the selected Product security basis without preparing
+    /// unrelated graph indexes. A disclosed read admits its indexes later.
+    pub(in crate::domain_computation::primary_graph) fn admit_query_permission_security_basis<
+        'basis,
+    >(
+        &self,
+        product: &impl WorthQueryProductObservationSource,
+        query_basis: &'basis WorthQueryApplicationQueryBasisCustody,
+    ) -> Result<
+        WorthQuerySelectedPermissionSecurityBasis<'basis>,
+        WorthQueryProductBranchAdmissionDenial,
+    > {
+        self.admit_product_security_basis_with_query_basis(
+            product,
+            Some(query_basis),
+            SecurityIndexCurrency::PermissionOnly,
+        )
+        .map(|basis| WorthQuerySelectedPermissionSecurityBasis { basis })
     }
 
     fn admit_product_security_basis_with_query_basis<'basis>(
         &self,
         product: &impl WorthQueryProductObservationSource,
         query_basis: Option<&'basis WorthQueryApplicationQueryBasisCustody>,
+        index_currency: SecurityIndexCurrency<'_>,
     ) -> Result<WorthQueryProductSecurityBasis<'basis>, WorthQueryProductBranchAdmissionDenial>
     {
         let selected = product.product_observation();
@@ -146,7 +237,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         return Err(WorthQueryProductBranchAdmissionDenial::IncarnationChanged);
                     }
                     let (application_basis, selected_program) =
-                        self.retain_indexed_security_basis(selected, query_basis)?;
+                        self.retain_security_basis(selected, query_basis, index_currency)?;
                     Ok(WorthQueryProductSecurityBasis {
                         _observation: selected.clone(),
                         application_basis,
@@ -161,7 +252,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     return Err(WorthQueryProductBranchAdmissionDenial::IncarnationChanged);
                 }
                 let (application_basis, selected_program) =
-                    self.retain_indexed_security_basis(&observation, query_basis)?;
+                    self.retain_security_basis(&observation, query_basis, index_currency)?;
                 Ok(WorthQueryProductSecurityBasis {
                     _observation: observation,
                     application_basis,

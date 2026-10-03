@@ -32,7 +32,7 @@ pub fn prepare_application_operation_graph_work<Schema, Operation, Input>(
     support: &WorthQueryExecutionResourceSupportSnapshot,
 ) -> Result<WorthQueryPreparedApplicationOperationGraphWork, WorthQueryGraphWorkAdmissionDenial> {
     let obligations = Arc::new(operation.retain_graph_obligations_for_admission());
-    let intent = WorthQueryGraphWorkIntent::application_operation_mutation();
+    let intent = WorthQueryGraphWorkIntent::application_operation(obligations.rows());
     let selected = match select_core(
         SelectedInstalledGraphObligations::PreparedOperation(Arc::clone(&obligations)),
         intent,

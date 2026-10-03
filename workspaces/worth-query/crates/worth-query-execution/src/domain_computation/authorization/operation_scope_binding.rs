@@ -50,7 +50,31 @@ pub struct WorthQueryOperationScopeBinding {
     scope: WorthQueryOperationScopeEntityBinding,
 }
 
+/// Fixed descriptive affinity used only to compare completed producer
+/// decisions. The admitted operation remains the authority to execute.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation) struct WorthQueryDecisionScopeWitness {
+    runtime_authority: u64,
+    binding_identity: ApplicationSchemaBindingIdentity,
+    operation_authority_identity: [u8; 32],
+    principal: WorthQueryOperationScopeEntityBinding,
+    scope: WorthQueryOperationScopeEntityBinding,
+}
+
 impl WorthQueryOperationScopeBinding {
+    pub(in crate::domain_computation) fn decision_reuse_witness(
+        &self,
+        operation_authority_identity: [u8; 32],
+    ) -> WorthQueryDecisionScopeWitness {
+        WorthQueryDecisionScopeWitness {
+            runtime_authority: self.runtime_authority,
+            binding_identity: self.binding_identity.clone(),
+            operation_authority_identity,
+            principal: self.principal,
+            scope: self.scope,
+        }
+    }
+
     pub(super) fn mint(
         runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
         binding_identity: &ApplicationSchemaBindingIdentity,

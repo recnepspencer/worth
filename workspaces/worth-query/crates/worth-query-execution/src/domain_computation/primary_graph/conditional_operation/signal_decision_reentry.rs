@@ -6,6 +6,10 @@ use worth_runtime_bridge::facade::{
 use super::predicate_admission::QueryConditionalComputeContext;
 use crate::domain_computation::primary_graph::primary_truth_branch_identity;
 
+mod admitted;
+mod selected_projections;
+pub(in crate::domain_computation::primary_graph) use selected_projections::WorthQuerySelectedSignalProjections;
+
 pub(in crate::domain_computation::primary_graph) struct WorthQueryConditionalTruthBasis {
     product: crate::basis::WorthQueryProductBranchLease,
     _application_basis:

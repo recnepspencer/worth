@@ -4,6 +4,65 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_query_declaration::facade::application_operation::ApplicationMutationIdentityDenial;
 
+mod source_readmission;
+pub(super) use source_readmission::{query_admission_denied, query_execution_denied};
+
+/// A rejected caller cannot terminally fail the output shared by other callers.
+/// Only actual operation/query admission issues the first variant.
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) enum ProducerExecutionStop
+{
+    RequestAdmissionDenied(ProducerRequestAdmissionRejection),
+    ExecutionStopped(WorthQueryOutputDemandDenial),
+}
+
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct ProducerRequestAdmissionRejection
+{
+    denial: WorthQueryOutputDemandDenial,
+}
+
+impl ProducerRequestAdmissionRejection {
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn into_denial(
+        self,
+    ) -> WorthQueryOutputDemandDenial {
+        self.denial
+    }
+}
+
+pub(super) fn request_admission_denied(
+    subject: &str,
+    error: impl std::fmt::Debug,
+) -> ProducerExecutionStop {
+    request_admission_rejected(failed(subject, error))
+}
+
+pub(super) fn request_authority_denied(
+    subject: &str,
+    error: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+) -> ProducerExecutionStop {
+    use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Kind;
+    let refusal = match error.kind() {
+        Kind::Cancelled => denial(WorthQueryOutputDemandDenialKind::Cancelled, subject),
+        Kind::DeadlineExceeded => denial(WorthQueryOutputDemandDenialKind::TimedOut, subject),
+        kind => denial(
+            WorthQueryOutputDemandDenialKind::RequestAuthorization(kind),
+            subject,
+        ),
+    };
+    request_admission_rejected(refusal)
+}
+
+pub(super) fn request_admission_rejected(
+    denial: WorthQueryOutputDemandDenial,
+) -> ProducerExecutionStop {
+    ProducerExecutionStop::RequestAdmissionDenied(ProducerRequestAdmissionRejection { denial })
+}
+
+impl From<WorthQueryOutputDemandDenial> for ProducerExecutionStop {
+    fn from(denial: WorthQueryOutputDemandDenial) -> Self {
+        Self::ExecutionStopped(denial)
+    }
+}
+
 pub(super) fn execution_failed(
     subject: &str,
     error: MutationHandlerExecutionDenial,

@@ -64,12 +64,25 @@ pub(super) fn refresh(
         refresh_relations(pending, patch, &changes.relations, old, after, work)?;
     }
     for field in pending {
+        work.prepare(1, 0)?;
         match field {
             PendingField::Entity { entries, edits, .. } => {
-                grouped(entries, std::mem::take(edits), Ord::cmp, work)?;
+                grouped(
+                    entries,
+                    std::mem::take(edits),
+                    Ord::cmp,
+                    |key| key.canonical_value_bytes().len() + 1,
+                    work,
+                )?;
             }
             PendingField::Relation { entries, edits, .. } => {
-                grouped(entries, std::mem::take(edits), Ord::cmp, work)?;
+                grouped(
+                    entries,
+                    std::mem::take(edits),
+                    Ord::cmp,
+                    |key| key.canonical_value_bytes().len() + 1,
+                    work,
+                )?;
             }
         }
     }
@@ -84,6 +97,7 @@ fn refresh_entities(
     after: &VisibilityProjectionView<'_>,
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
+    work.prepare(pending.len() as u64, 0)?;
     if !pending
         .iter()
         .any(|field| matches!(field, PendingField::Entity { patch: lane, .. } if *lane == patch))
@@ -91,8 +105,19 @@ fn refresh_entities(
         return Ok(());
     }
     for id in changed {
-        let old = reads::entity(before, *id, work)?;
-        let new = reads::entity(Some(after), *id, work)?;
+        work.prepare(pending.len() as u64, 0)?;
+        let (old, new) = if work.has_preparation() {
+            if before.is_some() {
+                work.read()?;
+            }
+            work.read()?;
+            (None, None)
+        } else {
+            (
+                reads::entity(before, *id, work)?,
+                reads::entity(Some(after), *id, work)?,
+            )
+        };
         for field in pending.iter_mut() {
             let PendingField::Entity {
                 locator,
@@ -106,8 +131,23 @@ fn refresh_entities(
             if *lane != patch {
                 continue;
             }
-            let old_key = entity_key(before, old.as_ref(), locator);
-            let new_key = entity_key(Some(after), new.as_ref(), locator);
+            work.prepare(1, 0)?;
+            let (old_key, new_key) = if work.has_preparation() {
+                (
+                    super::field_keys::entity(before, *id, locator, work)?,
+                    super::field_keys::entity(Some(after), *id, locator, work)?,
+                )
+            } else {
+                (
+                    entity_key(before, old.as_ref(), locator),
+                    entity_key(Some(after), new.as_ref(), locator),
+                )
+            };
+            prepare_key_comparison(
+                old_key.as_ref().map(|(key, _)| key),
+                new_key.as_ref().map(|(key, _)| key),
+                work,
+            )?;
             if old_key == new_key {
                 continue;
             }
@@ -130,6 +170,7 @@ fn refresh_relations(
     after: &VisibilityProjectionView<'_>,
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
+    work.prepare(pending.len() as u64, 0)?;
     if !pending
         .iter()
         .any(|field| matches!(field, PendingField::Relation { patch: lane, .. } if *lane == patch))
@@ -137,8 +178,19 @@ fn refresh_relations(
         return Ok(());
     }
     for id in changed {
-        let old = reads::relation(before, *id, work)?;
-        let new = reads::relation(Some(after), *id, work)?;
+        work.prepare(pending.len() as u64, 0)?;
+        let (old, new) = if work.has_preparation() {
+            if before.is_some() {
+                work.read()?;
+            }
+            work.read()?;
+            (None, None)
+        } else {
+            (
+                reads::relation(before, *id, work)?,
+                reads::relation(Some(after), *id, work)?,
+            )
+        };
         for field in pending.iter_mut() {
             let PendingField::Relation {
                 locator,
@@ -152,8 +204,23 @@ fn refresh_relations(
             if *lane != patch {
                 continue;
             }
-            let old_key = relation_key(before, old.as_ref(), locator);
-            let new_key = relation_key(Some(after), new.as_ref(), locator);
+            work.prepare(1, 0)?;
+            let (old_key, new_key) = if work.has_preparation() {
+                (
+                    super::field_keys::relation(before, *id, locator, work)?,
+                    super::field_keys::relation(Some(after), *id, locator, work)?,
+                )
+            } else {
+                (
+                    relation_key(before, old.as_ref(), locator),
+                    relation_key(Some(after), new.as_ref(), locator),
+                )
+            };
+            prepare_key_comparison(
+                old_key.as_ref().map(|(key, _)| key),
+                new_key.as_ref().map(|(key, _)| key),
+                work,
+            )?;
             if old_key == new_key {
                 continue;
             }
@@ -176,11 +243,32 @@ fn queue<R>(
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
     work.charge(1)?;
-    edits
-        .entry(key)
-        .or_default()
-        .push(PendingEdit { row, insert });
+    work.ordered::<AuthoritativeFieldComparisonKey, Vec<PendingEdit<R>>>(
+        edits.len(),
+        key.canonical_value_bytes().len() + 1,
+        0,
+    )?;
+    let operations = edits.entry(key).or_default();
+    work.grow_vec(operations)?;
+    operations.push(PendingEdit { row, insert });
     Ok(())
+}
+
+fn prepare_key_comparison(
+    old: Option<&AuthoritativeFieldComparisonKey>,
+    new: Option<&AuthoritativeFieldComparisonKey>,
+    work: &mut MaintenanceWork,
+) -> Result<(), Denial> {
+    let width = match (old, new) {
+        (Some(old), Some(new)) => {
+            old.canonical_value_bytes()
+                .len()
+                .min(new.canonical_value_bytes().len())
+                + 1
+        }
+        _ => 1,
+    };
+    work.prepare(width as u64, 0)
 }
 
 fn entity_key(

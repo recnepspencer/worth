@@ -10,12 +10,21 @@ use super::{
     WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
     WorthQueryProducerOutputFamily,
 };
+use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 mod admission;
-mod resources;
+mod refresh;
+mod required_fresh;
+mod required_wave;
+mod retained_read;
+pub(in crate::domain_computation::primary_graph) use required_wave::{
+    MatchedRequiredPredecessor, ResolvedRequiredPredecessor,
+};
+pub(super) mod resources;
 mod selected_program;
 mod source_recovery;
+mod validated;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -37,6 +46,12 @@ where
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
+        let mut admission = self
+            .primary_provider
+            .graph
+            .source_owner
+            .invalidation_owner
+            .read_admission(demand.limits.source_currentness_work());
         self.advance_output_demand_with_commit_authority(
             demand,
             principal,
@@ -44,6 +59,53 @@ where
             delivery_branch,
             disclosure,
             WorthQueryProducerCommitAuthority::Ordinary,
+            &mut admission,
+        )
+    }
+
+    /// Reenter the admitted demand's frozen source selector, parameters and
+    /// scope only if its existing Ready cannot be certified on this call.
+    pub fn advance_output_demand_from_retained<Family>(
+        &self,
+        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request_scope: &WorthQueryRequestScope,
+        delivery_branch: crate::basis::WorthQueryProductBranch,
+    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+        FamilySourceValue<Schema, Family>:
+            crate::domain_computation::primary_graph::WorthQueryApplicationProjection<
+                    Schema,
+                    FamilySourceQuery<Schema, Family>,
+                > + 'static,
+        FamilySourceQuery<Schema, Family>: 'static,
+    {
+        let mut admission = self
+            .primary_provider
+            .graph
+            .source_owner
+            .invalidation_owner
+            .read_admission(demand.limits.source_currentness_work());
+        let limits = demand.limits;
+        self.advance_output_demand_with_prepared_source(
+            demand,
+            principal,
+            request_scope,
+            delivery_branch,
+            |retained, admission| {
+                retained_read::read_retained_source::<Schema, Family>(
+                    self,
+                    retained,
+                    principal,
+                    request_scope,
+                    delivery_branch,
+                    limits,
+                    admission,
+                )
+            },
+            WorthQueryProducerCommitAuthority::Ordinary,
+            &mut admission,
         )
     }
 
@@ -63,6 +125,12 @@ where
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
+        let mut admission = self
+            .primary_provider
+            .graph
+            .source_owner
+            .invalidation_owner
+            .read_admission(demand.limits.source_currentness_work());
         self.advance_output_demand_with_commit_authority(
             demand,
             principal,
@@ -70,10 +138,13 @@ where
             delivery_branch,
             disclosure,
             WorthQueryProducerCommitAuthority::ProgramOutput,
+            &mut admission,
         )
     }
 
-    fn advance_output_demand_with_commit_authority<Family>(
+    pub(in crate::domain_computation::primary_graph) fn advance_output_demand_with_commit_authority<
+        Family,
+    >(
         &self,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -84,6 +155,46 @@ where
             FamilySourceValue<Schema, Family>,
         >,
         commit_authority: WorthQueryProducerCommitAuthority,
+        request_admission: &mut InvalidationEditAdmission,
+    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+        FamilySourceValue<Schema, Family>: 'static,
+        FamilySourceQuery<Schema, Family>: 'static,
+    {
+        self.advance_output_demand_with_prepared_source(
+            demand,
+            principal,
+            request_scope,
+            delivery_branch,
+            |_, _| Ok(disclosure),
+            commit_authority,
+            request_admission,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn advance_output_demand_with_prepared_source<
+        Family,
+    >(
+        &self,
+        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request_scope: &WorthQueryRequestScope,
+        delivery_branch: crate::basis::WorthQueryProductBranch,
+        disclosure: impl FnOnce(
+            &crate::domain_computation::primary_graph::WorthQueryObservedSource<
+                FamilySourceQuery<Schema, Family>,
+            >,
+            &mut InvalidationEditAdmission,
+        ) -> Result<
+            crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
+                FamilySourceQuery<Schema, Family>,
+                FamilySourceValue<Schema, Family>,
+            >,
+            WorthQueryOutputDemandDenial,
+        >,
+        commit_authority: WorthQueryProducerCommitAuthority,
+        request_admission: &mut InvalidationEditAdmission,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
@@ -98,23 +209,15 @@ where
                 Family::IDENTITY,
             ));
         }
-        let interest = demand
+        demand
             .interest
             .as_ref()
             .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::Closed, Family::IDENTITY))?;
-        let entry = self
-            .installed_producers
-            .entries
-            .get(&demand.selected.identity)
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-                    format!(
-                        "{}: installed producer disappeared",
-                        demand.selected.identity
-                    ),
-                )
-            })?;
+        request_admission
+            .charge_external_work((std::mem::size_of_val(&demand.installed_entry) + 1) as u64)
+            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
+        let installed_entry = std::sync::Arc::clone(&demand.installed_entry);
+        let entry = installed_entry.as_ref();
         if !entry
             .declaration
             .applicability
@@ -128,7 +231,28 @@ where
                 ),
             ));
         }
-        let (disclosed_value, disclosed_source) = validate_disclosure(
+        // A required successor carries the mode and installed edition that
+        // issued it. Check those before a Current-only required wave can
+        // acknowledge work without entering the validated execution core.
+        demand.progression_provenance.validate_for_execution(
+            &commit_authority,
+            &entry.edition,
+            request_admission,
+        )?;
+        if let Some(advance) = required_wave::advance_required_before_caller(
+            self,
+            demand,
+            principal,
+            request_scope,
+            delivery_branch,
+            &commit_authority,
+            &entry.edition,
+            request_admission,
+        )? {
+            return Ok(advance);
+        }
+        let disclosure = disclosure(&demand.observed_source, request_admission)?;
+        let disclosure = validate_disclosure(
             self,
             demand,
             principal,
@@ -139,254 +263,18 @@ where
                 WorthQueryProducerCommitAuthority::ProgramOutput
             ),
             disclosure,
+            entry.edition,
         )?;
-        use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandAdvanceAdmission as Admission;
-        let successor_of = match self.output_demands.begin(interest) {
-            Admission::Schedule(performed_source) => {
-                if !demand.matches_observed_source(&disclosed_source) {
-                    return Err(self
-                        .output_demands
-                        .finish_superseded(interest, Family::IDENTITY));
-                }
-                let mut result = self.schedule_selected_output_producer(
-                    &demand.selected,
-                    delivery_branch,
-                    &demand.observed_source,
-                    performed_source.as_ref(),
-                );
-                self.output_demands
-                    .finish_scheduling(interest, performed_source, &mut result);
-                return match result {
-                    Ok(crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputSchedulingResult::Scheduled) => {
-                        Ok(WorthQueryOutputDemandAdvance::Pending)
-                    }
-                    Ok(crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputSchedulingResult::Deferred) => {
-                        Ok(WorthQueryOutputDemandAdvance::Pending)
-                    }
-                    Ok(crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputSchedulingResult::NoEffect(denial))
-                    | Err(denial) => Err(denial),
-                };
-            }
-            Admission::Pending => return Ok(WorthQueryOutputDemandAdvance::Pending),
-            Admission::AdvanceCheckpoint { claim, checkpoint } => {
-                if !demand.matches_observed_source(&disclosed_source) {
-                    let denial = self
-                        .output_demands
-                        .finish_superseded(interest, Family::IDENTITY);
-                    self.output_demands.finish_checkpoint(
-                        interest,
-                        claim,
-                        checkpoint,
-                        Some(&denial),
-                    )?;
-                    return Err(denial);
-                }
-                return self.advance_output_checkpoint(
-                    interest,
-                    &demand.selected.identity,
-                    claim,
-                    checkpoint,
-                );
-            }
-            Admission::Ready(completion) => {
-                if !demand.matches_observed_source(&disclosed_source) {
-                    return Err(self
-                        .output_demands
-                        .finish_superseded(interest, Family::IDENTITY));
-                }
-                return match completion.authority {
-                    crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Committed(receipt) => {
-                        let current = self.on_branch(delivery_branch).select().map_err(|denial| {
-                            WorthQueryOutputDemandDenial::product_selection(
-                                denial,
-                                "ready output currentness basis could not be selected",
-                            )
-                        })?;
-                        match current.require_current_output_receipts(
-                            [&receipt],
-                            demand.currentness_work_limit(),
-                        ) {
-                            Ok(()) => {}
-                            Err(denial)
-                                if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded =>
-                            {
-                                return self.refresh_output_demand(
-                                    demand,
-                                    disclosed_value,
-                                    disclosed_source,
-                                    &receipt,
-                                );
-                            }
-                            Err(denial) => return Err(denial),
-                        }
-                        let settlement = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement::from_commit(
-                            self,
-                            &receipt,
-                            &completion.readiness,
-                            &demand.selected.identity,
-                            Family::IDENTITY,
-                            demand.producer_contacts_in_this_demand,
-                        );
-                        match settlement {
-                            Ok(settlement) => Ok(WorthQueryOutputDemandAdvance::Settled(settlement)),
-                            Err(denial)
-                                if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded =>
-                            {
-                                self.refresh_output_demand(
-                                    demand,
-                                    disclosed_value,
-                                    disclosed_source,
-                                    &receipt,
-                                )
-                            }
-                            Err(denial) => Err(denial),
-                        }
-                    }
-                    crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Restored(restored) => {
-                        crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement::from_restoration(
-                            self,
-                            &restored,
-                            Family::IDENTITY,
-                        )
-                        .map(WorthQueryOutputDemandAdvance::Settled)
-                    }
-                };
-            }
-            Admission::Failed(denial) => return Err(denial),
-            Admission::Execute { successor_of } => successor_of,
-        };
-        if !demand.matches_observed_source(&disclosed_source) {
-            return Err(self
-                .output_demands
-                .finish_superseded(interest, Family::IDENTITY));
-        }
-        if !demand.resources_validated {
-            let resources = resources::validate_demand_resources(
-                entry.executor.as_ref(),
-                &disclosed_value,
-                &demand.selected.identity,
-                demand.limits,
-            );
-            let resources = match resources {
-                Ok(resources) => resources,
-                Err(denial) => {
-                    self.output_demands.relinquish_execution(interest);
-                    return Err(denial);
-                }
-            };
-            demand.resources = Some(resources);
-            demand.resources_validated = true;
-        }
-        if let Err(denial) = entry.executor.authorize_interest(
-            self,
+        self.advance_validated_output_demand(
+            demand,
             principal,
             request_scope,
             delivery_branch,
-            &disclosed_value,
-        ) {
-            self.output_demands.relinquish_execution(interest);
-            return Err(denial);
-        }
-        demand.producer_contacts_in_this_demand += 1;
-        let result = entry.executor.execute(
-            self,
-            principal,
-            request_scope,
-            delivery_branch,
-            &disclosed_value,
-            &disclosed_source,
-            successor_of,
+            disclosure,
+            entry,
             commit_authority,
-            demand.limits.source_currentness_work(),
-        );
-        let mut receipt = match result {
-            Ok(receipt) => receipt,
-            Err(mut denial) => {
-                self.output_demands
-                    .finish_execution_failure(interest, &mut denial);
-                return Err(denial);
-            }
-        };
-        if let Some(resources) = demand.resources {
-            self.primary_provider
-                .graph
-                .output_lineage
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .record_producer_resources(&receipt, resources);
-        }
-        let delivery = receipt
-            .take_performed_relational_product_change()
-            .map_or(
-                crate::domain_computation::primary_graph::application_output_demand::WorthQueryPendingOutputDelivery::NoChange,
-                crate::domain_computation::primary_graph::application_output_demand::WorthQueryPendingOutputDelivery::Change,
-            );
-        self.output_demands.publish_checkpoint(
-            interest,
-            crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputCheckpoint::Published {
-                receipt,
-                delivery,
-            },
-        )?;
-        Ok(WorthQueryOutputDemandAdvance::Pending)
-    }
-}
-
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    fn refresh_output_demand<Family>(
-        &self,
-        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
-        source: FamilySourceValue<Schema, Family>,
-        observed_source: crate::domain_computation::primary_graph::WorthQueryObservedSource<
-            FamilySourceQuery<Schema, Family>,
-        >,
-        stale_receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
-    where
-        Family: WorthQueryProducerOutputFamily<Schema>,
-        FamilySourceValue<Schema, Family>: 'static,
-        FamilySourceQuery<Schema, Family>: 'static,
-    {
-        if demand.admission_kind
-            == crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Recovery
-        {
-            let interest = demand.interest.as_ref().ok_or_else(|| {
-                denial(WorthQueryOutputDemandDenialKind::Closed, Family::IDENTITY)
-            })?;
-            return Err(self
-                .output_demands
-                .finish_superseded(interest, Family::IDENTITY));
-        }
-        let profile_kind = Family::profile_kind(&source);
-        let mut refreshed = self.admit_output_demand_with_source::<Family>(
-            source,
-            observed_source,
-            None,
-            profile_kind,
-            demand.limits,
-            None,
-            demand.admission_kind,
-            None,
-            Some(stale_receipt),
-            demand.retained_program_basis.clone(),
-        )?;
-        refreshed.producer_contacts_in_this_demand = demand.producer_contacts_in_this_demand;
-        if let Some(interest) = demand.interest.take() {
-            self.output_demands.finish_replaced_interest(
-                &interest,
-                refreshed
-                    .interest
-                    .as_ref()
-                    .expect("a refreshed demand retains its new interest"),
-                Family::IDENTITY,
-            );
-            drop(interest);
-        }
-        *demand = refreshed;
-        Ok(WorthQueryOutputDemandAdvance::Pending)
+            request_admission,
+        )
     }
 }
 

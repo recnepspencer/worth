@@ -2,7 +2,9 @@ use crate::branch::RelationalBranchRootSchemaAuthority;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::runtime::VisibilityProjectionView;
 use crate::schema::data::{AspectContractPlanCatalog, LoweredAspectContractPlan, SchemaVersionId};
-use crate::storage::data::{EntityReadRecord, RelationReadRecord};
+use crate::storage::data::{EntityReadRecord, RecordLifecycleState, RelationReadRecord};
+use crate::storage::overlay::PartitionAccess;
+use worth_foundational::facade::AspectFieldLocator;
 
 /// Schema-qualified storage projection used to derive or certify an index.
 ///
@@ -107,6 +109,37 @@ impl<'view, 'runtime> IndexProjectionSource<'view, 'runtime> {
             .authoritative_entity_record(entity_id)
             .as_ref()
             .map(inspect)
+    }
+
+    /// Compare the requested field through the exact selected root without
+    /// encoding an unrelated value from a stale index entry.
+    pub(in crate::indexes) fn exact_entity_field_matches(
+        &self,
+        entity_id: EntityId,
+        locator: &AspectFieldLocator,
+        expected: &worth_foundational::facade::AspectValue,
+    ) -> Option<(KindId, bool)> {
+        let root = self.projection.selected_root()?;
+        let slot = root
+            .get_partition(entity_id.partition_id)?
+            .entity_arena
+            .get_slot(entity_id.slot_index())?;
+        if slot.lifecycle() != RecordLifecycleState::Live
+            || (!entity_id.generation.is_zero()
+                && slot.generation() != entity_id.generation_value())
+        {
+            return None;
+        }
+        let kind = slot.kind_id()?;
+        self.schema_authority()?
+            .registry()
+            .entity_registration(kind)
+            .ok()?;
+        let matches = crate::visibility::materialization::read_records::authoritative_state_query_locus_value(
+            slot.extra().authoritative_aspect_state.as_ref(),
+            locator,
+        ).is_some_and(|actual| actual == expected);
+        Some((kind, matches))
     }
 
     pub(in crate::indexes) fn candidate_entity_bytes(&self, entity_id: EntityId) -> u64 {

@@ -113,6 +113,18 @@ pub(in crate::domain_computation::primary_graph) fn installed_authorization_worl
     })
 }
 
+pub(in crate::domain_computation::primary_graph) fn installed_authorization_world_with_product_resources(
+    resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
+) -> AuthorizationWorld {
+    super::authorization_world_installation::install_authorization_world_with_product_resources(
+        AuthorizationWorldSpec {
+            owner_bindings: PRINCIPAL_ZERO_ACCOUNTS,
+            ..standard_spec()
+        },
+        resources,
+    )
+}
+
 pub(in crate::domain_computation::primary_graph) fn installed_authorization_world_with_resource_profile(
     resources: WorthQueryApplicationQueryResourceProfile,
 ) -> AuthorizationWorld {
@@ -121,6 +133,18 @@ pub(in crate::domain_computation::primary_graph) fn installed_authorization_worl
         resources,
         ..standard_spec()
     })
+}
+
+pub(in crate::domain_computation::primary_graph) fn installed_authorization_world_with_completed_evidence_capacity(
+    maximum: std::num::NonZeroUsize,
+) -> AuthorizationWorld {
+    super::authorization_world_installation::install_authorization_world_with_completed_evidence_resources(
+        AuthorizationWorldSpec {
+            owner_bindings: PRINCIPAL_ZERO_ACCOUNTS,
+            ..standard_spec()
+        },
+        crate::domain_computation::execution_runtime::WorthQueryCompletedEvidenceResourceProfile::bounded(maximum),
+    )
 }
 
 pub(in crate::domain_computation::primary_graph) fn installed_two_principal_authorization_world(

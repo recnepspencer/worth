@@ -55,6 +55,7 @@ fn product_selection(kind: BankProductSelectionDenialKind) -> BankHttpDenial {
             BankHttpDenial::new(Kind::ResourceExhausted, Next::Retry)
         }
         Selection::ObservationIdentityExhausted
+        | Selection::ObservationAccountingOverflow
         | Selection::RetentionIdentityExhausted
         | Selection::SnapshotIdentityExhausted => {
             BankHttpDenial::new(Kind::ResourceExhausted, Next::ContactOperator)
@@ -173,6 +174,7 @@ fn entity(kind: BankEntityResolutionDenialKind) -> BankHttpDenial {
         Entity::UnknownEntity => BankHttpDenial::new(Kind::NotFound, Next::CorrectRequest),
         Entity::ValueEncodingRejected => malformed(),
         Entity::ProjectionWorkBudgetExceeded
+        | Entity::ProjectionPreparationMemoryExhausted
         | Entity::ActiveSnapshotCapacityExhausted { .. }
         | Entity::SnapshotIdentityExhausted
         | Entity::RetentionCapacityExhausted
@@ -254,6 +256,12 @@ fn authorization(kind: BankAuthorizationDenialKind) -> BankHttpDenial {
 fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHttpDenial {
     use BankApplicationOutputSettlementDenialKind as Settlement;
     match kind {
+        Settlement::SourceQueryInstallation(_) => unavailable(),
+        Settlement::SourcePrincipal(_) => stale(),
+        Settlement::SourceScope(kind) => entity(kind),
+        Settlement::SourceQueryAdmission(kind) => admission(kind),
+        Settlement::SourceQueryExecution(kind) => execution(kind),
+        Settlement::RequestAuthorization(kind) => authorization(kind),
         Settlement::Cancelled => cancelled(),
         Settlement::TimedOut => deadline(),
         Settlement::Superseded

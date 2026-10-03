@@ -1,6 +1,7 @@
 pub use crate::indexes::data::{
-    BoundedEntityFieldLookupDenial, BoundedEntityFieldLookupDenialKind,
-    BoundedEntityFieldLookupOutcome, BoundedEntityFieldLookupRequest, BoundedIndexParityMode,
+    BoundedEntityFieldLookupAdmissionStop, BoundedEntityFieldLookupDenial,
+    BoundedEntityFieldLookupDenialKind, BoundedEntityFieldLookupOutcome,
+    BoundedEntityFieldLookupRequest, BoundedIndexParityMode,
     BoundedRelatedEntityOrderedLookupDenial, BoundedRelatedEntityOrderedLookupDenialKind,
     BoundedRelatedEntityOrderedLookupOutcome, BoundedRelatedEntityOrderedLookupRequest,
     BoundedRelationJoinLookupDenial, BoundedRelationJoinLookupDenialKind,
@@ -8,13 +9,14 @@ pub use crate::indexes::data::{
     DerivedIndexArtifacts, DerivedIndexBuildOutcome, DerivedIndexBuildRequest,
     DerivedIndexDefinition, DerivedIndexEntries, DerivedIndexEntryMap, DerivedIndexExecutionDenial,
     DerivedIndexExecutionDenialKind, DerivedIndexGeneration, DerivedIndexGenerationId,
-    DerivedIndexId, DerivedIndexKind, DerivedIndexMaintenanceBudget, DerivedIndexMaintenanceDenial,
+    DerivedIndexId, DerivedIndexKind, DerivedIndexMaintenanceAdmissionStop,
+    DerivedIndexMaintenanceBudget, DerivedIndexMaintenanceDenial,
     DerivedIndexMaintenanceDenialKind, DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceWork,
     DerivedIndexPublicationStatus, DerivedIndexRows, DerivedIndexSelectionCounters,
     RelatedEntityEndpoint, RelatedEntityOrderingBoundary, RelatedEntityOrderingDirection,
     RelatedEntityOrderingEntry, RelatedEntityOrderingField, RelatedEntityOrderingValue,
     RelationJoinDefinition, RelationJoinEntry, RelationJoinKey, RelationJoinLeg,
-    RelationJoinSharedEndpoint, MAX_BOUNDED_INDEX_CANDIDATES,
+    RelationJoinSharedEndpoint, SelectedIndexGenerationAdmissionStop, MAX_BOUNDED_INDEX_CANDIDATES,
     MAX_BOUNDED_RELATED_ENTITY_PAGE_WIDTH,
 };
 pub use crate::indexes::DerivedIndexDefinitionLookup;

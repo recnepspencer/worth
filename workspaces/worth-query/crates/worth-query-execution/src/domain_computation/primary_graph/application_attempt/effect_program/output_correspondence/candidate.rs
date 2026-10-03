@@ -40,6 +40,21 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Wor
 }
 
 impl WorthQueryApplicationOutputCorrespondenceCandidate {
+    pub(in crate::domain_computation::primary_graph) fn native_witness_roles(
+        &self,
+    ) -> impl ExactSizeIterator<Item = (&str, WorthQueryApplicationOutputPosture, &str)> + Clone
+    {
+        self.roles
+            .iter()
+            .map(|(role, binding)| (role.as_str(), binding.posture, binding.entity_name.as_str()))
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_attempt) const fn binding_type(
+        &self,
+    ) -> Option<TypeId> {
+        self.binding_type
+    }
+
     pub(in crate::domain_computation::primary_graph::application_attempt) fn is_empty(
         &self,
     ) -> bool {

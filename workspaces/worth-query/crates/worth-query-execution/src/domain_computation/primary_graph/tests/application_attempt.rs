@@ -52,6 +52,7 @@ mod preimage_retention;
 mod producer_invariant_publication;
 #[path = "application_attempt/program_fixture.rs"]
 mod program_fixture;
+pub(super) use program_fixture::admitted_operation;
 #[path = "application_attempt/program_occurrence_gate.rs"]
 mod program_occurrence_gate;
 #[path = "application_attempt/provider_terminal_evidence.rs"]

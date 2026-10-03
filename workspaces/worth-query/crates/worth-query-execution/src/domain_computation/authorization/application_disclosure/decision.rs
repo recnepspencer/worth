@@ -174,6 +174,34 @@ pub(in crate::domain_computation) struct WorthQueryApplicationGovernanceBinding 
 }
 
 impl WorthQueryApplicationGovernanceBinding {
+    /// Bind a fresh disclosure decision to the exact Query session that will
+    /// later execute graph work. The reserved identities are consumed by that
+    /// session; preparing permission does not itself open a graph read.
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::domain_computation) fn from_prepared_query(
+        reserved: &crate::domain_computation::provider_session::WorthQueryPreparedQuerySessionIdentity,
+        runtime: WorthQueryRuntimeAuthorityIdentity,
+        query: WorthQueryInstalledApplicationQueryIdentity,
+        parameters: CanonicalDigestId,
+        principal: EntityId,
+        scope: EntityId,
+        basis: &crate::domain_computation::primary_graph::WorthQueryApplicationBasisIdentity,
+        provider: &str,
+    ) -> Self {
+        Self {
+            runtime,
+            query,
+            parameters,
+            principal,
+            scope,
+            session: reserved.identity(),
+            managed_run: reserved.managed_run_identity(),
+            branch: basis.branch_id().clone(),
+            basis: basis.clone(),
+            provider: provider.to_owned(),
+        }
+    }
+
     pub(in crate::domain_computation) fn from_session(
         graph_work: &WorthQueryManagedGraphWorkSession,
         query: WorthQueryInstalledApplicationQueryIdentity,

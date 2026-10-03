@@ -1,6 +1,6 @@
 use worth_foundational::facade::{AspectFieldLocator, AspectKey, AspectValue};
 use worth_relational::facade::identity::{EntityId, KindId, RelationId};
-use worth_relational::facade::indexes::DerivedIndexId;
+use worth_relational::facade::indexes::{DerivedIndexDefinition, DerivedIndexId};
 
 mod adjacency;
 mod entity_touch;
@@ -17,7 +17,7 @@ pub(in crate::domain_computation::primary_graph) use adjacency::{
 pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::observe_indexed_entity_selection;
 pub(in crate::domain_computation::primary_graph) use source_currentness::WorthQuerySourceCurrentnessFailure;
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation) enum WorthQueryApplicationAdjacencyDirection {
     Outgoing,
     Incoming,
@@ -113,6 +113,7 @@ pub(in crate::domain_computation) enum WorthQueryApplicationObservedFact {
     /// check-then-create race without exposing raw index authority.
     IndexedEntitySelection {
         index_id: DerivedIndexId,
+        definition: std::sync::Arc<DerivedIndexDefinition>,
         entity_kind: KindId,
         locator: AspectFieldLocator,
         value: AspectValue,
@@ -205,8 +206,7 @@ impl WorthQueryApplicationObservedFact {
                 native_revision,
             } => runtime
                 .read_truth()
-                .project_snapshot(snapshot)
-                .and_then(|view| view.entity_aspect_version(*entity_id, aspect))
+                .exact_snapshot_entity_aspect_version(snapshot, *entity_id, aspect)
                 == Some(*native_revision),
             Self::SourceFieldRevision { entity_id, locator, native_revision } =>
                 native_revision.is_some_and(|expected| {
@@ -237,21 +237,8 @@ impl WorthQueryApplicationObservedFact {
                 entity_id, kind, ..
             } => runtime
                 .read_truth()
-                .project_snapshot(snapshot)
-                .and_then(|view| {
-                    view.entity_record_with_projection_scope(
-                        *entity_id,
-                        worth_relational::facade::runtime::ProjectionAspectScope::empty(),
-                        |record| {
-                            Some((
-                                record.kind_id(),
-                                record.lifecycle()
-                                    == worth_relational::facade::storage::RecordLifecycleState::Live,
-                            ))
-                        },
-                    )
-                })
-                .is_some_and(|(current_kind, live)| current_kind == *kind && live),
+                .exact_snapshot_live_entity_kind_status(snapshot, *entity_id)
+                == Some(Some(*kind)),
             Self::Field {
                 entity_id,
                 kind,
@@ -302,6 +289,7 @@ impl WorthQueryApplicationObservedFact {
             ),
             Self::IndexedEntitySelection {
                 index_id,
+                definition,
                 entity_kind,
                 locator,
                 value,
@@ -311,6 +299,7 @@ impl WorthQueryApplicationObservedFact {
                 runtime,
                 snapshot,
                 *index_id,
+                definition,
                 *entity_kind,
                 locator,
                 value,

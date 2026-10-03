@@ -16,11 +16,12 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
     let a_source = a_key.source.checkpoint_identity().bytes();
     let ready = |receipt| {
         DemandState::Output(WorthQueryOutputProgress::new(
-            WorthQueryOutputCheckpoint::Ready(super::super::super::WorthQueryCompletedOutputDemand {
+            WorthQueryOutputCheckpoint::Ready(super::super::super::ReadyCompletion::for_test(super::super::super::WorthQueryCompletedOutputDemand {
                 authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
+                producer_commit_authority: None,
                 readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
                 resources: Some(crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources::new(7, 8)),
-            }),
+            })),
         ))
     };
     registry.state.lock().unwrap().records.extend([
@@ -34,6 +35,7 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
                     WorthQueryOutputCheckpoint::Published {
                         receipt: receipt.clone(),
                         delivery: WorthQueryPendingOutputDelivery::NoChange,
+                        ready_backing: super::super::super::PreparedReadyBacking::for_test(),
                     },
                 )),
                 1,
@@ -42,11 +44,12 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
     ]);
     let stopped_key = key("stopped", 1, 4);
     let mut stopped = WorthQueryOutputProgress::new(WorthQueryOutputCheckpoint::Ready(
-        super::super::super::WorthQueryCompletedOutputDemand {
+        super::super::super::ReadyCompletion::for_test(super::super::super::WorthQueryCompletedOutputDemand {
             authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
+            producer_commit_authority: None,
             readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
             resources: None,
-        },
+        }),
     ));
     stopped.stop(WorthQueryOutputDemandDenial::new(
         WorthQueryOutputDemandDenialKind::Superseded,
@@ -73,6 +76,7 @@ fn checkpoint_output_slots_ignore_superseded_source_generations() {
         .scope();
     let checkpoint = |source| WorthQueryAcceptedOutputCheckpointIdentity {
         producer: "producer".to_owned(),
+        posture: super::super::super::WorthQueryAcceptedOutputCheckpointPosture::Performed,
         source,
         scope,
         source_partition: [7; 32],
@@ -81,6 +85,7 @@ fn checkpoint_output_slots_ignore_superseded_source_generations() {
         resources: None,
         roles: Vec::new(),
         producer_facts: None,
+        producer_fact_wire_version: 0,
     };
 
     assert!(checkpoint([1; 32]).same_output_slot(&checkpoint([2; 32])));

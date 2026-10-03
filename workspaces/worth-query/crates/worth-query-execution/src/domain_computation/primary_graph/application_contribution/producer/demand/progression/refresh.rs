@@ -1,0 +1,74 @@
+use super::*;
+
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+where
+    Schema: ApplicationSchema + 'static,
+{
+    pub(super) fn refresh_output_demand<Family>(
+        &self,
+        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
+        source: FamilySourceValue<Schema, Family>,
+        observed_source: crate::domain_computation::primary_graph::WorthQueryObservedSource<
+            FamilySourceQuery<Schema, Family>,
+        >,
+        predecessor: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority,
+        request_admission: &mut InvalidationEditAdmission,
+    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+        FamilySourceValue<Schema, Family>: 'static,
+        FamilySourceQuery<Schema, Family>: 'static,
+    {
+        if demand.admission_kind
+            == crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Recovery
+        {
+            let interest = demand.interest.as_ref().ok_or_else(|| {
+                denial(WorthQueryOutputDemandDenialKind::Closed, Family::IDENTITY)
+            })?;
+            return Err(self
+                .output_demands
+                .finish_superseded(interest, Family::IDENTITY));
+        }
+        let interest = demand
+            .interest
+            .as_ref()
+            .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::Closed, Family::IDENTITY))?;
+        let predecessor = match predecessor {
+            crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Committed(receipt) =>
+                crate::domain_computation::primary_graph::application_output_demand::OutputRefreshPredecessor::Committed(receipt),
+            crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Stable(published) =>
+                crate::domain_computation::primary_graph::application_output_demand::OutputRefreshPredecessor::Stable { interest, published },
+            crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Restored(_) =>
+                return Err(self.output_demands.finish_superseded(interest, Family::IDENTITY)),
+        };
+        let profile_kind = Family::profile_kind(&source);
+        let mut refreshed = self.admit_output_demand_with_source_admitted::<Family>(
+            &source,
+            observed_source,
+            None,
+            profile_kind,
+            demand.limits,
+            None,
+            demand.admission_kind,
+            None,
+            Some(predecessor),
+            demand.retained_program_basis.clone(),
+            super::admission::SourceAdmissionSelection::Ordinary,
+            request_admission,
+        )?;
+        refreshed.producer_contacts_in_this_demand = demand.producer_contacts_in_this_demand;
+        if let Some(interest) = demand.interest.as_ref() {
+            self.output_demands.finish_replaced_interest(
+                interest,
+                refreshed
+                    .interest
+                    .as_ref()
+                    .expect("a refreshed demand retains its new interest"),
+                Family::IDENTITY,
+                request_admission,
+            )?;
+        }
+        *demand = refreshed;
+        Ok(WorthQueryOutputDemandAdvance::Pending)
+    }
+}

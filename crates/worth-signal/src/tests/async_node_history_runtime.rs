@@ -25,7 +25,7 @@ fn async_node_historical_parity_report_matches_legacy_resource_truth() {
         .expect("async capability should attach");
 
     runtime.observe_nodes(
-        ObservationPolicy::touched(),
+        ObservationPolicy::visited(),
         [node],
         Box::new(NoopAsyncNodeObservationListener),
     );

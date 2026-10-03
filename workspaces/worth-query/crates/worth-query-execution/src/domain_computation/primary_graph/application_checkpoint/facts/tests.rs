@@ -69,3 +69,63 @@ fn fact_decode_rejects_unbounded_count_and_foreign_kind_before_allocation() {
     assert!(decode(&[0, 0, 0, 1, 255]).is_err());
     assert!(decode(&vec![0; MAXIMUM_FACT_BYTES + 1]).is_err());
 }
+
+#[test]
+fn legacy_optional_absence_requires_verification_while_fresh_v6_absence_is_exact() {
+    let entity = EntityId::new(worth_relational::facade::identity::PartitionId(1), 2, 1);
+    let fact = Fact::SourceAspectRevision {
+        entity_id: entity,
+        aspect: AspectKey::new("test.optional").unwrap(),
+        native_revision: None,
+    };
+    let bytes = encode(&[fact.clone()]).expect("fresh absence has a bounded wire");
+    assert_eq!(
+        decode_for_wire_version(&bytes, 6)
+            .unwrap()
+            .unwrap()
+            .as_ref(),
+        &[fact]
+    );
+    assert!(decode_for_wire_version(&bytes, 5).unwrap().is_none());
+}
+
+#[test]
+fn indexed_selection_wire_preserves_semantic_definition_and_signed_zero() {
+    use std::sync::Arc;
+    use worth_foundational::facade::{AspectValue, CanonicalF64};
+    use worth_relational::facade::indexes::{
+        DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind,
+    };
+
+    let entity = EntityId::new(worth_relational::facade::identity::PartitionId(1), 2, 1);
+    let locator = AspectFieldLocator::new(
+        LocatorAuthority::Authoritative,
+        AspectKey::new("test.index").unwrap(),
+        CanonicalFieldPath::single(FieldKey::new("value").unwrap()),
+    );
+    let fact = Fact::IndexedEntitySelection {
+        index_id: DerivedIndexId(8),
+        definition: Arc::new(DerivedIndexDefinition {
+            index_id: DerivedIndexId(8),
+            name: "test-index".to_owned(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: locator.clone(),
+            },
+            branch_scoped: true,
+        }),
+        entity_kind: KindId(3),
+        locator,
+        value: AspectValue::Float64(CanonicalF64::from_f64(-0.0)),
+        candidate_limit: 4,
+        candidates: vec![entity],
+    };
+    let bytes = encode(&[fact.clone()]).expect("bounded native index fact encodes");
+    assert_eq!(
+        decode_for_wire_version(&bytes, 6)
+            .unwrap()
+            .unwrap()
+            .as_ref(),
+        &[fact]
+    );
+    assert!(decode_for_wire_version(&bytes, 5).is_err());
+}

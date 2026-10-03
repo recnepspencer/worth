@@ -1,3 +1,4 @@
+mod admitted_entity_field_lookup;
 mod bounded_entity_field_lookup;
 mod bounded_relation_join_lookup;
 mod branch_scope;
@@ -12,6 +13,7 @@ mod generation_selection_locality;
 mod historical_relation_field_lookup;
 mod main_branch_unique_recovery;
 mod maintenance;
+mod maintenance_admission;
 mod maintenance_lifecycle;
 mod maintenance_locality;
 mod maintenance_slot_reuse;

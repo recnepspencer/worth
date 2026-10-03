@@ -11,6 +11,10 @@ pub(crate) mod application_installation;
 pub(crate) mod application_invariant;
 mod application_invariant_preparation;
 mod application_output_demand;
+pub(in crate::domain_computation::primary_graph) use application_output_demand::PreparedPrerequisiteClaims;
+pub(in crate::domain_computation) use application_output_demand::{
+    RequiredOutputDemandContext, RequiredOutputExecution,
+};
 mod application_program;
 pub(crate) mod application_query;
 mod application_runtime;
@@ -29,6 +33,7 @@ mod expression;
 mod freshness;
 mod granular_invalidation;
 mod handler;
+pub(in crate::domain_computation) use handler::DecisionContextUse;
 mod index_currency;
 mod index_maintenance_budget;
 mod index_refresh;
@@ -41,10 +46,18 @@ pub(crate) use managed_bridge::build_primary_graph_product_bridge;
 mod observations;
 mod ordinary_read;
 pub(crate) mod output_lineage;
+pub(in crate::domain_computation) use output_lineage::{
+    InvalidationEditAdmission, SourceInvalidationOwner,
+};
 mod output_reuse;
+mod principal_currentness_capture;
 mod principal_key;
+pub(in crate::domain_computation) use principal_currentness_capture::{
+    capture_principal_currentness_admitted, PrincipalCurrentnessCaptureStop,
+};
 pub(crate) mod product_activation;
 mod product_operation;
+pub(in crate::domain_computation) use product_operation::SharedSelectedProductOperation;
 mod program_occurrence;
 mod provider;
 pub(in crate::domain_computation::primary_graph) use provider::OutstandingDispatchInFlightLease;
@@ -61,10 +74,12 @@ pub(in crate::domain_computation) mod tests;
 
 pub(in crate::domain_computation) use application_attempt::application_resource_request;
 pub(in crate::domain_computation) use application_attempt::precondition_binding::{
-    bind_mutation_preconditions, WorthQueryBoundMutationPreconditions,
+    bind_empty_mutation_preconditions_admitted, bind_mutation_preconditions,
+    EmptyMutationPreconditionAdmissionStop, WorthQueryBoundMutationPreconditions,
 };
 pub(in crate::domain_computation) use application_attempt::{
     WorthQueryApplicationSnapshotLease, WorthQueryApplicationSnapshotLeaseDenial,
+    WorthQueryApplicationSnapshotRelease,
 };
 pub(in crate::domain_computation) use exact_basis_access::WorthQueryExactBasisSnapshotDenial;
 pub(in crate::domain_computation) use application_attempt::WorthQueryApplicationObservedFact;
@@ -76,7 +91,7 @@ pub(in crate::domain_computation) use application_attempt::{
 pub(crate) use application_attempt::WorthQueryRetainedGovernedInput;
 pub(crate) use application_attempt::WorthQueryPerformedExternalRedispatchSeal;
 pub(crate) use provider::WorthQueryRetainedPreImageSeal;
-pub(crate) use provider::WorthQueryApplicationBranchCommitLane;
+pub(crate) use provider::WorthQueryPrimaryGraphProvider;
 pub(in crate::domain_computation) use provider::WorthQueryPrimaryGraphApplicationDecisionFact;
 pub(in crate::domain_computation) use provider::WorthQueryAftermathCausalityReadDenial;
 pub(in crate::domain_computation) use provider::WorthQueryUnpublishedIdempotencyDisposition;
@@ -90,9 +105,10 @@ pub(in crate::domain_computation) use application_runtime::WorthQueryExternalDis
 pub(in crate::domain_computation) use application_runtime::WorthQueryPerformedInboundCompletion;
 pub(in crate::domain_computation) use application_runtime::WorthQueryUnpublishedInboundCompletion;
 pub(in crate::domain_computation::primary_graph) use application_runtime::{
-    InstalledTransportCompletion, InstalledTransportPendingReason, InstalledTransportResumeOutcome,
-    PerformedInstalledTransportCompletion,
+    InstalledTransportCompletion, InstalledTransportResumeOutcome, PerformedInstalledTransportCompletion,
 };
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use application_runtime::InstalledTransportPendingReason;
 pub(in crate::domain_computation) use application_runtime::{
     WorthQueryInstalledTransportCompletionBinding,
 };
@@ -100,6 +116,8 @@ pub(in crate::domain_computation) use entity_resolution::{
     WorthQueryEntityResolutionTruth, WorthQueryInstalledEntityResolutionContext,
     WorthQueryResolvedEntity,
 };
+pub(in crate::domain_computation) use entity_resolution::WorthQueryIssuedSelectedScope;
+pub(in crate::domain_computation) use resolution::WorthQueryIssuedSelectedPrincipal;
 pub(in crate::domain_computation) use freshness::{
     validate_freshness_at_snapshot, WorthQueryDurablePrincipalCurrentness,
     WorthQueryPrincipalFreshnessEvidence,

@@ -18,7 +18,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationRes
     state: Arc<ResultBufferRegistryState>,
 }
 
-/// Read-only view of the query result buffers this runtime holds.
+/// Read-only view of query result buffers and disclosed source custody.
 ///
 /// Get one from `result_buffer_observer` and call `observe` for a
 /// point-in-time reading. Observing grants nothing and changes nothing.
@@ -27,9 +27,8 @@ pub struct WorthQueryApplicationResultBufferObserver {
     state: Arc<ResultBufferRegistryState>,
 }
 
-/// Point-in-time reading of query result buffers: how many are active, the
-/// bytes they retain, the largest size any buffer reached, and the largest
-/// claim that was refused.
+/// Point-in-time reading: active buffers, bytes held by buffers or disclosed
+/// sources, the largest buffer claim, and the largest refused claim.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationResultBufferObservation {
     active_buffers: usize,
@@ -54,8 +53,16 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationRes
     registry: WorthQueryApplicationResultBufferRegistry,
     limit_bytes: usize,
     retained_bytes: usize,
+    transferred_bytes: usize,
     peak_bytes: usize,
     released: bool,
+}
+
+/// Bytes admitted by a query result buffer and retained by a disclosed source.
+pub(in crate::domain_computation::primary_graph::application_query) struct WorthQueryRetainedSourceCharge
+{
+    state: Arc<ResultBufferRegistryState>,
+    bytes: usize,
 }
 
 impl WorthQueryApplicationResultBufferRegistry {
@@ -77,6 +84,7 @@ impl WorthQueryApplicationResultBufferRegistry {
             registry: self.clone(),
             limit_bytes,
             retained_bytes: 0,
+            transferred_bytes: 0,
             peak_bytes: 0,
             released: false,
         }
@@ -131,7 +139,11 @@ impl WorthQueryApplicationResultBufferReservation {
         &mut self,
         bytes: usize,
     ) -> Result<(), ()> {
-        let Some(claimed) = self.retained_bytes.checked_add(bytes) else {
+        let Some(claimed) = self
+            .retained_bytes
+            .checked_add(self.transferred_bytes)
+            .and_then(|total| total.checked_add(bytes))
+        else {
             self.record_rejected(usize::MAX);
             return Err(());
         };
@@ -148,8 +160,21 @@ impl WorthQueryApplicationResultBufferReservation {
             .state
             .peak_observed_bytes
             .fetch_max(claimed, Ordering::AcqRel);
-        self.retained_bytes = claimed;
+        self.retained_bytes += bytes;
         Ok(())
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn claim_retained_source(
+        &mut self,
+        bytes: usize,
+    ) -> Result<WorthQueryRetainedSourceCharge, ()> {
+        self.claim(bytes)?;
+        self.retained_bytes -= bytes;
+        self.transferred_bytes += bytes;
+        Ok(WorthQueryRetainedSourceCharge {
+            state: Arc::clone(&self.registry.state),
+            bytes,
+        })
     }
 
     fn record_rejected(&self, bytes: usize) {
@@ -209,6 +234,13 @@ impl Drop for WorthQueryApplicationResultBufferReservation {
     }
 }
 
+impl Drop for WorthQueryRetainedSourceCharge {
+    fn drop(&mut self) {
+        release(&self.state.retained_bytes, self.bytes)
+            .expect("disclosed source retention cannot underflow");
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -231,5 +263,43 @@ mod tests {
 
         drop(reservation);
         assert_eq!(registry.observer().observe().active_buffers(), 0);
+    }
+
+    #[test]
+    fn disclosed_source_outlives_result_buffer_without_losing_its_charge() {
+        let registry = WorthQueryApplicationResultBufferRegistry::default();
+        let mut reservation = registry.reserve(64);
+        reservation.claim(13).unwrap();
+        let charge = reservation.claim_retained_source(19).unwrap();
+        assert_eq!(registry.observer().observe().retained_bytes(), 32);
+
+        let receipt = reservation.release();
+        assert!(receipt.released());
+        let observed = registry.observer().observe();
+        assert_eq!(observed.active_buffers(), 0);
+        assert_eq!(observed.retained_bytes(), 19);
+        assert_eq!(receipt.peak_bytes(), 32);
+
+        drop(charge);
+        assert_eq!(registry.observer().observe().retained_bytes(), 0);
+    }
+
+    #[test]
+    fn transferred_sources_share_one_read_limit_and_refund_on_final_drop() {
+        let registry = WorthQueryApplicationResultBufferRegistry::default();
+        let mut reservation = registry.reserve(1_024);
+        reservation.claim(100).unwrap();
+        let scope = reservation.claim_retained_source(400).unwrap();
+        let parameters = reservation.claim_retained_source(500).unwrap();
+        assert!(reservation.claim_retained_source(25).is_err());
+        assert_eq!(registry.observer().observe().retained_bytes(), 1_000);
+        assert_eq!(registry.observer().observe().peak_rejected_bytes(), 1_025);
+        reservation.release_temporary(100);
+        let descriptor = reservation.claim_retained_source(124).unwrap();
+        let receipt = reservation.release();
+        assert_eq!(receipt.peak_bytes(), 1_024);
+        assert_eq!(registry.observer().observe().retained_bytes(), 1_024);
+        drop((scope, parameters, descriptor));
+        assert_eq!(registry.observer().observe().retained_bytes(), 0);
     }
 }

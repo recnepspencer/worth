@@ -1,4 +1,6 @@
-use super::WorthQueryApplicationOutputLineage;
+use super::{
+    prepared_slot::CancelledLineageSlot, ProductCoordinate, WorthQueryApplicationOutputLineage,
+};
 
 impl WorthQueryApplicationOutputLineage {
     pub(in crate::domain_computation::primary_graph) fn release_occurrence(
@@ -19,11 +21,28 @@ impl WorthQueryApplicationOutputLineage {
                 }
             }
         }
-        self.by_source.retain(|_, versions| {
-            versions.retain(|indexed, _| retained.contains(indexed));
+        let cancelled = &self.cancelled_slots;
+        self.by_source.retain(|source, versions| {
+            versions.retain(|indexed, history| {
+                if retained.contains(indexed) {
+                    return true;
+                }
+                history.retain(|generation, _| {
+                    CancelledLineageSlot::contains_generation(
+                        cancelled,
+                        source,
+                        ProductCoordinate {
+                            occurrence: *indexed,
+                            generation: *generation,
+                        },
+                    )
+                });
+                !history.is_empty()
+            });
             !versions.is_empty()
         });
-        self.partition_index.retain_occurrences(&retained);
+        self.partition_index
+            .retain_occurrences(&retained, cancelled);
         self.origins.retain(|child, _| retained.contains(child));
     }
 }

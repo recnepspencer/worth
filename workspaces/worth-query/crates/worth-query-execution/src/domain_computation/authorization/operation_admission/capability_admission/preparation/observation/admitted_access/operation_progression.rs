@@ -209,6 +209,7 @@ where
         graph_work: revalidated.graph_work,
         source_partition_identity: None,
         source_facts: Vec::new(),
+        required_output_demand: None,
         _marker: std::marker::PhantomData,
     })
 }

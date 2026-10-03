@@ -82,6 +82,11 @@ pub(super) fn map_validation_failure(
             return map_invariant_failure(fields, detail);
         }
         Error::PublicationDeferred { deferred, .. } => match deferred {
+            Deferred::CompanionRegistrationPending
+            | Deferred::CompanionRebindRequired
+            | Deferred::CompanionPreflight(_) => {
+                WorthQueryInvariantExecutionDenialKind::RelationalDeferred(deferred)
+            }
             Deferred::RetentionBackpressure => return retention_capacity_failure(),
             Deferred::PatchPositionReservationContended => {
                 WorthQueryInvariantExecutionDenialKind::PatchPositionReservationContended

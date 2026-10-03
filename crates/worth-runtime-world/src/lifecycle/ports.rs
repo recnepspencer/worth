@@ -90,9 +90,23 @@ pub enum RuntimeWorldBranchCreationOutcome {
 }
 
 /// Shared internal seam for exact product-head observation.
+pub(crate) enum RuntimeWorldCurrentnessAdmissionStop {
+    Native(RuntimeWorldBranchAdmissionDenial),
+    Preparation,
+}
+
 pub(crate) trait RuntimeWorldObservationService:
     super::availability::RuntimeWorldAvailability
 {
+    fn admit_product_branch_currentness_with_work<'selected>(
+        &self,
+        expected: &'selected ProductBranchObservation,
+        prepare: &mut dyn FnMut(u64) -> bool,
+    ) -> Result<
+        crate::branch::ProductBranchCurrentnessScope<'selected>,
+        RuntimeWorldCurrentnessAdmissionStop,
+    >;
+
     fn observe_product_branch(
         &self,
         branch: &ProductBranchIdentity,

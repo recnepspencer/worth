@@ -11,6 +11,17 @@ pub(in crate::domain_computation) fn committed_recoverable_application(
     recoverable_application_world(241, "recovery-fixture-committed").1
 }
 
+pub(in crate::domain_computation) fn committed_recoverable_application_with_output_demand_observation(
+) -> WorthQueryApplicationCommitReceipt {
+    let world = installed_authorization_world(true);
+    commit_on_world_with_output_demand_observation(
+        &world,
+        241,
+        "open",
+        "performed-output-fixture-committed",
+    )
+}
+
 pub(in crate::domain_computation) fn recoverable_application_world(
     seed: u8,
     replacement: &str,
@@ -45,6 +56,25 @@ fn commit_on_world(
     current_status: &str,
     replacement: &str,
 ) -> WorthQueryApplicationCommitReceipt {
+    commit_with_observation(world, seed, current_status, replacement, false)
+}
+
+fn commit_on_world_with_output_demand_observation(
+    world: &AuthorizationWorld,
+    seed: u8,
+    current_status: &str,
+    replacement: &str,
+) -> WorthQueryApplicationCommitReceipt {
+    commit_with_observation(world, seed, current_status, replacement, true)
+}
+
+fn commit_with_observation(
+    world: &AuthorizationWorld,
+    seed: u8,
+    current_status: &str,
+    replacement: &str,
+    retain_output_demand_observation: bool,
+) -> WorthQueryApplicationCommitReceipt {
     let request = live_scope();
     let principal = authenticated_principal(world, &request);
     let account = resolved_account(world, current_status, &request);
@@ -56,6 +86,11 @@ fn commit_on_world(
         replacement,
         super::application_attempt::preimage_evidence::RetentionMutationBreadth::Narrow,
     );
+    let program = if retain_output_demand_observation {
+        program.with_output_demand_observation()
+    } else {
+        program
+    };
     match world
         .application
         .compare_and_commit_application(program, idempotency(seed, seed.wrapping_add(1)))

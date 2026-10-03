@@ -17,6 +17,8 @@ pub struct WorthQueryApplicationCommitDeferred {
 /// The limit that deferred a commit attempt.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationCommitDeferredKind {
+    /// A required native publication companion deferred the attempt.
+    RelationalDeferred(worth_relational::facade::mvcc::RelationalPublicationDeferred),
     /// The owner had no room to retain another basis for the attempt.
     RetentionCapacityExhausted,
     /// Another attempt held the reservation this commit needed.
@@ -27,6 +29,12 @@ pub enum WorthQueryApplicationCommitDeferredKind {
     CandidateCapacityExhausted { maximum_candidates: usize },
     /// The owner already held its maximum number of published snapshot handles.
     PublishedSnapshotCapacityExhausted { maximum_handles: usize },
+    /// Source marking changed during exact same-image revalidation; retry the commit.
+    SourceCurrentnessRaced(worth_relational::facade::mvcc::CompanionCellEditStop),
+    /// Required upstream custody or its bounded preparation is unavailable.
+    RequiredPrerequisitePending(
+        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind,
+    ),
 }
 
 impl From<crate::domain_computation::provider_session::WorthQueryProviderSessionCommitDeferredKind>
@@ -37,6 +45,7 @@ impl From<crate::domain_computation::provider_session::WorthQueryProviderSession
     ) -> Self {
         use crate::domain_computation::provider_session::WorthQueryProviderSessionCommitDeferredKind as Provider;
         match kind {
+            Provider::RelationalDeferred(deferred) => Self::RelationalDeferred(deferred),
             Provider::RetentionCapacityExhausted => Self::RetentionCapacityExhausted,
             Provider::PatchPositionReservationContended => Self::PatchPositionReservationContended,
             Provider::CandidateLifetimeExpired {
@@ -50,6 +59,8 @@ impl From<crate::domain_computation::provider_session::WorthQueryProviderSession
             Provider::PublishedSnapshotCapacityExhausted { maximum_handles } => {
                 Self::PublishedSnapshotCapacityExhausted { maximum_handles }
             }
+            Provider::SourceCurrentnessRaced(stop) => Self::SourceCurrentnessRaced(stop),
+            Provider::RequiredPrerequisitePending(kind) => Self::RequiredPrerequisitePending(kind),
         }
     }
 }

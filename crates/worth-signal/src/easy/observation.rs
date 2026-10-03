@@ -108,7 +108,7 @@ pub(super) fn deliver_observation_boundary(
             continue;
         }
 
-        let touched = true;
+        let visited = true;
         let recomputed = matched_nodes
             .iter()
             .copied()
@@ -118,7 +118,7 @@ pub(super) fn deliver_observation_boundary(
             .copied()
             .any(|node| meaningful_nodes.contains(&node) || changed_nodes.contains(&node));
         let trigger_matched = match policy.trigger() {
-            ObservationTrigger::Touched => touched,
+            ObservationTrigger::Visited => visited,
             ObservationTrigger::Recomputed => recomputed,
             ObservationTrigger::MeaningfulChange => meaningful_change,
         };
@@ -132,7 +132,7 @@ pub(super) fn deliver_observation_boundary(
             policy,
             observed_nodes: observed_nodes.clone(),
             matched_nodes: ObservedNodeSet::from_nodes(matched_nodes),
-            touched,
+            visited,
             recomputed,
             meaningful_change,
             trigger_matched,

@@ -14,6 +14,12 @@ mod index_identity;
 mod rebuild_report;
 mod relation;
 
+pub use application_schema::{
+    WorthQueryCurrentRetainedMutationBinding, WorthQueryRetainedMutationBindingAdmissionStop,
+};
+pub use application_schema::{
+    WorthQueryPrincipalBindingValidationAdmissionStop, WorthQueryValidatedPrincipalBinding,
+};
 pub use authority::WorthQueryInstalledPackageAuthority;
 pub use denial::{
     WorthQueryInstalledPackageIndexDenial, WorthQueryInstalledPackageIndexDenialKind,
@@ -26,6 +32,7 @@ pub use relation::WorthQueryInstalledPackageIndexRelation;
 
 use crate::admission::WorthQueryAdmittedPortableDomainPackage;
 use crate::application_operation::WorthQueryPortableApplicationConditionalOperationBinding;
+use crate::authority_cryptography::InstallationAuthorityLineage;
 use crate::authority_cryptography::{InstallationAuthorityRootKey, PackageAuthorityKey};
 use crate::canonical_work::WorthQueryCanonicalWorkEvidence;
 use crate::domain_computation::WorthQueryPortableArtifactContract;
@@ -47,6 +54,7 @@ pub struct WorthQueryInstalledPackageIndex {
     runtime: WorthQueryInstallationRuntimeIdentity,
     generation: WorthQueryInstallationGeneration,
     authority_root: InstallationAuthorityRootKey,
+    authority_lineage: InstallationAuthorityLineage,
     packages: BTreeMap<String, WorthQueryInstalledPackageRecord>,
     definitions:
         BTreeMap<(WorthQueryPortableDefinitionKind, String, String), WorthQueryPortableDefinition>,

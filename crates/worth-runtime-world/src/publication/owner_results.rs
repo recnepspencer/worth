@@ -249,6 +249,21 @@ impl CompositeOwnerExecutionResults {
         }
     }
 
+    /// Retain the same owner-issued immutable result for publication recovery.
+    /// Cloning the Arc does not copy diagnostic, trace, or changed-record
+    /// backing after an owner effect has performed.
+    pub fn retain_relational_commit_result(&self) -> Option<std::sync::Arc<CommitResult>> {
+        match &self.relational.result {
+            CompositeRelationalOwnerResultKind::Published { result, .. } => {
+                result.as_ref().map(std::sync::Arc::clone)
+            }
+            CompositeRelationalOwnerResultKind::RetainedExact
+            | CompositeRelationalOwnerResultKind::Forked { .. }
+            | CompositeRelationalOwnerResultKind::SettlementPending { .. }
+            | CompositeRelationalOwnerResultKind::SettlementRequired { .. } => None,
+        }
+    }
+
     pub fn signal_publication_identity(
         &self,
     ) -> Option<crate::history::CompositeSignalPublicationIdentity> {

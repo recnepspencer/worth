@@ -11,6 +11,7 @@ use crate::diagnostics::profile::DiagnosticsTier;
 
 use super::runtime_state::SignalRuntime;
 
+mod policy_wire;
 mod registry;
 
 pub use registry::RuntimeObservationRegistry;
@@ -51,7 +52,8 @@ impl ObservationHandle {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ObservationTrigger {
-    Touched,
+    #[serde(alias = "Touched")]
+    Visited,
     Recomputed,
     MeaningfulChange,
 }
@@ -61,7 +63,7 @@ pub enum ObservationDeliveryMode {
     PerCommittedTransaction,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ObservationPolicy {
     trigger: ObservationTrigger,
     delivery_mode: ObservationDeliveryMode,
@@ -75,9 +77,9 @@ impl ObservationPolicy {
         }
     }
 
-    pub fn touched() -> Self {
+    pub fn visited() -> Self {
         Self::new(
-            ObservationTrigger::Touched,
+            ObservationTrigger::Visited,
             ObservationDeliveryMode::PerCommittedTransaction,
         )
     }
@@ -176,7 +178,7 @@ pub struct ObservationNotice<'a> {
     policy: ObservationPolicy,
     observed_nodes: &'a ObservedNodeSet,
     matched_nodes: &'a ObservedNodeSet,
-    touched: bool,
+    visited: bool,
     recomputed: bool,
     meaningful_change: bool,
     trigger_matched: bool,
@@ -203,8 +205,8 @@ impl ObservationNotice<'_> {
         self.matched_nodes
     }
 
-    pub fn touched(&self) -> bool {
-        self.touched
+    pub fn visited(&self) -> bool {
+        self.visited
     }
 
     pub fn recomputed(&self) -> bool {

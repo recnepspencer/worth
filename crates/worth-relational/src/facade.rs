@@ -95,8 +95,9 @@ pub mod history {
         CommittedVersionSummary, HistoryAspectQueryTarget, HistoryDriftClass,
         HistoryRetentionClass, HistoryShapeClassification, LineageAspectHistory,
         LineageAspectHistoryQueryResult, LineageAspectResolutionDigest, MergeConflictRecord,
-        MergeInspection, OrderedParentList, RelationalCommitReceipt,
-        RelationalMergeBranchBasisDenial, VersionGraphPolicy,
+        MergeInspection, OrderedParentList, RelationalCommitReceipt, RelationalDescriptiveTouch,
+        RelationalDescriptiveTouchGraph, RelationalDescriptiveTouchPrecision,
+        RelationalMergeBranchBasisDenial, RelationalTouchAdjacencyDirection, VersionGraphPolicy,
     };
     pub use crate::history::{BoundedCanonicalCommitPatchDenial, HistoryAccess, HistoryAuthority};
     pub use crate::history::{
@@ -205,18 +206,21 @@ pub mod runtime {
         custom_invariant_inventory_digest, AdjacencyStructuralRevision,
         AdjacencyStructuralRevisionDenial, CompiledArtifactAuthorityStatus, CompiledArtifactError,
         CompiledExecutionArtifact, ComplexityContract, ComplexityStatus, EntityProjectionRecord,
-        EntityRecordProjection, InvariantAccess, QueryLeasedReadOutcome, QueryReadExecutionStop,
-        QueryReadPacketDenial, RelationProjectionRecord, RelationRecordProjection,
-        RelationalAdjacencyDirection, RelationalCandidateInputCounters,
+        EntityRecordProjection, InvariantAccess, PositionedRelationalSnapshot,
+        QueryLeasedReadOutcome, QueryReadExecutionStop, QueryReadPacketDenial,
+        RelationProjectionRecord, RelationRecordProjection, RelationalAdjacencyDirection,
+        RelationalAdjacencyVisit, RelationalBorrowedRecordReadDenial,
+        RelationalCandidateInputCounters, RelationalEntityMetadata,
         RelationalInitialSchemaInstallation, RelationalInitialSchemaInstallationDenial,
         RelationalInitialSchemaInstallationDenialKind, RelationalInitialSchemaInstallationReceipt,
         RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
-        RelationalReplayRecord, RelationalRuntime, RelationalRuntimeConfig,
-        RelationalRuntimeForkDenial, RelationalSchemaTransitionAdmissionDenial,
-        RelationalSchemaTransitionAdmissionDenialKind, ReplaySchemaVersion,
-        RuntimeComplexityCounters, SimulationAccess, SimulationAuthority, SnapshotGuard,
-        TopologyFreezeMode, VisibilityProjectionView, VisibilityReadContext,
-        VisibilityRetentionAuthority,
+        RelationalRelationMetadata, RelationalReplayRecord, RelationalRuntime,
+        RelationalRuntimeConfig, RelationalRuntimeForkDenial,
+        RelationalSchemaTransitionAdmissionDenial, RelationalSchemaTransitionAdmissionDenialKind,
+        RelationalSnapshotPositionAdmissionStop, RelationalSnapshotProjectionAdmissionStop,
+        ReplaySchemaVersion, RuntimeComplexityCounters, SimulationAccess, SimulationAuthority,
+        SnapshotGuard, SnapshotPositionDenial, TopologyFreezeMode, VisibilityProjectionView,
+        VisibilityReadContext, VisibilityRetentionAuthority,
     };
     pub use crate::storage::data::{
         ChunkVisibilitySummary, ChunkedStorageSummary, EntityReadRecord, PartitionStorageStats,
@@ -351,7 +355,8 @@ pub mod visibility {
 pub mod storage {
     pub use crate::storage::data::{
         authoritative_aspect_value_field_comparison_key, AuthoritativeFieldComparisonKey,
-        RecordLifecycleState,
+        AuthoritativeFieldComparisonKeyDecodeDenial,
+        AuthoritativeFieldComparisonKeyDecodeDenialKind, RecordLifecycleState,
     };
 }
 

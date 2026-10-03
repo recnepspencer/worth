@@ -16,6 +16,8 @@ use super::{
     live_scope, resolved_account, WorthQueryApplicationCommitOutcome,
 };
 
+#[path = "mutation_work_scale/completed_evidence.rs"]
+mod completed_evidence;
 #[path = "mutation_work_scale/locality.rs"]
 mod locality;
 
@@ -162,7 +164,7 @@ fn mutation_work(
     unrelated_accounts: usize,
     idempotency_key: u8,
 ) -> super::super::super::provider::WorthQueryPrimaryMutationWorkEvidence {
-    let world = installed_authorization_world(true);
+    let world = installed_scale_world();
     grow_unrelated_accounts(&world, unrelated_accounts);
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
@@ -176,6 +178,19 @@ fn no_demand_mutation_work(
     idempotency_key: u8,
 ) -> super::super::super::provider::WorthQueryPrimaryMutationWorkEvidence {
     let world = installed_authorization_world(true);
+    let program = no_demand_mutation_program(&world, wide);
+    commit_work(&world, program, idempotency_key)
+}
+
+fn no_demand_mutation_program(
+    world: &super::super::fixture::AuthorizationWorld,
+    wide: bool,
+) -> crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram<
+    IdentityExecutionSchema,
+    TouchAccountOperation,
+    TouchAccountInput,
+    Account,
+> {
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "open", &request);
@@ -230,7 +245,7 @@ fn no_demand_mutation_work(
             .write_field(&other, AccountLabel::reference(), "wide".to_owned())
             .unwrap();
     }
-    commit_work(&world, effects.finish().unwrap(), idempotency_key)
+    effects.finish().unwrap()
 }
 
 fn commit_work(
@@ -310,4 +325,28 @@ fn grow_unrelated_accounts(world: &super::super::fixture::AuthorizationWorld, co
         );
         super::super::fixture::publish_relational_mutation(world, batch);
     }
+}
+
+fn installed_scale_world() -> super::super::fixture::AuthorizationWorld {
+    use crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources;
+    use crate::domain_computation::execution_runtime::{
+        WorthQueryInvalidationResourceInstallation, WorthQueryInvalidationResources,
+    };
+    let (budgets, clock, _) =
+        crate::domain_computation::execution_runtime::product_world::test_product_world_resources()
+            .into_parts();
+    // This court measures the local edit after native population. Its cold
+    // population publishes up to 4,000 accounts per batch and 100,000 total;
+    // those declared deltas retain their own bounded selector history.
+    let invalidation =
+        WorthQueryInvalidationResources::install(WorthQueryInvalidationResourceInstallation {
+            maximum_marking_work: 64 * 1024 * 1024,
+            maximum_preparation_bytes: 64 * 1024 * 1024,
+            maximum_retained_bytes: 512 * 1024 * 1024,
+            maximum_retained_positions: 128,
+        })
+        .unwrap();
+    super::super::fixture::installed_authorization_world_with_product_resources(
+        WorthQueryProductWorldResources::new(budgets, clock, invalidation),
+    )
 }

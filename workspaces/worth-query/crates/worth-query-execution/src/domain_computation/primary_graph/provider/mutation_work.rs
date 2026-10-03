@@ -104,22 +104,18 @@ pub struct WorthQueryPrimaryMutationWorkEvidence {
     performed_application_touches_admitted: usize,
     installed_touch_scopes_compared: usize,
     installed_read_touch_overlaps_observed: usize,
-    touched_records: Vec<WorthQueryTouchedRecordIdentity>,
+    touched_records: std::sync::Arc<super::RetainedTouchedRecords>,
 }
 
 impl WorthQueryPrimaryMutationWorkEvidence {
     /// Complete mutation work from invariant counters and the commit's records.
     ///
-    /// `changed_records` must be the exact slice Relational published on the
-    /// commit that produced this work. Callers cannot invent identities.
+    /// The prepared touched identities were filled from the exact native
+    /// changed-record slice after this commit performed.
     pub(in crate::domain_computation::primary_graph) fn from_commit_seal(
         seal: super::session_commit::WorthQueryMutationWorkCommitSeal,
     ) -> Self {
-        let (counters, index_maintenance_work, changed_records, preimage) = seal.into_parts();
-        let touched_records = changed_records
-            .into_iter()
-            .map(WorthQueryTouchedRecordIdentity::from_commit_record)
-            .collect();
+        let (counters, index_maintenance_work, touched_records, preimage) = seal.into_parts();
         let touch_projection = counters.installed_touch_admission.projection_work();
         Self {
             index_maintenance_work,
@@ -240,10 +236,10 @@ impl WorthQueryPrimaryMutationWorkEvidence {
 
     /// Records this mutation touched, derived from the commit (C2).
     pub fn touched_records(&self) -> &[WorthQueryTouchedRecordIdentity] {
-        &self.touched_records
+        self.touched_records.as_slice()
     }
 
     pub fn touched_record_count(&self) -> usize {
-        self.touched_records.len()
+        self.touched_records.as_slice().len()
     }
 }

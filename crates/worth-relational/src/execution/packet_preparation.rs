@@ -17,6 +17,9 @@ pub(crate) struct PacketPreparationBudget<'a, 'b, 'c> {
 }
 
 impl PacketPreparationBudget<'_, '_, '_> {
+    pub(crate) const fn claimed_bytes(&self) -> u64 {
+        self.claimed
+    }
     pub(crate) fn checkpoint(
         &mut self,
         units: u64,
@@ -53,6 +56,67 @@ impl PacketPreparationBudget<'_, '_, '_> {
 }
 
 struct PreparedPackets<T>(Vec<ReadOnlyPacket<T>>);
+
+struct PreparedArtifact<T> {
+    value: T,
+    owned_bytes: u64,
+}
+
+impl<T> ChargedBytes for PreparedArtifact<T> {
+    fn additional_charged_bytes(&self) -> u64 {
+        self.owned_bytes
+    }
+}
+
+/// Seal one borrowed-source artifact under the same request preparation account
+/// used by packet construction. The caller claims each allocation before growth.
+pub(crate) fn prepare_borrowed_artifact<T>(
+    lease: &ExecutionResourceLease<'_>,
+    work_budget: Option<&super::RequestWorkBudget>,
+    build: impl FnOnce(
+        &mut PacketPreparationBudget<'_, '_, '_>,
+    ) -> Result<(T, u64), MapKernelFailure<super::PacketBudgetDenial>>,
+) -> Result<T, PacketExecutionStop> {
+    let identity = PartitionIdentity::new(1);
+    let scan = ExecutionScan::try_from_ordered(vec![identity], vec![(identity, ())])
+        .map_err(|_| PacketExecutionStop::Admission(worth_execution::MapDenial::MemoryOverflow))?;
+    let ceiling = lease.policy().budget().charged_memory_bytes() / PREPARATION_MEMORY_DIVISOR;
+    let mut build = Some(build);
+    let outcome = super::run_with_remaining_request_work(
+        lease,
+        work_budget,
+        |child_lease| {
+            scan.run(
+                Some(child_lease),
+                (),
+                0,
+                ceiling,
+                0,
+                ceiling,
+                |_, _, context| {
+                    let mut budget = PacketPreparationBudget {
+                        context,
+                        ceiling,
+                        claimed: 0,
+                    };
+                    budget.checkpoint(0)?;
+                    let (value, owned_bytes) =
+                        build.take().expect("one artifact preparation")(&mut budget)?;
+                    Ok(((), PreparedArtifact { value, owned_bytes }))
+                },
+            )
+        },
+        ScanOutcome::report,
+    );
+    match outcome {
+        ScanOutcome::Complete { mut prefixes, .. } => {
+            Ok(prefixes.pop().expect("one artifact output").value)
+        }
+        ScanOutcome::Stopped {
+            boundary, reason, ..
+        } => Err(PacketExecutionStop::Execution { boundary, reason }),
+    }
+}
 
 impl<T> ChargedBytes for PreparedPackets<T> {
     fn additional_charged_bytes(&self) -> u64 {

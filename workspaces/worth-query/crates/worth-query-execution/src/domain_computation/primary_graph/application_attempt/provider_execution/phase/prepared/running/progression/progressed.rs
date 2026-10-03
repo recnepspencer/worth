@@ -27,11 +27,11 @@ where
         request,
     } = progressed;
     let terminal = terminal_for(&outcome);
-    let snapshot_released = lease.release();
+    let snapshot_release = lease.release_custody();
     application
         .primary_provider
         .observe_managed_application_cleanup();
-    let completion = match cleanup.finish(running, terminal, snapshot_released) {
+    let completion = match cleanup.finish(running, terminal, snapshot_release) {
         Ok(completion) => completion,
         Err(()) => {
             return match outcome {

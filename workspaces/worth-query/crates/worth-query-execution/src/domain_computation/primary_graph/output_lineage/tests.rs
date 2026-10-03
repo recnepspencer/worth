@@ -5,6 +5,7 @@ use super::{
     WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputLineage,
 };
 
+mod input_cutoff_selection;
 mod partition_selection;
 mod restoration_identity;
 
@@ -50,6 +51,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         [0x41; 32],
         source_facts(),
         None,
+        None,
     );
     lineage.record_restoration(
         std::any::TypeId::of::<RestoredOutputBinding>(),
@@ -64,6 +66,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         [0x42; 32],
         source_facts(),
         None,
+        None,
     );
     lineage.record_restoration(
         std::any::TypeId::of::<RestoredOutputBinding>(),
@@ -77,6 +80,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         None,
         [0x41; 32],
         source_facts(),
+        None,
         None,
     );
 
@@ -248,6 +252,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         [0x41; 32],
         Arc::from([]),
         None,
+        None,
     );
 
     assert!(
@@ -277,6 +282,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         None,
         [0x41; 32],
         source_facts(),
+        None,
         None,
     );
 

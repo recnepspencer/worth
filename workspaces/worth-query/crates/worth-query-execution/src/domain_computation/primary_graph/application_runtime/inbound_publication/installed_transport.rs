@@ -168,6 +168,7 @@ pub(in crate::domain_computation::primary_graph) enum InstalledTransportPublicat
     ForeignRelationalRuntime,
     ForeignProductWorld,
     OriginalPublicationCommitMismatch,
+    BranchCoordinationCapacityExhausted,
     BindingUnavailable,
     PublicationPermit(crate::domain_computation::application_aftermath::WorthQueryTransportPublicationPermitDenial),
     TerminalIndexUnavailable,

@@ -1,12 +1,26 @@
-use std::{any::TypeId, sync::Arc};
+mod retained_candidates;
+
+use std::{
+    any::TypeId,
+    sync::{Arc, OnceLock},
+};
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 use super::{
-    ProductCoordinate, RecordedSourceIdentity, SemanticSource, WorthQueryApplicationOutputLineage,
-    WorthQueryProducerLineageHead, WorthQueryRetainedOutputCandidate,
+    ProductCoordinate, RecordedOutput, RecordedSourceIdentity, SemanticSource,
+    WorthQueryApplicationOutputLineage, WorthQueryProducerLineageHead,
+    WorthQueryRetainedOutputCandidate,
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
+
+pub(in crate::domain_computation::primary_graph) struct RetainedOutputCurrentnessRead {
+    pub(in crate::domain_computation::primary_graph) facts:
+        Arc<[crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact]>,
+    pub(in crate::domain_computation::primary_graph) native_output_witness:
+        Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
+    pub(in crate::domain_computation::primary_graph) work: usize,
+}
 
 impl WorthQueryApplicationOutputLineage {
     pub(in crate::domain_computation::primary_graph) fn producer_head<Binding: 'static>(
@@ -65,13 +79,7 @@ impl WorthQueryApplicationOutputLineage {
         observation: &worth_runtime_world::facade::ProductBranchObservation,
         receipt: &WorthQueryApplicationCommitReceipt,
         maximum_work: usize,
-    ) -> Result<
-        Option<(
-            std::sync::Arc<[super::super::application_attempt::WorthQueryApplicationObservedFact]>,
-            usize,
-        )>,
-        (),
-    > {
+    ) -> Result<Option<RetainedOutputCurrentnessRead>, ()> {
         let Some(output_binding) = receipt.output_correspondence().binding_type() else {
             return Ok(None);
         };
@@ -121,14 +129,7 @@ impl WorthQueryApplicationOutputLineage {
             };
             work = work.checked_add(lookup_work).ok_or(())?;
             if let Some(recorded) = recorded {
-                let Some(facts) = recorded
-                    .observed_source_facts
-                    .as_ref()
-                    .filter(|facts| !facts.is_empty())
-                else {
-                    return Ok(None);
-                };
-                return Ok(Some((std::sync::Arc::clone(facts), work)));
+                return retained_currentness_read(recorded, work, maximum_work);
             }
             let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {
                 return Ok(None);
@@ -144,13 +145,7 @@ impl WorthQueryApplicationOutputLineage {
         observation: &worth_runtime_world::facade::ProductBranchObservation,
         settlement: &crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement,
         maximum_work: usize,
-    ) -> Result<
-        Option<(
-            std::sync::Arc<[super::super::application_attempt::WorthQueryApplicationObservedFact]>,
-            usize,
-        )>,
-        (),
-    > {
+    ) -> Result<Option<RetainedOutputCurrentnessRead>, ()> {
         let Some(restored) = settlement.restored_source.as_ref() else {
             return Ok(None);
         };
@@ -188,14 +183,7 @@ impl WorthQueryApplicationOutputLineage {
             )?;
             work = work.checked_add(lookup_work).ok_or(())?;
             if let Some(recorded) = recorded {
-                let Some(facts) = recorded
-                    .observed_source_facts
-                    .as_ref()
-                    .filter(|facts| !facts.is_empty())
-                else {
-                    return Ok(None);
-                };
-                return Ok(Some((std::sync::Arc::clone(facts), work)));
+                return retained_currentness_read(recorded, work, maximum_work);
             }
             let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {
                 return Ok(None);
@@ -215,65 +203,83 @@ impl WorthQueryApplicationOutputLineage {
             .is_ok_and(|facts| facts.is_some())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn retained_output_candidates(
+    /// A stable authority names one immutable alias row. Selection must still
+    /// find that row as the latest output in its semantic partition; a newer
+    /// alias supersedes it even when both share a Product generation.
+    pub(in crate::domain_computation::primary_graph) fn source_facts_for_stable_output(
         &self,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-        generation: u64,
-        output_bindings: &[TypeId],
-        source_partition_identity: [u8; 32],
+        observation: &worth_runtime_world::facade::ProductBranchObservation,
+        stable: &super::PublishedStableLineage,
         maximum_work: usize,
-    ) -> Result<(Vec<WorthQueryRetainedOutputCandidate>, usize), ()> {
-        let mut candidates = Vec::new();
-        let mut work = 0_usize;
-        for output_binding in output_bindings {
-            let source = SemanticSource {
-                runtime_authority,
-                schema: schema.clone(),
-                scope,
-                output_binding: *output_binding,
-            };
-            if !self.by_source.contains_key(&source) {
-                work = work.checked_add(1).ok_or(())?;
-                if work > maximum_work {
-                    return Err(());
-                }
-                continue;
-            }
-            let mut coordinate = ProductCoordinate {
-                occurrence,
-                generation,
-            };
-            loop {
-                let (recorded, lookup_work) = self.latest_output_in_partition_budgeted(
-                    &source,
-                    coordinate,
-                    source_partition_identity,
-                    maximum_work.saturating_sub(work),
-                )?;
-                work = work.checked_add(lookup_work).ok_or(())?;
-                if work > maximum_work {
-                    return Err(());
-                }
-                if let Some(recorded) = recorded {
-                    candidates.push(WorthQueryRetainedOutputCandidate {
-                        binding: *output_binding,
-                        correspondence: Arc::clone(&recorded.correspondence),
-                        source_identity: recorded.source_identity,
-                        observed_source_facts: recorded.observed_source_facts.clone(),
-                        resources: recorded.resources,
-                        idempotency_key_identity: recorded.idempotency_key_identity,
-                    });
-                    break;
-                }
-                let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {
-                    break;
-                };
-                coordinate = parent;
-            }
+    ) -> Result<Option<RetainedOutputCurrentnessRead>, ()> {
+        let identity = stable.exact_settlement();
+        let source = identity.source();
+        if source.runtime_authority != runtime_authority || &source.schema != schema {
+            return Ok(None);
         }
-        Ok((candidates, work))
+        let Some(partition) = stable.source_partition_identity() else {
+            return Ok(None);
+        };
+        let mut coordinate = ProductCoordinate {
+            occurrence: observation.lifecycle_incarnation(),
+            generation: observation.reference_generation().get(),
+        };
+        let mut work = 0_usize;
+        loop {
+            let (recorded, lookup_work) = self.latest_output_in_partition_budgeted(
+                source,
+                coordinate,
+                partition,
+                maximum_work.saturating_sub(work),
+            )?;
+            work = work.checked_add(lookup_work).ok_or(())?;
+            if let Some(recorded) = recorded {
+                return if Arc::ptr_eq(&recorded.settlement_identity, identity) {
+                    retained_currentness_read(recorded, work, maximum_work)
+                } else {
+                    Ok(None)
+                };
+            }
+            let ancestry_work = super::prepared_slot::tree_work::<
+                worth_runtime_world::facade::ProductBranchIncarnation,
+            >(self.origins.len())
+            .ok_or(())?;
+            let ancestry_work = usize::try_from(ancestry_work).map_err(|_| ())?;
+            work = work.checked_add(ancestry_work).ok_or(())?;
+            if work > maximum_work {
+                return Err(());
+            }
+            let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {
+                return Ok(None);
+            };
+            coordinate = parent;
+        }
     }
+}
+
+fn retained_currentness_read(
+    recorded: &RecordedOutput,
+    work: usize,
+    maximum_work: usize,
+) -> Result<Option<RetainedOutputCurrentnessRead>, ()> {
+    let work = work
+        .checked_add(3)
+        .filter(|work| *work <= maximum_work)
+        .ok_or(())?;
+    let facts = recorded
+        .observed_source_facts()
+        .filter(|facts| !facts.is_empty());
+    let Some(facts) = facts else { return Ok(None) };
+    let origin = recorded
+        .performed_origin
+        .as_ref()
+        .and_then(|cell| cell.get())
+        .unwrap_or(recorded);
+    Ok(Some(RetainedOutputCurrentnessRead {
+        facts,
+        native_output_witness: origin.native_output_witness_cell().map(Arc::clone),
+        work,
+    }))
 }

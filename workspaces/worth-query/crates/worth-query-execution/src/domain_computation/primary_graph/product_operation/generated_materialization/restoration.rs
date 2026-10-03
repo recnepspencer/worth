@@ -304,6 +304,7 @@ where
                         producer.idempotency_key_identity,
                         producer.observed_source_facts,
                         producer.resources,
+                        None,
                     );
                 Ok(WorthQueryRestoredGeneratedOutput {
                     branch,

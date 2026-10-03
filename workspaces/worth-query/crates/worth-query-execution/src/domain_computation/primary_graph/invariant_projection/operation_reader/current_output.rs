@@ -61,6 +61,11 @@ pub enum WorthQueryCurrentOutputDenialKind {
     /// A recorded output entity is no longer live, the producer changed after
     /// its outputs were recorded, or a recorded source fact could not be read.
     OutputUnavailable,
+    /// A consumed upstream output is pending source-aligned revalidation.
+    PendingUpstream,
+    /// Source marking changed while a verified dirty mark was being cleared.
+    /// The exact companion edit stop is retained for retry policy.
+    CurrentnessRaced(worth_relational::facade::mvcc::CompanionCellEditStop),
     /// The operation does not declare the role's entity or the producer as a
     /// decision read.
     UndeclaredDecisionTarget,

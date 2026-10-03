@@ -1,6 +1,9 @@
+use std::num::NonZeroUsize;
+
 use worth_query_admission::facade::{
     application_query::{
-        admit_application_query_parameters, WorthQueryAdmittedApplicationQueryParameters,
+        admit_application_query_parameters, readmit_application_query_parameters,
+        WorthQueryAdmittedApplicationQueryParameters,
     },
     authenticated_principal::{WorthQueryRequestInterruption, WorthQueryRequestScope},
 };
@@ -14,7 +17,11 @@ use super::{
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
     WorthQueryApplicationQueryControls,
 };
+use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+
+mod validation_preflight;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -53,6 +60,117 @@ where
         ),
         WorthQueryApplicationQueryAdmissionDenial,
     > {
+        self.validate_application_query_admission(query, access, &controls)?;
+        let parameters =
+            admit_application_query_parameters(query, parameters).map_err(|denial| {
+                WorthQueryApplicationQueryAdmissionDenial::new(
+                    WorthQueryApplicationQueryAdmissionDenialKind::Parameter(denial.kind()),
+                    denial.parameter(),
+                )
+            })?;
+        Ok((parameters, controls))
+    }
+
+    pub(super) fn prepare_application_query_source_readmission<
+        'a,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >(
+        &'a self,
+        query: &'a WorthQueryInstalledApplicationQuery<
+            Schema,
+            Query,
+            Parameters,
+            QueryResult,
+            Scope,
+        >,
+        access: &WorthQueryApplicationQueryAccessContext<
+            'a,
+            Schema,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+        retained: &WorthQueryAdmittedApplicationQueryParameters,
+        controls: WorthQueryApplicationQueryControls<'a, Schema>,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<
+        (
+            WorthQueryAdmittedApplicationQueryParameters,
+            WorthQueryApplicationQueryControls<'a, Schema>,
+        ),
+        WorthQueryApplicationQueryAdmissionDenial,
+    > {
+        validation_preflight::admit_source_readmission_validation(
+            query, access, &controls, admission,
+        )?;
+        self.validate_application_query_admission(query, access, &controls)?;
+        let (bytes, work) = retained
+            .readmission_preparation_requirements()
+            .ok_or_else(|| {
+                WorthQueryApplicationQueryAdmissionDenial::new(
+                    WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
+                    query.name(),
+                )
+            })?;
+        admission.admit_read_scratch(bytes).map_err(|stop| {
+            WorthQueryApplicationQueryAdmissionDenial::new(
+                match stop {
+                    CompanionPreflightStop::PreparationMemoryExhausted { .. }
+                    | CompanionPreflightStop::PreparationMemoryCounterOverflow => {
+                        WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted
+                    }
+                    _ => WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
+                },
+                query.name(),
+            )
+        })?;
+        admission.charge_external_work(work).map_err(|_| {
+            WorthQueryApplicationQueryAdmissionDenial::new(
+                WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
+                query.name(),
+            )
+        })?;
+        let remaining = NonZeroUsize::new(admission.remaining_work()).ok_or_else(|| {
+            WorthQueryApplicationQueryAdmissionDenial::new(
+                WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
+                query.name(),
+            )
+        })?;
+        let controls = controls.limit_maximum_work(remaining);
+        let parameters =
+            readmit_application_query_parameters(query, retained).map_err(|denial| {
+                WorthQueryApplicationQueryAdmissionDenial::new(
+                    WorthQueryApplicationQueryAdmissionDenialKind::Parameter(denial.kind()),
+                    denial.parameter(),
+                )
+            })?;
+        Ok((parameters, controls))
+    }
+
+    fn validate_application_query_admission<
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >(
+        &self,
+        query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
+        access: &WorthQueryApplicationQueryAccessContext<
+            '_,
+            Schema,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+        controls: &WorthQueryApplicationQueryControls<'_, Schema>,
+    ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
         validate_admission_request(controls.request_scope(), query.name())?;
         if controls.maximum_work()
             > self
@@ -67,15 +185,7 @@ where
         }
         self.validate_installed_query(query)?;
         self.validate_access_authority(query, access)?;
-        validate_controls(query, &controls)?;
-        let parameters =
-            admit_application_query_parameters(query, parameters).map_err(|denial| {
-                WorthQueryApplicationQueryAdmissionDenial::new(
-                    WorthQueryApplicationQueryAdmissionDenialKind::Parameter(denial.kind()),
-                    denial.parameter(),
-                )
-            })?;
-        Ok((parameters, controls))
+        validate_controls(query, controls)
     }
 
     fn validate_installed_query<Query, Parameters, QueryResult, Scope>(

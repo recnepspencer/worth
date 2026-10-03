@@ -23,6 +23,7 @@ fn ready_ordinary_output_survives_close_and_reopens_without_scheduling() {
     .expect("empty restored correspondence is valid for a registry lifetime test");
     let checkpoint = super::super::WorthQueryAcceptedOutputCheckpointIdentity {
         producer: "producer".to_owned(),
+        posture: super::super::WorthQueryAcceptedOutputCheckpointPosture::Performed,
         source: [1; 32],
         scope,
         source_partition: [2; 32],
@@ -31,6 +32,7 @@ fn ready_ordinary_output_survives_close_and_reopens_without_scheduling() {
         resources: None,
         roles: Vec::new(),
         producer_facts: None,
+        producer_fact_wire_version: 0,
     };
     let completion = super::super::WorthQueryCompletedOutputDemand {
         authority: super::super::WorthQueryAcceptedOutputAuthority::Restored(
@@ -41,28 +43,37 @@ fn ready_ordinary_output_survives_close_and_reopens_without_scheduling() {
                 source_scope: scope,
                 source_identity: WorthQueryCheckpointSourceIdentity::new([1; 32]),
                 observed_source_facts: Arc::from([]),
+                native_output_witness: None,
             },
         ),
-        readiness: WorthQueryOutputReadinessDeliveryEvidence::from_restoration(),
+        readiness: WorthQueryOutputReadinessDeliveryEvidence::without_execution(),
+        producer_commit_authority: None,
         resources: None,
     };
     let wake = Arc::new(DemandWake {
+        _record_capacity: test_record_capacity(),
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
     registry.state.lock().unwrap().records.insert(
         output_key.clone(),
         DemandRecord {
+            _record_capacity: test_record_capacity(),
+            source_commit_capacity: None,
             source_scope: Some(scope),
             wake: Arc::clone(&wake),
             ..record(
                 product_occurrence,
-                DemandState::Output(super::super::WorthQueryOutputProgress::restored(completion)),
+                DemandState::Output(super::super::WorthQueryOutputProgress::restored(
+                    super::super::ReadyCompletion::for_test(completion),
+                )),
                 1,
             )
         },
     );
     drop(interest(&registry, output_key.clone(), wake));
+    assert!(registry.state.lock().unwrap().records[&output_key].has_cached_ready());
+    assert!(!registry.state.lock().unwrap().records[&output_key].is_required());
     let reopened = registry
         .admit(
             output_key.clone(),
@@ -72,8 +83,21 @@ fn ready_ordinary_output_survives_close_and_reopens_without_scheduling() {
             super::super::DemandAdmissionKind::Ordinary,
             None,
             None,
+            &mut record_admission(),
         )
         .expect("the equivalent ordinary demand reopens");
+    let mut short = InvalidationEditAdmission::new(CompanionPreflightBudget {
+        maximum_work_visits: 0,
+        maximum_preparation_bytes: 8 * 1024 * 1024,
+    });
+    assert!(matches!(
+        registry.peek_ready(&reopened, &mut short),
+        Err(denial) if denial.kind() == WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
+    ));
+    assert!(registry
+        .peek_ready(&reopened, &mut record_admission())
+        .expect("ordered lookup and fixed Arc pin fit the admitted work")
+        .is_some());
     assert!(matches!(
         registry.begin(&reopened),
         super::super::WorthQueryOutputDemandAdvanceAdmission::Ready(_)

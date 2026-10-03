@@ -140,7 +140,7 @@ budget or determinism contract.
   with every commit. Bridge's direct correspondence path delivers them only for
   an installed correspondence with Signal targets, matched against that
   correspondence's dependency, and carries no index-membership records. Query
-  live queries and conditional operations consume those deliveries. Application
+  conditional operations consume those deliveries. Application
   outputs never read them. Instead:
   - reuse re-runs the source query and hashes its whole footprint
     (`identity_current`), so any revision change in the footprint forces a fresh
@@ -210,8 +210,14 @@ budget or determinism contract.
 
 Required:
 
-- For the fixed edit, marking work, verification work, producer contacts and
-  reverse-index bytes per consumed fact are equal at 1, 10 and 100 copies.
+- For the fixed edit, logical marking operations (posting-key lookups, matched
+  fact ordinals and affected downstream vertices), verification work, producer
+  contacts and reverse-index capacity bytes per consumed fact are equal at 1,
+  10 and 100 copies. Physical index navigation and selected copy-on-write paths
+  are separately admitted and reported. Their structural cost may vary with
+  index height; no settlement scan, waiting-work scan or whole-index copy is
+  hidden in the logical counters. A conservative allocation bound is reported
+  as a bound; independent allocation evidence measures actual allocation.
 - Demanding a clean output costs zero fact checks and zero source-query re-runs.
 - One `advance` with an adequate budget settles every marked output, and
   exhaustion returns a typed outcome naming the remaining work; the application
@@ -397,16 +403,26 @@ at its declared breadth and is counted and reported.
   Index membership changes carry the old and new index keys, derived by
   Relational from the field changes and the installed index definitions, so a
   phantom match is caught.
+  Relational seals this description into the canonical commit envelope before
+  publication. Native segment and checkpoint entries write explicit touch-wire
+  version 3; version 2 entries readmit with `Unavailable` precision and require
+  full verification. A version 2 entry claiming exact touches is rejected.
 - **Delivery.** Marking consumes every committed patch envelope on the branch
   through one Query-owned Bridge subscription with no Signal targets.
   - It carries the full published aspect change with its field path, the
     index-membership records, and, from Phase 4, the scope path at the depth
     Signal sealed it.
   - Delivery runs in commit order and synchronously with commit visibility.
-  - Live queries, conditional operations and workflow coverage consume the same
+  - Conditional operations and workflow coverage consume the same
     subscription, and their correspondence-based matching is replaced by
     marking. Signal correspondences keep delivering to Signal-hosted nodes and
     never feed Query marking. No second path feeds Query invalidation.
+  - Live queries are caused by committed application emissions, delivered in
+    Product commit order by Query's commit-causality source. They invalidate
+    nothing, so they are not a second invalidation path. Each delivery
+    re-admits the principal and re-reads at the cause's Product observation. A
+    future live query whose result depends on data registers in the reverse
+    index like any other consumer.
 
 ### Marking
 
@@ -498,8 +514,8 @@ at its declared breadth and is counted and reported.
   beside marking and fails on any difference.
 - **One mechanism.** Workflow definition and capacity facts mark through the same
   path. A workflow history basis is pinned to an immutable snapshot and is never
-  marked. One invalidation mechanism serves outputs, live queries and workflow
-  coverage, and no parallel lane remains.
+  marked. One invalidation mechanism serves outputs, conditional operations and
+  workflow coverage, and no parallel lane remains.
 - **Charging.** Work budgets charge marking and dirty verification, never a scan
   of clean state.
 
@@ -527,6 +543,137 @@ Input cutoff and output cutoff are one mechanism.
   cutoff.
 - **Determinism.** Cutoff and reuse depend on deterministic producers. The
   serial oracle and schedule perturbation certify them.
+
+#### Phase 5 decision-context and publication boundary
+
+The three-part reuse key identifies prepared input; it is not, by itself, proof
+that a completed handler has the same decision context. `DecisionReader` also
+exposes the request key, principal and operation scope. The installed producer
+declaration must explicitly state its deterministic reuse contract and these
+context dependencies before execution. An existing handler without that contract
+remains executable and is ineligible for input cutoff. Use the existing
+`worth-foundational::execution::DeterminismContract` vocabulary; changing this
+contract or its dependencies changes the installed producer edition.
+
+The handler boundary records actual context consumption only to enforce the
+installed declaration. It does not discover the dependency contract. A read of
+undeclared context, or a managed computation without retained currentness
+dependencies, prevents creation of the completed reuse proof. It must never
+silently omit a dependency. Declared key dependencies compare the original
+canonical key identity; principal dependencies compare owner-issued native
+identity and freshness evidence; scope dependencies compare exact operation
+affinity. These comparisons, their retained backing and canonical encoding draw
+from the same admitted request meter. Authentication and operation authorization
+precede reuse even when the handler declares independence from that context.
+The same completeness check covers the inner operation projection reader:
+public raw `reader()` access prevents input reuse in this phase. Its native
+version is one observation outside declared decision facts. Tracked outer
+projection methods borrow the private reader directly and remain eligible.
+
+The completed proof carries the handler fact prefix separately from the freshly
+read source suffix. Input sameness, the declared decision context, the dirty
+handler facts, consumed-output closure and the native output witness must all
+close before a sealed stable-output publication proof exists. Missing proof,
+including a restored row without live proof, selects ordinary execution or the
+specified full-verification fallback. No contact counter or matching digest may
+construct the publication proof. `ContractEquivalent` needs its installed
+identity-bearing predicate; its identifier alone cannot enable reuse.
+
+Stable publication belongs to the existing Query lineage and demand owners. It
+creates a new settlement identity at the actual current product observation,
+retains the original output correspondence and performed-receipt provenance,
+and installs fresh source facts and postings. It does not perform a new World
+commit, invent a successor generation or manufacture a commit receipt. The
+public settlement distinguishes stable reuse from a newly performed commit.
+Its readiness evidence reports zero producer and delivery contacts.
+
+The executor carries a typed progression: original prepared input custody goes
+to fresh execution, or owner-published stable lineage goes directly to Ready.
+Stable consumers preserve that authority rather than synthesizing a receipt or
+re-running delivery. The performed native output witness contributes exact
+entity-kind and aspect-revision facts to the alias's canonical fact set, so
+marking, consumed-output checks and downstream optimistic commits use the same
+authority.
+
+Settlement registration first projects source and output facts into one owned
+map of keys and composite fact ordinals. A consuming prepared-posting value
+then installs each unique key into the reverse index once. The immutable facts
+remain shared; grouping must preserve every matched ordinal and all admission
+and retained-capacity charges.
+
+Ready storage is prepared before effects and travels in the required-output
+execution envelope, then through published and delivered checkpoints to its
+terminal fill. The final shared completion owns its refundable capacity until
+the last reader releases it. Clean reuse admits the actual Query read and
+disclosure authorities without executing the source query. Its exact accepted
+candidate pins that completion; native currentness certification and Product
+basis binding produce sealed proof consumed by the settlement constructor while
+the admitted Query plan remains live. The constructor shares the accepted
+authority rather than copying its historical receipt or re-verifying facts.
+Partition reuse and required-wave scheduling consume this same handoff.
+
+Branch coordination has a finite installed aggregate retained-byte profile.
+One refundable ticket funds a lane and its Weak map entry until both observers
+release custody. All lane acquisition is fallible before owner effects. Stable
+publication also samples the admitted request's cancellation and expiry after
+blocking Product guard acquisition, immediately before source CAS. Its typed
+stop and full prepared custody leave both owner guards before denial allocation
+or cleanup.
+
+Prepare all lineage payload, retained capacity, prerequisite claims and registry
+handoff storage before cutover. The existing occurrence commit lane holds a
+prospective lineage address while the registry prepares its prerequisite
+vacancy. This address is preparation custody, not accepted output authority.
+The final lineage guard covers actual path admission, geometric backing growth
+preparation, and the product-currentness callback; any new empty path remains
+invisible under that same guard and has a prepaid inverse on failure. Existing
+record backings remain unchanged until CAS succeeds. Under that guard, validate the
+original partition locator and settlement, perform the source-owner CAS, then
+infallibly append the immutable stable row and replace its exact derived
+locator. Family reads and partition reads must select that same new row. A
+denial before CAS leaves the prior row, locator and postings usable. Historical
+rows and receipts remain immutable. Checkpoint capture preserves the stable
+reuse distinction and original provenance; restoration does not promote it to
+new performed authority and requires the existing reconstruction verification.
+The existing occurrence commit lane and owner-issued product observation pin
+remain held and currentness-checked through cutover; native actor CAS alone does
+not prove that the independently owned product reference stayed current. World's
+observation port holds its existing operation
+reservation and upgraded service for a short callback over the branch read
+guard. Only that callback issues the non-escaping `CurrentProductHead` witness
+required by Query's stable cutover. A retained observation alone cannot replace
+this witness. Native companion image allocation must also be prepared before
+that callback; its consuming CAS returns retired custody for later cleanup.
+Stable publication accepts only a current-source registration bound to the
+cutoff's exact native root, commit and position. Historical insertion replay
+remains available for ordinary post-effect registration; it cannot advance a
+stable cutoff across source movement. The performed receipt retains the exact
+owner-issued settlement address, so replacing a same-generation partition
+locator cannot hide its immutable original row.
+Lock order is lineage then source edit, with no reverse lineage acquisition from
+source preflight. No registry lock is acquired under that pair. The prepared
+row, locator and prerequisite handoff use only moves after CAS; displaced
+payload destruction is deferred until outside the critical window.
+
+The decisive tests include equal prepared input under changed request keys and
+principal identity revisions; handlers both dependent on and independent of
+each declared context field; an undeclared getter; an unavailable equivalence
+predicate; and managed computation without currentness evidence. Dependent or
+ineligible handlers execute, while lawfully independent handlers reuse with zero
+contacts. A forced actor-CAS conflict and a one-unit work or capacity shortfall
+must preserve the old settlement. Independent family, partition, retained-read
+and checkpoint observations must agree after successful stable publication.
+Bypassing context completeness, native output verification or the locator CAS
+must make the evidence fail.
+
+The existing certification topology supplies the first concrete producer cases:
+`anchor-a` uses tracked projection reads; `anchor-isolated` additionally calls
+the raw inner reader's native `version()`; `anchor-island` reads the undeclared
+request key. Editing each scope's successor position changes its source epoch
+without changing its canonical operation input. Re-demand must reuse the first
+case and enter the actual installed handler in both negative cases. Use public
+producer-contact work and current output observations as the oracles; fixture
+provider callbacks alone do not establish handler entry.
 
 ### The public definition is restored
 
@@ -1030,9 +1177,9 @@ executor and no second pool survives.
 
 | Contract | Bound |
 | --- | --- |
-| Commit-time marking | O(touched records + matched facts + marked downstream closure); no scan of settlements or waiting work |
+| Commit-time marking | O(touched records + matched facts + marked downstream closure) logical routing operations, plus separately bounded physical index navigation and selected copy-on-write paths; no scan of settlements or waiting work |
 | Clean demand | Zero fact checks and zero source-query re-runs |
-| Fixed edit at 1, 10 and 100 model copies | Equal marking work, verification work, producer contacts and reverse-index bytes per consumed fact |
+| Fixed edit at 1, 10 and 100 model copies | Equal logical marking operations, verification work, producer contacts and reverse-index capacity bytes per consumed fact; separately bounded and reported physical index navigation and selected copy-on-write paths |
 | Reverse index | Charged as derived retained bytes; entries reclaimed with their settlement |
 | Unchanged producer input or output encoding | Zero producer contacts downstream of it |
 | Charged work | Identical at every worker count and schedule for completed outcomes |
@@ -1173,6 +1320,176 @@ plans/WORTH_signal/milestone-{14,15,16,17}-plan.md       D  canceled
 ```
 
 Enforcement:
+
+Phase 5 refines the existing Query owners along their authority boundaries:
+
+```text
+worth-query-execution/src/domain_computation/primary_graph/
+  application_contribution/producer/
+    input_reuse_contract.rs                         N  static declaration, portable meaning
+    registry/{declaration,semantic_edition}.rs       R  installed contract and handler edition
+    execution/input_cutoff/                         N  admitted input -> verified reuse or execution
+      preparation.rs                               N  selection, declared context and dependency proof
+      publication.rs                               N  consumes proof through lineage/demand owners
+  handler/
+    invariant.rs                                   R  DecisionReader records context consumption
+    decision_context.rs                            N  finite consumption and completeness evidence
+  application_attempt/read_set/
+    handler_fact_boundary.rs                       R  complete prefix, independent of reuse eligibility
+    completed_input_reuse.rs                       N  sealed proof of the exact completed invocation
+  output_lineage/
+    input_cutoff.rs                                R  pins prior immutable owner record
+    stable_publication/                            N  same-observation publication lifecycle
+      preparation.rs                               N  payload, capacity and exact locator claim
+      cutover.rs                                   N  owner CAS and infallible row/locator install
+    partition_index/                               R  exact current locator replacement
+    invalidation/                                  R  canonical settlement posting and edge owner
+      settlement/postings.rs                       N  prepared unique keys and composite ordinals
+    required_settlement/current_accepted.rs         N  sealed exact accepted currentness proof
+  application_output_demand/
+    registry/record_capacity.rs                    N  ordered record storage and escaped wake custody
+    registry/required_custody.rs                    N  existing aggregate lifetime capacity
+    registry/ready_backing.rs                      N  prepared storage -> shared Ready completion
+    registry/stable_reuse.rs                        N  accepted stable authority and ready handoff
+    settlement/stable_reuse.rs                      N  current observation and original provenance
+    registry/accepted_checkpoint.rs                R  capture preserves publication posture
+```
+
+These are semantic destinations, not empty placeholders. The producer contract
+owns declared sameness, the handler/read-set boundary owns completion proof,
+lineage owns immutable output history, and the demand registry owns accepted
+readiness and prerequisite custody. Publication orchestration consumes these
+owners' proofs; it cannot mint their authority. Phase 6 adds partition preparation
+and reuse beside the producer cutoff boundary, and Phase 7 adds required-wave
+scheduling beside demand progression without moving these facades. Proof
+constructors remain visible only to their producing owner, and exhaustive
+accepted-authority matches enforce propagation through reads and recovery.
+
+The registry keeps one ordered record owner. Exact-key lookup charges the
+selected tree descent; insertion prepares key storage, possible tree splits and
+the wake's independent lifetime before visibility. Cached Ready values remain
+in that owner. Removing its last record preserves the empty tree's storage
+credit until the tree is destroyed, and an escaped notification retains its own
+credit until its final owner drops. This avoids a second readiness cache and
+keeps unrelated records out of current-demand lookup cost.
+
+Refreshing a demand carries its original request admission through retained
+producer selection and registry replacement. The existing reconstruction
+selector preserves its bounded remainder on both success and failure; its
+legacy Work is reconciled into that same admission. This bridge does not claim
+that inherited reconstruction copies have entered the new ordinary cost class.
+Replacement prepares matching obligation slots, exact missing commit
+provenance, retained record growth and required membership before either record
+changes. Failure leaves both records and their reservations usable. Retired
+backings keep their aggregate credits through destruction outside the registry
+guard; a prepaid owner cleanup refunds those exact credits afterward.
+
+Query permission preparation precedes graph-work construction. Its owner selects
+the Product basis, holds the security lease, validates the current principal and
+scope, and issues the installed policy authority with a reserved Query session
+identity. The sealed permission carries that exact basis and identity forward:
+Clean reuse consumes it with the exact accepted Ready completion; disclosure
+consumes it to construct graph work in the reserved session. Neither branch
+selects a replacement Product or repeats permission admission. Eligibility and
+resource refusal remain typed outcomes, distinct from policy denial.
+
+Producer mutation installation selects its exact operation obligations and
+validates their semantic owners once, against the final installed provider
+support. Admission retains that immutable selection and lowered resource basis
+in an opaque installation template; the template reserves no live capacity and
+grants no permission. Invocation consumes the current operation owner's proof,
+joins its full schema binding and obligation identity with that template, and
+checks the same installed support authority before a funded shallow retention.
+It derives only the unique invocation resource identity and reserves the actual
+participating capacity ports on the original request meter. Immutable obligation
+copies, selection walks, owner validation and resource strategy rediscovery do
+not belong to that hot invocation; its counters report those checks as zero.
+Selected session construction still consumes fresh permission and the exact
+retained Product basis. Required-wave and partition successors use these same
+installation and invocation boundaries rather than adding another authority or
+allowance.
+
+Installation also owns one immutable compiled operation contract value.
+Admitted invocations retain a funded shallow share of it; they do not copy its
+declaration vectors and strings. Borrowed contract inspection and content-based
+reinstallation comparison preserve their meaning. Sharing the representation
+does not grant current issuer authority or replace its schema and operation
+identity checks.
+
+Native principal probes, selected-index lookup, authorization traversal and
+framework-owned preparation use the carried request meter before reads, copies
+or allocation. The installed application principal decoder runs freshly, with
+its ordinary acceptance semantics. Application-authored decoder internals retain
+their existing application cost contract; native admission does not claim to
+meter arbitrary application instructions or allocations. Clean may not substitute
+prior decoder success for fresh principal acceptance.
+
+Permission prepares only its selected principal/scope field indexes. Missing
+currency reconstructs those exact fields through the native index owner on the
+same request meter; it does not materialize unrelated record aspects or rebuild
+the installed index catalog. Disclosure must additionally prepare the indexes
+consumed by its actual graph contract. Native generation retention keeps its
+existing native cost class; request scratch prepayment is not an aggregate
+native retained-byte ledger.
+
+Cursor teardown retains creation-time credit for present-row removal and inner
+entry destruction, and destroys extracted custody after the registry unlocks.
+An absent-occurrence lookup belongs to the existing Query Product-retirement
+cleanup lane: it allocates nothing and is bounded by the installed required
+capacity divided by the mandatory positive cursor-row claim. It can repeat per
+cleanup retry and is not charged as advance/read request Work.
+
+The retained read owns its final storage credit. Query permission, actor
+certification and any disclosure fallback continue on the same request meter.
+Private currentness proof is consumed while its exact selected basis remains
+pinned. These boundaries also serve partition reuse and required-wave scheduling
+without adding another authority or allowance. Phase 6 can add partition
+selection after permission, and Phase 7 can schedule prepared required work
+without changing either policy admission or publication authority.
+
+Serial required advancement holds one selected Product operation through each
+dependency wave. An actual performed publication requires selection of the
+authentic new World head before a downstream producer continues; that next wave
+starts inside the same caller advance. Each producer borrows the exact
+Product/native basis for its wave, validates its
+own installed source, principal, scope and policy, and uses the same request
+admission. Before the wave enters per-producer progression, a sealed shared
+selection phase funds one final-owner Arc around the already issued Query
+snapshot, Native retention obligation and selected-program interpretation. The
+ordinary exclusive lease remains inline. A producer retains a metered local
+identity and Product share of this custody; it does not register another Native
+snapshot or reinspect program support. A terminal receipt distinguishes local
+share disposal from physical Native release. Only final-owner release or drop
+closes the snapshot, Native obligation and program guard. Preparation refusal
+returns the still-exclusive selected operation intact.
+
+Disclosure may retain an admitted copy of that pinned selection; it
+cannot replace it with a fresh head selection. The registry pins the exact
+required row's Ready completion and retained source together under its token,
+version and Idle checks. This pin is storage custody, not currentness proof.
+
+When currentness reaches an unresolved consumed output, the lineage/actor owner
+returns the exact pending settlement with its funded evidence custody. The
+coordinator joins that identity through the existing exact settlement index and
+certifies that prerequisite's own source before retrying its dependent. It must
+not infer the prerequisite from a latest producer result, scan Clean rows, or
+acknowledge an unresolved edge. Missing evidence, unavailable Ready storage and
+resource refusal preserve pending custody. Only the actual accepted consequence
+permits the exact-version acknowledgement. The public A/B/C fixture must prove this
+handoff through real handler `current_output` reads, one caller advance, original
+performed provenance, no new World commit and zero downstream producer contacts.
+
+The native delivery owner counts its actual posting-key lookups, matched
+postings, newly marked fact ordinals, visited vertices and consumed downstream
+edges. A fixed diagnostic report travels in the existing branch image with the
+native commit identity; derived-only image edits preserve that report. Reading
+it requires the exact native root, commit and position, so a later image cannot
+be reported as another native delivery. An unavailable change retains an
+explicit discontinuity posture rather than fabricated per-row counts. Physical
+tree navigation and retained-capacity bounds continue through their existing
+admission owner. An independent native revision oracle over actual created rows
+at 1, 10 and 100 copies checks selected-mark locality; this owner proof does not
+substitute for public producer-contact or the full differential courtroom.
 
 - The boundary check registers `worth-execution` below Relational and Signal.
 - The threading rule covers every production source in `crates/` and
@@ -1323,10 +1640,66 @@ graph boundary; this refinement creates no additional execution authority.
 
 ### Phase 5: Exact invalidation
 
+The first working public checkpoint uses real A/B/C producer handlers and their
+`current_output` dependencies. One C advance discharges an unchanged-input
+upstream cutoff without another World commit or C producer contact. When A
+actually publishes a replacement, one C advance follows that publication to the
+new World head and keeps C's output entity. The alias full-verification oracle
+and seeded differential scenarios protect this same production path.
+The public Clean-advancement observer also proves that reusing a retained Ready
+skips the source-query kernel and that changed input reenters the kernel.
+
+This checkpoint does not close Phase 5. Preserve it while completing public
+reuse under explicit independent source and producer resource policies, restored output-content proof,
+interrupted successor retry on the same caller, multi-root dependency closure,
+required-queue consumption and retained-custody lifecycle, and the remaining
+locality and differential courtroom requirements. Each next batch must close
+one of these journeys through the public facade before adding machinery for
+another.
+
+Work admission counts named operations and bounded comparison or initialized
+copy payloads; it does not claim to count machine instructions. Constant state
+transitions use their owner's fixed operation granule. A borrowed carrier does
+not pay for hypothetical moves, and destruction visits initialized elements,
+not unused Vec capacity. Conditional continuation installation reserves its
+maximum on the original request meter before Fresh effects and settles only
+the reached installation; other branches refund that reservation without
+refunding nested work. Prepared and retained memory remain separate capacity
+claims with their actual lifetimes. Static diagnostic subjects are borrowed and
+require no speculative String allocation. The contact fixture's 4,096 producer
+allowance remains artifact policy; source currentness has its own host-bounded
+allowance. Exact exhaustion and locality evidence, rather than fitting a chosen
+fixture constant, establish the accounting and scaling contract.
+
+Checkpoint readmission reconstructs the original complete Native output-aspect
+witness from captured facts. It verifies those original revisions and supported
+producer facts against the currently selected World before creating restored
+Ready authority. Missing, unsupported or changed evidence follows Fresh;
+admission exhaustion preserves its resource denial. Public Current may consume
+the verified restored witness, while fact-only restoration remains insufficient.
+The owner proof changes output content while a producer field stays current and
+requires the combined verifier to reject the old witness.
+
+An admitted demand retains the immutable producer entry chosen by the existing
+selector. Advancement consumes that entry after the exact Interest-to-Ready join
+instead of searching again by its copied name. Successor transfer is admitted
+only after the actual successor passes its joins; a Clean result pays its scalar
+contact reset. The displaced certification methods and conversion-only cue
+adapter are removed. Fresh request, principal and policy admission remain on the
+production path.
+
+Source fact preparation resolves each observed field's installed contract once.
+A private prepared materialization carries the validated field observations
+and admitted storage into conversion; conversion consumes that proof without
+another layout lookup. Typed native locators preserve first-occurrence fact
+order and duplicate-conflict semantics, while Work follows each locator's own
+initialized comparison bytes. This keeps publication witness preparation under
+the same request admission rather than introducing another resource policy.
+
 - Emit observable-revision touched records from Relational, with old and new
   index keys, and bump an aspect version only when one of its fields changed.
 - Deliver every committed patch envelope to one Query-owned Bridge subscription,
-  and move live queries, conditional operations and workflow coverage onto it.
+  and move conditional operations and workflow coverage onto it.
 - Land the settle-time reverse index with insertion replay, commit-time marking,
   upstream propagation, selection and lineage marking.
 - Land clean reuse, the input-value reuse key and cutoff, stable republication,

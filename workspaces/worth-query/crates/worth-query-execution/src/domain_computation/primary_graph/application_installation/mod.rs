@@ -203,6 +203,11 @@ where
         }
         initial_state(&mut graph, &installed).map_err(Denial::InitialState)?;
     }
+    // This is the exact support object moved into the final graph provider.
+    // Cold producer executors become installable only after it exists.
+    let producers = producers
+        .seal_with_support(graph.resource_support_ref(), runtime.installed_packages())
+        .map_err(Denial::Contributions)?;
     let (mut application, installed_conditionals) =
         if conditionals.is_empty() && producers.is_empty() {
             let application = match authorization_time_source {

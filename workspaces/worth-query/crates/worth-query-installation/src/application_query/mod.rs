@@ -39,7 +39,7 @@ pub use graph_access_contract::{
 };
 pub use installed_binding::{
     WorthQueryInstalledApplicationQueryBinding, WorthQueryInstalledBoundPrincipal,
-    WorthQueryInstalledBoundQuery,
+    WorthQueryInstalledBoundQuery, WorthQueryInstalledQueryBindingAdmissionStop,
 };
 pub use installed_contract::{
     WorthQueryInstalledApplicationQuery, WorthQueryInstalledApplicationQueryAuthorization,

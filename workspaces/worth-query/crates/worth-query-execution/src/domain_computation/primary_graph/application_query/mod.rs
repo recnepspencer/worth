@@ -1,12 +1,16 @@
 mod access_context;
 mod access_receipt;
 mod admission;
+pub(in crate::domain_computation::primary_graph) use admission::{
+    FreshQueryPermissionStop, PreparedApplicationQueryPermission,
+};
 mod admission_preparation;
 mod admitted_result;
 mod authorization_observation;
 mod authorization_work;
 mod authorized_read;
 mod basis;
+pub(in crate::domain_computation::primary_graph) use basis::PreparedSelectedReadIndexes;
 pub(in crate::domain_computation::primary_graph) use basis::WorthQueryApplicationQueryBasisCustody;
 mod continuation;
 mod control_validation;
@@ -23,8 +27,11 @@ mod installed_schema_currentness;
 mod live;
 pub(in crate::domain_computation::primary_graph) mod observed_source;
 mod one_shot;
+pub(in crate::domain_computation::primary_graph) use one_shot::WorthQueryAdmittedOneShotStop;
 mod projection;
 mod read_execution;
+#[cfg(feature = "test-query-execution-observer")]
+pub use read_execution::query_read_kernel_entries_on_this_thread_for_test;
 mod readiness;
 pub(crate) mod resource_lifecycle;
 mod retained_read;
@@ -38,6 +45,7 @@ pub use access_receipt::{
     WorthQueryApplicationQueryAccessReceipt, WorthQueryApplicationQueryOmissionPosture,
     WorthQueryApplicationQueryWorkEvidence,
 };
+pub(in crate::domain_computation::primary_graph) use admitted_result::WorthQueryApplicationQueryRequestAffinity;
 pub use admitted_result::{
     WorthQueryAdmittedDisclosedApplicationResult, WorthQueryApplicationOutputDemandDisclosure,
     WorthQueryApplicationOutputDemandSource,
@@ -77,13 +85,16 @@ pub use live::{
     WorthQueryApplicationLiveOpenDenialKind, WorthQueryApplicationLiveOutcome,
     WorthQueryApplicationLiveOverflow, WorthQueryApplicationLiveUpdate,
 };
+pub(in crate::domain_computation::primary_graph) use observed_source::{
+    BoundStableObservedSourceFacts, PreparedObservedSourceExpectation,
+    WorthQueryCheckpointSourceIdentity, WorthQueryObservedEpochStop,
+    WorthQueryObservedScopeSelector, WorthQueryObservedSourceCloneStop,
+    WorthQueryObservedSourceEpoch, WorthQueryObservedSourceSelection,
+    WorthQueryRuntimeSourceIdentity,
+};
 pub use observed_source::{
     WorthQueryBoundSourceExpectation, WorthQueryObservedResultSet, WorthQueryObservedSource,
     WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind,
-};
-pub(in crate::domain_computation::primary_graph) use observed_source::{
-    WorthQueryCheckpointSourceIdentity, WorthQueryObservedSourceEpoch,
-    WorthQueryRuntimeSourceIdentity,
 };
 pub use one_shot::{
     WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind,
@@ -97,8 +108,9 @@ pub use projection::{
 pub use readiness::WorthQueryPrimaryGraphApplicationReadinessSnapshot;
 pub use resource_lifecycle::{
     WorthQueryApplicationBasisIdentity, WorthQueryApplicationBasisObservation,
-    WorthQueryApplicationBasisObserver, WorthQueryApplicationBasisReleaseReceipt,
-    WorthQueryApplicationBasisSelectionIdentity, WorthQueryApplicationResultBufferEvidence,
-    WorthQueryApplicationResultBufferObservation, WorthQueryApplicationResultBufferObserver,
+    WorthQueryApplicationBasisObserver, WorthQueryApplicationBasisReleaseOutcome,
+    WorthQueryApplicationBasisReleaseReceipt, WorthQueryApplicationBasisSelectionIdentity,
+    WorthQueryApplicationResultBufferEvidence, WorthQueryApplicationResultBufferObservation,
+    WorthQueryApplicationResultBufferObserver,
 };
 pub use retained_read::WorthQueryApplicationReadObservation;

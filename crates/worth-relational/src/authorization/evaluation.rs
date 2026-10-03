@@ -1,64 +1,110 @@
 use crate::runtime::RelationalRuntime;
 
-use super::field_observation::entity_is_live_kind;
+use super::admission::{self, ObservationResult, UnrestrictedObservation};
 use super::observation_identity::mint_observation_identity;
-use super::path_evaluation::evaluate_path;
 use super::{
-    RelationalAuthorizationObservationCounters, RelationalAuthorizationObservationDenial,
-    RelationalAuthorizationObservationEvidence, RelationalAuthorizationObservationPlan,
-    RelationalAuthorizationPathObservation,
+    RelationalAuthorizationBudgetedObservationStop as Stop,
+    RelationalAuthorizationObservationAdmission, RelationalAuthorizationObservationCounters,
+    RelationalAuthorizationObservationDenial, RelationalAuthorizationObservationEvidence,
+    RelationalAuthorizationObservationPlan, RelationalAuthorizationPathObservation,
 };
 
 impl RelationalRuntime {
-    pub fn observe_authorization(
+    pub fn observe_authorization_budgeted<A: RelationalAuthorizationObservationAdmission>(
         &self,
         plan: RelationalAuthorizationObservationPlan,
-    ) -> Result<RelationalAuthorizationObservationEvidence, RelationalAuthorizationObservationDenial>
-    {
-        let evaluation = self.evaluate_authorization_plan(&plan)?;
-        let observation_identity = mint_observation_identity(&plan)
-            .ok_or(RelationalAuthorizationObservationDenial::ObservationIdentityExhausted)?;
+        admission: &mut A,
+    ) -> Result<RelationalAuthorizationObservationEvidence, Stop<A::Stop>> {
+        let evaluation = self.evaluate_authorization_admitted(&plan, admission)?;
+        admission::prepare(admission, 1, 0)?;
+        let identity = mint_observation_identity(&plan).ok_or(Stop::Native(
+            RelationalAuthorizationObservationDenial::ObservationIdentityExhausted,
+        ))?;
         Ok(RelationalAuthorizationObservationEvidence::mint(
             plan,
-            observation_identity,
+            identity,
             evaluation.paths,
             evaluation.counters,
         ))
     }
 
-    pub(super) fn evaluate_authorization_plan(
+    pub fn observe_authorization(
+        &self,
+        plan: RelationalAuthorizationObservationPlan,
+    ) -> Result<RelationalAuthorizationObservationEvidence, RelationalAuthorizationObservationDenial>
+    {
+        self.observe_authorization_budgeted(plan, &mut UnrestrictedObservation)
+            .map_err(admission::legacy_stop)
+    }
+
+    pub(super) fn evaluate_authorization_admitted<
+        A: RelationalAuthorizationObservationAdmission,
+    >(
         &self,
         plan: &RelationalAuthorizationObservationPlan,
-    ) -> Result<RelationalAuthorizationEvaluation, RelationalAuthorizationObservationDenial> {
+        admission: &mut A,
+    ) -> ObservationResult<RelationalAuthorizationEvaluation, A> {
+        admission::prepare(admission, 1, 0)?;
         if plan.snapshot().runtime_instance_id != self.runtime_instance_id() {
-            return Err(RelationalAuthorizationObservationDenial::ForeignRuntime {
-                expected_runtime_instance_id: self.runtime_instance_id(),
-                actual_runtime_instance_id: plan.snapshot().runtime_instance_id,
-            });
+            return Err(Stop::Native(
+                RelationalAuthorizationObservationDenial::ForeignRuntime {
+                    expected_runtime_instance_id: self.runtime_instance_id(),
+                    actual_runtime_instance_id: plan.snapshot().runtime_instance_id,
+                },
+            ));
         }
-        let mut counters = RelationalAuthorizationObservationCounters::default();
         let view = self
             .read_truth()
             .project_snapshot(plan.snapshot())
-            .ok_or(RelationalAuthorizationObservationDenial::SnapshotUnavailable)?;
-        if !entity_is_live_kind(
-            &view,
-            plan.principal(),
-            plan.principal_kind(),
-            &mut counters,
-        ) {
-            return Err(RelationalAuthorizationObservationDenial::PrincipalUnavailableOrWrongKind);
+            .ok_or(Stop::Native(
+                RelationalAuthorizationObservationDenial::SnapshotUnavailable,
+            ))?;
+        admission::prepare(admission, 1, 0)?;
+        let principal = view
+            .with_exact_entity_state(plan.principal(), |metadata, _| {
+                metadata.kind_id == plan.principal_kind()
+            })
+            .map_err(|_| Stop::ExactBasisRequired)?
+            .unwrap_or(false);
+        if !principal {
+            return Err(Stop::Native(
+                RelationalAuthorizationObservationDenial::PrincipalUnavailableOrWrongKind,
+            ));
         }
-        if plan.scope() != plan.principal()
-            && !entity_is_live_kind(&view, plan.scope(), plan.scope_kind(), &mut counters)
-        {
-            return Err(RelationalAuthorizationObservationDenial::ScopeUnavailableOrWrongKind);
+        let mut counters = RelationalAuthorizationObservationCounters {
+            entity_records_inspected: 1,
+            ..Default::default()
+        };
+        if plan.scope() != plan.principal() {
+            admission::prepare(admission, 1, 0)?;
+            let scope = view
+                .with_exact_entity_state(plan.scope(), |metadata, _| {
+                    metadata.kind_id == plan.scope_kind()
+                })
+                .map_err(|_| Stop::ExactBasisRequired)?
+                .unwrap_or(false);
+            counters.entity_records_inspected += 1;
+            if !scope {
+                return Err(Stop::Native(
+                    RelationalAuthorizationObservationDenial::ScopeUnavailableOrWrongKind,
+                ));
+            }
         }
-        let paths = plan
-            .paths()
-            .iter()
-            .map(|path| evaluate_path(self, &view, plan, path, &mut counters))
-            .collect();
+        admission::array::<A, RelationalAuthorizationPathObservation>(
+            admission,
+            plan.paths().len(),
+        )?;
+        let mut paths = Vec::with_capacity(plan.paths().len());
+        for path in plan.paths() {
+            paths.push(super::path_evaluation::admitted::evaluate_path(
+                self,
+                &view,
+                plan,
+                path,
+                &mut counters,
+                admission,
+            )?);
+        }
         Ok(RelationalAuthorizationEvaluation { paths, counters })
     }
 }

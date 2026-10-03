@@ -10,6 +10,7 @@ pub(in crate::domain_computation::primary_graph) use provider_registration::Wort
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAttemptRegistration<'a>
 {
+    required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
     effect_owner: WorthQueryProviderEffectRegistrationSeal,
     affinity: super::super::provider_execution::WorthQueryApplicationAttemptAffinity,
     decision_facts: crate::domain_computation::authorization::WorthQueryProviderDecisionFactBinding,
@@ -33,6 +34,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAtt
     output_currentness_facts: Option<
         std::sync::Arc<[super::super::WorthQueryApplicationObservedFact]>,
     >,
+    consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
 }
 
 /// Proves that the effect owner consumed a completed provider attempt before
@@ -71,6 +73,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
 ) -> Result<WorthQueryRegisteredProviderAttempt<'run>, WorthQueryProviderProgressionOutcome> {
     let inspection = WorthQueryProviderRegistrationInspectionPermit::mint();
     let WorthQueryPreparedApplicationProviderAttempt {
+        required_output_demand,
         installed_read_scopes,
         facts,
         effects,
@@ -81,6 +84,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
         retain_client_observation,
         producer_required_invariants,
         output_currentness_facts,
+        consumed_outputs,
     } = prepared;
     let affinity = match staged.bind_application_attempt(attempt_basis) {
         Ok(affinity) => affinity,
@@ -103,6 +107,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
     let expected_steps = effects.shared_expected_steps();
     let dispatch_outbox = context.provider(&inspection).register_application_attempt(
         WorthQueryApplicationAttemptRegistration {
+            required_output_demand,
             effect_owner: WorthQueryProviderEffectRegistrationSeal::mint(),
             affinity,
             decision_facts,
@@ -124,6 +129,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             retain_client_observation,
             producer_required_invariants,
             output_currentness_facts,
+            consumed_outputs,
         },
     );
     match dispatch_outbox {

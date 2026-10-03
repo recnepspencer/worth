@@ -63,6 +63,9 @@ impl SparseAdjacencyTable {
     pub(crate) fn get(&self, slot: usize) -> Option<&AdjacencySet> {
         self.entries.get(&slot)
     }
+    pub(crate) fn navigation_work_bound(&self) -> usize {
+        self.entries.navigation_work_bound()
+    }
 
     pub(crate) fn get_mut(&mut self, slot: usize) -> Option<&mut AdjacencySet> {
         self.entries.get_mut(&slot)

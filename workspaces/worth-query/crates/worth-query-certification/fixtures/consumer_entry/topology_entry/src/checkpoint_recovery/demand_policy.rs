@@ -132,14 +132,20 @@ pub(super) fn feature_specs<Artifact>() -> Vec<ApplicationFeatureSpec>
 where
     Artifact: ApplicationDerivedArtifact<CheckpointSchema, PlanarFinalOutputFeature>,
 {
+    feature_specs_with_output::<Artifact>(required_chain::output_feature_spec())
+}
+
+pub(super) fn feature_specs_with_output<Artifact>(
+    output: ApplicationFeatureSpec,
+) -> Vec<ApplicationFeatureSpec>
+where
+    Artifact: ApplicationDerivedArtifact<CheckpointSchema, PlanarFinalOutputFeature>,
+{
     vec![
         ApplicationFeatureSpec::root::<CheckpointSchema, PlanarSourceFeature>()
             .provides::<PlanarBodyOutput>()
             .finish(),
-        ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
-            .provides::<PlanarDerivedBodyOutput>()
-            .conditional_operation::<MutatePlanar>()
-            .finish(),
+        output,
         ApplicationFeatureSpec::root::<CheckpointSchema, PlanarFinalOutputFeature>()
             .derived_artifact::<Artifact>()
             .conditional_operation::<PublishFinalPlanarOutput>()

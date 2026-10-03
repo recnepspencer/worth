@@ -28,11 +28,15 @@ where
 }
 
 pub(super) fn installed_checkpoint_producer<'entries, Schema>(
-    entries: &'entries std::collections::BTreeMap<String, super::InstalledProducerProvider<Schema>>,
+    entries: &'entries std::collections::BTreeMap<
+        String,
+        std::sync::Arc<super::InstalledProducerProvider<Schema>>,
+    >,
     producer: &str,
 ) -> Result<&'entries super::InstalledProducerProvider<Schema>, String> {
     entries
         .get(producer)
+        .map(std::sync::Arc::as_ref)
         .ok_or_else(|| format!("checkpoint output producer {producer} is not installed"))
 }
 

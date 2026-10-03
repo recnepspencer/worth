@@ -1,9 +1,10 @@
+use super::super::OneShotReadWorkObservation;
 use super::{
     read_execution_denial, WorthQueryApplicationReadExecutionDenial,
     WorthQueryApplicationReadExecutionDenialKind,
 };
 
-pub(super) struct ResultTreeWork {
+pub(super) struct ResultTreeWork<'a> {
     request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     maximum_work: usize,
     pub(super) projected_records: usize,
@@ -14,6 +15,7 @@ pub(super) struct ResultTreeWork {
     pub(super) relation_predicate_work_units: usize,
     pub(super) ordering_comparisons: usize,
     pub(super) work_units: usize,
+    spent: Option<&'a OneShotReadWorkObservation>,
 }
 
 fn work_limit_denial(subject: impl Into<String>) -> WorthQueryApplicationReadExecutionDenial {
@@ -23,10 +25,11 @@ fn work_limit_denial(subject: impl Into<String>) -> WorthQueryApplicationReadExe
     )
 }
 
-impl ResultTreeWork {
+impl<'a> ResultTreeWork<'a> {
     pub(super) fn new(
         maximum_work: usize,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        spent: Option<&'a OneShotReadWorkObservation>,
     ) -> Self {
         Self {
             request: request.clone(),
@@ -39,6 +42,7 @@ impl ResultTreeWork {
             relation_predicate_work_units: 0,
             ordering_comparisons: 0,
             work_units: 0,
+            spent,
         }
     }
 
@@ -130,5 +134,13 @@ impl ResultTreeWork {
         subject: &str,
     ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
         super::super::interruption::checkpoint(&self.request, subject)
+    }
+}
+
+impl Drop for ResultTreeWork<'_> {
+    fn drop(&mut self) {
+        if let Some(spent) = self.spent {
+            spent.tree(self.work_units);
+        }
     }
 }

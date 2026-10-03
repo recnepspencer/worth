@@ -107,6 +107,11 @@ pub(super) fn commit(
                 }
             }
             Deferred::CandidateLifetimeExpired { .. } => WorthQueryWorkspaceErrorKind::Unclassified,
+            Deferred::CompanionRegistrationPending
+            | Deferred::CompanionRebindRequired
+            | Deferred::CompanionPreflight(_) => {
+                WorthQueryWorkspaceErrorKind::InvalidationCompanionPending
+            }
         },
         Error::PublicationFailed { failure, .. } => match failure.kind() {
             Failure::SnapshotIdentityExhausted => {

@@ -46,27 +46,38 @@ pub(super) fn grouped<K: Ord + Clone, R: Clone>(
     entries: &mut DerivedIndexEntryMap<K, R>,
     edits: BTreeMap<K, Vec<PendingEdit<R>>>,
     compare: impl Fn(&R, &R) -> Ordering,
+    key_width: impl Fn(&K) -> usize,
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
     for (key, operations) in edits {
+        work.prepare(1, 0)?;
+        let width = key_width(&key);
+        work.lookup(entries.len(), width)?;
         let mut rows = entries.get(&key).cloned().unwrap_or_default();
         let mut map_reserved = false;
         for operation in operations {
+            work.lookup(rows.len(), 1)?;
             let mut comparisons = 0;
             let found = rows.binary_search_by(|candidate| {
                 comparisons += 1;
                 compare(candidate, &operation.row)
             });
-            work.charge(comparisons)?;
+            if work.has_preparation() {
+                work.settle_prepaid(comparisons)?;
+            } else {
+                work.charge(comparisons)?;
+            }
             work.counts.seek_comparisons += comparisons;
             let position = match (operation.insert, found) {
                 (true, Err(position)) | (false, Ok(position)) => position,
                 _ => return Err(Denial::PriorEntryMismatch),
             };
             if !map_reserved {
+                prepare_map::<K, R>(entries.len(), width, work)?;
                 reserve_map_path(entries.len(), work)?;
                 map_reserved = true;
             }
+            prepare_row::<R>(rows.len(), operation.insert, work)?;
             reserve_row_path(rows.len(), work)?;
             if operation.insert {
                 rows.insert(position, operation.row);
@@ -80,6 +91,52 @@ pub(super) fn grouped<K: Ord + Clone, R: Clone>(
         }
     }
     Ok(())
+}
+
+pub(super) fn prepare_map<K: Ord + Clone, R: Clone>(
+    keys: usize,
+    width: usize,
+    work: &mut MaintenanceWork,
+) -> Result<(), Denial> {
+    // im 15 OrdMap: a 64-entry key/value chunk and a 65-pointer
+    // child chunk, four chunk offsets, and the Arc control block.
+    let node = std::mem::size_of::<(std::sync::Arc<K>, DerivedIndexRows<R>)>()
+        .checked_mul(64)
+        .and_then(|n| n.checked_add(std::mem::size_of::<usize>() * 71))
+        .ok_or(Denial::WorkBudgetExceeded)?;
+    let nodes = path_height(keys)
+        .checked_mul(3)
+        .and_then(|n| n.checked_add(2))
+        .ok_or(Denial::WorkBudgetExceeded)?;
+    let bytes = node
+        .checked_mul(nodes)
+        .and_then(|n| n.checked_add(std::mem::size_of::<K>() + 2 * std::mem::size_of::<usize>()))
+        .ok_or(Denial::WorkBudgetExceeded)?;
+    work.lookup(keys, width)?;
+    work.prepare((nodes * 64) as u64, bytes as u64)
+}
+
+fn prepare_row<R>(rows: usize, insert: bool, work: &mut MaintenanceWork) -> Result<(), Denial> {
+    // An RRB branch retains child pointers and sizes; leaves retain Arc<R>
+    // handles. Include the four frontier chunks and split/rebalance paths.
+    let nodes = path_height(rows)
+        .checked_mul(3)
+        .and_then(|n| n.checked_add(5))
+        .ok_or(Denial::WorkBudgetExceeded)?;
+    let node = std::mem::size_of::<usize>()
+        .checked_mul(134)
+        .ok_or(Denial::WorkBudgetExceeded)?;
+    let bytes = node
+        .checked_mul(nodes)
+        .and_then(|n| {
+            n.checked_add(if insert {
+                std::mem::size_of::<R>() + 2 * std::mem::size_of::<usize>()
+            } else {
+                0
+            })
+        })
+        .ok_or(Denial::WorkBudgetExceeded)?;
+    work.prepare((nodes * 64) as u64, bytes as u64)
 }
 
 fn reserve_paths<R>(
@@ -205,7 +262,7 @@ mod tests {
             )
             .unwrap();
         }
-        grouped(&mut entries, edits, Ord::cmp, &mut grouped_work).unwrap();
+        grouped(&mut entries, edits, Ord::cmp, |_| 1, &mut grouped_work).unwrap();
         assert_eq!(entries, sequential);
         assert_eq!(
             retained

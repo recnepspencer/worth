@@ -16,6 +16,9 @@ use crate::domain_computation::primary_graph::{
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::authorization::RelationalAuthorizationObservationPlan;
 
+mod admitted;
+pub(in crate::domain_computation) use admitted::AdmittedQueryAuthorizationStop;
+
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,

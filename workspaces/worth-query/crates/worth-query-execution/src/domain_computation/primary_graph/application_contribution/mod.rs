@@ -27,18 +27,19 @@ pub use contracts::{
     WorthQueryApplicationContractCatalog, WorthQueryApplicationContributionContracts,
 };
 pub(in crate::domain_computation::primary_graph) use producer::{
-    install_output_readiness_routes, PendingOutputReadiness, TypedPendingOutputReadiness,
-    WorthQueryInstalledOutputProducerRoutes, WorthQueryInstalledOutputReadinessRoutes,
+    install_output_readiness_routes, InstalledProducerEdition, MatchedRequiredPredecessor,
+    PendingOutputReadiness, TypedPendingOutputReadiness, WorthQueryInstalledOutputProducerRoutes,
+    WorthQueryInstalledOutputReadinessRoutes, WorthQueryProducerCommitAuthority,
 };
 pub use producer::{
     WorthQueryAdmittedOutputDemand, WorthQueryApplicationOutputDemand,
     WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
-    WorthQueryInstalledApplicationProducerRegistry, WorthQueryOutputDemandAdvance,
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
+    WorthQueryDecisionContextDependencies, WorthQueryInstalledApplicationProducerRegistry,
+    WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
     WorthQueryOutputDemandRecoveryPosture, WorthQueryProducerApplicability,
-    WorthQueryProducerDemandResources, WorthQueryProducerInvariantRequirement,
-    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
-    WorthQuerySelectedApplicationProducer, WorthQueryWorkflowAssessmentOutputFamily,
-    WorthQueryWorkflowAssessmentPosture,
+    WorthQueryProducerDemandResources, WorthQueryProducerInputReuseContract,
+    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
+    WorthQueryProducerOutputFamily, WorthQuerySelectedApplicationProducer,
+    WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
 };
 pub use setup::WorthQueryApplicationContributionSetup;

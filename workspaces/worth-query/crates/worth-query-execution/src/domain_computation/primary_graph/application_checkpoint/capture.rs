@@ -1,4 +1,7 @@
+use super::super::application_output_demand::AcceptedCheckpointFactSource;
 use super::{facts, WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes};
+
+mod output_facts;
 
 pub(super) fn merge_accepted_outputs(
     mut current: Vec<
@@ -53,22 +56,40 @@ where
                 .native_checkpoint()
                 .map(|checkpoint| {
                     let mut accepted = self.output_demands.accepted_checkpoint_records();
+                    let mut admission = self
+                        .primary_provider
+                        .graph
+                        .source_owner
+                        .invalidation_owner
+                        .edit_admission();
                     let lineage = self
                         .primary_provider
                         .graph
                         .output_lineage
                         .lock()
                         .unwrap_or_else(std::sync::PoisonError::into_inner);
-                    for (identity, receipt) in &mut accepted {
-                        let Some(receipt) = receipt else {
+                    for (identity, source) in &mut accepted {
+                        let Some(source) = source else {
                             continue;
                         };
                         // A mismatch or unsupported fact kind leaves no reusable
                         // payload. Neither the query footprint nor the digest can
                         // reconstruct a producer's original decision reads.
-                        identity.producer_facts = lineage
-                            .producer_facts_for_receipt(receipt)
-                            .and_then(|facts| facts::encode(&facts));
+                        identity.producer_facts = match source {
+                            AcceptedCheckpointFactSource::Committed(receipt) => lineage
+                                .checkpoint_facts_for_receipt(receipt)
+                                .and_then(|(facts, witness)| {
+                                    output_facts::encode(&facts, witness, &mut admission)
+                                }),
+                            AcceptedCheckpointFactSource::Stable(stable) => stable
+                                .observed_source_facts()
+                                .and_then(|facts| facts::encode(&facts)),
+                        };
+                        identity.producer_fact_wire_version = if identity.producer_facts.is_some() {
+                            6
+                        } else {
+                            0
+                        };
                     }
                     drop(lineage);
                     let accepted_outputs = merge_accepted_outputs(

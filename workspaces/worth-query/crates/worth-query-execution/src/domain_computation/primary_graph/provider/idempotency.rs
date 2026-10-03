@@ -96,24 +96,18 @@ impl WorthQueryPrimaryGraphProvider {
 
         let affinity =
             WorthQueryProductIdempotencyAffinity::from_observation(product.observation());
-        if let Some(pending) = self.inspect_pending_application_idempotency(affinity.incarnation())
-        {
-            match pending {
-                None => {
-                    return Custody::Indeterminate(
-                        WorthQueryProviderIdempotencyResolutionDenial::Unavailable,
-                    )
-                }
-                Some(recorded) if recorded.key_identity() == binding.key_identity() => {
-                    return if recorded == binding {
-                        Custody::PublicationPending
-                    } else {
-                        Custody::IntentDrift
-                    };
-                }
-                Some(_) => {}
+        let pending = self.inspect_pending_application_idempotency(affinity.incarnation());
+        if let Some(Some(recorded)) = pending {
+            if recorded.key_identity() == binding.key_identity() {
+                return if recorded == binding {
+                    Custody::PublicationPending
+                } else {
+                    Custody::IntentDrift
+                };
             }
         }
+        // A retained World partial keeps its publication slot reserved for
+        // resumption, so exact unpublished custody outranks that reservation.
         if let Some((recorded, handle)) =
             self.inspect_unpublished_application_idempotency(&affinity, binding)
         {
@@ -122,6 +116,11 @@ impl WorthQueryPrimaryGraphProvider {
             } else {
                 Custody::IntentDrift
             };
+        }
+        if let Some(None) = pending {
+            return Custody::Indeterminate(
+                WorthQueryProviderIdempotencyResolutionDenial::Unavailable,
+            );
         }
         match self.resolve_idempotency_binding_at_product(binding, product) {
             Ok(WorthQueryProviderIdempotencyResolution::Absent) => Custody::Unseen,

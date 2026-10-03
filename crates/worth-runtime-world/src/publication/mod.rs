@@ -60,7 +60,7 @@ pub use progress::{
 pub use progression::RuntimeWorldPublicationPhase;
 pub use reservation::{
     CompositeAttemptCancellationPosture, CompositePublicationOrder,
-    ReservedCompositePublicationAttempt,
+    PlannedProductReferenceSuccessor, ReservedCompositePublicationAttempt,
 };
 pub(crate) use reservation::{
     ReservedAttemptCapacities, ReservedAttemptCapacityInputs, ReservedBranchCreationAttempt,

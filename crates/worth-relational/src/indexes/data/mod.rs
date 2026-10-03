@@ -3,8 +3,10 @@ mod entry_map;
 pub use entry_map::{DerivedIndexEntryMap, DerivedIndexRows};
 mod maintenance;
 pub use maintenance::{
-    DerivedIndexMaintenanceBudget, DerivedIndexMaintenanceDenial,
-    DerivedIndexMaintenanceDenialKind, DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceWork,
+    DerivedIndexMaintenanceAdmissionStop, DerivedIndexMaintenanceBudget,
+    DerivedIndexMaintenanceDenial, DerivedIndexMaintenanceDenialKind,
+    DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceWork,
+    SelectedIndexGenerationAdmissionStop,
 };
 mod bounded_entity_field_lookup;
 mod bounded_related_entity_ordered_lookup;
@@ -16,9 +18,9 @@ mod relation_join;
 pub use generation_selection_counters::DerivedIndexSelectionCounters;
 
 pub use bounded_entity_field_lookup::{
-    BoundedEntityFieldLookupDenial, BoundedEntityFieldLookupDenialKind,
-    BoundedEntityFieldLookupOutcome, BoundedEntityFieldLookupRequest, BoundedIndexParityMode,
-    MAX_BOUNDED_INDEX_CANDIDATES,
+    BoundedEntityFieldLookupAdmissionStop, BoundedEntityFieldLookupDenial,
+    BoundedEntityFieldLookupDenialKind, BoundedEntityFieldLookupOutcome,
+    BoundedEntityFieldLookupRequest, BoundedIndexParityMode, MAX_BOUNDED_INDEX_CANDIDATES,
 };
 pub use bounded_related_entity_ordered_lookup::{
     BoundedRelatedEntityOrderedLookupDenial, BoundedRelatedEntityOrderedLookupDenialKind,

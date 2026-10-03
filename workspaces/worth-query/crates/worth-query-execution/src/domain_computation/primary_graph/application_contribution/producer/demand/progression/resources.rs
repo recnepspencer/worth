@@ -20,7 +20,7 @@ pub(super) fn validate_demand_resources<Schema>(
     Ok(resources)
 }
 
-pub(super) fn validate_retained_resources(
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn validate_retained_resources(
     resources: super::super::super::WorthQueryProducerDemandResources,
     producer_identity: &str,
     limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,

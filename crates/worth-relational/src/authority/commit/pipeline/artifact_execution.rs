@@ -1,5 +1,6 @@
 use super::snapshot_validation::SnapshotValidatedCommitExecution;
 
+mod descriptive_touches;
 mod phase;
 pub(super) mod preparation;
 
@@ -96,6 +97,7 @@ pub(super) fn assemble_commit_artifacts(
         phase_timing,
         ArtifactAssemblyInput {
             working_state: &mut working_state,
+            selected_branch_state: &selected_branch_state,
             effect,
             commit_reference: &history.commit_reference,
             branch_id: &history.branch_id,

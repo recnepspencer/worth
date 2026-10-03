@@ -7,18 +7,23 @@ impl WorthQueryPrimaryGraphProvider {
         graph: super::WorthQueryPrimaryGraphIntegrationHandle,
         fault_port: Arc<dyn super::fault_port::WorthQueryPrimaryGraphFaultPort>,
         maximum_concurrent_graph_work: std::num::NonZeroUsize,
-        candidate_resources: crate::domain_computation::execution_runtime::WorthQueryApplicationCandidateResourceProfile,
+        resource_support: super::WorthQueryPrimaryGraphResourceSupport,
+        completed_evidence_resources: crate::domain_computation::execution_runtime::WorthQueryCompletedEvidenceResourceProfile,
+        branch_coordination_resources: crate::domain_computation::execution_runtime::WorthQueryBranchCoordinationResourceProfile,
     ) -> (
         Arc<crate::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor>,
         Arc<Self>,
     ){
         let provider = Arc::new(Self {
             graph,
-            resource_support: super::resource_support::WorthQueryPrimaryGraphResourceSupport::install(
-                maximum_concurrent_graph_work,
-                candidate_resources,
+            resource_support,
+            completed_evidence_capacity: super::completed_evidence_capacity::CompletedEvidenceCapacity::new(
+                completed_evidence_resources.retained_bytes(),
             ),
-            branch_commit_coordination: Default::default(),
+            branch_commit_coordination:
+                super::branch_commit_coordination::WorthQueryApplicationBranchCommitCoordinator::new(
+                    branch_coordination_resources.retained_bytes(),
+                ),
             live_delivery: crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveDeliverySource::default(),
             attempts: std::sync::Arc::new(std::sync::Mutex::new(
                 super::application_attempt_state::WorthQueryPrimaryGraphApplicationAttemptStore::default(),

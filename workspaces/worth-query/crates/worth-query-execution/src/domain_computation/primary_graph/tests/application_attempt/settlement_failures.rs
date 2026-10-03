@@ -1,7 +1,57 @@
 use super::{
-    admitted_program, authenticated_principal, idempotency, installed_authorization_world,
-    live_scope, resolved_account,
+    admitted_operation, admitted_program, authenticated_principal, idempotency,
+    installed_authorization_world, live_scope, resolved_account,
 };
+
+#[test]
+fn admitted_ordinary_recovery_uses_the_original_commit_and_exact_world_successor() {
+    let world = installed_authorization_world(true);
+    let request = live_scope();
+    let principal = authenticated_principal(&world, &request);
+    let account = resolved_account(&world, "open", &request);
+    let commits = || {
+        world
+            .application
+            .primary_provider
+            .graph
+            .with_runtime(|runtime| runtime.history().immutable_commit_count())
+    };
+    let baseline = commits();
+    let program = admitted_program(&world, &principal, &account, &request, "recovered");
+    world.application.fail_next_durable_append_for_test();
+    let WorthQueryApplicationCommitOutcome::ProductUnpublished(partial) = world
+        .application
+        .compare_and_commit_application(program, idempotency(191, 191))
+    else {
+        panic!("the fault must retain the exact World partial");
+    };
+    let recovery = partial.into_recovery();
+    recovery.continue_owner_settlement().unwrap();
+    let fresh = admitted_operation(&world, &principal, &account, &request);
+    let outcome = world
+        .application
+        .recover_admitted_unpublished_application(&recovery, &fresh, idempotency(191, 191))
+        .expect("the same authorized intent can adopt its settled World partial");
+    let crate::domain_computation::primary_graph::WorthQueryManagedApplicationRecoveryOutcome::Performed(performed) = outcome else {
+        panic!("settled ordinary recovery must finish the original application");
+    };
+    let (read, publication_failure, cleanup_failure) = performed.into_parts();
+    assert!(publication_failure.is_none());
+    assert!(cleanup_failure.is_none());
+    assert!(matches!(read.unwrap().into_resolution(), crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(_)));
+    assert_eq!(
+        commits(),
+        baseline + 1,
+        "adoption cannot rerun the Relational handler"
+    );
+    assert_eq!(
+        world
+            .application
+            .primary_provider
+            .unpublished_idempotency_count(),
+        0
+    );
+}
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
     WorthQueryApplicationCommitOutcome,

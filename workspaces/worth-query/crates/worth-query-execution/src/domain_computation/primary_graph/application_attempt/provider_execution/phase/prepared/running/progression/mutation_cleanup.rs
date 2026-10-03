@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotRelease;
 use crate::domain_computation::{
     WorthQueryManagedRunTerminalKind, WorthQueryMutationGraphWorkCompletion,
     WorthQueryMutationRunBinding, WorthQueryProviderSessionBoundMutationRun,
@@ -19,11 +20,11 @@ impl WorthQueryApplicationMutationCleanupOwner {
         self,
         running: WorthQueryRunningDirectRun,
         terminal: WorthQueryManagedRunTerminalKind,
-        snapshot_released: bool,
+        snapshot_release: WorthQueryApplicationSnapshotRelease,
     ) -> Result<WorthQueryMutationGraphWorkCompletion, ()> {
         match self {
-            Self::Unbound(run) => run.finish(running, terminal, snapshot_released),
-            Self::ProviderBound(run) => run.finish(running, terminal, snapshot_released),
+            Self::Unbound(run) => run.finish(running, terminal, snapshot_release),
+            Self::ProviderBound(run) => run.finish(running, terminal, snapshot_release),
         }
     }
 }

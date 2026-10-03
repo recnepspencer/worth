@@ -11,22 +11,42 @@ use super::WorthQueryProductWorldClock;
 pub struct WorthQueryProductWorldResources {
     budgets: RuntimeWorldBudgets,
     clock: WorthQueryProductWorldClock,
+    invalidation: super::super::WorthQueryInvalidationResources,
 }
 
 impl WorthQueryProductWorldResources {
     pub fn install(
         budgets: worth_runtime_world::facade::RuntimeWorldBudgetInstallation,
         clock: WorthQueryProductWorldClock,
+        invalidation: super::super::WorthQueryInvalidationResources,
     ) -> Result<Self, worth_runtime_world::facade::RuntimeWorldBudgetDenial> {
-        RuntimeWorldBudgets::install(budgets).map(|budgets| Self::new(budgets, clock))
+        RuntimeWorldBudgets::install(budgets).map(|budgets| Self::new(budgets, clock, invalidation))
     }
 
-    pub const fn new(budgets: RuntimeWorldBudgets, clock: WorthQueryProductWorldClock) -> Self {
-        Self { budgets, clock }
+    pub fn new(
+        budgets: RuntimeWorldBudgets,
+        clock: WorthQueryProductWorldClock,
+        invalidation: super::super::WorthQueryInvalidationResources,
+    ) -> Self {
+        Self {
+            budgets,
+            clock,
+            invalidation,
+        }
     }
 
-    pub(crate) fn into_parts(self) -> (RuntimeWorldBudgets, WorthQueryProductWorldClock) {
-        (self.budgets, self.clock)
+    pub fn invalidation_resources(&self) -> super::super::WorthQueryInvalidationResources {
+        self.invalidation.clone()
+    }
+
+    pub(crate) fn into_parts(
+        self,
+    ) -> (
+        RuntimeWorldBudgets,
+        WorthQueryProductWorldClock,
+        super::super::WorthQueryInvalidationResources,
+    ) {
+        (self.budgets, self.clock, self.invalidation)
     }
 
     #[cfg(test)]
@@ -81,5 +101,14 @@ pub(crate) fn test_product_world_resources_with_history_limit(
         })
         .expect("the test Product World budget is valid"),
         WorthQueryProductWorldClock::start(),
+        super::super::WorthQueryInvalidationResources::install(
+            super::super::WorthQueryInvalidationResourceInstallation {
+                maximum_marking_work: 1_000_000,
+                maximum_preparation_bytes: 64 * 1_024 * 1_024,
+                maximum_retained_bytes: 128 * 1_024 * 1_024,
+                maximum_retained_positions: 128,
+            },
+        )
+        .expect("the test invalidation resources are valid"),
     )
 }

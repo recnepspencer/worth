@@ -13,6 +13,9 @@ use worth_relational::facade::identity::{EntityId, RelationId};
 use super::freshness::WorthQueryPrincipalFreshnessEvidence;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 
+mod admitted_mint;
+pub(super) use admitted_mint::PrincipalMintAdmissionStop;
+
 /// Opaque identity of one application principal in an installed primary graph.
 ///
 /// This value is descriptive and cannot authorize an operation by itself.

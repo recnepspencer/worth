@@ -121,6 +121,11 @@ fn pre_effect_failure(no_effect: NoEffectCause) -> RelationalExecutionFailure {
 
 fn deferred_no_effect(deferred: RelationalPublicationDeferred) -> NoEffectCause {
     match deferred {
+        RelationalPublicationDeferred::CompanionRegistrationPending
+        | RelationalPublicationDeferred::CompanionRebindRequired
+        | RelationalPublicationDeferred::CompanionPreflight(_) => {
+            NoEffectCause::RelationalDeferred(deferred)
+        }
         RelationalPublicationDeferred::RetentionBackpressure => NoEffectCause::CapacityExhausted,
         RelationalPublicationDeferred::PatchPositionReservationContended
         | RelationalPublicationDeferred::CandidateLifetimeExpired { .. }
@@ -145,5 +150,23 @@ mod tests {
             deferred_no_effect(RelationalPublicationDeferred::PatchPositionReservationContended),
             NoEffectCause::PreEffectFailure
         );
+    }
+
+    #[test]
+    fn native_companion_stops_keep_their_recovery_reason() {
+        let stop = worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted {
+            required: 9,
+            maximum: 8,
+        };
+        for deferred in [
+            RelationalPublicationDeferred::CompanionRegistrationPending,
+            RelationalPublicationDeferred::CompanionRebindRequired,
+            RelationalPublicationDeferred::CompanionPreflight(stop),
+        ] {
+            assert_eq!(
+                deferred_no_effect(deferred),
+                NoEffectCause::RelationalDeferred(deferred)
+            );
+        }
     }
 }

@@ -22,8 +22,9 @@ pub use aspect_history::{
 };
 pub use branch_creation::{BranchCreateError, BranchCreateErrorClass};
 pub use canonical_commit_envelope::{
-    CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, RelationalReplayRecord,
-    ReplaySchemaVersion,
+    CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, RelationalDescriptiveTouch,
+    RelationalDescriptiveTouchGraph, RelationalDescriptiveTouchPrecision, RelationalReplayRecord,
+    RelationalTouchAdjacencyDirection, ReplaySchemaVersion,
 };
 pub(crate) use canonical_commit_envelope::{CheckpointCanonicalEnvelopeRef, CommittedRecordChange};
 pub use canonical_record_allocation::RecordAllocationClass;

@@ -35,6 +35,15 @@ pub(crate) fn bank_product_world_resources() -> WorthQueryProductWorldResources 
             },
         },
         WorthQueryProductWorldClock::start(),
+        worth_query_host::facade::runtime::WorthQueryInvalidationResources::install(
+            worth_query_host::facade::runtime::WorthQueryInvalidationResourceInstallation::bounded(
+                1_000_000,
+                64 * 1_024 * 1_024,
+                128 * 1_024 * 1_024,
+                128,
+            ),
+        )
+        .expect("the Query invalidation installation is valid"),
     )
     .expect("the bank Product World resources are statically valid")
 }

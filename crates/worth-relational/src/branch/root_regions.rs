@@ -8,6 +8,7 @@ use super::root::{
 };
 
 mod partition_visitation;
+pub(crate) use partition_visitation::RelationalPartitionVisit;
 
 const PARTITION_KEY_BITS: u32 = u32::BITS;
 

@@ -8,6 +8,7 @@ use worth_query_declaration::facade::application_schema::ApplicationStructuredVa
 use worth_query_installation::facade::ApplicationSchema;
 
 mod demand;
+pub(in crate::domain_computation::primary_graph) use demand::MatchedRequiredPredecessor;
 pub use demand::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial,
     WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture,
@@ -15,6 +16,10 @@ pub use demand::{
 };
 mod execution;
 use execution::{InstalledProducerExecutor, TypedInstalledProducer};
+mod input_reuse_contract;
+pub use input_reuse_contract::{
+    WorthQueryDecisionContextDependencies, WorthQueryProducerInputReuseContract,
+};
 
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProducerCommitAuthority {
@@ -32,7 +37,8 @@ pub(in crate::domain_computation::primary_graph) use readiness::{
 };
 mod scheduling;
 pub(in crate::domain_computation::primary_graph) use scheduling::{
-    schedule_output_producer, WorthQueryInstalledOutputProducerRoutes,
+    schedule_output_producer, schedule_output_producer_on_selected,
+    WorthQueryInstalledOutputProducerRoutes,
 };
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -80,6 +86,13 @@ where
         source: &<<Self::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
     ) -> &'static str;
 }
+
+pub(super) type ProducerSourceBinding<Schema, Binding> =
+    <<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source;
+pub(super) type ProducerSourceQuery<Schema, Binding> =
+    <<<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::Query;
+pub(super) type ProducerSourceValue<Schema, Binding> =
+    <<<<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowAssessmentPosture {
@@ -226,8 +239,11 @@ where
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement];
     const RESOURCE_POLICY: &'static str;
     const REUSE_POLICY: &'static str;
+    const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = None;
 }
 
 mod registry;
+pub(super) use registry::DeclaredProducerBinding;
+pub(in crate::domain_computation::primary_graph) use registry::InstalledProducerEdition;
+pub(in crate::domain_computation::primary_graph) use registry::PendingProducerRegistry;
 pub use registry::WorthQueryInstalledApplicationProducerRegistry;
-pub(super) use registry::{DeclaredProducerBinding, PendingProducerRegistry};

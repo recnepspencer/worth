@@ -271,49 +271,45 @@ fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
 
     // Nor can an ordinary admission materialize a lifecycle program: each
     // lane refuses it with the typed transition denial before any effect.
-    macro_rules! ordinary_reads {
-        () => {{
-            let operation = application
-                .installed_schema()
-                .installed_operation(super::TouchAccountOperation::reference())
-                .unwrap();
-            let admission = world
-                .selected_product()
-                .authorize_operation(
-                    &principal,
-                    &account,
-                    &operation,
-                    Default::default(),
-                    &request,
-                )
-                .unwrap();
-            let (_, projection, _) = world
-                .invariant
-                .project_admitted_operation(&admission, |reader, projected| {
-                    reader
-                        .require_decision_field(projected, super::AccountStatus::reference())
-                        .unwrap();
-                })
-                .unwrap()
-                .into_parts();
-            application
-                .begin_projected_application_read_attempt(admission, projection)
-                .unwrap()
-                .complete_projected_dependencies()
-                .unwrap()
-        }};
-    }
+    let ordinary_reads = || {
+        let operation = application
+            .installed_schema()
+            .installed_operation(super::TouchAccountOperation::reference())
+            .unwrap();
+        let admission = world
+            .selected_product()
+            .authorize_operation(
+                &principal,
+                &account,
+                &operation,
+                Default::default(),
+                &request,
+            )
+            .unwrap();
+        let (_, projection, _) = world
+            .invariant
+            .project_admitted_operation(&admission, |reader, projected| {
+                reader
+                    .require_decision_field(projected, super::AccountStatus::reference())
+                    .unwrap();
+            })
+            .unwrap()
+            .into_parts();
+        application
+            .begin_projected_application_read_attempt(admission, projection)
+            .unwrap()
+            .complete_projected_dependencies()
+            .unwrap()
+    };
     let denials = [
-        ordinary_reads!()
+        ordinary_reads()
             .materialize_elevation_request_program()
             .err(),
-        ordinary_reads!()
+        ordinary_reads()
             .materialize_elevation_approval_program()
             .err(),
-        ordinary_reads!()
-            .materialize_elevation_close_program()
-            .err(),
-        ordinary_reads!()
+        ordinary_reads().materialize_elevation_close_program().err(),
+        ordinary_reads()
             .materialize_mandatory_review_program()
             .err(),
     ];

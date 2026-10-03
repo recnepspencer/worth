@@ -40,6 +40,14 @@ impl<'runtime> VisibilityProjectionView<'runtime> {
         )
     }
 
+    pub(crate) fn is_from_runtime(&self, runtime: &RelationalRuntime) -> bool {
+        std::ptr::eq(self.runtime, runtime)
+    }
+
+    pub(crate) fn selected_branch_id(&self) -> &crate::history::data::BranchId {
+        self.basis.branch_id()
+    }
+
     pub(crate) fn selected_schema_authority(
         &self,
     ) -> Option<&crate::branch::RelationalBranchRootSchemaAuthority> {

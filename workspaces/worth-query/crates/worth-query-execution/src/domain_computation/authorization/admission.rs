@@ -12,7 +12,11 @@ mod operation_observation;
 mod requirement_observation;
 mod validation;
 
+pub(in crate::domain_computation) use requirement_observation::AdmittedQueryAuthorizationStop;
 pub(super) use validation::{admit_request, operation_scope_binding, validate_static_authority};
+pub(in crate::domain_computation::authorization) use validation::{
+    validate_static_authority_retained, WorthQueryRetainedMutationStaticStop,
+};
 
 pub(in crate::domain_computation::authorization) struct WorthQueryConventionalAuthorizationDecisionPermit(
     (),

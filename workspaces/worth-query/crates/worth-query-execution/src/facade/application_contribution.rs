@@ -7,7 +7,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationContributionSetup, WorthQueryApplicationContributionTuple,
     WorthQueryApplicationOutputDemand, WorthQueryApplicationProducerBinding,
     WorthQueryApplicationProducerProvider, WorthQueryCompletedManagedComputation,
-    WorthQueryConfiguredApplicationContributions,
+    WorthQueryConfiguredApplicationContributions, WorthQueryDecisionContextDependencies,
     WorthQueryInstalledApplicationConditionalRegistry,
     WorthQueryInstalledApplicationProducerRegistry, WorthQueryInstalledManagedComputation,
     WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationCheckpointDenial,
@@ -16,8 +16,9 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryManagedComputationPrepared, WorthQueryManagedComputationResourceDenial,
     WorthQueryOutputReadinessContractBuilder, WorthQueryOutputReadinessContractDenial,
     WorthQueryPreparedManagedComputation, WorthQueryProducerApplicability,
-    WorthQueryProducerDemandResources, WorthQueryProducerInvariantRequirement,
-    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
-    WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
+    WorthQueryProducerDemandResources, WorthQueryProducerInputReuseContract,
+    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
+    WorthQueryProducerOutputFamily, WorthQueryWorkflowAssessmentOutputFamily,
+    WorthQueryWorkflowAssessmentPosture,
 };
 pub use worth_query_declaration::facade::application_schema::ApplicationSchemaComposition;

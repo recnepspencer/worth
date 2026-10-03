@@ -47,8 +47,12 @@ mod input;
 mod request;
 mod work;
 
+pub use encoder::CanonicalEncodingCharge;
 pub use input::ApplicationEncodedInput;
-pub use request::{ApplicationMutationIdentities, ApplicationMutationIdentityDenial};
+pub use request::{
+    ApplicationMutationIdentities, ApplicationMutationIdentityAdmittedDenial,
+    ApplicationMutationIdentityDenial,
+};
 pub use work::ApplicationCanonicalWork;
 
 use serde::Serialize;
@@ -82,6 +86,8 @@ pub enum ApplicationValueIdentityDomain {
     HostCommitKey,
     /// The intent of a commit whose effects the host authored itself.
     HostCommitIntent,
+    /// The installed semantic meaning of one output producer binding.
+    ProducerImplementationEdition,
 }
 
 impl ApplicationValueIdentityDomain {
@@ -91,6 +97,7 @@ impl ApplicationValueIdentityDomain {
             Self::TemporalIntentRelation => "worth-query.temporal-intent-idempotency-relation.v1",
             Self::HostCommitKey => "worth-query.host-commit-key.v1",
             Self::HostCommitIntent => "worth-query.host-commit-intent.v1",
+            Self::ProducerImplementationEdition => "worth-query.producer-implementation-edition.v1",
         }
     }
 }
@@ -130,6 +137,24 @@ where
     canonical_identity(INPUT_DOMAIN, input_type.as_str(), input).map_err(|_| rejected(input_type))
 }
 
+fn input_identity_admitted<InputBinding, F, E>(
+    input: &InputBinding::Value,
+    admission: &mut F,
+) -> Result<ApplicationCanonicalIdentity, encoder::CanonicalEncodeError<E>>
+where
+    InputBinding: ApplicationStructuredValueBinding,
+    InputBinding::Value: Serialize,
+    F: FnMut(CanonicalEncodingCharge) -> Result<(), E>,
+    E: std::fmt::Debug,
+{
+    canonical_identity_admitted(
+        INPUT_DOMAIN,
+        InputBinding::IDENTITY.as_str(),
+        input,
+        admission,
+    )
+}
+
 /// Identity of one client idempotency key, scoped to the binding's key namespace.
 fn application_mutation_key_identity<Schema, Binding>(
     key: &Binding::IdempotencyKey,
@@ -143,6 +168,19 @@ where
             Binding::IDEMPOTENCY_IDENTITY,
         ))
     })
+}
+
+fn application_mutation_key_identity_admitted<Schema, Binding, F, E>(
+    key: &Binding::IdempotencyKey,
+    admission: &mut F,
+) -> Result<ApplicationCanonicalIdentity, encoder::CanonicalEncodeError<E>>
+where
+    Schema: ApplicationSchema,
+    Binding: ApplicationMutationBinding<Schema>,
+    F: FnMut(CanonicalEncodingCharge) -> Result<(), E>,
+    E: std::fmt::Debug,
+{
+    canonical_identity_admitted(KEY_DOMAIN, Binding::IDEMPOTENCY_IDENTITY, key, admission)
 }
 
 /// Identity of any value for one purpose inside a scope.
@@ -169,15 +207,48 @@ fn canonical_identity<T: Serialize + ?Sized>(
     scope: &str,
     value: &T,
 ) -> Result<ApplicationCanonicalIdentity, encoder::CanonicalEncodeError> {
-    let mut sink = encoder::HashingSink::new();
-    let mut framing = 0_usize;
-    for part in [domain, scope] {
-        let length = (part.len() as u64).to_be_bytes();
-        sink.put(&length);
-        sink.put(part.as_bytes());
-        framing = framing.saturating_add(length.len() + part.len());
+    canonical_identity_in_sink(domain, scope, value, encoder::HashingSink::new())
+}
+
+fn canonical_identity_admitted<T: Serialize + ?Sized, F, E>(
+    domain: &str,
+    scope: &str,
+    value: &T,
+    admission: &mut F,
+) -> Result<ApplicationCanonicalIdentity, encoder::CanonicalEncodeError<E>>
+where
+    F: FnMut(CanonicalEncodingCharge) -> Result<(), E>,
+    E: std::fmt::Debug,
+{
+    canonical_identity_in_sink(
+        domain,
+        scope,
+        value,
+        encoder::HashingSink::with_admission(encoder::CallbackAdmission::new(admission)),
+    )
+}
+
+fn canonical_identity_in_sink<T: Serialize + ?Sized, A: encoder::EncodingAdmission>(
+    domain: &str,
+    scope: &str,
+    value: &T,
+    mut sink: encoder::HashingSink<A>,
+) -> Result<ApplicationCanonicalIdentity, encoder::CanonicalEncodeError<A::Error>> {
+    let encoded = (|| {
+        let mut framing = 0_usize;
+        for part in [domain, scope] {
+            let length = (part.len() as u64).to_be_bytes();
+            sink.put(&length)?;
+            sink.put(part.as_bytes())?;
+            framing = framing.saturating_add(length.len() + part.len());
+        }
+        encoder::encode_into(&mut sink, value)?;
+        Ok::<_, encoder::CanonicalEncodeError<A::Error>>(framing)
+    })();
+    if let Some(error) = sink.take_terminal_failure() {
+        return Err(error);
     }
-    encoder::encode_into(&mut sink, value)?;
+    let framing = encoded?;
     let hashed = sink.hashed_bytes();
     let work = ApplicationCanonicalWork::one_derivation(
         hashed.saturating_sub(framing),
@@ -185,7 +256,7 @@ fn canonical_identity<T: Serialize + ?Sized>(
         sink.buffered_bytes(),
     );
     Ok(ApplicationCanonicalIdentity {
-        identity: sink.finish(),
+        identity: sink.finish()?,
         work,
     })
 }

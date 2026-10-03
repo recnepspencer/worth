@@ -349,7 +349,7 @@ where
         self.primary_provider.application_resource_support()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn graph_work_resource_support_ref(
+    pub(in crate::domain_computation) fn graph_work_resource_support_ref(
         &self,
     ) -> &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot
     {

@@ -105,7 +105,7 @@ fn stateful_bridge_task_runtime_with_merge_posture(
     let probe = StatefulBridgeMergeProbe {
         state: Rc::clone(&state),
     };
-    let runtime = WorthQueryRuntime::builder(test_product_world_resources())
+    let runtime = WorthQueryRuntime::builder(product.resources)
         .backend(StatefulBridgeRuntimeBackend::new(
             state,
             graph_test_support_profile(),
@@ -190,7 +190,7 @@ fn stateful_bridge_builder(
         product.bridge.clone(),
         product.source,
     )));
-    WorthQueryRuntime::builder(test_product_world_resources())
+    WorthQueryRuntime::builder(product.resources)
         .backend(StatefulBridgeRuntimeBackend::new(state, support_profile))
         .installed_product_bridge(
             product.bridge,

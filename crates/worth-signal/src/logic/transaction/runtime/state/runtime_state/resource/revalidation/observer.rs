@@ -8,6 +8,7 @@ use crate::logic::transaction::{CommittedObservationEventSummary, ObservationBou
 use super::super::super::super::resource::ResourceRuntimeState;
 
 use super::super::super::SignalRuntime;
+mod policy_v1;
 
 impl<D, I, E, Ctx, T> SignalRuntime<D, I, E, Ctx, T>
 where
@@ -34,11 +35,7 @@ where
     }
 
     fn observer_demand_observation_digest(event: &CommittedObservationEventSummary) -> String {
-        let policy = format!(
-            "{:?}:{:?}",
-            event.policy.trigger(),
-            event.policy.delivery_mode()
-        );
+        let policy = policy_v1::encode(event.policy);
         let matched_nodes = event
             .matched_nodes
             .iter()
@@ -47,9 +44,9 @@ where
         ResourceRuntimeState::observer_demand_observation_digest(
             event.observer_id.get(),
             event.handle_id.get(),
-            &policy,
+            policy,
             &matched_nodes,
-            event.touched,
+            event.visited,
             event.recomputed,
             event.meaningful_change,
             event.trigger_matched,

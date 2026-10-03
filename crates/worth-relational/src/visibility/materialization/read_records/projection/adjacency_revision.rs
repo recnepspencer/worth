@@ -88,10 +88,11 @@ mod tests {
             delete_relation_on_branch(&runtime, relation, BranchId("main".to_owned()));
 
         let revision_at = |snapshot| {
-            runtime
+            let view = runtime
                 .read_truth()
                 .project_snapshot(snapshot)
-                .expect("commit snapshot remains readable")
+                .expect("commit snapshot remains readable");
+            let revision = view
                 .bounded_adjacency_structural_revision(
                     source,
                     KindId(2),
@@ -99,7 +100,17 @@ mod tests {
                     1,
                 )
                 .expect("the selected-basis revision is one owner-index lookup")
-                .revision()
+                .revision();
+            assert_eq!(
+                view.exact_adjacency_structural_revision(
+                    source,
+                    KindId(2),
+                    RelationalAdjacencyDirection::Outgoing,
+                )
+                .unwrap(),
+                revision
+            );
+            revision
         };
         assert_eq!(revision_at(&source_commit.snapshot), None);
         assert_eq!(

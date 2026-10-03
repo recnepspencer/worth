@@ -3,9 +3,14 @@ use std::num::NonZeroUsize;
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::Duration;
 
+mod currentness_hold;
+pub(crate) use currentness_hold::ProductCurrentnessLatch;
+pub use currentness_hold::RuntimeWorldProductCurrentnessPause;
+
 #[derive(Clone, Default)]
 pub struct RuntimeWorldOperationControl {
     pending_product_compare: Arc<Mutex<Option<ProductCompareControl>>>,
+    pending_currentness: Arc<Mutex<Option<Arc<ProductCurrentnessLatch>>>>,
 }
 enum ProductCompareControl {
     Pause(Arc<ExactPause>),

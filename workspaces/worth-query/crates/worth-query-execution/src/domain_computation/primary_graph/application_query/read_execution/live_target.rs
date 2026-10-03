@@ -45,7 +45,15 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
             plan.query.name(),
         )
     })?;
-    let selection = select_bounded_roots(runtime, graph, plan, &mut result_buffer, false)?;
+    let selection = select_bounded_roots(
+        runtime,
+        graph,
+        plan,
+        &mut result_buffer,
+        false,
+        None,
+        plan.controls.maximum_work().get(),
+    )?;
     super::validate_cardinality_and_limit(
         contract.cardinality(),
         selection.candidates.len(),
@@ -98,6 +106,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
         collection_selection,
         plan.controls.request_scope(),
         &mut result_buffer,
+        None,
     )?;
     let actual_work = admitted_before_materialization.saturating_add(tree.work_units);
     if actual_work > plan.controls.maximum_work().get() {

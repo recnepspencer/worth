@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard, TryLockError};
 
 use dashmap::DashMap;
@@ -41,6 +41,7 @@ impl std::fmt::Debug for RelationalCanonicalPublicationRoutes {
 struct CanonicalPublicationRoute {
     envelope: Arc<CanonicalCommitEnvelope>,
     handoff: Mutex<Option<CanonicalPublicationHandoff>>,
+    performed_position: AtomicU64,
     performed: AtomicBool,
     settled: AtomicBool,
 }
@@ -90,6 +91,7 @@ impl RelationalCanonicalPublicationRoutes {
         let route = Arc::new(CanonicalPublicationRoute {
             envelope: Arc::clone(positioned.canonical_arc()),
             handoff: Mutex::new(None),
+            performed_position: AtomicU64::new(0),
             performed: AtomicBool::new(true),
             settled: AtomicBool::new(true),
         });
@@ -110,7 +112,10 @@ impl RelationalCanonicalPublicationRoutes {
                 .remove(&positioned.envelope().commit.commit_id);
             return Err("recovered canonical version route is duplicated");
         }
-        self.performed_stream.link_recovered(positioned, route)?;
+        let position = positioned.position();
+        self.performed_stream
+            .link_recovered(positioned, Arc::clone(&route))?;
+        route.set_position(position);
         Ok(())
     }
 
@@ -125,6 +130,7 @@ impl RelationalCanonicalPublicationRoutes {
                 root,
                 publication_cell: None,
             })),
+            performed_position: AtomicU64::new(0),
             performed: AtomicBool::new(false),
             settled: AtomicBool::new(false),
         });
@@ -190,7 +196,11 @@ impl RelationalCanonicalPublicationRoutes {
     }
 
     pub(crate) fn stream_position(&self, commit_id: CommitId) -> Option<PatchStreamPosition> {
-        self.performed_stream.position(commit_id)
+        let route = self
+            .by_commit
+            .get(&commit_id)
+            .map(|entry| Arc::clone(entry.value()))?;
+        route.is_visible().then(|| route.position()).flatten()
     }
 
     pub(crate) fn positioned_commit(
@@ -266,6 +276,10 @@ impl PreparedCanonicalPublicationRoute {
         self.route.envelope.commit.commit_id
     }
 
+    pub(crate) fn selected_position(&self, commit_id: CommitId) -> Option<PatchStreamPosition> {
+        self.routes.stream_position(commit_id)
+    }
+
     pub(crate) fn enter_publication(&self) -> RwLockReadGuard<'_, ()> {
         self.routes
             .lifecycle
@@ -276,7 +290,7 @@ impl PreparedCanonicalPublicationRoute {
     pub(crate) fn record_performed_with_cutover(
         &self,
         publication_cell: crate::branch::RelationalBranchPublicationCell,
-        cutover: impl FnOnce(),
+        cutover: impl FnOnce(crate::publication::patch::data::PatchStreamPosition),
     ) -> Result<Arc<PositionedCanonicalCommit>, CanonicalPublicationRecordError> {
         self.route
             .handoff
@@ -310,6 +324,17 @@ impl Drop for PreparedCanonicalPublicationRoute {
 }
 
 impl CanonicalPublicationRoute {
+    pub(super) fn set_position(&self, position: PatchStreamPosition) {
+        self.performed_position.store(position.0, Ordering::Release);
+    }
+
+    fn position(&self) -> Option<PatchStreamPosition> {
+        match self.performed_position.load(Ordering::Acquire) {
+            0 => None,
+            value => Some(PatchStreamPosition(value)),
+        }
+    }
+
     pub(super) fn is_performed(&self) -> bool {
         self.performed.load(Ordering::Acquire)
     }

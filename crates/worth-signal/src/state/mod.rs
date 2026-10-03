@@ -56,8 +56,17 @@ mod tests {
 
     #[test]
     fn checkpoint_slot_deserializes_legacy_entry_payload() {
+        let mut entry = NodeEntry::new();
+        entry.set_runtime_artifact_state(Some(crate::data::trace::RuntimeArtifactState::new(
+            crate::data::trace::RuntimeArtifactHot {
+                output_hash: crate::data::core_profile::StableHashValue::MAX,
+                ..Default::default()
+            },
+            Default::default(),
+        )));
+        let expected = entry.to_checkpoint_image();
         let legacy = LegacyCheckpointSlot {
-            entry: Some(NodeEntry::new()),
+            entry: Some(entry),
             generation: 7,
             retired: false,
         };
@@ -72,6 +81,7 @@ mod tests {
         );
         assert_eq!(decoded.generation, 7);
         assert!(!decoded.retired);
+        assert_eq!(decoded.node, Some(expected));
     }
 
     #[test]
@@ -120,5 +130,13 @@ mod tests {
             encoded.get("entry").is_none(),
             "current checkpoint schema must not emit the legacy in-memory entry field"
         );
+    }
+
+    #[test]
+    fn checkpoint_slot_rejects_duplicate_current_and_legacy_carriers() {
+        let payload = r#"{"node":null,"entry":null,"generation":1,"retired":false}"#;
+        assert!(serde_json::from_str::<SignalCheckpointSlot>(payload).is_err());
+        let payload = r#"{"node":null,"node":null,"generation":1,"retired":false}"#;
+        assert!(serde_json::from_str::<SignalCheckpointSlot>(payload).is_err());
     }
 }

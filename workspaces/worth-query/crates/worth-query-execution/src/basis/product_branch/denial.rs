@@ -31,6 +31,8 @@ pub enum WorthQueryProductBranchAdmissionDenial {
     CustodyCapacityExhausted,
     /// The owner ran out of observation identities.
     ObservationIdentityExhausted,
+    /// The owner could not represent the selected currentness preparation cost.
+    ObservationAccountingOverflow,
     /// The program activation for the branch could not be read.
     ProductActivationUnavailable,
     /// The Relational basis for the branch could not be retained.

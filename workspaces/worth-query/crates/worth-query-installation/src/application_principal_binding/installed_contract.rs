@@ -12,6 +12,9 @@ use crate::application_schema::{
 use crate::authority_cryptography::{
     AuthoritySeal, AuthoritySealDomain, AuthorityTranscript, PackageAuthorityKey,
 };
+
+#[path = "installed_contract/admission_cost.rs"]
+mod admission_cost;
 use crate::installed_index::WorthQueryInstalledPackageAuthority;
 
 /// Opaque installation authority for one schema-declared principal binding.

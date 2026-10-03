@@ -6,7 +6,9 @@ mod writing;
 
 pub(crate) use error::AspectValueCanonicalCodecError;
 pub(crate) use reading::decode_aspect_value;
-pub(crate) use writing::{encode_aspect_value, encode_length_prefixed_aspect_value};
+pub(crate) use writing::{
+    encode_aspect_value, encode_length_prefixed_aspect_value, encoded_aspect_value_len,
+};
 
 pub(crate) fn encode_string(bytes: &mut Vec<u8>, value: &str) {
     encode_u32(bytes, value.len() as u32);

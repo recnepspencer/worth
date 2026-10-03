@@ -13,7 +13,9 @@ use super::{
 /// Builds the minimal real Product source and bridge needed by an explicit
 /// test backend. The returned source must be retained by that backend and
 /// supplied from `WorthQueryRuntimeBackend::prepare_product_source`.
-pub fn in_memory_test_product_world_installation() -> Result<
+pub fn in_memory_test_product_world_installation(
+    resources: &worth_query_execution::facade::integration::WorthQueryProductWorldResources,
+) -> Result<
     (
         worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner,
         RuntimeBridge,
@@ -28,6 +30,7 @@ pub fn in_memory_test_product_world_installation() -> Result<
     let source = worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner::new(
         runtime,
         "worth-query-explicit-test-backend-product",
+        resources.invalidation_resources(),
     )
     .map_err(|error| {
         WorthQueryTestBackendError::new(

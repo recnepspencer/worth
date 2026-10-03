@@ -1,4 +1,6 @@
 mod retained_charge;
+#[cfg(test)]
+mod wire;
 
 use serde::{Deserialize, Serialize};
 
@@ -20,7 +22,8 @@ pub struct CommittedObservationEventSummary {
     pub policy: ObservationPolicy,
     pub observed_nodes: ObservedNodeSet,
     pub matched_nodes: ObservedNodeSet,
-    pub touched: bool,
+    #[serde(alias = "touched")]
+    pub visited: bool,
     pub recomputed: bool,
     pub meaningful_change: bool,
     pub trigger_matched: bool,

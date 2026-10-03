@@ -2,61 +2,112 @@
 
 mod current_output;
 mod denial;
+mod input_cutoff;
+mod input_reuse_key;
+pub(in crate::domain_computation::primary_graph) mod invalidation;
+mod native_output_witness;
 mod partition_index;
+mod prepared_slot;
 mod qualification;
+mod recorded_output;
 mod recorded_source_identity;
+mod required_settlement;
+pub(in crate::domain_computation::primary_graph) use required_settlement::{
+    AcceptedCurrentCandidate, BoundCurrentAcceptedOutput, CurrentAcceptedResult,
+    CurrentAcceptedStop,
+};
+mod resolution;
 mod resources;
 mod restoration;
+mod retained_capacity;
 mod retention;
+mod settlement_identity;
+pub(in crate::domain_computation) use invalidation::InvalidationEditAdmission;
+pub(in crate::domain_computation) use invalidation::SourceInvalidationOwner;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) mod registry_fixture;
 #[cfg(test)]
 mod tests;
 
 use std::any::TypeId;
-use std::collections::{BTreeMap, HashMap, HashSet};
-use std::sync::Arc;
+use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::sync::{Arc, OnceLock};
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
+pub(in crate::domain_computation::primary_graph) use super::application_attempt::{
+    CompletedDecisionReuseProof, PreparedDecisionReuseContext,
+};
 pub use denial::{WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind};
+pub(in crate::domain_computation::primary_graph) use input_cutoff::{
+    prepare_stable_address, InputCutoffDecision, InputCutoffVerificationStop,
+    PreparedInputCutoffBasis, PublishedStableLineage, StablePublicationStop,
+};
+pub(in crate::domain_computation::primary_graph) use input_reuse_key::PreparedInputReuseKey;
+pub(in crate::domain_computation::primary_graph) use native_output_witness::{
+    PreparedNativeOutputWitness, SealedNativeOutputWitness,
+};
+pub(in crate::domain_computation::primary_graph) use prepared_slot::prepare as prepare_output_lineage_slot;
+pub(in crate::domain_computation::primary_graph) use prepared_slot::PreparedLineageRecoveryMetadata;
+pub(in crate::domain_computation::primary_graph) use prepared_slot::PreparedOutputLineageSlot;
+use recorded_output::{RecordedOutput, RecordedOutputMutable};
 pub(in crate::domain_computation::primary_graph) use recorded_source_identity::RecordedSourceIdentity;
+use resolution::latest_output_matching;
+pub(in crate::domain_computation::primary_graph) use settlement_identity::RecordedSettlementIdentity;
 
 use super::{
     provider::WorthQueryPrimaryGraphCommittedApplication, WorthQueryApplicationOutputCorrespondence,
 };
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-struct SemanticSource {
+pub(in crate::domain_computation::primary_graph) struct SemanticSource {
     runtime_authority: u64,
     schema: ApplicationSchemaBindingIdentity,
     scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     output_binding: TypeId,
 }
 
+impl Ord for SemanticSource {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        let key = |source: &Self| {
+            (
+                source.runtime_authority,
+                source.schema.runtime_ordinal(),
+                source.schema.generation(),
+                *source.schema.package_identity(),
+                *source.schema.schema_identity(),
+                source.scope,
+                source.output_binding,
+            )
+        };
+        key(self).cmp(&key(other))
+    }
+}
+
+impl PartialOrd for SemanticSource {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 #[derive(Default)]
 pub(crate) struct WorthQueryApplicationOutputLineage {
-    by_source: HashMap<
+    by_source: BTreeMap<
         SemanticSource,
-        HashMap<
+        BTreeMap<
             worth_runtime_world::facade::ProductBranchIncarnation,
-            BTreeMap<u64, Vec<RecordedOutput>>,
+            BTreeMap<u64, RecordedGeneration>,
         >,
     >,
     partition_index: partition_index::OutputPartitionIndex,
-    origins: HashMap<worth_runtime_world::facade::ProductBranchIncarnation, ProductCoordinate>,
-    live_occurrences: HashSet<worth_runtime_world::facade::ProductBranchIncarnation>,
+    origins: BTreeMap<worth_runtime_world::facade::ProductBranchIncarnation, ProductCoordinate>,
+    live_occurrences: BTreeSet<worth_runtime_world::facade::ProductBranchIncarnation>,
+    cancelled_slots: Option<Box<prepared_slot::CancelledLineageSlot>>,
     output_families: HashMap<String, Vec<TypeId>>,
+    retention: retained_capacity::LineageRetentionLedger,
 }
 
-struct RecordedOutput {
-    correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
-    source_identity: Option<RecordedSourceIdentity>,
-    source_partition_identity: Option<[u8; 32]>,
-    producer_dependency_identity: Option<[u8; 32]>,
-    idempotency_key_identity: [u8; 32],
-    observed_source_facts:
-        Option<Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>>,
-    resources: Option<super::application_contribution::WorthQueryProducerDemandResources>,
-}
+type RecordedGeneration = Vec<Arc<OnceLock<RecordedOutput>>>;
 
 pub(super) struct WorthQueryExactRecordedOutput {
     pub(super) correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
@@ -81,7 +132,7 @@ pub(super) struct WorthQueryProducerLineageHead {
     pub(super) idempotency_key_identity: [u8; 32],
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ProductCoordinate {
     occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     generation: u64,
@@ -93,9 +144,13 @@ pub(super) struct WorthQueryPriorOutputBindingResolution {
 }
 
 pub(super) struct WorthQueryCurrentOutputCandidate {
+    pub(super) consumed_outputs: Arc<[super::invariant_projection::ConsumedOutputEvidence]>,
+    pub(super) verification_requirement: Option<invalidation::FullVerificationReason>,
+    pub(super) settlement_identity: Arc<RecordedSettlementIdentity>,
     pub(super) correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
     pub(super) observed_source_facts:
         Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>,
+    pub(super) native_output_witness: Option<Arc<OnceLock<SealedNativeOutputWitness>>>,
 }
 
 pub(super) struct WorthQueryRetainedOutputCandidate {
@@ -121,6 +176,13 @@ impl WorthQueryApplicationOutputLineage {
         self.output_families.extend(families);
     }
 
+    pub(in crate::domain_computation::primary_graph) fn set_lineage_retention_maximum(
+        &mut self,
+        maximum_bytes: usize,
+    ) {
+        self.retention.set_maximum(maximum_bytes as u64);
+    }
+
     pub(crate) fn register_fork(
         &mut self,
         source: &worth_runtime_world::facade::ProductBranchObservation,
@@ -139,7 +201,43 @@ impl WorthQueryApplicationOutputLineage {
         );
     }
 
-    pub(super) fn record(&mut self, application: &WorthQueryPrimaryGraphCommittedApplication) {
+    #[cfg(test)]
+    pub(super) fn record(
+        &mut self,
+        application: &WorthQueryPrimaryGraphCommittedApplication,
+    ) -> Option<Arc<RecordedSettlementIdentity>> {
+        self.record_inner(application, None, None, None, None, None)
+    }
+
+    fn record_prepared(
+        &mut self,
+        application: &WorthQueryPrimaryGraphCommittedApplication,
+        prepared: &PreparedOutputLineageSlot,
+        completed_handler_facts: Option<super::application_attempt::CompletedHandlerFactBoundary>,
+        completed_decision_reuse: Option<CompletedDecisionReuseProof>,
+        prepared_input_reuse_key: Option<PreparedInputReuseKey>,
+        retained_capacity: retained_capacity::RetainedLineageCapacity,
+    ) -> Arc<RecordedSettlementIdentity> {
+        self.record_inner(
+            application,
+            Some(prepared),
+            completed_handler_facts,
+            completed_decision_reuse,
+            prepared_input_reuse_key,
+            Some(retained_capacity),
+        )
+        .expect("a prepared output slot has a sealed output binding")
+    }
+
+    fn record_inner(
+        &mut self,
+        application: &WorthQueryPrimaryGraphCommittedApplication,
+        prepared: Option<&PreparedOutputLineageSlot>,
+        completed_handler_facts: Option<super::application_attempt::CompletedHandlerFactBoundary>,
+        completed_decision_reuse: Option<CompletedDecisionReuseProof>,
+        prepared_input_reuse_key: Option<PreparedInputReuseKey>,
+        retained_capacity: Option<retained_capacity::RetainedLineageCapacity>,
+    ) -> Option<Arc<RecordedSettlementIdentity>> {
         let evidence = application.commit_evidence();
         let correspondence = evidence.output_correspondence();
         let scope = evidence.operation_scope();
@@ -148,48 +246,118 @@ impl WorthQueryApplicationOutputLineage {
             occurrence: head.lifecycle_incarnation(),
             generation: head.reference_generation().get(),
         };
-        self.live_occurrences.insert(coordinate.occurrence);
         let Some(output_binding) = correspondence.binding_type() else {
-            return;
+            return None;
         };
-        let source = SemanticSource {
+        // The performed path borrows the pre-effect source. Constructing a
+        // fresh source here could allocate after World has moved.
+        let fallback_source = prepared.is_none().then(|| SemanticSource {
             runtime_authority: scope.runtime_authority(),
             schema: scope.binding_identity().clone(),
             scope: scope.scope(),
             output_binding,
-        };
+        });
+        let source = prepared.map_or_else(
+            || {
+                fallback_source
+                    .as_ref()
+                    .expect("test-only record owns its source")
+            },
+            |prepared| &prepared.source,
+        );
         let partition = evidence.idempotency().source_partition_identity();
-        if let Some(partition) = partition {
-            assert!(
-                self.partition_index
-                    .at_generation(
-                        &source,
-                        coordinate.occurrence,
-                        coordinate.generation,
-                        partition
-                    )
-                    .is_none(),
-                "one product generation may publish one output binding once"
+        if let Some(prepared) = prepared {
+            assert_eq!(source.runtime_authority, scope.runtime_authority());
+            assert_eq!(&source.schema, scope.binding_identity());
+            assert_eq!(source.scope, scope.scope());
+            assert_eq!(source.output_binding, output_binding);
+            assert_eq!(
+                prepared.coordinate, coordinate,
+                "World performed the prepared product address"
             );
+            assert_eq!(
+                prepared.partition, partition,
+                "prepared partition matches sealed commit evidence"
+            );
+        } else {
+            self.live_occurrences.insert(coordinate.occurrence);
         }
-        let generation = self
-            .by_source
-            .entry(source.clone())
-            .or_default()
-            .entry(head.lifecycle_incarnation())
-            .or_default()
-            .entry(head.reference_generation().get())
-            .or_default();
+        if prepared.is_none() {
+            if let Some(partition) = partition {
+                assert!(
+                    self.partition_index
+                        .at_generation(
+                            source,
+                            coordinate.occurrence,
+                            coordinate.generation,
+                            partition
+                        )
+                        .is_none(),
+                    "one product generation may publish one output binding once"
+                );
+            }
+        }
+        let generation = prepared.is_none().then(|| {
+            self.by_source
+                .entry(source.clone())
+                .or_default()
+                .entry(coordinate.occurrence)
+                .or_default()
+                .entry(coordinate.generation)
+                .or_default()
+        });
         if partition.is_none() {
             assert!(
-                generation
-                    .iter()
-                    .all(|recorded| recorded.source_partition_identity.is_some()),
+                generation.as_ref().is_none_or(|generation| {
+                    generation.iter().all(|cell| {
+                        cell.get()
+                            .is_some_and(|recorded| recorded.source_partition_identity.is_some())
+                    })
+                }),
                 "one product generation may publish one output binding once"
             );
         }
-        let slot = generation.len();
-        generation.push(RecordedOutput {
+        let slot = prepared.map_or_else(
+            || generation.as_ref().unwrap().len(),
+            |slot| slot.identity.slot(),
+        );
+        let settlement_identity = if let Some(prepared) = prepared {
+            assert!(prepared.record_cell.get().is_none());
+            Arc::clone(&prepared.identity)
+        } else {
+            RecordedSettlementIdentity::retain(source, coordinate, slot)
+        };
+        let recorded = RecordedOutput {
+            performed_origin: None,
+            _retained_capacity: retained_capacity,
+            consumed_outputs: evidence.retain_consumed_outputs(),
+            completed_handler_facts,
+            completed_decision_reuse,
+            prepared_input_reuse_key,
+            native_output_witness: prepared
+                .and_then(|slot| slot.native_output_witness.as_ref().map(Arc::clone))
+                .map(std::sync::OnceLock::from)
+                .unwrap_or_default(),
+            mutable: std::sync::Mutex::new(RecordedOutputMutable {
+                verification_requirement: evidence.source_fact_verification_requirement().map(
+                    |reason| match reason {
+                        super::provider::RebaseVerificationReason::NativeRevisionUnavailable => {
+                            invalidation::FullVerificationReason::NativeRevisionUnavailable
+                        }
+                        super::provider::RebaseVerificationReason::UnsupportedDecisionFact => {
+                            invalidation::FullVerificationReason::UnsupportedFact
+                        }
+                        super::provider::RebaseVerificationReason::AdmissionDenied(stop) => {
+                            invalidation::FullVerificationReason::MarkingAdmissionDenied(stop)
+                        }
+                    },
+                ),
+                observed_source_facts: evidence
+                    .retain_observed_source_facts()
+                    .or_else(|| evidence.retain_verification_source_facts()),
+                resources: prepared.and_then(|slot| slot.actual_resources),
+            }),
+            settlement_identity: Arc::clone(&settlement_identity),
             correspondence: evidence.retain_output_correspondence(),
             source_identity: evidence.idempotency().source_identity().map(|identity| {
                 RecordedSourceIdentity::Runtime(
@@ -199,158 +367,31 @@ impl WorthQueryApplicationOutputLineage {
             source_partition_identity: evidence.idempotency().source_partition_identity(),
             producer_dependency_identity: evidence.idempotency().producer_dependency_identity(),
             idempotency_key_identity: *evidence.idempotency().key_identity(),
-            observed_source_facts: Some(evidence.retain_observed_source_facts()),
-            resources: None,
-        });
-        if let Some(partition) = partition {
+        };
+        if let Some(prepared) = prepared {
+            assert!(
+                prepared.record_cell.set(recorded).is_ok(),
+                "prepared output fills once"
+            );
+            if let Some(locator) = prepared.partition_cell.as_ref() {
+                assert!(locator.set(slot).is_ok(), "prepared partition fills once");
+            }
+        } else if let Some(partition) = partition {
+            let cell = Arc::new(OnceLock::new());
+            assert!(cell.set(recorded).is_ok());
+            generation.unwrap().push(cell);
             self.partition_index.insert(
-                source,
+                source.clone(),
                 coordinate.occurrence,
                 coordinate.generation,
                 partition,
                 slot,
             );
+        } else {
+            let cell = Arc::new(OnceLock::new());
+            assert!(cell.set(recorded).is_ok());
+            generation.unwrap().push(cell);
         }
+        Some(settlement_identity)
     }
-
-    pub(super) fn resolve_current_family(
-        &self,
-        runtime_authority: u64,
-        schema: &ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-        family: &str,
-        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-        generation: u64,
-        maximum_source_lookups: usize,
-    ) -> Result<WorthQueryCurrentOutputFamilyResolution, ()> {
-        let Some(bindings) = self.output_families.get(family) else {
-            return Ok(WorthQueryCurrentOutputFamilyResolution {
-                family_installed: false,
-                candidates: Vec::new(),
-                source_lookups: 1,
-            });
-        };
-        let mut candidates = Vec::new();
-        let mut source_lookups = 0_usize;
-        for output_binding in bindings {
-            let source = SemanticSource {
-                runtime_authority,
-                schema: schema.clone(),
-                scope,
-                output_binding: *output_binding,
-            };
-            source_lookups = source_lookups.saturating_add(1);
-            if source_lookups > maximum_source_lookups {
-                return Err(());
-            }
-            let Some(versions) = self.by_source.get(&source) else {
-                continue;
-            };
-            let mut coordinate = ProductCoordinate {
-                occurrence,
-                generation,
-            };
-            loop {
-                source_lookups = source_lookups.saturating_add(1);
-                if source_lookups > maximum_source_lookups {
-                    return Err(());
-                }
-                if let Some(recorded) = versions
-                    .get(&coordinate.occurrence)
-                    .and_then(|history| history.range(..=coordinate.generation).next_back())
-                    .and_then(|(_, recorded)| {
-                        recorded
-                            .iter()
-                            .rev()
-                            .find(|recorded| recorded.observed_source_facts.is_some())
-                    })
-                {
-                    candidates.push(WorthQueryCurrentOutputCandidate {
-                        correspondence: Arc::clone(&recorded.correspondence),
-                        observed_source_facts: Arc::clone(
-                            recorded
-                                .observed_source_facts
-                                .as_ref()
-                                .expect("a current-output candidate has source facts"),
-                        ),
-                    });
-                    break;
-                }
-                let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {
-                    break;
-                };
-                coordinate = parent;
-            }
-        }
-        Ok(WorthQueryCurrentOutputFamilyResolution {
-            family_installed: true,
-            candidates,
-            source_lookups,
-        })
-    }
-
-    pub(super) fn resolve_binding<Binding: 'static>(
-        &self,
-        scope: &crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
-        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-        generation: u64,
-        source_partition_identity: [u8; 32],
-        maximum_source_lookups: usize,
-    ) -> Result<WorthQueryPriorOutputBindingResolution, ()> {
-        let source = SemanticSource {
-            runtime_authority: scope.runtime_authority(),
-            schema: scope.binding_identity().clone(),
-            scope: scope.scope(),
-            output_binding: TypeId::of::<Binding>(),
-        };
-        if !self.by_source.contains_key(&source) {
-            return (maximum_source_lookups > 0)
-                .then_some(WorthQueryPriorOutputBindingResolution {
-                    correspondence: None,
-                    source_lookups: 1,
-                })
-                .ok_or(());
-        }
-        let mut coordinate = ProductCoordinate {
-            occurrence,
-            generation,
-        };
-        let mut source_lookups = 0_usize;
-        loop {
-            let (recorded, work) = self.latest_output_in_partition_budgeted(
-                &source,
-                coordinate,
-                source_partition_identity,
-                maximum_source_lookups.saturating_sub(source_lookups),
-            )?;
-            source_lookups = source_lookups.checked_add(work).ok_or(())?;
-            if source_lookups > maximum_source_lookups {
-                return Err(());
-            }
-            if let Some(recorded) = recorded {
-                return Ok(WorthQueryPriorOutputBindingResolution {
-                    correspondence: Some(Arc::clone(&recorded.correspondence)),
-                    source_lookups,
-                });
-            }
-            let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {
-                return Ok(WorthQueryPriorOutputBindingResolution {
-                    correspondence: None,
-                    source_lookups,
-                });
-            };
-            coordinate = parent;
-        }
-    }
-}
-
-fn latest_output_matching(
-    history: &BTreeMap<u64, Vec<RecordedOutput>>,
-    maximum_generation: u64,
-    mut matches: impl FnMut(&RecordedOutput) -> bool,
-) -> Option<&RecordedOutput> {
-    history
-        .range(..=maximum_generation)
-        .rev()
-        .find_map(|(_, recorded)| recorded.iter().find(|recorded| matches(recorded)))
 }

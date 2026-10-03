@@ -97,6 +97,7 @@ fn scope_posture(kind: ScopeKind) -> WorthQueryRequiredOutputRecoveryPosture {
         | ScopeKind::AmbiguousEntity
         | ScopeKind::CorruptIdentityIndex
         | ScopeKind::ProjectionWorkBudgetExceeded
+        | ScopeKind::ProjectionPreparationMemoryExhausted
         | ScopeKind::SnapshotIdentityExhausted
         | ScopeKind::RetentionIdentityExhausted
         | ScopeKind::ForeignResolutionTruth => Terminal,

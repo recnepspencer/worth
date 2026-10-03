@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use worth_query_installation::facade::{
     ApplicationSchemaBindingIdentity, WorthQueryInstalledGraphObligation,
-    WorthQueryInstalledGraphObligationSet, WorthQueryInstalledGraphObligationSetIdentity,
-    WorthQueryInstalledGraphObligationSubjectKind,
+    WorthQueryInstalledGraphObligationEffectPosture, WorthQueryInstalledGraphObligationSet,
+    WorthQueryInstalledGraphObligationSetIdentity, WorthQueryInstalledGraphObligationSubjectKind,
     WorthQueryRetainedApplicationQueryGraphObligations,
 };
 
@@ -37,6 +37,24 @@ impl WorthQueryGraphWorkIntent {
     pub const fn application_operation_mutation() -> Self {
         Self {
             kind: WorthQueryGraphWorkIntentKind::ApplicationOperationMutation,
+        }
+    }
+
+    /// The one intent an installed operation's obligations admit: mutation when
+    /// any row is mutating or invariant, otherwise read. Every operation graph
+    /// work lane, cold-prepared or per call, derives its intent here.
+    pub fn application_operation(rows: &[WorthQueryInstalledGraphObligation]) -> Self {
+        let mutating = rows.iter().any(|row| {
+            matches!(
+                row.effect_posture(),
+                WorthQueryInstalledGraphObligationEffectPosture::Mutating
+                    | WorthQueryInstalledGraphObligationEffectPosture::Invariant
+            )
+        });
+        if mutating {
+            Self::application_operation_mutation()
+        } else {
+            Self::application_operation_read()
         }
     }
 

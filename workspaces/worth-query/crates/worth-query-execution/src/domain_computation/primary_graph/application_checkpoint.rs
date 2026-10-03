@@ -9,7 +9,9 @@ mod section_bytes;
 mod tests;
 #[cfg(test)]
 use capture::merge_accepted_outputs;
+#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use facts::decode as decode_producer_facts;
+pub(in crate::domain_computation::primary_graph) use facts::decode_for_wire_version as decode_producer_facts_for_wire_version;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use facts::encode as encode_producer_facts;
 pub use section_bytes::{
@@ -17,13 +19,15 @@ pub use section_bytes::{
 };
 
 const MAGIC: &[u8; 8] = b"WQAPCP01";
-const FORMAT_VERSION: u16 = 5;
+const FORMAT_VERSION: u16 = 7;
 const CHECKSUM_BYTES: usize = 32;
 const BODY_PREFIX_BYTES: usize = 2 + 8 + 8 + 8;
 const HEADER_BYTES: usize = MAGIC.len() + CHECKSUM_BYTES + BODY_PREFIX_BYTES;
 const LEGACY_MINIMUM_ACCEPTED_OUTPUT_BYTES: usize = 8 + 1 + 32 + 16 + 32 + 33 + 32 + 8;
 const MINIMUM_ACCEPTED_OUTPUT_BYTES: usize = LEGACY_MINIMUM_ACCEPTED_OUTPUT_BYTES + 17;
 const MINIMUM_V5_ACCEPTED_OUTPUT_BYTES: usize = MINIMUM_ACCEPTED_OUTPUT_BYTES + 8;
+const MINIMUM_V6_ACCEPTED_OUTPUT_BYTES: usize = MINIMUM_V5_ACCEPTED_OUTPUT_BYTES + 2;
+const MINIMUM_V7_ACCEPTED_OUTPUT_BYTES: usize = MINIMUM_V6_ACCEPTED_OUTPUT_BYTES + 1;
 const MAXIMUM_PRODUCER_IDENTITY_BYTES: usize = 4 * 1024;
 const MAXIMUM_ROLE_IDENTITY_BYTES: usize = 4 * 1024;
 const MAXIMUM_ENTITY_NAME_BYTES: usize = 4 * 1024;
@@ -81,7 +85,8 @@ impl WorthQueryApplicationCheckpoint {
             return Err("Query application checkpoint checksum differs".to_owned());
         }
         let version = u16::from_be_bytes([body[0], body[1]]);
-        if version != FORMAT_VERSION && version != 4 && version != 3 {
+        if version != FORMAT_VERSION && version != 6 && version != 5 && version != 4 && version != 3
+        {
             return Err(format!(
                 "Query application checkpoint format {version} is unsupported"
             ));
@@ -96,7 +101,9 @@ impl WorthQueryApplicationCheckpoint {
         let minimum = match version {
             3 => LEGACY_MINIMUM_ACCEPTED_OUTPUT_BYTES,
             4 => MINIMUM_ACCEPTED_OUTPUT_BYTES,
-            _ => MINIMUM_V5_ACCEPTED_OUTPUT_BYTES,
+            5 => MINIMUM_V5_ACCEPTED_OUTPUT_BYTES,
+            6 => MINIMUM_V6_ACCEPTED_OUTPUT_BYTES,
+            _ => MINIMUM_V7_ACCEPTED_OUTPUT_BYTES,
         };
         if accepted_count > cursor.remaining.len() / minimum {
             return Err("checkpoint accepted-output count exceeds its payload".to_owned());
@@ -111,6 +118,15 @@ impl WorthQueryApplicationCheckpoint {
             let producer = std::str::from_utf8(cursor.next_bytes(producer_len)?)
                 .map_err(|_| "checkpoint producer identity is not UTF-8".to_owned())?
                 .to_owned();
+            let posture = if version >= 7 {
+                match cursor.next_byte()? {
+                    0 => super::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::Performed,
+                    1 => super::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::StableReused,
+                    _ => return Err("checkpoint accepted output posture is invalid".to_owned()),
+                }
+            } else {
+                super::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::Performed
+            };
             let source = cursor
                 .next_bytes(32)?
                 .try_into()
@@ -174,25 +190,39 @@ impl WorthQueryApplicationCheckpoint {
             if roles.windows(2).any(|pair| pair[0].role >= pair[1].role) {
                 return Err("checkpoint output roles are duplicated or non-canonical".to_owned());
             }
-            let producer_facts = if version >= 5 {
+            let (producer_facts, producer_fact_wire_version) = if version >= 5 {
+                let fact_version = if version >= 6 { cursor.next_u16()? } else { 5 };
                 let fact_len = usize::try_from(cursor.next_u64()?)
                     .map_err(|_| "checkpoint producer fact length exceeds this host".to_owned())?;
                 if fact_len > facts::MAXIMUM_FACT_BYTES {
                     return Err("checkpoint producer fact payload length is invalid".to_owned());
                 }
                 if fact_len == 0 {
-                    None
+                    if version >= 6 && fact_version != 0 {
+                        return Err(
+                            "checkpoint empty producer facts carry a wire version".to_owned()
+                        );
+                    }
+                    (None, 0)
                 } else {
+                    if !matches!(fact_version, 5 | 6) {
+                        return Err(
+                            "checkpoint producer fact wire version is unsupported".to_owned()
+                        );
+                    }
                     let bytes = cursor.next_bytes(fact_len)?;
-                    facts::decode(bytes)?;
-                    Some(bytes.to_vec())
+                    match facts::decode_for_wire_version(bytes, fact_version)? {
+                        Some(_) => (Some(bytes.to_vec()), fact_version),
+                        None => (None, 0),
+                    }
                 }
             } else {
-                None
+                (None, 0)
             };
             accepted_outputs.push(
                 super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity {
                     producer,
+                    posture,
                     source,
                     scope,
                     source_partition,
@@ -201,6 +231,7 @@ impl WorthQueryApplicationCheckpoint {
                     resources,
                     roles,
                     producer_facts,
+                    producer_fact_wire_version,
                 },
             );
         }
@@ -253,6 +284,14 @@ impl<'a> CheckpointCursor<'a> {
             self.next_bytes(8)?
                 .try_into()
                 .expect("the checkpoint integer length is exact"),
+        ))
+    }
+
+    fn next_u16(&mut self) -> Result<u16, String> {
+        Ok(u16::from_be_bytes(
+            self.next_bytes(2)?
+                .try_into()
+                .expect("the checkpoint version length is exact"),
         ))
     }
 

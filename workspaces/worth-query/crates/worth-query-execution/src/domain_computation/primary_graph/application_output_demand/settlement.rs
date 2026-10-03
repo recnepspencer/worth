@@ -1,8 +1,17 @@
+mod current_accepted;
+mod readiness;
+mod receipt_custody;
+pub use readiness::WorthQueryOutputReadinessDeliveryEvidence;
+use receipt_custody::SettlementReceiptCustody;
 use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
+use super::{ReadyCompletion, WorthQueryAcceptedOutputAuthority};
 use crate::basis::WorthQueryProductObservationLease;
+use crate::domain_computation::primary_graph::output_lineage::{
+    invalidation::InvalidationEditAdmission, BoundCurrentAcceptedOutput,
+};
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryApplicationReadObservation,
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
@@ -15,12 +24,14 @@ use crate::domain_computation::primary_graph::{
 /// settlement is held. After compaction, the receipt identifies the same
 /// committed lineage so the owner can reacquire its still-current occurrence.
 pub struct WorthQueryOutputDemandSettlement {
+    posture: WorthQueryOutputSettlementPosture,
     runtime_authority: u64,
     schema_binding: ApplicationSchemaBindingIdentity,
     producer_identity: String,
     output_family_identity: String,
-    pub(in crate::domain_computation::primary_graph) receipt:
-        Option<WorthQueryApplicationCommitReceipt>,
+    receipt: Option<SettlementReceiptCustody>,
+    pub(in crate::domain_computation::primary_graph) stable:
+        Option<super::super::output_lineage::PublishedStableLineage>,
     pub(in crate::domain_computation::primary_graph) output_correspondence:
         Arc<crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence>,
     pub(in crate::domain_computation::primary_graph) restored_source:
@@ -28,6 +39,16 @@ pub struct WorthQueryOutputDemandSettlement {
     readiness_delivery: Option<WorthQueryOutputReadinessDeliveryEvidence>,
     producer_contacts_in_this_demand: usize,
     observation: Arc<WorthQueryApplicationReadObservation>,
+}
+
+/// Whether settlement performed an output or reused stable lineage, including
+/// the corresponding posture recovered from an existing owner publication.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryOutputSettlementPosture {
+    Performed,
+    StableReused,
+    RecoveredPerformed,
+    RecoveredStableReused,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryRestoredOutputSource {
@@ -76,11 +97,13 @@ impl WorthQueryOutputDemandSettlement {
                 )
             })?;
         Ok(Arc::new(Self {
+            posture: WorthQueryOutputSettlementPosture::Performed,
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
             producer_identity: producer_identity.to_owned(),
             output_family_identity: output_family_identity.to_owned(),
-            receipt: Some(receipt.clone()),
+            receipt: Some(SettlementReceiptCustody::Owned(receipt.clone())),
+            stable: None,
             output_correspondence: receipt.retain_output_correspondence(),
             restored_source: None,
             readiness_delivery: Some(readiness_delivery.clone()),
@@ -90,7 +113,21 @@ impl WorthQueryOutputDemandSettlement {
     }
 
     pub fn application_commit_receipt(&self) -> Option<&WorthQueryApplicationCommitReceipt> {
-        self.receipt.as_ref()
+        self.receipt
+            .as_ref()
+            .map(SettlementReceiptCustody::as_receipt)
+    }
+
+    pub const fn is_stably_reused(&self) -> bool {
+        matches!(
+            self.posture,
+            WorthQueryOutputSettlementPosture::StableReused
+                | WorthQueryOutputSettlementPosture::RecoveredStableReused
+        )
+    }
+
+    pub const fn posture(&self) -> WorthQueryOutputSettlementPosture {
+        self.posture
     }
 
     pub fn output_correspondence(
@@ -151,11 +188,20 @@ impl WorthQueryOutputDemandSettlement {
                 )
             })?;
         Ok(Arc::new(Self {
+            posture: match restored.checkpoint.posture {
+                super::WorthQueryAcceptedOutputCheckpointPosture::Performed => {
+                    WorthQueryOutputSettlementPosture::RecoveredPerformed
+                }
+                super::WorthQueryAcceptedOutputCheckpointPosture::StableReused => {
+                    WorthQueryOutputSettlementPosture::RecoveredStableReused
+                }
+            },
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
             producer_identity: restored.checkpoint.producer.clone(),
             output_family_identity: output_family_identity.to_owned(),
             receipt: None,
+            stable: None,
             output_correspondence: Arc::clone(&restored.correspondence),
             restored_source: Some(WorthQueryRestoredOutputSource {
                 scope: restored.source_scope,
@@ -170,102 +216,36 @@ impl WorthQueryOutputDemandSettlement {
             ),
         }))
     }
-}
 
-/// Query-owned evidence that a fresh output patch reached its declared
-/// readiness conditional and produced a Signal successor.
-#[derive(Clone)]
-pub struct WorthQueryOutputReadinessDeliveryEvidence {
-    // `from_execution` is reached only after the installed producer boundary
-    // returned the receipt whose readiness is evaluated.
-    producer_contacts: usize,
-    // A Bridge delivery contact exists only when that receipt carried a fresh
-    // performed change into readiness evaluation.
-    delivery_contacts: usize,
-    conditional_successor: bool,
-    truth_targets_admitted: usize,
-    signal_seeds_emitted: usize,
-    slots_touched: usize,
-    signal_decision: crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision,
-    semantic_observation_reads: usize,
-}
-
-impl WorthQueryOutputReadinessDeliveryEvidence {
-    pub(in crate::domain_computation::primary_graph) const fn from_restoration() -> Self {
-        Self {
-            producer_contacts: 0,
-            delivery_contacts: 0,
-            conditional_successor: false,
-            truth_targets_admitted: 0,
-            signal_seeds_emitted: 0,
-            slots_touched: 0,
-            signal_decision: crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision::DependencyUnchanged,
-            semantic_observation_reads: 0,
-        }
-    }
-
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) const fn for_test() -> Self {
-        Self {
-            producer_contacts: 1,
-            delivery_contacts: 0,
-            conditional_successor: false,
-            truth_targets_admitted: 0,
-            signal_seeds_emitted: 0,
-            slots_touched: 0,
-            signal_decision: crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision::DependencyUnchanged,
-            semantic_observation_reads: 1,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn from_execution(
-        delivery: Option<&worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt>,
-        execution: &worth_runtime_bridge::facade::BridgeConditionalDecisionEvidence,
-    ) -> Self {
-        Self {
-            producer_contacts: 1,
-            delivery_contacts: usize::from(delivery.is_some()),
-            conditional_successor: delivery.is_some_and(|receipt| receipt.has_conditional_successor()),
-            truth_targets_admitted: delivery.map_or(0, |receipt| receipt.truth_targets_admitted()),
-            signal_seeds_emitted: delivery.map_or(0, |receipt| receipt.signal_seeds_emitted()),
-            slots_touched: delivery.map_or(0, |receipt| receipt.slots_touched()),
-            signal_decision: crate::domain_computation::primary_graph::conditional_operation::classify_bridge_signal(execution),
-            semantic_observation_reads: execution.semantic_observation_reads(),
-        }
-    }
-
-    pub const fn producer_contact_count(&self) -> usize {
-        self.producer_contacts
-    }
-
-    pub const fn delivery_contact_count(&self) -> usize {
-        self.delivery_contacts
-    }
-
-    pub const fn has_conditional_successor(&self) -> bool {
-        self.conditional_successor
-    }
-
-    pub const fn truth_targets_admitted(&self) -> usize {
-        self.truth_targets_admitted
-    }
-
-    pub const fn signal_seeds_emitted(&self) -> usize {
-        self.signal_seeds_emitted
-    }
-
-    pub const fn slots_touched(&self) -> usize {
-        self.slots_touched
-    }
-
-    pub const fn signal_decision(
-        &self,
-    ) -> crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision {
-        self.signal_decision
-    }
-
-    pub const fn semantic_observation_reads(&self) -> usize {
-        self.semantic_observation_reads
+    pub(in crate::domain_computation::primary_graph) fn from_stable<Schema>(
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        stable: &super::super::output_lineage::PublishedStableLineage,
+        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+        producer_identity: &str,
+        output_family_identity: &str,
+    ) -> Arc<Self>
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema,
+    {
+        Arc::new(Self {
+            posture: WorthQueryOutputSettlementPosture::StableReused,
+            runtime_authority: runtime.runtime.authority_identity().as_u64(),
+            schema_binding: runtime.installed_schema.binding_identity(),
+            producer_identity: producer_identity.to_owned(),
+            output_family_identity: output_family_identity.to_owned(),
+            receipt: None,
+            stable: Some(stable.clone()),
+            output_correspondence: Arc::clone(stable.output_correspondence()),
+            restored_source: None,
+            readiness_delivery: Some(
+                WorthQueryOutputReadinessDeliveryEvidence::without_execution(),
+            ),
+            producer_contacts_in_this_demand: 0,
+            observation: WorthQueryApplicationReadObservation::from_product(
+                runtime,
+                selected.product().read_lease(),
+            ),
+        })
     }
 }
 
@@ -347,6 +327,12 @@ where
                 "output settlement belongs to another application runtime",
             ));
         }
+        if settlement.posture == WorthQueryOutputSettlementPosture::RecoveredStableReused {
+            return Err(WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                "restored stable output requires native re-evidence",
+            ));
+        }
         let selected = match settlement.application_commit_receipt() {
             Some(receipt) => {
                 self.on_branch(receipt.product_branch())
@@ -374,13 +360,22 @@ where
                 receipt,
                 usize::MAX,
             ),
-            None => lineage.source_facts_for_restored_output(
-                self.runtime.authority_identity().as_u64(),
-                &self.installed_schema.binding_identity(),
-                selected.product().observation(),
-                settlement,
-                usize::MAX,
-            ),
+            None => match settlement.stable.as_ref() {
+                Some(stable) => lineage.source_facts_for_stable_output(
+                    self.runtime.authority_identity().as_u64(),
+                    &self.installed_schema.binding_identity(),
+                    selected.product().observation(),
+                    stable,
+                    usize::MAX,
+                ),
+                None => lineage.source_facts_for_restored_output(
+                    self.runtime.authority_identity().as_u64(),
+                    &self.installed_schema.binding_identity(),
+                    selected.product().observation(),
+                    settlement,
+                    usize::MAX,
+                ),
+            },
         };
         facts
             .map_err(|()| {
@@ -389,7 +384,7 @@ where
                     "settled output currentness exceeded its lineage work budget",
                 )
             })?
-            .map(|(facts, _)| facts)
+            .map(|read| read.facts)
             .ok_or_else(|| {
                 WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::Superseded,

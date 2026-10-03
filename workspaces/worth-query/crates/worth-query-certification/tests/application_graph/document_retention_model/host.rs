@@ -22,6 +22,10 @@ use worth_query_host::facade::declaration::application_schema::{
 use worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema;
 use worth_query_host::facade::{declaration, primary_graph, runtime};
 
+#[path = "host/world_resources.rs"]
+mod world_resources;
+use world_resources::world_resources;
+
 use super::assessment_output::{
     RetentionAssessmentBinding, RetentionAssessmentHandler, RetentionAssessmentProducer,
     RetentionAssessmentProvider,
@@ -353,41 +357,4 @@ fn history_limits(
             .expect("valid query limits"),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     )
-}
-
-fn world_resources(
-    commits: u64,
-    metadata_bytes: u64,
-    pins: u64,
-) -> runtime::WorthQueryProductWorldResources {
-    runtime::WorthQueryProductWorldResources::install(
-        runtime::RuntimeWorldBudgetInstallation {
-            branches: runtime::RuntimeWorldBranchBudgetInstallation {
-                live_product_branches: 32,
-            },
-            history: runtime::RuntimeWorldHistoryBudgetInstallation {
-                retained_composite_commits: commits,
-                history_metadata_bytes: metadata_bytes,
-            },
-            observations: runtime::RuntimeWorldObservationBudgetInstallation {
-                active_observations: 128,
-            },
-            publication: runtime::RuntimeWorldPublicationBudgetInstallation {
-                active_publication_attempts: 32,
-            },
-            recovery: runtime::RuntimeWorldRecoveryBudgetInstallation {
-                retained_product_unpublished_records: 32,
-                retained_partial_metadata_bytes: 4 * 1024 * 1024,
-            },
-            retention: runtime::RuntimeWorldRetentionBudgetInstallation {
-                unique_exact_component_pins: pins,
-                in_flight_pin_acquisition_reservations: 64,
-            },
-            custody: runtime::RuntimeWorldCustodyBudgetInstallation {
-                owner_created_component_custody_records: 64,
-            },
-        },
-        runtime::WorthQueryProductWorldClock::start(),
-    )
-    .expect("the document-retention World resources are valid")
 }

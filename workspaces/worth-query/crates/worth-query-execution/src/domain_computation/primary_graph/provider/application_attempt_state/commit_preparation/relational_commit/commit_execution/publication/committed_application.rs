@@ -14,6 +14,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCo
     commit_evidence: super::super::super::WorthQueryPrimaryGraphCommitEvidence,
     committed_product_publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
     product_publication: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationReceipt,
+    exact_output_settlement: Option<std::sync::Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>>,
 }
 
 impl WorthQueryPrimaryGraphCommittedApplication {
@@ -39,7 +40,27 @@ impl WorthQueryPrimaryGraphCommittedApplication {
             commit_evidence: evidence,
             committed_product_publication,
             product_publication,
+            exact_output_settlement: None,
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn retain_exact_output_settlement(
+        &mut self,
+        identity: std::sync::Arc<
+            crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
+        >,
+    ) {
+        assert!(self.exact_output_settlement.replace(identity).is_none());
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn exact_output_settlement(
+        &self,
+    ) -> Option<
+        &std::sync::Arc<
+            crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
+        >,
+    > {
+        self.exact_output_settlement.as_ref()
     }
 
     pub(in crate::domain_computation::primary_graph) fn product_publication(

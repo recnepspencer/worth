@@ -54,4 +54,6 @@ pub use runtime::WorthQueryProductRuntime;
 #[doc(hidden)]
 pub use shared_root::WorthQueryProductSharedRoot;
 pub use source_installation::WorthQueryProductRelationalInstallation;
-pub use source_owner::WorthQueryRelationalSourceOwner;
+pub use source_owner::{
+    WorthQueryRelationalSourceInstallationDenial, WorthQueryRelationalSourceOwner,
+};

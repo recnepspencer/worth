@@ -66,7 +66,7 @@ pub(super) fn write_field_versions_for_delta(
     }
 }
 
-pub(super) fn changed_fields(
+pub(crate) fn changed_fields(
     binding: &EvaluatedAspectBinding,
     structural: crate::publication::patch::data::RecordStructuralChange,
 ) -> Vec<(FieldKey, RelationalFieldPresence)> {

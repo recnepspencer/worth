@@ -87,6 +87,7 @@ mod tests {
             .map(|number| WorthQueryReadmittedAcceptedOutput {
                 checkpoint: WorthQueryAcceptedOutputCheckpointIdentity {
                     producer: "producer".to_owned(),
+                    posture: super::super::WorthQueryAcceptedOutputCheckpointPosture::Performed,
                     source: [0x31; 32],
                     scope,
                     source_partition: partition(number),
@@ -95,6 +96,7 @@ mod tests {
                     resources: None,
                     roles: Vec::new(),
                     producer_facts: None,
+                    producer_fact_wire_version: 0,
                 },
                 correspondence: Arc::clone(&correspondence),
             })

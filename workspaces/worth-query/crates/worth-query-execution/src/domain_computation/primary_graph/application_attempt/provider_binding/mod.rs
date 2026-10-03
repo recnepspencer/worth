@@ -23,8 +23,10 @@ use super::{
 };
 
 pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAttempt {
+    required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
     installed_read_scopes: Vec<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
     facts: Vec<WorthQueryApplicationObservedFact>,
+    consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
     effects: effect_accumulator::WorthQueryRegisteredProviderEffects,
     preimage_demand: Option<InstalledPreImageDemand>,
     conditional_definition:
@@ -38,6 +40,14 @@ pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAt
 }
 
 impl WorthQueryPreparedApplicationProviderAttempt {
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn with_required_output_demand(
+        mut self,
+        context: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
+    ) -> Self {
+        self.required_output_demand = context;
+        self
+    }
+
     pub(in crate::domain_computation) fn register<'run, Schema, Operation, Input, Scope>(
         self,
         staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
@@ -79,6 +89,9 @@ pub(super) fn prepare_provider_attempt(
     application_effect_count: usize,
     installed_read_scopes: Vec<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
     facts: Vec<WorthQueryApplicationObservedFact>,
+    consumed_outputs: Vec<
+        crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence,
+    >,
     effects: Vec<WorthQueryApplicationRealizedEffect>,
     expected_emission_retained_bytes: u64,
     emission_retained_bytes_ceiling: u64,
@@ -109,8 +122,10 @@ pub(super) fn prepare_provider_attempt(
         output_correspondence,
     )?;
     Ok(WorthQueryPreparedApplicationProviderAttempt {
+        required_output_demand: None,
         installed_read_scopes,
         facts,
+        consumed_outputs,
         effects: completed,
         preimage_demand,
         conditional_definition,

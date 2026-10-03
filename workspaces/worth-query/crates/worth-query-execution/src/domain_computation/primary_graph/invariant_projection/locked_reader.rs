@@ -45,6 +45,7 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
         Arc<std::sync::Mutex<super::super::aggregate_projection::WorthQueryAggregateProjections>>,
     pub(super) output_lineage:
         Arc<std::sync::Mutex<super::super::output_lineage::WorthQueryApplicationOutputLineage>>,
+    pub(super) invalidation_owner: Arc<super::super::SourceInvalidationOwner>,
     pub(super) selected_product_occurrence:
         Option<worth_runtime_world::facade::ProductBranchIncarnation>,
     pub(super) selected_product_generation: Option<u64>,
@@ -58,8 +59,10 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
         ),
         Vec<Arc<super::super::WorthQueryApplicationOutputCorrespondence>>,
     >,
-    pub(super) dependent_source_facts:
-        BTreeMap<String, super::super::application_attempt::WorthQueryApplicationObservedFact>,
+    pub(super) consumed_outputs: BTreeMap<
+        Arc<super::super::output_lineage::RecordedSettlementIdentity>,
+        super::ConsumedOutputEvidence,
+    >,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -148,12 +151,13 @@ where
                     realized_scope: WorthQueryRealizedProjectionScope::default(),
                     aggregate_projections: Arc::clone(&self.graph.aggregate_projections),
                     output_lineage: Arc::clone(&self.graph.output_lineage),
+                    invalidation_owner: Arc::clone(&self.graph.source_owner.invalidation_owner),
                     selected_product_occurrence: None,
                     selected_product_generation: None,
                     selected_source_partition_identity: None,
                     prior_output_bindings: HashMap::new(),
                     current_output_families: HashMap::new(),
-                    dependent_source_facts: BTreeMap::new(),
+                    consumed_outputs: BTreeMap::new(),
                     _schema: PhantomData,
                 };
                 let output = projection(&mut reader);
@@ -161,12 +165,12 @@ where
                     output,
                     reader.work,
                     reader.realized_scope,
-                    reader.dependent_source_facts,
+                    reader.consumed_outputs,
                     reader.work_budget.exceeded(),
                 )
             }))
         });
-        let (output, work, realized_scope, dependent_source_facts, exceeded) = match projected {
+        let (output, work, realized_scope, consumed_outputs, exceeded) = match projected {
             Ok(completed) => completed,
             Err(payload) => {
                 self.graph.with_runtime_mut(|runtime| {
@@ -192,7 +196,7 @@ where
                 binding_identity: self.binding_identity.clone(),
                 authority_identity: self.authority_identity,
                 realized_scope,
-                dependent_source_facts,
+                consumed_outputs,
                 _schema: PhantomData,
             },
             work,

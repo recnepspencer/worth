@@ -17,6 +17,8 @@ use super::RuntimeWorldOwnerConstructionContract;
 mod admission_race;
 #[path = "owner_tests/close_report.rs"]
 mod close_report;
+#[path = "owner_tests/currentness_scope.rs"]
+mod currentness_scope;
 #[path = "owner_tests/product_cas_loss.rs"]
 mod product_cas_loss;
 #[path = "owner_tests/publication.rs"]

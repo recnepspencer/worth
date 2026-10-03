@@ -58,7 +58,9 @@ pub enum WorthQueryConditionalExecutionCause {
     /// The operation produced no effect for this reason.
     NoEffect(crate::domain_computation::primary_graph::WorthQueryApplicationNoEffectCause),
     /// The installed limit on concurrently active snapshots was reached.
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     /// No capacity remains to retain a basis.
     RetentionCapacityExhausted,
     /// The runtime ran out of basis-retention identities.
@@ -67,11 +69,21 @@ pub enum WorthQueryConditionalExecutionCause {
     SnapshotIdentityExhausted,
     /// The commit position was contended; the commit was deferred.
     PatchPositionReservationContended,
+    RelationalDeferred(worth_relational::facade::mvcc::RelationalPublicationDeferred),
+    /// A source mark changed during same-image verification; retry with a new selected root.
+    SourceCurrentnessRaced(worth_relational::facade::mvcc::CompanionCellEditStop),
+    RequiredPrerequisitePending(
+        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind,
+    ),
     /// The provider's candidate limit was reached; the commit was deferred.
-    CandidateCapacityExhausted { maximum_candidates: usize },
+    CandidateCapacityExhausted {
+        maximum_candidates: usize,
+    },
     /// The provider's published-snapshot limit was reached; the commit was
     /// deferred.
-    PublishedSnapshotCapacityExhausted { maximum_handles: usize },
+    PublishedSnapshotCapacityExhausted {
+        maximum_handles: usize,
+    },
     /// The attempt was cancelled.
     Cancelled,
     /// The attempt timed out.

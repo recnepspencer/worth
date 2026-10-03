@@ -95,8 +95,21 @@ impl WorthQueryMemoryWorkspace {
         for custom_invariant in custom_invariants {
             runtime_builder = runtime_builder.custom_invariant(custom_invariant);
         }
-        let runtime = WorthQueryRelationalSourceOwner::new(runtime_builder.build(), "model")
-            .map_err(|error| WorthQueryWorkspaceError::new(format!("{error:?}")))?;
+        let invalidation_resources = worth_query_execution::facade::runtime::WorthQueryInvalidationResources::install(
+            worth_query_execution::facade::runtime::WorthQueryInvalidationResourceInstallation::bounded(
+                1_000_000,
+                64 * 1_024 * 1_024,
+                128 * 1_024 * 1_024,
+                128,
+            ),
+        )
+        .map_err(|error| WorthQueryWorkspaceError::new(format!("{error:?}")))?;
+        let runtime = WorthQueryRelationalSourceOwner::new(
+            runtime_builder.build(),
+            "model",
+            invalidation_resources,
+        )
+        .map_err(|error| WorthQueryWorkspaceError::new(format!("{error:?}")))?;
         Ok(Self {
             runtime,
             kind_id,

@@ -277,6 +277,14 @@ explained). Rust names are given where a type embodies the term.
   constructor is private, which `authority_marker!` generates. Surrendering a
   marker value mints a *witness*.
 
+**Marking**
+: How a commit invalidates derived outputs. The commit's *touched graph* is
+  intersected with the *reverse index*; each matched settlement is marked
+  dirty, and every settlement that consumed its output is marked
+  pending-upstream. Marks are per branch lineage, and an unmarked settlement on
+  a continuous basis is current without re-running its source query.
+  **See** [How WORTH Works §10.5](how-it-works.md#105-marking-and-currentness).
+
 ## O
 
 **Observation**
@@ -359,9 +367,21 @@ explained). Rust names are given where a type embodies the term.
   tokens, discovery answers, diagnostics, receipt clones. Reporting never
   grants anything.
 
+**Required set**
+: The outputs still owed: those with an open demand, and those a performed
+  operation requires (`start_required_outputs`). One `advance` progresses the
+  dirty and pending-upstream members of the set, in dependency order, within
+  its budget. Closing a demand removes its outputs.
+
 **Residency (retention)**
 : Keeping a basis available in memory under a lease. A resident basis is not
   necessarily current.
+
+**Reverse index**
+: Query's index from consumed facts (field revisions, index keys, selection
+  and absence facts) to the settlements that read them. It is filled when a
+  settlement is recorded and consulted by *marking*, so a commit's cost follows
+  what it touched, never the number of settlements.
 
 ## S
 
@@ -382,6 +402,14 @@ explained). Rust names are given where a type embodies the term.
   process restart arrives when Store is wired in
   ([How WORTH Works §15.1](how-it-works.md#151-store-durable-physical-survival)).
 
+**Shard**
+: A placement unit for storage or execution. Its placement does not determine
+  which facts changed or which consumers require recomputation.
+
+**Scope path**
+: A precision granule within a touched record. The record supplies the cause;
+  its scope path narrows the affected region.
+
 **Signal**
 : The runtime for deterministic, incremental derived computation. Signal
   decides whether an output changed meaningfully. It is never truth.
@@ -397,18 +425,34 @@ explained). Rust names are given where a type embodies the term.
 
 ## T
 
-**Touched records**
-: The records a commit actually changed, sealed by the commit itself
-  (`WorthQueryTouchedRecordIdentity`, read with
-  `receipt.mutation_work().touched_records()`). They are never supplied by a
-  caller. Undo depends on them.
+**Touched graph**
+: The exact changes sealed by a commit: changed records, aspect field paths,
+  adjacency changes, observable revision bumps, and old/new index membership.
+  It supplies both performed evidence and the cause of invalidation. Declared
+  dependencies determine which consumers intersect those changes. A producer
+  that declares coarser precision carries and reports that widening.
   **See** [How WORTH Works §10](how-it-works.md#10-the-touched-graph).
+
+**Touched records**
+: The record layer of the *touched graph* exposed on a receipt
+  (`WorthQueryTouchedRecordIdentity`, read with
+  `receipt.mutation_work().touched_records()`). Sealed by the commit and never
+  supplied by a caller. Undo depends on them.
+  **See** [How WORTH Works §10.3](how-it-works.md#103-layer-3-commit-sealed-records).
 
 **Truth**
 : Committed, owner-held facts: in WORTH, the entities, relations, and
   aspects Relational commits. Truth
   changes only through a governed commit.
   **Not** derived state, cached projections, or reports.
+
+## V
+
+**Visited (Signal observation)**
+: Nodes considered during committed transaction processing. The `Visited`
+  observation tier includes consideration that produces no recomputation or
+  value change. `Recomputed` observes evaluation; `MeaningfulChange` observes
+  the committed change selected by the node's comparison contract.
 
 ## W
 

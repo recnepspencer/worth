@@ -137,6 +137,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
     pub fn retain_graph_obligations_for_admission(&self) -> WorthQueryInstalledGraphObligationSet {
         self.compiled.retain_graph_obligations()
     }
+
     /// Admit the actual shared-Arc visit before retaining these installed
     /// obligations for a Graph Work plan. No new row backing is allocated.
     pub fn retain_graph_obligations_for_admission_admitted<Stop>(
@@ -156,6 +157,12 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
     }
     pub(crate) fn authority_matches(&self, package: &WorthQueryInstalledPackageAuthority) -> bool {
         self.compiled.authority_matches(package)
+    }
+
+    /// Before-work bound for the installed identity and seal check performed
+    /// by `InstalledApplicationSchema::validate_installed_query`.
+    pub fn validation_work_bound(&self) -> Option<u64> {
+        super::authority_seal::installed_query_validation_work_bound()
     }
     #[cfg(test)]
     pub(crate) fn shares_compiled_contract_with(&self, other: &Self) -> bool {

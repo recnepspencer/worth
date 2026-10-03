@@ -99,6 +99,22 @@ impl<'facts> WorthQueryProviderEffectAccumulator<'facts> {
 }
 
 impl WorthQueryRegisteredProviderEffects {
+    pub(in crate::domain_computation::primary_graph) fn native_witness_roles(
+        &self,
+    ) -> impl ExactSizeIterator<
+        Item = (
+            &str,
+            super::super::effect_program::WorthQueryApplicationOutputPosture,
+            &str,
+        ),
+    > + Clone {
+        self.output_correspondence.native_witness_roles()
+    }
+
+    pub(super) const fn output_binding_type(&self) -> Option<std::any::TypeId> {
+        self.output_correspondence.binding_type()
+    }
+
     pub(super) fn expected_steps(&self) -> &[WorthQueryProvisionalEffectStep] {
         self.expected_steps.steps()
     }

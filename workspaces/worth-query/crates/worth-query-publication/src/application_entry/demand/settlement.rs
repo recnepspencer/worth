@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+pub use worth_query_execution::facade::primary_graph::WorthQueryOutputSettlementPosture;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryObservedSource, WorthQueryOutputDemandSettlement,
 };
@@ -34,6 +35,10 @@ impl<Query> WorthQueryApplicationOutputDemandSettlement<Query> {
 
     pub fn application_commit_receipt(&self) -> Option<&WorthQueryApplicationCommitReceipt> {
         self.retained.application_commit_receipt()
+    }
+
+    pub fn posture(&self) -> WorthQueryOutputSettlementPosture {
+        self.retained.posture()
     }
 
     pub fn output_correspondence(

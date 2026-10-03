@@ -18,6 +18,7 @@ use crate::transactions::data::{
 
 pub(super) struct ArtifactAssemblyInput<'a> {
     pub(super) working_state: &'a mut crate::storage::overlay::WorkingState,
+    pub(super) selected_branch_state: &'a crate::branch::SelectedRelationalBranchState,
     pub(super) effect: MutationEffect,
     pub(super) commit_reference: &'a RelationalCommitReceipt,
     pub(super) branch_id: &'a BranchId,
@@ -61,6 +62,7 @@ pub(super) fn assemble_authoritative_publication_phase(
         runtime,
         PublicationPreparationInput {
             working_state: input.working_state,
+            selected_branch_state: input.selected_branch_state,
             patch,
             commit_reference: input.commit_reference,
             branch_id: input.branch_id,
@@ -76,6 +78,7 @@ pub(super) fn assemble_authoritative_publication_phase(
             additional_diagnostics_entries: input.additional_diagnostics_entries,
             deferred_diagnostic_artifacts: input.deferred_diagnostic_artifacts,
         },
+        lease,
     )
     .map_err(|error| attach_rejection(commit_log, CommitPhase::ArtifactAssembly, error))?;
     record_publication_phase_artifacts(commit_log, &publication);

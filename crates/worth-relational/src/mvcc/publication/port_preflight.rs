@@ -12,9 +12,11 @@ impl PreparedCanonicalBranchMovement {
         parts: PreparedRelationalPublicationParts,
         retention_binding: crate::history::retention::RelationalBranchRetentionBinding,
         branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
+        companion_epoch: &super::super::CompanionRegistrationEpoch<'_>,
     ) -> Result<PreparedBranchPublicationPreflight, RelationalPublicationOutcome> {
         let PreparedRelationalPublicationParts {
             runtime_instance_id,
+            candidate_id,
             publication_binding,
             expected,
             expected_root,
@@ -75,6 +77,65 @@ impl PreparedCanonicalBranchMovement {
                     ));
                 }
             };
+        let (companion, companion_binding) = match companion_epoch.active() {
+            Ok(None) => (None, None),
+            Err(super::super::PublicationCompanionRegistrationStop::RebindRequired) => {
+                return Err(RelationalPublicationOutcome::deferred(
+                    RelationalPublicationDeferred::CompanionRebindRequired,
+                ));
+            }
+            Err(_) => {
+                return Err(RelationalPublicationOutcome::deferred(
+                    RelationalPublicationDeferred::CompanionRegistrationPending,
+                ))
+            }
+            Ok(Some((generation, participant, budget))) => {
+                let envelope = movement.root.canonical_envelope().ok_or_else(|| {
+                    RelationalPublicationOutcome::failed(RelationalPublicationFailure::new(
+                        RelationalPublicationFailureKind::PreparedRootMismatch,
+                        "prepared companion root has no canonical envelope",
+                    ))
+                })?;
+                let expected_position = match expected_root.commit_id() {
+                    Some(commit_id) => Some(
+                        movement
+                            .canonical_publication_route
+                            .selected_position(commit_id)
+                            .ok_or_else(|| {
+                                map_companion_stop(
+                                    super::super::CompanionPreflightStop::SelectedPositionUnavailable {
+                                        commit_id,
+                                    },
+                                )
+                            })?,
+                    ),
+                    None => None,
+                };
+                let binding = super::super::CandidateCompanionBinding {
+                    runtime_instance_id,
+                    registration_generation: generation,
+                    candidate_id,
+                    branch_id: expected.branch_id().clone(),
+                    expected_root_id: expected_root.id(),
+                    expected_commit_id: expected_root.commit_id(),
+                    expected_position,
+                    next_root_id: movement.root.id(),
+                    next_commit_id: envelope.commit.commit_id,
+                };
+                let mut context = super::super::PublicationCompanionPreflight::new(
+                    binding.clone(),
+                    envelope,
+                    &control,
+                    budget,
+                    Arc::clone(publication_binding.companion_registry()),
+                );
+                let effect = participant
+                    .prepare(&mut context)
+                    .map_err(map_companion_stop)?;
+                effect.matches(&binding).map_err(map_companion_stop)?;
+                (Some(effect), Some(binding))
+            }
+        };
         let next_basis = crate::branch::issue_admitted_relational_branch_basis_with_retention(
             next_descriptor,
             movement.next_cell.identity().clone(),
@@ -181,6 +242,8 @@ impl PreparedCanonicalBranchMovement {
             }
         };
         Ok(PreparedBranchPublicationPreflight {
+            companion,
+            companion_binding,
             movement,
             expected,
             publication_cell,
@@ -194,5 +257,16 @@ impl PreparedCanonicalBranchMovement {
             maximum_lifetime_millis,
             branch_head_versions,
         })
+    }
+}
+
+fn map_companion_stop(stop: super::super::CompanionPreflightStop) -> RelationalPublicationOutcome {
+    match stop {
+        super::super::CompanionPreflightStop::Interrupted(event) => {
+            RelationalPublicationOutcome::interrupted(event)
+        }
+        other => RelationalPublicationOutcome::deferred(
+            RelationalPublicationDeferred::CompanionPreflight(other),
+        ),
     }
 }

@@ -76,6 +76,8 @@ worth_query_application_contribution! {
     pub contribution TopologyContribution for Schema: TopologySchemaBinding {
         identity: "worth.query.certification.topology.v1",
         members: |schema| {
+            #[cfg(test)]
+            let schema = checkpoint_recovery::required_chain::declare(schema);
             let schema = alternate_output::declare_alternate_output(schema);
             let schema = vertex_replacement::declare_vertex_replacement(schema);
             let schema = prior_cycle_adjustment::declare_prior_cycle_adjustment(schema);
@@ -134,7 +136,7 @@ worth_query_application_contribution! {
                 .application_mutation_binding::<PlanarMutationBinding<Schema>>()
                 .operation(EditPlanar::reference::<Schema>().definition().no_external_effect().no_aftermath().finish())
                 .operation_decision_fact_budget(EditPlanar::reference::<Schema>(), 64)
-                .operation_projection_work_budget(EditPlanar::reference::<Schema>(), 256)
+                .operation_projection_work_budget(EditPlanar::reference::<Schema>(), 8_192)
                 .operation_read_entity(EditPlanar::reference::<Schema>(), Body::reference::<Schema>())
                 .operation_read_field(EditPlanar::reference::<Schema>(), BodyKey::reference::<Schema>())
                 .operation_read_field(EditPlanar::reference::<Schema>(), PositionX::reference::<Schema>())

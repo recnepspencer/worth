@@ -795,10 +795,22 @@ descriptive history.
   batches were missed. Updates are never dropped silently. Close with
   `close()`.
 - **Output demand.** `request.demand(d).controls(c).start()` opens a demand.
-  `advance(&fresh_request)` returns `Pending` or `Settled`.
+  `advance(&fresh_request)` returns `Pending` or `Settled`. One call
+  progresses every dirty and pending-upstream output in the *required set*, in
+  dependency-ready waves, until it settles or its budget runs out. When the
+  budget runs out first, the typed `Pending` outcome names the remaining work.
+  The application neither re-demands its output tree nor polls, and no
+  background sweeper runs: the authenticated request stays the principal.
 - **Required outputs.** After `execute_performed`, `start_required_outputs`
   produces the outputs the operation requires, and `recover_required_outputs`
-  resumes that work.
+  resumes that work. Those outputs join the required set until their demand
+  closes.
+- **Reuse.** An output whose settlement is unmarked on a continuous basis is
+  reused without contacting its producer or re-running its source query. A
+  dirty output re-verifies only its marked facts; when the value its producer
+  would receive is unchanged, the producer is not called (input cutoff), and
+  when a recomputed value encodes identically, its consumers stay current
+  (output cutoff). [§10.5](#105-marking-and-currentness) gives the rules.
 
 ### 9.9 Resources and budgets
 
@@ -829,6 +841,17 @@ explicitly.
 ---
 
 ## 10. The touched graph
+
+The touched graph is the exact set of changes a commit made. Relational seals
+changed records, aspect field paths, adjacency changes, observable revision
+bumps, and old/new index keys into its published patch envelope. Every writer
+contributes that commit evidence. It also supplies the cause of invalidation:
+the runtime intersects it with consumed facts to determine affected consumers.
+A producer that declares coarser precision carries and reports the widening.
+
+Scope paths narrow precision within touched records. Shards determine
+placement. Signal's `Visited` observation tier reports consideration during
+transaction processing; the commit's touched graph reports actual changes.
 
 "What did this operation change?" has three answers in WORTH. They are
 different questions, and the platform keeps them apart.
@@ -908,6 +931,42 @@ an `Approval`.
   `touched_records()` lists only that order record, even though the ceiling
   also allowed a link.
 - A typed *emit* from the operation is not a graph touch.
+
+### 10.5 Marking and currentness
+
+The touched graph is also the cause of invalidation. Query owns one Bridge
+subscription that receives every committed patch envelope on a branch, in
+commit order and synchronously with commit visibility, whoever the writer was.
+
+- **Reverse index.** When an output settles, Query records the facts it
+  consumed (field revisions, index keys, selection and absence facts) in a
+  reverse index from fact to settlement. A settlement recorded against an
+  older read replays the deliveries since that read before it is indexed.
+- **Marking.** A delivered commit looks up only its touched keys. Each match
+  marks that settlement dirty. Every settlement that consumed a marked
+  output is marked pending-upstream, transitively. No commit scans
+  settlements or waiting work, and marks are per branch lineage.
+- **Clean reuse.** On a continuous basis (same lineage, read basis still
+  inside the retained commit window, demand at or after that basis), an
+  unmarked settlement is current. Nothing is re-read or hashed.
+- **Dirty recompute.** A dirty settlement re-verifies only its marked facts.
+  If they changed, it recomputes, subject to input cutoff. When an upstream
+  republishes an equal value, the pending marks below it clear without any
+  producer contact.
+- **Full-verification fallback.** Revision comparison of every consumed fact
+  remains only where marking cannot be trusted: checkpoint restore or reopen,
+  a read basis outside the retained window, a switch of branch lineage, a
+  foreign basis, program or schema installation, a contract-revision or
+  index-definition change, or a delivery gap. It runs once per affected
+  output and is counted and reported.
+- **Commit-time checks.** A commit still re-compares its own attempt's read
+  facts. Marking replaces only demand-time re-verification.
+- **Equivalence mode.** A certification feature runs full verification beside
+  marking and fails on any difference.
+
+Work budgets charge marking and dirty verification, never a scan of clean
+state. Live queries are not invalidated: they are caused by committed
+application emissions and re-read at the cause's observation.
 
 ---
 

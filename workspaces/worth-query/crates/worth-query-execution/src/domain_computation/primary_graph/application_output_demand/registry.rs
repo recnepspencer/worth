@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, Condvar, Mutex};
 
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
@@ -22,12 +22,6 @@ struct DiscoveredSourceRecovery {
     receipt: crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     observation: worth_runtime_world::facade::ProductBranchObservation,
     discovery: Arc<dyn std::any::Any + Send + Sync>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum PreparedOutputRootKind {
-    Required(std::any::TypeId),
-    Discovered(std::any::TypeId),
 }
 
 struct SourceCustody {
@@ -101,30 +95,17 @@ impl SourceCustody {
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryAcceptedOutputAuthority {
     Committed(crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt),
+    Stable(crate::domain_computation::primary_graph::output_lineage::PublishedStableLineage),
     Restored(WorthQueryRestoredAcceptedOutput),
-}
-
-#[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryRestoredAcceptedOutput {
-    pub(in crate::domain_computation::primary_graph) checkpoint:
-        WorthQueryAcceptedOutputCheckpointIdentity,
-    pub(in crate::domain_computation::primary_graph) correspondence: std::sync::Arc<
-        crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
-    >,
-    pub(in crate::domain_computation::primary_graph) observation:
-        worth_runtime_world::facade::ProductBranchObservation,
-    pub(in crate::domain_computation::primary_graph) source_scope:
-        crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-    pub(in crate::domain_computation::primary_graph) source_identity:
-        crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
-    pub(in crate::domain_computation::primary_graph) observed_source_facts: std::sync::Arc<[
-        crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact
-    ]>,
 }
 
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryCompletedOutputDemand {
     pub(in crate::domain_computation::primary_graph) authority: WorthQueryAcceptedOutputAuthority,
+    /// The actual producer mode that minted this checkpoint. Restored rows
+    /// have no execution-mode authority for a fresh required wave.
+    pub(in crate::domain_computation::primary_graph) producer_commit_authority:
+        Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority>,
     pub(in crate::domain_computation::primary_graph) readiness:
         super::WorthQueryOutputReadinessDeliveryEvidence,
     pub(in crate::domain_computation::primary_graph) resources:
@@ -137,7 +118,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryOutputScheduling
     NoEffect(WorthQueryOutputDemandDenial),
 }
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryOutputDemandKey {
     producer: String,
     source: SourceEpoch,
@@ -177,13 +158,43 @@ pub struct WorthQueryOutputDemandNotifications {
 }
 
 mod accepted_checkpoint;
+mod accepted_checkpoint_identity;
+pub(in crate::domain_computation::primary_graph) use accepted_checkpoint::AcceptedCheckpointFactSource;
+pub(in crate::domain_computation::primary_graph) use accepted_checkpoint_identity::{
+    WorthQueryAcceptedOutputCheckpointIdentity, WorthQueryAcceptedOutputCheckpointPosture,
+};
 mod admission;
 mod checkpoint;
+mod cleanup;
 mod lifecycle;
 mod notifications;
+mod obligations;
+mod prerequisite_claims;
+mod prerequisite_work;
 mod progression;
+pub(in crate::domain_computation::primary_graph) use progression::{
+    PreparedSelectedCheckpointFinish, SelectedCheckpointFinishStop,
+};
+mod ready_backing;
+mod record_capacity;
+mod refresh_predecessor;
+mod required_context;
+mod required_custody;
+mod required_members;
+mod required_work;
+pub(in crate::domain_computation::primary_graph) use required_work::ReplacedRequiredWorkHint;
+pub(in crate::domain_computation::primary_graph) use required_work::RequiredWorkMembership;
+pub(in crate::domain_computation::primary_graph) use required_work::SelectedReadyReadmission;
+pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequiredRefreshClaim;
+pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequiredWork;
+pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequiredWorkKind;
 mod restoration;
+pub(in crate::domain_computation::primary_graph) use restoration::WorthQueryRestoredAcceptedOutput;
+mod settlement_index;
+mod settlement_progression;
 mod source_custody;
+mod source_readmission;
+pub(in crate::domain_computation::primary_graph) use source_readmission::RetainedOutputReadmissionSource;
 mod supersession;
 #[cfg(test)]
 mod tests;
@@ -191,22 +202,20 @@ use checkpoint::{WorthQueryOutputAdvancement, WorthQueryOutputProgress};
 pub(in crate::domain_computation::primary_graph) use checkpoint::{
     WorthQueryOutputCheckpoint, WorthQueryOutputClaimIdentity, WorthQueryPendingOutputDelivery,
 };
+pub(in crate::domain_computation::primary_graph) use prerequisite_claims::PreparedPrerequisiteClaims;
+pub(in crate::domain_computation::primary_graph) use ready_backing::PreparedReadyBacking;
+pub(in crate::domain_computation::primary_graph) use ready_backing::ReadyCompletion;
+pub(in crate::domain_computation::primary_graph) use refresh_predecessor::OutputRefreshPredecessor;
+pub(in crate::domain_computation) use required_context::{
+    RequiredOutputDemandContext, RequiredOutputExecution,
+};
+pub(in crate::domain_computation::primary_graph) use required_custody::RequiredOutputCustodyCapacity;
 use supersession::supersede_predecessors;
 
 struct DemandWake {
     generation: Mutex<u64>,
     changed: Condvar,
-}
-
-impl DemandWake {
-    fn notify(&self) {
-        let mut generation = self
-            .generation
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        *generation = generation.saturating_add(1);
-        self.changed.notify_all();
-    }
+    _record_capacity: record_capacity::RecordCapacity,
 }
 
 enum DemandState {
@@ -232,85 +241,115 @@ impl DemandAdmissionKind {
 }
 
 struct DemandRecord {
+    _record_capacity: record_capacity::RecordCapacity,
+    work_membership: Option<Arc<required_work::RequiredWorkMembership>>,
     interests: usize,
-    required: bool,
+    required_interests: usize,
+    performed_obligations: Vec<PerformedOutputObligation>,
+    framework_required_count: usize,
+    prerequisites: Vec<Arc<WorthQueryOutputDemandKey>>,
+    prepared_prerequisite_claims: usize,
+    pending_cleanup_next: Option<Arc<WorthQueryOutputDemandKey>>,
+    pending_cleanup_queued: bool,
+    pending_cleanup_key_bytes: usize,
+    settlements: Vec<(
+        Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
+        usize,
+    )>,
     product_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     source_scope:
         Option<crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding>,
     source_commits: Vec<worth_runtime_world::facade::CompositeCommitIdentity>,
+    source_commit_capacity: Option<record_capacity::RecordCapacity>,
     state: DemandState,
     performed_source: Option<WorthQueryPerformedOutputDemandSource>,
+    readmission_source: Option<Arc<source_readmission::RequiredOutputReadmission>>,
     successor_of: Option<[u8; 32]>,
     wake: Arc<DemandWake>,
 }
 
-#[derive(Default)]
+/// An obligation admitted from an actual retained performed source. Its
+/// source commit is kept until settlement or terminal retirement.
+struct PerformedOutputObligation {
+    source_commit: worth_runtime_world::facade::CompositeCommitIdentity,
+    source: SourceEpoch,
+}
+
 struct DemandRegistryState {
-    records: HashMap<WorthQueryOutputDemandKey, DemandRecord>,
+    records: BTreeMap<WorthQueryOutputDemandKey, DemandRecord>,
+    // May remain after the last row is removed until the map itself drops.
+    _empty_root_capacity: Option<record_capacity::RecordCapacity>,
+    record_budget_bytes: usize,
+    record_retained_bytes: Arc<std::sync::atomic::AtomicUsize>,
+    obligation_budget_bytes: usize,
+    obligation_reserved_bytes: usize,
+    required_keys: std::collections::BTreeSet<Arc<WorthQueryOutputDemandKey>>,
+    required_work_queue: Option<Arc<required_work::RequiredWorkQueue>>,
+    discontinuity_cursors: required_work::DiscontinuityCursors,
+    required_budget_bytes: usize,
+    required_reserved_bytes: usize,
+    required_custody_retained_bytes: Arc<std::sync::atomic::AtomicUsize>,
+    settlement_keys: settlement_index::SettlementIndex,
+    pending_cleanup_head: Option<Arc<WorthQueryOutputDemandKey>>,
     source_preparations:
         HashMap<worth_runtime_world::facade::ProductBranchIncarnation, SourcePreparationState>,
     source_custody: HashMap<worth_runtime_world::facade::CompositeCommitIdentity, SourceCustody>,
 }
 
-#[derive(Default)]
-struct SourcePreparationState {
-    active: usize,
-    retired: bool,
+impl Default for DemandRegistryState {
+    fn default() -> Self {
+        Self {
+            records: BTreeMap::new(),
+            _empty_root_capacity: None,
+            record_budget_bytes: crate::domain_computation::execution_runtime::WorthQueryOutputDemandResourceProfile::standard().registry_record_retained_bytes(),
+            record_retained_bytes: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
+            obligation_budget_bytes: crate::domain_computation::execution_runtime::WorthQueryOutputDemandResourceProfile::standard().registry_obligation_retained_bytes(),
+            obligation_reserved_bytes: 0,
+            required_keys: std::collections::BTreeSet::new(),
+            required_work_queue: None,
+            discontinuity_cursors: required_work::DiscontinuityCursors::default(),
+            required_budget_bytes: crate::domain_computation::execution_runtime::WorthQueryOutputDemandResourceProfile::standard().registry_required_retained_bytes(),
+            required_reserved_bytes: 0,
+            required_custody_retained_bytes: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
+            settlement_keys: settlement_index::SettlementIndex::default(),
+            pending_cleanup_head: None,
+            source_preparations: HashMap::new(),
+            source_custody: HashMap::new(),
+        }
+    }
 }
+
+pub(in crate::domain_computation::primary_graph) use source_custody::PreparedOutputRootKind;
+use source_custody::SourcePreparationState;
 
 #[derive(Clone, Default)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryOutputDemandRegistry {
     state: Arc<Mutex<DemandRegistryState>>,
 }
 
+impl WorthQueryOutputDemandRegistry {
+    pub(in crate::domain_computation::primary_graph) fn with_budgets(
+        obligation_bytes: usize,
+        record_bytes: usize,
+        required_bytes: usize,
+    ) -> Self {
+        let state = DemandRegistryState {
+            obligation_budget_bytes: obligation_bytes,
+            record_budget_bytes: record_bytes,
+            required_budget_bytes: required_bytes,
+            ..DemandRegistryState::default()
+        };
+        Self {
+            state: Arc::new(Mutex::new(state)),
+        }
+    }
+}
+
 pub(in crate::domain_computation::primary_graph) struct WorthQueryOutputDemandInterest {
     key: WorthQueryOutputDemandKey,
+    requires_output: bool,
     notifications: WorthQueryOutputDemandNotifications,
     owner: WorthQueryOutputDemandRegistry,
-}
-
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryAcceptedOutputCheckpointIdentity {
-    pub(in crate::domain_computation::primary_graph) producer: String,
-    pub(in crate::domain_computation::primary_graph) source: [u8; 32],
-    pub(in crate::domain_computation::primary_graph) scope:
-        crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-    pub(in crate::domain_computation::primary_graph) source_partition: [u8; 32],
-    pub(in crate::domain_computation::primary_graph) producer_dependency: Option<[u8; 32]>,
-    pub(in crate::domain_computation::primary_graph) idempotency_key: [u8; 32],
-    pub(in crate::domain_computation::primary_graph) resources:
-        Option<super::super::application_contribution::WorthQueryProducerDemandResources>,
-    pub(in crate::domain_computation::primary_graph) roles:
-        Vec<crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole>,
-    /// Authenticated v5 encoding of the complete rebased producer fact set.
-    /// Legacy and unsupported fact sets carry no reuse authority.
-    pub(in crate::domain_computation::primary_graph) producer_facts: Option<Vec<u8>>,
-}
-
-impl WorthQueryAcceptedOutputCheckpointIdentity {
-    pub(in crate::domain_computation::primary_graph) fn canonical_cmp(
-        &self,
-        other: &Self,
-    ) -> std::cmp::Ordering {
-        self.producer
-            .cmp(&other.producer)
-            .then_with(|| self.source.cmp(&other.source))
-            .then_with(|| self.scope.cmp(&other.scope))
-            .then_with(|| self.source_partition.cmp(&other.source_partition))
-            .then_with(|| self.producer_dependency.cmp(&other.producer_dependency))
-            .then_with(|| self.idempotency_key.cmp(&other.idempotency_key))
-            .then_with(|| self.resources.cmp(&other.resources))
-            .then_with(|| self.roles.cmp(&other.roles))
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn same_output_slot(
-        &self,
-        other: &Self,
-    ) -> bool {
-        self.producer == other.producer
-            && self.scope == other.scope
-            && self.source_partition == other.source_partition
-    }
 }
 
 #[derive(Clone)]
@@ -336,7 +375,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryOutputDemandAdva
         claim: WorthQueryOutputClaimIdentity,
         checkpoint: WorthQueryOutputCheckpoint,
     },
-    Ready(WorthQueryCompletedOutputDemand),
+    Ready(ReadyCompletion),
     Pending,
     Failed(WorthQueryOutputDemandDenial),
 }

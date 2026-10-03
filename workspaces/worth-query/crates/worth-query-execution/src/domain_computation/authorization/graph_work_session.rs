@@ -19,6 +19,11 @@ use crate::domain_computation::provider_session::{
 
 use super::{WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind};
 
+mod selected;
+pub(in crate::domain_computation) use selected::{
+    start_selected_operation_graph_work_admitted, SelectedOperationGraphWorkStop,
+};
+
 pub(super) fn start_operation_graph_work<Schema, Operation, Input>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     product: crate::basis::WorthQueryProductBranchLease,
@@ -42,22 +47,8 @@ where
         product,
     )
     .map_err(|denial| snapshot_lease_denial(denial, operation.operation()))?;
-    let intent = if operation
-        .graph_obligations()
-        .rows()
-        .iter()
-        .any(|row| {
-            matches!(
-                row.effect_posture(),
-                worth_query_installation::facade::WorthQueryInstalledGraphObligationEffectPosture::Mutating
-                    | worth_query_installation::facade::WorthQueryInstalledGraphObligationEffectPosture::Invariant
-            )
-        })
-    {
-        WorthQueryGraphWorkIntent::application_operation_mutation()
-    } else {
-        WorthQueryGraphWorkIntent::application_operation_read()
-    };
+    let intent =
+        WorthQueryGraphWorkIntent::application_operation(operation.graph_obligations().rows());
     let obligations = operation.retain_graph_obligations_for_admission();
     let obligation_identity = obligations.identity().clone();
     let selected = select_installed_graph_obligations(obligations, intent)
@@ -107,18 +98,8 @@ where
         product,
     )
     .map_err(|denial| snapshot_lease_denial(denial, operation.operation()))?;
-    let mutating = operation.graph_obligations().rows().iter().any(|row| {
-        matches!(
-            row.effect_posture(),
-            worth_query_installation::facade::WorthQueryInstalledGraphObligationEffectPosture::Mutating
-                | worth_query_installation::facade::WorthQueryInstalledGraphObligationEffectPosture::Invariant
-        )
-    });
-    let intent = if mutating {
-        WorthQueryGraphWorkIntent::application_operation_mutation()
-    } else {
-        WorthQueryGraphWorkIntent::application_operation_read()
-    };
+    let intent =
+        WorthQueryGraphWorkIntent::application_operation(operation.graph_obligations().rows());
     let obligations = operation.retain_graph_obligations_for_admission();
     let obligation_identity = obligations.identity().clone();
     let selected = select_installed_graph_obligations(obligations, intent)

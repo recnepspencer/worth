@@ -1,4 +1,5 @@
 use crate::domain_computation::primary_graph::WorthQueryApplicationBasisIdentity;
+use std::sync::Arc;
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::snapshots::SnapshotHandle;
 use worth_runtime_bridge::facade::TruthBranchIdentity;
@@ -23,7 +24,8 @@ impl WorthQueryGraphWorkBranchAffinity {
     }
 
     fn from_relational_branch(relational: BranchId) -> Self {
-        let truth = TruthBranchIdentity::from_relational_branch_id(relational.0.clone());
+        let truth =
+            TruthBranchIdentity::from_relational_branch_id(Arc::<str>::from(relational.0.as_str()));
         Self { relational, truth }
     }
 

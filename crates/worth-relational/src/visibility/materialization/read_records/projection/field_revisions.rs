@@ -8,6 +8,9 @@ use crate::storage::overlay::PartitionAccess;
 
 use super::VisibilityProjectionView;
 
+#[path = "field_revisions/admitted_entity.rs"]
+mod admitted_entity;
+
 impl VisibilityProjectionView<'_> {
     /// Native field status and revision at an exact immutable root. `None`
     /// means unavailable provenance; it never means an absent field. Current
@@ -17,52 +20,10 @@ impl VisibilityProjectionView<'_> {
         entity: EntityId,
         locator: &AspectFieldLocator,
     ) -> Option<RelationalFieldRevision> {
-        if !self.is_exact_basis() || locator.aspect().authority() != LocatorAuthority::Authoritative
-        {
-            return None;
-        }
-        let [field] = locator.field_path().fields() else {
-            return None;
-        };
-        let root = self.basis.root()?;
-        let partition = root.get_partition(entity.partition_id)?;
-        let slot = partition.entity_arena.get(&entity)?;
-        if slot.lifecycle() != RecordLifecycleState::Live {
-            return None;
-        }
-        let kind = slot.kind_id()?;
-        let declared = self
-            .entity_aspect_plan(kind)?
-            .executable_bindings
-            .iter()
-            .any(|binding| {
-                binding.aspect_key() == locator.aspect().aspect_key()
-                    && (binding.targets_entity_scalar_field(field)
-                        || binding.targets_entity_struct_field(field))
-            });
-        if !declared {
-            return None;
-        }
-        let revisions = partition
-            .entity_arena
-            .field_revisions_at(entity.slot_index())?;
-        let (aspect_symbol, field_symbol) = self.runtime.services.symbols.with_read(|symbols| {
-            (
-                symbols.symbol(locator.aspect().aspect_key().as_str()),
-                symbols.symbol(field.as_str()),
-            )
-        });
-        let explicit = aspect_symbol
-            .zip(field_symbol)
-            .and_then(|key| revisions.get(&key).copied());
-        Some(
-            explicit.unwrap_or(RelationalFieldRevision::new(
-                partition
-                    .entity_arena
-                    .created_at_for_slot(entity.slot_index())?,
-                RelationalFieldPresence::Absent,
-            )),
-        )
+        self.entity_field_revision_admitted(entity, locator, |_| {
+            Ok::<_, std::convert::Infallible>(())
+        })
+        .unwrap_or_else(|never| match never {})
     }
 
     pub fn relation_field_revision(

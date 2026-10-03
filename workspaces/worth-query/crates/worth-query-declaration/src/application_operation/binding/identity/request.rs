@@ -1,10 +1,11 @@
 //! Both identities of one mutation request, encoded once beside the request.
 
-use std::marker::PhantomData;
+use std::{fmt::Debug, marker::PhantomData};
 
 use super::{
-    application_mutation_key_identity, input_identity, ApplicationCanonicalWork,
-    ApplicationEncodedInput,
+    application_mutation_key_identity, application_mutation_key_identity_admitted,
+    encoder::CanonicalEncodeError, input_identity, input_identity_admitted,
+    ApplicationCanonicalWork, ApplicationEncodedInput, CanonicalEncodingCharge,
 };
 use crate::application_operation::ApplicationMutationBinding;
 use crate::application_schema::{ApplicationSchema, ApplicationValueEncodeDenial};
@@ -19,6 +20,41 @@ pub enum ApplicationMutationIdentityDenial {
     Key(ApplicationValueEncodeDenial),
     /// The mutation input did not encode.
     Input(ApplicationValueEncodeDenial),
+}
+
+/// A refusal from the admitted encoder, distinct from a value's serde refusal.
+#[derive(Debug)]
+pub enum ApplicationMutationIdentityAdmittedDenial<E: Debug> {
+    Key(ApplicationValueEncodeDenial),
+    Input(ApplicationValueEncodeDenial),
+    Admission(E),
+    CapacityOverflow,
+    Allocation,
+}
+
+fn admitted_denial<E: Debug>(
+    error: CanonicalEncodeError<E>,
+    serialization: ApplicationValueEncodeDenial,
+    key: bool,
+) -> ApplicationMutationIdentityAdmittedDenial<E> {
+    match error {
+        CanonicalEncodeError::Serialization if key => {
+            ApplicationMutationIdentityAdmittedDenial::Key(serialization)
+        }
+        CanonicalEncodeError::Serialization => {
+            ApplicationMutationIdentityAdmittedDenial::Input(serialization)
+        }
+        CanonicalEncodeError::Admission(error) => {
+            ApplicationMutationIdentityAdmittedDenial::Admission(error)
+        }
+        CanonicalEncodeError::AdmissionDeferred => {
+            unreachable!("the canonical owner returns its latched admission cause")
+        }
+        CanonicalEncodeError::CapacityOverflow => {
+            ApplicationMutationIdentityAdmittedDenial::CapacityOverflow
+        }
+        CanonicalEncodeError::Allocation => ApplicationMutationIdentityAdmittedDenial::Allocation,
+    }
 }
 
 /// One request to `Binding`: its client key and input together with the
@@ -107,6 +143,49 @@ where
             .map_err(ApplicationMutationIdentityDenial::Key)?;
         let input_identity = input_identity::<Binding::InputBinding>(input)
             .map_err(ApplicationMutationIdentityDenial::Input)?;
+        Ok(Self {
+            key,
+            input,
+            key_identity: key_identity.identity(),
+            input_identity: input_identity.identity(),
+            work: key_identity.work().combine(input_identity.work()),
+            marker: PhantomData,
+        })
+    }
+
+    /// Encodes both identities under one cumulative work and scratch admission.
+    /// Each charge is requested before the corresponding hash, copy or growth.
+    pub fn encode_admitted<F, E>(
+        key: &'request Binding::IdempotencyKey,
+        input: &'request Binding::Input,
+        admission: &mut F,
+    ) -> Result<Self, ApplicationMutationIdentityAdmittedDenial<E>>
+    where
+        F: FnMut(CanonicalEncodingCharge) -> Result<(), E>,
+        E: Debug,
+    {
+        let key_identity =
+            application_mutation_key_identity_admitted::<Schema, Binding, _, _>(key, admission)
+                .map_err(|error| {
+                    admitted_denial(
+                        error,
+                        super::rejected(
+                            crate::portable_identity::WorthQueryPortableTypeIdentity::declared(
+                                Binding::IDEMPOTENCY_IDENTITY,
+                            ),
+                        ),
+                        true,
+                    )
+                })?;
+        let input_identity =
+            input_identity_admitted::<Binding::InputBinding, _, _>(input, admission)
+                .map_err(|error| {
+                    admitted_denial(
+                        error,
+                        super::rejected(<Binding::InputBinding as crate::application_schema::ApplicationStructuredValueBinding>::IDENTITY),
+                        false,
+                    )
+                })?;
         Ok(Self {
             key,
             input,

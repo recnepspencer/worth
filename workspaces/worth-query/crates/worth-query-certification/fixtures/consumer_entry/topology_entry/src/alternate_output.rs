@@ -10,7 +10,8 @@ use worth_query_host::facade::application_contribution;
 use worth_query_host::facade::{
     application_contribution::{
         WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
-        WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
+        WorthQueryDecisionContextDependencies, WorthQueryProducerApplicability,
+        WorthQueryProducerDemandResources, WorthQueryProducerInputReuseContract,
         WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
     },
     domain,
@@ -211,6 +212,10 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
     const RESOURCE_POLICY: &'static str = "manual-certification-only";
     const REUSE_POLICY: &'static str = "exact-source";
+    const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
+        Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
+            WorthQueryDecisionContextDependencies::NONE,
+        ));
 }
 
 pub(crate) fn declare_alternate_output<Schema: TopologySchemaBinding>(

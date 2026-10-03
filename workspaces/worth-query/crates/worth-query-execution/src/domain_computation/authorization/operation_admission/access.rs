@@ -275,6 +275,20 @@ impl<Schema, Operation, Input, Scope>
     /// Later governed phases must call this rather than accepting a detached
     /// timestamp or caller assertion.
     pub fn validate_current_authority(&self) -> Result<(), WorthQueryOperationAuthorizationDenial> {
+        match self.current_authority_stop_kind() {
+            Some(kind) => Err(WorthQueryOperationAuthorizationDenial::new(
+                kind,
+                &self.operation,
+            )),
+            None => Ok(()),
+        }
+    }
+
+    /// Samples this admission's request authority without allocating a denial.
+    /// Effect owners use this at safe points while retaining prepared custody.
+    pub(in crate::domain_computation) fn current_authority_stop_kind(
+        &self,
+    ) -> Option<WorthQueryOperationAuthorizationDenialKind> {
         if let Some(interruption) = self.request_scope.interruption() {
             let kind = match interruption {
                 WorthQueryRequestInterruption::Cancelled => {
@@ -284,18 +298,12 @@ impl<Schema, Operation, Input, Scope>
                     WorthQueryOperationAuthorizationDenialKind::DeadlineExceeded
                 }
             };
-            return Err(WorthQueryOperationAuthorizationDenial::new(
-                kind,
-                &self.operation,
-            ));
+            return Some(kind);
         }
         if Instant::now() >= self.authentication_valid_until {
-            return Err(WorthQueryOperationAuthorizationDenial::new(
-                WorthQueryOperationAuthorizationDenialKind::ExpiredAuthentication,
-                &self.operation,
-            ));
+            return Some(WorthQueryOperationAuthorizationDenialKind::ExpiredAuthentication);
         }
-        Ok(())
+        None
     }
 
     pub(in crate::domain_computation) fn publication_request(

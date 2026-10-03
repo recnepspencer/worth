@@ -6,8 +6,10 @@ use worth_foundational::facade::{
 use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
 
 use super::{account_parameter, installed_query};
-use crate::application_query::admit_application_query_parameters;
 use crate::application_query::parameter_canonical_basis::prepare_parameter_basis;
+use crate::application_query::{
+    admit_application_query_parameters, readmit_application_query_parameters,
+};
 
 #[test]
 fn parameter_bindings_converge_and_diverge_through_foundational_comparison() {
@@ -49,6 +51,49 @@ fn mutation_selectors_match_exact_admitted_parameters() {
         .matches_expected(expected(7).bind(account_parameter(), 7).unwrap())
         .unwrap_err().kind(),
         crate::application_query::WorthQueryApplicationQueryParameterDenialKind::CanonicalEntryBudgetExceeded);
+}
+
+#[test]
+fn producer_parameter_comparison_admits_before_canonical_copy() {
+    let query = installed_query();
+    let source = admitted(&query, 7);
+    let expected = |account| {
+        ApplicationQueryParameterSet::new()
+            .bind(account_parameter(), account)
+            .unwrap()
+    };
+    let mut charges = Vec::new();
+    assert!(source
+        .matches_expected_with_preflight(expected(7), |work, bytes| {
+            charges.push((work, bytes));
+            Ok::<_, ()>(())
+        })
+        .unwrap()
+        .unwrap());
+    assert!(charges.iter().any(|(work, _)| *work > 0));
+    assert!(charges.iter().any(|(_, bytes)| *bytes > 0));
+    assert!(source
+        .matches_expected_with_preflight(expected(8), |_, _| Ok::<_, ()>(()))
+        .unwrap()
+        .is_ok_and(|matches| !matches));
+    assert!(source
+        .matches_expected_with_preflight(expected(7), |_, _| Err::<(), _>(()))
+        .is_err());
+}
+
+#[test]
+fn retained_parameter_values_receive_a_fresh_installed_canonical_basis() {
+    let query = installed_query();
+    let retained = admitted(&query, 7);
+    let readmitted = readmit_application_query_parameters(&query, &retained).unwrap();
+    let independent = admitted(&query, 7);
+
+    assert_eq!(readmitted.bindings(), retained.bindings());
+    assert_eq!(readmitted.identity(), independent.identity());
+    assert!(readmitted
+        .canonical_basis()
+        .is_equivalent_to(independent.canonical_basis()));
+    assert_ne!(readmitted.identity(), admitted(&query, 8).identity());
 }
 
 #[test]

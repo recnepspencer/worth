@@ -1,5 +1,10 @@
 use super::*;
 
+pub(crate) enum RelationalPartitionVisit {
+    RadixNode,
+    Partition(PartitionId),
+}
+
 impl RelationalPersistentRegionSet {
     pub(crate) fn partition_ids_iter(&self) -> impl Iterator<Item = PartitionId> + '_ {
         let mut stack: [Option<(&RelationalPersistentRegionNode, u32, u32)>; 33] = [None; 33];
@@ -35,6 +40,16 @@ impl RelationalPersistentRegionSet {
         &self,
         mut visit: impl FnMut(PartitionId) -> Result<(), E>,
     ) -> Result<(), E> {
+        self.try_visit_partitions(|event| match event {
+            RelationalPartitionVisit::RadixNode => Ok(()),
+            RelationalPartitionVisit::Partition(id) => visit(id),
+        })
+    }
+
+    pub(crate) fn try_visit_partitions<E>(
+        &self,
+        mut visit: impl FnMut(RelationalPartitionVisit) -> Result<(), E>,
+    ) -> Result<(), E> {
         visit_node(self.index_root.as_ref(), 0, 0, &mut visit)
     }
 }
@@ -43,12 +58,13 @@ fn visit_node<E>(
     current: Option<&Arc<RelationalPersistentRegionNode>>,
     depth: u32,
     key_prefix: u32,
-    visit: &mut impl FnMut(PartitionId) -> Result<(), E>,
+    visit: &mut impl FnMut(RelationalPartitionVisit) -> Result<(), E>,
 ) -> Result<(), E> {
     let Some(node) = current else { return Ok(()) };
+    visit(RelationalPartitionVisit::RadixNode)?;
     if depth == PARTITION_KEY_BITS {
         if matches!(node.leaf, Some(RelationalPersistentRegionLeaf::Present(_))) {
-            visit(PartitionId(key_prefix))?;
+            visit(RelationalPartitionVisit::Partition(PartitionId(key_prefix)))?;
         }
         return Ok(());
     }

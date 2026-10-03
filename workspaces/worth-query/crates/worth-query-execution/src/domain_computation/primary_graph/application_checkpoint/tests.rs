@@ -1,5 +1,8 @@
 use sha2::{Digest, Sha256};
 
+#[path = "tests/fact_versions.rs"]
+mod fact_versions;
+
 use super::{
     merge_accepted_outputs, WorthQueryApplicationCheckpoint, BODY_PREFIX_BYTES, CHECKSUM_BYTES,
     FORMAT_VERSION, MAGIC, MAXIMUM_ENTITY_NAME_BYTES, MAXIMUM_PRODUCER_IDENTITY_BYTES,
@@ -14,6 +17,7 @@ fn current_output_replaces_its_recovered_slot_without_checkpoint_growth() {
     let checkpoint = |source, partition| {
         crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity {
             producer: "producer".to_owned(),
+            posture: crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::Performed,
             source,
             scope,
             source_partition: partition,
@@ -22,6 +26,7 @@ fn current_output_replaces_its_recovered_slot_without_checkpoint_growth() {
             resources: None,
             roles: Vec::new(),
             producer_facts: None,
+            producer_fact_wire_version: 0,
         }
     };
     let stale = checkpoint([1; 32], [7; 32]);
@@ -62,7 +67,7 @@ fn decoded_native_payload_uses_the_verified_query_buffer() {
 #[test]
 fn producer_identity_length_and_utf8_are_guarded() {
     let mut zero = 0_u64.to_be_bytes().to_vec();
-    zero.resize(super::MINIMUM_V5_ACCEPTED_OUTPUT_BYTES, 0);
+    zero.resize(super::MINIMUM_V7_ACCEPTED_OUTPUT_BYTES, 0);
     assert_denied(
         checkpoint_body(1, zero),
         "producer identity length is invalid",
@@ -71,7 +76,7 @@ fn producer_identity_length_and_utf8_are_guarded() {
     let mut oversized = ((MAXIMUM_PRODUCER_IDENTITY_BYTES + 1) as u64)
         .to_be_bytes()
         .to_vec();
-    oversized.resize(super::MINIMUM_V5_ACCEPTED_OUTPUT_BYTES, 0);
+    oversized.resize(super::MINIMUM_V7_ACCEPTED_OUTPUT_BYTES, 0);
     assert_denied(
         checkpoint_body(1, oversized),
         "producer identity length is invalid",
@@ -171,14 +176,15 @@ fn roles_and_accepted_outputs_require_canonical_order() {
 fn duplicate_slot_and_copied_fact_payload_cannot_form_two_recovered_candidates() {
     let first = accepted_without_roles(b"producer", 0);
     let mut changed_source = first.clone();
-    // Producer length (8) plus the eight-byte name precede source identity.
-    changed_source[16] = 2;
+    // Producer length, name, and v7 posture precede source identity.
+    changed_source[17] = 2;
     let mut two_slots = first.clone();
     two_slots.extend_from_slice(&changed_source);
     assert_denied(checkpoint_body(2, two_slots), "output slots are duplicated");
 
     let mut copied_facts = first.clone();
     copied_facts.truncate(copied_facts.len() - 8);
+    copied_facts.truncate(copied_facts.len() - 2);
     let fact = super::facts::encode(&[
         crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact::SourceEntity {
             entity_id: worth_relational::facade::identity::EntityId::new(
@@ -186,6 +192,7 @@ fn duplicate_slot_and_copied_fact_payload_cannot_form_two_recovered_candidates()
             ),
         },
     ]).unwrap();
+    copied_facts.extend_from_slice(&6_u16.to_be_bytes());
     copied_facts.extend_from_slice(&(fact.len() as u64).to_be_bytes());
     copied_facts.extend_from_slice(&fact);
     let mut duplicate_identity = first;
@@ -222,6 +229,7 @@ fn accepted_prefix(producer: &[u8], dependency_posture: u8, dependency: [u8; 32]
     let mut accepted = Vec::new();
     accepted.extend_from_slice(&(producer.len() as u64).to_be_bytes());
     accepted.extend_from_slice(producer);
+    accepted.push(0); // Performed; StableReused is the other v7 posture.
     accepted.extend_from_slice(&[1; 32]);
     accepted.extend_from_slice(&entity_bytes());
     accepted.extend_from_slice(&[2; 32]);
@@ -241,6 +249,7 @@ fn producer_resource_profile_roundtrips_and_legacy_is_unavailable() {
         Some(crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources::new(4_096, 8_192)),
     );
     accepted.extend_from_slice(&0_u64.to_be_bytes());
+    accepted.extend_from_slice(&0_u16.to_be_bytes());
     accepted.extend_from_slice(&0_u64.to_be_bytes());
     let decoded = checkpoint_from_body(checkpoint_body(1, accepted))
         .decode()
@@ -249,6 +258,7 @@ fn producer_resource_profile_roundtrips_and_legacy_is_unavailable() {
     assert_eq!((profile.work(), profile.retained_bytes()), (4_096, 8_192));
 
     let mut legacy = accepted_prefix(b"producer", 0, [0; 32]);
+    legacy.remove(8 + b"producer".len());
     legacy.truncate(legacy.len() - 17);
     legacy.extend_from_slice(&0_u64.to_be_bytes());
     let mut body = checkpoint_body(1, legacy);
@@ -260,6 +270,7 @@ fn producer_resource_profile_roundtrips_and_legacy_is_unavailable() {
     assert_eq!(decoded.accepted_outputs[0].producer_facts, None);
 
     let mut v4 = accepted_prefix(b"producer", 0, [0; 32]);
+    v4.remove(8 + b"producer".len());
     v4.extend_from_slice(&0_u64.to_be_bytes());
     let mut body = checkpoint_body(1, v4);
     body[..2].copy_from_slice(&4_u16.to_be_bytes());
@@ -272,7 +283,7 @@ fn producer_resource_profile_roundtrips_and_legacy_is_unavailable() {
 #[test]
 fn producer_resource_profile_rejects_invalid_posture_and_padding() {
     let mut malformed = accepted_without_roles(b"producer", 0);
-    let position = malformed.len() - 8 - 8 - 17;
+    let position = malformed.len() - 8 - 2 - 8 - 17;
     malformed[position] = 7;
     assert_denied(
         checkpoint_body(1, malformed.clone()),
@@ -286,40 +297,11 @@ fn producer_resource_profile_rejects_invalid_posture_and_padding() {
     );
 }
 
-#[test]
-fn v5_complete_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
-    let fact = crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact::SourceEntity {
-        entity_id: worth_relational::facade::identity::EntityId::new(
-            worth_relational::facade::identity::PartitionId(1), 3, 1,
-        ),
-    };
-    let bytes = super::facts::encode(std::slice::from_ref(&fact)).unwrap();
-    let mut accepted = accepted_without_roles(b"producer", 0);
-    accepted.truncate(accepted.len() - 8);
-    accepted.extend_from_slice(&(bytes.len() as u64).to_be_bytes());
-    accepted.extend_from_slice(&bytes);
-    let decoded = checkpoint_from_body(checkpoint_body(1, accepted.clone()))
-        .decode()
-        .unwrap();
-    assert_eq!(
-        decoded.accepted_outputs[0].producer_facts.as_deref(),
-        Some(bytes.as_slice())
-    );
-    assert_eq!(super::facts::decode(&bytes).unwrap().as_ref(), &[fact]);
-
-    let length_start = accepted.len() - bytes.len() - 8;
-    accepted[length_start..length_start + 8]
-        .copy_from_slice(&((super::facts::MAXIMUM_FACT_BYTES + 1) as u64).to_be_bytes());
-    assert_denied(
-        checkpoint_body(1, accepted),
-        "producer fact payload length is invalid",
-    );
-}
-
 fn accepted_without_roles(producer: &[u8], role_count: u64) -> Vec<u8> {
     let mut accepted = accepted_prefix(producer, 0, [0; 32]);
     accepted.extend_from_slice(&role_count.to_be_bytes());
     if role_count == 0 {
+        accepted.extend_from_slice(&0_u16.to_be_bytes());
         accepted.extend_from_slice(&0_u64.to_be_bytes());
     }
     accepted
@@ -338,6 +320,7 @@ fn accepted_with_raw_role(
     accepted.extend_from_slice(&(entity_name.len() as u64).to_be_bytes());
     accepted.extend_from_slice(entity_name);
     accepted.extend_from_slice(&entity);
+    accepted.extend_from_slice(&0_u16.to_be_bytes());
     accepted.extend_from_slice(&0_u64.to_be_bytes());
     accepted
 }
@@ -362,7 +345,7 @@ fn entity_bytes() -> [u8; 16] {
 }
 
 fn padded(mut accepted: Vec<u8>) -> Vec<u8> {
-    accepted.resize(super::MINIMUM_V5_ACCEPTED_OUTPUT_BYTES, 0);
+    accepted.resize(super::MINIMUM_V7_ACCEPTED_OUTPUT_BYTES, 0);
     accepted
 }
 

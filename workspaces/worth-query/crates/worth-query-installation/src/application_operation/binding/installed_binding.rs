@@ -51,6 +51,22 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
+    pub(crate) fn matches_issuing_schema(
+        &self,
+        schema: &WorthQueryInstalledApplicationSchema<Schema>,
+    ) -> bool {
+        let identity = schema.binding_identity();
+        self.operation.binding_identity() == &identity
+            && self.principal.binding_identity() == &identity
+            && self.operation.owner() == schema.owner()
+            && self.principal.owner() == schema.owner()
+            && self.operation.schema_name() == schema.schema_name()
+            && self.principal.schema_name() == schema.schema_name()
+            && schema
+                .mutation_catalog
+                .contains_exact_binding(Binding::IDENTITY, &self.meaning)
+    }
+
     pub fn identity(&self) -> &str {
         Binding::IDENTITY
     }

@@ -38,7 +38,9 @@ pub fn to_portable_wire<T>(value: &T) -> Result<String, WorthSignalJsError>
 where
     T: Serialize,
 {
-    let bytes = rmp_serde::to_vec(value).map_err(|err| {
+    // Checkpoint compatibility readers select meanings by their declared fields.
+    // Named structs preserve those fields when private runtime layouts differ.
+    let bytes = rmp_serde::to_vec_named(value).map_err(|err| {
         WorthSignalJsError::internal(format!("failed to serialize wasm value: {err}"))
     })?;
     Ok(BASE64_STANDARD.encode(bytes))

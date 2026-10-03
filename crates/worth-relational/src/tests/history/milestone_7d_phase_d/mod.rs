@@ -1,6 +1,7 @@
 mod aspect_merge_policy_denials;
 mod deleted_convergence;
 mod last_writer_wins_resolution;
+mod merge_descriptive_touches;
 mod monotonic_counter_resolution;
 mod prepared_merge_denials;
 mod topology_local_rewire;

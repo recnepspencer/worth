@@ -33,9 +33,12 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryPrincipalResolutionDenialKind, WorthQueryProductBranchAdmissionDenial,
 };
 
-use crate::{BankAuthorizationDenial, BankEntityResolutionDenial};
+use crate::{
+    BankAuthorizationDenial, BankAuthorizationDenialKind, BankEntityResolutionDenial,
+    BankEntityResolutionDenialKind,
+};
 use admission::admission;
-use execution::{continuation, live, one_shot, product_selection};
+use execution::{authorization, continuation, live, one_shot, product_selection};
 use installation::{capability_installation, query_installation};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -46,10 +49,16 @@ pub struct BankApplicationQueryLaneDenial<Kind> {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankApplicationOutputSettlementDenialKind {
+    SourceQueryInstallation(BankApplicationQueryInstallationDenialKind),
+    SourcePrincipal(WorthQueryPrincipalResolutionDenialKind),
+    SourceScope(BankEntityResolutionDenialKind),
+    SourceQueryAdmission(BankApplicationQueryAdmissionDenialKind),
+    SourceQueryExecution(BankApplicationOneShotDenialKind),
     ForeignSource,
     MissingApplicableProducer,
     AmbiguousApplicableProducer,
     ProducerUnavailable,
+    RequestAuthorization(BankAuthorizationDenialKind),
     ProductSelection(BankProductSelectionDenialKind),
     SchedulingRejected,
     SchedulingDeferred,
@@ -243,10 +252,20 @@ impl BankApplicationQueryDenial {
         use WorthQueryOutputDemandDenialKind as Query;
 
         let kind = match denial.kind() {
+            Query::SourceQueryInstallation(kind) => {
+                Bank::SourceQueryInstallation(query_installation(kind))
+            }
+            Query::SourcePrincipal(kind) => Bank::SourcePrincipal(kind),
+            Query::SourceScope(kind) => {
+                Bank::SourceScope(BankEntityResolutionDenial::from_query(kind).kind())
+            }
+            Query::SourceQueryAdmission(kind) => Bank::SourceQueryAdmission(admission(kind)),
+            Query::SourceQueryExecution(kind) => Bank::SourceQueryExecution(one_shot(kind)),
             Query::ForeignSource => Bank::ForeignSource,
             Query::MissingApplicableProducer => Bank::MissingApplicableProducer,
             Query::AmbiguousApplicableProducer => Bank::AmbiguousApplicableProducer,
             Query::ProducerUnavailable => Bank::ProducerUnavailable,
+            Query::RequestAuthorization(kind) => Bank::RequestAuthorization(authorization(kind)),
             Query::ProductSelection(denial) => Bank::ProductSelection(product_selection(denial)),
             Query::SchedulingRejected => Bank::SchedulingRejected,
             Query::SchedulingDeferred => Bank::SchedulingDeferred,

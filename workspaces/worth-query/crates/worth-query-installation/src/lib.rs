@@ -216,13 +216,14 @@ pub mod facade {
         WorthQueryInstalledGraphOrdering, WorthQueryInstalledGraphPredicate,
         WorthQueryInstalledGraphProjection, WorthQueryInstalledGraphReadContract,
         WorthQueryInstalledGraphRelation, WorthQueryInstalledOutputDependencyContract,
-        WorthQueryInstalledRootPath, WorthQueryInstalledRootPathGuard,
-        WorthQueryInstalledRootPathStep, WorthQueryPlanningInventoryStop,
-        WorthQueryPreparedReadGraphPlanningContract, WorthQueryReadGraphGuardView,
-        WorthQueryReadGraphOrderingMechanism, WorthQueryReadGraphOrderingView,
-        WorthQueryReadGraphPlanningContract, WorthQueryReadGraphPredicateView,
-        WorthQueryReadGraphProjectionView, WorthQueryReadGraphRelationDirection,
-        WorthQueryReadGraphRelationView, WorthQueryResolvedApplicationQueryLimits,
+        WorthQueryInstalledQueryBindingAdmissionStop, WorthQueryInstalledRootPath,
+        WorthQueryInstalledRootPathGuard, WorthQueryInstalledRootPathStep,
+        WorthQueryPlanningInventoryStop, WorthQueryPreparedReadGraphPlanningContract,
+        WorthQueryReadGraphGuardView, WorthQueryReadGraphOrderingMechanism,
+        WorthQueryReadGraphOrderingView, WorthQueryReadGraphPlanningContract,
+        WorthQueryReadGraphPredicateView, WorthQueryReadGraphProjectionView,
+        WorthQueryReadGraphRelationDirection, WorthQueryReadGraphRelationView,
+        WorthQueryResolvedApplicationQueryLimits,
         WorthQueryRetainedApplicationQueryGraphObligations,
     };
     pub use crate::application_schema::{
@@ -270,10 +271,16 @@ pub mod facade {
         WorthQueryDomainHandleDenial, WorthQueryDomainHandleDenialKind,
     };
     pub use crate::installed_index::{
+        WorthQueryCurrentRetainedMutationBinding, WorthQueryRetainedMutationBindingAdmissionStop,
+    };
+    pub use crate::installed_index::{
         WorthQueryInstalledPackageAuthority, WorthQueryInstalledPackageIndex,
         WorthQueryInstalledPackageIndexCounters, WorthQueryInstalledPackageIndexDenial,
         WorthQueryInstalledPackageIndexDenialKind, WorthQueryInstalledPackageIndexRebuildReport,
         WorthQueryInstalledPackageIndexRelation,
+    };
+    pub use crate::installed_index::{
+        WorthQueryPrincipalBindingValidationAdmissionStop, WorthQueryValidatedPrincipalBinding,
     };
     pub use crate::installed_operation::WorthQueryInstalledOperationAuthority;
     pub use crate::package::{

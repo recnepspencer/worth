@@ -36,6 +36,34 @@ pub(crate) struct WorthQueryProductPublicationReceipt {
 }
 
 impl WorthQueryReservedProductPublicationReceipt {
+    /// The replacement is prepared before World can perform a recovery
+    /// successor. The old unfilled custody remains valid on a denied attempt.
+    pub(crate) fn replacement_request_bytes() -> Option<u64> {
+        let bytes = std::mem::size_of::<WorthQueryProductPublicationCustody>()
+            .checked_add(std::mem::size_of::<usize>().checked_mul(2)?)?
+            .checked_add(std::mem::align_of::<WorthQueryProductPublicationCustody>())?;
+        u64::try_from(bytes).ok()
+    }
+
+    pub(crate) fn matches_recovery_handle(
+        &self,
+        handle: &ProductUnpublishedRecoveryHandle,
+    ) -> bool {
+        &self.custody._recovery_handle == handle
+    }
+
+    pub(crate) fn rebind_unfilled(&mut self, handle: ProductUnpublishedRecoveryHandle) {
+        assert!(self.custody.terminal.get().is_none());
+        let replacement = Self::new(
+            Arc::clone(&self.custody.root_identity),
+            handle,
+            self.custody.retain_live_observation,
+            self.custody.retain_output_demand_observation,
+            self.custody.retain_client_observation,
+        );
+        *self = replacement;
+    }
+
     pub(crate) fn new(
         root_identity: Arc<WorthQueryProductRootIdentity>,
         recovery_handle: ProductUnpublishedRecoveryHandle,

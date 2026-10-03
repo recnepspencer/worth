@@ -11,6 +11,8 @@ use worth_signal::facade::runtime::{ObservationNotice, ObservationPolicy, Observ
 
 use crate::boundary::serde::to_js;
 #[cfg(test)]
+mod policy_codec_tests;
+#[cfg(test)]
 use std::rc::Rc;
 
 thread_local! {
@@ -33,7 +35,8 @@ pub struct WebObservationNotice {
     pub signal_id: String,
     pub branch_id: u64,
     pub policy: ObservationPolicy,
-    pub touched: bool,
+    #[serde(alias = "touched")]
+    pub visited: bool,
     pub recomputed: bool,
     pub meaningful_change: bool,
     pub trigger_matched: bool,
@@ -373,7 +376,7 @@ pub fn notice_from_runtime(
         signal_id: signal_id.to_owned(),
         branch_id: ctx.current_branch().id.0,
         policy: notice.policy(),
-        touched: notice.touched(),
+        visited: notice.visited(),
         recomputed: notice.recomputed(),
         meaningful_change: notice.meaningful_change(),
         trigger_matched: notice.trigger_matched(),

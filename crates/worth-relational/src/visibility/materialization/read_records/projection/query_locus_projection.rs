@@ -12,6 +12,28 @@ pub(crate) fn entity_query_locus_comparison_key(
         .map(AuthoritativeFieldComparisonKey::from_aspect_value)
 }
 
+/// Same native field-key projection for commit preparation, which already owns
+/// the old and new authoritative states and need not clone read records.
+pub(crate) fn authoritative_state_query_locus_comparison_key(
+    state: Option<&worth_foundational::facade::AuthoritativeRecordAspectState>,
+    field_locator: &AspectFieldLocator,
+) -> Option<AuthoritativeFieldComparisonKey> {
+    authoritative_state_query_locus_value(state, field_locator)
+        .map(AuthoritativeFieldComparisonKey::from_aspect_value)
+}
+
+pub(crate) fn authoritative_state_query_locus_value<'state>(
+    state: Option<&'state worth_foundational::facade::AuthoritativeRecordAspectState>,
+    field_locator: &AspectFieldLocator,
+) -> Option<&'state AspectValue> {
+    match state?.get(field_locator.aspect().aspect_key())?.view() {
+        ContractValidatedAspectValueView::Scalar(value) => Some(value),
+        ContractValidatedAspectValueView::Struct(value) => {
+            value.get(single_field_locator_key(field_locator)?)
+        }
+    }
+}
+
 pub(crate) fn relation_query_locus_comparison_key(
     record: &RelationReadRecord,
     field_locator: &AspectFieldLocator,

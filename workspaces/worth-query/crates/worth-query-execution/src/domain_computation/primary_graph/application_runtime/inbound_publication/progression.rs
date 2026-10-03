@@ -51,6 +51,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let lane = self
             .primary_provider
             .application_branch_commit_lane_for_occurrence(incarnation);
+        let lane = match lane {
+            Ok(lane) => lane,
+            Err(_) => return Outcome::Denied(Denial::BranchCoordinationCapacityExhausted),
+        };
         let _coordination = lane.enter();
         // A transport completion may have won after this signed occurrence
         // entered custody but before it acquired the shared incarnation lane.

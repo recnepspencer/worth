@@ -1,17 +1,14 @@
+mod replacement;
+mod selected_begin;
+mod selected_checkpoint_finish;
+mod selected_finish;
+pub(in crate::domain_computation::primary_graph) use selected_checkpoint_finish::{
+    PreparedSelectedCheckpointFinish, SelectedCheckpointFinishStop,
+};
+
 use super::*;
 
 impl WorthQueryOutputDemandRegistry {
-    pub(in crate::domain_computation::primary_graph) fn finish_replaced_interest(
-        &self,
-        replaced: &WorthQueryOutputDemandInterest,
-        replacement: &WorthQueryOutputDemandInterest,
-        subject: &str,
-    ) {
-        if replaced.key != replacement.key {
-            self.finish_superseded(replaced, subject);
-        }
-    }
-
     pub(in crate::domain_computation::primary_graph) fn begin(
         &self,
         interest: &WorthQueryOutputDemandInterest,
@@ -24,56 +21,118 @@ impl WorthQueryOutputDemandRegistry {
             .records
             .get_mut(&interest.key)
             .expect("live demand interest retains its owner record");
-        match &mut record.state {
-            DemandState::Admitted => {
-                record.state = DemandState::Scheduling;
-                WorthQueryOutputDemandAdvanceAdmission::Schedule(record.performed_source.take())
-            }
-            DemandState::Scheduled => {
-                record.state = DemandState::Running;
-                WorthQueryOutputDemandAdvanceAdmission::Execute {
-                    successor_of: record.successor_of,
-                }
-            }
-            DemandState::Scheduling | DemandState::Running => {
-                WorthQueryOutputDemandAdvanceAdmission::Pending
-            }
-            DemandState::Output(output) => match &output.advancement {
-                WorthQueryOutputAdvancement::Claimed(_) => {
-                    WorthQueryOutputDemandAdvanceAdmission::Pending
-                }
-                WorthQueryOutputAdvancement::Stopped { denial, .. } => {
-                    WorthQueryOutputDemandAdvanceAdmission::Failed(denial.clone())
-                }
-                WorthQueryOutputAdvancement::Idle => {
-                    if let Some(WorthQueryOutputCheckpoint::Ready(completion)) = &output.checkpoint
-                    {
-                        return WorthQueryOutputDemandAdvanceAdmission::Ready(completion.clone());
-                    }
-                    let Some(next_claim) = output.next_claim.checked_add(1) else {
-                        let denial = WorthQueryOutputDemandDenial::new(
-                            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::SchedulingRejected,
-                            "output advancement claim identity exhausted",
-                        );
-                        output.stop(denial.clone());
-                        return WorthQueryOutputDemandAdvanceAdmission::Failed(denial);
-                    };
-                    output.next_claim = next_claim;
-                    let claim = WorthQueryOutputClaimIdentity(next_claim);
-                    let checkpoint = output
-                        .checkpoint
-                        .take()
-                        .expect("idle output retains its checkpoint");
-                    output.advancement = WorthQueryOutputAdvancement::Claimed(claim);
-                    WorthQueryOutputDemandAdvanceAdmission::AdvanceCheckpoint { claim, checkpoint }
-                }
-            },
-            DemandState::Failed(denial) => {
-                WorthQueryOutputDemandAdvanceAdmission::Failed(denial.clone())
-            }
-        }
+        begin_record(record, "output advancement claim identity exhausted")
     }
 
+    /// The selected required wave pays the first registry transition before
+    /// changing the record. The ordinary entry retains its historical class.
+    pub(in crate::domain_computation::primary_graph) fn begin_admitted<'a>(
+        &'a self,
+        interest: &'a WorthQueryOutputDemandInterest,
+        admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
+    ) -> Result<
+        (
+            WorthQueryOutputDemandAdvanceAdmission,
+            Option<selected_finish::PreparedSelectedSchedulingFinish<'a>>,
+        ),
+        WorthQueryOutputDemandDenial,
+    > {
+        selected_begin::begin_admitted(self, interest, admission)
+    }
+
+    /// The required wave's second begin pays its exact ordered lookup and
+    /// optional successor copy before changing Scheduled to Running. A racing
+    /// owner that already moved the row leaves this attempt Pending.
+    pub(in crate::domain_computation::primary_graph) fn begin_scheduled_admitted(
+        &self,
+        interest: &WorthQueryOutputDemandInterest,
+        admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
+    ) -> Result<WorthQueryOutputDemandAdvanceAdmission, WorthQueryOutputDemandDenial> {
+        // The ordered-lookup owner can construct a subject up to 55 bytes on
+        // refusal. Its terminal backing and initialized copy are admitted
+        // before it can run; failure of this envelope uses empty diagnostics.
+        admission
+            .admit_read_scratch(55)
+            .map_err(empty_begin_preflight_denial)?;
+        admission
+            .charge_external_work(55 + 4)
+            .map_err(|_| empty_begin_work_denial())?;
+        if !std::sync::Arc::ptr_eq(&self.state, &interest.owner.state) {
+            return Err(WorthQueryOutputDemandDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
+                "",
+            ));
+        }
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        state.charge_record_lookup(&interest.key, admission)?;
+        let record = state
+            .records
+            .get_mut(&interest.key)
+            .expect("live demand interest retains its owner record");
+        let state @ DemandState::Scheduled = &mut record.state else {
+            return Ok(WorthQueryOutputDemandAdvanceAdmission::Pending);
+        };
+        let copy_work = u64::try_from(std::mem::size_of::<Option<[u8; 32]>>())
+            .map_err(|_| empty_begin_work_denial())?;
+        admission
+            .charge_external_work(copy_work)
+            .map_err(|_| empty_begin_work_denial())?;
+        Ok(start_scheduled(state, record.successor_of))
+    }
+}
+
+fn begin_record(
+    record: &mut DemandRecord,
+    overflow_subject: &'static str,
+) -> WorthQueryOutputDemandAdvanceAdmission {
+    match &mut record.state {
+        DemandState::Admitted => {
+            record.state = DemandState::Scheduling;
+            WorthQueryOutputDemandAdvanceAdmission::Schedule(record.performed_source.take())
+        }
+        state @ DemandState::Scheduled => start_scheduled(state, record.successor_of),
+        DemandState::Scheduling | DemandState::Running => {
+            WorthQueryOutputDemandAdvanceAdmission::Pending
+        }
+        DemandState::Output(output) => match &output.advancement {
+            WorthQueryOutputAdvancement::Claimed(_) => {
+                WorthQueryOutputDemandAdvanceAdmission::Pending
+            }
+            WorthQueryOutputAdvancement::Stopped { denial, .. } => {
+                WorthQueryOutputDemandAdvanceAdmission::Failed(denial.clone())
+            }
+            WorthQueryOutputAdvancement::Idle => {
+                if let Some(WorthQueryOutputCheckpoint::Ready(completion)) = &output.checkpoint {
+                    return WorthQueryOutputDemandAdvanceAdmission::Ready(completion.clone());
+                }
+                let Some(next_claim) = output.next_claim.checked_add(1) else {
+                    let denial = WorthQueryOutputDemandDenial::new(
+                            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::SchedulingRejected,
+                            overflow_subject,
+                        );
+                    output.stop(denial.clone());
+                    return WorthQueryOutputDemandAdvanceAdmission::Failed(denial);
+                };
+                output.next_claim = next_claim;
+                let claim = WorthQueryOutputClaimIdentity(next_claim);
+                let checkpoint = output
+                    .checkpoint
+                    .take()
+                    .expect("idle output retains its checkpoint");
+                output.advancement = WorthQueryOutputAdvancement::Claimed(claim);
+                WorthQueryOutputDemandAdvanceAdmission::AdvanceCheckpoint { claim, checkpoint }
+            }
+        },
+        DemandState::Failed(denial) => {
+            WorthQueryOutputDemandAdvanceAdmission::Failed(denial.clone())
+        }
+    }
+}
+
+impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn finish_scheduling(
         &self,
         interest: &WorthQueryOutputDemandInterest,
@@ -110,7 +169,19 @@ impl WorthQueryOutputDemandRegistry {
                 DemandState::Failed(denial.clone())
             }
         };
+        let released = if matches!(record.state, DemandState::Failed(_)) {
+            record.release_obligations()
+        } else {
+            0
+        };
+        let terminal = matches!(record.state, DemandState::Failed(_));
         record.wake.notify();
+        let released_prerequisites =
+            terminal.then(|| state.release_record_prerequisites(&interest.key));
+        state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
+        state.remove_required_member_if_released(&interest.key);
+        drop(state);
+        drop(released_prerequisites);
     }
 
     pub(in crate::domain_computation::primary_graph) fn publish_checkpoint(
@@ -149,13 +220,7 @@ impl WorthQueryOutputDemandRegistry {
         interest: &WorthQueryOutputDemandInterest,
         denial: &mut WorthQueryOutputDemandDenial,
     ) {
-        let rescheduled = matches!(
-            denial.kind(),
-            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::PublicationStale
-                | crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Cancelled
-                | crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::TimedOut
-                | crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::PublicationCapacityExceeded
-        );
+        let rescheduled = execution_failure_is_retryable(denial);
         denial.recovery_posture = if rescheduled {
             crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable
         } else {
@@ -177,7 +242,18 @@ impl WorthQueryOutputDemandRegistry {
         } else {
             DemandState::Failed(denial.clone())
         };
+        let released = if rescheduled {
+            0
+        } else {
+            record.release_obligations()
+        };
         record.wake.notify();
+        let released_prerequisites =
+            (!rescheduled).then(|| state.release_record_prerequisites(&interest.key));
+        state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
+        state.remove_required_member_if_released(&interest.key);
+        drop(state);
+        drop(released_prerequisites);
     }
 
     pub(in crate::domain_computation::primary_graph) fn finish_checkpoint(
@@ -215,6 +291,13 @@ impl WorthQueryOutputDemandRegistry {
                     denial: stopped.clone(),
                     interrupted_claim: None,
                 };
+                let released = record.release_obligations();
+                state.obligation_reserved_bytes =
+                    state.obligation_reserved_bytes.saturating_sub(released);
+                let released_prerequisites = state.release_record_prerequisites(&interest.key);
+                state.remove_required_member_if_released(&interest.key);
+                drop(state);
+                drop(released_prerequisites);
                 return Err(stopped);
             }
             _ => return Err(WorthQueryOutputDemandDenial::new(
@@ -233,9 +316,52 @@ impl WorthQueryOutputDemandRegistry {
             }
             _ => WorthQueryOutputAdvancement::Idle,
         };
+        let terminal = matches!(
+            output.advancement,
+            WorthQueryOutputAdvancement::Stopped { .. }
+        );
+        let released = if terminal {
+            record.release_obligations()
+        } else {
+            0
+        };
         record.wake.notify();
+        let released_prerequisites =
+            terminal.then(|| state.release_record_prerequisites(&interest.key));
+        state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
+        state.remove_required_member_if_released(&interest.key);
+        drop(state);
+        drop(released_prerequisites);
         Ok(())
     }
+}
+
+fn start_scheduled(
+    state: &mut DemandState,
+    successor_of: Option<[u8; 32]>,
+) -> WorthQueryOutputDemandAdvanceAdmission {
+    *state = DemandState::Running;
+    WorthQueryOutputDemandAdvanceAdmission::Execute { successor_of }
+}
+
+fn empty_begin_work_denial() -> WorthQueryOutputDemandDenial {
+    WorthQueryOutputDemandDenial::new(
+        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+        "",
+    )
+}
+
+fn empty_begin_preflight_denial(
+    stop: worth_relational::facade::mvcc::CompanionPreflightStop,
+) -> WorthQueryOutputDemandDenial {
+    use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
+    let kind = match stop {
+        Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => {
+            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
+        }
+        _ => crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
+    };
+    WorthQueryOutputDemandDenial::new(kind, "")
 }
 
 fn demand_record_is_closed(record: &DemandRecord) -> bool {
@@ -245,4 +371,16 @@ fn demand_record_is_closed(record: &DemandRecord) -> bool {
             if denial.kind()
                 == crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Closed
     )
+}
+
+pub(super) fn execution_failure_is_retryable(denial: &WorthQueryOutputDemandDenial) -> bool {
+    denial.recovery_posture()
+        == crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable
+        || matches!(
+            denial.kind(),
+            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::PublicationStale
+                | crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Cancelled
+                | crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::TimedOut
+                | crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::PublicationCapacityExceeded
+        )
 }

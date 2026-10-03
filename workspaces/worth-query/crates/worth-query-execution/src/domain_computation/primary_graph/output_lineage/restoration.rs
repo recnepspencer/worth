@@ -1,10 +1,10 @@
 use std::any::TypeId;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, OnceLock};
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 use super::{
-    RecordedOutput, RecordedSourceIdentity, SemanticSource,
+    RecordedOutput, RecordedOutputMutable, RecordedSourceIdentity, SemanticSource,
     WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputLineage,
 };
 
@@ -28,6 +28,7 @@ impl WorthQueryApplicationOutputLineage {
         resources: Option<
             super::super::application_contribution::WorthQueryProducerDemandResources,
         >,
+        verified_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     ) {
         let source = SemanticSource {
             runtime_authority,
@@ -43,6 +44,19 @@ impl WorthQueryApplicationOutputLineage {
             generation_number,
             source_partition_identity,
         );
+        if existing_slot.is_none()
+            && self.partition_index.has_address(
+                &source,
+                super::ProductCoordinate {
+                    occurrence,
+                    generation: generation_number,
+                },
+                source_partition_identity,
+            )
+        {
+            // A selected World publication owns this invisible address.
+            return;
+        }
         let generation = self
             .by_source
             .entry(source.clone())
@@ -53,7 +67,8 @@ impl WorthQueryApplicationOutputLineage {
             .or_default();
         if let Some(slot) = existing_slot {
             let recorded = generation
-                .get_mut(slot)
+                .get(slot)
+                .and_then(|cell| cell.get())
                 .expect("a restored partition locator must reference retained output authority");
             assert!(
                 recorded.source_partition_identity == Some(source_partition_identity)
@@ -63,22 +78,44 @@ impl WorthQueryApplicationOutputLineage {
                     && Arc::ptr_eq(&recorded.correspondence, &correspondence),
                 "one restored output partition keeps one exact identity"
             );
-            recorded.observed_source_facts = Some(observed_source_facts);
-            recorded.resources = resources;
+            recorded.restore(observed_source_facts, resources, verified_witness);
             self.live_occurrences
                 .insert(observation.lifecycle_incarnation());
             return;
         }
         let slot = generation.len();
-        generation.push(RecordedOutput {
+        let recorded = RecordedOutput {
+            performed_origin: None,
+            _retained_capacity: None,
+            consumed_outputs: Arc::from([]),
+            completed_handler_facts: None,
+            completed_decision_reuse: None,
+            prepared_input_reuse_key: None,
+            native_output_witness: verified_witness.map(OnceLock::from).unwrap_or_default(),
+            mutable: Mutex::new(RecordedOutputMutable {
+                verification_requirement: Some(
+                    super::invalidation::FullVerificationReason::CheckpointRestore,
+                ),
+                observed_source_facts: Some(observed_source_facts),
+                resources,
+            }),
+            settlement_identity: super::RecordedSettlementIdentity::retain(
+                &source,
+                super::ProductCoordinate {
+                    occurrence,
+                    generation: generation_number,
+                },
+                slot,
+            ),
             correspondence,
             source_identity: Some(source_identity),
             source_partition_identity: Some(source_partition_identity),
             producer_dependency_identity,
             idempotency_key_identity,
-            observed_source_facts: Some(observed_source_facts),
-            resources,
-        });
+        };
+        let cell = Arc::new(OnceLock::new());
+        assert!(cell.set(recorded).is_ok());
+        generation.push(cell);
         self.partition_index.insert(
             source,
             occurrence,
@@ -125,9 +162,21 @@ impl WorthQueryApplicationOutputLineage {
                     generation,
                 },
                 source_partition_identity,
+                usize::MAX,
             )
-            .is_some()
+            .map(|(selected, _)| selected.is_some())
+            .unwrap_or(true)
         {
+            return;
+        }
+        if self.partition_index.has_address(
+            &source,
+            super::ProductCoordinate {
+                occurrence,
+                generation,
+            },
+            source_partition_identity,
+        ) {
             return;
         }
         let records = self
@@ -139,15 +188,38 @@ impl WorthQueryApplicationOutputLineage {
             .entry(generation)
             .or_default();
         let slot = records.len();
-        records.push(RecordedOutput {
+        let recorded = RecordedOutput {
+            performed_origin: None,
+            _retained_capacity: None,
+            consumed_outputs: Arc::from([]),
+            completed_handler_facts: None,
+            completed_decision_reuse: None,
+            prepared_input_reuse_key: None,
+            native_output_witness: OnceLock::new(),
+            mutable: Mutex::new(RecordedOutputMutable {
+                verification_requirement: Some(
+                    super::invalidation::FullVerificationReason::CheckpointRestore,
+                ),
+                observed_source_facts: None,
+                resources,
+            }),
+            settlement_identity: super::RecordedSettlementIdentity::retain(
+                &source,
+                super::ProductCoordinate {
+                    occurrence,
+                    generation,
+                },
+                slot,
+            ),
             correspondence,
             source_identity: Some(source_identity),
             source_partition_identity: Some(source_partition_identity),
             producer_dependency_identity,
             idempotency_key_identity,
-            observed_source_facts: None,
-            resources,
-        });
+        };
+        let cell = Arc::new(OnceLock::new());
+        assert!(cell.set(recorded).is_ok());
+        records.push(cell);
         self.partition_index.insert(
             source,
             occurrence,

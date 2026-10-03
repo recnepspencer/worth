@@ -79,14 +79,14 @@ fn observation_unobserve_does_not_resurrect_dead_listener_after_branch_restore_c
     let removed_calls = Arc::new(Mutex::new(Vec::<CommittedObservationRecord>::new()));
 
     let keep = runtime.observe_nodes(
-        ObservationPolicy::touched(),
+        ObservationPolicy::visited(),
         [source],
         Box::new(Phase3RecordingObservationListener {
             calls: Arc::clone(&keep_calls),
         }),
     );
     let removed = runtime.observe_nodes(
-        ObservationPolicy::touched(),
+        ObservationPolicy::visited(),
         [source],
         Box::new(Phase3RecordingObservationListener {
             calls: Arc::clone(&removed_calls),
@@ -110,7 +110,7 @@ fn observation_unobserve_does_not_resurrect_dead_listener_after_branch_restore_c
             observer_id: keep.observer_id().get(),
             handle_id: keep.handle_id().get(),
             matched_node_count: 1,
-            touched: true,
+            visited: true,
             recomputed: false,
             meaningful_change: false,
             trigger_matched: true,
@@ -125,7 +125,7 @@ fn observation_unobserve_does_not_resurrect_dead_listener_after_branch_restore_c
             observer_id: removed.observer_id().get(),
             handle_id: removed.handle_id().get(),
             matched_node_count: 1,
-            touched: true,
+            visited: true,
             recomputed: false,
             meaningful_change: false,
             trigger_matched: true,

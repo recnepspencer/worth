@@ -95,6 +95,43 @@ impl<Binding, Entity> WorthQueryApplicationOutputFamilyEntry<'_, Binding, Entity
 }
 
 impl WorthQueryApplicationOutputCorrespondence {
+    /// Admit the selected role's ordered descent before the ordinary typed
+    /// projection reads the installed correspondence. Other roles contribute
+    /// only the finite B-tree node bound, never copied role text.
+    pub(in crate::domain_computation::primary_graph) fn admit_selected_role_lookup(
+        &self,
+        role: &str,
+        admission: &mut crate::domain_computation::primary_graph::InvalidationEditAdmission,
+    ) -> Result<(), worth_relational::facade::mvcc::CompanionPreflightStop> {
+        use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
+        admission.charge_external_work(3)?;
+        let count = self.roles.len();
+        let levels = usize::BITS as usize - count.max(1).leading_zeros() as usize;
+        let comparisons = count
+            .min(11)
+            .checked_mul(levels)
+            .ok_or(Stop::WorkCounterOverflow)?;
+        let work = comparisons
+            .checked_mul(role.len().checked_add(1).ok_or(Stop::WorkCounterOverflow)?)
+            .and_then(|work| work.checked_add(2 * std::mem::size_of::<TypeId>() + 4))
+            .ok_or(Stop::WorkCounterOverflow)?;
+        admission.charge_external_work(u64::try_from(work).map_err(|_| Stop::WorkCounterOverflow)?)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn native_witness_roles(
+        &self,
+    ) -> impl ExactSizeIterator<Item = (&str, WorthQueryApplicationOutputPosture, &str, EntityId)>
+    {
+        self.roles.iter().map(|(role, binding)| {
+            (
+                role.as_str(),
+                binding.posture,
+                binding.entity_name.as_str(),
+                binding.entity,
+            )
+        })
+    }
+
     pub(in crate::domain_computation::primary_graph) fn from_checkpoint_roles(
         binding_type: TypeId,
         roles: Vec<WorthQueryCheckpointOutputRole>,

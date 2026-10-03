@@ -17,14 +17,14 @@ use worth_query_installation::facade::{
 
 pub(super) const UNPUBLISHED_IDEMPOTENCY_CAPACITY: usize = 64;
 
-pub(super) struct WorthQueryPrimaryGraphResourceSupport {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphResourceSupport {
     graph: WorthQueryExecutionResourceSupport,
     snapshot:
         worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot,
 }
 
 impl WorthQueryPrimaryGraphResourceSupport {
-    pub(super) fn install(
+    pub(in crate::domain_computation::primary_graph) fn install(
         maximum_concurrent_graph_work: std::num::NonZeroUsize,
         candidate_resources: WorthQueryApplicationCandidateResourceProfile,
     ) -> Self {
@@ -59,7 +59,7 @@ impl WorthQueryPrimaryGraphResourceSupport {
         self.snapshot.clone()
     }
 
-    pub(super) fn snapshot_ref(
+    pub(in crate::domain_computation::primary_graph) fn snapshot_ref(
         &self,
     ) -> &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot
     {

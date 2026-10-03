@@ -18,6 +18,8 @@ pub enum WorthQueryGeneratedOutputPublicationNoEffectCause {
     CapacityExhausted,
     /// An owner could not be reached.
     OwnerUnavailable,
+    /// Relational's exact pre-effect stop, including its recovery/budget reason.
+    RelationalDeferred(worth_relational::facade::mvcc::RelationalPublicationDeferred),
     /// The publication plan failed a check before any effect.
     PreEffectFailure,
 }
@@ -71,6 +73,9 @@ const fn map_cause(
         }
         WorldCause::OwnerUnavailable => {
             WorthQueryGeneratedOutputPublicationNoEffectCause::OwnerUnavailable
+        }
+        WorldCause::RelationalDeferred(reason) => {
+            WorthQueryGeneratedOutputPublicationNoEffectCause::RelationalDeferred(reason)
         }
         WorldCause::PreEffectFailure => {
             WorthQueryGeneratedOutputPublicationNoEffectCause::PreEffectFailure

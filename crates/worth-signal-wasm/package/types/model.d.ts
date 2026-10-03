@@ -242,8 +242,8 @@ export interface WebObservationNotice {
   handleId: number;
   signalId: string;
   branchId: number;
-  policy: unknown;
-  touched: boolean;
+  policy: import("./diagnostics/observation.js").ObservationPolicySummary | null;
+  visited: boolean;
   recomputed: boolean;
   meaningfulChange: boolean;
   triggerMatched: boolean;

@@ -30,7 +30,10 @@ use super::settlement::{
 
 use types::{ConnectionBinding, Family, RootConnection, SourceBinding, SourceQuery, SourceValue};
 
-/// An admitted output demand. `settle` drives it toward a settlement within its controls.
+/// An admitted output demand. The source selector, parameters, and scope are
+/// fixed by the source read at `start`; later `advance` requests refresh the
+/// caller and branch but cannot change that admitted source intent.
+/// `settle` drives the demand toward a settlement within its controls.
 pub struct WorthQueryApplicationOutputDemandHandle<'application, Schema, Demand>
 where
     Schema: ApplicationSchema,
@@ -38,7 +41,6 @@ where
 {
     application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     admitted: WorthQueryAdmittedOutputDemand<Schema, Family<Schema, Demand>>,
-    demand: Demand,
     controls: WorthQueryOutputDemandControls,
     selected_program: Option<(ApplicationProgramIdentity, ApplicationProgramRevision)>,
     closed: bool,
@@ -347,7 +349,6 @@ where
         WorthQueryApplicationOutputDemandHandle {
             application: self.application,
             admitted,
-            demand: self.demand,
             controls,
             selected_program: None,
             closed: false,

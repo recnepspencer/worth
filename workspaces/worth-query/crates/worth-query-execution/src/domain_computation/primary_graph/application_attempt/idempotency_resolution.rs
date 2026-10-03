@@ -1,5 +1,7 @@
 use worth_query_installation::facade::ApplicationSchema;
 
+#[path = "idempotency_resolution/denial_format.rs"]
+mod denial_format;
 #[path = "idempotency_resolution/external_settlement.rs"]
 mod external_settlement;
 
@@ -118,6 +120,13 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
         }
     }
 
+    const fn branch_coordination_capacity_exhausted() -> Self {
+        Self {
+            kind: WorthQueryApplicationIdempotencyResolutionDenialKind::RetentionCapacityExhausted,
+            authorization: None,
+        }
+    }
+
     pub(super) fn from_provider(
         denial: crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial,
     ) -> Self {
@@ -192,7 +201,8 @@ where
             .publication_binding();
         let commit_lane = self
             .primary_provider
-            .application_branch_commit_lane(product.observation());
+            .application_branch_commit_lane(product.observation())
+            .map_err(|_| WorthQueryApplicationIdempotencyResolutionDenial::branch_coordination_capacity_exhausted())?;
         let coordination = commit_lane.enter();
         let proof = self
             .authorize_idempotency_inspection(admission, &coordination)
@@ -320,7 +330,8 @@ where
             .publication_binding();
         let commit_lane = self
             .primary_provider
-            .application_branch_commit_lane(product.observation());
+            .application_branch_commit_lane(product.observation())
+            .map_err(|_| WorthQueryApplicationIdempotencyResolutionDenial::branch_coordination_capacity_exhausted())?;
         let coordination = commit_lane.enter();
         let proof = self
             .authorize_idempotency_inspection(admission, &coordination)
@@ -383,15 +394,3 @@ where
             .collect()
     }
 }
-
-impl std::fmt::Display for WorthQueryApplicationIdempotencyResolutionDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "application idempotency resolution denied: {:?}",
-            self.kind
-        )
-    }
-}
-
-impl std::error::Error for WorthQueryApplicationIdempotencyResolutionDenial {}

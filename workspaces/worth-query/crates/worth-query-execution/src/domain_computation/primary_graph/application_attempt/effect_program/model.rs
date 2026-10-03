@@ -109,6 +109,20 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         Option<Arc<[super::super::WorthQueryApplicationObservedFact]>>,
 }
 
+#[cfg(test)]
+impl<Schema, Operation, Input, Scope>
+    WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
+{
+    /// Exercise the provider boundary with genuine owner-ticketed evidence.
+    pub(in crate::domain_computation::primary_graph) fn with_consumed_output_for_test(
+        mut self,
+        evidence: crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence,
+    ) -> Self {
+        self.read_set.consumed_outputs.push(evidence);
+        self
+    }
+}
+
 /// Authors the effects of one candidate against a complete projected read set.
 ///
 /// Begin with `begin_effect_program`. Each write, create, delete, link, unlink,

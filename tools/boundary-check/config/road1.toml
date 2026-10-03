@@ -1549,3 +1549,11 @@ kind = "thread-builder"
 count = 1
 category = "event-loop-watcher"
 reason = "UI readiness, source, theme or event-loop observation runs independently of computation."
+
+[[threading_sites]]
+source = "crates/worth-runtime-world/src/lifecycle/operation_control/currentness_hold.rs"
+item = "ProductCurrentnessLatch::hold_reference"
+kind = "thread-spawn"
+count = 1
+category = "certification-harness"
+reason = "Test operation control holds the real Product reference write lock with one bounded, joined actor to verify final-currentness contention and cancellation."

@@ -14,6 +14,11 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 
+mod retained_mutation;
+pub(in crate::domain_computation::authorization) use retained_mutation::{
+    validate_static_authority_retained, WorthQueryRetainedMutationStaticStop,
+};
+
 pub(in crate::domain_computation::authorization) fn operation_scope_binding<
     Schema,
     Principal,
@@ -52,6 +57,28 @@ pub(in crate::domain_computation::authorization) fn validate_static_authority<
 where
     Schema: ApplicationSchema,
 {
+    validate_static_authority_prefix(runtime, principal, scope, operation)?;
+    runtime
+        .runtime
+        .installed_packages()
+        .validate_application_operation(operation)
+        .map_err(|_| {
+            denial(
+                WorthQueryOperationAuthorizationDenialKind::StaleInstalledOperation,
+                operation.operation(),
+            )
+        })
+}
+
+fn validate_static_authority_prefix<Schema, Principal, PrincipalIdentity, Operation, Input, Scope>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+    scope: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+) -> Result<(), WorthQueryOperationAuthorizationDenial>
+where
+    Schema: ApplicationSchema,
+{
     if principal.is_expired() {
         return Err(denial(
             WorthQueryOperationAuthorizationDenialKind::ExpiredAuthentication,
@@ -74,16 +101,7 @@ where
             operation.operation(),
         ));
     }
-    runtime
-        .runtime
-        .installed_packages()
-        .validate_application_operation(operation)
-        .map_err(|_| {
-            denial(
-                WorthQueryOperationAuthorizationDenialKind::StaleInstalledOperation,
-                operation.operation(),
-            )
-        })
+    Ok(())
 }
 
 pub(super) fn validate_decision(

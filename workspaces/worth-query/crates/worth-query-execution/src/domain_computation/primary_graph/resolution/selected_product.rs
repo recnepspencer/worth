@@ -1,6 +1,13 @@
 use super::*;
 use crate::domain_computation::primary_graph::resolution_denial::principal_index_currency_denial;
 
+#[path = "selected_product/admitted.rs"]
+mod admitted;
+pub(in crate::domain_computation) use admitted::WorthQueryIssuedSelectedPrincipal;
+#[cfg(test)]
+#[path = "selected_product/admitted_tests.rs"]
+mod admitted_tests;
+
 impl<Schema> super::super::WorthQuerySelectedProductOperation<'_, Schema>
 where
     Schema: ApplicationSchema,

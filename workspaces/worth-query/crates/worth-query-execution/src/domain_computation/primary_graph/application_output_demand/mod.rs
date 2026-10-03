@@ -4,15 +4,32 @@ mod registry;
 mod settlement;
 
 pub(super) use recovered_outputs::WorthQueryRecoveredOutputs;
+pub(in crate::domain_computation::primary_graph) use registry::PreparedPrerequisiteClaims;
+pub(in crate::domain_computation::primary_graph) use registry::ReplacedRequiredWorkHint;
+pub(in crate::domain_computation::primary_graph) use registry::RequiredWorkMembership;
+pub(in crate::domain_computation::primary_graph) use registry::RetainedOutputReadmissionSource;
+pub(in crate::domain_computation::primary_graph) use registry::SelectedReadyReadmission;
+pub(in crate::domain_computation::primary_graph) use registry::SelectedRequiredRefreshClaim;
+pub(in crate::domain_computation::primary_graph) use registry::SelectedRequiredWork;
+pub(in crate::domain_computation::primary_graph) use registry::SelectedRequiredWorkKind;
 pub use registry::WorthQueryOutputDemandNotifications;
 pub(super) use registry::{
-    BoundOutputSource, DemandAdmissionKind, PreparedOutputRootKind,
+    AcceptedCheckpointFactSource, BoundOutputSource, DemandAdmissionKind, OutputRefreshPredecessor,
+    PreparedOutputRootKind, PreparedReadyBacking, PreparedSelectedCheckpointFinish,
+    ReadyCompletion, RequiredOutputCustodyCapacity, SelectedCheckpointFinishStop,
     WorthQueryAcceptedOutputAuthority, WorthQueryAcceptedOutputCheckpointIdentity,
-    WorthQueryCompletedOutputDemand, WorthQueryOutputCheckpoint, WorthQueryOutputClaimIdentity,
+    WorthQueryAcceptedOutputCheckpointPosture, WorthQueryCompletedOutputDemand,
+    WorthQueryOutputCheckpoint, WorthQueryOutputClaimIdentity,
     WorthQueryOutputDemandAdvanceAdmission, WorthQueryOutputDemandInterest,
     WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry, WorthQueryOutputSchedulingResult,
     WorthQueryPendingOutputDelivery, WorthQueryPerformedOutputDemandSource,
     WorthQueryReadmittedAcceptedOutput, WorthQueryRequiredOutputSourcePreparation,
     WorthQueryRestoredAcceptedOutput,
 };
-pub use settlement::{WorthQueryOutputDemandSettlement, WorthQueryOutputReadinessDeliveryEvidence};
+pub(in crate::domain_computation) use registry::{
+    RequiredOutputDemandContext, RequiredOutputExecution,
+};
+pub use settlement::{
+    WorthQueryOutputDemandSettlement, WorthQueryOutputReadinessDeliveryEvidence,
+    WorthQueryOutputSettlementPosture,
+};

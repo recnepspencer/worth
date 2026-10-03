@@ -23,6 +23,13 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod binding_proof;
+mod completion;
+mod decision_reuse;
+pub(in crate::domain_computation::primary_graph) use decision_reuse::{
+    CompletedDecisionReuseProof, PreparedDecisionReuseContext,
+};
+mod handler_fact_boundary;
+pub(in crate::domain_computation) use handler_fact_boundary::CompletedHandlerFactBoundary;
 mod observation_admission;
 mod observations;
 mod projected_completion;
@@ -31,7 +38,7 @@ mod source_facts;
 
 pub(super) use binding_proof::{MutationHandlerBindingProof, WorkflowOperationBindingProof};
 pub use relation_observation::WorthQueryObservedApplicationRelation;
-use source_facts::{merge_source_facts, validate_source_facts};
+use source_facts::validate_source_facts;
 
 /// An in-progress decision read for one admitted operation, begun on a leased
 /// snapshot of the branch.
@@ -58,6 +65,7 @@ pub struct WorthQueryApplicationReadAttempt<
         BTreeMap<WorthQueryApplicationFactKey, WorthQueryOperationGraphReadScope>,
     facts: BTreeMap<WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact>,
     source_facts: Vec<WorthQueryApplicationObservedFact>,
+    consumed_outputs: Vec<super::super::invariant_projection::ConsumedOutputEvidence>,
     _phase: PhantomData<fn() -> Phase>,
 }
 
@@ -79,6 +87,7 @@ pub struct WorthQueryCompleteApplicationReadSet<
     pub(super) lease: WorthQueryApplicationSnapshotLease,
     pub(super) installed_read_scopes: Vec<WorthQueryOperationGraphReadScope>,
     pub(super) facts: Vec<WorthQueryApplicationObservedFact>,
+    pub(super) consumed_outputs: Vec<super::super::invariant_projection::ConsumedOutputEvidence>,
     pub(super) workflow_authority_binding: Option<WorkflowOperationBindingProof>,
     pub(super) mutation_handler_binding: Option<MutationHandlerBindingProof>,
     /// The Unix-epoch millisecond the workflow instance this attempt steps
@@ -142,6 +151,7 @@ where
             installed_read_scopes: BTreeMap::new(),
             facts: BTreeMap::new(),
             source_facts,
+            consumed_outputs: Vec::new(),
             _phase: PhantomData,
         })
     }
@@ -220,14 +230,10 @@ where
             )
         })?;
         let root = admission.scope_entity_id();
-        let (lease, projected_scope, expected_facts, dependent_source_facts) =
+        let (lease, projected_scope, expected_facts, consumed_outputs) =
             projection.into_lease_and_realized_scope();
         let mut admission = admission;
-        let source_facts = merge_source_facts(
-            validate_source_facts(&mut admission, &lease)?,
-            dependent_source_facts,
-            admission.operation(),
-        )?;
+        let source_facts = validate_source_facts(&mut admission, &lease)?;
         let layout = Arc::clone(&lease.layout);
         Ok(WorthQueryApplicationReadAttempt {
             admission,
@@ -239,6 +245,7 @@ where
             installed_read_scopes: BTreeMap::new(),
             facts: BTreeMap::new(),
             source_facts,
+            consumed_outputs,
             _phase: PhantomData,
         })
     }
@@ -302,90 +309,6 @@ impl<Schema, Operation, Input, Scope, Phase>
             ));
         }
         Ok(resolved.into_application_identity())
-    }
-
-    pub fn complete(
-        self,
-    ) -> Result<
-        WorthQueryCompleteApplicationReadSet<Schema, Operation, Input, Scope, Phase>,
-        WorthQueryApplicationAttemptDenial,
-    > {
-        if self.facts.len().saturating_add(self.source_facts.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.admission.operation(),
-            ));
-        }
-        if self
-            .expected_facts
-            .as_ref()
-            .is_some_and(|expected| !self.facts.keys().eq(expected.iter()))
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch,
-                self.admission.operation(),
-            ));
-        }
-        let installed_scopes_close_over_facts = self
-            .installed_read_scopes
-            .iter()
-            .zip(self.facts.keys())
-            .all(|((scope_key, scope), fact_key)| {
-                scope_key == fact_key
-                    && observation_admission::graph_read_scope_matches_key(scope, fact_key)
-                    && self
-                        .admission
-                        .allowed_graph_contract()
-                        .graph_reads()
-                        .roles()
-                        .iter()
-                        .flat_map(|role| role.read_scopes())
-                        .any(|installed| installed == scope)
-            });
-        if self.installed_read_scopes.len() != self.facts.len()
-            || !installed_scopes_close_over_facts
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch,
-                self.admission.operation(),
-            ));
-        }
-        if self.expected_facts.is_none()
-            && !observation_admission::graph_reads_exactly_cover_fact_keys(
-                self.admission.allowed_graph_contract().graph_reads(),
-                self.facts.keys(),
-            )
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::IncompleteDecisionReadSet,
-                self.admission.operation(),
-            ));
-        }
-        self.admission
-            .mutation_preconditions()
-            .validate_observations(&self.facts)
-            .map_err(|()| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::MutationPreconditionMismatch,
-                    self.admission.operation(),
-                )
-            })?;
-        Ok(WorthQueryCompleteApplicationReadSet {
-            admission: self.admission,
-            lease: self.lease,
-            installed_read_scopes: self.installed_read_scopes.into_values().collect(),
-            facts: self.facts.into_values().chain(self.source_facts).collect(),
-            workflow_authority_binding: None,
-            mutation_handler_binding: None,
-            workflow_deadline: None,
-            new_commit_refusal: None,
-            _phase: PhantomData,
-        })
     }
 }
 

@@ -14,6 +14,8 @@ pub enum WorthQuerySourceExpectationDenialKind {
     ForeignModel,
     /// The source was not observed on the admitted product branch.
     ForeignBranch,
+    /// A prepared source was consumed by a different admitted operation or product selection.
+    ForeignOperation,
     /// The same source was observed with conflicting revisions.
     SourceChanged,
     /// The observation did not record a complete read footprint.
@@ -24,6 +26,8 @@ pub enum WorthQuerySourceExpectationDenialKind {
     SourceParametersMismatch,
     /// Comparing the source exceeded its canonical work budget.
     WorkBudgetExceeded,
+    /// Constructing the source facts exceeded this request's preparation memory.
+    PreparationMemoryExceeded,
 }
 
 /// Refusal to bind an observed query source as an admitted mutation's source

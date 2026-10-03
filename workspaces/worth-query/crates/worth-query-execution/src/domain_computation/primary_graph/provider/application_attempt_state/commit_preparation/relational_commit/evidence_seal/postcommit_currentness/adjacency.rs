@@ -9,55 +9,55 @@ use worth_relational::facade::runtime::RelationalAdjacencyDirection as NativeDir
 // outgoing revision may over-invalidate but covers pair presence and ABA.
 const MAXIMUM_PAIR_REBASE_WORK: usize = 64;
 
+#[cfg(test)]
 pub(super) fn rebase_decision_adjacency(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     fact: Fact,
     admitted_work: usize,
 ) -> Fact {
+    prepare_decision_adjacency(runtime, snapshot, &fact, admitted_work).unwrap_or(fact)
+}
+
+pub(super) fn prepare_decision_adjacency(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    fact: &Fact,
+    admitted_work: usize,
+) -> Option<Fact> {
     if admitted_work == 0 {
-        return fact;
+        return None;
     }
-    let (relation_kind, anchor, direction, limit, endpoints) = match &fact {
+    let (relation_kind, anchor, direction, limit) = match fact {
         Fact::Relation {
             relation_kind,
             from,
-            to,
             ..
         } => (
             *relation_kind,
             *from,
             NativeDirection::Outgoing,
             MAXIMUM_PAIR_REBASE_WORK.min(admitted_work),
-            vec![*to],
         ),
         Fact::Adjacency {
             relation_kind,
             anchor,
             direction,
             maximum_work_units,
-            relations,
+            ..
         } => {
             let native_direction = match direction {
                 DecisionDirection::Outgoing => NativeDirection::Outgoing,
                 DecisionDirection::Incoming => NativeDirection::Incoming,
             };
-            let endpoints = relations
-                .iter()
-                .map(|relation| match direction {
-                    DecisionDirection::Outgoing => relation.to,
-                    DecisionDirection::Incoming => relation.from,
-                })
-                .collect();
             (
                 *relation_kind,
                 *anchor,
                 native_direction,
                 (*maximum_work_units).min(admitted_work),
-                endpoints,
             )
         }
-        _ => return fact,
+        _ => return None,
     };
     let Some(native_revision) = runtime
         .read_truth()
@@ -68,16 +68,31 @@ pub(super) fn rebase_decision_adjacency(
         })
         .map(|revision| revision.revision())
     else {
-        return fact;
+        return None;
     };
-    Fact::SourceAdjacencyRevision {
+    let endpoints = match fact {
+        Fact::Relation { to, .. } => vec![*to],
+        Fact::Adjacency {
+            direction,
+            relations,
+            ..
+        } => relations
+            .iter()
+            .map(|relation| match direction {
+                DecisionDirection::Outgoing => relation.to,
+                DecisionDirection::Incoming => relation.from,
+            })
+            .collect(),
+        _ => unreachable!("decision adjacency was classified above"),
+    };
+    Some(Fact::SourceAdjacencyRevision {
         relation_kind,
         anchor,
         direction,
         native_revision,
         comparison_work_limit: limit,
         endpoints,
-    }
+    })
 }
 
 #[cfg(test)]
@@ -87,6 +102,15 @@ mod tests {
         installed_authorization_world, live_scope, AccountOwner, PrincipalIdentityField,
     };
     use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
+
+    fn admission(work: u64) -> crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission{
+        crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::new(
+            worth_relational::facade::mvcc::CompanionPreflightBudget {
+                maximum_work_visits: work,
+                maximum_preparation_bytes: 1024 * 1024,
+            },
+        )
+    }
 
     #[test]
     fn pair_rebase_requires_admitted_native_work_and_never_retains_partial_facts() {
@@ -114,6 +138,7 @@ mod tests {
         };
         graph.integration_handle().with_runtime(|runtime| {
             let snapshot = selected.application_basis().snapshot_handle();
+            let mut zero_work = admission(0);
             assert!(matches!(
                 rebase_decision_adjacency(runtime, snapshot, fact.clone(), 64),
                 Fact::SourceAdjacencyRevision {
@@ -122,9 +147,17 @@ mod tests {
                     ..
                 }
             ));
-            assert_eq!(
-                super::super::rebase(runtime, snapshot, vec![fact], true, 0).len(),
-                0,
+            assert!(
+                matches!(
+                    super::super::rebase(
+                        runtime,
+                        snapshot,
+                        super::super::PreparedSourceFactRebase::admit(vec![fact]).unwrap(),
+                        true,
+                        Some(&mut zero_work)
+                    ),
+                    super::super::RebasedSourceFacts::VerificationRequired { .. }
+                ),
                 "failed relation revision acquisition marks the entire output non-reusable"
             );
             let stale_revision = Fact::SourceAdjacencyRevision {
@@ -135,20 +168,34 @@ mod tests {
                 comparison_work_limit: 0,
                 endpoints: Vec::new(),
             };
-            assert!(super::super::rebase(
+            let mut producer_work = admission(64);
+            assert!(matches!(
+                super::super::rebase(
+                    runtime,
+                    snapshot,
+                    super::super::PreparedSourceFactRebase::admit(vec![stale_revision.clone()])
+                        .unwrap(),
+                    true,
+                    Some(&mut producer_work),
+                ),
+                super::super::RebasedSourceFacts::VerificationRequired { .. }
+            ));
+            let mut ordinary_work = admission(64);
+            match super::super::rebase(
                 runtime,
                 snapshot,
-                vec![stale_revision.clone()],
-                true,
-                64,
-            )
-            .is_empty());
-            assert_eq!(
-                super::super::rebase(runtime, snapshot, vec![stale_revision.clone()], false, 64)
-                    .as_ref(),
-                &[stale_revision],
-                "non-output evidence retains its original comparison posture"
-            );
+                super::super::PreparedSourceFactRebase::admit(vec![stale_revision.clone()])
+                    .unwrap(),
+                false,
+                Some(&mut ordinary_work),
+            ) {
+                super::super::RebasedSourceFacts::Exact(facts) => {
+                    assert_eq!(facts.as_ref(), &[stale_revision])
+                }
+                super::super::RebasedSourceFacts::VerificationRequired { reason, .. } => {
+                    panic!("non-output evidence must retain its comparison posture: {reason:?}")
+                }
+            }
         });
     }
 }
