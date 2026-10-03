@@ -19,6 +19,5 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Current(Arc<WorthQueryOutputDemandSettlement>),
     PendingExact(SelectedPendingConsumedOutput<'basis>),
     PendingUnresolved,
-    NeedsDisclosure,
     Fresh(super::super::demand::RequiredFreshProgress<Schema>),
 }

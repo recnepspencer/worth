@@ -183,7 +183,7 @@ where
         }
         let selected =
             selected.ok_or_else(|| WorthQueryOutputDemandDenial::new(missing, Family::IDENTITY))?;
-        if let Some(remaining) = remaining_work.as_deref_mut() {
+        if let Some(remaining) = remaining_work {
             let copied = selected
                 .declaration
                 .identity
@@ -267,9 +267,7 @@ where
         Ok(&role.declaration.output_role)
     }
 
-    pub(in crate::domain_computation::primary_graph::application_contribution) fn select_exact<
-        Family,
-    >(
+    pub(super) fn select_exact<Family>(
         &self,
         output_binding: TypeId,
         remaining_work: Option<&mut usize>,

@@ -127,7 +127,7 @@ impl WorthQueryApplicationOutputLineage {
         let Some(output_binding) = correspondence.binding_type() else {
             return Ok(None);
         };
-        let pin = pin.ok_or_else(|| match authority {
+        let pin = pin.ok_or(match authority {
             WorthQueryAcceptedOutputAuthority::Committed(_) => {
                 FullVerificationReason::NativeRevisionUnavailable
             }

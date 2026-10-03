@@ -55,7 +55,7 @@ pub(super) fn map_verification_stop(
             WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded,
         ) => ConsumedOutputVerificationStop::WorkExhausted,
         SettlementVerificationStop::SourceRead(WorthQuerySourceCurrentnessFailure::Unavailable)
-        | SettlementVerificationStop::Alignment(_) => ConsumedOutputVerificationStop::Unavailable,
+        | SettlementVerificationStop::Alignment => ConsumedOutputVerificationStop::Unavailable,
         SettlementVerificationStop::PendingUpstream => {
             ConsumedOutputVerificationStop::PendingUpstream
         }

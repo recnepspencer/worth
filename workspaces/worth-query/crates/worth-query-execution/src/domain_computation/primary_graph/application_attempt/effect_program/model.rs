@@ -109,7 +109,7 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         Option<Arc<[super::super::WorthQueryApplicationObservedFact]>>,
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "certification-invalidation-equivalence")))]
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
 {

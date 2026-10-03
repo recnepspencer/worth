@@ -14,13 +14,13 @@ pub(super) enum EqualOutputCurrentness {
     NoConsequence,
     CanonicallyEqualClean(Arc<RecordedSettlementIdentity>),
     Pending,
-    FullVerificationRequired(FullVerificationReason),
+    FullVerificationRequired,
 }
 
 /// No history is nested inside a MarkState. Historical clearing therefore
 /// retains the earlier state without building recursive history ownership.
 #[derive(Clone, Debug)]
-pub(super) struct BranchMarkRoot {
+pub(in crate::domain_computation::primary_graph) struct BranchMarkRoot {
     pub(super) retained_capacity: Option<Arc<crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity>>,
     pub(super) current: Arc<MarkState>,
     pub(super) last_native_marking: Option<super::logical_marking::NativeMarkingReport>,
@@ -194,9 +194,8 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
         }
         admission.ordered_read(self.state.settlements.len())?;
         admission.ordered_read(self.retained.past.len())?;
-        if let SettlementCurrentness::FullVerificationRequired(reason) = self.currentness(identity)
-        {
-            return Ok(EqualOutputCurrentness::FullVerificationRequired(reason));
+        if let SettlementCurrentness::FullVerificationRequired(_) = self.currentness(identity) {
+            return Ok(EqualOutputCurrentness::FullVerificationRequired);
         }
         let mut current = identity;
         let mut latest = None;
@@ -207,15 +206,11 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
                 worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow,
             )?;
             if hops > self.state.equal_links.len() {
-                return Ok(EqualOutputCurrentness::FullVerificationRequired(
-                    FullVerificationReason::RetainedDeliveryGap,
-                ));
+                return Ok(EqualOutputCurrentness::FullVerificationRequired);
             }
             admission.ordered_read(self.state.equal_links.len())?;
             let Some(link) = self.state.equal_links.get(current) else {
-                return Ok(EqualOutputCurrentness::FullVerificationRequired(
-                    FullVerificationReason::RetainedDeliveryGap,
-                ));
+                return Ok(EqualOutputCurrentness::FullVerificationRequired);
             };
             let Some(next) = &link.next else {
                 admission.ordered_read(self.state.settlements.len())?;
@@ -227,21 +222,19 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
                     SettlementCurrentness::Dirty(_) | SettlementCurrentness::PendingUpstream(_) => {
                         EqualOutputCurrentness::Pending
                     }
-                    SettlementCurrentness::FullVerificationRequired(reason) => {
-                        EqualOutputCurrentness::FullVerificationRequired(reason)
+                    SettlementCurrentness::FullVerificationRequired(_) => {
+                        EqualOutputCurrentness::FullVerificationRequired
                     }
                 });
             };
             admission.ordered_read(self.state.equal_links.len())?;
-            if !self
+            if self
                 .state
                 .equal_links
                 .get(next)
-                .is_some_and(|following| following.prior.as_deref() == Some(current))
+                .is_none_or(|following| following.prior.as_deref() != Some(current))
             {
-                return Ok(EqualOutputCurrentness::FullVerificationRequired(
-                    FullVerificationReason::RetainedDeliveryGap,
-                ));
+                return Ok(EqualOutputCurrentness::FullVerificationRequired);
             }
             latest = Some(Arc::clone(next));
             current = next;

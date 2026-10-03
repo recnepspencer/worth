@@ -20,10 +20,10 @@ pub(super) fn terminal<'state>(
         };
         admission.work(1)?;
         admission.ordered_read(state.equal_links.len())?;
-        if !state
+        if state
             .equal_links
             .get(next)
-            .is_some_and(|following| following.prior.as_ref() == Some(current))
+            .is_none_or(|following| following.prior.as_ref() != Some(current))
         {
             return Err(gap());
         }
@@ -60,10 +60,10 @@ pub(super) fn output_projection<'state>(
             .ok_or(gap())?;
         admission.work(1)?;
         admission.ordered_read(state.equal_links.len())?;
-        if !state
+        if state
             .equal_links
             .get(prior)
-            .is_some_and(|preceding| preceding.next.as_ref() == Some(current))
+            .is_none_or(|preceding| preceding.next.as_ref() != Some(current))
         {
             return Err(gap());
         }

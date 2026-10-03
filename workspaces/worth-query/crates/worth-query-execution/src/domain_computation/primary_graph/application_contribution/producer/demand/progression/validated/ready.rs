@@ -52,7 +52,7 @@ where
                 .output_demands
                 .finish_superseded(interest, Family::IDENTITY));
         }
-        return match &completion.authority {
+        match &completion.authority {
                     crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Committed(receipt) => {
                         let current = self.on_branch(delivery_branch).select().map_err(|denial| {
                             WorthQueryOutputDemandDenial::product_selection(
@@ -157,7 +157,7 @@ where
                             Ok(WorthQueryOutputDemandAdvance::Settled(settlement))
                         })
                     }
-                };
+                }
     }
 }
 

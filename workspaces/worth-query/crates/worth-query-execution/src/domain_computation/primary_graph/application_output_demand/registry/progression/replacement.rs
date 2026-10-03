@@ -36,7 +36,7 @@ impl WorthQueryOutputDemandRegistry {
                 let mut next_slots = std::mem::take(&mut next_record.performed_obligations);
                 let next_bytes =
                     next_slots.capacity() * std::mem::size_of::<PerformedOutputObligation>();
-                prepared.slots.extend(next_slots.drain(..));
+                prepared.slots.append(&mut next_slots);
                 prepared
                     .slots
                     .extend(old_slots.extract_if(.., |obligation| {
@@ -49,7 +49,7 @@ impl WorthQueryOutputDemandRegistry {
                 }
                 next_record
                     .source_commits
-                    .extend(prepared.added_commits.drain(..));
+                    .append(&mut prepared.added_commits);
                 next_record.performed_obligations = prepared.slots;
                 // Retired Vec backings still exist after this guard is released.
                 // Their credits remain reserved until their physical Drop.

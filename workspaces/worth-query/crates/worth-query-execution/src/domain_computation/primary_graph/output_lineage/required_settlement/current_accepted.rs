@@ -115,7 +115,7 @@ impl AcceptedCurrentCandidate {
         let branch_work = u64::try_from(selected.branch_id().0.len())
             .ok()
             .and_then(|length| length.checked_add(3))
-            .ok_or_else(|| {
+            .ok_or({
                 CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(
                     worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow,
                 ))

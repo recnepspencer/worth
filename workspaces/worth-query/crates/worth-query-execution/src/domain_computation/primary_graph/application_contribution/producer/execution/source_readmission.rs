@@ -45,6 +45,16 @@ type BoundPrincipalIdentity<Schema, Binding> =
 type BoundScope<Schema, Binding> = <<BoundQuery<Schema, Binding> as ApplicationQueryBinding<
     Schema,
 >>::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Scope;
+/// Source query binding, principal, and scope a retained source re-authorizes.
+type RetainedSourceAuthority<Schema, Binding> = (
+    WorthQueryInstalledApplicationQueryBinding<Schema, SourceBinding<Schema, Binding>>,
+    WorthQueryAuthenticatedPrincipal<
+        Schema,
+        BoundPrincipal<Schema, Binding>,
+        BoundPrincipalIdentity<Schema, Binding>,
+    >,
+    WorthQueryApplicationEntityIdentity<Schema, BoundScope<Schema, Binding>>,
+);
 
 /// Fresh request authority for the original descriptive source selector. It
 /// retains the selected Product and governed identities until the caller
@@ -106,18 +116,7 @@ pub(super) fn authorize_retained_source_on_selected<Schema, Binding>(
     retained: &WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
     admission: &mut InvalidationEditAdmission,
-) -> Result<
-    (
-        WorthQueryInstalledApplicationQueryBinding<Schema, SourceBinding<Schema, Binding>>,
-        WorthQueryAuthenticatedPrincipal<
-            Schema,
-            BoundPrincipal<Schema, Binding>,
-            BoundPrincipalIdentity<Schema, Binding>,
-        >,
-        WorthQueryApplicationEntityIdentity<Schema, BoundScope<Schema, Binding>>,
-    ),
-    ProducerExecutionStop,
->
+) -> Result<RetainedSourceAuthority<Schema, Binding>, ProducerExecutionStop>
 where
     Schema: ApplicationSchema + 'static,
     Binding: WorthQueryApplicationProducerBinding<Schema>,
@@ -256,7 +255,7 @@ where
         request,
     );
     let plan = runtime
-        .readmit_application_query_from_observed(&query, &access, retained, controls, admission)
+        .readmit_application_query_from_observed(query, &access, retained, controls, admission)
         .map_err(|error| query_admission_denied(Binding::IDENTITY, error))?;
     let read = runtime
         .execute_application_query_one_shot(plan)

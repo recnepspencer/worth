@@ -77,10 +77,10 @@ pub(in crate::domain_computation::primary_graph) struct SelectedRequiredWork {
 pub(in crate::domain_computation::primary_graph) enum SelectedRequiredWorkKind {
     Native {
         observer: CompanionPublicationCompletionObserver,
-        settlement: Arc<RecordedSettlementIdentity>,
         branch: Arc<FundedNativeBranch>,
     },
     Local {
+        #[cfg_attr(not(test), allow(dead_code))] // Tests read which cutover a selection carries.
         settlement: Arc<RecordedSettlementIdentity>,
     },
     Discontinuity,
@@ -253,10 +253,6 @@ impl RequiredWorkMembership {
 impl SelectedRequiredWork {
     pub(in crate::domain_computation::primary_graph) fn key(&self) -> &WorthQueryOutputDemandKey {
         self.membership.key()
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn producer_identity(&self) -> &str {
-        &self.membership.key.producer
     }
 
     pub(in crate::domain_computation::primary_graph) fn kind(&self) -> &SelectedRequiredWorkKind {

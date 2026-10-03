@@ -157,6 +157,7 @@ impl ConsumedOutputEvidence {
         )
     }
 
+    #[cfg(all(test, not(feature = "certification-invalidation-equivalence")))]
     pub(in crate::domain_computation::primary_graph) fn verify_many_at(
         roots: &[Self],
         owner: &SourceInvalidationOwner,
@@ -273,7 +274,7 @@ impl ConsumedOutputEvidence {
                 ConsumedOutputCurrentness::PendingEqualSuccessor => {
                     return Err(ConsumedOutputVerificationStop::PendingUpstream);
                 }
-                ConsumedOutputCurrentness::FullVerificationRequired(_) => {
+                ConsumedOutputCurrentness::FullVerificationRequired => {
                     return Err(ConsumedOutputVerificationStop::Unavailable);
                 }
             };

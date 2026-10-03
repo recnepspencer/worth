@@ -139,8 +139,8 @@ impl PreparedPostingOrdinals {
                 }
             }
         }
-        let mut admission = meter.into_inner();
-        let groups = group_projected(projected, maximum, &mut admission)?;
+        let admission = meter.into_inner();
+        let groups = group_projected(projected, maximum, admission)?;
         let mut ordinals = OrdMap::new();
         let mut posting_payload_bytes = 0u64;
         for group in groups {
@@ -250,14 +250,14 @@ fn group_projected(
             bucket_start = groups.len();
         }
         let mut matching = None;
-        for index in bucket_start..groups.len() {
+        for (index, group) in groups.iter().enumerate().skip(bucket_start) {
             admission.work(
                 projection
                     .key
                     .comparison_work_bound()
                     .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
             )?;
-            if projection.key.as_ref() == groups[index].key.as_ref() {
+            if projection.key.as_ref() == group.key.as_ref() {
                 matching = Some(index);
                 break;
             }

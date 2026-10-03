@@ -3,6 +3,7 @@
 use super::*;
 
 impl WorthQueryApplicationOutputLineage {
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn retained_output_candidates(
         &self,
         runtime_authority: u64,

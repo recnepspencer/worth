@@ -5,9 +5,7 @@ use std::sync::Arc;
 use super::super::required_work::RequiredWorkMembership;
 use super::*;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
-use crate::domain_computation::primary_graph::{
-    WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture,
-};
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
 /// A stopped claim may already have restored its checkpoint. A moved claim
 /// returns the original value to the successor demand for exact retry.
@@ -182,10 +180,7 @@ impl PreparedSelectedCheckpointFinish<'_> {
                 // The shared required row stops only for a stop intrinsic to
                 // it; any other stays with the advance that met it, and the
                 // row's checkpoint waits for a later claim.
-                let terminal = denial.is_some_and(|cause| {
-                    cause.recovery_posture() != WorthQueryOutputDemandRecoveryPosture::Retryable
-                        && super::super::required_stop::intrinsic_to_row(cause.kind())
-                });
+                let terminal = denial.is_some_and(super::super::required_stop::fails_row);
                 output.advancement = if terminal {
                     WorthQueryOutputAdvancement::Stopped {
                         denial: retained_denial(denial.expect("terminal cause exists")),

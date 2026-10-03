@@ -72,7 +72,7 @@ where
             .map_err(|stop| match stop {
                 SelectedPermissionSecurityStop::Admission(stop) => resource_denial(stop),
                 SelectedPermissionSecurityStop::AccountingOverflow => work_denial(),
-                SelectedPermissionSecurityStop::World(_) => denial(
+                SelectedPermissionSecurityStop::World => denial(
                     WorthQueryApplicationQueryAdmissionDenialKind::StaleBasis,
                     self.query.name(),
                 ),

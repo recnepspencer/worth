@@ -8,7 +8,7 @@ use crate::domain_computation::execution_runtime::product_world::WorthQueryProdu
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
 use crate::domain_computation::primary_graph::WorthQueryInstalledTransportCompletionBinding;
 use crate::domain_computation::WorthQueryProductUnpublishedApplication;
-use worth_runtime_world::facade::{NoEffectCompositePublication, ProductBranchIncarnation};
+use worth_runtime_world::facade::ProductBranchIncarnation;
 
 /// A completed physical attempt paired with its exact committed outbox owner.
 /// The transport observation carries no inbound signature or verifier claim.
@@ -44,10 +44,10 @@ impl InstalledTransportCompletion {
             return Err(Denial::CorrelationMismatch);
         }
         let ladder = dispatch.causal_ladder();
-        if !ladder
+        if ladder
             .observation()
             .and_then(|observed| observed.predecessor())
-            .is_some_and(|predecessor| predecessor.predecessor() == ladder.attempt().identity())
+            .is_none_or(|predecessor| predecessor.predecessor() != ladder.attempt().identity())
         {
             return Err(Denial::CausalMismatch);
         }
@@ -170,24 +170,19 @@ pub(in crate::domain_computation::primary_graph) enum InstalledTransportPublicat
     OriginalPublicationCommitMismatch,
     BranchCoordinationCapacityExhausted,
     BindingUnavailable,
-    PublicationPermit(crate::domain_computation::application_aftermath::WorthQueryTransportPublicationPermitDenial),
+    PublicationPermit,
     TerminalIndexUnavailable,
     CorrelationAlreadyOwned,
-    ProductAdmission(crate::basis::WorthQueryProductBranchAdmissionDenial),
-    CompletionPreparation(
-        super::super::super::provider::WorthQueryInboundCompletionPreparationDenial,
-    ),
+    ProductAdmission,
+    CompletionPreparation,
 }
 
 #[must_use = "retain actual dispatch evidence and any World recovery custody"]
 pub(in crate::domain_computation::primary_graph) enum InstalledTransportPublicationOutcome {
-    AlreadyCompleted(Arc<InstalledTransportCompletion>),
+    AlreadyCompleted,
     Performed(PerformedInstalledTransportCompletion),
     ProductUnpublished(UnpublishedInstalledTransportCompletion),
-    NoEffect(
-        Arc<InstalledTransportCompletion>,
-        NoEffectCompositePublication,
-    ),
+    NoEffect(Arc<InstalledTransportCompletion>),
     Denied(
         Arc<InstalledTransportCompletion>,
         InstalledTransportPublicationDenial,

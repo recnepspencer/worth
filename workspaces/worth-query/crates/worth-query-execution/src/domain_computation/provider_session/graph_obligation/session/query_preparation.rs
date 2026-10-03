@@ -43,12 +43,6 @@ impl WorthQueryPreparedQuerySessionIdentity {
     ) -> WorthQueryGraphWorkSessionIdentity {
         self.identity
     }
-
-    pub(in crate::domain_computation) const fn managed_run_identity(
-        &self,
-    ) -> WorthQueryGraphWorkManagedRunIdentity {
-        self.managed_run
-    }
 }
 
 impl WorthQueryManagedGraphWorkSession {

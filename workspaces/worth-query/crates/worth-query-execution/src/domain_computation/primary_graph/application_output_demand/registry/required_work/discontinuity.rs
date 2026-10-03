@@ -125,10 +125,10 @@ impl DemandRegistryState {
         let outer_new = row.is_none();
         let inner_new = previous.is_none();
         let outer_bytes = outer_new
-            .then(|| node_bytes::<ProductBranchIncarnation, BranchCursors>())
+            .then(node_bytes::<ProductBranchIncarnation, BranchCursors>)
             .transpose()?;
         let root_bytes = (outer_new && self.discontinuity_cursors._root_capacity.is_none())
-            .then(|| node_bytes::<ProductBranchIncarnation, BranchCursors>())
+            .then(node_bytes::<ProductBranchIncarnation, BranchCursors>)
             .transpose()?;
         let inner_bytes = inner_new
             .then(|| {
@@ -140,7 +140,7 @@ impl DemandRegistryState {
             })
             .transpose()?;
         let inner_root_bytes = (inner_new && row.is_none_or(|row| row._root_capacity.is_none()))
-            .then(|| node_bytes::<BranchId, DiscontinuityCursor>())
+            .then(node_bytes::<BranchId, DiscontinuityCursor>)
             .transpose()?;
         let key_bytes = selected_key
             .as_ref()

@@ -42,8 +42,8 @@ impl<'snapshot> PreparedInputCutoffBasis<'snapshot> {
                         CompanionPreflightStop::WorkCounterOverflow,
                     )
                 }
-                RelationalSnapshotPositionAdmissionStop::Position(stop) => {
-                    InputCutoffVerificationStop::SelectedSourceUnavailable(stop)
+                RelationalSnapshotPositionAdmissionStop::Position(_) => {
+                    InputCutoffVerificationStop::SelectedSourceUnavailable
                 }
             })?;
         Ok(Self {

@@ -105,7 +105,7 @@ where
         Ok(slot.finish(
             successor,
             match outcome {
-                Ok(advance) => RequiredFreshOutcome::Advanced(advance),
+                Ok(_) => RequiredFreshOutcome::Advanced,
                 Err(denial) => RequiredFreshOutcome::Refused(denial),
             },
         ))

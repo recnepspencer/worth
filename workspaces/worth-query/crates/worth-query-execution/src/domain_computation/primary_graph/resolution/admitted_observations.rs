@@ -239,7 +239,7 @@ pub(super) fn observe_mapping(
         .semantic_byte_width()
         .checked_add(std::mem::size_of::<AspectValue>())
         .and_then(|work| u64::try_from(work).ok())
-        .ok_or_else(|| {
+        .ok_or({
             AdmittedPrincipalObservationStop::Admission(CompanionPreflightStop::WorkCounterOverflow)
         })?;
     let copy_bytes =
@@ -288,12 +288,11 @@ pub(super) fn observe_target(
                     if relation.kind_id == layout.relation_kind
                         && relation.source == mapping
                         && relation.lifecycle == RecordLifecycleState::Live
+                        && selected.replace(relation).is_some()
                     {
-                        if selected.replace(relation).is_some() {
-                            return Err(AdmittedPrincipalObservationStop::Semantic(
-                                WorthQueryPrincipalResolutionDenialKind::AmbiguousPrincipalTarget,
-                            ));
-                        }
+                        return Err(AdmittedPrincipalObservationStop::Semantic(
+                            WorthQueryPrincipalResolutionDenialKind::AmbiguousPrincipalTarget,
+                        ));
                     }
                 }
             }

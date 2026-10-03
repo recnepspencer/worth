@@ -78,7 +78,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         let lease = match self.product_runtime.admit_product_occurrence(incarnation) {
             Ok(lease) => lease,
-            Err(denial) => return Outcome::Denied(Denial::ProductAdmission(denial)),
+            Err(_) => return Outcome::Denied(Denial::ProductAdmission),
         };
         cost.cost
             .completion_candidate_prepares
@@ -88,13 +88,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .prepare_inbound_completion_candidate(lease.relational_basis(), &accepted)
         {
             Ok(candidate) => candidate,
-            Err(denial) => return Outcome::Denied(Denial::CompletionPreparation(denial)),
+            Err(_) => return Outcome::Denied(Denial::CompletionPreparation),
         };
         let binding = lease.publication_binding();
         let recovery = binding.recovery();
         let prepared = match binding.prepare_relational_candidate(candidate, request, false) {
             Ok(prepared) => prepared,
-            Err(no_effect) => return Outcome::NoEffect(no_effect),
+            Err(_) => return Outcome::NoEffect,
         };
         let terminal = WorthQueryReservedProductPublicationReceipt::new(
             binding.root_identity(),
@@ -120,10 +120,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     terminal.fill(publication.consume(), None),
                 ))
             }
-            RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
+            RuntimeWorldPublicationOutcome::NoEffect(_) => {
                 self.primary_provider
                     .clear_inbound_completion_publication_pending(&correlation);
-                Outcome::NoEffect(no_effect)
+                Outcome::NoEffect
             }
             RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
                 Outcome::ProductUnpublished(WorthQueryUnpublishedInboundCompletion::new(

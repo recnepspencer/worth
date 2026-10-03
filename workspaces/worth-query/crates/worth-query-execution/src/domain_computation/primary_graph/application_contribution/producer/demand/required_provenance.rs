@@ -16,7 +16,9 @@ use crate::domain_computation::primary_graph::{
 
 use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
 
+#[derive(Default)]
 pub(super) enum DemandProgressionProvenance {
+    #[default]
     Ordinary,
     RequiredSuccessor(RequiredSuccessorProvenance),
 }
@@ -95,16 +97,6 @@ impl RequiredSuccessorProvenance {
 
     pub(super) fn commit_authority(&self) -> &WorthQueryProducerCommitAuthority {
         &self.commit_authority
-    }
-
-    pub(super) fn installed_edition(&self) -> InstalledProducerEdition {
-        self.installed_edition
-    }
-}
-
-impl Default for DemandProgressionProvenance {
-    fn default() -> Self {
-        Self::Ordinary
     }
 }
 

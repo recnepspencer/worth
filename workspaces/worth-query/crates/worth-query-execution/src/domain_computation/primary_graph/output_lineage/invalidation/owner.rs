@@ -220,7 +220,7 @@ impl RelationalPublicationCompanion for SourceInvalidationOwner {
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
             hint_allowance.bytes(prepared_bytes)?;
             let mut prepared = Vec::with_capacity(selected.len());
-            for (membership, identity) in selected {
+            for membership in selected {
                 let branch_bytes = u64::try_from(context.branch_id().0.len())
                     .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?;
                 let hint_bytes = RequiredWorkMembership::native_hint_bytes();
@@ -248,7 +248,6 @@ impl RelationalPublicationCompanion for SourceInvalidationOwner {
                 );
                 let hint = RequiredWorkMembership::prepared_native_hint(
                     observer.clone(),
-                    identity,
                     branch,
                     hint_capacity,
                 );

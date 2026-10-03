@@ -124,6 +124,7 @@ impl WorthQueryOutputDemandRegistry {
 
     /// Pops only a selected required-work hint. The registry key and native
     /// settlement remain descriptive until the caller authenticates them.
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn next_required_work(
         &self,
         source_owner: &SourceInvalidationOwner,
@@ -154,9 +155,7 @@ impl WorthQueryOutputDemandRegistry {
                     .state
                     .lock()
                     .unwrap_or_else(std::sync::PoisonError::into_inner);
-                if let Err(denial) = state.charge_record_lookup(selected.key(), admission) {
-                    return Err(denial);
-                }
+                state.charge_record_lookup(selected.key(), admission)?;
                 charge_required_key_lookup(&state, selected.key(), admission)?;
                 let live = state.records.get(selected.key()).is_some_and(|record| {
                     record.is_required()

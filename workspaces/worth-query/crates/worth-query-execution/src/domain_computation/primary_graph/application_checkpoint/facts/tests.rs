@@ -78,7 +78,7 @@ fn legacy_optional_absence_requires_verification_while_fresh_v6_absence_is_exact
         aspect: AspectKey::new("test.optional").unwrap(),
         native_revision: None,
     };
-    let bytes = encode(&[fact.clone()]).expect("fresh absence has a bounded wire");
+    let bytes = encode(std::slice::from_ref(&fact)).expect("fresh absence has a bounded wire");
     assert_eq!(
         decode_for_wire_version(&bytes, 6)
             .unwrap()
@@ -119,7 +119,7 @@ fn indexed_selection_wire_preserves_semantic_definition_and_signed_zero() {
         candidate_limit: 4,
         candidates: vec![entity],
     };
-    let bytes = encode(&[fact.clone()]).expect("bounded native index fact encodes");
+    let bytes = encode(std::slice::from_ref(&fact)).expect("bounded native index fact encodes");
     assert_eq!(
         decode_for_wire_version(&bytes, 6)
             .unwrap()

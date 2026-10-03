@@ -253,7 +253,7 @@ where
             }
             RequiredWaveStep::Fresh(progress) => {
                 match slot.install(progress) {
-                    RequiredFreshOutcome::Advanced(_) => {}
+                    RequiredFreshOutcome::Advanced => {}
                     RequiredFreshOutcome::Refused(stop) => {
                         stopped!('required, selected.key(), stop)
                     }
@@ -345,7 +345,7 @@ where
                     Err(stop) => stopped!('required, &head, stop),
                 }
             }
-            RequiredWaveStep::Pending | RequiredWaveStep::NeedsDisclosure => {
+            RequiredWaveStep::Pending => {
                 if queue.active() {
                     hold_queue_frame!('required, None)
                 }

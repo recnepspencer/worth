@@ -62,12 +62,6 @@ impl ManagedUnpublishedAttempt {
             && self.attempt.affinity().product_publication().observation() == product
     }
 
-    pub(in crate::domain_computation::primary_graph::provider) fn recovery_port(
-        &self,
-    ) -> worth_runtime_world::facade::RuntimeWorldRecoveryPort {
-        self.attempt.affinity().product_publication().recovery()
-    }
-
     pub(in crate::domain_computation::primary_graph::provider) fn prepare_fresh_terminal(
         &mut self,
         successor: worth_runtime_world::facade::ProductUnpublishedRecoveryHandle,
@@ -80,19 +74,6 @@ impl ManagedUnpublishedAttempt {
         self.publication_admission.admit_read_scratch(bytes)?;
         self.reserved_terminal.rebind_unfilled(successor);
         Ok(())
-    }
-
-    /// A World partial never authorizes its prospective Query settlement.
-    /// Keep the handler's sealed facts while both old vacancies are queued for
-    /// the owning metered admission to drain before a fresh reservation.
-    pub(in crate::domain_computation::primary_graph::provider) fn cancel_stale_slot(&mut self) {
-        if let Some(slot) = self.prepared_lineage_slot.take() {
-            assert!(self.lineage_metadata.is_none());
-            self.lineage_metadata = Some(slot.into_recovery_metadata());
-        }
-        if let Some(required) = self.required_prerequisites.as_mut() {
-            required.cancel_reserved_identity_for_recovery();
-        }
     }
 
     pub(in crate::domain_computation::primary_graph::provider) fn prepare_fresh_slot(

@@ -11,7 +11,7 @@ use crate::domain_computation::primary_graph::output_lineage::invalidation::Inva
 
 pub(in crate::domain_computation::primary_graph) enum SelectedPermissionSecurityStop {
     Admission(CompanionPreflightStop),
-    World(RuntimeWorldServiceDenial<RuntimeWorldBranchAdmissionDenial>),
+    World,
     AccountingOverflow,
 }
 
@@ -144,7 +144,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 RuntimeWorldServiceDenial::Denied(
                     RuntimeWorldBranchAdmissionDenial::CurrentnessAccountingOverflow,
                 ) => Err(SelectedPermissionSecurityStop::AccountingOverflow),
-                denial => Err(SelectedPermissionSecurityStop::World(denial)),
+                _ => Err(SelectedPermissionSecurityStop::World),
             },
         }
     }

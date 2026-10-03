@@ -108,7 +108,7 @@ pub(super) struct MarkedDelivery {
     pub(super) retained_key_bytes: u64,
 }
 
-pub(super) type SelectedHint = (Arc<RequiredWorkMembership>, Arc<RecordedSettlementIdentity>);
+pub(super) type SelectedHint = Arc<RequiredWorkMembership>;
 
 /// Marking either completes within the installed marking ceiling and retained
 /// capacity or degrades to a counted discontinuity: readers then fall back to
@@ -213,7 +213,7 @@ fn select_hints(
             .get(identity)
             .and_then(|row| row.work_membership.as_ref())
         {
-            selected.push((Arc::clone(membership), Arc::clone(identity)));
+            selected.push(Arc::clone(membership));
         }
     }
     if selected.is_empty() {

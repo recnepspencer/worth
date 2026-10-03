@@ -3,8 +3,8 @@
 use std::sync::Arc;
 
 use worth_relational::facade::{
-    mvcc::{CompanionCellEditStop, CompanionPreflightStop},
-    runtime::{PositionedRelationalSnapshot, RelationalRuntime, SnapshotPositionDenial},
+    mvcc::CompanionPreflightStop,
+    runtime::{PositionedRelationalSnapshot, RelationalRuntime},
     snapshots::SnapshotHandle,
 };
 
@@ -33,7 +33,6 @@ pub(in crate::domain_computation::primary_graph) struct VerifiedInputCutoff<'sel
     pub(super) candidate: RetainedInputCutoffCandidate,
     pub(super) selected: &'selected PositionedRelationalSnapshot,
     pub(super) fresh_key: Option<PreparedInputReuseKey>,
-    pub(super) fresh_context: PreparedDecisionReuseContext,
     /// The same alias-local facts whose completed prefix passed verification.
     pub(super) verified_facts: Arc<[WorthQueryApplicationObservedFact]>,
 }
@@ -51,8 +50,8 @@ pub(in crate::domain_computation::primary_graph) enum InputCutoffVerificationSto
     Admission(CompanionPreflightStop),
     WorkExhausted,
     PendingUpstream,
-    CurrentnessRaced(CompanionCellEditStop),
-    SelectedSourceUnavailable(SnapshotPositionDenial),
+    CurrentnessRaced,
+    SelectedSourceUnavailable,
     SelectedSourceMismatch,
 }
 
@@ -94,7 +93,6 @@ impl RetainedInputCutoffCandidate {
                 candidate: self,
                 selected,
                 fresh_key: Some(fresh_key),
-                fresh_context,
                 verified_facts,
             })
         } else {
@@ -254,8 +252,8 @@ impl RetainedInputCutoffCandidate {
                 }
                 return Err(InputCutoffVerificationStop::PendingUpstream);
             }
-            Err(ConsumedOutputVerificationStop::RetryCurrentness(stop)) => {
-                return Err(InputCutoffVerificationStop::CurrentnessRaced(stop));
+            Err(ConsumedOutputVerificationStop::RetryCurrentness(_)) => {
+                return Err(InputCutoffVerificationStop::CurrentnessRaced);
             }
             Err(ConsumedOutputVerificationStop::WorkExhausted) => {
                 return Err(InputCutoffVerificationStop::WorkExhausted);

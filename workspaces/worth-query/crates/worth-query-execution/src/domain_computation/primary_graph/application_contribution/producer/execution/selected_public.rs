@@ -16,8 +16,7 @@ use crate::domain_computation::authorization::{
 };
 use crate::domain_computation::primary_graph::{
     SharedSelectedProductOperation, WorthQueryEntityResolutionDenial,
-    WorthQueryIssuedSelectedPrincipal, WorthQueryIssuedSelectedScope,
-    WorthQueryPrincipalResolutionDenial,
+    WorthQueryIssuedSelectedPrincipal, WorthQueryPrincipalResolutionDenial,
 };
 
 type Mutation<Schema, Binding> =
@@ -58,8 +57,6 @@ where
         MutationPrincipal<Schema, Binding>,
         MutationPrincipalIdentity<Schema, Binding>,
     >,
-    pub(super) scope:
-        WorthQueryIssuedSelectedScope<'selected, 'runtime, Schema, MutationScope<Schema, Binding>>,
     pub(super) operation:
         crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<
             Schema,
@@ -168,7 +165,6 @@ where
         .map_err(Stop::Admission)?;
     Ok(PreparedSelectedPublicMutation {
         principal,
-        scope,
         operation,
     })
 }
@@ -218,6 +214,8 @@ where
         SelectedPublicPreparationStop::Operation(stop) => match stop {
             SelectedConventionalAdmissionStop::Admission(stop) => resource(stop),
             SelectedConventionalAdmissionStop::AccountingOverflow => work(),
+            SelectedConventionalAdmissionStop::Authorization(denial) =>
+                super::denial::request_authority_denied(Binding::IDENTITY, denial),
             SelectedConventionalAdmissionStop::Interrupted(kind) => interrupted(kind),
             SelectedConventionalAdmissionStop::ExpiredAuthentication =>
                 request(WorthQueryOutputDemandDenialKind::ProducerUnavailable),

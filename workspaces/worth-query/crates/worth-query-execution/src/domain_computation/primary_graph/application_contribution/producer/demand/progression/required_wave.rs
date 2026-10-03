@@ -58,7 +58,6 @@ pub(super) enum RequiredWaveStep<Schema: ApplicationSchema> {
     /// The upstream row is still refreshing.
     Held(WorthQueryOutputDemandKey),
     Pending,
-    NeedsDisclosure,
     Fresh(RequiredFreshProgress<Schema>),
 }
 
@@ -102,12 +101,7 @@ impl RequiredWaveStack {
             // A chain grows geometrically so successive prerequisites do not
             // repeatedly relocate the whole stack. The old and new buffers
             // coexist during reserve; the selected pin is then written once.
-            let next_capacity = self
-                .frames
-                .capacity()
-                .checked_mul(2)
-                .unwrap_or(usize::MAX)
-                .max(next_len);
+            let next_capacity = self.frames.capacity().saturating_mul(2).max(next_len);
             let new_bytes = next_capacity
                 .checked_mul(std::mem::size_of::<SelectedReadyReadmission>())
                 .ok_or_else(capacity_denial)?;
@@ -133,7 +127,7 @@ impl RequiredWaveStack {
             if replacement.capacity() != next_capacity {
                 return Err(capacity_denial());
             }
-            replacement.extend(self.frames.drain(..));
+            replacement.append(&mut self.frames);
             self.frames = replacement;
         } else {
             admission
@@ -277,7 +271,6 @@ where
             })
         }
         RequiredCueProgress::PendingUnresolved => Ok(RequiredWaveStep::Pending),
-        RequiredCueProgress::NeedsDisclosure => Ok(RequiredWaveStep::NeedsDisclosure),
         RequiredCueProgress::Fresh(progress) => Ok(RequiredWaveStep::Fresh(progress)),
     }
 }

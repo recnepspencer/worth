@@ -41,7 +41,7 @@ pub(in crate::domain_computation) enum SelectedConventionalAdmissionStop {
     UnsupportedAuthorization,
     Interrupted(WorthQueryRequestInterruption),
     ExpiredAuthentication,
-    Static(WorthQueryRetainedMutationStaticStop),
+    Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial),
     Preconditions(EmptyMutationPreconditionAdmissionStop),
     IdentityExhausted,
     GraphWork(SelectedOperationGraphWorkStop),
@@ -99,7 +99,11 @@ where
         current,
         admission,
     )
-    .map_err(Stop::Static)?;
+    .map_err(|stop| match stop {
+        WorthQueryRetainedMutationStaticStop::Admission(stop) => Stop::Admission(stop),
+        WorthQueryRetainedMutationStaticStop::Authorization(denial) => Stop::Authorization(denial),
+        WorthQueryRetainedMutationStaticStop::AccountingOverflow => Stop::AccountingOverflow,
+    })?;
     // Two contracts() accesses, authorization, requirements and the empty
     // cardinality check all precede the unsupported-authority refusal.
     admission.charge_external_work(5).map_err(Stop::Admission)?;

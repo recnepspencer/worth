@@ -7,6 +7,7 @@ use worth_relational::facade::history::CommitId;
 
 use super::super::RecordedSettlementIdentity;
 
+#[cfg(test)]
 mod read_observation;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]

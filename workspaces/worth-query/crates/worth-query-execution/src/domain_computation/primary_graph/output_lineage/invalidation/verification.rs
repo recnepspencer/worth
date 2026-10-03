@@ -17,7 +17,7 @@ use super::super::RecordedSettlementIdentity;
 use super::{
     admission::IndexAdmission,
     index_capacity,
-    mark_state::{FullVerificationReason, SettlementCurrentness, SettlementMarks},
+    mark_state::{SettlementCurrentness, SettlementMarks},
     retention,
     source_alignment::{BranchMarkRoot, SnapshotAlignedMarkState},
     InvalidationEditAdmission, SourceInvalidationOwner,
@@ -25,7 +25,7 @@ use super::{
 
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) enum SettlementVerificationStop {
-    Alignment(FullVerificationReason),
+    Alignment,
     Admission(CompanionPreflightStop),
     SourceRead(WorthQuerySourceCurrentnessFailure),
     Edit(CompanionCellEditStop),
@@ -71,24 +71,18 @@ impl SourceInvalidationOwner {
         let actual = runtime
             .read_truth()
             .positioned_snapshot(snapshot)
-            .map_err(|denial| {
-                SettlementVerificationStop::Alignment(
-                    FullVerificationReason::SelectedSourceUnavailable(denial),
-                )
-            })?;
+            .map_err(|_| SettlementVerificationStop::Alignment)?;
         if &actual != selected || selected.runtime_instance_id() != self.runtime_instance_id {
-            return Err(SettlementVerificationStop::Alignment(
-                FullVerificationReason::ForeignSource,
-            ));
+            return Err(SettlementVerificationStop::Alignment);
         }
-        let cell = self.cell_for_read(selected, admission)?.ok_or(
-            SettlementVerificationStop::Alignment(FullVerificationReason::MissingSettlement),
-        )?;
+        let cell = self
+            .cell_for_read(selected, admission)?
+            .ok_or(SettlementVerificationStop::Alignment)?;
         let image = cell.read_image();
         admission.ordered_read(image.payload().past.len())?;
         admission.ordered_read(image.payload().past.len())?;
         let aligned = SnapshotAlignedMarkState::observe_image(&image, selected)
-            .map_err(SettlementVerificationStop::Alignment)?;
+            .map_err(|_| SettlementVerificationStop::Alignment)?;
         admission.ordered_read(aligned.settlement_count())?;
         let ordinals = match aligned.currentness(identity) {
             SettlementCurrentness::Clean => return Ok(DirtyReverification::AlreadyCurrent),
@@ -96,8 +90,8 @@ impl SourceInvalidationOwner {
             SettlementCurrentness::PendingUpstream(_) => {
                 return Err(SettlementVerificationStop::PendingUpstream)
             }
-            SettlementCurrentness::FullVerificationRequired(reason) => {
-                return Err(SettlementVerificationStop::Alignment(reason))
+            SettlementCurrentness::FullVerificationRequired(_) => {
+                return Err(SettlementVerificationStop::Alignment)
             }
         };
         let live = image.root_id() == selected.root_id()
@@ -125,9 +119,7 @@ impl SourceInvalidationOwner {
             admission.work(1)?;
             let fact = row
                 .fact_at(ordinal)
-                .ok_or(SettlementVerificationStop::Alignment(
-                    FullVerificationReason::MissingSettlement,
-                ))?;
+                .ok_or(SettlementVerificationStop::Alignment)?;
             let remaining = admission.remaining_work();
             let prepaid = fact
                 .exact_probe_work()
@@ -169,9 +161,7 @@ impl SourceInvalidationOwner {
             row,
         } = verified;
         if runtime_instance_id != self.runtime_instance_id {
-            return Err(SettlementVerificationStop::Alignment(
-                FullVerificationReason::ForeignSource,
-            ));
+            return Err(SettlementVerificationStop::Alignment);
         }
         admission.bytes(
             index_capacity::arc_bytes::<SettlementMarks>()
@@ -200,8 +190,8 @@ impl SourceInvalidationOwner {
         let prepared = self
             .prepare_root_replacement(cell, image, Arc::new(root), admission)
             .map_err(|stop| match stop {
-                super::SettlementRegistrationStop::Alignment(reason) => {
-                    SettlementVerificationStop::Alignment(reason)
+                super::SettlementRegistrationStop::Alignment(_) => {
+                    SettlementVerificationStop::Alignment
                 }
                 super::SettlementRegistrationStop::Admission(reason) => {
                     SettlementVerificationStop::Admission(reason)

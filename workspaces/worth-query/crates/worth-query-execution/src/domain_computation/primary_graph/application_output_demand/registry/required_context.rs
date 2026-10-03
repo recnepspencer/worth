@@ -42,7 +42,7 @@ pub(in crate::domain_computation) struct RequiredOutputExecution {
 }
 
 impl RequiredOutputExecution {
-    pub(in crate::domain_computation) fn into_parts(
+    pub(in crate::domain_computation::primary_graph) fn into_parts(
         self,
     ) -> (RequiredOutputDemandContext, PreparedReadyBacking) {
         (self.context, self.ready_backing)
@@ -81,14 +81,6 @@ impl RequiredOutputDemandContext {
                 .bind_execution_mode(mode),
             context: self,
         }
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn prepared_decision_reuse(
-        &self,
-    ) -> Option<
-        &crate::domain_computation::primary_graph::output_lineage::PreparedDecisionReuseContext,
-    > {
-        self.prepared_decision_reuse.as_ref()
     }
 
     pub(in crate::domain_computation::primary_graph) fn retain_prepared_decision_reuse(
@@ -133,12 +125,6 @@ impl RequiredOutputDemandContext {
             boundary.seal_decision_reuse(prepared, self.decision_context_use.take()?)
         });
         self.completed_handler_facts = Some(boundary);
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn completed_handler_facts(
-        &self,
-    ) -> Option<&CompletedHandlerFactBoundary> {
-        self.completed_handler_facts.as_ref()
     }
 
     pub(in crate::domain_computation::primary_graph) fn take_completed_handler_facts(

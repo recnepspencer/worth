@@ -58,11 +58,6 @@ impl PublishedStableLineage {
     {
         self.recorded().observed_source_facts()
     }
-    pub(in crate::domain_computation::primary_graph) fn resources(
-        &self,
-    ) -> Option<crate::domain_computation::primary_graph::WorthQueryProducerDemandResources> {
-        self.recorded().resources()
-    }
     pub(in crate::domain_computation::primary_graph) fn observation(
         &self,
     ) -> &ProductBranchObservation {

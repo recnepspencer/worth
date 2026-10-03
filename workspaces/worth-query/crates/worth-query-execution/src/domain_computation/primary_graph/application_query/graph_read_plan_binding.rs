@@ -111,15 +111,6 @@ impl<'a, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, S
             .expect("an application-query graph-work session retains its exact basis")
     }
 
-    pub(in crate::domain_computation::primary_graph) fn selected_basis(
-        &self,
-    ) -> (
-        &crate::basis::WorthQueryProductObservationLease,
-        &worth_relational::facade::snapshots::SnapshotHandle,
-    ) {
-        (self.basis.selected_product(), self.basis.snapshot_handle())
-    }
-
     pub fn graph_work_session_identity(
         &self,
     ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity {

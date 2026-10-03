@@ -45,7 +45,7 @@ pub(super) fn clone_published_mode(
     let work = u64::try_from(copy)
         .ok()
         .and_then(|copy| copy.checked_add(3));
-    if !work.is_some_and(|work| admission.charge_external_work(work).is_ok()) {
+    if work.is_none_or(|work| admission.charge_external_work(work).is_err()) {
         registry.relinquish_execution(interest);
         return Err(denial(
             WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,

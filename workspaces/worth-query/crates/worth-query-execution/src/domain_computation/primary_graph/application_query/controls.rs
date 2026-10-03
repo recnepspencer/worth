@@ -224,21 +224,6 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph::application_query) fn selected_permission_basis(
-        &self,
-    ) -> Option<(
-        &crate::basis::WorthQueryProductObservationLease,
-        &super::resource_lifecycle::WorthQueryApplicationBasisLease,
-    )> {
-        match &self.basis {
-            WorthQueryApplicationQueryBasis::Selected {
-                product,
-                application_basis,
-            } => Some((product, application_basis)),
-            WorthQueryApplicationQueryBasis::RetainedContinuation { .. } => None,
-        }
-    }
-
     pub(super) fn into_admission_parts(
         self,
     ) -> (

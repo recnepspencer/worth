@@ -192,8 +192,8 @@ fn no_demand_mutation_program(
     Account,
 > {
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
+    let principal = authenticated_principal(world, &request);
+    let account = resolved_account(world, "open", &request);
     let operation = world
         .application
         .installed_schema()
@@ -209,7 +209,7 @@ fn no_demand_mutation_program(
             &request,
         )
         .unwrap();
-    let other = wide.then(|| resolved_account(&world, "unrelated", &request));
+    let other = wide.then(|| resolved_account(world, "unrelated", &request));
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(&admission, |reader, projected| {

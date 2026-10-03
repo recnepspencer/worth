@@ -169,6 +169,7 @@ impl WorthQueryApplicationSnapshotLease {
         }
     }
 
+    #[cfg(test)]
     pub(in crate::domain_computation) fn release(self) -> bool {
         self.release_custody().snapshot_released()
     }

@@ -1,8 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use worth_runtime_world::facade::{
-    ProductUnpublishedOwnerEffects, ProductUnpublishedRecoveryHandle, RuntimeWorldRecoveryDenial,
-    RuntimeWorldRecoveryPort,
+    ProductUnpublishedRecoveryHandle, RuntimeWorldRecoveryDenial, RuntimeWorldRecoveryPort,
 };
 
 use super::{
@@ -46,19 +45,6 @@ impl WorthQueryUnpublishedIdempotencyReservation {
         let removed = self.with_store(|store, key, handle| store.release_exact(key, handle));
         self.armed = false;
         drop(removed);
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn retain(
-        mut self,
-        effects: &ProductUnpublishedOwnerEffects,
-    ) {
-        let returned_handle = effects.recovery_handle();
-        assert_eq!(
-            self.recovery_handle, returned_handle,
-            "World returned the recovery identity preissued to this publication"
-        );
-        self.with_store(|store, key, handle| store.retain_exact(key, handle));
-        self.armed = false;
     }
 
     pub(in crate::domain_computation::primary_graph::provider) fn retain_managed(

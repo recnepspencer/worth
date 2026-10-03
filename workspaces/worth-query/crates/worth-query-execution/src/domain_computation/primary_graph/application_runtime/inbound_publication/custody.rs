@@ -44,7 +44,7 @@ pub(in crate::domain_computation::primary_graph) enum InstalledTransportResumeOu
 
 enum RetainedCompletion {
     Ready(Arc<InstalledTransportCompletion>),
-    Publishing(Arc<InstalledTransportCompletion>),
+    Publishing,
     PerformedPending(
         PerformedInstalledTransportCompletion,
         Option<RecoveryRelease>,
@@ -54,10 +54,7 @@ enum RetainedCompletion {
         WorthQueryProductUnpublishedRecovery,
         Option<RecoveryRelease>,
     ),
-    Recovering(
-        Arc<InstalledTransportCompletion>,
-        WorthQueryProductUnpublishedRecovery,
-    ),
+    Recovering,
     StaleRelease(Arc<InstalledTransportCompletion>, RecoveryRelease),
 }
 
@@ -191,7 +188,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 return Resume::Pending(Pending::UnknownCompletion);
             };
             match &mut entry.state {
-                RetainedCompletion::Publishing(_) | RetainedCompletion::Recovering(_, _) => {
+                RetainedCompletion::Publishing | RetainedCompletion::Recovering => {
                     return Resume::Pending(Pending::ConcurrentContinuation);
                 }
                 RetainedCompletion::Unpublished(evidence, recovery, prior) => {
@@ -203,8 +200,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     }
                     let evidence = Arc::clone(evidence);
                     let recovery = recovery.clone();
-                    entry.state =
-                        RetainedCompletion::Recovering(Arc::clone(&evidence), recovery.clone());
+                    entry.state = RetainedCompletion::Recovering;
                     Work::Recover(evidence, recovery)
                 }
                 RetainedCompletion::StaleRelease(evidence, release) => {
@@ -224,7 +220,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 }
                 RetainedCompletion::Ready(evidence) => {
                     let evidence = Arc::clone(evidence);
-                    entry.state = RetainedCompletion::Publishing(Arc::clone(&evidence));
+                    entry.state = RetainedCompletion::Publishing;
                     Work::Publish(evidence)
                 }
                 RetainedCompletion::PerformedPending(_, _) => Work::Seal,
@@ -242,7 +238,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     .get_mut(correlation)
                     .expect("publishing custody slot");
                 match outcome {
-                    InstalledTransportPublicationOutcome::AlreadyCompleted(_) => {
+                    InstalledTransportPublicationOutcome::AlreadyCompleted => {
                         custody.finish(correlation);
                         return Resume::Performed;
                     }
@@ -258,11 +254,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         );
                         return Resume::Pending(Pending::ProductRecoveryRequired);
                     }
-                    InstalledTransportPublicationOutcome::Denied(evidence, super::installed_transport::InstalledTransportPublicationDenial::PublicationPermit(_)) => {
+                    InstalledTransportPublicationOutcome::Denied(evidence, super::installed_transport::InstalledTransportPublicationDenial::PublicationPermit) => {
                         entry.state = RetainedCompletion::Ready(evidence);
                         return Resume::Pending(Pending::PublicationAtCapacity);
                     }
-                    InstalledTransportPublicationOutcome::NoEffect(evidence, _)
+                    InstalledTransportPublicationOutcome::NoEffect(evidence)
                     | InstalledTransportPublicationOutcome::Denied(evidence, _) => {
                         entry.state = RetainedCompletion::Ready(evidence);
                         return Resume::Pending(Pending::PublicationRetryRequired);

@@ -54,9 +54,7 @@ impl WorthQueryOutputDemandRegistry {
                         ))
                     }
                     WorthQueryAcceptedOutputAuthority::Stable(stable) => {
-                        let Some(partition) = stable.source_partition_identity() else {
-                            return None;
-                        };
+                        let partition = stable.source_partition_identity()?;
                         let exact_source = stable.source_identity()
                             == Some(crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Runtime(
                                 crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity::new(

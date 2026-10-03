@@ -31,12 +31,6 @@ impl<'a, Schema> PreparedApplicationQuerySourceReadmission<'a, Schema> {
         &self.query_identity
     }
 
-    pub(in crate::domain_computation::primary_graph) fn parameter_identity(
-        &self,
-    ) -> &worth_foundational::facade::CanonicalDigestId {
-        self.parameters.identity()
-    }
-
     pub(in crate::domain_computation::primary_graph) fn into_parts(
         self,
     ) -> (
@@ -53,15 +47,6 @@ impl<'a, Schema> PreparedApplicationQuerySourceReadmission<'a, Schema> {
         &worth_relational::facade::snapshots::SnapshotHandle,
     )> {
         self.controls.selected_basis()
-    }
-
-    pub(super) fn selected_permission_basis(
-        &self,
-    ) -> Option<(
-        &crate::basis::WorthQueryProductObservationLease,
-        &super::super::resource_lifecycle::WorthQueryApplicationBasisLease,
-    )> {
-        self.controls.selected_permission_basis()
     }
 }
 

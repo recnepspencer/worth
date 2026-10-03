@@ -2,10 +2,10 @@
 //! The test-only relation mint exercises the actor, not producer authorization.
 
 use super::*;
+#[cfg(not(feature = "certification-invalidation-equivalence"))]
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerification;
 use crate::domain_computation::primary_graph::{
-    invariant_projection::{
-        ConsumedOutputEvidence, ConsumedOutputVerification, ConsumedOutputVerificationStop,
-    },
+    invariant_projection::{ConsumedOutputEvidence, ConsumedOutputVerificationStop},
     output_lineage::{
         input_cutoff::StableEqualityConsequence,
         invalidation::{

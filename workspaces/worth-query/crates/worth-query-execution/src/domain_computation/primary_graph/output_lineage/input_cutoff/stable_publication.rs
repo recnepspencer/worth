@@ -59,31 +59,11 @@ impl PreparedStableLineagePublication<'_, '_> {
         &self.address.identity
     }
 
-    pub(in crate::domain_computation::primary_graph) fn facts(
-        &self,
-    ) -> &Arc<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]> {
-        &self.facts
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn selected_source(
-        &self,
-    ) -> &worth_relational::facade::runtime::PositionedRelationalSnapshot {
-        self.address.verified.selected
-    }
-
     pub(in crate::domain_computation::primary_graph) fn consumed_outputs(
         &self,
     ) -> &[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence]
     {
         &self.recorded.consumed_outputs
-    }
-}
-
-impl PreparedStableLineageAddress<'_, '_> {
-    pub(in crate::domain_computation::primary_graph) fn identity(
-        &self,
-    ) -> &Arc<RecordedSettlementIdentity> {
-        &self.identity
     }
 }
 

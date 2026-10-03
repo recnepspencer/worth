@@ -145,6 +145,7 @@ impl InstalledProducerEdition {
         })
     }
 
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) const fn digest(self) -> [u8; 32] {
         self.digest
     }

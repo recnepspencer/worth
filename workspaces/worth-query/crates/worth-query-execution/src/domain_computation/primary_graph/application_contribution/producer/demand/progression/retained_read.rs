@@ -99,7 +99,7 @@ where
     let (product, basis) = runtime
         .retain_selected_query_basis_admitted(&shared, &mut query_admission)
         .map_err(|stop| match stop {
-            SelectedQueryBasisRetentionStop::Basis(_) => denial(
+            SelectedQueryBasisRetentionStop::Basis => denial(
                 WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
                 "",
             ),

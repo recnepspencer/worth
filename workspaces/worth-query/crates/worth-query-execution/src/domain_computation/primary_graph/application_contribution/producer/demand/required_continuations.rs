@@ -34,7 +34,7 @@ use worth_query_admission::facade::authenticated_principal::{
 pub(in crate::domain_computation::primary_graph) use held::resume_held_upstream;
 
 pub(in crate::domain_computation::primary_graph) enum RequiredFreshOutcome {
-    Advanced(WorthQueryOutputDemandAdvance),
+    Advanced,
     Refused(WorthQueryOutputDemandDenial),
 }
 

@@ -338,7 +338,7 @@ where
                         SelectedFieldIndexAdmissionStop::Admission(stop) => {
                             principal_admission_denial(stop, binding)
                         }
-                        SelectedFieldIndexAdmissionStop::Native(_) => resolution_denial(
+                        SelectedFieldIndexAdmissionStop::Native => resolution_denial(
                             WorthQueryPrincipalResolutionDenialKind::IdentityIndexUnavailable,
                             binding,
                         ),

@@ -183,7 +183,7 @@ fn map_selected_read_stop(
             crate::domain_computation::primary_graph::product_operation::SelectedPermissionSecurityStop::AccountingOverflow,
         ) => return WorthQueryAdmittedOneShotStop::WorkCounterOverflow,
         SelectedAuthorizedReadStop::Security(
-            crate::domain_computation::primary_graph::product_operation::SelectedPermissionSecurityStop::World(_),
+            crate::domain_computation::primary_graph::product_operation::SelectedPermissionSecurityStop::World,
         ) | SelectedAuthorizedReadStop::StaleSecurity => {
             WorthQueryApplicationOneShotDenialKind::Authorization(
                 crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,

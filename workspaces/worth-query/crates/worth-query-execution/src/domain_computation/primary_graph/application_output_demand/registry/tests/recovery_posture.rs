@@ -55,8 +55,10 @@ fn retryable_publication_stale_does_not_keep_a_closed_required_interest() {
         .contains_key(&demand_key));
 }
 
+/// The request that ran out of budget keeps its Terminal stop; the row it was
+/// refreshing waits for a later claim with its own budget.
 #[test]
-fn running_budget_failure_cannot_claim_retry_after_the_registry_finishes_it() {
+fn running_budget_failure_stays_with_its_request_and_leaves_the_row_claimable() {
     let registry = WorthQueryOutputDemandRegistry::default();
     let demand_key = key("required", 7, 1);
     let wake = Arc::new(DemandWake {
@@ -88,8 +90,7 @@ fn running_budget_failure_cannot_claim_retry_after_the_registry_finishes_it() {
     );
     assert!(matches!(
         registry.begin(&demand_interest),
-        WorthQueryOutputDemandAdvanceAdmission::Failed(stored)
-            if stored == denial
+        WorthQueryOutputDemandAdvanceAdmission::Execute { successor_of: None }
     ));
 }
 

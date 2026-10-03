@@ -45,9 +45,7 @@ impl OutputPartitionIndex {
         coordinate: ProductCoordinate,
         partition: Option<[u8; 32]>,
     ) -> Option<Arc<OnceLock<usize>>> {
-        let Some(partition) = partition else {
-            return None;
-        };
+        let partition = partition?;
         let cell = Arc::new(OnceLock::new());
         assert!(self
             .slots

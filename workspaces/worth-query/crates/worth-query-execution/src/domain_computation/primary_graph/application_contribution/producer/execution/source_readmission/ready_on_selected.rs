@@ -114,7 +114,7 @@ where
     let (product, basis) = runtime
         .retain_selected_query_basis_admitted(shared, admission)
         .map_err(|stop| match stop {
-            SelectedQueryBasisRetentionStop::Basis(_) => denial(
+            SelectedQueryBasisRetentionStop::Basis => denial(
                 WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
                 Binding::IDENTITY,
             )
@@ -134,7 +134,7 @@ where
     .map_err(|stop| ready::ready_resource_denial(Binding::IDENTITY, stop))?;
     runtime
         .with_fresh_retained_query_permission(
-            &installed,
+            installed,
             Some(validated_principal),
             external_principal,
             retained,

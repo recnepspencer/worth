@@ -238,15 +238,14 @@ where
                 )
             })?;
         }
-        if matches!(selection, DisclosureSelection::Single)
-            || source.source_root() == retained.source_root()
+        if (matches!(selection, DisclosureSelection::Single)
+            || source.source_root() == retained.source_root())
+            && found.replace((value, source)).is_some()
         {
-            if found.replace((value, source)).is_some() {
-                return Err(denial(
-                    WorthQueryOutputDemandDenialKind::Superseded,
-                    subject,
-                ));
-            }
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::Superseded,
+                subject,
+            ));
         }
     }
     let (value, source) =

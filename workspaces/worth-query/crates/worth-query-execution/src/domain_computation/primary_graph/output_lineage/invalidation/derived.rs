@@ -50,7 +50,7 @@ pub(in crate::domain_computation::primary_graph) enum ConsumedOutputCurrentness 
     Direct(SourceSettlementCurrentness),
     CanonicallyEqualClean(Arc<RecordedSettlementIdentity>),
     PendingEqualSuccessor,
-    FullVerificationRequired(FullVerificationReason),
+    FullVerificationRequired,
 }
 
 enum RegistrationReadBasis {
@@ -164,22 +164,18 @@ impl SourceInvalidationOwner {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<ConsumedOutputCurrentness, CompanionPreflightStop> {
         if selected.runtime_instance_id() != self.runtime_instance_id {
-            return Ok(ConsumedOutputCurrentness::FullVerificationRequired(
-                FullVerificationReason::ForeignSource,
-            ));
+            return Ok(ConsumedOutputCurrentness::FullVerificationRequired);
         }
         let Some(cell) = self.cell_for_read(selected, admission)? else {
-            return Ok(ConsumedOutputCurrentness::FullVerificationRequired(
-                FullVerificationReason::MissingSettlement,
-            ));
+            return Ok(ConsumedOutputCurrentness::FullVerificationRequired);
         };
         let image = cell.read_image();
         let past_len = image.payload().past.len();
         admission.ordered_read(past_len)?;
         let aligned = match SnapshotAlignedMarkState::select_image(image, selected) {
             Ok(aligned) => aligned,
-            Err(reason) => {
-                return Ok(ConsumedOutputCurrentness::FullVerificationRequired(reason));
+            Err(_) => {
+                return Ok(ConsumedOutputCurrentness::FullVerificationRequired);
             }
         };
         Ok(
@@ -195,8 +191,8 @@ impl SourceInvalidationOwner {
                     ConsumedOutputCurrentness::CanonicallyEqualClean(successor)
                 }
                 EqualOutputCurrentness::Pending => ConsumedOutputCurrentness::PendingEqualSuccessor,
-                EqualOutputCurrentness::FullVerificationRequired(reason) => {
-                    ConsumedOutputCurrentness::FullVerificationRequired(reason)
+                EqualOutputCurrentness::FullVerificationRequired => {
+                    ConsumedOutputCurrentness::FullVerificationRequired
                 }
             },
         )

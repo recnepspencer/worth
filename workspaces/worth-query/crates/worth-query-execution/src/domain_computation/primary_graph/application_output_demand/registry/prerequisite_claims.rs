@@ -268,27 +268,6 @@ impl PreparedPrerequisiteClaims {
             && self.reserved_posting.is_some()
             && self.reserved_cleanup.is_some()
     }
-
-    /// The previous World plan did not publish. Its invisible address is
-    /// cancelled while the running demand and predecessor pins stay sealed.
-    pub(in crate::domain_computation::primary_graph) fn cancel_reserved_identity_for_recovery(
-        &mut self,
-    ) {
-        if self.reserved_identity.take().is_none() {
-            return;
-        }
-        let owner = WorthQueryOutputDemandRegistry::clone(self.context.registry());
-        let mut state = owner
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.defer_cancelled_settlement_vacancy(
-            self.reserved_cleanup
-                .take()
-                .expect("prepared identity retains its cancellation cue"),
-        );
-        self.reserved_posting.take();
-    }
 }
 
 impl PreparedPrerequisiteClaims {

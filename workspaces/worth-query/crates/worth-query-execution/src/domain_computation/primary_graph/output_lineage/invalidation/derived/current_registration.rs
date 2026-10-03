@@ -69,10 +69,6 @@ impl<'selected> PreparedCurrentSettlementRegistration<'selected> {
 }
 
 impl<'selected> StoppedCurrentSettlementRegistration<'selected> {
-    pub(in crate::domain_computation::primary_graph) fn reason(&self) -> CompanionCellEditStop {
-        self.stopped.reason()
-    }
-
     pub(in crate::domain_computation::primary_graph) fn into_parts(
         self,
     ) -> (
@@ -92,6 +88,7 @@ impl<'selected> StoppedCurrentSettlementRegistration<'selected> {
 }
 
 impl SourceInvalidationOwner {
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn prepare_current_settlement<'selected>(
         &self,
         registration: SettlementRegistration,

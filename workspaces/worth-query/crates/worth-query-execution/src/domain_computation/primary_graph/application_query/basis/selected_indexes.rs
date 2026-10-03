@@ -96,7 +96,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn ensure_se
                 WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
                 query.name(),
             ),
-            SelectedFieldIndexAdmissionStop::Native(_) => denial(query.name()),
+            SelectedFieldIndexAdmissionStop::Native => denial(query.name()),
         })?;
     Ok(PreparedSelectedReadIndexes {
         basis: retained_basis,

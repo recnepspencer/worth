@@ -68,8 +68,7 @@ fn nonempty_exact_settlement_lookup_denies_before_pinning_and_retries() {
     let denial = state
         .settlement_keys
         .get_exact_admitted(&identity, &mut short)
-        .err()
-        .expect("one short work unit denies before selecting the upstream key");
+        .expect_err("one short work unit denies before selecting the upstream key");
     assert_eq!(
         denial.kind(),
         WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
@@ -124,8 +123,7 @@ fn queued_historical_settlement_cleanup_denies_before_unlink_and_retries() {
     let mut short = admission(full_work - 1);
     let denial = retry
         .drain_terminal_cleanup(&mut short)
-        .err()
-        .expect("one short work unit preserves the queued row and exact posting");
+        .expect_err("one short work unit preserves the queued row and exact posting");
     assert_eq!(
         denial.kind(),
         WorthQueryOutputDemandDenialKind::WorkBudgetExceeded

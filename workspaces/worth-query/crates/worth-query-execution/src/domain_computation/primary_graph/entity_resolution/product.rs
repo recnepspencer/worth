@@ -115,7 +115,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         let (lookup_key_bytes, lookup_work) = graph
             .layout
             .equality_lookup_bound(field.entity(), field.aspect(), field.field())
-            .ok_or_else(|| exhausted())?;
+            .ok_or_else(&exhausted)?;
         admission
             .admit_read_scratch(lookup_key_bytes)
             .and_then(|()| admission.charge_external_work(lookup_work))
@@ -190,14 +190,14 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .checked_add(installed_locator.owned_allocation_capacity_bytes())
             .and_then(|bytes| bytes.checked_add(field.entity().len()))
             .and_then(|bytes| u64::try_from(bytes).ok())
-            .ok_or_else(|| exhausted())?;
+            .ok_or_else(&exhausted)?;
         let copy_work = value_copy_work(selector.value())
             .and_then(|work| work.checked_add(installed_text))
             .and_then(|work| work.checked_add(installed_fields.len()))
             .and_then(|work| work.checked_add(field.entity().len()))
             .and_then(|work| work.checked_add(3))
             .and_then(|work| u64::try_from(work).ok())
-            .ok_or_else(|| exhausted())?;
+            .ok_or_else(exhausted)?;
         admission
             .admit_read_scratch(allocation_bytes)
             .and_then(|()| admission.charge_external_work(copy_work))

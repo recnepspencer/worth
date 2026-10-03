@@ -243,9 +243,7 @@ impl WorthQueryApplicationOutputLineage {
             occurrence: head.lifecycle_incarnation(),
             generation: head.reference_generation().get(),
         };
-        let Some(output_binding) = correspondence.binding_type() else {
-            return None;
-        };
+        let output_binding = correspondence.binding_type()?;
         // The performed path borrows the pre-effect source. Constructing a
         // fresh source here could allocate after World has moved.
         let fallback_source = prepared.is_none().then(|| SemanticSource {

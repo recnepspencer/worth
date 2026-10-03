@@ -6,10 +6,10 @@
 //! its dependents fail with the recorded stop instead of reporting Pending
 //! forever. Only such intrinsic stops are recorded on the shared row. A stop
 //! that belongs to the request that met it (its principal, scope, deadline,
-//! cancellation or budgets) or to a moment (a stale publication, a newer
-//! source, missing coverage) stays with that advance. The newest row of the
-//! occurrence decides: its own stopped state, or the recorded stop, which its
-//! successful certification or refresh clears.
+//! cancellation or budgets) or to a moment (a stale publication, deferred
+//! scheduling, exhausted publication capacity) stays with that advance. The
+//! newest row of the occurrence decides: its own stopped state, or the recorded
+//! stop, which its successful certification or refresh clears.
 
 use std::collections::BTreeMap;
 
@@ -23,6 +23,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandRecoveryPosture,
 };
 
+mod source_query;
+
 impl WorthQueryOutputDemandRegistry {
     /// Record `stop` on the row whose required certification or refresh it
     /// ended, when the row fails the same way for any principal.
@@ -31,9 +33,7 @@ impl WorthQueryOutputDemandRegistry {
         key: &WorthQueryOutputDemandKey,
         stop: &WorthQueryOutputDemandDenial,
     ) {
-        if stop.recovery_posture() != WorthQueryOutputDemandRecoveryPosture::Terminal
-            || !intrinsic_to_row(stop.kind())
-        {
+        if !fails_row(stop) {
             return;
         }
         self.set_required_stop(key, Some(stop.kind()));
@@ -62,38 +62,47 @@ impl WorthQueryOutputDemandRegistry {
     }
 }
 
-/// Stops that the row's installed producer, program or source decide, the same
-/// for every principal and every request.
+/// Whether `stop` fails the shared row for every caller: it is terminal and
+/// intrinsic to the row. Any other stop leaves the row for a later claim.
+pub(super) fn fails_row(stop: &WorthQueryOutputDemandDenial) -> bool {
+    stop.recovery_posture() == WorthQueryOutputDemandRecoveryPosture::Terminal
+        && intrinsic_to_row(stop.kind())
+}
+
+/// Stops the same for every principal and every request. Only the kinds named
+/// as the caller's own (its interruption, budgets, principal, scope,
+/// authorization or selected basis) or the moment's (a later advance can
+/// succeed) stay with the advance that met them; every other kind is the row's.
 pub(super) fn intrinsic_to_row(kind: WorthQueryOutputDemandDenialKind) -> bool {
     use WorthQueryOutputDemandDenialKind as Kind;
     match kind {
+        Kind::Cancelled
+        | Kind::TimedOut
+        | Kind::WorkBudgetExceeded
+        | Kind::RetentionBudgetExceeded
+        | Kind::SourcePrincipal(_)
+        | Kind::SourceScope(_)
+        | Kind::RequestAuthorization(_) => false,
+        Kind::SourceQueryAdmission(kind) => source_query::admission_is_row(kind),
+        Kind::SourceQueryExecution(kind) => source_query::execution_is_row(kind),
+        Kind::PublicationStale | Kind::SchedulingDeferred | Kind::PublicationCapacityExceeded => {
+            false
+        }
+        Kind::ProductSelection(denial) => !denial.is_transient(),
         Kind::SourceQueryInstallation(_)
         | Kind::ForeignSource
         | Kind::MissingApplicableProducer
         | Kind::AmbiguousApplicableProducer
         | Kind::ProducerUnavailable
-        | Kind::ForeignDemand
-        | Kind::ForeignSettlement => true,
-        Kind::SourcePrincipal(_)
-        | Kind::SourceScope(_)
-        | Kind::SourceQueryAdmission(_)
-        | Kind::SourceQueryExecution(_)
-        | Kind::RequestAuthorization(_)
-        | Kind::ProductSelection(_)
         | Kind::SchedulingRejected
-        | Kind::SchedulingDeferred
-        | Kind::PublicationStale
         | Kind::NoEffect
         | Kind::Superseded
-        | Kind::Cancelled
-        | Kind::TimedOut
-        | Kind::WorkBudgetExceeded
-        | Kind::RetentionBudgetExceeded
-        | Kind::PublicationCapacityExceeded
+        | Kind::ForeignDemand
+        | Kind::ForeignSettlement
         | Kind::IncompleteDependencyCoverage
         | Kind::RetainedBasisUnavailable
         | Kind::Closed
-        | Kind::DuplicatePerformedSource => false,
+        | Kind::DuplicatePerformedSource => true,
     }
 }
 
@@ -135,7 +144,7 @@ pub(super) fn head_stop(
         },
         _ => None,
     };
-    if let Some(denial) = stopped.filter(|denial| intrinsic_to_row(denial.kind())) {
+    if let Some(denial) = stopped.filter(|denial| fails_row(denial)) {
         return Some(denial.clone());
     }
     record.required_stop.map(|kind| {

@@ -3,7 +3,6 @@
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
 use worth_relational::facade::indexes::{
     DerivedIndexBuildRequest, DerivedIndexId, DerivedIndexMaintenanceAdmissionStop,
-    DerivedIndexMaintenanceDenialKind,
 };
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::runtime::RelationalRuntime;
@@ -14,7 +13,7 @@ use super::selected_index_is_current_admitted;
 #[derive(Debug)]
 pub(crate) enum SelectedFieldIndexAdmissionStop {
     Admission(CompanionPreflightStop),
-    Native(DerivedIndexMaintenanceDenialKind),
+    Native,
 }
 
 /// Prepare only the installed EntityField indexes consumed by this
@@ -93,12 +92,10 @@ pub(crate) fn ensure_selected_field_indexes_admitted(
         )
         .map_err(|stop| match stop {
             DerivedIndexMaintenanceAdmissionStop::Admission(stop) => Stop::Admission(stop),
-            DerivedIndexMaintenanceAdmissionStop::Native(denial) => Stop::Native(denial.kind),
+            DerivedIndexMaintenanceAdmissionStop::Native(_) => Stop::Native,
         })?;
     if build.generations.len() != stale_count {
-        return Err(Stop::Native(
-            DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired,
-        ));
+        return Err(Stop::Native);
     }
     Ok(())
 }

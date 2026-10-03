@@ -1,9 +1,6 @@
 //! Borrow the exact successor and predecessor while caller custody is live.
 
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::producer::{
-    registry::InstalledProducerEdition, WorthQueryProducerCommitAuthority,
-};
 
 impl<Schema> RequiredFreshProgress<Schema>
 where
@@ -38,18 +35,6 @@ where
         Family: WorthQueryProducerOutputFamily<Schema> + 'static,
     {
         self.successor.family_type() == TypeId::of::<Family>()
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn commit_authority(
-        &self,
-    ) -> &WorthQueryProducerCommitAuthority {
-        self.successor.progression().commit_authority()
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn installed_edition(
-        &self,
-    ) -> InstalledProducerEdition {
-        self.successor.progression().installed_edition()
     }
 
     pub(in crate::domain_computation::primary_graph) fn predecessor(

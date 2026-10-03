@@ -220,8 +220,9 @@ impl WorthQueryOutputDemandRegistry {
         interest: &WorthQueryOutputDemandInterest,
         denial: &mut WorthQueryOutputDemandDenial,
     ) {
-        let rescheduled = execution_failure_is_retryable(denial);
-        denial.recovery_posture = if rescheduled {
+        let retryable = execution_failure_is_retryable(denial);
+        let rescheduled = execution_failure_reschedules(denial);
+        denial.recovery_posture = if retryable {
             crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable
         } else {
             crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Terminal
@@ -383,4 +384,11 @@ pub(super) fn execution_failure_is_retryable(denial: &WorthQueryOutputDemandDeni
                 | crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::TimedOut
                 | crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::PublicationCapacityExceeded
         )
+}
+
+/// Whether a failed execution leaves its row for a later claim. Only a stop
+/// intrinsic to the row fails it for every caller; any other stays with the
+/// request that met it, which still sees it as Terminal unless retryable.
+pub(super) fn execution_failure_reschedules(denial: &WorthQueryOutputDemandDenial) -> bool {
+    !super::required_stop::fails_row(denial)
 }

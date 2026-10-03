@@ -146,7 +146,7 @@ fn denied_identity_copy_and_foreign_owner_leave_no_hidden_shared_custody() {
         Ok(_) => panic!("another Query runtime cannot share this selected basis"),
         Err(error) => error,
     };
-    assert!(matches!(error, SelectedQueryBasisRetentionStop::Basis(_)));
+    assert!(matches!(error, SelectedQueryBasisRetentionStop::Basis));
     drop(shared);
     drop(product);
     assert!(

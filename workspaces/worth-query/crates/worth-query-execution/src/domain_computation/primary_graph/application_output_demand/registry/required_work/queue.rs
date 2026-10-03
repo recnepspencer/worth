@@ -99,7 +99,6 @@ impl RequiredWorkQueue {
         let kind = if let Some(hint) = member.native_hints.as_ref() {
             SelectedRequiredWorkKind::Native {
                 observer: hint.observer.clone(),
-                settlement: Arc::clone(&hint.settlement),
                 branch: Arc::clone(&hint.branch),
             }
         } else if let Some(settlement) = member.local_settlement.as_ref() {

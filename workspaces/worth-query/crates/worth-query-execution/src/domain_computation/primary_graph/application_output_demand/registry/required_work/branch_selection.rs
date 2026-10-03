@@ -65,7 +65,6 @@ impl SelectedRequiredWork {
             let hint = state.native_hints.as_ref().expect("matching head retained");
             self.kind = SelectedRequiredWorkKind::Native {
                 observer: hint.observer.clone(),
-                settlement: Arc::clone(&hint.settlement),
                 branch: Arc::clone(&hint.branch),
             };
             return Ok(true);

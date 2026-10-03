@@ -70,12 +70,6 @@ impl ManagedUnpublishedRecoveryGuard {
         })
     }
 
-    pub(in crate::domain_computation::primary_graph::provider) fn handle(
-        &self,
-    ) -> &ProductUnpublishedRecoveryHandle {
-        &self.handle
-    }
-
     pub(in crate::domain_computation::primary_graph::provider) fn attempt_mut(
         &mut self,
     ) -> &mut ManagedUnpublishedAttempt {

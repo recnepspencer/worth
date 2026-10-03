@@ -3,7 +3,8 @@
 use std::sync::Arc;
 
 use super::super::{
-    progression::execution_failure_is_retryable, required_work::RequiredWorkMembership,
+    progression::{execution_failure_is_retryable, execution_failure_reschedules},
+    required_work::RequiredWorkMembership,
     DemandRecord, DemandState, WorthQueryOutputCheckpoint, WorthQueryOutputDemandInterest,
     WorthQueryOutputDemandRegistry, WorthQueryOutputProgress,
 };
@@ -153,8 +154,9 @@ impl PreparedSelectedExecutionFinish<'_> {
         self,
         denial: &mut WorthQueryOutputDemandDenial,
     ) {
-        let rescheduled = execution_failure_is_retryable(denial);
-        denial.recovery_posture = if rescheduled {
+        let retryable = execution_failure_is_retryable(denial);
+        let rescheduled = execution_failure_reschedules(denial);
+        denial.recovery_posture = if retryable {
             WorthQueryOutputDemandRecoveryPosture::Retryable
         } else {
             WorthQueryOutputDemandRecoveryPosture::Terminal

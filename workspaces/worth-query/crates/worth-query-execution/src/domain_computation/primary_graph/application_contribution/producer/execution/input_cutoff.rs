@@ -188,7 +188,7 @@ fn cutoff_basis_denial(stop: InputCutoffVerificationStop) -> WorthQueryOutputDem
         InputCutoffVerificationStop::Admission(_) => {
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
         }
-        InputCutoffVerificationStop::SelectedSourceUnavailable(_) => {
+        InputCutoffVerificationStop::SelectedSourceUnavailable => {
             WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
         }
         _ => WorthQueryOutputDemandDenialKind::PublicationStale,

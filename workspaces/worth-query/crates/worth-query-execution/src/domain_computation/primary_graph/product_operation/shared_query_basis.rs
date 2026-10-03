@@ -1,6 +1,6 @@
 //! One funded final owner for an exact selected wave's Query snapshot custody.
 use super::WorthQuerySelectedProductOperation;
-use crate::basis::{WorthQueryProductBranchAdmissionDenial, WorthQueryProductObservationLease};
+use crate::basis::WorthQueryProductObservationLease;
 use crate::domain_computation::primary_graph::{
     application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
     output_lineage::invalidation::InvalidationEditAdmission,
@@ -14,7 +14,7 @@ pub(in crate::domain_computation) struct SharedSelectedProductOperation<'runtime
 
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) enum SelectedQueryBasisRetentionStop {
-    Basis(WorthQueryProductBranchAdmissionDenial),
+    Basis,
     Admission(CompanionPreflightStop),
 }
 
@@ -58,9 +58,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
             .charge_external_work(1)
             .map_err(SelectedQueryBasisRetentionStop::Admission)?;
         if !std::ptr::eq(self, selected.application()) {
-            return Err(SelectedQueryBasisRetentionStop::Basis(
-                WorthQueryProductBranchAdmissionDenial::ForeignOwner,
-            ));
+            return Err(SelectedQueryBasisRetentionStop::Basis);
         }
         // The sealed progression owns the unchanged pair bound by on_product.
         // Cloning a local share cannot change its snapshot, Native root, World

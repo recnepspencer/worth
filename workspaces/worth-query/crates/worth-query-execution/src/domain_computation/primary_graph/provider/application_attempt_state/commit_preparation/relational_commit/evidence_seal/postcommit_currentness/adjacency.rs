@@ -59,17 +59,14 @@ pub(super) fn prepare_decision_adjacency(
         }
         _ => return None,
     };
-    let Some(native_revision) = runtime
+    let native_revision = runtime
         .read_truth()
         .project_snapshot(snapshot)
         .and_then(|view| {
             view.bounded_adjacency_structural_revision(anchor, relation_kind, direction, limit)
                 .ok()
         })
-        .map(|revision| revision.revision())
-    else {
-        return None;
-    };
+        .map(|revision| revision.revision())?;
     let endpoints = match fact {
         Fact::Relation { to, .. } => vec![*to],
         Fact::Adjacency {

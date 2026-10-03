@@ -10,16 +10,13 @@ use worth_runtime_bridge::facade::TruthBranchIdentity;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLease;
 
-use super::{
-    WorthQueryGraphWorkAccessContextAffinity, WorthQueryManagedGraphWorkSession,
-    WorthQueryManagedGraphWorkSessionStartDenial,
-};
+use super::{WorthQueryGraphWorkAccessContextAffinity, WorthQueryManagedGraphWorkSession};
 
 pub(in crate::domain_computation) enum WorthQueryAdmittedMutationSessionStartStop<Stop> {
     Admission(Stop),
     WorkCounterOverflow,
     PreparationBytesCounterOverflow,
-    Session(WorthQueryManagedGraphWorkSessionStartDenial),
+    Session,
 }
 
 impl WorthQueryManagedGraphWorkSession {
@@ -102,6 +99,6 @@ impl WorthQueryManagedGraphWorkSession {
             lease,
             provider,
         )
-        .map_err(Refusal::Session)
+        .map_err(|_| Refusal::Session)
     }
 }

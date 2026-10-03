@@ -5,12 +5,11 @@ use std::sync::Arc;
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::mvcc::CompanionPublicationCompletionObserver;
 
-use super::{RecordedSettlementIdentity, RequiredWorkMembership};
+use super::RequiredWorkMembership;
 use crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity;
 
 pub(in crate::domain_computation::primary_graph) struct NativeHint {
     pub(super) observer: CompanionPublicationCompletionObserver,
-    pub(super) settlement: Arc<RecordedSettlementIdentity>,
     pub(super) branch: Arc<FundedNativeBranch>,
     // The selection version at which this publication was seen installed
     // (or aborted) before a head check. Only such a hint is covered.
@@ -64,13 +63,11 @@ impl RequiredWorkMembership {
     /// retained ticket. Installation only links this already-owned node.
     pub(in crate::domain_computation::primary_graph) fn prepared_native_hint(
         observer: CompanionPublicationCompletionObserver,
-        settlement: Arc<RecordedSettlementIdentity>,
         branch: Arc<FundedNativeBranch>,
         capacity: Arc<RetainedInvalidationCapacity>,
     ) -> Box<NativeHint> {
         Box::new(NativeHint {
             observer,
-            settlement,
             branch,
             seen_settled_at: None,
             next: None,

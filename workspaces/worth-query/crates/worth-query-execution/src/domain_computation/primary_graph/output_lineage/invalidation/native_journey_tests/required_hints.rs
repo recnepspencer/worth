@@ -28,7 +28,6 @@ use crate::domain_computation::execution_runtime::source_invalidation::{
 use crate::domain_computation::primary_graph::application_output_demand::{
     RequiredWorkMembership, SelectedRequiredWorkKind, WorthQueryOutputDemandRegistry,
 };
-use crate::domain_computation::primary_graph::output_lineage::registry_fixture;
 
 #[path = "required_hints/gate.rs"]
 mod gate;
@@ -37,7 +36,6 @@ use gate::TwoPrepareGate;
 struct TwoCellHints {
     cells: BTreeMap<BranchId, CompanionBranchCell<u64>>,
     member: Arc<RequiredWorkMembership>,
-    identities: [Arc<RecordedSettlementIdentity>; 2],
     resources: WorthQueryInvalidationResources,
     observers: Arc<Mutex<Vec<CompanionPublicationCompletionObserver>>>,
     saw_two_prepared: Arc<AtomicBool>,
@@ -98,7 +96,6 @@ impl RelationalPublicationCompanion for TwoCellHints {
             );
             Ok::<_, CompanionPreflightStop>(RequiredWorkMembership::prepared_native_hint(
                 observer,
-                Arc::clone(&self.identities[index]),
                 branch,
                 hint_capacity,
             ))
@@ -171,9 +168,6 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
         let registry = WorthQueryOutputDemandRegistry::default();
         let (interest, member) = registry
             .fixture_admitted_work_membership(product.observation().lifecycle_incarnation());
-        // The identities are lineage minted; this fixture exercises scheduling
-        // custody and never treats them as currentness authority.
-        let (_lineage, identities) = registry_fixture::recorded_settlement_pair();
         let hint_header = RequiredWorkMembership::native_hint_bytes();
         let ticket_bytes =
             super::super::index_capacity::arc_bytes::<RetainedInvalidationCapacity>().unwrap();
@@ -225,7 +219,6 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
             let participant = Arc::new(TwoCellHints {
                 cells: BTreeMap::from([(main.clone(), main_cell), (fork.clone(), fork_cell)]),
                 member: Arc::clone(&member),
-                identities,
                 resources: resources.clone(),
                 observers: Arc::clone(&observers),
                 saw_two_prepared: Arc::clone(&saw_two_prepared),
@@ -298,7 +291,7 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
                 .next_required_work_for_selected(
                     product.read_lease_ref(),
                     &main_root,
-                    &owner,
+                    owner,
                     &mut owner.edit_admission(),
                 )
                 .unwrap()
@@ -316,7 +309,7 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
         );
         if allowed_hints == 2 {
             let first = registry
-                .next_required_work(&owner, &mut owner.edit_admission())
+                .next_required_work(owner, &mut owner.edit_admission())
                 .unwrap()
                 .expect("fork-cell hint remains after main acknowledgement");
             assert!(matches!(
@@ -326,7 +319,7 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
             ));
             registry.fixture_requeue_admitted_work(&interest);
             let stale = registry
-                .next_required_work(&owner, &mut owner.edit_admission())
+                .next_required_work(owner, &mut owner.edit_admission())
                 .unwrap()
                 .expect("one native hint can have two selected readers");
             assert!(matches!(
@@ -344,7 +337,7 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
             assert_eq!(resources.retained_capacity_bytes(), 0);
         }
         let initial = registry
-            .next_required_work(&owner, &mut owner.edit_admission())
+            .next_required_work(owner, &mut owner.edit_admission())
             .unwrap()
             .expect("the original required interest is unresolved");
         assert!(matches!(
@@ -353,7 +346,7 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
         ));
         assert!(initial.acknowledge().is_some());
         assert!(registry
-            .next_required_work(&owner, &mut owner.edit_admission())
+            .next_required_work(owner, &mut owner.edit_admission())
             .unwrap()
             .is_none());
         drop(interest);

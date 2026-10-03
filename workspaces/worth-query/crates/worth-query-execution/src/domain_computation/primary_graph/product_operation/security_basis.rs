@@ -73,7 +73,6 @@ impl WorthQuerySelectedPermissionSecurityBasis<'_> {
 enum SecurityIndexCurrency<'a> {
     GraphRead,
     PreparedSelectedGraphRead(&'a PreparedSelectedReadIndexes),
-    PermissionOnly,
 }
 
 impl WorthQueryProductSecurityBasis<'_> {
@@ -124,11 +123,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         if let Some(query_basis) =
             query_basis.filter(|basis| basis.can_reuse_security_snapshot_at(observation))
         {
-            if matches!(index_currency, SecurityIndexCurrency::PermissionOnly) {
-                if let Some(snapshot) = query_basis.reusable_permission_snapshot() {
-                    return Ok((SecurityApplicationBasis::Reused(snapshot), None));
-                }
-            }
             let (_, interpretation) = self
                 .retain_selected_program_interpretation(relational)?
                 .into_parts();
@@ -186,26 +180,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             Some(query_basis),
             SecurityIndexCurrency::PreparedSelectedGraphRead(prepared),
         )
-    }
-
-    /// Permission uses the selected Product security basis without preparing
-    /// unrelated graph indexes. A disclosed read admits its indexes later.
-    pub(in crate::domain_computation::primary_graph) fn admit_query_permission_security_basis<
-        'basis,
-    >(
-        &self,
-        product: &impl WorthQueryProductObservationSource,
-        query_basis: &'basis WorthQueryApplicationQueryBasisCustody,
-    ) -> Result<
-        WorthQuerySelectedPermissionSecurityBasis<'basis>,
-        WorthQueryProductBranchAdmissionDenial,
-    > {
-        self.admit_product_security_basis_with_query_basis(
-            product,
-            Some(query_basis),
-            SecurityIndexCurrency::PermissionOnly,
-        )
-        .map(|basis| WorthQuerySelectedPermissionSecurityBasis { basis })
     }
 
     fn admit_product_security_basis_with_query_basis<'basis>(

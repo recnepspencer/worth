@@ -2,8 +2,7 @@ use std::sync::Arc;
 
 use super::{
     DemandState, SelectedReadyReadmission, WorthQueryAcceptedOutputAuthority,
-    WorthQueryOutputAdvancement, WorthQueryOutputCheckpoint, WorthQueryOutputDemandInterest,
-    WorthQueryOutputDemandRegistry,
+    WorthQueryOutputCheckpoint, WorthQueryOutputDemandInterest, WorthQueryOutputDemandRegistry,
 };
 use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::{
@@ -94,6 +93,7 @@ impl WorthQueryOutputDemandRegistry {
     /// Observe an exact Ready checkpoint without advancing any other demand
     /// state. A pre-disclosure currentness probe must leave a non-Ready record
     /// untouched for the normal source-query progression.
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn peek_ready(
         &self,
         interest: &WorthQueryOutputDemandInterest,
@@ -110,7 +110,7 @@ impl WorthQueryOutputDemandRegistry {
         let DemandState::Output(output) = &record.state else {
             return Ok(None);
         };
-        if !matches!(output.advancement, WorthQueryOutputAdvancement::Idle) {
+        if !matches!(output.advancement, super::WorthQueryOutputAdvancement::Idle) {
             return Ok(None);
         }
         let Some(WorthQueryOutputCheckpoint::Ready(completion)) = &output.checkpoint else {
