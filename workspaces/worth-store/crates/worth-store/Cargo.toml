@@ -16,6 +16,9 @@ certification-test-authority = [
     "worth-store-physical-backend/certification-test-authority",
     "worth-store-io-scheduler/certification-test-authority",
 ]
+# Test-only pass-through so recovery-runtime tests reach the backend flag
+# without depending on the backend directly; release builds ignore it.
+volatile-sync-for-tests = ["worth-store-physical-backend/volatile-sync-for-tests"]
 
 [dependencies]
 worth-store-aspect-native.workspace = true
