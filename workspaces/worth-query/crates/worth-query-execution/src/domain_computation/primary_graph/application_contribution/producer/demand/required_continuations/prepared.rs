@@ -5,6 +5,9 @@ where
     Schema: ApplicationSchema + 'static,
     Family: WorthQueryProducerOutputFamily<Schema> + 'static,
     WorthQueryAdmittedOutputDemand<Schema, Family>: Send + Sync,
+    FamilySourceValue<Schema, Family>:
+        WorthQueryApplicationProjection<Schema, FamilySourceQuery<Schema, Family>> + 'static,
+    FamilySourceQuery<Schema, Family>: 'static,
 {
     /// Allocate the typed erasure slot before the successor can be admitted.
     /// The real demand and its interest are moved into this storage later.

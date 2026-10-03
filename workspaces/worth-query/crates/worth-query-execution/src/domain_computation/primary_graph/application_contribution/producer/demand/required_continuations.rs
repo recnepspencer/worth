@@ -9,10 +9,12 @@ use std::any::{Any, TypeId};
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
+    super::WorthQueryProducerCommitAuthority,
     required_provenance::{DemandProgressionProvenance, RequiredSuccessorProvenance},
-    WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial,
-    WorthQueryProducerOutputFamily,
+    FamilySourceQuery, FamilySourceValue, WorthQueryAdmittedOutputDemand,
+    WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryProducerOutputFamily,
 };
+mod held;
 mod prepared;
 mod progress;
 mod promotion;
@@ -23,9 +25,13 @@ use crate::domain_computation::primary_graph::{
         WorthQueryOutputDemandInterest, WorthQueryOutputDemandRegistry,
     },
     output_lineage::invalidation::InvalidationEditAdmission,
-    WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryApplicationProjection, WorthQueryPrimaryGraphApplicationRuntime,
 };
-use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_admission::facade::authenticated_principal::{
+    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
+};
+
+pub(in crate::domain_computation::primary_graph) use held::resume_held_upstream;
 
 pub(in crate::domain_computation::primary_graph) enum RequiredFreshOutcome {
     Advanced(WorthQueryOutputDemandAdvance),
@@ -49,6 +55,15 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
         request: &WorthQueryRequestScope,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial>;
+    /// Run the successor's own row again under the authority that issued it.
+    fn resume(
+        &mut self,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request: &WorthQueryRequestScope,
+        branch: crate::basis::WorthQueryProductBranch,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>;
     fn into_any(self: Box<Self>) -> Box<dyn Any>;
 }
 
@@ -68,6 +83,9 @@ where
     Schema: ApplicationSchema + 'static,
     Family: WorthQueryProducerOutputFamily<Schema> + 'static,
     WorthQueryAdmittedOutputDemand<Schema, Family>: Send + Sync,
+    FamilySourceValue<Schema, Family>:
+        WorthQueryApplicationProjection<Schema, FamilySourceQuery<Schema, Family>> + 'static,
+    FamilySourceQuery<Schema, Family>: 'static,
 {
     fn interest(&self) -> &WorthQueryOutputDemandInterest {
         self.demand
@@ -153,6 +171,17 @@ where
             finish,
             admission,
         )
+    }
+
+    fn resume(
+        &mut self,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request: &WorthQueryRequestScope,
+        branch: crate::basis::WorthQueryProductBranch,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
+        self.run_again(runtime, principal, request, branch, admission)
     }
 
     fn into_any(self: Box<Self>) -> Box<dyn Any> {
@@ -297,7 +326,7 @@ where
     }
 }
 
-impl<Schema> PreparedRequiredContinuationSlot<'_, Schema>
+impl<'caller, Schema> PreparedRequiredContinuationSlot<'caller, Schema>
 where
     Schema: ApplicationSchema,
 {
@@ -309,10 +338,15 @@ where
         self.caller.entries.last()
     }
 
-    pub(super) fn install(
+    pub(super) fn install(self, progress: RequiredFreshProgress<Schema>) -> RequiredFreshOutcome {
+        self.push(progress).take_outcome()
+    }
+
+    /// Install `progress` as the last entry, ending any it supersedes.
+    fn push(
         mut self,
         progress: RequiredFreshProgress<Schema>,
-    ) -> RequiredFreshOutcome {
+    ) -> &'caller mut RequiredFreshProgress<Schema> {
         if let Some(mut replacement) = self.replacement.take() {
             replacement.append(&mut self.caller.entries);
             let retired_entries = std::mem::replace(&mut self.caller.entries, replacement);
@@ -322,18 +356,19 @@ where
             drop(retired_entries);
             drop(retired_capacity);
         }
-        // A newer row of the same occurrence ends the custody of every older
-        // one: dropping its typed demand releases the superseded row.
+        // A newer successor of the same occurrence, from a newer source or a
+        // second refresh of the same row, ends the custody of the older one:
+        // dropping its typed demand releases what only it held.
         let newest = progress.successor.interest();
         self.caller
             .entries
-            .retain(|entry| !newest.replaces(entry.successor.interest()));
-        self.caller.entries.push(progress);
-        self.caller
+            .retain(|entry| !newest.supersedes(entry.successor.interest()));
+        let caller = self.caller;
+        caller.entries.push(progress);
+        caller
             .entries
             .last_mut()
             .expect("prepared slot installs one successor")
-            .take_outcome()
     }
 }
 

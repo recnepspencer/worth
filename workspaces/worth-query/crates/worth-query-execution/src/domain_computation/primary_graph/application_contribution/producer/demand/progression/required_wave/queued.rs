@@ -88,6 +88,11 @@ impl RequiredQueueFrames {
             let Some(work) = runtime.output_demands.next_required_work_for_selected(
                 wave.shared.selected().product().read_lease_ref(),
                 &wave.positioned,
+                &runtime
+                    .primary_provider
+                    .graph
+                    .source_owner
+                    .invalidation_owner,
                 admission,
             )?
             else {

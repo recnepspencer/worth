@@ -54,7 +54,7 @@ where
             request_scope,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
-        .map_err(|error| request_admission_denied(Binding::IDENTITY, error))?;
+        .map_err(|error| principal_rejected(Binding::IDENTITY, error))?;
     let (scope_field, scope_value) = input
         .scope_binding()
         .into_field_parts(principal.principal_identity());
@@ -65,7 +65,7 @@ where
             request_scope,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
-        .map_err(|error| request_admission_denied(Binding::IDENTITY, error))?;
+        .map_err(|error| scope_rejected(Binding::IDENTITY, error))?;
     let admission = selected
         .authorize_operation(
             &principal,
@@ -74,7 +74,7 @@ where
             TypedMutationPreconditions::default(),
             request_scope,
         )
-        .map_err(|error| request_admission_denied(Binding::IDENTITY, error))?;
+        .map_err(|error| request_authority_denied(Binding::IDENTITY, error))?;
     post_authorization::execute_authorized::<Schema, Binding>(
         runtime,
         &selected,

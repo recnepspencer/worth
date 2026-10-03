@@ -6,6 +6,7 @@ publish.workspace = true
 
 [features]
 test-invalidation-equivalence = ["worth-query-host/test-invalidation-equivalence"]
+test-output-delivery-faults = ["worth-query-host/test-output-delivery-faults"]
 test-query-execution-observer = ["worth-query-host/test-query-execution-observer"]
 test-world-operation-control = ["worth-query-host/test-world-operation-control"]
 

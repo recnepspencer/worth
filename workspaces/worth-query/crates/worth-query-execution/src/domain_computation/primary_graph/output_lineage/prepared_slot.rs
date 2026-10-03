@@ -131,6 +131,7 @@ impl PreparedOutputLineageSlot {
     pub(in crate::domain_computation::primary_graph) fn record(
         mut self,
         application: &WorthQueryPrimaryGraphCommittedApplication,
+        consumed_outputs: Arc<[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence]>,
     ) -> (
         Arc<RecordedSettlementIdentity>,
         Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
@@ -150,6 +151,7 @@ impl PreparedOutputLineageSlot {
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             lineage.record_prepared(
                 application,
+                consumed_outputs,
                 &self,
                 completed_handler_facts,
                 completed_decision_reuse,

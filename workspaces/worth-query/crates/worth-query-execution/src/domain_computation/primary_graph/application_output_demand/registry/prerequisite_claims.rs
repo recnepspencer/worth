@@ -89,7 +89,7 @@ impl RequiredOutputDemandContext {
             let upstream = state
                 .settlement_keys
                 .get_exact_admitted(identity, admission)?
-                .ok_or_else(coverage_denial)?;
+                .ok_or_else(prerequisite_denials::stale_upstream_denial)?;
             if upstream.as_ref() == downstream {
                 return Err(coverage_denial());
             }
@@ -340,7 +340,7 @@ impl PreparedPrerequisiteClaims {
     pub(in crate::domain_computation::primary_graph) fn publish(
         mut self,
         identity: Arc<RecordedSettlementIdentity>,
-    ) {
+    ) -> super::SupersededSettlements {
         let owner = WorthQueryOutputDemandRegistry::clone(self.context.registry());
         let mut state = owner
             .state
@@ -395,5 +395,6 @@ impl PreparedPrerequisiteClaims {
         self.published = true;
         drop(state);
         drop(old);
+        super::SupersededSettlements::new(owner, Arc::clone(self.context.key_arc()))
     }
 }

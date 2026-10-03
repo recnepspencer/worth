@@ -243,12 +243,26 @@ impl WorthQueryOutputDemandRegistry {
         {
             state.remove_required_member_if_released(&interest.key);
         }
+        // A held successor ends with its row's work or with the last owner
+        // awaiting that row; it drops after the lock.
+        let mut finished = state.take_finished_successor(&interest.key);
+        // A closing stale owner may have been the last one awaiting the
+        // newest row of its occurrence.
+        if terminal {
+            if let Some(newest) =
+                refreshed_rejoin::newest_of_occurrence(&state.records, &interest.key)
+            {
+                state.remove_required_member_if_released(&newest);
+                finished = finished.or_else(|| state.take_finished_successor(&newest));
+            }
+        }
         state.obligation_reserved_bytes = state
             .obligation_reserved_bytes
             .saturating_sub(released_bytes);
         state.prune_completed_custody();
         drop(state);
         drop(released_prerequisites);
+        drop(finished);
     }
 }
 
@@ -278,9 +292,10 @@ impl DemandRegistryState {
             }) {
                 return true;
             }
-            self.records.values().any(|record| {
+            self.records.iter().any(|(key, record)| {
                 record.source_commits.contains(commit)
                     && (record.interests != 0
+                        || refreshed_rejoin::awaited_by_stale_owner(&self.records, key)
                         || !record.performed_obligations.is_empty()
                         || !matches!(
                             record.state,
@@ -334,9 +349,17 @@ impl WorthQueryOutputDemandInterest {
         self.notifications.clone()
     }
 
-    /// Whether this interest's row is a newer source of `older`'s occurrence.
-    pub(in crate::domain_computation::primary_graph) fn replaces(&self, older: &Self) -> bool {
-        self.key.same_occurrence(&older.key)
-            && self.key.replacement_order(&older.key) == Some(std::cmp::Ordering::Greater)
+    pub(in crate::domain_computation::primary_graph) const fn key(
+        &self,
+    ) -> &WorthQueryOutputDemandKey {
+        &self.key
+    }
+
+    /// Whether this interest supersedes `older` as a continuation: a newer
+    /// source of the same occurrence, or the same row refreshed again.
+    pub(in crate::domain_computation::primary_graph) fn supersedes(&self, older: &Self) -> bool {
+        self.key
+            .replacement_order(&older.key)
+            .is_some_and(|order| order != std::cmp::Ordering::Less)
     }
 }

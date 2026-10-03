@@ -35,6 +35,24 @@ pub(super) fn request_admission_denied(
     request_admission_rejected(failed(subject, error))
 }
 
+/// The request's principal did not resolve; the stop stays with the request.
+pub(super) fn principal_rejected(
+    subject: &str,
+    error: crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial,
+) -> ProducerExecutionStop {
+    let kind = WorthQueryOutputDemandDenialKind::of_principal_resolution(error.kind());
+    request_admission_rejected(denial(kind, format!("{subject}: {error:?}")))
+}
+
+/// The request's scope did not resolve; the stop stays with the request.
+pub(super) fn scope_rejected(
+    subject: &str,
+    error: crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial,
+) -> ProducerExecutionStop {
+    let kind = WorthQueryOutputDemandDenialKind::of_scope_resolution(error.kind());
+    request_admission_rejected(denial(kind, format!("{subject}: {error:?}")))
+}
+
 pub(super) fn request_authority_denied(
     subject: &str,
     error: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,

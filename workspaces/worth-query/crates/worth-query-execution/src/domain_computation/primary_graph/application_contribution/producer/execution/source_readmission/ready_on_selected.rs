@@ -201,6 +201,13 @@ where
                                 drop(sealed);
                                 return on_disclosure(permission, Some(matched), admission);
                             }
+                            if resolved
+                                .names_current_upstream(runtime, &pending, positioned, admission)
+                                .map_err(ProducerExecutionStop::ExecutionStopped)?
+                            {
+                                drop(sealed);
+                                return on_disclosure(permission, None, admission);
+                            }
                         }
                         // The evidence is an owned, ticketed pin. Only its
                         // selected-root borrow crosses this scoped callback.
@@ -225,20 +232,8 @@ where
             },
         )
         .map_err(|stop| match stop {
-            FreshQueryPermissionStop::Principal(error) => match error.kind() {
-                crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind::ProjectionWorkBudgetExceeded =>
-                    denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, "").into(),
-                crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind::ProjectionPreparationMemoryExhausted =>
-                    denial(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded, "").into(),
-                _ => request_admission_denied(Binding::IDENTITY, error),
-            },
-            FreshQueryPermissionStop::Scope(error) => match error.kind() {
-                crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::ProjectionWorkBudgetExceeded =>
-                    denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, "").into(),
-                crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::ProjectionPreparationMemoryExhausted =>
-                    denial(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded, "").into(),
-                _ => request_admission_denied(Binding::IDENTITY, error),
-            },
+            FreshQueryPermissionStop::Principal(error) => principal_rejected(Binding::IDENTITY, error),
+            FreshQueryPermissionStop::Scope(error) => scope_rejected(Binding::IDENTITY, error),
             FreshQueryPermissionStop::Query(error) =>
                 query_admission_denied(Binding::IDENTITY, error),
             FreshQueryPermissionStop::Inspect(error) => error,

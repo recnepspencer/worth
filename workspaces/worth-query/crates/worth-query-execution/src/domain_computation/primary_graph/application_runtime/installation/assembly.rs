@@ -30,6 +30,15 @@ pub(super) fn assemble_application_runtime<Schema>(
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
+    // Output-lineage history keeps the generations the invalidation window keeps.
+    let history_positions = std::num::NonZeroUsize::new(
+        graph
+            .product_world_resources
+            .invalidation_resources()
+            .installation()
+            .maximum_retained_positions,
+    )
+    .expect("installed invalidation resources retain at least one position");
     let product_runtime = crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime::install(
         graph.primary_provider.graph.prepare_product_source(&graph.relational_branch_identity)
             .map_err(|denial| WorthQueryPrimaryGraphInstallationDenial::new(
@@ -102,11 +111,12 @@ where
         .output_lineage
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .set_lineage_retention_maximum(
+        .install_lineage_retention(
             graph
                 .runtime
                 .output_demand_resource_profile()
                 .lineage_retained_bytes(),
+            history_positions,
         );
     Ok(WorthQueryPrimaryGraphApplicationRuntime {
         runtime: graph.runtime,

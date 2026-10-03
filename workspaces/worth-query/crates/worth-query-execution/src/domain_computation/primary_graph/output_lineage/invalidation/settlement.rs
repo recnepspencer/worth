@@ -93,6 +93,7 @@ pub(super) fn insert(
         dirty_ordinals: OrdSet::new(),
         pending_upstream: OrdSet::new(),
         verification_requirement,
+        superseded: false,
     };
     let replayed_stale = matches!(alignment, SettlementReadAlignment::Retained)
         && replay(&mut row, root, admission)?;

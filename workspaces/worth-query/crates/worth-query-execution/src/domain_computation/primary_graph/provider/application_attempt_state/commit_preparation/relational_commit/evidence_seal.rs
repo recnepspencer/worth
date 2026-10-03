@@ -29,7 +29,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCo
     >,
     operation_scope: crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
     observed_source_facts: postcommit_currentness::RebasedSourceFacts,
-    consumed_outputs: std::sync::Arc<[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence]>,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryMutationWorkCommitSeal {
@@ -88,7 +87,6 @@ pub(super) fn seal(
         output_correspondence: std::sync::Arc::new(output_correspondence),
         operation_scope: committed.attempt().affinity().operation_scope().clone(),
         observed_source_facts,
-        consumed_outputs: committed.retain_consumed_outputs(),
         committed_changes: crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges::from_commit(committed.committed()),
     };
     (evidence, source_fact_admission)
@@ -113,20 +111,6 @@ impl WorthQueryMutationWorkCommitSeal {
 }
 
 impl WorthQueryPrimaryGraphCommitEvidence {
-    pub(in crate::domain_computation::primary_graph) fn consumed_outputs(
-        &self,
-    ) -> &[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence]
-    {
-        &self.consumed_outputs
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn retain_consumed_outputs(
-        &self,
-    ) -> std::sync::Arc<
-        [crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence],
-    > {
-        std::sync::Arc::clone(&self.consumed_outputs)
-    }
     pub(in crate::domain_computation::primary_graph) const fn provider_session_binding(
         &self,
     ) -> &crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding

@@ -168,7 +168,9 @@ where
         crate::domain_computation::primary_graph::output_lineage::StablePublicationStop::Demand(stop) => ProducerExecutionStop::ExecutionStopped(stop),
         crate::domain_computation::primary_graph::output_lineage::StablePublicationStop::RequestAuthority(stop) => super::denial::request_authority_denied(Binding::IDENTITY, stop),
     })?;
-    prerequisites.publish(Arc::clone(published.exact_settlement()));
+    prerequisites
+        .publish(Arc::clone(published.exact_settlement()))
+        .retire(source_owner);
     Ok(ProducerInputProgression::StablePublished(published))
 }
 

@@ -47,7 +47,8 @@ use admitted::execute_fresh;
 pub(super) use denial::ProducerExecutionStop;
 use denial::{
     denial, execution_failed, failed, identity_unavailable, query_admission_denied,
-    query_execution_denied, request_admission_denied,
+    principal_rejected, query_execution_denied, request_authority_denied,
+    scope_rejected,
 };
 use input_identity::encode_input;
 use input_reuse::{prepared_key, resolve_program};

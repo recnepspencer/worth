@@ -46,7 +46,11 @@ where
     ) -> Result<RequiredFreshProgress<Schema>, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema> + 'static,
-        FamilySourceValue<Schema, Family>: 'static,
+        FamilySourceValue<Schema, Family>:
+            crate::domain_computation::primary_graph::WorthQueryApplicationProjection<
+                    Schema,
+                    FamilySourceQuery<Schema, Family>,
+                > + 'static,
         FamilySourceQuery<Schema, Family>: 'static,
         WorthQueryAdmittedOutputDemand<Schema, Family>: Send + Sync,
     {

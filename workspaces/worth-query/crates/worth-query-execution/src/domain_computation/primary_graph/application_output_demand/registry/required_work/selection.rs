@@ -126,9 +126,10 @@ impl WorthQueryOutputDemandRegistry {
     /// settlement remain descriptive until the caller authenticates them.
     pub(in crate::domain_computation::primary_graph) fn next_required_work(
         &self,
+        source_owner: &SourceInvalidationOwner,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<SelectedRequiredWork>, WorthQueryOutputDemandDenial> {
-        self.drain_terminal_cleanup_admitted(admission)?;
+        self.drain_terminal_cleanup_admitted(source_owner, admission)?;
         let queue = {
             let state = self
                 .state
@@ -185,6 +186,7 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         product: &crate::basis::WorthQueryProductObservationLease,
         selected: &worth_relational::facade::runtime::PositionedRelationalSnapshot,
+        source_owner: &SourceInvalidationOwner,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<SelectedRequiredWork>, WorthQueryOutputDemandDenial> {
         let basis = product.relational_basis_descriptor();
@@ -209,7 +211,7 @@ impl WorthQueryOutputDemandRegistry {
         admission
             .charge_external_work(2)
             .map_err(|_| work_denial())?;
-        self.drain_terminal_cleanup_admitted(admission)?;
+        self.drain_terminal_cleanup_admitted(source_owner, admission)?;
         let queue = {
             let state = self
                 .state

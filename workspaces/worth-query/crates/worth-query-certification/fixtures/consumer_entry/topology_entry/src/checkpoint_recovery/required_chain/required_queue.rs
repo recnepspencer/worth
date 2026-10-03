@@ -209,27 +209,58 @@ fn queued_required_work_stays_live_and_exact_across_cycles() {
     drop((a, b, c, d));
 }
 
-/// The chain program with smaller required custody or invalidation retention.
+/// The chain program with smaller required custody or invalidation retention,
+/// and the invalidation resources it retains.
 fn limited_application(
     required_custody_bytes: usize,
     invalidation_bytes: u64,
-) -> application_installation::WorthQueryProgramApplicationRuntime<
-    CheckpointSchema,
-    program::ChainProgram,
-> {
+    retained_positions: usize,
+) -> (
+    application_installation::WorthQueryProgramApplicationRuntime<
+        CheckpointSchema,
+        program::ChainProgram,
+    >,
+    worth_query_host::facade::runtime::WorthQueryInvalidationResources,
+) {
+    limited_application_for_journeys(
+        required_custody_bytes,
+        invalidation_bytes,
+        retained_positions,
+        1,
+    )
+}
+
+/// [`limited_application`] with World capacity for `journeys` of the
+/// fixture's own journeys.
+fn limited_application_for_journeys(
+    required_custody_bytes: usize,
+    invalidation_bytes: u64,
+    retained_positions: usize,
+    journeys: u64,
+) -> (
+    application_installation::WorthQueryProgramApplicationRuntime<
+        CheckpointSchema,
+        program::ChainProgram,
+    >,
+    worth_query_host::facade::runtime::WorthQueryInvalidationResources,
+) {
     let profile =
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard()
             .with_registry_required_retained_bytes(
                 std::num::NonZeroUsize::new(required_custody_bytes).unwrap(),
             );
-    support::install_program_with_seed::<program::ChainProgram>(
-        None,
-        profile,
-        4_096,
+    let invalidation = support::invalidation(
         invalidation_bytes,
         u64::try_from(profile.limits().source_currentness_work()).unwrap(),
+        retained_positions,
+    );
+    let application = support::install_program_with_limits::<program::ChainProgram>(
+        None,
+        profile,
+        support::limits_for_journeys(4_096, journeys, invalidation.clone()),
         source_world::seed,
-    )
+    );
+    (application, invalidation)
 }
 
 #[test]
@@ -239,7 +270,7 @@ fn a_queued_chain_no_advance_can_fund_never_starves_an_unrelated_caller() {
     // but not a refreshed generation: the queued chain fails on every
     // advance that tries it.
     let row = worth_query_host::facade::primary_graph::required_ready_custody_bytes_for_test();
-    let application = limited_application(4 * 3 * row, 128 * 1_024 * 1_024);
+    let (application, _) = limited_application(4 * 3 * row, 128 * 1_024 * 1_024, 128);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let (a, b, c, mut d) = chain_with_unrelated!(application, request);
@@ -267,13 +298,10 @@ fn a_queued_chain_no_advance_can_fund_never_starves_an_unrelated_caller() {
 }
 
 #[test]
-#[ignore = "known gap, reproduces without queue consumption: after a required refresh \
-            fails on exhausted retained custody, its dependents report Pending on every \
-            later advance although no advance can finish them"]
 fn dependents_of_a_failed_required_refresh_never_stay_pending() {
     let _guard = checkpoint_recovery_test_guard();
     let row = worth_query_host::facade::primary_graph::required_ready_custody_bytes_for_test();
-    let application = limited_application(4 * 3 * row, 128 * 1_024 * 1_024);
+    let (application, _) = limited_application(4 * 3 * row, 128 * 1_024 * 1_024, 128);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let (a, mut b, mut c, mut d) = chain_with_unrelated!(application, request);
@@ -296,21 +324,61 @@ fn dependents_of_a_failed_required_refresh_never_stay_pending() {
     drop((a, b, c, d));
 }
 
+#[cfg(feature = "test-output-delivery-faults")]
 #[test]
-#[ignore = "known gap, next slice: invalidation-index settlement rows are never \
-            retired, so retained invalidation bytes grow every cycle until a refresh fails"]
-fn the_required_chain_stays_live_for_a_hundred_cycles_at_small_retention() {
+fn a_queue_frame_whose_stage_defers_leaves_its_row_to_a_later_advance() {
     let _guard = checkpoint_recovery_test_guard();
-    let application = limited_application(4 * 1_024 * 1_024, 8 * 1_024 * 1_024);
+    let application = chain_application();
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
-    let (mut a, mut b, mut c, mut d) = chain_with_unrelated!(application, request);
-    for cycle in 0..100_u64 {
-        change_root_input!(request, application, 2 + cycle % 2, 0x9176_3c00_u64 + cycle);
-        settled_in_one_advance!(d, request, "the unrelated required demand");
-        settled_in_one_advance!(c, request, "the last consumer");
-        settled_in_one_advance!(b, request, "the middle consumer");
-        settled_in_one_advance!(a, request, "the open root demand");
-    }
+    let (a, b, mut c, mut d) = chain_with_unrelated!(application, request);
+    change_root_input!(request, application, 2, 0x9176_3e00_u64);
+    // The unrelated caller runs the root's refresh as a queue frame, and
+    // that refresh defers its readiness delivery.
+    application.delay_next_output_readiness_delivery_for_test();
+    settled_in_one_advance!(d, request, "the unrelated required demand");
+    // The frame's successor outlived the frame's wave: the last consumer
+    // finishes the deferred row and the chain above it.
+    settled_in_one_advance!(c, request, "the last consumer");
     drop((a, b, c, d));
 }
+
+#[cfg(feature = "test-output-delivery-faults")]
+#[test]
+fn a_required_refresh_its_request_stops_is_left_to_a_later_advance() {
+    use std::time::{Duration, Instant};
+    let _guard = checkpoint_recovery_test_guard();
+    let application = chain_application();
+    let (scope, principal) = authenticate(&application);
+    let request = application.request(&principal, &scope);
+    let (a, mut b, mut c, mut d) = chain_with_unrelated!(application, request);
+    change_root_input!(request, application, 2, 0x9176_3f00_u64);
+    // A queue frame leaves the root's refresh waiting on its deferred
+    // readiness delivery.
+    application.delay_next_output_readiness_delivery_for_test();
+    settled_in_one_advance!(d, request, "the unrelated required demand");
+    // A cancelled request refreshes the middle row and stops inside it.
+    let cancellation = authentication::WorthQueryCancellationSource::new();
+    let cancelled_scope = authentication::WorthQueryRequestScope::new(
+        Instant::now() + Duration::from_secs(120),
+        cancellation.token(),
+    );
+    let cancelled = application.request(&principal, &cancelled_scope);
+    cancellation.cancel();
+    let stopped = b.advance(&cancelled);
+    assert!(
+        matches!(
+            &stopped,
+            Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial))
+                if denial.kind() == WorthQueryOutputDemandDenialKind::Cancelled
+        ),
+        "the cancelled request meets its own stop: {:?}",
+        stopped.as_ref().err()
+    );
+    // The stop was the request's, not the row's: the dependent of that row
+    // redoes its refresh on a later advance.
+    settled_in_one_advance!(c, request, "the last consumer");
+    drop((a, b, c, d));
+}
+
+mod steady_retention;

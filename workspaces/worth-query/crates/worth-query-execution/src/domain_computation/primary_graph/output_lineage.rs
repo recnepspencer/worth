@@ -176,11 +176,13 @@ impl WorthQueryApplicationOutputLineage {
         self.output_families.extend(families);
     }
 
-    pub(in crate::domain_computation::primary_graph) fn set_lineage_retention_maximum(
+    pub(in crate::domain_computation::primary_graph) fn install_lineage_retention(
         &mut self,
         maximum_bytes: usize,
+        history_positions: std::num::NonZeroUsize,
     ) {
-        self.retention.set_maximum(maximum_bytes as u64);
+        self.retention
+            .install(maximum_bytes as u64, history_positions);
     }
 
     pub(crate) fn register_fork(
@@ -201,17 +203,10 @@ impl WorthQueryApplicationOutputLineage {
         );
     }
 
-    #[cfg(test)]
-    pub(super) fn record(
-        &mut self,
-        application: &WorthQueryPrimaryGraphCommittedApplication,
-    ) -> Option<Arc<RecordedSettlementIdentity>> {
-        self.record_inner(application, None, None, None, None, None)
-    }
-
     fn record_prepared(
         &mut self,
         application: &WorthQueryPrimaryGraphCommittedApplication,
+        consumed_outputs: Arc<[super::invariant_projection::ConsumedOutputEvidence]>,
         prepared: &PreparedOutputLineageSlot,
         completed_handler_facts: Option<super::application_attempt::CompletedHandlerFactBoundary>,
         completed_decision_reuse: Option<CompletedDecisionReuseProof>,
@@ -220,6 +215,7 @@ impl WorthQueryApplicationOutputLineage {
     ) -> Arc<RecordedSettlementIdentity> {
         self.record_inner(
             application,
+            consumed_outputs,
             Some(prepared),
             completed_handler_facts,
             completed_decision_reuse,
@@ -232,6 +228,7 @@ impl WorthQueryApplicationOutputLineage {
     fn record_inner(
         &mut self,
         application: &WorthQueryPrimaryGraphCommittedApplication,
+        consumed_outputs: Arc<[super::invariant_projection::ConsumedOutputEvidence]>,
         prepared: Option<&PreparedOutputLineageSlot>,
         completed_handler_facts: Option<super::application_attempt::CompletedHandlerFactBoundary>,
         completed_decision_reuse: Option<CompletedDecisionReuseProof>,
@@ -330,7 +327,7 @@ impl WorthQueryApplicationOutputLineage {
         let recorded = RecordedOutput {
             performed_origin: None,
             _retained_capacity: retained_capacity,
-            consumed_outputs: evidence.retain_consumed_outputs(),
+            consumed_outputs,
             completed_handler_facts,
             completed_decision_reuse,
             prepared_input_reuse_key,

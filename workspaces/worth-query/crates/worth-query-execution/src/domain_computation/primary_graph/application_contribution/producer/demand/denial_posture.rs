@@ -42,3 +42,34 @@ impl WorthQueryOutputDemandDenialKind {
         }
     }
 }
+
+impl WorthQueryOutputDemandDenialKind {
+    /// The request's principal did not resolve: the request's interruption or
+    /// budgets, or the principal it names. Never the producer's own stop.
+    pub(in crate::domain_computation::primary_graph) const fn of_principal_resolution(
+        kind: crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind,
+    ) -> Self {
+        use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind as Kind;
+        match kind {
+            Kind::Cancelled => Self::Cancelled,
+            Kind::DeadlineExceeded => Self::TimedOut,
+            Kind::ProjectionWorkBudgetExceeded => Self::WorkBudgetExceeded,
+            Kind::ProjectionPreparationMemoryExhausted => Self::RetentionBudgetExceeded,
+            other => Self::SourcePrincipal(other),
+        }
+    }
+
+    /// The request's scope did not resolve, as [`Self::of_principal_resolution`].
+    pub(in crate::domain_computation::primary_graph) const fn of_scope_resolution(
+        kind: crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind,
+    ) -> Self {
+        use crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind as Kind;
+        match kind {
+            Kind::Cancelled => Self::Cancelled,
+            Kind::DeadlineExceeded => Self::TimedOut,
+            Kind::ProjectionWorkBudgetExceeded => Self::WorkBudgetExceeded,
+            Kind::ProjectionPreparationMemoryExhausted => Self::RetentionBudgetExceeded,
+            other => Self::SourceScope(other),
+        }
+    }
+}

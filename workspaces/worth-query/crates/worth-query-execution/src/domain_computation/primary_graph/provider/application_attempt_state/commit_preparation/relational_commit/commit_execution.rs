@@ -258,13 +258,6 @@ fn world_no_effect(
     }
 }
 impl WorthQueryCommittedApplicationSession {
-    pub(super) fn retain_consumed_outputs(
-        &self,
-    ) -> std::sync::Arc<
-        [crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence],
-    > {
-        self.attempt.retain_consumed_outputs()
-    }
     pub(super) fn take_source_fact_admission(&mut self) -> Option<crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>{
         self.source_fact_admission.take()
     }

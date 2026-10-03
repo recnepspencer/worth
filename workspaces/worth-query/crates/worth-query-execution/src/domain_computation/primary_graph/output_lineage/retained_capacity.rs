@@ -6,6 +6,9 @@ use super::super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKin
 
 pub(super) struct LineageRetentionLedger {
     state: Arc<Mutex<LineageRetentionState>>,
+    /// The invalidation window: how many of an occurrence's newest
+    /// generations its readers may still select. Unset until installation.
+    history_positions: Option<std::num::NonZeroUsize>,
 }
 
 struct LineageRetentionState {
@@ -25,16 +28,26 @@ impl LineageRetentionLedger {
                 maximum_bytes,
                 retained_bytes: 0,
             })),
+            history_positions: None,
         }
     }
 
-    pub(super) fn set_maximum(&self, maximum_bytes: u64) {
+    pub(super) fn install(
+        &mut self,
+        maximum_bytes: u64,
+        history_positions: std::num::NonZeroUsize,
+    ) {
+        self.history_positions = Some(history_positions);
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         assert!(state.retained_bytes <= maximum_bytes);
         state.maximum_bytes = maximum_bytes;
+    }
+
+    pub(super) const fn history_positions(&self) -> Option<std::num::NonZeroUsize> {
+        self.history_positions
     }
 
     pub(super) fn reserve(
@@ -54,6 +67,16 @@ impl LineageRetentionLedger {
             state: Arc::clone(&self.state),
             bytes,
         })
+    }
+}
+
+#[cfg(feature = "test-query-execution-observer")]
+impl LineageRetentionLedger {
+    pub(super) fn retained_bytes(&self) -> u64 {
+        self.state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .retained_bytes
     }
 }
 

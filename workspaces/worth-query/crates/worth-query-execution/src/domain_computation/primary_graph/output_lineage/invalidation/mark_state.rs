@@ -71,6 +71,9 @@ pub(super) struct SettlementMarks {
     pub(super) dirty_ordinals: OrdSet<usize>,
     pub(super) pending_upstream: OrdSet<Arc<RecordedSettlementIdentity>>,
     pub(super) verification_requirement: Option<FullVerificationReason>,
+    /// A newer settlement of the same demand replaced this row. It leaves the
+    /// live root once no live row or equality reader reaches it.
+    pub(super) superseded: bool,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

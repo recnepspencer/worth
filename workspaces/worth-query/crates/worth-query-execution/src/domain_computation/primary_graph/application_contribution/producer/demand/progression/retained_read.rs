@@ -20,9 +20,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationOneShotDenialKind, WorthQueryApplicationOutputDemandSource,
     WorthQueryApplicationProjection, WorthQueryApplicationQueryAdmissionDenial,
     WorthQueryApplicationQueryAdmissionDenialKind, WorthQueryApplicationQueryControls,
-    WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind,
-    WorthQueryObservedSource, WorthQueryPrimaryGraphApplicationRuntime,
-    WorthQueryPrincipalResolutionDenial, WorthQueryPrincipalResolutionDenialKind,
+    WorthQueryEntityResolutionDenial, WorthQueryObservedSource,
+    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionDenial,
 };
 
 pub(super) fn read_retained_source<Schema, Family>(
@@ -143,31 +142,17 @@ where
 }
 
 fn principal_denial(stop: WorthQueryPrincipalResolutionDenial) -> WorthQueryOutputDemandDenial {
-    use WorthQueryPrincipalResolutionDenialKind as Kind;
-    let kind = match stop.kind() {
-        Kind::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
-        Kind::DeadlineExceeded => WorthQueryOutputDemandDenialKind::TimedOut,
-        Kind::ProjectionWorkBudgetExceeded => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-        Kind::ProjectionPreparationMemoryExhausted => {
-            WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
-        }
-        other => WorthQueryOutputDemandDenialKind::SourcePrincipal(other),
-    };
-    denial(kind, "")
+    denial(
+        WorthQueryOutputDemandDenialKind::of_principal_resolution(stop.kind()),
+        "",
+    )
 }
 
 fn scope_denial(stop: WorthQueryEntityResolutionDenial) -> WorthQueryOutputDemandDenial {
-    use WorthQueryEntityResolutionDenialKind as Kind;
-    let kind = match stop.kind() {
-        Kind::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
-        Kind::DeadlineExceeded => WorthQueryOutputDemandDenialKind::TimedOut,
-        Kind::ProjectionWorkBudgetExceeded => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-        Kind::ProjectionPreparationMemoryExhausted => {
-            WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
-        }
-        other => WorthQueryOutputDemandDenialKind::SourceScope(other),
-    };
-    denial(kind, "")
+    denial(
+        WorthQueryOutputDemandDenialKind::of_scope_resolution(stop.kind()),
+        "",
+    )
 }
 
 fn query_admission_denial(

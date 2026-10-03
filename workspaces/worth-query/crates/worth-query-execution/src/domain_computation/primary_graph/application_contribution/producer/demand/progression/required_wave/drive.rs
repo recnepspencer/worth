@@ -1,6 +1,7 @@
 //! One wave's required chain: the caller's own Ready first, then the dirty
 //! records popped from the shared queue as frames.
 
+use super::super::super::required_continuations::{resume_held_upstream, RequiredContinuations};
 use super::super::super::RequiredFreshOutcome;
 use super::super::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryProducerOutputFamily,
@@ -26,6 +27,7 @@ pub(super) fn drive_required_wave<'runtime, Schema, Family>(
     installed_edition: &InstalledProducerEdition,
     mut wave: RequiredWaveSelection<'runtime, Schema>,
     queue: &mut RequiredQueueFrames,
+    frame_custody: &mut RequiredContinuations<Schema>,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
 where
@@ -51,6 +53,19 @@ where
             stack.frames.clear();
             current = None;
             continue $label
+        }};
+    }
+    // A stop ends the row being certified or refreshed. One intrinsic to the
+    // row is recorded there, so dependents pending on that row fail with it;
+    // the row's next Current certification or refresh clears it.
+    macro_rules! stopped {
+        ($label:lifetime, $key:expr, $stop:expr) => {{
+            let stop = $stop;
+            runtime.output_demands.record_required_stop($key, &stop);
+            if queue.active() {
+                hold_queue_frame!($label, Some(stop))
+            }
+            return Err(stop);
         }};
     }
     // The caller's outcome is decided; queue frames take the rest.
@@ -90,17 +105,19 @@ where
             current_contacts
         };
         // The typed executor may admit and execute Fresh inside this call.
-        // Reserve caller custody before dispatch, even if it returns Current.
-        let slot = demand
-            .required_continuations
-            .prepare_slot(&runtime.output_demands, admission)?;
+        // Reserve its custody before dispatch, even if it returns Current.
+        let custody = if queue.active() {
+            &mut *frame_custody
+        } else {
+            &mut demand.required_continuations
+        };
+        let slot = custody.prepare_slot(&runtime.output_demands, admission)?;
         let installation_work = slot.installation_work();
         let mut installation = admission
             .reserve_external_work(installation_work)
             .map_err(admission_denial)?;
-        let resolved = last_resolved.as_ref().and_then(|(ready, settled)| {
-            slot.last()
-                .map(|progress| ResolvedRequiredPredecessor::from_current(progress, ready, settled))
+        let resolved = last_resolved.as_ref().map(|(ready, settled)| {
+            ResolvedRequiredPredecessor::from_current(slot.last(), ready, settled)
         });
         let result = certify_required_ready(
             runtime,
@@ -122,15 +139,15 @@ where
             .map_err(admission_denial)?;
         let result = match result {
             Ok(result) => result,
-            Err(stop) if queue.active() => {
+            Err(stop) => {
                 drop(slot);
-                hold_queue_frame!('required, Some(stop))
+                stopped!('required, selected.key(), stop)
             }
-            Err(stop) => return Err(stop),
         };
         match result {
             RequiredWaveStep::Current(settlement) => {
                 drop(slot);
+                runtime.output_demands.clear_required_stop(selected.key());
                 if stack.frames.is_empty() && !queue.active() {
                     // A Clean caller with no successor only resets its contact
                     // scalar. The real demand/continuation transfer is paid
@@ -237,10 +254,9 @@ where
             RequiredWaveStep::Fresh(progress) => {
                 match slot.install(progress) {
                     RequiredFreshOutcome::Advanced(_) => {}
-                    RequiredFreshOutcome::Refused(stop) if queue.active() => {
-                        hold_queue_frame!('required, Some(stop))
+                    RequiredFreshOutcome::Refused(stop) => {
+                        stopped!('required, selected.key(), stop)
                     }
-                    RequiredFreshOutcome::Refused(stop) => return Err(stop),
                 }
                 loop {
                     // Rejoin the actual successor after each real
@@ -250,23 +266,23 @@ where
                     admission
                         .charge_external_work(2)
                         .map_err(|_| work_denial())?;
-                    let successor = demand
-                        .required_continuations
+                    let custody = if queue.active() {
+                        &mut *frame_custody
+                    } else {
+                        &mut demand.required_continuations
+                    };
+                    let successor = custody
                         .last()
                         .expect("the prepared slot installed one successor");
                     if let Some(ready) = runtime
                         .output_demands
                         .interest_ready_readmission(successor.interest(), admission)?
                     {
-                        admission
-                            .charge_external_work(2)
-                            .map_err(|_| work_denial())?;
-                        let committed = matches!(
-                            &ready.completion().authority,
-                            crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Committed(_)
-                        );
+                        runtime
+                            .output_demands
+                            .clear_required_stop(successor.interest().key());
                         current_contacts = successor.producer_contacts();
-                        if committed {
+                        if committed_ready(&ready, admission)? {
                             wave = reselect_required_wave(runtime, wave, admission)?;
                             last_resolved = None;
                             queue.wave_moved();
@@ -278,22 +294,55 @@ where
                     admission
                         .charge_external_work(1)
                         .map_err(|_| work_denial())?;
-                    let progressed = match demand
-                        .required_continuations
+                    let successor = custody
                         .last_mut()
-                        .expect("the prepared slot installed one successor")
-                        .advance_checkpoint(runtime, request_scope, admission)
-                    {
-                        Ok(progressed) => progressed,
-                        Err(stop) if queue.active() => hold_queue_frame!('required, Some(stop)),
-                        Err(stop) => return Err(stop),
-                    };
+                        .expect("the prepared slot installed one successor");
+                    let progressed =
+                        match successor.advance_checkpoint(runtime, request_scope, admission) {
+                            Ok(progressed) => progressed,
+                            Err(stop) => stopped!('required, successor.interest().key(), stop),
+                        };
                     if !progressed {
                         if queue.active() {
                             hold_queue_frame!('required, None)
                         }
                         finish_caller!('required, WorthQueryOutputDemandAdvance::Pending)
                     }
+                }
+            }
+            RequiredWaveStep::Held(head) => {
+                drop(slot);
+                let custody = if queue.active() {
+                    &mut *frame_custody
+                } else {
+                    &mut demand.required_continuations
+                };
+                match resume_held_upstream(
+                    runtime,
+                    principal,
+                    request_scope,
+                    wave.branch,
+                    custody,
+                    &head,
+                    admission,
+                ) {
+                    Ok(Some(ready)) => {
+                        runtime.output_demands.clear_required_stop(&head);
+                        if committed_ready(&ready, admission)? {
+                            wave = reselect_required_wave(runtime, wave, admission)?;
+                            last_resolved = None;
+                            queue.wave_moved();
+                        }
+                        // Certify the same row again against the finished upstream.
+                        continue 'required;
+                    }
+                    Ok(None) => {
+                        if queue.active() {
+                            hold_queue_frame!('required, None)
+                        }
+                        finish_caller!('required, WorthQueryOutputDemandAdvance::Pending)
+                    }
+                    Err(stop) => stopped!('required, &head, stop),
                 }
             }
             RequiredWaveStep::Pending | RequiredWaveStep::NeedsDisclosure => {
@@ -304,4 +353,18 @@ where
             }
         }
     }
+}
+
+/// A committed Ready moved the wave past its selected position.
+fn committed_ready(
+    ready: &SelectedReadyReadmission,
+    admission: &mut InvalidationEditAdmission,
+) -> Result<bool, WorthQueryOutputDemandDenial> {
+    admission
+        .charge_external_work(2)
+        .map_err(|_| work_denial())?;
+    Ok(matches!(
+        &ready.completion().authority,
+        crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Committed(_)
+    ))
 }

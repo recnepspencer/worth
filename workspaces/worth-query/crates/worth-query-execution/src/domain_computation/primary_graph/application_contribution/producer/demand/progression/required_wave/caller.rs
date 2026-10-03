@@ -1,5 +1,6 @@
 //! Caller-owned required-wave progression before ordinary Ready acceptance.
 
+use super::super::super::required_continuations::RequiredContinuations;
 use super::super::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryProducerOutputFamily,
 };
@@ -12,7 +13,8 @@ use crate::domain_computation::primary_graph::application_contribution::producer
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
 
 /// Check actual selected required work before the caller's ordinary Ready
-/// result can be accepted. The caller owns every newly minted successor.
+/// result can be accepted. The caller keeps the successors its own chain
+/// mints; a queue frame's successors belong to their own occurrence.
 pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) fn advance_required_before_caller<
     Schema,
     Family,
@@ -90,6 +92,9 @@ where
         return Ok(None);
     }
     let mut queue = RequiredQueueFrames::new();
+    // A queue frame refreshes rows for owners outside this request. Its
+    // unfinished successors go to registry custody when the wave ends.
+    let mut frame_custody = RequiredContinuations::default();
     let result = drive_required_wave(
         runtime,
         demand,
@@ -99,7 +104,9 @@ where
         installed_edition,
         wave,
         &mut queue,
+        &mut frame_custody,
         admission,
     );
+    frame_custody.hold_unfinished(&runtime.output_demands);
     queue.conclude(result)
 }

@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, OnceLock};
 
 mod admitted_lookup;
+mod history_retirement;
 mod preparation;
 mod stable_publication;
 pub(super) use stable_publication::PreparedStablePartitionLocator;

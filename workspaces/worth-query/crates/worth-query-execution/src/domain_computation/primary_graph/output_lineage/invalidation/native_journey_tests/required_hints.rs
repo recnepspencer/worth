@@ -298,6 +298,7 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
                 .next_required_work_for_selected(
                     product.read_lease_ref(),
                     &main_root,
+                    &owner,
                     &mut owner.edit_admission(),
                 )
                 .unwrap()
@@ -315,7 +316,7 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
         );
         if allowed_hints == 2 {
             let first = registry
-                .next_required_work(&mut owner.edit_admission())
+                .next_required_work(&owner, &mut owner.edit_admission())
                 .unwrap()
                 .expect("fork-cell hint remains after main acknowledgement");
             assert!(matches!(
@@ -325,7 +326,7 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
             ));
             registry.fixture_requeue_admitted_work(&interest);
             let stale = registry
-                .next_required_work(&mut owner.edit_admission())
+                .next_required_work(&owner, &mut owner.edit_admission())
                 .unwrap()
                 .expect("one native hint can have two selected readers");
             assert!(matches!(
@@ -343,7 +344,7 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
             assert_eq!(resources.retained_capacity_bytes(), 0);
         }
         let initial = registry
-            .next_required_work(&mut owner.edit_admission())
+            .next_required_work(&owner, &mut owner.edit_admission())
             .unwrap()
             .expect("the original required interest is unresolved");
         assert!(matches!(
@@ -352,7 +353,7 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
         ));
         assert!(initial.acknowledge().is_some());
         assert!(registry
-            .next_required_work(&mut owner.edit_admission())
+            .next_required_work(&owner, &mut owner.edit_admission())
             .unwrap()
             .is_none());
         drop(interest);

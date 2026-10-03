@@ -166,6 +166,7 @@ pub(in crate::domain_computation::primary_graph) use accepted_checkpoint_identit
 mod admission;
 mod checkpoint;
 mod cleanup;
+mod held_successor;
 mod lifecycle;
 mod notifications;
 mod obligations;
@@ -182,7 +183,10 @@ mod refreshed_rejoin;
 mod required_context;
 mod required_custody;
 mod required_members;
+mod required_stop;
 mod required_work;
+pub(in crate::domain_computation::primary_graph) use held_successor::HeldRequiredSuccessor;
+pub(in crate::domain_computation::primary_graph) use required_work::PendingUpstream;
 pub(in crate::domain_computation::primary_graph) use required_work::ReplacedRequiredWorkHint;
 pub(in crate::domain_computation::primary_graph) use required_work::RequiredWorkMembership;
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedReadyReadmission;
@@ -193,6 +197,8 @@ mod restoration;
 pub(in crate::domain_computation::primary_graph) use restoration::WorthQueryRestoredAcceptedOutput;
 mod settlement_index;
 mod settlement_progression;
+mod settlement_retirement;
+use settlement_retirement::SupersededSettlements;
 mod source_custody;
 mod source_readmission;
 pub(in crate::domain_computation::primary_graph) use source_readmission::RetainedOutputReadmissionSource;
@@ -268,6 +274,13 @@ struct DemandRecord {
     performed_source: Option<WorthQueryPerformedOutputDemandSource>,
     readmission_source: Option<Arc<source_readmission::RequiredOutputReadmission>>,
     successor_of: Option<[u8; 32]>,
+    /// A terminal stop met while certifying or refreshing this row as required
+    /// work. Dependents still pending on it, or on an older row of its
+    /// occurrence, fail with it instead of waiting for work no advance runs.
+    required_stop:
+        Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind>,
+    /// A queue frame's unfinished successor of this row; see `held_successor`.
+    held_successor: Option<held_successor::HeldRequiredSuccessor>,
     wake: Arc<DemandWake>,
 }
 
@@ -293,6 +306,7 @@ struct DemandRegistryState {
     required_reserved_bytes: usize,
     required_custody_retained_bytes: Arc<std::sync::atomic::AtomicUsize>,
     settlement_keys: settlement_index::SettlementIndex,
+    released_settlements: settlement_retirement::ReleasedSettlements,
     pending_cleanup_head: Option<Arc<WorthQueryOutputDemandKey>>,
     source_preparations:
         HashMap<worth_runtime_world::facade::ProductBranchIncarnation, SourcePreparationState>,
@@ -315,6 +329,7 @@ impl Default for DemandRegistryState {
             required_reserved_bytes: 0,
             required_custody_retained_bytes: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
             settlement_keys: settlement_index::SettlementIndex::default(),
+            released_settlements: Vec::new(),
             pending_cleanup_head: None,
             source_preparations: HashMap::new(),
             source_custody: HashMap::new(),

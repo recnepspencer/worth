@@ -38,6 +38,7 @@ mod retained_read;
 mod runtime_support;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use runtime_support::primary_graph_support_inventory;
+#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use runtime_support::primary_graph_support_inventory_admitted;
 
 pub use access_context::WorthQueryApplicationQueryAccessContext;

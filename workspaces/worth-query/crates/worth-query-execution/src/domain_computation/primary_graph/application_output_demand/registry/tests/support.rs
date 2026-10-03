@@ -94,6 +94,8 @@ pub(super) fn record(
         performed_source: None,
         readmission_source: None,
         successor_of: None,
+        required_stop: None,
+        held_successor: None,
         wake: Arc::new(DemandWake {
             _record_capacity: test_record_capacity(),
             generation: Mutex::new(0),

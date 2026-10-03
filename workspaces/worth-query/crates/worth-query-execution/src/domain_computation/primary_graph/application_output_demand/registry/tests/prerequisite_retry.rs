@@ -38,3 +38,56 @@ fn pending_required_prerequisite_preserves_its_retryable_operation() {
         DemandState::Scheduled
     ));
 }
+
+/// An execution pinned before its upstream refreshed read the older row, and
+/// the refresh retired it before the claim. The claim is stale and retryable:
+/// the retry reads the current upstream row.
+#[test]
+fn an_upstream_retired_after_the_execution_read_it_is_a_retryable_stale_claim() {
+    use crate::domain_computation::execution_runtime::source_invalidation::{
+        WorthQueryInvalidationResourceInstallation, WorthQueryInvalidationResources,
+    };
+    let registry = WorthQueryOutputDemandRegistry::default();
+    let reader_key = key("reader", 71, 1);
+    let wake = Arc::new(DemandWake {
+        _record_capacity: test_record_capacity(),
+        generation: Mutex::new(0),
+        changed: Condvar::new(),
+    });
+    registry.state.lock().unwrap().records.insert(
+        reader_key.clone(),
+        DemandRecord {
+            required_interests: 1,
+            wake: Arc::clone(&wake),
+            ..record(occurrence(), DemandState::Running, 1)
+        },
+    );
+    let reader = required_interest(&registry, reader_key, wake);
+    let resources = WorthQueryInvalidationResources::install(
+        WorthQueryInvalidationResourceInstallation::bounded(1_000_000, 1 << 20, 1 << 20, 1),
+    )
+    .unwrap();
+    let source_owner =
+        crate::domain_computation::primary_graph::output_lineage::SourceInvalidationOwner::new(
+            resources, 1,
+        );
+    let mut admission = record_admission();
+    let context = reader
+        .required_context(&source_owner, &mut admission)
+        .expect("the running reader issues its required context");
+    // The upstream row this execution read is no longer indexed: a newer
+    // settlement of its demand retired it.
+    let (_lineage, retired) = crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
+    let stop = context
+        .prepare_prerequisites(std::iter::once(&retired), &mut admission)
+        .err()
+        .expect("a retired upstream cannot be claimed");
+    assert_eq!(
+        stop.kind(),
+        WorthQueryOutputDemandDenialKind::PublicationStale
+    );
+    assert_eq!(
+        stop.recovery_posture(),
+        WorthQueryOutputDemandRecoveryPosture::Retryable
+    );
+}

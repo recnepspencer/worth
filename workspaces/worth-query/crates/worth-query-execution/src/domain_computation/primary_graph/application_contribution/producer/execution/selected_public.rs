@@ -181,10 +181,6 @@ where
     Binding: WorthQueryApplicationProducerBinding<Schema>,
 {
     use crate::domain_computation::authorization::SelectedOperationGraphWorkStop as GraphStop;
-    use crate::domain_computation::primary_graph::{
-        WorthQueryEntityResolutionDenialKind as ScopeKind,
-        WorthQueryPrincipalResolutionDenialKind as PrincipalKind,
-    };
     use crate::domain_computation::provider_session::WorthQueryAdmittedMutationSessionStartStop as SessionStop;
     use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
     use worth_query_admission::integration::WorthQueryGraphWorkCapacityAdmissionStop as CapacityStop;
@@ -210,20 +206,10 @@ where
         SelectedPublicPreparationStop::Issuer(IssuerStop::AccountingOverflow) => work(),
         SelectedPublicPreparationStop::Issuer(IssuerStop::Installation(_)) =>
             denial(WorthQueryOutputDemandDenialKind::Superseded, Binding::IDENTITY).into(),
-        SelectedPublicPreparationStop::Principal(denial) => request(match denial.kind() {
-            PrincipalKind::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
-            PrincipalKind::DeadlineExceeded => WorthQueryOutputDemandDenialKind::TimedOut,
-            PrincipalKind::ProjectionWorkBudgetExceeded => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-            PrincipalKind::ProjectionPreparationMemoryExhausted => WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-            _ => WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-        }),
-        SelectedPublicPreparationStop::Scope(denial) => request(match denial.kind() {
-            ScopeKind::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
-            ScopeKind::DeadlineExceeded => WorthQueryOutputDemandDenialKind::TimedOut,
-            ScopeKind::ProjectionWorkBudgetExceeded => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-            ScopeKind::ProjectionPreparationMemoryExhausted => WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-            _ => WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-        }),
+        SelectedPublicPreparationStop::Principal(denial) =>
+            super::denial::principal_rejected(Binding::IDENTITY, denial),
+        SelectedPublicPreparationStop::Scope(denial) =>
+            super::denial::scope_rejected(Binding::IDENTITY, denial),
         SelectedPublicPreparationStop::UnsupportedScopeMode =>
             denial(WorthQueryOutputDemandDenialKind::ProducerUnavailable, Binding::IDENTITY).into(),
         SelectedPublicPreparationStop::Head(stop) => stop,

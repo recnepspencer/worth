@@ -28,6 +28,7 @@ mod output_witness_capacity;
 mod owner;
 mod publication;
 mod retention;
+mod retirement;
 mod settlement;
 mod source_alignment;
 mod touch_keys;

@@ -37,6 +37,7 @@ pub(in crate::domain_computation::primary_graph) fn collect_consumed_output_upst
 pub(in crate::domain_computation::primary_graph) fn register_completed(
     owner: &SourceInvalidationOwner,
     application: &WorthQueryPrimaryGraphCommittedApplication,
+    consumed_outputs: &[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence],
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     identity: Arc<RecordedSettlementIdentity>,
@@ -60,7 +61,7 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
         .prepare_performed_output_facts(output_witness, admission)
         .map_err(FullVerificationReason::MarkingAdmissionDenied)?
         .ok_or(FullVerificationReason::NativeRevisionUnavailable)?;
-    let upstream = collect_consumed_output_upstream(evidence.consumed_outputs(), admission)
+    let upstream = collect_consumed_output_upstream(consumed_outputs, admission)
         .map_err(FullVerificationReason::MarkingAdmissionDenied)?;
     let requirement = evidence.source_fact_verification_requirement().map(|reason| match reason {
         crate::domain_computation::primary_graph::provider::RebaseVerificationReason::NativeRevisionUnavailable => FullVerificationReason::NativeRevisionUnavailable,

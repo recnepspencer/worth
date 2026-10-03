@@ -13,6 +13,21 @@ fn admission(work: u64) -> InvalidationEditAdmission {
     })
 }
 
+/// Released rows were never registered with this owner; retiring them is a no-op.
+fn source_owner(
+) -> crate::domain_computation::primary_graph::output_lineage::SourceInvalidationOwner {
+    use crate::domain_computation::execution_runtime::source_invalidation::{
+        WorthQueryInvalidationResourceInstallation, WorthQueryInvalidationResources,
+    };
+    let resources = WorthQueryInvalidationResources::install(
+        WorthQueryInvalidationResourceInstallation::bounded(1_000_000, 1 << 20, 1 << 20, 1),
+    )
+    .unwrap();
+    crate::domain_computation::primary_graph::output_lineage::SourceInvalidationOwner::new(
+        resources, 1,
+    )
+}
+
 fn populated_index(
     identity: &Arc<RecordedSettlementIdentity>,
 ) -> (DemandRegistryState, Arc<WorthQueryOutputDemandKey>) {
@@ -230,7 +245,7 @@ fn last_interest_drop_preserves_queued_obligations_for_admitted_cleanup() {
     assert_eq!(state.required_reserved_bytes, required_bytes);
     drop(state);
     registry
-        .drain_terminal_cleanup_admitted(&mut admission(1_000_000))
+        .drain_terminal_cleanup_admitted(&source_owner(), &mut admission(1_000_000))
         .unwrap();
     let state = registry.state.lock().unwrap();
     assert!(!state.records.contains_key(key.as_ref()));

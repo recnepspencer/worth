@@ -199,6 +199,8 @@ impl DemandRegistryState {
             performed_source: None,
             readmission_source: None,
             successor_of,
+            required_stop: None,
+            held_successor: None,
             wake,
         };
         Ok(PreparedRecord {

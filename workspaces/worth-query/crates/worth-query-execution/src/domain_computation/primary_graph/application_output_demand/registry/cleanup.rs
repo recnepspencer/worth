@@ -3,7 +3,9 @@ use std::sync::Arc;
 use super::{
     DemandRecord, DemandRegistryState, WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry,
 };
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::{
+    InvalidationEditAdmission, SourceInvalidationOwner,
+};
 use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
@@ -288,8 +290,11 @@ struct RetiredTerminalCleanup {
 }
 
 impl WorthQueryOutputDemandRegistry {
+    /// Released settlements leave the invalidation owner too, with every
+    /// upstream row only they still held.
     pub(super) fn drain_terminal_cleanup_admitted(
         &self,
+        owner: &SourceInvalidationOwner,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let mut entry_paid = false;
@@ -301,11 +306,12 @@ impl WorthQueryOutputDemandRegistry {
                     .unwrap_or_else(std::sync::PoisonError::into_inner);
                 state.take_terminal_cleanup_step(admission, entry_paid)?
             };
-            let Some(retired) = retired else {
+            let Some(mut retired) = retired else {
                 return Ok(());
             };
             let refund = retired.refund_required_bytes;
             let obligation_refund = retired.refund_obligation_bytes;
+            let released = std::mem::take(&mut retired._settlements);
             drop(retired);
             let mut state = self
                 .state
@@ -316,6 +322,8 @@ impl WorthQueryOutputDemandRegistry {
                 .obligation_reserved_bytes
                 .saturating_sub(obligation_refund);
             entry_paid = true;
+            drop(state);
+            self.retire_released_settlements(released, owner);
         }
     }
 }

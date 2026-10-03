@@ -14,7 +14,8 @@ use worth_relational::facade::{
 use crate::basis::WorthQueryProductBranch;
 use crate::domain_computation::primary_graph::{
     application_output_demand::{
-        SelectedReadyReadmission, WorthQueryOutputDemandInterest, WorthQueryOutputDemandSettlement,
+        PendingUpstream, SelectedReadyReadmission, WorthQueryOutputDemandInterest,
+        WorthQueryOutputDemandKey, WorthQueryOutputDemandSettlement,
     },
     output_lineage::invalidation::{FullVerificationReason, InvalidationEditAdmission},
     product_operation::SharedSelectedProductOperation,
@@ -54,6 +55,8 @@ pub(super) use caller::advance_required_before_caller;
 pub(super) enum RequiredWaveStep<Schema: ApplicationSchema> {
     Current(Arc<WorthQueryOutputDemandSettlement>),
     Upstream(SelectedReadyReadmission),
+    /// The upstream row is still refreshing.
+    Held(WorthQueryOutputDemandKey),
     Pending,
     NeedsDisclosure,
     Fresh(RequiredFreshProgress<Schema>),
@@ -267,7 +270,11 @@ where
                 &wave.positioned,
                 admission,
             )?;
-            Ok(upstream.map_or(RequiredWaveStep::Pending, RequiredWaveStep::Upstream))
+            Ok(match upstream {
+                PendingUpstream::Ready(ready) => RequiredWaveStep::Upstream(ready),
+                PendingUpstream::Held(head) => RequiredWaveStep::Held(head),
+                PendingUpstream::Unavailable => RequiredWaveStep::Pending,
+            })
         }
         RequiredCueProgress::PendingUnresolved => Ok(RequiredWaveStep::Pending),
         RequiredCueProgress::NeedsDisclosure => Ok(RequiredWaveStep::NeedsDisclosure),

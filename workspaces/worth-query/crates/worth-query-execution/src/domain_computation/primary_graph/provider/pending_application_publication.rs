@@ -249,6 +249,9 @@ fn publish_with_snapshot(
         .attempt
         .take()
         .expect("pending application publication retains causality until final cutover");
+    // The output's lineage record and its settlement row hold the consumed
+    // outputs; the completed receipt evidence never does.
+    let consumed_outputs = attempt.retain_consumed_outputs();
     let outstanding = attempt.take_outstanding_dispatch_reservation();
     let causality = attempt.publish_causality(provider, committed_product_publication);
     assert_eq!(
@@ -290,7 +293,7 @@ fn publish_with_snapshot(
     let recorded = pending
         .prepared_lineage_slot
         .take()
-        .map(|slot| slot.record(&completed));
+        .map(|slot| slot.record(&completed, Arc::clone(&consumed_outputs)));
     let settlement_identity = recorded.as_ref().map(|(identity, _)| Arc::clone(identity));
     if let Some(identity) = settlement_identity.as_ref() {
         completed.retain_exact_output_settlement(Arc::clone(identity));
@@ -299,13 +302,13 @@ fn publish_with_snapshot(
         .required_prerequisites
         .as_ref()
         .and_then(|prerequisites| prerequisites.work_membership());
-    if let Some(prerequisites) = pending.required_prerequisites.take() {
+    let superseded = pending.required_prerequisites.take().map(|prerequisites| {
         prerequisites.publish(Arc::clone(
             settlement_identity
                 .as_ref()
                 .expect("managed producer publication records its exact output settlement"),
-        ));
-    }
+        ))
+    });
     if let Some(identity) = settlement_identity {
         let failure_membership = work_membership.clone();
         let owner = &provider.graph.source_owner.invalidation_owner;
@@ -321,6 +324,7 @@ fn publish_with_snapshot(
         let registration_result = crate::domain_computation::primary_graph::output_lineage::invalidation::register_completed(
             owner,
             &completed,
+            &consumed_outputs,
             runtime,
             after,
             Arc::clone(&identity),
@@ -343,6 +347,9 @@ fn publish_with_snapshot(
                 drop(prior);
             }
         }
+    }
+    if let Some(superseded) = superseded {
+        superseded.retire(&provider.graph.source_owner.invalidation_owner);
     }
     provider
         .completed_commit_evidence

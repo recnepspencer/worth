@@ -46,3 +46,21 @@ impl WorthQueryApplicationOutputLineage {
         self.origins.retain(|child, _| retained.contains(child));
     }
 }
+
+#[cfg(feature = "test-query-execution-observer")]
+impl<Schema>
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+{
+    /// The bytes this runtime's output lineage retains now: recorded outputs
+    /// and the generation history that locates them.
+    #[doc(hidden)]
+    pub fn output_lineage_retained_bytes_for_test(&self) -> u64 {
+        self.primary_provider
+            .graph
+            .output_lineage
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .retention
+            .retained_bytes()
+    }
+}

@@ -53,11 +53,13 @@ impl MatchedRequiredPredecessor<'_> {
 
 /// This borrow exists only while the caller handles the Current result on its
 /// selected wave. It cannot turn the predecessor into a Current settlement.
+/// `progress` is the successor this wave refreshed, when it refreshed one; a
+/// row that was already Current resolves no predecessor edge exactly.
 pub(in crate::domain_computation::primary_graph) struct ResolvedRequiredPredecessor<'a, Schema>
 where
     Schema: ApplicationSchema,
 {
-    progress: &'a RequiredFreshProgress<Schema>,
+    progress: Option<&'a RequiredFreshProgress<Schema>>,
     successor_ready: &'a SelectedReadyReadmission,
     current: &'a Arc<WorthQueryOutputDemandSettlement>,
 }
@@ -67,7 +69,7 @@ where
     Schema: ApplicationSchema + 'static,
 {
     pub(super) fn from_current(
-        progress: &'a RequiredFreshProgress<Schema>,
+        progress: Option<&'a RequiredFreshProgress<Schema>>,
         successor_ready: &'a SelectedReadyReadmission,
         current: &'a Arc<WorthQueryOutputDemandSettlement>,
     ) -> Self {
@@ -90,14 +92,15 @@ where
         admission
             .charge_external_work(8)
             .map_err(|_| work_denial())?;
-        let progress_name = self.progress.producer_identity();
+        let Some(progress) = self.progress else {
+            return Ok(None);
+        };
+        let progress_name = progress.producer_identity();
         let comparison_work = progress_name
             .len()
             .checked_mul(2)
             .and_then(|work| work.checked_add(self.current.producer_identity().len()))
-            .and_then(|work| {
-                work.checked_add(self.progress.predecessor().producer_identity().len())
-            })
+            .and_then(|work| work.checked_add(progress.predecessor().producer_identity().len()))
             .and_then(|work| work.checked_add(2))
             .and_then(|work| u64::try_from(work).ok())
             .ok_or_else(work_denial)?;
@@ -106,19 +109,19 @@ where
             .map_err(|_| work_denial())?;
         if !std::ptr::eq(pending.selected_root(), positioned)
             || self.current.producer_identity() != progress_name
-            || self.progress.predecessor().producer_identity() != progress_name
+            || progress.predecessor().producer_identity() != progress_name
         {
             return Ok(None);
         }
         if !self
             .successor_ready
-            .matches_interest(self.progress.interest(), admission)?
+            .matches_interest(progress.interest(), admission)?
         {
             return Ok(None);
         }
         let Some(live_successor) = runtime
             .output_demands
-            .interest_ready_readmission(self.progress.interest(), admission)?
+            .interest_ready_readmission(progress.interest(), admission)?
         else {
             return Ok(None);
         };
@@ -135,7 +138,7 @@ where
             .resolve_required_settlement(
                 runtime.runtime.authority_identity().as_u64(),
                 &runtime.installed_schema.binding_identity(),
-                self.progress.predecessor().completion(),
+                progress.predecessor().completion(),
                 admission,
             );
         let predecessor = match predecessor {
@@ -168,5 +171,27 @@ where
             selected: positioned,
             _current: self.current,
         }))
+    }
+
+    /// Whether `pending` names an older settlement of the row this wave just
+    /// certified Current. No exact predecessor joins that edge, so the
+    /// consumer refreshes in full against the Current row: holding it would
+    /// wait on an upstream with nothing left to refresh.
+    pub(in crate::domain_computation::primary_graph) fn names_current_upstream(
+        &self,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        pending: &SelectedPendingConsumedOutput<'_>,
+        positioned: &PositionedRelationalSnapshot,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<bool, WorthQueryOutputDemandDenial> {
+        let crate::domain_computation::primary_graph::application_output_demand::PendingUpstream::Ready(
+            upstream,
+        ) = runtime
+            .output_demands
+            .pending_exact_ready_readmission(pending, positioned, admission)?
+        else {
+            return Ok(false);
+        };
+        upstream.same_ready_cell(self.successor_ready, admission)
     }
 }

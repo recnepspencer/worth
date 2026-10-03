@@ -35,6 +35,26 @@ pub fn required_ready_custody_bytes_for_test() -> usize {
     PreparedReadyBacking::retained_bytes()
 }
 
+#[cfg(feature = "test-query-execution-observer")]
+impl<Schema>
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+{
+    /// The required-retained bytes this runtime's demand registry holds now:
+    /// required members and the custody beneath them.
+    #[doc(hidden)]
+    pub fn required_custody_bytes_for_test(&self) -> usize {
+        let state = self
+            .output_demands
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        state.required_reserved_bytes
+            + state
+                .required_custody_retained_bytes
+                .load(std::sync::atomic::Ordering::Acquire)
+    }
+}
+
 impl PreparedReadyBacking {
     pub(super) const fn retained_bytes() -> usize {
         let header = 2 * std::mem::size_of::<usize>();

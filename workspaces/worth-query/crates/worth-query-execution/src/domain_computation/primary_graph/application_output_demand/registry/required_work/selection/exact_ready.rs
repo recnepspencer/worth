@@ -3,6 +3,11 @@
 use super::*;
 
 impl SelectedReadyReadmission {
+    /// The registry row this Ready belongs to.
+    pub(in crate::domain_computation::primary_graph) fn key(&self) -> &WorthQueryOutputDemandKey {
+        self.membership.key()
+    }
+
     /// Authenticate the exact pinned Ready, source and membership against the
     /// row selected under the registry guard. No receipt traversal is needed.
     pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn matches_ready_record(

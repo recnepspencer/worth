@@ -127,6 +127,8 @@ pub(in crate::domain_computation::primary_graph) fn prepare_stable_address<
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     lineage.drain_cancelled_slots(admission)?;
+    // History no retained reader selects is freed before this address extends it.
+    lineage.retire_unselected_generations(&source, coordinate.occurrence, admission)?;
     let actual = lineage
         .prior_input_cutoff_candidate::<Binding>(scope, observation, partition, admission)
         .map_err(|stop| match stop {

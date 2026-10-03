@@ -95,6 +95,28 @@ where
     >,
     Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
 {
+    let limits = limits(
+        retained_composite_commits,
+        invalidation(retained_invalidation_bytes, maximum_invalidation_work, 128),
+    );
+    install_program_with_limits::<Program>(checkpoint, profile, limits, seed)
+}
+
+/// Installs with caller-built limits, so a test can keep the invalidation
+/// resources it observes.
+pub(super) fn install_program_with_limits<Program>(
+    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
+    limits: WorthQueryInMemoryApplicationLimits,
+    seed: fn(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
+) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>
+where
+    Program: ApplicationProgramDefinition<
+        CheckpointSchema,
+        Contributions = <CheckpointSchema as ApplicationSchemaComposition>::Contributions,
+    >,
+    Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
+{
     let configuration = (TopologyConfiguration {
         setup_calls: Arc::new(AtomicUsize::new(0)),
         invariant_calls: Arc::new(AtomicUsize::new(0)),
@@ -110,12 +132,7 @@ where
             program,
             declaration,
             configuration,
-            limits(
-                retained_composite_commits,
-                retained_invalidation_bytes,
-                maximum_invalidation_work,
-            )
-            .with_output_demand_resources(profile),
+            limits.with_output_demand_resources(profile),
             checkpoint,
         )
         .expect("the checkpoint restores"),
@@ -123,12 +140,7 @@ where
             program,
             declaration,
             configuration,
-            limits(
-                retained_composite_commits,
-                retained_invalidation_bytes,
-                maximum_invalidation_work,
-            )
-            .with_output_demand_resources(profile),
+            limits.with_output_demand_resources(profile),
             |graph, installed| {
                 let principal = installed
                     .principal_binding(ConsumerPrincipalBinding::reference::<CheckpointSchema>())
@@ -200,10 +212,37 @@ pub(super) fn length(value: u64) -> PositiveLength {
     PositiveLength::new(value).unwrap()
 }
 
-fn limits(
-    retained_composite_commits: u64,
+pub(super) fn invalidation(
     retained_invalidation_bytes: u64,
     maximum_invalidation_work: u64,
+    retained_positions: usize,
+) -> worth_query_host::facade::runtime::WorthQueryInvalidationResources {
+    worth_query_host::facade::runtime::WorthQueryInvalidationResources::install(
+        worth_query_host::facade::runtime::WorthQueryInvalidationResourceInstallation::bounded(
+            maximum_invalidation_work,
+            64 * 1_024 * 1_024,
+            retained_invalidation_bytes,
+            retained_positions,
+        ),
+    )
+    .expect("the Query invalidation installation is valid")
+}
+
+pub(super) fn limits(
+    retained_composite_commits: u64,
+    invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
+) -> WorthQueryInMemoryApplicationLimits {
+    limits_for_journeys(retained_composite_commits, 1, invalidation)
+}
+
+/// [`limits`] with World history and pin capacity for `journeys` of the
+/// fixture's own journeys. Product World keeps every live-branch commit
+/// (deferred: "Live-branch history reclamation for Product World"), so a
+/// journey that commits more than the fixture's own needs more of both.
+pub(super) fn limits_for_journeys(
+    retained_composite_commits: u64,
+    journeys: u64,
+    invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
 ) -> WorthQueryInMemoryApplicationLimits {
     WorthQueryInMemoryApplicationLimits::new(
         WorthQueryProductWorldResources::install(
@@ -213,7 +252,7 @@ fn limits(
                 },
                 history: RuntimeWorldHistoryBudgetInstallation {
                     retained_composite_commits,
-                    history_metadata_bytes: 524_288,
+                    history_metadata_bytes: 524_288 * journeys,
                 },
                 observations: RuntimeWorldObservationBudgetInstallation {
                     active_observations: 16,
@@ -226,23 +265,15 @@ fn limits(
                     retained_partial_metadata_bytes: 524_288,
                 },
                 retention: RuntimeWorldRetentionBudgetInstallation {
-                    unique_exact_component_pins: 64,
+                    unique_exact_component_pins: 64 * journeys,
                     in_flight_pin_acquisition_reservations: 16,
                 },
                 custody: RuntimeWorldCustodyBudgetInstallation {
                     owner_created_component_custody_records: 16,
                 },
             },
-        WorthQueryProductWorldClock::start(),
-        worth_query_host::facade::runtime::WorthQueryInvalidationResources::install(
-            worth_query_host::facade::runtime::WorthQueryInvalidationResourceInstallation::bounded(
-                maximum_invalidation_work,
-                64 * 1_024 * 1_024,
-                retained_invalidation_bytes,
-                128,
-            ),
-        )
-        .expect("the Query invalidation installation is valid"),
+            WorthQueryProductWorldClock::start(),
+            invalidation,
         )
         .unwrap(),
         WorthQueryApplicationCandidateResourceProfile::bounded(4_096, 8_192, 4_096).unwrap(),

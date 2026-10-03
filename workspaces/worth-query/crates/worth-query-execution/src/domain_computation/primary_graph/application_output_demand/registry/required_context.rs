@@ -202,7 +202,8 @@ impl WorthQueryOutputDemandInterest {
         source_owner: &SourceInvalidationOwner,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<RequiredOutputDemandContext, WorthQueryOutputDemandDenial> {
-        self.owner.drain_terminal_cleanup_admitted(admission)?;
+        self.owner
+            .drain_terminal_cleanup_admitted(source_owner, admission)?;
         let mut state = self
             .owner
             .state

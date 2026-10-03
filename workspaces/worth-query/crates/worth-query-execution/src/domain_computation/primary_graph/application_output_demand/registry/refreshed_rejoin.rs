@@ -5,13 +5,14 @@
 //! the newest row of that occurrence instead of failing; a stop that was not
 //! a refresh, or a refresh that itself stopped, stays terminal.
 
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use super::admission::{accepts_semantic_join, interest};
 use super::source_readmission::RequiredOutputReadmission;
 use super::{
-    DemandState, WorthQueryOutputAdvancement, WorthQueryOutputDemandInterest,
-    WorthQueryOutputDemandRegistry,
+    DemandRecord, DemandState, WorthQueryOutputAdvancement, WorthQueryOutputDemandInterest,
+    WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry,
 };
 use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::{
@@ -41,18 +42,7 @@ impl WorthQueryOutputDemandRegistry {
         let Some(record) = state.records.get(&stale.key) else {
             return Ok(None);
         };
-        let superseded = match &record.state {
-            DemandState::Output(output) => matches!(
-                &output.advancement,
-                WorthQueryOutputAdvancement::Stopped { denial, .. }
-                    if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded
-            ),
-            DemandState::Failed(denial) => {
-                denial.kind() == WorthQueryOutputDemandDenialKind::Superseded
-            }
-            _ => false,
-        };
-        if !superseded {
+        if !superseded(record) {
             return Ok(None);
         }
         let (occurrence, scope) = (record.product_occurrence, record.source_scope);
@@ -87,6 +77,61 @@ impl WorthQueryOutputDemandRegistry {
         state.install_required_member(member);
         Ok(Some((rejoined, readmission)))
     }
+}
+
+/// A row its owner still holds after a newer source of its occurrence
+/// replaced it. The owner rejoins on its next advance.
+pub(super) fn superseded(record: &DemandRecord) -> bool {
+    match &record.state {
+        DemandState::Output(output) => matches!(
+            &output.advancement,
+            WorthQueryOutputAdvancement::Stopped { denial, .. }
+                if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded
+        ),
+        DemandState::Failed(denial) => {
+            denial.kind() == WorthQueryOutputDemandDenialKind::Superseded
+        }
+        _ => false,
+    }
+}
+
+/// The newest row of an occurrence belongs to the owners still holding its
+/// superseded rows, not to whichever advance refreshed it. It keeps its
+/// required membership and source custody until each owner rejoins or closes.
+pub(super) fn awaited_by_stale_owner(
+    records: &BTreeMap<WorthQueryOutputDemandKey, DemandRecord>,
+    key: &WorthQueryOutputDemandKey,
+) -> bool {
+    let mut awaited = false;
+    for (other, record) in records {
+        if other == key || !other.same_occurrence(key) {
+            continue;
+        }
+        match other.replacement_order(key) {
+            Some(std::cmp::Ordering::Greater) => return false,
+            Some(std::cmp::Ordering::Less) => {
+                awaited |= record.interests != 0 && superseded(record);
+            }
+            _ => {}
+        }
+    }
+    awaited
+}
+
+/// The newest row of `key`'s occurrence. A closing stale owner of `key` may
+/// have been the last one awaiting it.
+pub(super) fn newest_of_occurrence(
+    records: &BTreeMap<WorthQueryOutputDemandKey, DemandRecord>,
+    key: &WorthQueryOutputDemandKey,
+) -> Option<WorthQueryOutputDemandKey> {
+    records
+        .keys()
+        .filter(|other| {
+            other.same_occurrence(key)
+                && other.replacement_order(key) == Some(std::cmp::Ordering::Greater)
+        })
+        .max_by_key(|other| other.source.observation_generation())
+        .cloned()
 }
 
 fn work_denial() -> WorthQueryOutputDemandDenial {

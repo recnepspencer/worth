@@ -10,8 +10,8 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 
 use super::{
-    denial, failed, query_admission_denied, query_execution_denied, request_admission_denied,
-    ProducerExecutionStop, SourceBinding, SourceQuery, SourceValue,
+    denial, failed, principal_rejected, query_admission_denied, query_execution_denied,
+    scope_rejected, ProducerExecutionStop, SourceBinding, SourceQuery, SourceValue,
     WorthQueryApplicationProducerBinding, WorthQueryOutputDemandDenialKind,
 };
 use crate::basis::WorthQueryProductBranch;
@@ -145,7 +145,7 @@ where
             WorthQueryPrincipalResolutionMode::Ordinary,
             admission,
         )
-        .map_err(|error| request_admission_denied(Binding::IDENTITY, error))?;
+        .map_err(|error| principal_rejected(Binding::IDENTITY, error))?;
     let scope = selected
         .resolve_retained_query_scope(
             SourceBinding::<Schema, Binding>::scope_field(),
@@ -153,7 +153,7 @@ where
             request,
             admission,
         )
-        .map_err(|error| request_admission_denied(Binding::IDENTITY, error))?;
+        .map_err(|error| scope_rejected(Binding::IDENTITY, error))?;
     Ok((installed, principal, scope))
 }
 

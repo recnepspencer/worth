@@ -103,6 +103,7 @@ impl DemandRegistryState {
             .records
             .get(key)
             .is_some_and(super::DemandRecord::is_required)
+            || super::refreshed_rejoin::awaited_by_stale_owner(&self.records, key)
         {
             return DetachedRequiredMember::default();
         }

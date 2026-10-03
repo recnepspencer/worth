@@ -179,8 +179,12 @@ impl PreparedSelectedCheckpointFinish<'_> {
             }
             WorthQueryOutputAdvancement::Claimed(active) if *active == claim => {
                 output.checkpoint = Some(checkpoint);
+                // The shared required row stops only for a stop intrinsic to
+                // it; any other stays with the advance that met it, and the
+                // row's checkpoint waits for a later claim.
                 let terminal = denial.is_some_and(|cause| {
                     cause.recovery_posture() != WorthQueryOutputDemandRecoveryPosture::Retryable
+                        && super::super::required_stop::intrinsic_to_row(cause.kind())
                 });
                 output.advancement = if terminal {
                     WorthQueryOutputAdvancement::Stopped {

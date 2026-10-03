@@ -95,6 +95,36 @@ where
         FamilySourceQuery<Schema, Family>: 'static,
     {
         let mut admission = self.demand_request_admission();
+        self.advance_retained_with_commit_authority(
+            demand,
+            principal,
+            request_scope,
+            delivery_branch,
+            WorthQueryProducerCommitAuthority::Ordinary,
+            &mut admission,
+        )
+    }
+
+    /// Reenter the frozen source under the commit authority the demand was
+    /// issued with, on the caller's request meter.
+    pub(super) fn advance_retained_with_commit_authority<Family>(
+        &self,
+        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request_scope: &WorthQueryRequestScope,
+        delivery_branch: crate::basis::WorthQueryProductBranch,
+        commit_authority: WorthQueryProducerCommitAuthority,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+        FamilySourceValue<Schema, Family>:
+            crate::domain_computation::primary_graph::WorthQueryApplicationProjection<
+                    Schema,
+                    FamilySourceQuery<Schema, Family>,
+                > + 'static,
+        FamilySourceQuery<Schema, Family>: 'static,
+    {
         let limits = demand.limits;
         self.advance_output_demand_with_prepared_source(
             demand,
@@ -112,8 +142,8 @@ where
                     admission,
                 )
             },
-            WorthQueryProducerCommitAuthority::Ordinary,
-            &mut admission,
+            commit_authority,
+            admission,
         )
     }
 

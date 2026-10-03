@@ -26,6 +26,7 @@ mod record_capacity;
 mod recovery_posture;
 mod replacement_preparation;
 mod required_lifecycle;
+mod required_stop;
 mod required_work;
 mod selected_execution_release;
 mod semantic_epoch;

@@ -11,6 +11,7 @@ mod selection;
 mod subsumed;
 mod successor_join;
 
+pub(in crate::domain_computation::primary_graph) use pending_readmission::PendingUpstream;
 pub(in crate::domain_computation::primary_graph) use refresh_claim::SelectedRequiredRefreshClaim;
 pub(in crate::domain_computation::primary_graph) use selection::SelectedReadyReadmission;
 
@@ -27,7 +28,9 @@ use worth_relational::facade::mvcc::CompanionPublicationCompletionObserver;
 
 use super::record_capacity::RecordCapacity;
 use super::{WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry};
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::{
+    InvalidationEditAdmission, SourceInvalidationOwner,
+};
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
