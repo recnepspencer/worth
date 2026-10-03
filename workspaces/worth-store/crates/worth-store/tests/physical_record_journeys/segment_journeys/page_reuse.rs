@@ -34,15 +34,17 @@ fn cross_batch_page_reuse_is_cow_and_does_not_rebase_old_slots() {
     );
     let after_admission = serving.resident_admission_counters();
     // The second publication reads one source page and two blocks from each
-    // routing family (record, segment membership, and free space). All seven
-    // reads now cross resident integrity admission.
+    // routing family (record, segment membership, and free space). Copying
+    // the page also looks up the selected route of each of its two published
+    // slots, so a retired slot is never republished. All nine reads cross
+    // resident integrity admission.
     assert_eq!(
         after_admission.fresh_validations() + after_admission.exact_record_reuses(),
-        before_admission.fresh_validations() + before_admission.exact_record_reuses() + 7,
+        before_admission.fresh_validations() + before_admission.exact_record_reuses() + 9,
     );
     assert_eq!(
         after_admission.owner_decoder_entries(),
-        before_admission.owner_decoder_entries() + 7,
+        before_admission.owner_decoder_entries() + 9,
     );
     assert_eq!(
         after_admission.refusals_before_owner_entry(),

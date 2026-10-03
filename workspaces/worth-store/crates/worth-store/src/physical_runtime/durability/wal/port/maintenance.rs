@@ -144,16 +144,17 @@ impl PhysicalWalAppendPort {
             .ok_or(ScheduledMaintenanceDenial::Finish)?;
         match synchronize_scheduled_maintenance(self, artifact) {
             Ok(synchronization) => {
-                let frame_digests = self
-                    .owner
-                    .planned_maintenance_frame_digests(payload_digest)
-                    .ok_or(ScheduledMaintenanceDenial::Finish)?;
+                let frame_digests = self.owner.planned_maintenance_frame_digests(payload_digest);
+                if frame_digests.is_none() {
+                    return Err(ScheduledMaintenanceDenial::Finish);
+                }
                 self.finish_maintenance_frame()
                     .map_err(|()| ScheduledMaintenanceDenial::Finish)?;
                 Ok(super::DurableMaintenanceReceipt::completed(
                     payload_digest,
                     interval,
-                    Some(frame_digests),
+                    #[cfg(feature = "certification-test-authority")]
+                    frame_digests,
                     synchronization,
                 ))
             }

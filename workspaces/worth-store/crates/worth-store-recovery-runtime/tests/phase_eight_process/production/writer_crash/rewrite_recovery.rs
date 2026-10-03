@@ -60,7 +60,7 @@ fn fresh_recovery_applies_a_multi_page_source_rewrite() {
     let segment = source_segment(&root, rewrite);
     let report_path = parent.path().join("rewrite-multi-page-runtime-report.bin");
     let (_process_id, output) =
-        run_recovery_with_profile(&root, &report_path, parent.path(), "c8-phase2-admission-v1");
+        run_recovery_with_profile(&root, &report_path, parent.path(), "c10-extent-rewrite-v1");
     assert_child_succeeded("rewrite-multi-page", &output);
     let report = RecoveryReportEnvelope::decode(&fs::read(&report_path).expect("report bytes"))
         .expect("report decode");

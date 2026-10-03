@@ -170,15 +170,28 @@ pub(super) fn observe(
     {
         return Err(Denial::CheckpointBinding);
     }
-    let marker = match (claim.marker(), claim.selected_head_v2()) {
-        (Some(marker), None) => marker,
-        _ => return Err(Denial::CheckpointBinding),
+    let base_matches = match (claim.marker(), claim.selected_head_v2()) {
+        (Some(marker), None) => {
+            source.identity() == marker.checkpoint()
+                && source.root().generation() == marker.root_generation()
+                && marker.root_sha256() == claim.history().checkpoint_root_frame_sha256()
+                && no_release_roster_matches(marker, checkpoint_stream, window, resident)?
+        }
+        // A released checkpoint base keeps its own checkpoint-source roster;
+        // the completed history continues from it without replacing it.
+        (None, Some(base)) => {
+            *base.checkpoint() == *claim.checkpoint()
+                && base.source_root_sha256() == claim.history().checkpoint_root_frame_sha256()
+                && base.certificates_match(
+                    checkpoint_stream
+                        .certificate_records()
+                        .iter()
+                        .map(AsRef::as_ref),
+                )
+        }
+        _ => false,
     };
-    if source.identity() != marker.checkpoint()
-        || source.root().generation() != marker.root_generation()
-        || marker.root_sha256() != claim.history().checkpoint_root_frame_sha256()
-        || !no_release_roster_matches(marker, checkpoint_stream, window, resident)?
-    {
+    if !base_matches {
         return Err(Denial::CheckpointBinding);
     }
     let checkpoint_source = funded_record(
@@ -211,6 +224,9 @@ pub(super) fn observe(
         )?
         || <[u8; 32]>::from(Sha256::digest(checkpoint_source_bytes))
             != claim.history().checkpoint_root_frame_sha256()
+        || claim
+            .selected_head_v2()
+            .is_some_and(|base| base.checkpoint_source_root() != &checkpoint_source_root)
     {
         return Err(Denial::CheckpointBinding);
     }

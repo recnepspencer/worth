@@ -1,9 +1,13 @@
 //! One-shot bridge from an independently verified C.8 selection to Store
 //! serving admission. The sealed witness is never constructed from raw bytes.
 
+#[cfg(feature = "recovery-runtime-owner")]
 use sha2::{Digest, Sha256};
+#[cfg(feature = "recovery-runtime-owner")]
 use worth_store_physical_backend::QualifiedFilesystemMedia;
+#[cfg(feature = "recovery-runtime-owner")]
 use worth_store_physical_format::store_namespace::StableStoreIdentity;
+#[cfg(feature = "recovery-runtime-owner")]
 use worth_store_physical_format::{
     decode_checkpoint_certificate, CheckpointCertificateKind, DurableFreeSpaceManifestHeader,
     DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration, ReleaseCheckpointCertificateV1,
@@ -14,15 +18,18 @@ use worth_store_recovery_physics::{
     VerifiedSelectedReleaseHeadCustodyV2, VerifiedSelectedTierEpochCustody,
 };
 
+#[cfg(feature = "recovery-runtime-owner")]
 #[path = "recovered_custody/checkpoint.rs"]
 mod checkpoint;
 #[path = "recovered_custody/construction.rs"]
 mod construction;
+#[cfg(feature = "recovery-runtime-owner")]
 #[path = "recovered_custody/head_v2.rs"]
 mod head_v2;
 #[cfg(feature = "recovery-runtime-owner")]
 #[path = "recovered_custody/media_freshness.rs"]
 mod media_freshness;
+#[cfg(feature = "recovery-runtime-owner")]
 #[path = "recovered_custody/pending.rs"]
 mod pending;
 #[cfg(feature = "recovery-runtime-owner")]
@@ -40,8 +47,10 @@ pub(in crate::physical_runtime) struct RecoveredCheckpointCustodyEvidence {
     #[cfg(feature = "recovery-runtime-owner")]
     checkpoint_ownership:
         crate::physical_runtime::recovery_coordination::RecoveryCheckpointOwnership,
+    #[cfg(feature = "recovery-runtime-owner")]
     store: StableStoreIdentity,
     recovery_allocation: crate::physical_runtime::PhysicalRecoveryAllocationAdmission,
+    #[cfg(feature = "recovery-runtime-owner")]
     root: DurablePhysicalRootManifest,
     head_v2: Option<VerifiedSelectedReleaseHeadCustodyV2>,
     no_release: Option<VerifiedSelectedNoReleaseCustody>,
@@ -67,6 +76,7 @@ impl VerifiedRecoveredCheckpointCustody {
     }
 }
 
+#[cfg(feature = "recovery-runtime-owner")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::physical_runtime) enum RecoveredCheckpointCustodyDenial {
     SelectedRootMismatch,
@@ -118,6 +128,7 @@ impl RecoveredPhysicalCheckpointCustody {
 }
 
 impl RecoveredCheckpointCustodyEvidence {
+    #[cfg(feature = "recovery-runtime-owner")]
     fn checkpoint_stream(
         &self,
         facts: &worth_store_physical_integrity::VerifiedCheckpointFacts,
@@ -136,6 +147,7 @@ impl RecoveredCheckpointCustodyEvidence {
     }
 
     /// Original Store-issued recovery ceiling; this observation mints no new grant.
+    #[cfg(feature = "recovery-runtime-owner")]
     pub(in crate::physical_runtime) const fn recovery_allocation_admission(
         &self,
     ) -> crate::physical_runtime::PhysicalRecoveryAllocationAdmission {
@@ -228,6 +240,7 @@ impl RecoveredCheckpointCustodyEvidence {
         Ok(())
     }
 
+    #[cfg(feature = "recovery-runtime-owner")]
     fn verify_no_release(
         &self,
         verified: &VerifiedSelectedNoReleaseCustody,

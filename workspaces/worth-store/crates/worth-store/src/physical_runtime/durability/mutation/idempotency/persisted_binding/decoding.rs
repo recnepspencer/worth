@@ -66,6 +66,7 @@ pub(in crate::physical_runtime) struct DecodedPhysicalMutationBindingBasis {
 }
 
 impl PhysicalBindingDecodingContext {
+    #[cfg(feature = "recovery-runtime-owner")]
     pub(in crate::physical_runtime) const fn store_identity(self) -> StableStoreIdentity {
         self.store
     }

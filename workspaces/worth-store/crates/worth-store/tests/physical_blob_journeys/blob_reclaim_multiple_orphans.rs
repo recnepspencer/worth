@@ -3,12 +3,13 @@
 use std::{
     num::{NonZeroU16, NonZeroU64},
     thread,
+    time::{Duration, Instant},
 };
 
 use worth_store::physical_runtime::{
-    production::PhysicalMutationCheckpoint, BlobAppendFailure, BlobReclaimDisposition,
-    BlobReclaimFailure, BlobReclaimLimits, BlobReclaimRequest, PhysicalMutationDeadline,
-    PhysicalMutationProvenNoEffectCause,
+    production::{PhysicalMutationCheckpoint, PhysicalMutationPauseGate},
+    BlobAppendFailure, BlobReclaimDisposition, BlobReclaimFailure, BlobReclaimLimits,
+    BlobReclaimRequest, PhysicalMutationDeadline, PhysicalMutationProvenNoEffectCause,
 };
 use worth_store_physical_format::{decode_blob_record, BlobRecordV1, PersistedRecordIdentity};
 
@@ -47,20 +48,20 @@ fn two_terminal_orphans_clean_in_two_bounded_reclaims() {
             .pause_physical_mutation_at(PhysicalMutationCheckpoint::BeforeTerminalFinalization);
         let (result, reached) = thread::scope(|workers| {
             let worker = workers.spawn(|| {
-                if !manifest_gate.await_arrival() {
+                if !arrives(&manifest_gate) {
                     return "manifest";
                 }
                 let reservation_gate = serving.pause_physical_mutation_at(
                     PhysicalMutationCheckpoint::BeforeTerminalFinalization,
                 );
                 manifest_gate.release();
-                if !reservation_gate.await_arrival() {
+                if !arrives(&reservation_gate) {
                     return "reservation";
                 }
                 let drop_gate = serving
                     .pause_physical_mutation_at(PhysicalMutationCheckpoint::BeforeEffectCutover);
                 reservation_gate.release();
-                if !drop_gate.await_arrival() {
+                if !arrives(&drop_gate) {
                     return "drop";
                 }
                 serving
@@ -199,4 +200,18 @@ fn two_terminal_orphans_clean_in_two_bounded_reclaims() {
         BlobReclaimDisposition::ProvenNoEffect,
     );
     serving.close();
+}
+
+/// Waits for the paused mutation to arrive at `gate`. A single bounded wait can
+/// expire under parallel load and leave the gate holding the mutation with no
+/// one to release it; the same long deadline the crash journeys use keeps the
+/// arrival deterministic.
+fn arrives(gate: &PhysicalMutationPauseGate) -> bool {
+    let deadline = Instant::now() + Duration::from_secs(120);
+    while Instant::now() < deadline {
+        if gate.await_arrival() {
+            return true;
+        }
+    }
+    false
 }

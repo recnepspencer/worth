@@ -4,7 +4,6 @@
 use super::*;
 
 impl RecoveredCheckpointCustodyEvidence {
-    #[cfg(feature = "recovery-runtime-owner")]
     pub(super) fn verify_funded_current_checkpoint(
         &self,
         media: &QualifiedFilesystemMedia,
@@ -60,18 +59,70 @@ impl RecoveredCheckpointCustodyEvidence {
         actual_sha256: [u8; 32],
     ) -> Result<(), RecoveredCheckpointCustodyDenial> {
         let source = verified.checkpoint().source();
-        let marker = verified
-            .marker()
-            .ok_or(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch)?;
         if verified.selected_root() != root
             || verified.selected_root_frame_sha256() != actual_sha256
             || source.identity().store_identity() != store
             || source.root().generation() > root.generation()
-            || marker.checkpoint() != source.identity()
-            || marker.root_generation() != source.root().generation()
-            || marker.root_sha256() != verified.history().checkpoint_root_frame_sha256()
             || verified.history().selected_root_frame_sha256() != actual_sha256
             || verified.released_batches().is_empty()
+        {
+            return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
+        }
+        let effective = self
+            .effective_release_heads
+            .as_ref()
+            .ok_or(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch)?;
+        match (verified.marker(), verified.selected_head_v2()) {
+            (Some(marker), None) => self.verify_historical_no_release(verified, marker)?,
+            // The completed history continues from the base's checkpoint-
+            // source roster, which stays the effective roster's origin.
+            (None, Some(base)) => {
+                let checkpoint_source = base.checkpoint_source_root();
+                if base.checkpoint() != verified.checkpoint()
+                    || base.source_root_sha256()
+                        != verified.history().checkpoint_root_frame_sha256()
+                    || base.selected_root() != root
+                    || checkpoint_source.release_custody_head_root()
+                        != effective.checkpoint_source_root()
+                    || checkpoint_source.next_release_custody_head_block()
+                        != effective.checkpoint_source_next_block()
+                    || base.selected_heads() != effective.checkpoint_source_heads()
+                    || base.accumulator_v2().head_count()
+                        != effective.checkpoint_source_heads().len() as u64
+                {
+                    return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
+                }
+                self.verify_head_v2_certificates(base)?;
+            }
+            _ => return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch),
+        }
+        if effective.effective_root_frame_sha256() != actual_sha256
+            || root.release_custody_head_root() != Some(effective.effective_root())
+            || root.next_release_custody_head_block() != effective.effective_next_block()
+            || effective.ordered_replays().len() != verified.released_batches().len()
+        {
+            return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
+        }
+        let Some((_, last)) = effective.ordered_replays().last() else {
+            return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
+        };
+        if last.replay().result_root() != effective.effective_root()
+            || last.replay().result_next_block() != effective.effective_next_block()
+        {
+            return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
+        }
+        Ok(())
+    }
+
+    fn verify_historical_no_release(
+        &self,
+        verified: &VerifiedOrderedHistoricalReleaseCustody,
+        marker: worth_store_physical_format::ReleaseCheckpointNoReleaseV1,
+    ) -> Result<(), RecoveredCheckpointCustodyDenial> {
+        let source = verified.checkpoint().source();
+        if marker.checkpoint() != source.identity()
+            || marker.root_generation() != source.root().generation()
+            || marker.root_sha256() != verified.history().checkpoint_root_frame_sha256()
         {
             return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
         }
@@ -100,22 +151,9 @@ impl RecoveredCheckpointCustodyEvidence {
             .effective_release_heads
             .as_ref()
             .ok_or(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch)?;
-        if verified.selected_head_v2().is_some()
-            || !effective.checkpoint_source_heads().is_empty()
+        if !effective.checkpoint_source_heads().is_empty()
             || effective.checkpoint_source_root().is_some()
             || effective.checkpoint_source_next_block() != 1
-            || effective.effective_root_frame_sha256() != actual_sha256
-            || root.release_custody_head_root() != Some(effective.effective_root())
-            || root.next_release_custody_head_block() != effective.effective_next_block()
-            || effective.ordered_replays().len() != verified.released_batches().len()
-        {
-            return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
-        }
-        let Some((_, last)) = effective.ordered_replays().last() else {
-            return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
-        };
-        if last.replay().result_root() != effective.effective_root()
-            || last.replay().result_next_block() != effective.effective_next_block()
         {
             return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
         }

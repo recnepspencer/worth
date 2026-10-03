@@ -5,6 +5,10 @@ mod fixture;
 mod native_storage;
 #[cfg(windows)]
 mod reread;
+#[cfg(windows)]
+mod resident_ceiling;
+#[cfg(windows)]
+mod torn_tail;
 
 fn identity(segment: u64, generation: u64) -> WalSegmentArtifactIdentity {
     WalSegmentArtifactIdentity::new(
@@ -46,7 +50,7 @@ fn resident_fingerprint_handoff_moves_precharged_backing_without_clone() {
     let ports = owner.ports().clone();
     let observer = ports.allocation_events();
     let mut resident = StoreRejoinResidentLedger::for_test(original, 100, 4096).unwrap();
-    let mut make_inventory = || {
+    let make_inventory = |resident: &mut StoreRejoinResidentLedger| {
         let mut artifacts = WalRoster::with_capacity(&coordination, 2).unwrap();
         let bytes = (artifacts.capacity() * std::mem::size_of::<WalArtifactFingerprint>()) as u64;
         resident.retain(bytes).unwrap();
@@ -57,8 +61,10 @@ fn resident_fingerprint_handoff_moves_precharged_backing_without_clone() {
             artifacts,
         }
     };
-    let first = make_inventory();
-    let inventory = make_inventory();
+    let first = make_inventory(&mut resident)
+        .into_fingerprint_with_resident(&mut resident)
+        .unwrap();
+    let inventory = make_inventory(&mut resident);
     assert!(first.matches_reread(&inventory));
     let charged =
         (inventory.artifacts.capacity() * std::mem::size_of::<WalArtifactFingerprint>()) as u64;

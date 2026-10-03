@@ -115,6 +115,26 @@ impl<'scope, 'owner> HistoricalWalkStorage<'scope, 'owner> {
         self.discard_vec(old)
     }
 
+    /// Moves a vector funded only by the resident ledger into the raw grant
+    /// that travels to Serving. Both copies stay charged until the original
+    /// is dropped.
+    pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn adopt_resident_vec<
+        T: Clone,
+    >(
+        &mut self,
+        values: Vec<T>,
+    ) -> Result<Vec<T>, Denial> {
+        let bytes = self
+            .resident
+            .vector_bytes(&values)
+            .map_err(Denial::Resident)?;
+        let mut funded = self.reserve_vec(values.len())?;
+        funded.extend_from_slice(&values);
+        drop(values);
+        self.resident.release(bytes);
+        Ok(funded)
+    }
+
     pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn discard_vec<T>(
         &mut self,
         values: Vec<T>,

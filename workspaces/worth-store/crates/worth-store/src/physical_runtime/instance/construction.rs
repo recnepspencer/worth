@@ -10,7 +10,10 @@ use work_runtime::prepare_work_runtime;
 
 use crate::physical_runtime::{
     artifact_family::PhysicalArtifactFamilyRegistry,
-    record_serving::{RecordAllocationFrontier, RecordServingOwner, RecordServingState},
+    durability::ServingCheckpointCustody,
+    record_serving::{
+        checkpoint_pin_scan_bytes, RecordAllocationFrontier, RecordServingOwner, RecordServingState,
+    },
     runtime::PhysicalRuntimeCore,
 };
 
@@ -165,20 +168,43 @@ impl PhysicalStoreInstanceParts {
         // Keep this grant through publication-retention prevalidation, then
         // release it before ordinary serving installs operation grants.
         drop(reopen_grant);
-        let checkpoint_custody_origin = durability_reopen.checkpoint_custody_origin();
+        // Recovered Serving carries the original Store-issued ceiling, while
+        // this owner's pool independently enforces the current tighter limit.
+        let selected_recovery_allocation = residency.recovery_allocation_admission();
+        let serving_custody =
+            match ServingCheckpointCustody::reserve(
+                durability_reopen.checkpoint_custody_origin(),
+                checkpoint_custody.recovered,
+                frame_ports.clone(),
+                selected_recovery_allocation,
+                runtime_identity,
+                lifecycle_generation,
+                core.lifecycle_state(),
+                checkpoint_pin_scan_bytes(durability.observation(), bootstrap.format),
+            ) {
+                Ok(custody) => custody,
+                Err(cause) => return Err(PhysicalStoreInstanceConstructionFailure {
+                    termination,
+                    read_protection,
+                    media,
+                    core,
+                    residency,
+                    durability,
+                    cause:
+                        PhysicalSignalConstructionFailure::ServingCaptureCustodyReservationRejected(
+                            cause,
+                        ),
+                }),
+            };
         let reopened = durability_reopen.install(durability);
         prepared_work.admit_publication_residue(
             retirement_residue::PublicationResidueAdmission::classify(&bootstrap, &reopened),
         );
         let installed_work = prepared_work.install(media);
         let lifecycle_state = core.lifecycle_state();
-        // Recovered Serving carries the original Store-issued ceiling, while
-        // this owner's pool independently enforces the current tighter limit.
-        let selected_recovery_allocation = residency.recovery_allocation_admission();
         let record_serving = PhysicalRecordServingAssembly::new(
             bootstrap,
-            checkpoint_custody_origin,
-            checkpoint_custody.recovered,
+            serving_custody,
             allocation_frontier,
             frame_ports,
             selected_recovery_allocation,

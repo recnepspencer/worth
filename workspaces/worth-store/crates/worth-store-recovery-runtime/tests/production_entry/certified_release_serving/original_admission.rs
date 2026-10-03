@@ -47,7 +47,12 @@ fn original_recovery_ceiling_survives_seal_checkpoint_and_fresh_reopen() {
             assert_eq!(observation.store_identity(), store);
             let counters = observation.counters();
             assert_eq!(counters.peak_operation_bytes(), ORIGINAL_RECOVERY_BYTES);
-            assert_eq!(counters.active_operation_bytes(), 0);
+            // Serving entry funds the selected custody's standing capture
+            // reservation from the carried pool; nothing else stays active.
+            let standing = serving
+                .certification_checkpoint_capture_custody_bytes()
+                .expect("Serving entry funds the selected capture reservation");
+            assert_eq!(counters.active_operation_bytes(), standing);
             let grants = observation
                 .allocations()
                 .for_dimension(PhysicalResidencyDimension::OperationBytes);
@@ -75,12 +80,12 @@ fn original_recovery_ceiling_survives_seal_checkpoint_and_fresh_reopen() {
                 PhysicalResidencyDimension::OperationScope(Scope::Recovery),
             );
             assert_eq!(pressure.requested(), ORIGINAL_RECOVERY_BYTES);
-            assert_eq!(pressure.admitted(), 1);
+            assert_eq!(pressure.admitted(), standing + 1);
             assert_eq!(pressure.limit(), ORIGINAL_RECOVERY_BYTES);
             assert!(!pressure.effect_may_have_started());
             let after = serving.residency_observation().allocations();
             let dimension = PhysicalResidencyDimension::OperationScope(Scope::Recovery);
-            assert_eq!(after.for_dimension(dimension).active_units(), 1);
+            assert_eq!(after.for_dimension(dimension).active_units(), standing + 1);
             assert_eq!(
                 after.for_dimension(dimension).admitted_units(),
                 before.for_dimension(dimension).admitted_units(),

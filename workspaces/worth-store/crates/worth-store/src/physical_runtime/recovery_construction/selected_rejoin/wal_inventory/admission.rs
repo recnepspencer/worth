@@ -4,7 +4,8 @@ use crate::physical_runtime::{
     recovery_wal::wal_frame_integrity_scope_identity, PhysicalRecoveryWalResidentStage as Stage,
 };
 use worth_store_physical_integrity::{
-    validate_wal_frame_prefix, UntrustedPhysicalArtifact, WalFrameIntegrityValidation,
+    validate_wal_frame_prefix, PhysicalDamageCause, PhysicalIntegrityRejection,
+    UntrustedPhysicalArtifact, WalFrameIntegrityValidation,
 };
 pub(super) fn admit_artifacts(
     discovery: &BoundedRecoveryFilesystemDiscovery,
@@ -14,6 +15,7 @@ pub(super) fn admit_artifacts(
 ) -> Result<AdmittedWalInventory, Denial> {
     let mut frames = WalRoster::empty();
     let fingerprints = fingerprints(coordination, artifacts, resident.as_deref_mut())?;
+    let terminal = fingerprints.iter().map(|entry| entry.identity).max();
     for (ordinal, artifact) in artifacts.iter().enumerate() {
         let identity = artifact
             .name()
@@ -33,6 +35,12 @@ pub(super) fn admit_artifacts(
                 offset as u64,
             );
             let WalFrameIntegrityValidation::Intact(validated) = validation else {
+                if Some(identity) == terminal && is_truncation(&validation) {
+                    // C.8 admits the valid prefix and leaves the torn final
+                    // suffix in place as quarantined residue; the artifact
+                    // fingerprint still binds its exact bytes.
+                    break;
+                }
                 return Err(Denial::WalFate);
             };
             let scope = validated.scope();
@@ -103,6 +111,13 @@ pub(super) fn admit_artifacts(
         frames,
         artifacts: fingerprints,
     })
+}
+fn is_truncation(validation: &WalFrameIntegrityValidation<'_>) -> bool {
+    matches!(
+        validation,
+        WalFrameIntegrityValidation::Rejected(PhysicalIntegrityRejection::Damaged(localization))
+            if localization.cause() == PhysicalDamageCause::Truncated
+    )
 }
 fn fingerprints(
     coordination: &PhysicalRecoveryCoordination,

@@ -2,12 +2,12 @@
 use super::*;
 use worth_store::physical_runtime::certification::MediaOperationRole;
 use worth_store::physical_runtime::{
-    ArtifactTreeListingAllocationBoundary, PhysicalRecoveryObservationAllocationDenial,
-    RecordBootstrapDenial, RecoveryWalArtifactView, RecoveryWalReadFailureView,
+    PhysicalRecoveryObservationAllocationDenial, RecordBootstrapDenial, RecoveryWalArtifactView,
+    RecoveryWalReadFailureView,
 };
 
 #[test]
-fn sealed_serving_wal_provider_native_pressure_denies_and_fresh_recovery_retries() {
+fn sealed_serving_wal_payload_native_pressure_denies_and_fresh_recovery_retries() {
     std::thread::Builder::new()
         .name("sealed-serving-wal-native-pressure".to_owned())
         .stack_size(16 << 20)
@@ -30,8 +30,7 @@ fn sealed_serving_wal_provider_native_pressure_denies_and_fresh_recovery_retries
             let retained_bytes = observer.snapshot().for_dimension(dimension).active_units();
             // Real file lengths, not a copied native chooser or another policy:
             // bounded bootstrap frame loads have at least one full format page.
-            // This fixture's actual WAL-sized remainder cannot fund the pinned
-            // provider's fixed path-conversion peak before WAL materialization.
+            // One byte short of the actual WAL payloads cannot materialize them.
             let available = payload_bytes.checked_sub(1).expect("genuine nonempty WAL");
             assert!(
                 available >= u64::from(format.declaration().page_size().bytes()),
@@ -60,25 +59,23 @@ fn sealed_serving_wal_provider_native_pressure_denies_and_fresh_recovery_retries
                 );
             };
             let RecoveryWalReadFailureView::Allocation {
-                artifact: RecoveryWalArtifactView::WalDirectory,
+                artifact: RecoveryWalArtifactView::WalArtifact(name),
                 offset,
                 requested,
                 cause:
-                    PhysicalRecoveryObservationAllocationDenial::ListingResidency {
-                        boundary: ArtifactTreeListingAllocationBoundary::ProviderPath,
-                        cause: PhysicalRecoveryRejoinResidentDenial::BudgetExceeded { required, admitted },
-                    },
+                    PhysicalRecoveryObservationAllocationDenial::Residency(
+                        PhysicalRecoveryRejoinResidentDenial::BudgetExceeded { required, admitted },
+                    ),
             } = failure.diagnostic()
             else {
-                panic!(
-                    "actual sealed Serving WAL provider admission must deny: {failure:?}"
-                );
+                panic!("actual sealed Serving WAL payload admission must deny: {failure:?}");
             };
             assert_eq!(offset, 0);
-            // Qualified Windows provider contract: winx's fixed 0x7fff UTF-16
-            // path buffer plus simultaneous WTF-8 conversion growth.
-            assert_eq!(requested, 14 * 0x7fff);
-            assert!(requested as u64 > available);
+            // The actual segment payload, not a provider envelope, is what the
+            // remaining WAL-sized capacity cannot fund.
+            assert!(payloads
+                .iter()
+                .any(|(segment, bytes)| segment.as_os_str() == name && *bytes == requested as u64));
             assert_eq!(*admitted, original);
             assert!(*required > original);
             assert_eq!(snapshot_family(root), before_media);
@@ -100,13 +97,15 @@ fn sealed_serving_wal_provider_native_pressure_denies_and_fresh_recovery_retries
             }
             assert_eq!(
                 observer.snapshot().for_dimension(dimension).active_units(),
-                peer.bytes(),
-                "only the actual peer remains after inline provider denial"
+                peer.bytes() + failure.charged_bytes(),
+                "only the actual peer and the failure's retained names remain"
             );
-            assert_eq!(failure.charged_bytes(), 0, "directory denial has no copied filename owner");
             runtime.close();
             drop(failure);
-            assert_eq!(observer.snapshot().for_dimension(dimension).active_units(), peer.bytes());
+            assert_eq!(
+                observer.snapshot().for_dimension(dimension).active_units(),
+                peer.bytes()
+            );
             drop(peer);
             assert_eq!(
                 observer.snapshot().for_dimension(dimension).active_units(),

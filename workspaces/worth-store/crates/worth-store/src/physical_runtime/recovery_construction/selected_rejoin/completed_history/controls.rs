@@ -1,5 +1,6 @@
-//! Selected-tip control closure for the completed-history NoRelease base.
-//! Released controls belong to ordered released batches; independently
+//! Selected-tip control closure for a completed history from a NoRelease or
+//! HeadV2 base. Released controls belong to ordered released batches or to
+//! the base's checkpoint-attested closure; independently
 //! validated ordinary-ingest controls retain their own actual selected bytes.
 //! Failed-ingest controls use the same source join as NoRelease, with native
 //! backing for their selected frames and temporary proofs.
@@ -15,6 +16,7 @@ use super::super::{
     control_frames::{
         read_extent_with_storage, FundedCompletedHistoricalRawSlices, SelectedArtifactSlice,
     },
+    release_heads,
     resident::StoreRejoinResidentLedger,
     tier, SelectedControlMediaFingerprint, SelectedMediaRejoinDenial as Denial,
     MAX_DISCOVERY_BYTES, MAX_DISCOVERY_ENTRIES,
@@ -58,6 +60,19 @@ pub(super) fn observe(
         reopen.format(),
         &mut storage,
     )?;
+    // A HeadV2 base keeps its checkpoint-attested head and Batch controls
+    // routed; the completed history never re-admits them as its own.
+    let base_controls = match claim.selected_head_v2() {
+        Some(base) => Some(release_heads::observe_controls_on_routes_with_resident(
+            &mut discovery,
+            reopen.format(),
+            routes.selected_routes(),
+            selected.free_header.tier_epoch_start(),
+            base,
+            &mut *storage.resident,
+        )?),
+        None => None,
+    };
     let SelectedControlPartition {
         failed_routes,
         mut ordinary_slices,
@@ -65,6 +80,7 @@ pub(super) fn observe(
         &mut discovery,
         routes.selected_routes(),
         claim,
+        base_controls.as_ref(),
         reopen.format(),
         &mut storage,
     )?;
@@ -85,6 +101,16 @@ pub(super) fn observe(
         SelectedControlMediaFingerprint::observed(ordinary_slices),
         &mut storage,
     )?;
+    // The base closure was read on the resident ledger alone; its retained
+    // slices join the raw grant that moves to Serving.
+    if let Some(base_controls) = base_controls {
+        let slices = base_controls.into_slices_with_resident(&mut *storage.resident)?;
+        let slices = storage.adopt_resident_vec(slices)?;
+        fingerprint.extend_with_storage(
+            SelectedControlMediaFingerprint::observed(slices),
+            &mut storage,
+        )?;
+    }
     drop(storage);
     Ok((discovery.finish(), fingerprint))
 }
@@ -98,13 +124,21 @@ fn observe_selected_control_partition(
     discovery: &mut worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery,
     routes: &[CurrentPhysicalRecordPlacement],
     claim: &VerifiedOrderedHistoricalReleaseCustody,
+    base_controls: Option<&release_heads::ObservedReleaseHeadControls>,
     format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
     storage: &mut HistoricalWalkStorage<'_, '_>,
 ) -> Result<SelectedControlPartition, Denial> {
+    let base_count = match base_controls {
+        Some(controls) => controls
+            .control_record_count()
+            .ok_or(Denial::BoundExceeded)?,
+        None => 0,
+    };
     let count = claim
         .released_batches()
         .len()
         .checked_mul(3)
+        .and_then(|count| count.checked_add(base_count))
         .ok_or(Denial::BoundExceeded)?;
     let mut admitted = storage.reserve_vec::<PersistedRecordIdentity>(count)?;
     for batch in claim.released_batches() {
@@ -113,6 +147,9 @@ fn observe_selected_control_partition(
             batch.reservation_frame().record(),
             batch.manifest_frame().record(),
         ]);
+    }
+    if let Some(controls) = base_controls {
+        admitted.extend(controls.control_records());
     }
     admitted.sort_unstable();
     if admitted.windows(2).any(|pair| pair[0] == pair[1]) {

@@ -11,8 +11,11 @@ mod commit;
 mod event;
 mod heads;
 mod no_release;
+#[cfg(feature = "recovery-runtime-owner")]
 mod pending_wal;
+#[cfg(any(test, feature = "recovery-runtime-owner"))]
 mod reopen;
+#[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use reopen::RecoveredReleaseLedgerDenial;
 mod snapshot;
 
@@ -37,7 +40,7 @@ use heads::SelectedReleaseHeadRoster;
 const CERTIFICATE_FRAME_OVERHEAD: u64 = 20;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(in crate::physical_runtime) enum ReleaseCertificateCapacityDenial {
+pub enum ReleaseCertificateCapacityDenial {
     SelectedLedgerUnavailable,
     ReclaimFenceMismatch,
     CapacityExhausted,

@@ -26,8 +26,8 @@ pub(in crate::physical_runtime::record_serving) use data_image::ExistingDataFram
 #[cfg(feature = "certification-test-authority")]
 pub use director::CertificationPhysicalRecordSubmission;
 pub(in crate::physical_runtime) use director::{
-    AdmittedPublicationRetention, RecordPublicationDirector, RecordPublicationFoundation,
-    SelectedBlobManifestPins,
+    checkpoint_pin_scan_bytes, AdmittedPublicationRetention, RecordPublicationDirector,
+    RecordPublicationFoundation, SelectedBlobManifestPins,
 };
 pub use director::{
     InlineArtifactRewritePlanDenial, PhysicalArenaEvacuationPreparationOutcome,

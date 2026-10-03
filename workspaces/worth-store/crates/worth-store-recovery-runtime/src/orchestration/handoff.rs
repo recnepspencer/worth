@@ -7,10 +7,11 @@ mod resident_memory;
 use worth_store_physical_format::{BlobRecordKind, SelectedRecordContentClass};
 
 pub(crate) fn finish_recovery_after_cleanup(
-    reopened: ReopenedPhysicalRecovery,
+    mut reopened: ReopenedPhysicalRecovery,
     closed_cleanup: worth_store::physical_runtime::ClosedPhysicalRecoveryCleanup,
     cleanup: crate::handoff::RecoveryCleanupPosture,
 ) -> PhysicalRecoveryOutcome {
+    reopened.state.integrity.release_admitted_wal();
     let retained = resident_memory::retained_bytes(&reopened, &cleanup)
         .and_then(|heap| heap.checked_add(resident_memory::inline_bytes(&reopened, &cleanup)?))
         .and_then(|bytes| bytes.checked_add(closed_cleanup.owned_heap_bytes()?))

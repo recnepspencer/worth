@@ -106,7 +106,8 @@ pub(super) fn read_after_boundary_pressure(
 
 #[test]
 fn tiny_original_ceiling_denies_provider_before_entries_then_adequate_owner_reads() {
-    let maximum = 16 << 10;
+    // Funds the directory path but not the actual path's iterator storage.
+    let maximum = 1 << 10;
     let (directory, media, mut coordination) = world_with_capacity(maximum, None);
     let wal = directory.path().join("store/families/wal");
     std::fs::create_dir_all(&wal).unwrap();
@@ -123,7 +124,7 @@ fn tiny_original_ceiling_denies_provider_before_entries_then_adequate_owner_read
         matches!(failure.diagnostic(), RecoveryWalReadFailureView::Allocation {
         artifact: RecoveryWalArtifactView::WalDirectory,
         cause: PhysicalRecoveryObservationAllocationDenial::ListingResidency {
-            boundary: ArtifactTreeListingAllocationBoundary::ProviderPath,
+            boundary: ArtifactTreeListingAllocationBoundary::ProviderIterator,
             cause: PhysicalRecoveryRejoinResidentDenial::BudgetExceeded { required, admitted },
         }, ..
     } if *required > maximum && *admitted == maximum)

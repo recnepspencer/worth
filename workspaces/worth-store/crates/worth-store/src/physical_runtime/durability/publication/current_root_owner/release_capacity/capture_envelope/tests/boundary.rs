@@ -166,7 +166,7 @@ fn drop_then_checkpoint(limit: u64) -> Outcome {
     drop(fold);
     drop(storage);
     assert!(
-        ledger.capture_custody_requirement(None).unwrap()
+        ledger.capture_custody_requirement(None, 0).unwrap()
             <= ledger.capture_custody_bytes().unwrap()
     );
     drop(

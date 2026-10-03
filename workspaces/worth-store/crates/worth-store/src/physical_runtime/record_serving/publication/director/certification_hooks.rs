@@ -35,6 +35,10 @@ impl RecordPublicationDirector {
         self.root_owner.checkpoint_capture_envelope_bytes()
     }
 
+    pub(in crate::physical_runtime) fn checkpoint_capture_custody_bytes(&self) -> Option<u64> {
+        self.root_owner.checkpoint_capture_custody_bytes()
+    }
+
     pub(in crate::physical_runtime) fn pending_publication_count(&self) -> usize {
         self.root_owner.pending_publication_count()
     }

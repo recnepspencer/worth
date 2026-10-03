@@ -8,6 +8,7 @@ mod policy;
 mod reconstruction;
 mod released_controls;
 mod reservation;
+#[cfg(any(test, feature = "certification-test-authority"))]
 mod tier_epoch;
 pub(in crate::physical_runtime::record_serving) use evacuation::ArenaEvacuationLease;
 #[cfg(test)]
@@ -23,6 +24,7 @@ pub use policy::{ArenaEvacuationThreshold, ExtentArenaCapacity, ExtentArenaPolic
 pub(in crate::physical_runtime::record_serving) use reservation::{
     ArenaReservation, ArenaReservationObligation, SharedArenaAllocationOwner,
 };
+#[cfg(any(test, feature = "certification-test-authority"))]
 pub(in crate::physical_runtime::record_serving) use tier_epoch::ArenaTierEpochFence;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

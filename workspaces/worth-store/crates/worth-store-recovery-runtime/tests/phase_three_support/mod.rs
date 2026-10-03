@@ -226,6 +226,34 @@ pub(crate) fn publish_synthetic_wal_tail(root: &Path) {
     std::fs::write(path, bytes).unwrap();
 }
 
+/// The WAL suffix a synthetic checkpoint's binding cutoff covers. A cutoff
+/// with no retained covered suffix and no straddling replay segment has no
+/// original WAL origin, so recovery denies it before effects. The covered
+/// frame keeps the two-field member shape; its binding is already in the
+/// checkpoint, so the freshness sample classifies and then skips it.
+pub(crate) fn publish_synthetic_covered_wal(root: &Path) {
+    let families = root.join("families");
+    let mut payload = Vec::new();
+    for field in [
+        &b"phase-three-covered-binding"[..],
+        b"phase-three-covered-redo",
+    ] {
+        payload.extend_from_slice(&(field.len() as u64).to_le_bytes());
+        payload.extend_from_slice(field);
+    }
+    let (path, bytes) =
+        worth_store_test_support::harness::recovery::wal_tail::prepare_persisted_wal_frame(
+            &families,
+            1,
+            1,
+            2,
+            "phase-three-covered-frame",
+            &payload,
+        );
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    std::fs::write(path, bytes).unwrap();
+}
+
 pub(crate) fn limits() -> PhysicalRecoveryLimits {
     limits_for(2, 8, 8 * 1024)
 }

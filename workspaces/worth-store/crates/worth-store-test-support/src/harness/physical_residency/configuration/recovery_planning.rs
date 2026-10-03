@@ -99,6 +99,10 @@ pub(in crate::harness::physical_residency) fn compact_recovery_planning_configur
         .extent_threshold(RecordByteLimit::new(8_000).unwrap())
         .page_fill(PageFillPercent::new(50).unwrap())
         .manifest_capacity(ManifestEntryCapacity::new(manifest_capacity).unwrap())
+        // Partial releases return isolated extent ranges to the shared arena.
+        // 1,024 + 4,096 * 128 bytes admits 128 free ranges, enough for a
+        // checkpoint-maximal release series plus control placement residue.
+        .arena_index_bytes(RecordByteLimit::new(1024 + 4096 * 128).unwrap())
         .admit(base.format())
         .unwrap();
     configuration(

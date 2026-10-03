@@ -53,22 +53,6 @@ impl AdmittedWalInventory {
     pub(super) fn frames(&self) -> &[IntegrityAdmittedRecoveryWalFrame] {
         &self.frames
     }
-    pub(super) fn matches_reread(&self, other: &Self) -> bool {
-        self.artifacts == other.artifacts
-            && self.frames.len() == other.frames.len()
-            && self
-                .frames
-                .iter()
-                .zip(other.frames.iter())
-                .all(|(before, after)| {
-                    before.source_name() == after.source_name()
-                        && before.scope() == after.scope()
-                        && before.lsn_start() == after.lsn_start()
-                        && before.lsn_end() == after.lsn_end()
-                        && before.identity_digest() == after.identity_digest()
-                        && before.payload_digest() == after.payload_digest()
-                })
-    }
     fn frame_memory(&self) -> Option<u64> {
         self.frames
             .iter()
@@ -78,6 +62,12 @@ impl AdmittedWalInventory {
     }
 }
 impl SelectedWalMediaFingerprint {
+    /// Frames are a deterministic validation of the artifact bytes, so equal
+    /// identity, length and SHA-256 per artifact prove the reread admits the
+    /// same frames without keeping the first frames alive beside it.
+    pub(super) fn matches_reread(&self, reread: &AdmittedWalInventory) -> bool {
+        self.artifacts == reread.artifacts
+    }
     pub(in crate::physical_runtime) fn owned_heap_bytes(&self) -> Option<u64> {
         self.artifacts.owned_heap_bytes()
     }

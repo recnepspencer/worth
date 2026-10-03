@@ -42,6 +42,11 @@ impl ServingPhysicalRuntime {
         self.parts.publication.checkpoint_capture_envelope_bytes()
     }
 
+    /// The standing capture reservation Serving entry funded, in bytes.
+    pub fn certification_checkpoint_capture_custody_bytes(&self) -> Option<u64> {
+        self.parts.publication.checkpoint_capture_custody_bytes()
+    }
+
     pub fn certification_pending_publication_count(&self) -> usize {
         self.parts.publication.pending_publication_count()
     }

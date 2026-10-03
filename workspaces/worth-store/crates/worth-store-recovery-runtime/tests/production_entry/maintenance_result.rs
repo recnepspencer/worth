@@ -12,7 +12,10 @@ use worth_store::physical_runtime::PhysicalRecoveryYieldpointStage;
 use worth_store_physical_format::{
     DurablePhysicalRootManifest, DurableRootSelector, RecordArtifactFile,
 };
-use worth_store_recovery_runtime::{PhysicalRecoveryBlockKind, PhysicalRecoveryOutcome};
+use worth_store_recovery_runtime::{
+    HistoricalDropAdmissionStage, PhysicalRecoveryBlockKind, PhysicalRecoveryOutcome,
+    PhysicalRecoveryPageAdmissionDenial, PhysicalRecoveryPlanningDenial,
+};
 
 #[test]
 fn selected_released_result_cannot_clear_maintenance() {
@@ -117,15 +120,24 @@ fn selected_released_result_cannot_clear_maintenance() {
         panic!("false-maintenance selected V3 result was admitted: {outcome:?}");
     };
     assert_eq!(blocked.recovery_effects(), 0);
-    assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::RedoPlanning);
+    // Ordered root history validates every postcheckpoint root step, the
+    // selected V3 result included, during page admission, so the cleared
+    // maintenance bit is refused there before redo planning begins. The
+    // typed historical-drop stage proves the historical V3 path was reached.
+    assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::PageAdmission);
     assert!(
-        blocked
-            .evidence()
-            .planning_counters
-            .as_ref()
-            .is_some_and(|counters| counters.redo_skip_historical_drop() > 0),
-        "historical V3 path was not reached: {:?}",
-        blocked.evidence().planning_counters
+        matches!(
+            blocked.evidence().planning_denial,
+            Some(PhysicalRecoveryPlanningDenial::Page(
+                PhysicalRecoveryPageAdmissionDenial::HistoricalDrop {
+                    stage: HistoricalDropAdmissionStage::OrderedHistory,
+                    target: None,
+                    ..
+                }
+            ))
+        ),
+        "the selected V3 result step must fail ordered history: {:?}",
+        blocked.evidence().planning_denial
     );
     assert_eq!(
         fs::read(root.join("families/records/root-current.selector")).unwrap(),

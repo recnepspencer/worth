@@ -113,6 +113,7 @@ impl RecordFramePorts {
         self.pool.begin_operation(scope, bytes)
     }
 
+    #[cfg(any(test, feature = "recovery-runtime-owner"))]
     pub(in crate::physical_runtime) fn restrict_recovery_operation_bytes(
         &self,
         ceiling: u64,
@@ -131,13 +132,6 @@ impl RecordFramePorts {
         &self,
     ) -> Result<PhysicalDirtyGenerationCaptureSession, PhysicalResidencyDenial> {
         self.pool.begin_dirty_generation_capture()
-    }
-
-    pub(in crate::physical_runtime) fn checkpoint_capture_allocation(
-        &self,
-        bytes: std::num::NonZeroU64,
-    ) -> Result<MaintenanceAllocationGrant, PhysicalResidencyDenial> {
-        self.pool.begin_maintenance_operation(bytes)
     }
 
     pub(in crate::physical_runtime) fn capture_checkpoint_slice(

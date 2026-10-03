@@ -40,6 +40,7 @@ enum PublicationBasis {
         intent: worth_store_physical_format::BlobManifestResidueCleanup,
         wal_digest: [u8; 32],
     },
+    #[cfg(feature = "certification-test-authority")]
     TierEpoch {
         operation: PhysicalMutationIdentity,
         intent: worth_store_physical_format::TierEpochActivationV1,
@@ -176,6 +177,7 @@ impl PhysicalRootPublicationIdentity {
         }
     }
 
+    #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn from_tier_epoch(
         policy: PhysicalDurabilityPolicyIdentity,
         operation: PhysicalMutationIdentity,
@@ -201,6 +203,7 @@ impl PhysicalRootPublicationIdentity {
             })
     }
 
+    #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn tier_epoch_basis(
         self,
     ) -> Option<(
@@ -270,6 +273,7 @@ impl PhysicalRootPublicationIdentity {
                 digest.update(intent.encode());
                 digest.update(wal_digest);
             }
+            #[cfg(feature = "certification-test-authority")]
             PublicationBasis::TierEpoch {
                 operation,
                 intent,

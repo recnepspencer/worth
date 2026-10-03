@@ -1,17 +1,15 @@
 use std::io::{Seek, SeekFrom, Write};
 
-use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
-    PhysicalManifestCapacityTransition, PhysicalMutationIdempotencyMaterial,
-    PhysicalMutationPreparationDenial, RecordAppendBatch, RecordAppendDenial, RecordByteLimit,
-    RecordReadLimits, RecordServingTerminalPosture, RecordStreamFailureKind,
+    PhysicalMutationIdempotencyMaterial, RecordAppendBatch, RecordByteLimit, RecordReadLimits,
+    RecordServingTerminalPosture, RecordStreamFailureKind,
 };
 
-use super::super::durable_publication::{self, publish_single};
+use super::super::durable_publication::publish_single;
 use super::fixture;
 
 #[test]
-fn later_extent_damage_through_a_view_revokes_health_and_releases_read_authority() {
+fn later_extent_damage_through_a_view_stays_local_and_releases_read_authority() {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join("damaged-view");
     let (serving, placement) = fixture::initialize(&root);
@@ -64,7 +62,13 @@ fn later_extent_damage_through_a_view_revokes_health_and_releases_read_authority
         Err(failure) => failure,
         Ok(_) => panic!("the damaged second extent frame must fail borrowed iteration"),
     };
-    assert_eq!(failure.kind(), RecordStreamFailureKind::ArtifactDamaged);
+    // Data-frame checksum damage localizes to the dependent range; only
+    // root/routing/manifest damage revokes global serving health (spec C.11
+    // "Read and verification").
+    assert_eq!(
+        failure.kind(),
+        RecordStreamFailureKind::SelectedDataFrameChecksumDamaged
+    );
     assert_eq!(
         failure.completed_range(),
         0..fixture::CHUNK_PAYLOAD_BYTES as u64
@@ -81,22 +85,15 @@ fn later_extent_damage_through_a_view_revokes_health_and_releases_read_authority
         residency.active_operation_bytes(),
         operation_bytes_before_read
     );
-    assert!(matches!(
-        durable_publication::prepare_single(
-            &serving.record_submission(),
-            placement,
-            PhysicalManifestCapacityTransition::PreserveCurrent,
-            PhysicalMutationIdempotencyMaterial::new([213; 32]),
-            RecordAppendBatch::try_from_iter([b"denied after damage".as_slice()]).unwrap(),
-        )
-        .into_raw(),
-        TransitionOutcome::Denied(PhysicalMutationPreparationDenial::RecordAppend(
-            RecordAppendDenial::ServingRequiresInspection
-        ))
-    ));
+    publish_single(
+        &serving,
+        placement,
+        PhysicalMutationIdempotencyMaterial::new([213; 32]),
+        RecordAppendBatch::try_from_iter([b"served after local damage".as_slice()]).unwrap(),
+    );
     assert_eq!(
         serving.abort().records().posture(),
-        RecordServingTerminalPosture::InspectionRequired
+        RecordServingTerminalPosture::NoInspectionRequired
     );
 }
 

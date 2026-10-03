@@ -73,7 +73,8 @@ pub(super) fn admit(
             )
         })
         .and_then(|bytes| bytes.checked_add(basis.sample.manifest_cleanup_sampling_peak_bytes()))
-        .and_then(|bytes| bytes.checked_add(staging.allocated_bytes()))
+        // Staging allocation is artifact space (whole extent arena ranges),
+        // admitted by the staging limit; only the staged writes are memory.
         .and_then(|bytes| bytes.checked_add(staging.write_bytes()))
         .unwrap_or(u64::MAX);
     // The existing lifecycle estimate and actual final live storage are two

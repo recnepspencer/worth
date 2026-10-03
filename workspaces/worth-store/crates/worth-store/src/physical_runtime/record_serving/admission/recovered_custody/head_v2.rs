@@ -2,9 +2,7 @@
 //! boundary. The retained media fingerprint separately covers every head
 //! block and control frame reread by Store before this seal was minted.
 
-use worth_store_physical_format::{
-    ReleaseCheckpointCertificateV1, ReleaseCustodyHeadRosterDigestV1,
-};
+use worth_store_physical_format::ReleaseCustodyHeadRosterDigestV1;
 use worth_store_recovery_physics::VerifiedSelectedReleaseHeadCustodyV2;
 
 use super::*;
@@ -56,30 +54,18 @@ impl RecoveredCheckpointCustodyEvidence {
         if roster.finish() != (accumulator.head_count(), accumulator.head_roster_digest()) {
             return Err(denial);
         }
-        let mut expected = claim
-            .batches()
-            .iter()
-            .copied()
-            .map(ReleaseCheckpointCertificateV1::Batch)
-            .chain(std::iter::once(
-                ReleaseCheckpointCertificateV1::AccumulatorV2(accumulator),
-            ));
-        let mut observed_count = 0_usize;
-        for frame in checkpoint.certificate_records() {
-            let (kind, payload) = decode_checkpoint_certificate(frame).map_err(|_| denial)?;
-            if kind == CheckpointCertificateKind::ReleasedDrop {
-                let observed =
-                    ReleaseCheckpointCertificateV1::decode(payload).map_err(|_| denial)?;
-                if expected.next() != Some(observed) {
-                    return Err(denial);
-                }
-                observed_count += 1;
-            }
-        }
-        if expected.next().is_some()
-            || observed_count != usize::from(claim.release_certificate_record_count())
-        {
-            return Err(denial);
+        self.verify_head_v2_certificates(claim)
+    }
+
+    /// The selected checkpoint carries exactly the base's Batch records and
+    /// its V2 accumulator, in order.
+    pub(super) fn verify_head_v2_certificates(
+        &self,
+        claim: &VerifiedSelectedReleaseHeadCustodyV2,
+    ) -> Result<(), RecoveredCheckpointCustodyDenial> {
+        let checkpoint = self.checkpoint_stream(claim.checkpoint())?;
+        if !claim.certificates_match(checkpoint.certificate_records().iter().map(AsRef::as_ref)) {
+            return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
         }
         Ok(())
     }

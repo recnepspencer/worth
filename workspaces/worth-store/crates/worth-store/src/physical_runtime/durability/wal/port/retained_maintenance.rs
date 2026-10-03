@@ -59,6 +59,7 @@ impl PhysicalWalAppendPort {
         Ok(DurableMaintenanceReceipt::completed(
             digest,
             interval,
+            #[cfg(feature = "certification-test-authority")]
             None,
             synchronization,
         ))

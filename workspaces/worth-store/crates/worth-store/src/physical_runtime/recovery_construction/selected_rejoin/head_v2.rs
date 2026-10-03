@@ -133,6 +133,12 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
     if let Some(tier) = tier_claim {
         tier::wal::verify_sample(&sample, tier)?;
     }
+    let inventory = inventory
+        .into_fingerprint_with_resident(resident)
+        .map_err(|cause| {
+            Denial::Resident(cause)
+                .at_resident_boundary(PhysicalRecoveryRejoinResidentBoundary::FirstWalAdmission)
+        })?;
     pause_before_final_reread();
     let mut final_discovery = media
         .bounded_discovery(MAX_DISCOVERY_ENTRIES, MAX_DISCOVERY_BYTES)

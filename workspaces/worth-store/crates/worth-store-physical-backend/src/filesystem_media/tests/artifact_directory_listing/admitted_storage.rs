@@ -95,30 +95,17 @@ fn staged_listing_grows_from_observed_entries_and_settles_exact_retained_capacit
             retained_bytes: (slot_bytes + names) as u64
         })
     );
-    let path_peak = storage
-        .changes
-        .iter()
-        .find_map(|change| match change {
-            Admit {
-                boundary: ArtifactTreeListingAllocationBoundary::ProviderPath,
-                required_bytes,
-            } => Some(*required_bytes),
-            _ => None,
-        })
-        .unwrap();
-    let iterator_peak = storage
-        .changes
-        .iter()
-        .find_map(|change| match change {
-            Admit {
-                boundary: ArtifactTreeListingAllocationBoundary::ProviderIterator,
-                required_bytes,
-            } => Some(*required_bytes),
-            _ => None,
-        })
-        .unwrap();
+    // The handle-path conversion is covered by the caller's operation
+    // envelope; the first admission is sized from the actual path.
+    let Some(&Admit {
+        boundary: ArtifactTreeListingAllocationBoundary::ProviderIterator,
+        required_bytes: iterator_peak,
+    }) = storage.changes.first()
+    else {
+        panic!("provider iterator storage is the first admission");
+    };
     assert!(
-        iterator_peak < path_peak,
+        iterator_peak < 0x7fff,
         "small actual path must not use the maximum path envelope"
     );
     assert_eq!(
@@ -142,7 +129,7 @@ fn staged_listing_grows_from_observed_entries_and_settles_exact_retained_capacit
 #[test]
 fn each_staged_listing_denial_disposes_storage_and_same_owner_retries() {
     use ArtifactTreeListingAllocationBoundary::*;
-    for boundary in [ProviderPath, ProviderIterator, EntryRoster, EntryName] {
+    for boundary in [ProviderIterator, EntryRoster, EntryName] {
         let parent = tempfile::tempdir().unwrap();
         let root = parent.path().join("store");
         let media = qualified(&root, MediaFaultSchedule::default());
@@ -176,7 +163,7 @@ fn each_staged_listing_denial_disposes_storage_and_same_owner_retries() {
                 .completed_operations_for(MediaOperationRole::ListDirectory),
             before.completed_operations_for(MediaOperationRole::ListDirectory)
         );
-        if matches!(boundary, ProviderPath | ProviderIterator | EntryRoster) {
+        if matches!(boundary, ProviderIterator | EntryRoster) {
             assert!(storage.rosters.is_empty());
         }
         let entries = media

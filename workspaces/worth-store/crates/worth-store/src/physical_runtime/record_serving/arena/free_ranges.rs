@@ -35,12 +35,14 @@ impl ArenaFreeRanges {
         self.by_address.len()
     }
 
+    #[cfg(any(test, feature = "certification-test-authority"))]
     pub(super) fn has_exclusion(&self) -> bool {
         self.excluded.is_some()
     }
 
     /// At the epoch frontier every existing arena remains Primary, so the
     /// size indexes require no migration and future insertions use the epoch.
+    #[cfg(any(test, feature = "certification-test-authority"))]
     pub(super) fn activate_tier_epoch(&mut self, epoch: u64) -> Result<(), ArenaAllocationDenial> {
         if self.tier_epoch_start.is_some()
             || self

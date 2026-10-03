@@ -55,8 +55,11 @@ mod root_preparation;
 mod root_progression;
 mod selected_manifest_pins;
 mod selected_segment_rewrite;
-pub(in crate::physical_runtime) use selected_manifest_pins::SelectedBlobManifestPins;
+pub(in crate::physical_runtime) use selected_manifest_pins::{
+    checkpoint_pin_scan_bytes, SelectedBlobManifestPins,
+};
 mod submission;
+#[cfg(feature = "certification-test-authority")]
 mod tier_epoch;
 mod wal_data_planning;
 
@@ -116,10 +119,8 @@ pub(in crate::physical_runtime) struct RecordPublicationTerminalState {
 }
 
 pub(in crate::physical_runtime) struct RecordPublicationFoundation {
-    pub(in crate::physical_runtime) recovered_checkpoint_custody:
-        Option<crate::physical_runtime::durability::PreparedRecoveredCheckpointCustody>,
-    pub(in crate::physical_runtime) checkpoint_custody_origin:
-        crate::physical_runtime::durability::CheckpointCustodyOrigin,
+    pub(in crate::physical_runtime) serving_custody:
+        crate::physical_runtime::durability::ServingCheckpointCustody,
     pub(in crate::physical_runtime) reader_factory: crate::physical_runtime::record_serving::lifecycle::record_lifecycle::RecordReaderLeaseFactory,
     pub(in crate::physical_runtime) read_protection:
         Arc<crate::physical_runtime::stability::RootProtectionRegistry>,
@@ -178,17 +179,13 @@ impl RecordPublicationDirector {
         let bootstrap_lifecycle = Arc::clone(&foundation.lifecycle);
         let root_owner = crate::physical_runtime::durability::PhysicalCurrentRootOwner::new(
             runtime,
-            foundation.checkpoint_custody_origin,
-            foundation.recovered_checkpoint_custody,
+            foundation.serving_custody,
             foundation.current_root.clone(),
             foundation.previous_root,
             foundation.free_space.clone(),
             foundation.read_protection,
             foundation.publication_retention.into_admission(),
             foundation.recovery_allocation,
-            foundation.frame_ports.clone(),
-            foundation.generation,
-            Arc::clone(&foundation.lifecycle),
         );
         for charge in &displaced {
             root_owner.restore_displaced(charge.source_root, charge.artifact, charge.bytes);

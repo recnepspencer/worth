@@ -143,6 +143,21 @@ fn authenticated_canonical_redo_binding_proves_payload() {
         "maintenance checkpoint schema retains the selected WAL frontier",
     );
     assert_eq!(
+        fate_from_files(
+            &[
+                (
+                    "families/checkpoint.current".to_owned(),
+                    checkpoint_current_schema(1, 3),
+                ),
+                files[1].clone(),
+            ],
+            &idempotency,
+            payload,
+        ),
+        history::InFlightMutationFate::DurableEffect,
+        "certified checkpoint schema retains the selected WAL frontier",
+    );
+    assert_eq!(
         fate_from_files(&files, &idempotency, b"foreign-payload"),
         history::InFlightMutationFate::Indeterminate
     );
@@ -187,7 +202,8 @@ fn checkpoint_current_schema(frontier: u64, schema: u8) -> Vec<u8> {
     header[16..24].copy_from_slice(&1_u64.to_le_bytes());
     header[32..40].copy_from_slice(&frontier.to_le_bytes());
     header[64] = 1;
-    let mut footer = vec![0; 136];
+    let certified = schema == 3;
+    let mut footer = vec![0; if certified { 184 } else { 136 }];
     footer[..24].copy_from_slice(&header[..24]);
     footer[32..64].copy_from_slice(&Sha256::digest([]));
     footer[64..72].copy_from_slice(&164_u64.to_le_bytes());
@@ -197,6 +213,14 @@ fn checkpoint_current_schema(frontier: u64, schema: u8) -> Vec<u8> {
     compaction[8..16].copy_from_slice(&frontier.to_le_bytes());
     let mut bytes = record(schema, 1, &header);
     bytes.extend_from_slice(&record(schema, 3, &compaction));
+    if certified {
+        // One release-custody certificate record precedes the footer.
+        let certificate = record(schema, 7, &[7; 24]);
+        footer[136..144].copy_from_slice(&1_u64.to_le_bytes());
+        footer[144..152].copy_from_slice(&(certificate.len() as u64).to_le_bytes());
+        footer[152..184].copy_from_slice(&Sha256::digest(&certificate));
+        bytes.extend_from_slice(&certificate);
+    }
     bytes.extend_from_slice(&record(schema, 5, &footer));
     bytes
 }

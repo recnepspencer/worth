@@ -23,6 +23,9 @@ pub(in crate::physical_runtime) struct ReleasePublicationAllocationOwner {
     runtime: RuntimeIdentity,
     generation: LifecycleGeneration,
     lifecycle: Arc<LifecycleState>,
+    /// The checkpoint pin scan's bound under the admitted policy. Every
+    /// capture envelope includes it, so the scan never needs pool bytes.
+    capture_scan_bytes: u64,
 }
 
 pub(in crate::physical_runtime::durability::publication::current_root_owner) struct LiveReleaseAllocation
@@ -40,6 +43,7 @@ impl ReleasePublicationAllocationOwner {
         runtime: RuntimeIdentity,
         generation: LifecycleGeneration,
         lifecycle: Arc<LifecycleState>,
+        capture_scan_bytes: u64,
     ) -> Self {
         Self {
             ports,
@@ -48,7 +52,14 @@ impl ReleasePublicationAllocationOwner {
             runtime,
             generation,
             lifecycle,
+            capture_scan_bytes,
         }
+    }
+
+    pub(in crate::physical_runtime::durability::publication::current_root_owner) const fn capture_scan_bytes(
+        &self,
+    ) -> u64 {
+        self.capture_scan_bytes
     }
 
     pub(in crate::physical_runtime::durability::publication::current_root_owner) fn fund(
@@ -119,7 +130,7 @@ impl ReleasePublicationAllocationOwner {
 }
 
 impl LiveReleaseAllocation {
-    #[cfg(test)]
+    #[cfg(any(test, feature = "certification-test-authority"))]
     pub(in crate::physical_runtime::durability::publication::current_root_owner) fn bytes(
         &self,
     ) -> u64 {

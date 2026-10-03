@@ -21,7 +21,10 @@ fn partial_drop_checkpoints_on_its_standing_reservation_and_reopens() {
 }
 
 fn run() {
-    let limit = numeric_one_head_closure() + (1 << 20);
+    // One head closure for the release certificate, plus the drop's capture
+    // custody (its envelope carries the policy's pin-scan bound, about 2.3 MB
+    // here) and headroom.
+    let limit = numeric_one_head_closure() + (4 << 20);
     let (world, proof, _) =
         release_reopen::published_world::create(false, None, NonZeroU64::new(limit));
     let source = (proof.object(), proof.generation());

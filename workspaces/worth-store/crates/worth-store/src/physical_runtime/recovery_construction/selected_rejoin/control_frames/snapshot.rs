@@ -176,6 +176,7 @@ impl SelectedControlMediaFingerprint {
             )
     }
 
+    #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn head_walk_heap_bytes(&self) -> Option<u64> {
         self.heads.owned_heap_bytes()
     }

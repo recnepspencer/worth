@@ -1,10 +1,10 @@
 //! Selected C.11 manifest custody for checkpoint binding retention.
 
-use std::{collections::HashSet, num::NonZeroU64};
+use std::collections::HashSet;
 
 use worth_store_physical_format::{
     decode_blob_record, BlobRecordKind, BlobRecordV1, PersistedRecordIdentity, RootPublicationCell,
-    BLOB_CONTROL_FRAME_MAX_BYTES, BLOB_RECORD_HEADER_BYTES, MAXIMUM_DROP_SET_RECORDS,
+    BLOB_RECORD_HEADER_BYTES, MAXIMUM_DROP_SET_RECORDS,
 };
 
 use super::RecordPublicationDirector;
@@ -18,7 +18,8 @@ mod budget;
 #[path = "selected_manifest_pins/read_deferred.rs"]
 mod deferred_read;
 
-use budget::selected_roster_reservation;
+pub(in crate::physical_runtime) use budget::checkpoint_pin_scan_bytes;
+use budget::{checkpoint_pin_scan_bound, PinScanBound};
 use deferred_read::read_deferred;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -32,8 +33,6 @@ pub(in crate::physical_runtime) struct SelectedBlobManifestPin {
 pub(in crate::physical_runtime) struct SelectedBlobManifestPins {
     root: RootPublicationCell,
     pins: Vec<SelectedBlobManifestPin>,
-    // Owns pool admission through checkpoint encoding and namespace sync.
-    _allocation: Option<worth_store_buffer_pool::MaintenanceAllocationGrant>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -74,7 +73,6 @@ impl SelectedBlobManifestPins {
         Self {
             root,
             pins: Vec::new(),
-            _allocation: None,
         }
     }
 
@@ -107,37 +105,16 @@ impl RecordPublicationDirector {
             .upgrade()
             .ok_or(SelectedBlobManifestPinDenial::RootUnavailable)?;
         let root_cell = root.root_cell();
-        let scratch_bytes = usize::try_from(memory_budget / 4)
-            .unwrap_or(usize::MAX)
-            .max(MINIMUM_MANIFEST_FRAME_BYTES)
-            .min(BLOB_CONTROL_FRAME_MAX_BYTES);
-        // The scan owns one page plus one row, and its payload or deferred
-        // reader owns another page at the same time. Both admit independently
-        // in Maintenance scope while this roster remains live.
-        let page_bytes = u64::from(self.format.declaration().page_size().bytes());
-        let nested_read_headroom = page_bytes
-            .checked_mul(2)
-            .and_then(|bytes| {
-                bytes.checked_add(std::mem::size_of::<
-                    crate::physical_runtime::record_serving::ScannedPhysicalRecord,
-                >() as u64)
-            })
-            .ok_or(SelectedBlobManifestPinDenial::BudgetExceeded)?;
-        let roster_budget = selected_roster_reservation(
+        // The roster is held by the standing capture reservation, whose
+        // envelope includes this exact bound; the scan takes no pool bytes.
+        let PinScanBound {
+            scratch_bytes,
+            roster_bytes: roster_budget,
+        } = checkpoint_pin_scan_bound(
             maximum_pins,
             memory_budget,
-            scratch_bytes,
-            nested_read_headroom,
+            u64::from(self.format.declaration().page_size().bytes()),
         )?;
-        // Charge only this owner's maximum live scratch/roster/handoff bytes.
-        // The grant stays live through binding compaction and namespace sync.
-        let allocation = self
-            .residency
-            .checkpoint_pin_allocation(
-                NonZeroU64::new(roster_budget)
-                    .ok_or(SelectedBlobManifestPinDenial::BudgetExceeded)?,
-            )
-            .map_err(|_| SelectedBlobManifestPinDenial::BudgetExceeded)?;
         let reader = PhysicalRecordReader {
             execution: crate::physical_runtime::instance::PhysicalStoreWorkRuntime::execution(
                 &runtime,
@@ -223,7 +200,6 @@ impl RecordPublicationDirector {
         Ok(SelectedBlobManifestPins {
             root: root_cell,
             pins,
-            _allocation: Some(allocation),
         })
     }
 }

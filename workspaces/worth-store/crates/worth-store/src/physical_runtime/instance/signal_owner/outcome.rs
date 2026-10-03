@@ -10,11 +10,16 @@ impl PhysicalSignalRuntimeIdentity {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PhysicalSignalConstructionFailure {
     ProfileRejected(crate::physical_runtime::PhysicalWorkProfileDenial),
     SchedulerCapabilityRejected(worth_store_io_scheduler::IoSchedulerBackendCapabilityDenial),
     DurabilityStateReopenRejected(super::super::PhysicalDurabilityStateReopenFailure),
+    /// Serving could not reserve the capture envelope of the released-drop
+    /// custody it would hold; denied before Serving installs any owner.
+    ServingCaptureCustodyReservationRejected(
+        crate::physical_runtime::ReleaseCertificateCapacityDenial,
+    ),
     IdentityEntropyUnavailable,
     WorkerSpawnRejected,
     WorkerReadinessLost,

@@ -48,6 +48,7 @@ fn selected_with_damaged_previous(label: &str) -> SelectedPhysicalRecovery {
     let store = initialize_store(&root);
     publish_synthetic_genesis(&root, store);
     publish_secured_synthetic_checkpoint(&root, store);
+    publish_synthetic_covered_wal(&root);
     let records = root.join("families").join("records");
     let mut previous = std::fs::read(records.join("root-current.selector")).unwrap();
     previous[65] ^= 0x5a;

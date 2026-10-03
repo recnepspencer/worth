@@ -2,6 +2,8 @@ use sha2::{Digest, Sha256};
 
 const CHECKPOINT_HEADER_BYTES: usize = 144;
 const CHECKPOINT_FOOTER_BYTES: usize = 136;
+const CHECKPOINT_CERTIFIED_FOOTER_BYTES: usize = 184;
+const CHECKPOINT_CERTIFIED_SCHEMA: u8 = 3;
 const CHECKPOINT_DIRTY_BYTES: usize = 48;
 const CHECKPOINT_COMPACTION_BYTES: usize = 16;
 const CHECKPOINT_PREFIX_BYTES: usize = 16;
@@ -26,8 +28,11 @@ struct Segment<'a> {
 /// Only a contiguous authenticated WAL suffix beginning at the selected
 /// checkpoint frontier can prove the checkpoint fixture's in-flight fate.
 /// Checkpoint schema 2 retains the schema-1 record layout while carrying
-/// maintenance-capable physical truth. Every record must use the selected
-/// header's schema before its WAL frontier is admitted.
+/// maintenance-capable physical truth. Schema 3 (C.11 certified) appends
+/// TierEpoch (6) and release-custody (7) certificate records after the
+/// bindings and extends the footer with their count, bytes and digest. Every
+/// record must use the selected header's schema before its WAL frontier is
+/// admitted.
 pub(super) fn tail<'a>(files: &'a [(String, Vec<u8>)]) -> Option<Vec<(&'a str, &'a [u8])>> {
     let frontier = checkpoint_frontier(files)?;
     let mut segments = files
@@ -78,14 +83,14 @@ fn checkpoint_frontier(files: &[(String, Vec<u8>)]) -> Option<u64> {
         .find(|(path, _)| path == "families/checkpoint.current")?
         .1;
     let schema = *bytes.get(8)?;
-    if schema != 1 && schema != 2 {
-        return None;
-    }
-    let footer_offset = bytes
-        .len()
-        .checked_sub(record_bytes(CHECKPOINT_FOOTER_BYTES))?;
+    let footer_bytes = match schema {
+        1 | 2 => CHECKPOINT_FOOTER_BYTES,
+        CHECKPOINT_CERTIFIED_SCHEMA => CHECKPOINT_CERTIFIED_FOOTER_BYTES,
+        _ => return None,
+    };
+    let footer_offset = bytes.len().checked_sub(record_bytes(footer_bytes))?;
     let header = fixed_record(bytes, 0, schema, 1, CHECKPOINT_HEADER_BYTES)?;
-    let footer = fixed_record(bytes, footer_offset, schema, 5, CHECKPOINT_FOOTER_BYTES)?;
+    let footer = fixed_record(bytes, footer_offset, schema, 5, footer_bytes)?;
     let covered_start = read_u64(header, 24)?;
     let covered_end = read_u64(header, 32)?;
     let durable = read_u64(footer, 80)?;
@@ -131,10 +136,38 @@ fn checkpoint_frontier(files: &[(String, Vec<u8>)]) -> Option<u64> {
         bindings.update(record);
         offset += record.len();
     }
-    (offset == footer_offset
-        && read_u64(footer, 96)? == (offset - binding_start) as u64
-        && bindings.finalize()[..] == footer[104..136])
-        .then_some(covered_end)
+    if read_u64(footer, 96)? != (offset - binding_start) as u64
+        || bindings.finalize()[..] != footer[104..136]
+    {
+        return None;
+    }
+    if schema == CHECKPOINT_CERTIFIED_SCHEMA {
+        offset = certificate_records(bytes, offset, footer)?;
+    }
+    (offset == footer_offset).then_some(covered_end)
+}
+
+/// Authenticates the certified checkpoint's certificate records against the
+/// footer aggregate and returns the offset just past them.
+fn certificate_records(bytes: &[u8], mut offset: usize, footer: &[u8]) -> Option<usize> {
+    let count = read_u64(footer, 136)?;
+    let start = offset;
+    let mut certificates = Sha256::new();
+    for _ in 0..count {
+        let prefix = bytes.get(offset..offset.checked_add(CHECKPOINT_PREFIX_BYTES)?)?;
+        let payload_bytes = usize::try_from(read_u32(prefix, 12)?).ok()?;
+        let kind = *prefix.get(9)?;
+        if payload_bytes == 0 || (kind != 6 && kind != 7) {
+            return None;
+        }
+        let record = bytes.get(offset..offset.checked_add(record_bytes(payload_bytes))?)?;
+        valid_record(record, CHECKPOINT_CERTIFIED_SCHEMA, kind, payload_bytes)?;
+        certificates.update(record);
+        offset += record.len();
+    }
+    (read_u64(footer, 144)? == (offset - start) as u64
+        && certificates.finalize()[..] == footer[152..184])
+        .then_some(offset)
 }
 
 fn fixed_record<'a>(

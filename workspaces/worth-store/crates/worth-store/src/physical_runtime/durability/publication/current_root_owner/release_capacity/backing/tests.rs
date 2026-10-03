@@ -61,6 +61,7 @@ fn fixture() -> Fixture {
         RuntimeIdentity::from_reopened(NonZeroU64::MIN),
         generation,
         lifecycle.observation_state(),
+        0,
     );
     Fixture {
         owner,
@@ -215,6 +216,7 @@ fn foreign_runtime_or_stale_generation_cannot_grow_existing_charge() {
         RuntimeIdentity::from_reopened(NonZeroU64::new(2).unwrap()),
         fixture.lifecycle.snapshot().generation,
         fixture.lifecycle.observation_state(),
+        0,
     );
     assert!(matches!(
         foreign.fund(&mut custody, fixture.ceiling, 1001),

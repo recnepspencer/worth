@@ -258,6 +258,7 @@ impl PhysicalPublicationAdmission {
         }
     }
 
+    #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn replace_profile(&self, profile: PhysicalRetentionProfile) {
         let mut state = self.lock();
         state.profile = profile;

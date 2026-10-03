@@ -14,7 +14,7 @@ mod mutation;
 pub(in crate::physical_runtime) use mutation::with_conflicting_binding_history;
 mod observation;
 mod publication;
-pub use publication::SelectedReleaseHeadDenial;
+pub use publication::{ReleaseCertificateCapacityDenial, SelectedReleaseHeadDenial};
 mod retention;
 pub(in crate::physical_runtime) use retention::PendingPublicationLease;
 pub(in crate::physical_runtime) use retention::PhysicalPublicationAdmission;
@@ -182,23 +182,28 @@ pub(in crate::physical_runtime) use observation::{
     PhysicalMutationCancellationClass, PhysicalMutationObservationCounters,
     PhysicalMutationTerminalClass,
 };
+#[cfg(feature = "recovery-runtime-owner")]
+pub(in crate::physical_runtime) use publication::RecoveredReleaseLedgerDenial;
 pub(in crate::physical_runtime) use publication::{
-    publish_manifest_residue_candidate, publish_retirement_candidate, publish_tier_epoch_candidate,
-    replace_root_candidate, synchronize_root_namespace, AdmittedFailedIngestDrop,
-    AdmittedManifestResidueRetirement, AdmittedReleasedGenerationDrop, CheckpointCertificateFrame,
-    CheckpointCustodyCandidate, CheckpointCustodyDenial, CheckpointCustodyOrigin,
-    CleanReopenCheckpointCustody, ManifestResidueDisplacement, ManifestResidueProof,
-    NamespaceDurableManifestResidueRoot, NamespaceDurableRetirementRoot,
-    NamespaceDurableTierEpochRoot, PhysicalBlobReclaimAdmissionDenial, PhysicalBlobSessionClaim,
+    publish_manifest_residue_candidate, publish_retirement_candidate, replace_root_candidate,
+    synchronize_root_namespace, AdmittedFailedIngestDrop, AdmittedManifestResidueRetirement,
+    AdmittedReleasedGenerationDrop, CheckpointCertificateFrame, CheckpointCustodyCandidate,
+    CheckpointCustodyDenial, CheckpointCustodyOrigin, CleanReopenCheckpointCustody,
+    ManifestResidueDisplacement, ManifestResidueProof, NamespaceDurableManifestResidueRoot,
+    NamespaceDurableRetirementRoot, PhysicalBlobReclaimAdmissionDenial, PhysicalBlobSessionClaim,
     PhysicalBlobSessionClaimDenial, PhysicalBlobTerminalAdmissionDenial, PhysicalCurrentRootOwner,
     PhysicalReclaimAttempt, PhysicalReconciledReclaimDescriptorFate,
     PhysicalRootPublicationIdentity, PhysicalRootPublicationPreparationFailure,
     PhysicalRootPublicationPreparationNotStartedCause, PhysicalRootPublicationTransition,
     PhysicalRootPublicationWorkFailure, PhysicalRootPublicationWorkPort,
-    PreparedRecoveredCheckpointCustody, RecoveredReleaseLedgerDenial,
-    ReleaseCertificateCapacityDenial, ReleaseCertificateCapacityLease, ReleaseHeadCapacityCharge,
+    PreparedRecoveredCheckpointCustody, ReleaseCertificateCapacityLease, ReleaseHeadCapacityCharge,
     ReleasedDropSourceCaptureDenial, RootCandidateSynchronizationFailure,
     SelectedCheckpointCustodySnapshot, SelectedOriginalDropProof, SelectedReleaseHeadBasis,
+    ServingCheckpointCustody,
+};
+#[cfg(feature = "certification-test-authority")]
+pub(in crate::physical_runtime) use publication::{
+    publish_tier_epoch_candidate, NamespaceDurableTierEpochRoot,
 };
 #[cfg(feature = "certification-test-authority")]
 pub use publication::{CertificationReadRootCapturePauseGate, CertificationReadRootCaptureStage};

@@ -60,16 +60,22 @@ fn genuine_pending_effect_backing_moves_through_serving_and_checkpoint() {
             };
             let after_serving = allocations.snapshot();
             assert_eq!(after_serving.pool(), before_seal.pool());
+            // Serving entry funds the standing capture reservation in the
+            // same pool before Serving is sealed.
+            let standing = serving
+                .certification_checkpoint_capture_custody_bytes()
+                .expect("Serving entry funds the selected capture reservation");
             assert_eq!(
                 after_serving.for_dimension(scope).active_units(),
-                after_seal.for_dimension(scope).active_units() - consumed_bytes,
+                after_seal.for_dimension(scope).active_units() - consumed_bytes + standing,
                 "Serving consumes its checkpoint and WAL, head, and effect witnesses"
             );
             assert_eq!(
                 after_serving.for_dimension(scope).released_units()
                     - after_seal.for_dimension(scope).released_units(),
                 consumed_bytes + after_serving.for_dimension(scope).admitted_units()
-                    - after_seal.for_dimension(scope).admitted_units(),
+                    - after_seal.for_dimension(scope).admitted_units()
+                    - standing,
                 "temporary Serving reads balance in the same native pool"
             );
             checkpoint(&serving, [0xe4; 32]);

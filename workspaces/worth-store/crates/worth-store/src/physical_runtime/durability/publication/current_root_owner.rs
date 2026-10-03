@@ -19,12 +19,16 @@ mod reclaim;
 mod recovered_copy;
 mod recovered_custody;
 pub(in crate::physical_runtime) use recovered_custody::PreparedRecoveredCheckpointCustody;
+#[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use release_capacity::RecoveredReleaseLedgerDenial;
 mod release_capacity;
-pub use release_capacity::SelectedReleaseHeadDenial;
+pub use release_capacity::{ReleaseCertificateCapacityDenial, SelectedReleaseHeadDenial};
 mod root_basis;
 mod root_capture;
+mod serving_custody;
 pub(in crate::physical_runtime) use root_capture::ReleasedDropSourceCaptureDenial;
+pub(in crate::physical_runtime) use serving_custody::ServingCheckpointCustody;
+#[cfg(feature = "certification-test-authority")]
 mod tier_epoch;
 #[cfg(feature = "certification-test-authority")]
 pub use capture_pause::{CertificationReadRootCapturePauseGate, CertificationReadRootCaptureStage};
@@ -56,8 +60,7 @@ pub(in crate::physical_runtime) use reclaim::{
     PhysicalReclaimAttempt, PhysicalReconciledReclaimDescriptorFate, SelectedOriginalDropProof,
 };
 pub(in crate::physical_runtime) use release_capacity::{
-    ReleaseCertificateCapacityDenial, ReleaseCertificateCapacityLease, ReleaseHeadCapacityCharge,
-    SelectedReleaseHeadBasis,
+    ReleaseCertificateCapacityLease, ReleaseHeadCapacityCharge, SelectedReleaseHeadBasis,
 };
 
 pub(in crate::physical_runtime) struct PhysicalCurrentRootOwner {
@@ -164,6 +167,7 @@ impl PhysicalCurrentRootOwner {
         Ok(())
     }
 
+    #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn install_retention_profile(
         &self,
         profile: crate::physical_runtime::durability::PhysicalRetentionProfile,

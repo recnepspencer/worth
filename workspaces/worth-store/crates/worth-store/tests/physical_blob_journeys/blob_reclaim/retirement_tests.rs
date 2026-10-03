@@ -249,6 +249,17 @@ fn isolated_range_index_pressure_keeps_exact_reclaim_retirement_pending() {
     );
     let mut receipt = blobs.reclaim(request).unwrap().wait().unwrap();
     assert!(receipt.displaced_extents().len() > 15, "{receipt:?}");
+    // The reclaim's own retirement batch is bounded by a wall-clock deadline,
+    // so under load it can stop before reaching a verdict. Every continuation
+    // makes at least one native attempt, so one per extent reaches it.
+    for _ in 0..receipt.displaced_extents().len() {
+        if receipt.retirement() != BlobReclaimRetirement::AwaitingRetirement {
+            break;
+        }
+        blobs
+            .continue_reclaim_retirement(&mut receipt, continuation_budget())
+            .unwrap();
+    }
     assert_eq!(
         receipt.retirement(),
         BlobReclaimRetirement::Pending(PhysicalRetirementDenial::ArenaIndexCapacity),

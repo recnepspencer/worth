@@ -4,7 +4,6 @@ use super::{ArtifactTreeDirectoryEntry, ArtifactTreeStorageAllocator};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ArtifactTreeListingAllocationBoundary {
-    ProviderPath,
     ProviderIterator,
     EntryName,
     EntryRoster,

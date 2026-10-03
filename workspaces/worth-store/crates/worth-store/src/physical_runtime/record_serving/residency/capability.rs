@@ -32,16 +32,6 @@ const _: () =
     assert!(std::mem::size_of::<PhysicalResidencyWorkPort>() <= std::mem::size_of::<usize>() * 4);
 
 impl PhysicalResidencyWorkPort {
-    pub(in crate::physical_runtime::record_serving) fn checkpoint_pin_allocation(
-        &self,
-        bytes: NonZeroU64,
-    ) -> Result<
-        worth_store_buffer_pool::MaintenanceAllocationGrant,
-        worth_store_buffer_pool::PhysicalResidencyDenial,
-    > {
-        self.access.frame_ports.checkpoint_capture_allocation(bytes)
-    }
-
     pub(in crate::physical_runtime::record_serving) fn read_fresh_exact(
         &self,
         coordinate: RecordFrameCoordinate,

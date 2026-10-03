@@ -9,6 +9,8 @@ use worth_store::physical_runtime::{
 
 #[path = "recovery_pool_handoff/backing_census.rs"]
 mod backing_census;
+#[path = "recovery_pool_handoff/serving_capture_reservation.rs"]
+mod serving_capture_reservation;
 #[path = "recovery_pool_handoff/serving_effect_freshness.rs"]
 mod serving_effect_freshness;
 #[path = "recovery_pool_handoff/serving_head_freshness.rs"]
@@ -143,19 +145,24 @@ fn genuine_release_recovery_moves_one_pool_through_core_seal_and_serving() {
             );
             let serving = super::super::admit_serving_with_seal(root, seal);
             let after_serving = allocations.snapshot();
+            // Serving entry funds the standing capture reservation in the
+            // same carried pool before Serving is sealed.
+            let standing = serving
+                .certification_checkpoint_capture_custody_bytes()
+                .expect("Serving entry funds the selected capture reservation");
             assert_eq!(
                 after_serving
                     .for_dimension(Dimension::OperationScope(Scope::Recovery))
                     .active_units(),
-                held.bytes() + retained_checkpoint_bytes,
+                held.bytes() + retained_checkpoint_bytes + standing,
                 "the escaped checkpoint observer and reservation survive owner transfer"
             );
             let before = initial.for_dimension(Dimension::OperationScope(Scope::Recovery));
             let after = after_serving.for_dimension(Dimension::OperationScope(Scope::Recovery));
-            assert_eq!(before.active_units() - after.active_units(), retained_fingerprint_bytes,
+            assert_eq!(before.active_units() + standing - after.active_units(), retained_fingerprint_bytes,
                 "successful freshness validation disposes the retained WAL fingerprint");
             assert_eq!(after.released_units() - before.released_units(),
-                retained_fingerprint_bytes + after.admitted_units() - before.admitted_units(),
+                retained_fingerprint_bytes + after.admitted_units() - before.admitted_units() - standing,
                 "temporary Serving reads balance independently of fingerprint disposal");
             assert_eq!(
                 serving

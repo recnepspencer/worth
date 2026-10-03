@@ -75,6 +75,7 @@ fn fixture_with(pool: u64, headroom: u64) -> Fixture {
         RuntimeIdentity::from_reopened(NonZeroU64::MIN),
         generation,
         lifecycle.observation_state(),
+        0,
     );
     Fixture {
         owner,
@@ -106,7 +107,7 @@ fn envelope_covers_every_capture_buffer_and_dies_with_them() {
     let fixture = fixture();
     let ledger = SelectedReleaseCustodyLedger::trusted_genesis();
     for tier in [false, true] {
-        let envelope = ledger.checkpoint_capture_envelope(None, tier).unwrap();
+        let envelope = ledger.checkpoint_capture_envelope(None, tier, 0).unwrap();
         assert_eq!(envelope.records, 1 + usize::from(tier));
         let mut custody = None;
         fixture
@@ -138,7 +139,7 @@ fn envelope_covers_every_capture_buffer_and_dies_with_them() {
 fn undersized_budget_denies_the_envelope_before_any_capture_allocation() {
     let fixture = fixture();
     let envelope = SelectedReleaseCustodyLedger::trusted_genesis()
-        .checkpoint_capture_envelope(None, false)
+        .checkpoint_capture_envelope(None, false, 0)
         .unwrap();
     let held = fixture
         .ports
@@ -176,7 +177,10 @@ fn a_capture_consumes_the_standing_reservation_without_new_bytes() {
         .unwrap();
     let reserved = active(&fixture);
     assert_eq!(ledger.capture_custody_bytes(), Some(reserved));
-    assert_eq!(ledger.capture_custody_requirement(None).unwrap(), reserved);
+    assert_eq!(
+        ledger.capture_custody_requirement(None, 0).unwrap(),
+        reserved
+    );
     let capture = |ledger: &mut SelectedReleaseCustodyLedger, tier| {
         Arc::new(SealedCheckpointStorage::from_prepared(
             ledger
@@ -188,7 +192,7 @@ fn a_capture_consumes_the_standing_reservation_without_new_bytes() {
     let first = capture(&mut ledger, true);
     assert_eq!(active(&fixture), reserved);
     // Only a capture that overlaps a still-live one funds its own envelope.
-    let envelope = ledger.checkpoint_capture_envelope(None, false).unwrap();
+    let envelope = ledger.checkpoint_capture_envelope(None, false, 0).unwrap();
     let second = capture(&mut ledger, false);
     assert_eq!(active(&fixture), reserved + envelope.bytes());
     drop(second);
@@ -206,7 +210,7 @@ fn a_capture_consumes_the_standing_reservation_without_new_bytes() {
 fn an_uncommitted_capture_returns_its_whole_envelope() {
     let fixture = fixture();
     let envelope = SelectedReleaseCustodyLedger::trusted_genesis()
-        .checkpoint_capture_envelope(None, true)
+        .checkpoint_capture_envelope(None, true, 0)
         .unwrap();
     let first = admitted(&fixture, envelope);
     let lease = first.lease_fold().unwrap();
@@ -218,4 +222,21 @@ fn an_uncommitted_capture_returns_its_whole_envelope() {
     assert_eq!(active(&fixture), envelope.bytes());
     drop(second);
     assert_eq!(active(&fixture), 0);
+}
+
+#[test]
+fn every_capture_envelope_holds_the_pin_scan_bound() {
+    let ledger = SelectedReleaseCustodyLedger::trusted_genesis();
+    let scan = 4_096;
+    for tier in [false, true] {
+        let without = ledger.checkpoint_capture_envelope(None, tier, 0).unwrap();
+        let with = ledger
+            .checkpoint_capture_envelope(None, tier, scan)
+            .unwrap();
+        assert_eq!(with.bytes(), without.bytes() + scan);
+    }
+    assert_eq!(
+        ledger.capture_custody_requirement(None, scan).unwrap(),
+        ledger.capture_custody_requirement(None, 0).unwrap() + scan
+    );
 }

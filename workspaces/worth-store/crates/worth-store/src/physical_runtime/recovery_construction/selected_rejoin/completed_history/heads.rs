@@ -74,20 +74,34 @@ impl CompletedHistoryHeadFold {
         format: PhysicalRecordFormatDeclaration,
         resident: &mut StoreRejoinResidentLedger,
     ) -> Result<Self, Denial> {
-        if claim.marker().is_none()
-            || claim.selected_head_v2().is_some()
-            || checkpoint_source_root.release_custody_head_root().is_some()
-            || checkpoint_source_root.next_release_custody_head_block() != 1
-            || effective.checkpoint_source_root().is_some()
-            || effective.checkpoint_source_next_block() != 1
-            || !effective.checkpoint_source_heads().is_empty()
+        let checkpoint_ref = checkpoint_source_root.release_custody_head_root();
+        let checkpoint_next_block = checkpoint_source_root.next_release_custody_head_block();
+        if checkpoint_ref != effective.checkpoint_source_root()
+            || checkpoint_next_block != effective.checkpoint_source_next_block()
             || discovery.store_identity() != allocation.store_identity()
         {
             return Err(Denial::CertificateRoster);
         }
+        // The fold starts from the checkpoint-source roster: empty for a
+        // NoRelease base, the checkpoint-attested heads for a HeadV2 base.
+        let (checkpoint_count, checkpoint_digest) = match (claim.marker(), claim.selected_head_v2())
+        {
+            (Some(_), None) if checkpoint_ref.is_none() && checkpoint_next_block == 1 => {
+                (0, ReleaseCustodyHeadRosterDigestV1::new(None, 0).finish().1)
+            }
+            (None, Some(base))
+                if base.checkpoint_source_root() == checkpoint_source_root
+                    && base.selected_heads() == effective.checkpoint_source_heads() =>
+            {
+                let accumulator = base.accumulator_v2();
+                (accumulator.head_count(), accumulator.head_roster_digest())
+            }
+            _ => return Err(Denial::CertificateRoster),
+        };
         let maximum_entries = effective.effective_heads().len();
         let page = u64::from(format.page_size().bytes());
         if maximum_entries == 0
+            || (maximum_entries as u64) < checkpoint_count
             || ReleaseHeadCapacityCharge::selected_roster_closure_bytes(
                 maximum_entries as u64,
                 page,
@@ -96,23 +110,22 @@ impl CompletedHistoryHeadFold {
         {
             return Err(Denial::BoundExceeded);
         }
-        let empty_digest = ReleaseCustodyHeadRosterDigestV1::new(None, 0).finish().1;
         let checkpoint = release_heads::observe_with_resident(
             discovery,
             window,
             checkpoint_source_root,
             format,
             allocation,
-            0,
-            empty_digest,
+            checkpoint_count,
+            checkpoint_digest,
             resident,
         )?;
-        if !checkpoint.entries().is_empty() {
+        if checkpoint.entries() != effective.checkpoint_source_heads() {
             return Err(Denial::CertificateRoster);
         }
         let requested = entry_bytes(maximum_entries)?;
         let entry_grant = window.reserve_owned(requested).map_err(Denial::Resident)?;
-        let entries = resident
+        let mut entries = resident
             .reserve_vec::<ReleaseCustodyHeadEntryV1>(maximum_entries)
             .map_err(Denial::Resident)?;
         let actual = entry_bytes(entries.capacity())?;
@@ -128,12 +141,13 @@ impl CompletedHistoryHeadFold {
                 },
             ));
         }
+        entries.extend_from_slice(checkpoint.entries());
         Ok(Self {
             checkpoint,
             entries,
             entry_grant,
-            current_root: None,
-            current_next_block: 1,
+            current_root: checkpoint_ref,
+            current_next_block: checkpoint_next_block,
             maximum_entries,
         })
     }

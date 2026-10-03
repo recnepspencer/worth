@@ -31,6 +31,12 @@ impl RecoveryIntegrityEvidence {
         &self.observations
     }
 
+    /// Cleanup is the admitted WAL's last reader. Store rejoin rereads WAL
+    /// under its own admission, so the Runtime copy is disposed first.
+    pub(crate) fn release_admitted_wal(&mut self) {
+        self.admitted_wal = AdmittedWalInventory::default();
+    }
+
     pub(crate) fn into_observations(self) -> PhysicalRecoveryIntegrityObservations {
         self.observations
     }

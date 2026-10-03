@@ -1,6 +1,7 @@
 //! Selected positive no-release marker; never inferred from an empty roster.
 
 use worth_store_physical_format::ReleaseCheckpointNoReleaseV1;
+#[cfg(feature = "recovery-runtime-owner")]
 use worth_store_recovery_physics::VerifiedSelectedNoReleaseCustody;
 
 use super::{
@@ -9,6 +10,7 @@ use super::{
 };
 
 impl ReleaseLedgerState {
+    #[cfg(feature = "recovery-runtime-owner")]
     pub(in crate::physical_runtime::durability::publication::current_root_owner) fn from_verified_no_release(
         verified: &VerifiedSelectedNoReleaseCustody,
     ) -> Self {

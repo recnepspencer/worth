@@ -37,6 +37,7 @@ impl StoreRejoinResidentLedger {
     /// The pending head observer's existing local allowance, clamped to the
     /// original admission. This does not account for surrounding C8/Store
     /// backing; V2 must consume its carried coordination basis instead.
+    #[cfg(feature = "recovery-runtime-owner")]
     pub(super) fn pending_head_walk_window(
         allocation: PhysicalRecoveryAllocationAdmission,
         maximum_resident_bytes: u64,
@@ -96,6 +97,7 @@ impl StoreRejoinResidentLedger {
         })
     }
 
+    #[cfg(any(test, feature = "recovery-runtime-owner"))]
     pub(in crate::physical_runtime) const fn remaining(&self) -> u64 {
         if self.failed.is_some() {
             0
@@ -142,6 +144,7 @@ impl StoreRejoinResidentLedger {
         Ok(())
     }
 
+    #[cfg(any(test, feature = "recovery-runtime-owner"))]
     pub(in crate::physical_runtime) fn release(&mut self, bytes: u64) {
         self.used = self
             .used
@@ -165,6 +168,7 @@ impl StoreRejoinResidentLedger {
         Ok(values)
     }
 
+    #[cfg(any(test, feature = "recovery-runtime-owner"))]
     pub(in crate::physical_runtime) fn reserve_bytes(
         &mut self,
         count: usize,
@@ -191,6 +195,7 @@ impl StoreRejoinResidentLedger {
     /// Streaming frame rosters need amortized growth, not one reallocation per
     /// admitted frame. A larger capacity is still admitted with the old backing
     /// live; an insufficient budget denies instead of silently changing cost.
+    #[cfg(feature = "recovery-runtime-owner")]
     pub(in crate::physical_runtime) fn grow_vec_geometrically<T>(
         &mut self,
         values: &mut Vec<T>,

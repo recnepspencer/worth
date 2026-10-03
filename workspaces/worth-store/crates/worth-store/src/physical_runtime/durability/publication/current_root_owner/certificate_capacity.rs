@@ -53,6 +53,7 @@ impl SealedTierEpochCustodyBasis {
     /// The exact C9 frame digests were admitted by this sealed physics claim
     /// and rejoined against current Store media. Carry that proof, do not
     /// encode the same metadata again during owner installation.
+    #[cfg(feature = "recovery-runtime-owner")]
     pub(super) fn from_verified_selected(
         verified: &worth_store_recovery_physics::VerifiedSelectedTierEpochCustody,
     ) -> Self {
@@ -242,8 +243,17 @@ impl PhysicalCurrentRootOwner {
             CheckpointCustodyState::CertifiedTier(_)
         );
         let ledger = state.release_ledger.selected()?;
-        let envelope = ledger.checkpoint_capture_envelope(None, tier).ok()?;
+        let envelope = ledger
+            .checkpoint_capture_envelope(None, tier, self.release_allocation.capture_scan_bytes())
+            .ok()?;
         Some(envelope.bytes())
+    }
+
+    /// The standing capture reservation the selected custody holds.
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn checkpoint_capture_custody_bytes(&self) -> Option<u64> {
+        let state = self.lock_publication_state();
+        state.release_ledger.selected()?.capture_custody_bytes()
     }
 
     /// Consumes the standing checkpoint reservation, before any effect, then

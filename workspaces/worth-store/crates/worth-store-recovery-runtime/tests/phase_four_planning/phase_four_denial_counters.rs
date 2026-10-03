@@ -39,7 +39,7 @@ fn page_failures_retain_distinct_exact_phase_four_read_counters() {
     let invalid_counters = invalid.evidence().planning_counters.unwrap();
     let page_counters = invalid_page.evidence().planning_counters.unwrap();
     assert_eq!(invalid_counters.page_extent_reads(), 2);
-    assert_eq!(invalid_counters.page_extent_bytes(), 208);
+    assert_eq!(invalid_counters.page_extent_bytes(), 248);
     assert_eq!(
         invalid_counters.freshness_retained() + invalid_counters.freshness_expired(),
         3

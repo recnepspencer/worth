@@ -191,6 +191,7 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
     }
     let projection = wal_fate::matched_pending_projection(claim, &sample, reopen.format())
         .ok_or(Denial::WalFate)?;
+    let inventory = inventory.into_fingerprint();
     pause_before_final_reread();
     let mut final_discovery = media
         .bounded_discovery(MAX_DISCOVERY_ENTRIES, MAX_DISCOVERY_BYTES)
@@ -256,7 +257,7 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
         return Err(Denial::WalFate);
     }
     // Only the final exact WAL observation remains live during historical
-    // root walks. The first complete inventory was compared above, then
+    // root walks. The first inventory's fingerprint was compared above, then
     // released before the shared recovery-memory budget is calculated.
     drop(selected_tier);
     drop(final_tier);

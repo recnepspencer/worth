@@ -1,9 +1,9 @@
 mod current_root_owner;
-pub use current_root_owner::SelectedReleaseHeadDenial;
 #[cfg(feature = "certification-test-authority")]
 pub use current_root_owner::{
     CertificationReadRootCapturePauseGate, CertificationReadRootCaptureStage,
 };
+pub use current_root_owner::{ReleaseCertificateCapacityDenial, SelectedReleaseHeadDenial};
 mod failure;
 mod identity;
 mod maintenance;
@@ -13,11 +13,16 @@ mod replacement;
 mod retained_root;
 mod work_port;
 pub(in crate::physical_runtime) use maintenance::{
-    publish_manifest_residue_candidate, publish_retirement_candidate, publish_tier_epoch_candidate,
+    publish_manifest_residue_candidate, publish_retirement_candidate,
     NamespaceDurableManifestResidueRoot, NamespaceDurableRetirementRoot,
-    NamespaceDurableTierEpochRoot,
+};
+#[cfg(feature = "certification-test-authority")]
+pub(in crate::physical_runtime) use maintenance::{
+    publish_tier_epoch_candidate, NamespaceDurableTierEpochRoot,
 };
 
+#[cfg(feature = "recovery-runtime-owner")]
+pub(in crate::physical_runtime) use current_root_owner::RecoveredReleaseLedgerDenial;
 pub(in crate::physical_runtime) use current_root_owner::{
     AdmittedFailedIngestDrop, AdmittedManifestResidueRetirement, AdmittedReleasedGenerationDrop,
     CheckpointCertificateFrame, CheckpointCustodyCandidate, CheckpointCustodyDenial,
@@ -25,10 +30,9 @@ pub(in crate::physical_runtime) use current_root_owner::{
     ManifestResidueProof, PhysicalBlobReclaimAdmissionDenial, PhysicalBlobSessionClaim,
     PhysicalBlobSessionClaimDenial, PhysicalBlobTerminalAdmissionDenial, PhysicalCurrentRootOwner,
     PhysicalReclaimAttempt, PhysicalReconciledReclaimDescriptorFate,
-    PreparedRecoveredCheckpointCustody, RecoveredReleaseLedgerDenial,
-    ReleaseCertificateCapacityDenial, ReleaseCertificateCapacityLease, ReleaseHeadCapacityCharge,
+    PreparedRecoveredCheckpointCustody, ReleaseCertificateCapacityLease, ReleaseHeadCapacityCharge,
     ReleasedDropSourceCaptureDenial, SelectedCheckpointCustodySnapshot, SelectedOriginalDropProof,
-    SelectedReleaseHeadBasis,
+    SelectedReleaseHeadBasis, ServingCheckpointCustody,
 };
 pub use current_root_owner::{
     CompletedPhysicalRootPublication, IndeterminatePhysicalCurrentRootAdvance,

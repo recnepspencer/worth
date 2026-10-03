@@ -10,7 +10,7 @@ use worth_store_buffer_pool::{
 };
 
 #[test]
-fn final_reread_native_denial_preserves_initial_inventory_and_retry_moves_fingerprint() {
+fn final_reread_native_denial_preserves_initial_fingerprint_and_retry_moves_fingerprint() {
     let (root, media, coordination) = fixture::coordination();
     let (path, encoded) = fixture::wal(root.path());
     let (owner, _, _) = coordination.sampling_allocation_basis().unwrap();
@@ -20,14 +20,8 @@ fn final_reread_native_denial_preserves_initial_inventory_and_retry_moves_finger
     let mut first_discovery = media.bounded_discovery(64, MAX_WAL_BYTES).unwrap();
     let first = admit_complete_inventory(&mut first_discovery, &coordination).unwrap();
     assert_eq!(first.frames.len(), 1);
-    let first_bytes = (first.frames.capacity() * size_of::<IntegrityAdmittedRecoveryWalFrame>()
-        + first.artifacts.capacity() * size_of::<WalArtifactFingerprint>())
-        as u64
-        + first
-            .frames
-            .iter()
-            .map(|frame| frame.charged_bytes())
-            .sum::<u64>();
+    let first = first.into_fingerprint();
+    let first_bytes = (first.artifacts.capacity() * size_of::<WalArtifactFingerprint>()) as u64;
     assert_eq!(fixture::active(&ports), first_bytes);
     let media = first_discovery.finish();
     let mut discovery = media.bounded_discovery(64, MAX_WAL_BYTES).unwrap();

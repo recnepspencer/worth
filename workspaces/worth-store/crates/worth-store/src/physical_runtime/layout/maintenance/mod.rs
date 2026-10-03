@@ -29,11 +29,13 @@ use crate::physical_runtime::{
 
 pub use append::PhysicalLayoutAppendFailure;
 use append::{append_layout_record, LayoutAppendKind};
+#[cfg(feature = "certification-test-authority")]
+pub(in crate::physical_runtime) use tree::retire_selected_tree;
 pub use tree::DeferredDerivedRetirementCause;
 pub(in crate::physical_runtime) use tree::{
     admit_directory_retirement, insert_registered_node, inspect_selected_tree_retirement,
-    retire_selected_tree, write_registered_cell, AdmittedDirectoryRetirement, InsertedLayoutTree,
-    InsertionSource, LayoutCellWrite, SelectedTreeRetirement,
+    write_registered_cell, AdmittedDirectoryRetirement, InsertedLayoutTree, InsertionSource,
+    LayoutCellWrite, SelectedTreeRetirement,
 };
 
 pub(in crate::physical_runtime) fn publish_derived_directory(

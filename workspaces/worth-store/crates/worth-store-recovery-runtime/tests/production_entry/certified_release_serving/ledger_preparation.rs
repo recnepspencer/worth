@@ -1,5 +1,13 @@
-//! A genuine recovered seal and loaded bootstrap share the target Serving
-//! recovery ceiling before the one-shot seal can enter Serving.
+//! A genuine recovered seal enters Serving only under the residency policy its
+//! recovery was funded by; a different Serving policy is refused before any
+//! publication, and the same media then reopens under the original policy.
+//!
+//! The Serving open policy must equal the recovery policy
+//! (`PhysicalResidencyOwner::validate_recovered_policy` returns
+//! `RecoveredResidencyPolicyMismatch`), so a world with an adequate recovery
+//! policy and a tighter Serving ceiling cannot be built. The combined
+//! seal-plus-bootstrap resident ceiling is unit-tested by
+//! `recovery_residency::tests::retained_state_and_reducing_ceiling_precede_allocation`.
 
 use std::{
     num::{NonZeroU32, NonZeroU64},
@@ -13,10 +21,9 @@ use worth_store::physical_runtime::{
     PhysicalDurabilityDeclaration, PhysicalIdempotencyPolicy,
     PhysicalOperationAllocationScope as Scope, PhysicalRecordAccessPolicy,
     PhysicalRecordFormatDeclaration, PhysicalRecordOpen, PhysicalRecordResidencyPolicy,
-    PhysicalRecoveryRejoinResidentDenial, PhysicalRuntimeAdmission,
-    PhysicalSpeculativeWorkKind as Speculation, PhysicalStore, PhysicalWalPolicy,
-    RecordBootstrapDenial, RecoveredPhysicalCheckpointCustody, RetainedWalTailLimit,
-    WalSegmentByteLimit, WalSegmentInventoryLimit,
+    PhysicalRuntimeAdmission, PhysicalSpeculativeWorkKind as Speculation, PhysicalStore,
+    PhysicalWalPolicy, RecordBootstrapDenial, RecoveredPhysicalCheckpointCustody,
+    RetainedWalTailLimit, WalSegmentByteLimit, WalSegmentInventoryLimit,
 };
 use worth_store_recovery_runtime::{PhysicalRecoveryOutcome, WorthStoreRecovery};
 
@@ -26,7 +33,7 @@ use super::*;
 mod world;
 
 #[test]
-fn retained_seal_and_bootstrap_deny_together_before_serving() {
+fn recovered_seal_refuses_a_different_serving_policy_then_reopens_under_its_own() {
     let worker = std::thread::Builder::new()
         .name("recovered-serving-ledger-preparation".to_owned())
         .stack_size(16 * 1024 * 1024)
@@ -47,39 +54,21 @@ fn retained_seal_and_bootstrap_deny_together_before_serving() {
             let selected_root = root.join("families/records/root-current.selector");
             let root_before = std::fs::read(&selected_root).expect("selected root selector bytes");
             let seal = recover_seal(&root, original_recovery_bytes);
-            let sealed_heap = seal
-                .retained_heap_bytes()
-                .expect("checked genuine seal cost");
-            let page_bytes = u64::from(
-                PhysicalRecordFormatDeclaration::builder()
-                    .admit()
-                    .unwrap()
-                    .page_size()
-                    .bytes(),
-            );
-            // The genuine selected Batch stream is larger than the four
-            // page transfers needed by Serving's historical extent walk.
-            let target = sealed_heap.checked_add(1).expect("checked seal size");
-            assert!(
-                target > 4 * page_bytes,
-                "genuine seal heap {sealed_heap} must exceed the bootstrap page-transfer floor"
-            );
-            assert!(target < original_recovery_bytes);
-            assert_pre_serving_resident_denial(&root, seal, target, sealed_heap);
+            assert_policy_mismatch_refusal(&root, seal, original_recovery_bytes / 2);
             assert_eq!(
-                std::fs::read(&selected_checkpoint).expect("checkpoint after denial"),
+                std::fs::read(&selected_checkpoint).expect("checkpoint after refusal"),
                 before,
-                "resident denial must precede a new publication"
+                "policy refusal must precede a new publication"
             );
             assert_eq!(
-                std::fs::read(&selected_root).expect("root selector after denial"),
+                std::fs::read(&selected_root).expect("root selector after refusal"),
                 root_before,
-                "resident denial must preserve the selected root"
+                "policy refusal must preserve the selected root"
             );
 
             // The seal was consumed by the attempted open. A fresh C8/Store
-            // rejoin under the original adequate policy still opens and
-            // checkpoints through the ordinary production path.
+            // rejoin under the original policy still opens and checkpoints
+            // through the ordinary production path.
             super::open_serving_with_seal(&root, recover_seal(&root, original_recovery_bytes));
         })
         .expect("recovery worker");
@@ -121,11 +110,10 @@ fn recover_seal(root: &Path, original_recovery_bytes: u64) -> RecoveredPhysicalC
         .expect("Store rejoined release grants a one-shot seal")
 }
 
-fn assert_pre_serving_resident_denial(
+fn assert_policy_mismatch_refusal(
     root: &Path,
     seal: RecoveredPhysicalCheckpointCustody,
     target: u64,
-    sealed_heap: u64,
 ) {
     let format = AdmittedPhysicalRecordFormat::admit(
         PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
@@ -167,7 +155,7 @@ fn assert_pre_serving_resident_denial(
         .with_residency_policy(tight_policy(format, target))
         .with_recovered_checkpoint_custody(seal);
     let TransitionOutcome::Denied(denial) = media.open_record_store(request).into_raw() else {
-        panic!("retained seal plus bootstrap must deny at the Serving admission")
+        panic!("a Serving policy other than the recovery policy must deny")
     };
     let reason = denial.reason();
     let release = denial.into_runtime().close();
@@ -178,11 +166,9 @@ fn assert_pre_serving_resident_denial(
     assert!(
         matches!(
             reason,
-            RecordBootstrapDenial::RecoveredCustodyResident(
-                PhysicalRecoveryRejoinResidentDenial::BudgetExceeded { required, admitted }
-            ) if required > admitted && admitted <= target
+            RecordBootstrapDenial::RecoveredResidencyPolicyMismatch
         ),
-        "expected the typed combined resident ceiling (seal heap {sealed_heap}, target {target}), got {reason:?}"
+        "expected the recovered residency policy refusal, got {reason:?}"
     );
 }
 

@@ -16,9 +16,7 @@ use super::work_runtime::InstalledPhysicalWorkRuntime;
 
 pub(super) struct PhysicalRecordServingAssembly {
     state: RecordServingState,
-    recovered_checkpoint_custody:
-        Option<crate::physical_runtime::durability::PreparedRecoveredCheckpointCustody>,
-    checkpoint_custody_origin: crate::physical_runtime::durability::CheckpointCustodyOrigin,
+    serving_custody: crate::physical_runtime::durability::ServingCheckpointCustody,
     allocation: RecordAllocationFrontier,
     frame_ports: crate::physical_runtime::record_serving::RecordFramePorts,
     recovery_allocation: crate::physical_runtime::PhysicalRecoveryAllocationAdmission,
@@ -38,10 +36,7 @@ pub(super) struct InstalledPhysicalRecordServing {
 impl PhysicalRecordServingAssembly {
     pub(super) fn new(
         state: RecordServingState,
-        checkpoint_custody_origin: crate::physical_runtime::durability::CheckpointCustodyOrigin,
-        recovered_checkpoint_custody: Option<
-            crate::physical_runtime::durability::PreparedRecoveredCheckpointCustody,
-        >,
+        serving_custody: crate::physical_runtime::durability::ServingCheckpointCustody,
         allocation: RecordAllocationFrontier,
         frame_ports: crate::physical_runtime::record_serving::RecordFramePorts,
         recovery_allocation: crate::physical_runtime::PhysicalRecoveryAllocationAdmission,
@@ -51,8 +46,7 @@ impl PhysicalRecordServingAssembly {
     ) -> Self {
         Self {
             state,
-            recovered_checkpoint_custody,
-            checkpoint_custody_origin,
+            serving_custody,
             allocation,
             frame_ports,
             recovery_allocation,
@@ -131,8 +125,7 @@ impl PhysicalRecordServingAssembly {
             read,
             mutation,
             RecordPublicationFoundation {
-                recovered_checkpoint_custody: self.recovered_checkpoint_custody,
-                checkpoint_custody_origin: self.checkpoint_custody_origin,
+                serving_custody: self.serving_custody,
                 reader_factory: record_owner.reader_factory(),
                 read_protection,
                 idempotency: durability.durability.idempotency_authority(),

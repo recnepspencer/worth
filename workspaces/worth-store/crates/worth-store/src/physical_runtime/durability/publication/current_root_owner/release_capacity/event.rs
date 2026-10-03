@@ -36,6 +36,16 @@ impl SelectedReleaseCustodyLedger {
             .count()
     }
 
+    /// Whether the ledger holds released-drop custody that every later
+    /// checkpoint must certify: selected heads or transitions still pending.
+    pub(in crate::physical_runtime::durability::publication::current_root_owner) fn holds_release_custody(
+        &self,
+    ) -> bool {
+        !self.pending_events.is_empty()
+            || self.checkpoint_heads.len() > 0
+            || self.effective_heads.len() > 0
+    }
+
     pub(super) fn pending_last_drop(&self) -> Option<SelectedReleaseBatchBasis> {
         self.pending_events
             .iter()

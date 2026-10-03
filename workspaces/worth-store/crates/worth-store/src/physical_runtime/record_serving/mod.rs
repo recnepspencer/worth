@@ -123,11 +123,12 @@ pub use publication::streaming::{
 pub use publication::CertificationPhysicalRecordSubmission;
 pub use publication::RecordPublicationStage;
 pub(in crate::physical_runtime) use publication::{
-    AdmittedPublicationRetention, AdoptedExtentCopy, CompletedExtentCopy,
-    PlannedPhysicalMutationParts, PreparedDerivedDirectoryBasis, PreparedPhysicalMutationContext,
-    PreparedPhysicalRootCandidate, PreparedRecordCompletionProjection,
-    PreparedReleasedDirectoryRebinding, PreparedReleasedDropBasis, RecordPublicationDirector,
-    RecordPublicationFoundation, SelectedBlobManifestPins, WrittenRootPublicationCandidate,
+    checkpoint_pin_scan_bytes, AdmittedPublicationRetention, AdoptedExtentCopy,
+    CompletedExtentCopy, PlannedPhysicalMutationParts, PreparedDerivedDirectoryBasis,
+    PreparedPhysicalMutationContext, PreparedPhysicalRootCandidate,
+    PreparedRecordCompletionProjection, PreparedReleasedDirectoryRebinding,
+    PreparedReleasedDropBasis, RecordPublicationDirector, RecordPublicationFoundation,
+    SelectedBlobManifestPins, WrittenRootPublicationCandidate,
 };
 pub use publication::{
     InlineArtifactRewritePlanDenial, PhysicalArenaEvacuationPreparationOutcome,

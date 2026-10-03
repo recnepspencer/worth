@@ -88,6 +88,9 @@ mod cache_retention;
 #[path = "physical_blob_journeys/checkpoint_capture_envelope.rs"]
 mod checkpoint_capture_envelope;
 #[cfg(feature = "certification-test-authority")]
+#[path = "physical_blob_journeys/checkpoint_liveness.rs"]
+mod checkpoint_liveness;
+#[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/clean_reopen_custody.rs"]
 mod clean_reopen_custody;
 #[path = "physical_blob_journeys/facade_status.rs"]

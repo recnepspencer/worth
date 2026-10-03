@@ -43,6 +43,8 @@ mod original_admission;
 mod pending_wal_rejoin;
 #[path = "certified_release_serving/recovery.rs"]
 mod recovery;
+#[path = "certified_release_serving/rejoin_liveness.rs"]
+mod rejoin_liveness;
 #[path = "certified_release_serving/release_capacity_budget.rs"]
 mod release_capacity_budget;
 use recovery::recover;

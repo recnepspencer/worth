@@ -90,6 +90,7 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
             selected.root().generation(),
         )?;
     }
+    let selected_wal = selected_wal.into_fingerprint();
     pause_before_final_reread();
     let store = media.store_identity();
     let mut final_read = media

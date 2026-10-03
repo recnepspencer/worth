@@ -143,28 +143,37 @@ fn killed_writer_recovers_after_each_mutation_effect_boundary() {
 
 #[test]
 fn hostile_successor_candidates_block_before_recovery_effects() {
-    let world = ProcessWorld::start_mutation_crash(
+    let inline = ProcessWorld::start_mutation_crash(
         "during-root-publication",
         MutationCrashWorkload::InlineRecord,
         0xC8_09_00_17,
         0xC8_19_00_17,
     );
-    let selected_generation = world
-        .writer
-        .history
-        .current_root_generation()
-        .expect("writer leaves a selected current root");
-    let candidate_generation = selected_generation + 1;
+    // Reusing the selected routing root needs a last inline record inside its
+    // range. Production record identities are random, so a new inline record
+    // can fall outside it; an extent mutation keeps the selected inline tail.
+    let extent = ProcessWorld::start_mutation_crash(
+        "during-root-publication",
+        MutationCrashWorkload::ExtentWriteback,
+        0xC8_09_00_18,
+        0xC8_19_00_18,
+    );
 
-    for hostile in [
-        "malformed",
-        "conflicting",
-        "inflated",
-        "root-routing-child",
-        "segment-membership-child",
-        "free-space-child",
-        "selected-routing-root",
+    for (hostile, world) in [
+        ("malformed", &inline),
+        ("conflicting", &inline),
+        ("inflated", &inline),
+        ("root-routing-child", &inline),
+        ("segment-membership-child", &inline),
+        ("free-space-child", &inline),
+        ("selected-routing-root", &extent),
     ] {
+        let candidate_generation = world
+            .writer
+            .history
+            .current_root_generation()
+            .expect("writer leaves a selected current root")
+            + 1;
         let root = world.parent_path().join(format!("hostile-{hostile}"));
         copy_directory(&world.writer.root, &root);
         let expected = expected_hostile_denial(&root, candidate_generation, hostile);

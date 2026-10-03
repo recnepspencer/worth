@@ -47,9 +47,9 @@ impl PhysicalRecoveryConstructionPort {
             let _ = coordination.shutdown_is_quiescent();
             return Err(denial);
         }
-        // Tier custody and released checkpoint bases require their own source
-        // joins; neither may enter the NoRelease completed-history owner.
-        if tier.is_some() || historical.selected_head_v2().is_some() {
+        // Tier custody requires its own source join; it may not enter the
+        // completed-history owner, which joins NoRelease and HeadV2 bases.
+        if tier.is_some() {
             let _ = coordination.shutdown_is_quiescent();
             return Err(RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch);
         }

@@ -25,8 +25,9 @@ impl SelectedReleaseCustodyLedger {
     pub(in crate::physical_runtime::durability::publication::current_root_owner) fn capture_custody_requirement(
         &self,
         incoming: Option<ReleaseCustodyHeadKeyV1>,
+        scan: u64,
     ) -> Result<u64, Denial> {
-        let envelope = self.capture_envelope_bytes(incoming, true)?;
+        let envelope = self.capture_envelope_bytes(incoming, true, scan)?;
         let heads = u64::try_from(envelope.heads)
             .ok()
             .and_then(|heads| {
@@ -51,7 +52,7 @@ impl SelectedReleaseCustodyLedger {
         ceiling: PhysicalRecoveryAllocationAdmission,
         incoming: Option<ReleaseCustodyHeadKeyV1>,
     ) -> Result<(), Denial> {
-        let required = self.capture_custody_requirement(incoming)?;
+        let required = self.capture_custody_requirement(incoming, owner.capture_scan_bytes())?;
         owner.fund(&mut self.capture_custody, ceiling, required)
     }
 
@@ -63,7 +64,7 @@ impl SelectedReleaseCustodyLedger {
         ceiling: PhysicalRecoveryAllocationAdmission,
         tier: bool,
     ) -> Result<CheckpointPreparation, Denial> {
-        let envelope = self.checkpoint_capture_envelope(None, tier)?;
+        let envelope = self.checkpoint_capture_envelope(None, tier, owner.capture_scan_bytes())?;
         // Clones happen only under the publication lock, so a count of one
         // cannot rise underneath this check; a stale higher count is safe.
         let custody = if self.capture_custody.as_ref().map_or(1, Arc::strong_count) == 1 {
@@ -77,7 +78,7 @@ impl SelectedReleaseCustodyLedger {
         Ok(envelope.prepare(custody.ok_or(Denial::CapacityExhausted)?))
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "certification-test-authority"))]
     pub(in crate::physical_runtime::durability::publication::current_root_owner) fn capture_custody_bytes(
         &self,
     ) -> Option<u64> {

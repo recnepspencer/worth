@@ -94,6 +94,9 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
     .map_err(Denial::binding_sampling)?;
     let sample_charge = sample.owned_heap_bytes().ok_or(Denial::BoundExceeded)?;
     resident.retain(sample_charge).map_err(Denial::Resident)?;
+    let inventory = inventory
+        .into_fingerprint_with_resident(&mut resident)
+        .map_err(Denial::Resident)?;
     pause_before_final_reread();
     let mut final_read = media
         .bounded_discovery(MAX_DISCOVERY_ENTRIES, MAX_DISCOVERY_BYTES)

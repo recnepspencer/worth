@@ -16,6 +16,11 @@ pub(super) fn open_request(
         }
         super::arguments::BoundedProfile::C11BlobCrash => c11_blob_crash_limits()?,
         super::arguments::BoundedProfile::C11BlobMultilevel => c11_blob_multilevel_limits()?,
+        // A multi-page extent rewrite stages its source range beside the ordinary
+        // C8 working set; it proves the rewrite applies, not the 512 KiB budget.
+        super::arguments::BoundedProfile::ExtentRewrite => {
+            phase_two_admission_limits(4 * 1024 * 1024)?
+        }
         super::arguments::BoundedProfile::FateCoverage
         | super::arguments::BoundedProfile::Refused
         | super::arguments::BoundedProfile::PublicationIndeterminate => {

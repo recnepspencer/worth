@@ -40,6 +40,12 @@ impl AddressedReleaseHeadControlV2 {
     pub const fn descriptor_record(&self) -> PersistedRecordIdentity {
         self.descriptor.selected_placement().record()
     }
+    pub const fn reservation_record(&self) -> PersistedRecordIdentity {
+        self.reservation.selected_placement().record()
+    }
+    pub const fn manifest_record(&self) -> PersistedRecordIdentity {
+        self.manifest.selected_placement().record()
+    }
 }
 
 pub(super) fn verify_head_controls(

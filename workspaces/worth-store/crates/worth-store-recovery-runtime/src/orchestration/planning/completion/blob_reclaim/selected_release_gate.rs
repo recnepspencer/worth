@@ -22,10 +22,25 @@ mod posture_tests;
 mod resident_basis;
 
 pub(super) fn admit_pending_wal_release(
-    context: PlanningContext,
+    mut context: PlanningContext,
     basis: &mut ResolvedPlanningBasis,
     projection_index: usize,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
+    // A first release of another object has no predecessor, but a HeadV2
+    // checkpoint still owns the source roster that the pending edge extends.
+    let posture = checkpoint_posture(
+        &context.selection,
+        context
+            .coordination
+            .owner()
+            .checkpoint()
+            .map(|shared| shared.stream()),
+    );
+    if posture == Ok(CheckpointReleasePosture::HeadV2)
+        && matches!(&basis.custody, PlanningCustody::Unresolved)
+    {
+        context = head_v2::admit(context, basis)?;
+    }
     pending_wal::admit(context, basis, projection_index)
 }
 

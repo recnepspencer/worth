@@ -15,6 +15,8 @@ use worth_store_physical_integrity::{
 use super::{roster_v2, SelectedCustodyDenial};
 use crate::PhysicalSourceSelection;
 
+#[path = "head_v2/certificates.rs"]
+mod certificates;
 #[path = "head_v2/controls.rs"]
 mod controls;
 #[path = "head_v2/rebind.rs"]

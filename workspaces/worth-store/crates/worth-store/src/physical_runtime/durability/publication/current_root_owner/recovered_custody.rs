@@ -1,11 +1,11 @@
 //! Recovered custody is prepared before Serving progression. Installation
-//! moves an admitted ledger and never performs fallible allocation.
+//! moves an admitted ledger, whose capture reservation Serving entry funded,
+//! and never performs fallible allocation.
 
 use super::{certificate_capacity, release_capacity, PhysicalCurrentRootOwner};
-use crate::physical_runtime::{
-    record_serving::VerifiedRecoveredCheckpointCustody,
-    recovery_residency::StoreRejoinResidentLedger,
-};
+use crate::physical_runtime::record_serving::VerifiedRecoveredCheckpointCustody;
+#[cfg(feature = "recovery-runtime-owner")]
+use crate::physical_runtime::recovery_residency::StoreRejoinResidentLedger;
 
 pub(in crate::physical_runtime) struct PreparedRecoveredCheckpointCustody {
     source: VerifiedRecoveredCheckpointCustody,
@@ -15,6 +15,7 @@ pub(in crate::physical_runtime) struct PreparedRecoveredCheckpointCustody {
 }
 
 impl PreparedRecoveredCheckpointCustody {
+    #[cfg(feature = "recovery-runtime-owner")]
     pub(in crate::physical_runtime) fn prepare(
         source: VerifiedRecoveredCheckpointCustody,
         resident: &mut StoreRejoinResidentLedger,
@@ -85,6 +86,10 @@ impl PreparedRecoveredCheckpointCustody {
             release_ledger,
             checkpoint_custody,
         })
+    }
+
+    pub(super) fn release_ledger_mut(&mut self) -> &mut release_capacity::ReleaseLedgerState {
+        &mut self.release_ledger
     }
 
     pub(in crate::physical_runtime) fn pending_wal_release(

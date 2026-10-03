@@ -1,17 +1,22 @@
 //! Selected V2 checkpoint-source roster is installed only after the Store's
 //! independent media walk agrees with C8's authenticated checkpoint claim.
 
+#[cfg(feature = "recovery-runtime-owner")]
 pub(super) mod encoding;
 
+#[cfg(feature = "recovery-runtime-owner")]
 use worth_store_physical_format::{
     ReleaseCheckpointAccumulatorV2, ReleaseCustodyHeadBlockReferenceV1, ReleaseCustodyHeadEntryV1,
     RELEASE_CHECKPOINT_ACCUMULATOR_V2_WIRE_BYTES,
 };
 
+use super::ReleaseCertificateCapacityDenial;
+#[cfg(feature = "recovery-runtime-owner")]
 use super::{
-    heads::SelectedReleaseHeadRoster, ReleaseCertificateCapacityDenial, ReleaseLedgerState,
-    SelectedReleaseCustodyLedger, CERTIFICATE_FRAME_OVERHEAD,
+    heads::SelectedReleaseHeadRoster, ReleaseLedgerState, SelectedReleaseCustodyLedger,
+    CERTIFICATE_FRAME_OVERHEAD,
 };
+#[cfg(feature = "recovery-runtime-owner")]
 use crate::physical_runtime::recovery_residency::StoreRejoinResidentLedger;
 use crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial;
 
@@ -36,6 +41,7 @@ impl From<PhysicalRecoveryRejoinResidentDenial> for RecoveredReleaseLedgerDenial
     }
 }
 
+#[cfg(feature = "recovery-runtime-owner")]
 impl ReleaseLedgerState {
     pub(in crate::physical_runtime::durability::publication::current_root_owner) fn from_verified_v2_source(
         accumulator_v2: ReleaseCheckpointAccumulatorV2,

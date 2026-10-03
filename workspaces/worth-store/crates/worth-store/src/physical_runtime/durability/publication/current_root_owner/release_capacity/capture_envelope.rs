@@ -55,8 +55,9 @@ impl SelectedReleaseCustodyLedger {
         &self,
         incoming: Option<ReleaseCustodyHeadKeyV1>,
         tier: bool,
+        scan: u64,
     ) -> Result<CheckpointCaptureEnvelope, Denial> {
-        let envelope = self.capture_envelope_bytes(incoming, tier)?;
+        let envelope = self.capture_envelope_bytes(incoming, tier, scan)?;
         if envelope.records as u64 > MAX_CHECKPOINT_CERTIFICATE_RECORDS
             || envelope.framed as u64 > MAX_CHECKPOINT_CERTIFICATE_BYTES
         {
@@ -67,10 +68,12 @@ impl SelectedReleaseCustodyLedger {
 
     /// The envelope's capacities without the certificate limits, so the
     /// standing reservation can also hold a not-yet-activated tier slot.
+    /// `scan` is the checkpoint pin scan's admitted bound.
     fn capture_envelope_bytes(
         &self,
         incoming: Option<ReleaseCustodyHeadKeyV1>,
         tier: bool,
+        scan: u64,
     ) -> Result<CheckpointCaptureEnvelope, Denial> {
         let batches = self.pending_drop_count() + usize::from(incoming.is_some());
         let records = batches + 1 + usize::from(tier);
@@ -137,6 +140,7 @@ impl SelectedReleaseCustodyLedger {
             })
             .and_then(|bytes| u64::try_from(bytes).ok())
             .and_then(|bytes| bytes.checked_add(SHARED_CUSTODY_BYTES))
+            .and_then(|bytes| bytes.checked_add(scan))
             .ok_or(Denial::CapacityExhausted)?;
         Ok(CheckpointCaptureEnvelope {
             batches,

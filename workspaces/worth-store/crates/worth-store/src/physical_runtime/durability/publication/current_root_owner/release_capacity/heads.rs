@@ -21,8 +21,10 @@ use super::ReleaseCertificateCapacityDenial;
 use crate::physical_runtime::durability::publication::current_root_owner::{
     PhysicalCurrentRootOwner, PhysicalReclaimAttempt,
 };
+#[cfg(any(test, feature = "recovery-runtime-owner"))]
 use crate::physical_runtime::recovery_residency::StoreRejoinResidentLedger;
 
+#[cfg(any(test, feature = "recovery-runtime-owner"))]
 use super::reopen::RecoveredReleaseLedgerDenial;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -146,6 +148,7 @@ impl SelectedReleaseHeadRoster {
 
     /// Recovery construction charges each backing before copying selected
     /// media entries into the Store-owned roster.
+    #[cfg(any(test, feature = "recovery-runtime-owner"))]
     pub(super) fn from_selected_admitted(
         root: Option<ReleaseCustodyHeadBlockReferenceV1>,
         entries: impl IntoIterator<Item = ReleaseCustodyHeadEntryV1>,
@@ -177,6 +180,7 @@ impl SelectedReleaseHeadRoster {
         Ok(roster)
     }
 
+    #[cfg(any(test, feature = "recovery-runtime-owner"))]
     pub(super) fn clone_admitted(
         &self,
         resident: &mut StoreRejoinResidentLedger,
@@ -190,6 +194,7 @@ impl SelectedReleaseHeadRoster {
     }
 
     /// Compare C8's final typed roster without a second retained Store copy.
+    #[cfg(feature = "recovery-runtime-owner")]
     pub(super) fn matches_selected(
         &self,
         root: Option<ReleaseCustodyHeadBlockReferenceV1>,
@@ -254,6 +259,7 @@ impl SelectedReleaseHeadRoster {
         Ok(())
     }
 
+    #[cfg(feature = "recovery-runtime-owner")]
     pub(super) fn apply_transition_admitted(
         &mut self,
         source_root: Option<ReleaseCustodyHeadBlockReferenceV1>,

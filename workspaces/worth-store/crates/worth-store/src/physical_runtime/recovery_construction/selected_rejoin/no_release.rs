@@ -91,6 +91,7 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
         reopen.format(),
         selected.root.generation(),
     )?;
+    let selected_wal = selected_wal.into_fingerprint();
     pause_before_final_reread();
     let mut final_read = media
         .bounded_discovery(MAX_DISCOVERY_ENTRIES, MAX_DISCOVERY_BYTES)

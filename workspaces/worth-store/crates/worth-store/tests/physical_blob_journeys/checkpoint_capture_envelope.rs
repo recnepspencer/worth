@@ -15,7 +15,7 @@ use worth_proof::{AdmittedBlobReleaseProof, TransitionOutcome};
 use worth_store::physical_runtime::production::PhysicalCheckpointStep;
 use worth_store::physical_runtime::{
     BlobCheckpointLimit, BlobIngestDeclaration, BlobReadLimits, BlobReclaimDisposition,
-    BlobReclaimLimits, BlobReclaimRequest, PhysicalCheckpointDeadline,
+    BlobReclaimLimits, BlobReclaimReceipt, BlobReclaimRequest, PhysicalCheckpointDeadline,
     PhysicalCheckpointIdempotencyKey, PhysicalCheckpointOutcome, PhysicalCheckpointRequest,
     PhysicalMutationDeadline, PhysicalOperationAllocationScope, ServingPhysicalRuntime,
 };
@@ -105,7 +105,11 @@ pub(super) fn child(root: &Path) {
     serving.close();
 }
 
-fn release_one_batch(serving: &ServingPhysicalRuntime, seed: u8, keep_pending: bool) {
+pub(super) fn release_one_batch(
+    serving: &ServingPhysicalRuntime,
+    seed: u8,
+    keep_pending: bool,
+) -> BlobReclaimReceipt {
     let scope = admitted_blob_scope("c11.blob.checkpoint.envelope.scope");
     let read_limits = BlobReadLimits::new(NonZeroU64::new(128).unwrap());
     let blobs = serving.blobs().unwrap();
@@ -160,6 +164,7 @@ fn release_one_batch(serving: &ServingPhysicalRuntime, seed: u8, keep_pending: b
         .wait()
         .unwrap();
     assert_eq!(receipt.disposition(), BlobReclaimDisposition::Dropped);
+    receipt
 }
 
 fn recovery_bytes(serving: &ServingPhysicalRuntime) -> u64 {

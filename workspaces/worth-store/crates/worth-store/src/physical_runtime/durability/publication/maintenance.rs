@@ -24,6 +24,7 @@ pub(in crate::physical_runtime) struct NamespaceDurableManifestResidueRoot {
     pub(super) namespace: PhysicalEffectIdentity,
 }
 
+#[cfg(feature = "certification-test-authority")]
 pub(in crate::physical_runtime) struct NamespaceDurableTierEpochRoot {
     pub(super) candidate: PreparedPhysicalRootCandidate,
     pub(super) transition: PhysicalRootPublicationTransition,
@@ -32,6 +33,7 @@ pub(in crate::physical_runtime) struct NamespaceDurableTierEpochRoot {
     pub(super) namespace: PhysicalEffectIdentity,
 }
 
+#[cfg(feature = "certification-test-authority")]
 pub(in crate::physical_runtime) fn publish_tier_epoch_candidate(
     candidate: PreparedPhysicalRootCandidate,
     mut transition: PhysicalRootPublicationTransition,

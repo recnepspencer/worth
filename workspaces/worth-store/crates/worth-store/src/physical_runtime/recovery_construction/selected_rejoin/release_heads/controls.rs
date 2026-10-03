@@ -80,6 +80,25 @@ impl ObservedReleaseHeadControls {
         })
     }
 
+    /// Every selected record in the witnessed closure, three per control set.
+    pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn control_records(
+        &self,
+    ) -> impl Iterator<Item = PersistedRecordIdentity> + '_ {
+        self.catalog.iter().flat_map(|triple| {
+            [
+                triple.descriptor_record(),
+                triple.reservation_record(),
+                triple.manifest_record(),
+            ]
+        })
+    }
+
+    pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn control_record_count(
+        &self,
+    ) -> Option<usize> {
+        self.catalog.len().checked_mul(3)
+    }
+
     pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn same_bytes(
         &self,
         other: &Self,
@@ -97,6 +116,15 @@ impl ObservedReleaseHeadControls {
         self,
         resident: &mut StoreRejoinResidentLedger,
     ) -> Result<SelectedControlMediaFingerprint, Denial> {
+        self.into_slices_with_resident(resident)
+            .map(SelectedControlMediaFingerprint::observed)
+    }
+
+    /// Releases the decoded catalog and keeps the resident-funded slices.
+    pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn into_slices_with_resident(
+        self,
+        resident: &mut StoreRejoinResidentLedger,
+    ) -> Result<Vec<SelectedArtifactSlice>, Denial> {
         let catalog_heap = u64::try_from(self.catalog.capacity())
             .ok()
             .and_then(|capacity| {
@@ -119,7 +147,7 @@ impl ObservedReleaseHeadControls {
         let Self { catalog, slices } = self;
         drop(catalog);
         resident.release(catalog_heap);
-        Ok(SelectedControlMediaFingerprint::observed(slices))
+        Ok(slices)
     }
 }
 

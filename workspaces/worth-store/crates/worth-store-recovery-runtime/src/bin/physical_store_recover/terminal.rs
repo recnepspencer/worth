@@ -14,7 +14,8 @@ pub(super) fn execute(
         super::arguments::BoundedProfile::PhaseTwoAdmission
         | super::arguments::BoundedProfile::C11BlobCrash
         | super::arguments::BoundedProfile::C11BlobMultilevel
-        | super::arguments::BoundedProfile::FateCoverage => Ok(match yieldpoint {
+        | super::arguments::BoundedProfile::FateCoverage
+        | super::arguments::BoundedProfile::ExtentRewrite => Ok(match yieldpoint {
             Some(yieldpoint) => {
                 WorthStoreRecovery::recover_with_process_yieldpoint(request, yieldpoint)
             }

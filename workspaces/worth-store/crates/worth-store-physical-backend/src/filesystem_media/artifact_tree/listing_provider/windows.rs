@@ -1,7 +1,6 @@
 #[cfg(feature = "recovery-runtime-owner")]
 use super::super::{
-    listing_admission::change,
-    listing_storage::{provider_iterator_storage, provider_path_construction_bytes},
+    listing_admission::change, listing_storage::provider_iterator_storage,
     ArtifactTreeAllocatedListingFailure, ArtifactTreeFailure, ArtifactTreeFailureKind,
     ArtifactTreeListingAllocationBoundary, ArtifactTreeListingAllocator,
     ArtifactTreeListingStorageChange,
@@ -53,21 +52,9 @@ pub(in crate::filesystem_media::artifact_tree) fn open_with_allocator<
     allocator: &mut A,
 ) -> Result<(DirectoryEntries, u64), ArtifactTreeAllocatedListingFailure<A::Denial>> {
     let directory = directory.into_std_file();
-    change(
-        allocator,
-        ArtifactTreeListingStorageChange::Admit {
-            boundary: ArtifactTreeListingAllocationBoundary::ProviderPath,
-            required_bytes: provider_path_construction_bytes(),
-        },
-    )?;
+    // The transient handle-path conversion lives inside the caller's admitted
+    // operation envelope; only the iterator storage it seeds is admitted here.
     let path = winx::file::get_file_path(&directory).map_err(provider_failure)?;
-    // winx's wide buffer has been disposed before this actual-capacity census.
-    change(
-        allocator,
-        ArtifactTreeListingStorageChange::Settle {
-            retained_bytes: path.capacity() as u64,
-        },
-    )?;
     require_extended_absolute_path(&path).map_err(provider_failure)?;
     let (required_bytes, retained_bytes) = provider_iterator_storage(&path).ok_or_else(|| {
         ArtifactTreeFailure::structural(ArtifactTreeFailureKind::AccessLimitExceeded)

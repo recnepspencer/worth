@@ -310,6 +310,7 @@ impl ExtentArenaAllocationOwner {
         }
     }
 
+    #[cfg(any(test, feature = "certification-test-authority"))]
     pub(super) fn begin_tier_epoch_activation(
         &mut self,
         published_next_arena: u64,
@@ -326,6 +327,7 @@ impl ExtentArenaAllocationOwner {
         Ok(published_next_arena)
     }
 
+    #[cfg(any(test, feature = "certification-test-authority"))]
     pub(super) fn complete_tier_epoch_activation(
         &mut self,
         epoch: u64,
@@ -343,6 +345,7 @@ impl ExtentArenaAllocationOwner {
         Ok(())
     }
 
+    #[cfg(any(test, feature = "certification-test-authority"))]
     pub(super) fn abort_tier_epoch_activation_before_effect(&mut self) {
         if self.tier_epoch_start.is_none() {
             self.tier_epoch_pending = false;

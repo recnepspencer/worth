@@ -12,10 +12,12 @@ pub(in crate::physical_runtime) use insertion::{
 };
 use replacements::ReplacementPath;
 mod retirement;
+#[cfg(feature = "certification-test-authority")]
+pub(in crate::physical_runtime) use retirement::retire_selected_tree;
 pub use retirement::DeferredDerivedRetirementCause;
 pub(in crate::physical_runtime) use retirement::{
-    admit_directory_retirement, inspect_selected_tree_retirement, retire_selected_tree,
-    AdmittedDirectoryRetirement, SelectedTreeRetirement,
+    admit_directory_retirement, inspect_selected_tree_retirement, AdmittedDirectoryRetirement,
+    SelectedTreeRetirement,
 };
 
 use worth_store_contracts::DurableArtifactFamilyId;

@@ -1,12 +1,17 @@
 //! Original Recovery admission binding in the single native residency owner.
 
-use crate::physical_runtime::{LifecycleGeneration, PhysicalRecoveryAllocationAdmission};
-use worth_store_buffer_pool::{PhysicalOperationAllocationScope as Scope, PhysicalResidencyDenial};
+#[cfg(any(test, feature = "recovery-runtime-owner"))]
+use crate::physical_runtime::LifecycleGeneration;
+use crate::physical_runtime::PhysicalRecoveryAllocationAdmission;
+use worth_store_buffer_pool::PhysicalOperationAllocationScope as Scope;
+#[cfg(any(test, feature = "recovery-runtime-owner"))]
+use worth_store_buffer_pool::PhysicalResidencyDenial;
 
 use super::PhysicalResidencyOwner;
 
 pub(super) enum RecoveryAllocationBinding {
     ServingPolicy(PhysicalRecoveryAllocationAdmission),
+    #[cfg(any(test, feature = "recovery-runtime-owner"))]
     RecoveryAdmission {
         admission: PhysicalRecoveryAllocationAdmission,
         origin_generation: LifecycleGeneration,
@@ -16,6 +21,7 @@ pub(super) enum RecoveryAllocationBinding {
 impl PhysicalResidencyOwner {
     /// Bind the carried original ceiling before exposing any Recovery issuer.
     /// Rebinding cannot widen it, even when the target policy permits more.
+    #[cfg(any(test, feature = "recovery-runtime-owner"))]
     pub(in crate::physical_runtime) fn restrict_recovery_allocation(
         &mut self,
         original: PhysicalRecoveryAllocationAdmission,
@@ -53,11 +59,13 @@ impl PhysicalResidencyOwner {
         &self,
     ) -> PhysicalRecoveryAllocationAdmission {
         match self.recovery_allocation {
-            RecoveryAllocationBinding::ServingPolicy(admission)
-            | RecoveryAllocationBinding::RecoveryAdmission { admission, .. } => admission,
+            RecoveryAllocationBinding::ServingPolicy(admission) => admission,
+            #[cfg(any(test, feature = "recovery-runtime-owner"))]
+            RecoveryAllocationBinding::RecoveryAdmission { admission, .. } => admission,
         }
     }
 
+    #[cfg(any(test, feature = "recovery-runtime-owner"))]
     pub(in crate::physical_runtime) const fn recovery_origin_generation(
         &self,
     ) -> Option<LifecycleGeneration> {
