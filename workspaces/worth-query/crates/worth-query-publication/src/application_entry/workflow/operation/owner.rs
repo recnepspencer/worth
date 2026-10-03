@@ -209,7 +209,9 @@ where
             <Intent::Binding as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
         >,
 {
-    let staged = operation.stage();
+    let staged = operation
+        .stage()
+        .map_err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Request)?;
     let identities = operation
         .identities()
         .map_err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Request)?;

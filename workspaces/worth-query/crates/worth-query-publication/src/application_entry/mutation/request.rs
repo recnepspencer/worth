@@ -77,6 +77,7 @@ pub struct WorthQueryApplicationMutationRequestWithIdempotency<
         Intent,
         SourcePreparation,
     >,
+    pub(super) unstaged: Option<super::staged::UnstagedMutation>,
     pub(super) key: &'key <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey,
     pub(super) workflow_transition_identity: Option<[u8; 32]>,
     /// The input, encoded once when the request bound its workflow
@@ -267,6 +268,7 @@ where
         WorthQueryApplicationMutationRequestWithIdempotency {
             request: self,
             key,
+            unstaged: Some(super::staged::UnstagedMutation),
             workflow_transition_identity: None,
             workflow_input: None,
             workflow_authority: None,

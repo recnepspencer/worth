@@ -72,6 +72,30 @@ The main owners remain separate:
 - Query owns application installation, admission, progression, and publication;
 - the host supplies adapters and resources but does not reinterpret decisions.
 
+## Preparing a program action before publication
+
+A keyed mutation request may call `prepare_in_program(&runtime)` when its
+installed candidate must wait before publication. Match
+`WorthQueryApplicationProgramMutationPreparation`: `Prepared` carries a sealed
+`WorthQueryPreparedProgramMutation`; `Settled` carries an ordinary replay,
+domain denial, cancellation, or deadline outcome without a new result.
+
+Preparation performs the same admission, source binding, idempotency check,
+tracked decision and candidate construction as `execute_in_program`. It retains
+the native read set and exact branch-selected program owner, holds no commit
+lane, applies no effects and registers no idempotency outcome. The request is
+borrowed until the handle is consumed or dropped. Its one-shot source and
+preconditions are consumed once: preparing that same request again returns
+`PreparationSpent`; build a fresh request with the same key for a real retry.
+
+Call `candidate.commit()` to compare and publish. The result is inaccessible
+before an accepted new commit. Drop discards it; stale basis, revoked authority,
+changed program, cancellation, deadline and duplicate replay never release it.
+Any intervening same-branch commit conservatively rejects the prepared basis,
+including an unrelated edit. This surface does not claim precise reuse across
+unrelated changes, detached result authority, durable queued work, or effect
+recovery. Those use their existing source, workflow, and publication owners.
+
 ## How It Executes
 
 The ordinary request path is:

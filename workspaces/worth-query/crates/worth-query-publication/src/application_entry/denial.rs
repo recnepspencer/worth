@@ -144,6 +144,8 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
     ApplicationProgramMismatch,
     RequiresWorkflowTransition,
     WorkflowAuthoritySpent,
+    /// This keyed request already consumed its one-shot preparation. Build a new request to retry.
+    PreparationSpent,
     WorkflowTransitionCurrentness,
 }
 
@@ -174,6 +176,8 @@ pub enum WorthQueryApplicationRequestMutationDenial {
     ApplicationProgramMismatch,
     RequiresWorkflowTransition,
     WorkflowAuthoritySpent,
+    /// This keyed request already consumed its one-shot preparation. Build a new request to retry.
+    PreparationSpent,
     WorkflowTransitionCurrentness(
         worth_query_execution::facade::primary_graph::WorthQueryApplicationAttemptDenial,
     ),
@@ -229,6 +233,9 @@ impl WorthQueryApplicationRequestMutationDenial {
             }
             Self::WorkflowAuthoritySpent => {
                 WorthQueryApplicationRequestMutationDenialKind::WorkflowAuthoritySpent
+            }
+            Self::PreparationSpent => {
+                WorthQueryApplicationRequestMutationDenialKind::PreparationSpent
             }
             Self::WorkflowTransitionCurrentness(_) => {
                 WorthQueryApplicationRequestMutationDenialKind::WorkflowTransitionCurrentness

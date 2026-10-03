@@ -7,6 +7,8 @@ mod outcome;
 mod performed;
 mod performed_outputs;
 mod performed_source;
+mod preparation;
+mod prepared_program;
 pub(in crate::application_entry) mod program_output_continuation;
 mod program_output_settlement;
 mod program_output_work;
@@ -43,3 +45,7 @@ pub use request::{
     WorthQueryMutationSourcePrepared,
 };
 pub use retained::WorthQueryApplicationRetainedMutationOutcome;
+
+pub use prepared_program::{
+    WorthQueryApplicationProgramMutationPreparation, WorthQueryPreparedProgramMutation,
+};

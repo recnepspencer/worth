@@ -116,7 +116,7 @@ where
         let selected = application.on_branch(self.product_branch()).select()
             .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)
             .map_err(WorthQueryWorkflowProposalPreparationDenial::RequestAdmission)?;
-        let staged = self.stage();
+        let staged = self.stage().map_err(WorthQueryWorkflowProposalPreparationDenial::RequestAdmission)?;
         let identities = self
             .identities()
             .map_err(WorthQueryWorkflowProposalPreparationDenial::RequestAdmission)?;

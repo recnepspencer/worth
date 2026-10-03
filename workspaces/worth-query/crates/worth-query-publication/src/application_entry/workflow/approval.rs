@@ -94,7 +94,7 @@ where
             .select()
             .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)
             .map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
-        let staged = self.stage();
+        let staged = self.stage().map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
         let identities = self
             .identities()
             .map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
