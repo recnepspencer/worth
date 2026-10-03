@@ -28,7 +28,6 @@ pub(in crate::physical_runtime) enum PhysicalCheckpointActionFailure {
     SubmissionStale,
     SubmissionFailed,
     PreEffect,
-    CheckpointCommandBackingUnavailable,
     DependencyBlocked,
     SchedulerCapacityUnavailable,
     BackgroundYielded,

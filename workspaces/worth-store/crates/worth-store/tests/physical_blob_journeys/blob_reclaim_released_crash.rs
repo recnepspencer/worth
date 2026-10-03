@@ -34,6 +34,8 @@ mod repeat_c8;
 mod retirement_witness;
 
 const ROLE: &str = "crash-released-first-wal";
+/// The same seam after a tier epoch is certified by the selected checkpoint.
+pub(super) const TIER_ROLE: &str = "crash-released-tier-first-wal";
 const SCOPE: &str = "c11.blob.released.redo.scope";
 const CHUNK: usize = 64 << 10;
 
@@ -127,9 +129,12 @@ fn durable_released_v3_descriptor_replays_exact_publication_drop_and_retirement(
 }
 
 pub(super) fn child(root: &Path, role: &str) {
-    assert_eq!(role, ROLE);
+    assert!(role == ROLE || role == TIER_ROLE);
     let serving = serving_from_initialization(root);
     establish_recovery_frontier(&serving);
+    if role == TIER_ROLE {
+        super::clean_reopen_custody::certify_tier_epoch(&serving);
+    }
     let scope = admitted_blob_scope(SCOPE);
     let blobs = serving.blobs().unwrap();
     let limits = BlobReadLimits::new(NonZeroU64::new(128).unwrap());

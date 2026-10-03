@@ -84,6 +84,7 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
     let mut interrupted_tail = None;
     let mut interrupted_segment = None;
     let mut semantic_failure = None;
+    let mut retained_released_drop = false;
     for identity in segments.iter().copied() {
         let artifact = artifact(&directory, identity);
         let byte_count = tree
@@ -241,7 +242,7 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
                     )?;
                     return Ok(());
                 }
-                publication_roster.observe(
+                retained_released_drop |= publication_roster.observe(
                     frame,
                     identity.segment().get(),
                     identity.generation().get(),
@@ -249,7 +250,9 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
                     binding_context,
                     byte_count,
                     active_frame_views_bytes,
-                )?;
+                )? && cutoff
+                    .lsn()
+                    .is_none_or(|lsn| frame.lsn_range().start() >= lsn);
                 super::copy_publication::observe(
                     frame.payload(),
                     frame.lsn_range(),
@@ -356,6 +359,14 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
         byte_count: total_bytes,
         peak_buffer_bytes,
         requires_inspection,
+        release_evidence: super::RetainedWalReleaseEvidence::new(
+            retained_released_drop,
+            if cutoff.lsn().is_none() && !requires_inspection {
+                super::RetainedWalHistory::FromOrigin
+            } else {
+                super::RetainedWalHistory::Suffix
+            },
+        ),
         segments: segment_inventory,
         members,
         retirement_spans,

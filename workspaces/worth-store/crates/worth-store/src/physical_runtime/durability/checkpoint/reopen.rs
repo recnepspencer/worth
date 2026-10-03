@@ -1,4 +1,5 @@
 mod binding_compaction;
+mod certificate_body;
 mod integrity_admission;
 
 pub(in crate::physical_runtime) use binding_compaction::{

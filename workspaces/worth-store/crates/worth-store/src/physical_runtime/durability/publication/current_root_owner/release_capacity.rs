@@ -4,8 +4,8 @@
 
 mod admission;
 pub(super) mod backing;
+pub(super) mod capture_envelope;
 mod charge;
-pub(super) mod checkpoint_backing;
 mod checkpoint_commit;
 mod commit;
 mod event;
@@ -176,7 +176,10 @@ pub(in crate::physical_runtime) struct SelectedReleaseCustodyLedger {
     prior_terminal: bool,
     // Declared after owned vectors: their backing dies before its grant.
     allocation_custody: Option<Arc<backing::LiveReleaseAllocation>>,
-    pub(super) checkpoint_backing: Option<Arc<checkpoint_backing::ReusableCheckpointSlot>>,
+    /// The standing checkpoint reservation: the committed checkpoint roster
+    /// plus the next capture's whole envelope. Drop admission grows it before
+    /// any effect; a capture consumes it, so checkpointing never funds fresh.
+    capture_custody: Option<Arc<backing::LiveReleaseAllocation>>,
 }
 
 impl SelectedReleaseCustodyLedger {
@@ -202,7 +205,7 @@ impl SelectedReleaseCustodyLedger {
             prior_tip: None,
             prior_terminal: false,
             allocation_custody: None,
-            checkpoint_backing: None,
+            capture_custody: None,
         }
     }
 
@@ -245,6 +248,16 @@ impl ReleaseLedgerState {
             CheckpointCustodyOrigin::FreshGenesis => {
                 Self::Selected(SelectedReleaseCustodyLedger::trusted_genesis())
             }
+            CheckpointCustodyOrigin::CleanReopen(
+                super::clean_reopen::CleanReopenCheckpointCustody::TrustedGenesis { .. },
+            ) => Self::Selected(SelectedReleaseCustodyLedger::trusted_genesis()),
+            CheckpointCustodyOrigin::CleanReopen(
+                super::clean_reopen::CleanReopenCheckpointCustody::SelectedNoRelease {
+                    marker,
+                    marker_payload_sha256,
+                    ..
+                },
+            ) => Self::from_selected_no_release(marker, marker_payload_sha256),
             CheckpointCustodyOrigin::ReopenRequiresC8 => Self::Unavailable,
         }
     }

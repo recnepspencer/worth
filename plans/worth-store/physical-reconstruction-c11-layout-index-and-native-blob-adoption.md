@@ -1187,7 +1187,11 @@ history; a future governed retained-checkpoint role would additionally require
 C.8 to validate any selected predecessor it retains. Reopen without either valid custody form remains
 unavailable, including old unmarked checkpoints. C.8 validates the selected
 certificate, root and typed route/WAL evidence, while Store independently
-rejoins the same selected media before issuing a one-shot Serving seal.
+rejoins the same selected media before issuing a one-shot Serving seal. Ordinary
+reopen whose retained WAL suffix has no released-drop member is the clean case:
+Store itself verifies the selected certificate against the loaded root and
+source and installs that custody without C.8. Any retained released-drop
+member keeps custody unavailable until the C.8 handoff.
 
 A released-drop WAL member may become durable after a selected checkpoint and
 before the next checkpoint. Its `NoRelease` marker, if present, attests only

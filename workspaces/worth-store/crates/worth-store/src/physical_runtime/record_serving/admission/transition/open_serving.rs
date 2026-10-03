@@ -5,7 +5,9 @@ use super::super::super::{
     ServingPhysicalRuntime,
 };
 use crate::physical_runtime::{
-    instance::PhysicalStoreInstanceFoundation, MediaOwnedPhysicalRuntime,
+    durability::{reopen_binding_compaction, CheckpointCustodyCandidate},
+    instance::{OpenedCheckpointCustody, PhysicalStoreInstanceFoundation},
+    MediaOwnedPhysicalRuntime,
 };
 
 pub(super) fn initialize_serving(
@@ -17,15 +19,18 @@ pub(super) fn initialize_serving(
     read_protection: crate::physical_runtime::stability::PhysicalReadProtectionOwner,
 ) -> RecordStoreInitializationOutcome {
     let frontier = RecordAllocationFrontier::new(&state.free_space);
+    let checkpoint_custody = OpenedCheckpointCustody {
+        checkpoint: reopen_binding_compaction(runtime.record_serving_media()),
+        candidate: CheckpointCustodyCandidate::FreshGenesis,
+        recovered: None,
+    };
     let (termination, media, core) = runtime.into_record_serving_parts();
     core.progress_to_record_serving();
     residency
         .ports()
         .invalidate_integrity_validation_for_runtime_transition();
     match ServingPhysicalRuntime::from_admission(PhysicalStoreInstanceFoundation {
-        recovered_checkpoint_custody: None,
-        checkpoint_custody_origin:
-            crate::physical_runtime::durability::CheckpointCustodyOrigin::FreshGenesis,
+        checkpoint_custody,
         read_protection,
         termination,
         media,
@@ -48,9 +53,7 @@ pub(super) fn open_serving(
     work_profile: crate::physical_runtime::PhysicalWorkProfileDeclaration,
     durability: crate::physical_runtime::durability::PhysicalDurabilityRuntimeOwner,
     read_protection: crate::physical_runtime::stability::PhysicalReadProtectionOwner,
-    recovered_checkpoint_custody: Option<
-        crate::physical_runtime::durability::PreparedRecoveredCheckpointCustody,
-    >,
+    checkpoint_custody: OpenedCheckpointCustody,
 ) -> RecordStoreOpenOutcome {
     let frontier = RecordAllocationFrontier::new(&state.free_space);
     let (termination, media, core) = runtime.into_record_serving_parts();
@@ -59,9 +62,7 @@ pub(super) fn open_serving(
         .ports()
         .invalidate_integrity_validation_for_runtime_transition();
     match ServingPhysicalRuntime::from_admission(PhysicalStoreInstanceFoundation {
-        recovered_checkpoint_custody,
-        checkpoint_custody_origin:
-            crate::physical_runtime::durability::CheckpointCustodyOrigin::ReopenRequiresC8,
+        checkpoint_custody,
         read_protection,
         termination,
         media,

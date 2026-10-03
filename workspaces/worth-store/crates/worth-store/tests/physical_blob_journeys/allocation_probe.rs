@@ -3,15 +3,24 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use tracking_allocator::{AllocationGroupId, AllocationRegistry, AllocationTracker, Allocator};
+use tracking_allocator::{
+    AllocationGroupId, AllocationGroupToken, AllocationRegistry, AllocationTracker, Allocator,
+};
 
 #[global_allocator]
 static ALLOCATOR: Allocator<System> = Allocator::system();
 
 static LIVE: AtomicUsize = AtomicUsize::new(0);
 static PEAK: AtomicUsize = AtomicUsize::new(0);
+/// The one scoped group (0 before any is registered) and its live bytes.
+static SCOPED_GROUP: AtomicUsize = AtomicUsize::new(0);
+static SCOPED_LIVE: AtomicUsize = AtomicUsize::new(0);
 
 struct ProcessHeapTracker;
+
+fn scoped(group: &AllocationGroupId) -> bool {
+    group.as_usize().get() == SCOPED_GROUP.load(Ordering::Acquire)
+}
 
 impl AllocationTracker for ProcessHeapTracker {
     fn allocated(
@@ -19,10 +28,13 @@ impl AllocationTracker for ProcessHeapTracker {
         _address: usize,
         _object_size: usize,
         wrapped_size: usize,
-        _group: AllocationGroupId,
+        group: AllocationGroupId,
     ) {
         let live = LIVE.fetch_add(wrapped_size, Ordering::AcqRel) + wrapped_size;
         PEAK.fetch_max(live, Ordering::AcqRel);
+        if scoped(&group) {
+            SCOPED_LIVE.fetch_add(wrapped_size, Ordering::AcqRel);
+        }
     }
 
     fn deallocated(
@@ -30,10 +42,13 @@ impl AllocationTracker for ProcessHeapTracker {
         _address: usize,
         _object_size: usize,
         wrapped_size: usize,
-        _source_group: AllocationGroupId,
+        source_group: AllocationGroupId,
         _current_group: AllocationGroupId,
     ) {
         LIVE.fetch_sub(wrapped_size, Ordering::AcqRel);
+        if scoped(&source_group) {
+            SCOPED_LIVE.fetch_sub(wrapped_size, Ordering::AcqRel);
+        }
     }
 }
 
@@ -47,4 +62,26 @@ pub(super) fn peak_live_bytes_during<T>(operation: impl FnOnce() -> T) -> (T, us
     let result = operation();
     AllocationRegistry::disable_tracking();
     (result, PEAK.load(Ordering::Acquire))
+}
+
+/// Runs `operation` with its calling thread's allocations attributed to the
+/// child's one scoped group. Other threads' allocations are never counted;
+/// scoped bytes freed anywhere are. Call inside `peak_live_bytes_during`.
+pub(super) fn attribute_allocations<T>(operation: impl FnOnce() -> T) -> T {
+    let mut token = AllocationGroupToken::register().expect("one scoped allocation group");
+    let previous = SCOPED_GROUP.swap(token.id().as_usize().get(), Ordering::AcqRel);
+    assert_eq!(
+        previous, 0,
+        "one scoped allocation group per C11 child process"
+    );
+    let guard = token.enter();
+    let result = operation();
+    // Dropping the guard exits once; this crate's `exit()` would pop twice.
+    drop(guard);
+    result
+}
+
+/// Bytes the scoped operation allocated that are still live now.
+pub(super) fn attributed_live_bytes() -> usize {
+    SCOPED_LIVE.load(Ordering::Acquire)
 }

@@ -211,17 +211,11 @@ impl PhysicalCurrentRootOwner {
             .encode_in_reserved(std::mem::take(&mut fold.scratch))
             .ok_or(CheckpointCustodyDenial::ReleaseCertificateUnavailable)?;
         let digest: [u8; 32] = Sha256::digest(&fold.scratch).into();
-        // Only after every independent join succeeds does the roster change owners.
+        // Only after every independent join succeeds does the roster change
+        // owners. It stays inside the standing reservation that funded it.
         let mut funded = fold_lease.into_workspace();
-        funded.heads.retain_fold_charge(std::sync::Arc::clone(
-            funded
-                .custody
-                .as_ref()
-                .ok_or(CheckpointCustodyDenial::ReleaseCertificateUnavailable)?,
-        ));
         let checkpoint_heads =
             std::mem::replace(&mut funded.heads, super::SelectedReleaseHeadRoster::empty());
-        // The decoded batches and scratch die now; their grant remains with the roster.
         drop(funded);
         ledger.pending_events.drain(..selected_events);
         ledger.checkpoint_heads = checkpoint_heads;

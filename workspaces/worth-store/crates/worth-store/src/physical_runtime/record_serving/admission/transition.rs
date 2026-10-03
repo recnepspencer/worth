@@ -1,6 +1,7 @@
 use worth_proof::TransitionOutcome;
 mod open_serving;
 use open_serving::{initialize_serving, open_serving};
+mod clean_custody;
 #[path = "transition/recovered_custody.rs"]
 mod recovered_custody;
 mod recovered_residency;
@@ -248,8 +249,22 @@ pub(in crate::physical_runtime) fn open(
         frame_ports.resident_integrity_counter_cells(),
     ) {
         Ok(state) => {
-            let recovered_checkpoint_custody = match recovered_custody::prepare(
+            let checkpoint = crate::physical_runtime::durability::reopen_binding_compaction(
+                runtime.record_serving_media(),
+            );
+            let candidate = clean_custody::prepare(
+                recovered_checkpoint_custody.is_some(),
+                &checkpoint,
+                &state,
+                &clean_custody::SourceRootMedia {
+                    runtime: &runtime,
+                    ports: &frame_ports,
+                    allocation: &bootstrap_allocation,
+                },
+            );
+            let recovered = match recovered_custody::prepare(
                 recovered_checkpoint_custody,
+                candidate,
                 &runtime,
                 &state,
                 &residency,
@@ -269,7 +284,11 @@ pub(in crate::physical_runtime) fn open(
                 work_profile,
                 durability,
                 read_protection,
-                recovered_checkpoint_custody,
+                crate::physical_runtime::instance::OpenedCheckpointCustody {
+                    checkpoint,
+                    candidate,
+                    recovered,
+                },
             )
         }
         Err(failure) => open_failure(runtime, failure),

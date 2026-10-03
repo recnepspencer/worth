@@ -1,6 +1,6 @@
-//! Identity-bound materialization into backing admitted before the release.
+//! Identity-bound materialization into the admitted capture envelope.
 use super::super::certificate_capacity::CheckpointCustodyDenial as Denial;
-use super::{checkpoint_backing::CheckpointPreparation, SelectedReleaseCustodyLedger};
+use super::{capture_envelope::CheckpointPreparation, SelectedReleaseCustodyLedger};
 use worth_store_physical_format::{
     release_checkpoint_batch_records_digest_v1, CheckpointCertificateKind,
     DurablePhysicalRootManifest, PhysicalCheckpointIdentity, ReleaseCheckpointAccumulatorV1,
@@ -58,10 +58,7 @@ impl SelectedReleaseCustodyLedger {
         let tip = self
             .selected_tip
             .ok_or(Denial::ReleaseCertificateUnavailable)?;
-        let fold = preparation
-            .fold
-            .as_mut()
-            .ok_or(Denial::ReleaseCertificateUnavailable)?;
+        let fold = &mut preparation.fold;
         fold.batches.clear();
         if fold.batches.capacity() < self.pending_drop_count() {
             return Err(Denial::ReleaseCertificateUnavailable);

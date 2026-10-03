@@ -1,4 +1,6 @@
-//! A completed partial drop remains checkpointable after cancellation under live pressure.
+//! A completed partial drop leaves a standing checkpoint reservation. Its
+//! checkpoint runs on that reservation even when every other Recovery byte
+//! is held, and a cancelled capture leaves the reservation whole.
 
 use super::*;
 use worth_store::physical_runtime::production::PhysicalCheckpointStep;
@@ -8,14 +10,14 @@ use worth_store::physical_runtime::{
 };
 
 #[test]
-fn partial_drop_checkpoint_cancellation_retries_under_recovery_pressure_and_reopens() {
+fn partial_drop_checkpoints_on_its_standing_reservation_and_reopens() {
     std::thread::Builder::new()
-        .name("release-prefunded-checkpoint".to_owned())
+        .name("release-checkpoint-reservation".to_owned())
         .stack_size(16 << 20)
         .spawn(run)
-        .expect("checkpoint funding worker")
+        .expect("checkpoint reservation worker")
         .join()
-        .expect("checkpoint funding worker did not panic");
+        .expect("checkpoint reservation worker did not panic");
 }
 
 fn run() {
@@ -55,11 +57,9 @@ fn run() {
     );
     assert_eq!(checkpoint_family(world.root()), selected_before_drop);
 
+    // The drop's retained custody includes the reservation for its checkpoint.
     let retained = recovery_bytes(serving);
-    assert!(
-        retained > 0,
-        "drop retains real Recovery funding before later pressure"
-    );
+    assert!(retained > 0, "drop retains real Recovery custody");
     let counters = serving.residency_observation().counters();
     let held_bytes = limit - retained - 1;
     assert!(32 << 20 > counters.active_operation_bytes() + held_bytes + (1 << 20));
@@ -72,14 +72,16 @@ fn run() {
         .expect("competing real Recovery allocation after the completed drop");
     assert_eq!(recovery_bytes(serving), limit - 1);
 
+    // Every other Recovery byte is held: the capture consumes the reservation.
     let selected_before = snapshot_family(world.root());
     let gate =
         serving.pause_physical_checkpoint_at(PhysicalCheckpointStep::CandidateSynchronization);
-    let handle = start(serving, 0x7c);
+    let handle = start(serving, 0x7b);
     assert!(
         gate.await_arrival(),
-        "ordinary funded candidate must reach file synchronization"
+        "a capture on the reservation must reach file synchronization"
     );
+    assert_eq!(recovery_bytes(serving), limit - 1, "no fresh capture bytes");
     assert!(matches!(
         handle.request_cancellation(),
         PhysicalCheckpointCancellationOutcome::Accepted { .. }
@@ -100,13 +102,16 @@ fn run() {
     assert_eq!(
         recovery_bytes(serving),
         limit - 1,
-        "cancelled capture returns funded backing, not its admission"
+        "a cancelled capture leaves the reservation whole"
     );
-    let completed = start(serving, 0x7d).wait();
+    let completed = start(serving, 0x7c).wait();
     assert!(
         matches!(completed, PhysicalCheckpointOutcome::Completed(_)),
-        "retry cannot require late Recovery admission: {completed:?}"
+        "the retry runs on the same reservation under held pressure: {completed:?}"
     );
+    // The committed roster lives inside the reservation that funded it.
+    drop(held);
+    assert_eq!(recovery_bytes(serving), retained);
 
     let checkpoint = fs::read(world.root().join("families/checkpoint.current")).unwrap();
     let (batches, accumulator) =
@@ -124,30 +129,30 @@ fn run() {
     assert_eq!(head.key().generation(), source.1);
     assert_eq!(head.cumulative_dropped(), 1);
     assert!(!head.terminal());
-    assert_eq!(
-        recovery_bytes(serving),
-        limit - 1,
-        "committed roster remains funded while the snapshot lives"
-    );
-    drop(held);
-    assert_eq!(recovery_bytes(serving), retained);
     let retained_root = world.retained_root();
     let root = retained_root.path().to_path_buf();
     drop(world);
     super::super::recover(root, super::super::Mutation::None);
 }
 
-fn start(serving: &ServingPhysicalRuntime, key: u8) -> PhysicalCheckpointHandle {
-    let request = PhysicalCheckpointRequest::fuzzy(
+fn checkpoint_request(key: u8) -> PhysicalCheckpointRequest {
+    PhysicalCheckpointRequest::fuzzy(
         PhysicalCheckpointIdempotencyKey::new([key; 32]),
         PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
-    );
-    match serving.checkpoints().start(request).into_raw() {
+    )
+}
+
+fn start(serving: &ServingPhysicalRuntime, key: u8) -> PhysicalCheckpointHandle {
+    match serving
+        .checkpoints()
+        .start(checkpoint_request(key))
+        .into_raw()
+    {
         TransitionOutcome::Success(handle) => handle,
         TransitionOutcome::Failed(failure) => {
-            panic!("prefunded checkpoint {key:#x} failed under Recovery pressure: {failure:?}")
+            panic!("checkpoint {key:#x} failed within the Recovery budget: {failure:?}")
         }
-        _ => panic!("prefunded checkpoint must admit under Recovery pressure"),
+        _ => panic!("checkpoint must admit within the Recovery budget"),
     }
 }
 

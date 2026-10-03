@@ -2,14 +2,13 @@ use worth_proof::TransitionOutcome;
 use worth_signal::facade::TemporalDuration;
 use worth_store::physical_runtime::{
     lower_physical_durability_performance_receipt, PageBasisPerformanceExpectation,
-    PhysicalCheckpointCaptureFailureKind, PhysicalCheckpointDeadline,
-    PhysicalCheckpointIdempotencyKey, PhysicalCheckpointRequest, PhysicalCheckpointStartFailure,
-    PhysicalDurabilityCloseoutOutcome, PhysicalDurabilityPerformanceContract,
-    PhysicalDurabilityPerformanceEvidenceDenial, PhysicalManifestCapacityTransition,
-    PhysicalMutationDeadline, PhysicalMutationIdempotencyMaterial,
-    PhysicalMutationPreparationSuccess, PhysicalMutationRequest, PhysicalRecordInitialization,
-    PhysicalRecordOpen, PhysicalRecoveryAttemptBindingFact, PhysicalRecoveryOperationFate,
-    RecordAppendBatch,
+    PhysicalCheckpointDeadline, PhysicalCheckpointIdempotencyKey, PhysicalCheckpointOutcome,
+    PhysicalCheckpointRequest, PhysicalDurabilityCloseoutOutcome,
+    PhysicalDurabilityPerformanceContract, PhysicalDurabilityPerformanceEvidenceDenial,
+    PhysicalManifestCapacityTransition, PhysicalMutationDeadline,
+    PhysicalMutationIdempotencyMaterial, PhysicalMutationPreparationSuccess,
+    PhysicalMutationRequest, PhysicalRecordInitialization, PhysicalRecordOpen,
+    PhysicalRecoveryAttemptBindingFact, PhysicalRecoveryOperationFate, RecordAppendBatch,
 };
 
 use super::super::durability;
@@ -111,7 +110,7 @@ fn published_and_reopened_closeout_retains_current_and_immediate_previous_roots(
 }
 
 #[test]
-fn ordinary_reopen_cannot_checkpoint_without_selected_c8_custody() {
+fn ordinary_genesis_reopen_checkpoints_under_its_own_custody() {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join("store");
     let serving = initialized(&root);
@@ -133,11 +132,15 @@ fn ordinary_reopen_cannot_checkpoint_without_selected_c8_custody() {
         PhysicalCheckpointIdempotencyKey::new([0x7b; 32]),
         PhysicalCheckpointDeadline::at(TemporalDuration::temporal_duration(10_000).unwrap()),
     );
+    // No checkpoint was ever selected and no drop was released, so the
+    // retained WAL from genesis is the whole ledger: the clean case.
+    let TransitionOutcome::Success(handle) = reopened.checkpoints().start(request).into_raw()
+    else {
+        panic!("a clean genesis reopen owns its checkpoint custody")
+    };
     assert!(matches!(
-        reopened.checkpoints().start(request).into_raw(),
-        TransitionOutcome::Failed(PhysicalCheckpointStartFailure::Capture(
-            PhysicalCheckpointCaptureFailureKind::CheckpointCustodyUnavailable
-        ))
+        handle.wait(),
+        PhysicalCheckpointOutcome::Completed(_)
     ));
     reopened.close();
 }

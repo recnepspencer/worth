@@ -7,6 +7,10 @@ mod blob_claim;
 #[cfg(feature = "certification-test-authority")]
 mod capture_pause;
 mod certificate_capacity;
+mod clean_reopen;
+pub(in crate::physical_runtime) use clean_reopen::{
+    CheckpointCustodyCandidate, CleanReopenCheckpointCustody,
+};
 mod construction;
 mod displaced;
 mod maintenance;
@@ -43,8 +47,8 @@ pub(in crate::physical_runtime) use blob_claim::{
     PhysicalBlobSessionClaim, PhysicalBlobSessionClaimDenial, PhysicalBlobTerminalAdmissionDenial,
 };
 pub(in crate::physical_runtime) use certificate_capacity::{
-    CheckpointCustodyDenial, CheckpointCustodyOrigin, FundedCheckpointBufferPreparation,
-    FundedCheckpointCommandBufferLease, FundedCheckpointFrame, SelectedCheckpointCustodySnapshot,
+    CheckpointCertificateFrame, CheckpointCustodyDenial, CheckpointCustodyOrigin,
+    SelectedCheckpointCustodySnapshot,
 };
 pub(in crate::physical_runtime) use reclaim::{
     AdmittedFailedIngestDrop, AdmittedManifestResidueRetirement, AdmittedReleasedGenerationDrop,

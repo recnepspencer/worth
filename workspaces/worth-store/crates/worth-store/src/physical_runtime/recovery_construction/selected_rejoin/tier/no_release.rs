@@ -5,9 +5,8 @@
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 use worth_store_physical_format::{
-    decode_canonical_redo_v3, decode_checkpoint_certificate, CheckpointCertificateKind,
-    PersistedPhysicalRecoveryOperation, PhysicalExtentCopyRecord, PhysicalRecordFormatDeclaration,
-    PhysicalRecoveryProjectionDecodeLimits, ReleaseCheckpointCertificateV1,
+    decode_canonical_redo_v3, PersistedPhysicalRecoveryOperation, PhysicalExtentCopyRecord,
+    PhysicalRecordFormatDeclaration, PhysicalRecoveryProjectionDecodeLimits,
 };
 use worth_store_recovery_physics::{
     admit_current_source_copy_publication, VerifiedSelectedNoReleaseCustody,
@@ -43,38 +42,17 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn verif
     allow_tier: bool,
     checkpoint: &worth_store_physical_integrity::VerifiedCheckpointStream,
 ) -> Result<(), Denial> {
-    let mut selected = None;
-    let mut tier_seen = false;
-    for frame in checkpoint.certificate_records() {
-        let (kind, payload) =
-            decode_checkpoint_certificate(frame).map_err(|_| Denial::CertificateRoster)?;
-        if kind == CheckpointCertificateKind::TierEpoch {
-            if !allow_tier || tier_seen || selected.is_some() {
-                return Err(Denial::CertificateRoster);
-            }
-            tier_seen = true;
-            continue;
-        }
-        let ReleaseCheckpointCertificateV1::NoRelease(marker) =
-            ReleaseCheckpointCertificateV1::decode(payload)
-                .map_err(|_| Denial::CertificateRoster)?
-        else {
-            return Err(Denial::CertificateRoster);
-        };
-        if selected.replace(marker).is_some()
-            || payload != marker.encode()
-            || marker.checkpoint() != no_release.checkpoint().source().identity()
-            || marker.root_generation() != no_release.checkpoint().source().root().generation()
-            || marker.root_sha256() != no_release.checkpoint_source_root_sha256()
-        {
-            return Err(Denial::CertificateRoster);
-        }
-    }
-    let Some(marker) = selected else {
-        return Err(Denial::CertificateRoster);
-    };
-    let marker_sha256: [u8; 32] = Sha256::digest(marker.encode()).into();
-    if marker != no_release.marker() || marker_sha256 != no_release.marker_payload_sha256() {
+    let selected = crate::physical_runtime::durability::select_no_release_marker(
+        checkpoint.certificate_records().iter().map(AsRef::as_ref),
+        no_release.checkpoint().source().identity(),
+        no_release.checkpoint().source().root().generation(),
+        no_release.checkpoint_source_root_sha256(),
+        allow_tier,
+    )
+    .ok_or(Denial::CertificateRoster)?;
+    if selected.marker() != no_release.marker()
+        || selected.marker_payload_sha256() != no_release.marker_payload_sha256()
+    {
         return Err(Denial::CertificateRoster);
     }
     Ok(())

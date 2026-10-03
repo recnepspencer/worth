@@ -11,8 +11,10 @@ mod work_lifecycle;
 mod work_runtime;
 
 pub(in crate::physical_runtime) use construction::PhysicalStoreInstanceFoundation;
-pub(in crate::physical_runtime) use durability_bootstrap::reopen_durability_basis;
 pub use durability_bootstrap::PhysicalDurabilityStateReopenFailure;
+pub(in crate::physical_runtime) use durability_bootstrap::{
+    reopen_durability_basis, OpenedCheckpointCustody,
+};
 pub(in crate::physical_runtime) use executor::PhysicalWorkExecutor;
 #[cfg(feature = "certification-test-authority")]
 pub use executor::{

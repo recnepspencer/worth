@@ -20,10 +20,7 @@ use super::{
 };
 
 pub(in crate::physical_runtime) struct PhysicalStoreInstanceFoundation {
-    pub(in crate::physical_runtime) recovered_checkpoint_custody:
-        Option<crate::physical_runtime::durability::PreparedRecoveredCheckpointCustody>,
-    pub(in crate::physical_runtime) checkpoint_custody_origin:
-        crate::physical_runtime::durability::CheckpointCustodyOrigin,
+    pub(in crate::physical_runtime) checkpoint_custody: super::OpenedCheckpointCustody,
     pub(in crate::physical_runtime) termination:
         crate::physical_runtime::lifecycle::LifecycleTerminationGuard,
     pub(in crate::physical_runtime) read_protection:
@@ -54,8 +51,7 @@ impl PhysicalStoreInstanceParts {
         foundation: PhysicalStoreInstanceFoundation,
     ) -> Result<Self, PhysicalStoreInstanceConstructionFailure> {
         let PhysicalStoreInstanceFoundation {
-            recovered_checkpoint_custody,
-            checkpoint_custody_origin,
+            checkpoint_custody,
             termination,
             read_protection,
             media,
@@ -120,9 +116,7 @@ impl PhysicalStoreInstanceParts {
             &durability,
             bootstrap.format.declaration(),
             &reopen_grant,
-            recovered_checkpoint_custody
-                .as_ref()
-                .and_then(|custody| custody.pending_wal_release()),
+            &checkpoint_custody,
         ) {
             Ok(reopened) => reopened,
             Err(failure) => {
@@ -171,6 +165,7 @@ impl PhysicalStoreInstanceParts {
         // Keep this grant through publication-retention prevalidation, then
         // release it before ordinary serving installs operation grants.
         drop(reopen_grant);
+        let checkpoint_custody_origin = durability_reopen.checkpoint_custody_origin();
         let reopened = durability_reopen.install(durability);
         prepared_work.admit_publication_residue(
             retirement_residue::PublicationResidueAdmission::classify(&bootstrap, &reopened),
@@ -183,7 +178,7 @@ impl PhysicalStoreInstanceParts {
         let record_serving = PhysicalRecordServingAssembly::new(
             bootstrap,
             checkpoint_custody_origin,
-            recovered_checkpoint_custody,
+            checkpoint_custody.recovered,
             allocation_frontier,
             frame_ports,
             selected_recovery_allocation,

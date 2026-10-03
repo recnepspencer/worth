@@ -20,8 +20,8 @@ pub(in crate::physical_runtime) use maintenance::{
 
 pub(in crate::physical_runtime) use current_root_owner::{
     AdmittedFailedIngestDrop, AdmittedManifestResidueRetirement, AdmittedReleasedGenerationDrop,
-    CheckpointCustodyDenial, CheckpointCustodyOrigin, FundedCheckpointBufferPreparation,
-    FundedCheckpointCommandBufferLease, FundedCheckpointFrame, ManifestResidueDisplacement,
+    CheckpointCertificateFrame, CheckpointCustodyCandidate, CheckpointCustodyDenial,
+    CheckpointCustodyOrigin, CleanReopenCheckpointCustody, ManifestResidueDisplacement,
     ManifestResidueProof, PhysicalBlobReclaimAdmissionDenial, PhysicalBlobSessionClaim,
     PhysicalBlobSessionClaimDenial, PhysicalBlobTerminalAdmissionDenial, PhysicalCurrentRootOwner,
     PhysicalReclaimAttempt, PhysicalReconciledReclaimDescriptorFate,

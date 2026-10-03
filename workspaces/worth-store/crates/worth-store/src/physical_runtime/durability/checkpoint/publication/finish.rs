@@ -10,7 +10,7 @@ use crate::physical_runtime::work::{
 
 impl CreatedCheckpointCandidate {
     pub(in crate::physical_runtime) fn finish(
-        mut self,
+        self,
         binding_compaction: &crate::physical_runtime::durability::PhysicalMutationBindingCompactionCutover<'_>,
     ) -> Result<
         CapturedCheckpointCandidate,
@@ -21,39 +21,17 @@ impl CreatedCheckpointCandidate {
             binding_compaction.wal_cutoff_lsn_exclusive(),
         )
         .expect("a prospective compaction has a nonzero generation and WAL cutoff");
-        let (mut encoder, record) = match super::command_encoding::begin_bindings(
-            self.encoder,
-            header,
-            self.command_buffer.as_mut(),
-        ) {
-            Ok(prepared) => prepared,
-            Err(failure) => {
-                return Err((
-                    CheckpointCandidateCleanup::from_capture(
-                        self.basis,
-                        self.work,
-                        self.custody,
-                        self.command_buffer,
-                    ),
-                    failure,
-                ))
-            }
-        };
+        let (mut encoder, record) = self.encoder.begin_binding_compaction(header);
         let byte_count = record.len() as u64;
         let mut offset = self.offset;
         if let Err(failure) = self.work.execute(
             self.basis.identity(),
             PhysicalCheckpointWorkAction::AppendCandidate { offset, byte_count },
-            Some(record),
+            Some(record.into_boxed_slice().into()),
             0,
         ) {
             return Err((
-                CheckpointCandidateCleanup::from_capture(
-                    self.basis,
-                    self.work,
-                    self.custody,
-                    self.command_buffer,
-                ),
+                CheckpointCandidateCleanup::from_capture(self.basis, self.work, self.custody),
                 failure,
             ));
         }
@@ -64,16 +42,14 @@ impl CreatedCheckpointCandidate {
             .checked_add(byte_count)
             .expect("checkpoint artifact bounds fit u64");
         let stream_result = binding_compaction.for_each_record(|binding| {
-            let record = super::command_encoding::binding(
-                &mut encoder,
-                binding,
-                self.command_buffer.as_mut(),
-            )?;
+            let record = encoder
+                .encode_binding_record(binding)
+                .map_err(|_| PhysicalCheckpointActionFailure::PreEffect)?;
             let byte_count = record.len() as u64;
             self.work.execute(
                 self.basis.identity(),
                 PhysicalCheckpointWorkAction::AppendCandidate { offset, byte_count },
-                Some(record),
+                Some(record.into_boxed_slice().into()),
                 0,
             )?;
             self.work.pause_after(
@@ -86,12 +62,7 @@ impl CreatedCheckpointCandidate {
         });
         if let Err(failure) = stream_result {
             return Err((
-                CheckpointCandidateCleanup::from_capture(
-                    self.basis,
-                    self.work,
-                    self.custody,
-                    self.command_buffer,
-                ),
+                CheckpointCandidateCleanup::from_capture(self.basis, self.work, self.custody),
                 failure,
             ));
         }
@@ -114,7 +85,6 @@ impl CreatedCheckpointCandidate {
                                 self.basis,
                                 self.work,
                                 self.custody,
-                                self.command_buffer,
                             ),
                             PhysicalCheckpointActionFailure::PreEffect,
                         ));
@@ -132,7 +102,6 @@ impl CreatedCheckpointCandidate {
                             self.basis,
                             self.work,
                             self.custody,
-                            self.command_buffer,
                         ),
                         failure,
                     ));
@@ -145,41 +114,21 @@ impl CreatedCheckpointCandidate {
                     .expect("checkpoint certificate bounds fit u64");
             }
         }
-        let (footer, record) =
-            match super::command_encoding::footer(encoder, self.command_buffer.as_mut()) {
-                Ok(prepared) => prepared,
-                Err(failure) => {
-                    return Err((
-                        CheckpointCandidateCleanup::from_capture(
-                            self.basis,
-                            self.work,
-                            self.custody,
-                            self.command_buffer,
-                        ),
-                        failure,
-                    ))
-                }
-            };
+        let (footer, record) = encoder.finish();
         let byte_count = record.len() as u64;
         if let Err(failure) = self.work.execute(
             self.basis.identity(),
             PhysicalCheckpointWorkAction::AppendCandidate { offset, byte_count },
-            Some(record),
+            Some(record.into_boxed_slice().into()),
             0,
         ) {
             return Err((
-                CheckpointCandidateCleanup::from_capture(
-                    self.basis,
-                    self.work,
-                    self.custody,
-                    self.command_buffer,
-                ),
+                CheckpointCandidateCleanup::from_capture(self.basis, self.work, self.custody),
                 failure,
             ));
         }
         self.work
             .pause_after(super::super::yieldpoint::PhysicalCheckpointStep::CandidateFooter);
-        drop(self.command_buffer);
         Ok(CapturedCheckpointCandidate {
             basis: self.basis,
             footer,

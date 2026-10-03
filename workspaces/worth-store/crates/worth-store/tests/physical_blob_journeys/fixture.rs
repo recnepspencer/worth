@@ -18,9 +18,10 @@ use worth_store::physical_runtime::{
     FilesystemMediaAdmission, GroupCommitDelay, GroupCommitLimit, IdempotencyRetentionGenerations,
     LiveIdempotencyBindingLimit, ManifestEntryCapacity, MediaOwnedPhysicalRuntime,
     PendingUnresolvedMutationLimit, PhysicalCheckpointPolicy, PhysicalDurabilityDeclaration,
-    PhysicalIdempotencyPolicy, PhysicalRecordAccessPolicy, PhysicalRecordFormatDeclaration,
-    PhysicalRecordInitialization, PhysicalRecordOpen, PhysicalRecordPlacementPolicy,
-    PhysicalRuntimeAdmission, PhysicalStore, PhysicalWalPolicy, RecordBootstrapDenial,
+    PhysicalDurabilityStateReopenFailure, PhysicalIdempotencyPolicy, PhysicalRecordAccessPolicy,
+    PhysicalRecordFormatDeclaration, PhysicalRecordInitialization, PhysicalRecordOpen,
+    PhysicalRecordPlacementPolicy, PhysicalRuntimeAdmission, PhysicalSignalConstructionFailure,
+    PhysicalStore, PhysicalWalPolicy, RecordBootstrapDenial, RecordBootstrapFailure,
     RecordServingAdmissionOutcome, RecordStoreInitializationDenial, RecordStoreOpenDenial,
     RetainedWalTailLimit, ServingPhysicalRuntime, WalSegmentByteLimit, WalSegmentInventoryLimit,
 };
@@ -134,6 +135,32 @@ pub(super) fn assert_released_open_requires_recovered_custody(
         RecordBootstrapDenial::RecoveredCheckpointCustodyMismatch
     );
     denial.into_runtime().close();
+}
+
+/// A tier-anchored root whose retained WAL refuses its verified tier custody
+/// fails ordinary durability reopen before Serving: only C8 may hand it off.
+pub(super) fn assert_anchored_open_requires_recovered_custody(root: &Path) {
+    let (format, _, access) = configuration();
+    let media = media(root);
+    let durability = durability(&media);
+    let TransitionOutcome::Failed(inspection) = media
+        .open_record_store(PhysicalRecordOpen::new(format, access, durability))
+        .into_raw()
+    else {
+        panic!("an anchored root without admissible clean custody must not serve")
+    };
+    let cause = inspection.cause();
+    assert!(
+        matches!(
+            cause,
+            RecordBootstrapFailure::SignalConstruction(
+                PhysicalSignalConstructionFailure::DurabilityStateReopenRejected(
+                    PhysicalDurabilityStateReopenFailure::RecoveredCheckpointCustodyRequired
+                )
+            )
+        ),
+        "unexpected reopen cause: {cause:?}"
+    );
 }
 
 pub(super) fn serving_from_open_with_retained_wal_tail(

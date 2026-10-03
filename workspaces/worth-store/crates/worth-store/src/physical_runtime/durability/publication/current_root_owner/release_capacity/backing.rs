@@ -21,10 +21,11 @@ const PENDING_CONTROL_BYTES: u64 =
     std::mem::size_of::<super::super::certificate_capacity::CheckpointCustodyState>() as u64;
 
 impl SelectedReleaseCustodyLedger {
+    /// The committed checkpoint roster is not here: the standing checkpoint
+    /// reservation holds it, so its bytes are charged exactly once.
     pub(super) fn publication_backing_bytes(&self) -> Option<u64> {
-        self.checkpoint_heads
+        self.effective_heads
             .owned_heap_bytes()?
-            .checked_add(self.effective_heads.owned_heap_bytes()?)?
             .checked_add(vector_heap_bytes(&self.pending_events)?)
     }
 
@@ -56,7 +57,25 @@ impl SelectedReleaseCustodyLedger {
         owner.fund(&mut self.allocation_custody, ceiling, required)
     }
 
-    pub(super) fn prepare_publication_backing(
+    /// One drop's admission: the publication backing, then the standing
+    /// checkpoint reservation grown to the envelope that holds this drop's
+    /// Batch. Either denial happens before any effect, so a drop is never
+    /// admitted unless its checkpoint is already funded.
+    pub(super) fn admit_drop_backing(
+        &mut self,
+        owner: &ReleasePublicationAllocationOwner,
+        ceiling: PhysicalRecoveryAllocationAdmission,
+        closure_bytes: u64,
+        fence_bytes: u64,
+        key: ReleaseCustodyHeadKeyV1,
+    ) -> Result<FundedRootFrame, Denial> {
+        let root_frame =
+            self.prepare_publication_backing(owner, ceiling, closure_bytes, fence_bytes, key)?;
+        self.reserve_capture_custody(owner, ceiling, Some(key))?;
+        Ok(root_frame)
+    }
+
+    fn prepare_publication_backing(
         &mut self,
         owner: &ReleasePublicationAllocationOwner,
         ceiling: PhysicalRecoveryAllocationAdmission,

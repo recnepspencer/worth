@@ -6,20 +6,13 @@ use worth_store_physical_format::{
 
 use super::capture::PhysicalCheckpointCaptureBasis;
 use super::{PhysicalCheckpointActionFailure, PhysicalCheckpointWorkPort};
-use crate::physical_runtime::durability::{
-    FundedCheckpointCommandBufferLease, SelectedCheckpointCustodySnapshot,
-};
+use crate::physical_runtime::durability::SelectedCheckpointCustodySnapshot;
 use crate::physical_runtime::work::{
-    CompletedPhysicalCheckpointAction, PhysicalCheckpointCommandPayload,
-    PhysicalCheckpointWorkAction,
+    CompletedPhysicalCheckpointAction, PhysicalCheckpointWorkAction,
 };
 
-#[path = "publication/command_encoding.rs"]
-mod command_encoding;
 #[path = "publication/finish.rs"]
 mod finish;
-#[path = "publication/header.rs"]
-mod header;
 
 pub(in crate::physical_runtime) struct CreatedCheckpointCandidate {
     basis: PhysicalCheckpointCaptureBasis,
@@ -27,7 +20,6 @@ pub(in crate::physical_runtime) struct CreatedCheckpointCandidate {
     offset: u64,
     dirty_records: u64,
     custody: Option<SelectedCheckpointCustodySnapshot>,
-    command_buffer: Option<FundedCheckpointCommandBufferLease>,
     work: PhysicalCheckpointWorkPort,
 }
 
@@ -47,7 +39,6 @@ pub(in crate::physical_runtime) struct CheckpointCandidateCleanup {
     basis: PhysicalCheckpointCaptureBasis,
     work: PhysicalCheckpointWorkPort,
     _custody: Option<SelectedCheckpointCustodySnapshot>,
-    _command_buffer: Option<FundedCheckpointCommandBufferLease>,
 }
 
 pub(in crate::physical_runtime) struct NamespaceDurableCheckpointPublication {
@@ -99,32 +90,30 @@ impl CreatedCheckpointCandidate {
                 PhysicalCheckpointActionFailure::PreEffect,
             ));
         }
-        let prepared = header::prepare(basis, custody.as_ref())
-            .map_err(|cause| (CheckpointCandidateCleanup::new(basis, work.clone()), cause))?;
-        let byte_count = prepared.payload.len() as u64;
+        // The capture envelope already covers this and every later command.
+        let (encoder, header) = if custody.is_some() {
+            CheckpointStreamEncoder::begin_certified(basis.source())
+        } else {
+            CheckpointStreamEncoder::begin(basis.source())
+        };
+        let byte_count = header.len() as u64;
         if let Err(failure) = work.execute(
             basis.identity(),
             PhysicalCheckpointWorkAction::CreateCandidate { byte_count },
-            Some(prepared.payload),
+            Some(header.into_boxed_slice().into()),
             0,
         ) {
             return Err((
-                CheckpointCandidateCleanup::from_capture(
-                    basis,
-                    work,
-                    custody,
-                    prepared.command_buffer,
-                ),
+                CheckpointCandidateCleanup::from_capture(basis, work, custody),
                 failure,
             ));
         }
         Ok(Self {
             basis,
-            encoder: prepared.encoder,
+            encoder,
             offset: byte_count,
             dirty_records: 0,
             custody,
-            command_buffer: prepared.command_buffer,
             work,
         })
     }
@@ -133,31 +122,15 @@ impl CreatedCheckpointCandidate {
         &mut self,
         basis: CheckpointDirtyFrameBasis,
     ) -> Result<(), PhysicalCheckpointActionFailure> {
-        let payload = if let Some(lease) = self.command_buffer.as_mut() {
-            let buffer = lease.buffer_mut();
-            let bytes = buffer
-                .bytes_mut()
-                .ok_or(PhysicalCheckpointActionFailure::CheckpointCommandBackingUnavailable)?;
-            self.encoder
-                .encode_dirty_basis_in_reserved(basis, bytes)
-                .map_err(|_| {
-                    PhysicalCheckpointActionFailure::CheckpointCommandBackingUnavailable
-                })?;
-            PhysicalCheckpointCommandPayload::Command(buffer.frame())
-        } else {
-            self.encoder
-                .encode_dirty_basis(basis)
-                .into_boxed_slice()
-                .into()
-        };
-        let byte_count = payload.len() as u64;
+        let record = self.encoder.encode_dirty_basis(basis);
+        let byte_count = record.len() as u64;
         self.work.execute(
             self.basis.identity(),
             PhysicalCheckpointWorkAction::AppendCandidate {
                 offset: self.offset,
                 byte_count,
             },
-            Some(payload),
+            Some(record.into_boxed_slice().into()),
             0,
         )?;
         self.work
@@ -176,13 +149,7 @@ impl CreatedCheckpointCandidate {
     pub(in crate::physical_runtime) fn remove(
         self,
     ) -> Result<CompletedPhysicalCheckpointAction, PhysicalCheckpointActionFailure> {
-        CheckpointCandidateCleanup::from_capture(
-            self.basis,
-            self.work,
-            self.custody,
-            self.command_buffer,
-        )
-        .remove()
+        CheckpointCandidateCleanup::from_capture(self.basis, self.work, self.custody).remove()
     }
 }
 
@@ -204,7 +171,7 @@ impl CapturedCheckpointCandidate {
             0,
         ) {
             return Err((
-                CheckpointCandidateCleanup::from_capture(self.basis, self.work, self.custody, None),
+                CheckpointCandidateCleanup::from_capture(self.basis, self.work, self.custody),
                 failure,
             ));
         }
@@ -214,7 +181,7 @@ impl CapturedCheckpointCandidate {
     pub(in crate::physical_runtime) fn remove(
         self,
     ) -> Result<CompletedPhysicalCheckpointAction, PhysicalCheckpointActionFailure> {
-        CheckpointCandidateCleanup::from_capture(self.basis, self.work, self.custody, None).remove()
+        CheckpointCandidateCleanup::from_capture(self.basis, self.work, self.custody).remove()
     }
 }
 
@@ -240,8 +207,7 @@ impl DurableCheckpointCandidate {
     pub(in crate::physical_runtime) fn remove(
         self,
     ) -> Result<CompletedPhysicalCheckpointAction, PhysicalCheckpointActionFailure> {
-        CheckpointCandidateCleanup::from_capture(self.0.basis, self.0.work, self.0.custody, None)
-            .remove()
+        CheckpointCandidateCleanup::from_capture(self.0.basis, self.0.work, self.0.custody).remove()
     }
 }
 
@@ -251,7 +217,6 @@ impl CheckpointCandidateCleanup {
             basis,
             work,
             _custody: None,
-            _command_buffer: None,
         }
     }
 
@@ -259,13 +224,11 @@ impl CheckpointCandidateCleanup {
         basis: PhysicalCheckpointCaptureBasis,
         work: PhysicalCheckpointWorkPort,
         custody: Option<SelectedCheckpointCustodySnapshot>,
-        command_buffer: Option<FundedCheckpointCommandBufferLease>,
     ) -> Self {
         Self {
             basis,
             work,
             _custody: custody,
-            _command_buffer: command_buffer,
         }
     }
 
@@ -344,10 +307,13 @@ impl NamespaceDurableCheckpointPublication {
         &self.binding_compaction
     }
 
+    /// The committed custody snapshot is done: the retained publication never
+    /// keeps its capture envelope beyond the committed roster's share.
     pub(in crate::physical_runtime) fn with_wal_reclamation(
-        self,
+        mut self,
         wal_reclamation: crate::physical_runtime::PhysicalWalReclamationObservation,
     ) -> PhysicalCheckpointPublication {
+        drop(self.custody.take());
         PhysicalCheckpointPublication {
             namespace: self,
             wal_reclamation,

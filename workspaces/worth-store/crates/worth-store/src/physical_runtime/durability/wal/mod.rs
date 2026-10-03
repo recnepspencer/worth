@@ -19,8 +19,11 @@ pub use canonical_redo::{CanonicalRedoRecords, RedoRecord};
 pub(in crate::physical_runtime::durability) use checkpoint_cutover::PhysicalWalCheckpointCutover;
 pub(in crate::physical_runtime) use group_reservation::ReservedPhysicalWalGroupMembers;
 pub use inventory::PhysicalWalOpenFailure;
+#[cfg(test)]
+pub(in crate::physical_runtime) use inventory::RetainedWalHistory;
 pub(in crate::physical_runtime) use inventory::{
     reopen_wal_inventory, PhysicalWalBindingReopenCutoff, ReopenedWalPublicationGroup,
+    RetainedWalReleaseEvidence,
 };
 pub use member_basis::{PhysicalWalMemberBasis, PhysicalWalMemberIdentity};
 pub use observation::PhysicalWalObservation;

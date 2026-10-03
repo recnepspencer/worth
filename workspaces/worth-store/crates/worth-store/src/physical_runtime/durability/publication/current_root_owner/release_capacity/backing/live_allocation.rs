@@ -118,6 +118,18 @@ impl ReleasePublicationAllocationOwner {
     }
 }
 
+impl LiveReleaseAllocation {
+    #[cfg(test)]
+    pub(in crate::physical_runtime::durability::publication::current_root_owner) fn bytes(
+        &self,
+    ) -> u64 {
+        self.grant
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .bytes()
+    }
+}
+
 /// Shared object and the Arc strong/weak control words are funded before Arc::new.
 pub(in crate::physical_runtime::durability::publication::current_root_owner) const SHARED_CUSTODY_BYTES: u64 =
     (std::mem::size_of::<LiveReleaseAllocation>() + 2 * std::mem::size_of::<usize>()) as u64;

@@ -14,7 +14,9 @@ use super::super::{
 };
 use super::{contracts::BlobTerminalLimits, BlobTerminalFailure};
 
-const CONTROL_SCAN_BYTES: usize = 256;
+/// Covers every frame whose fields can decide the abort's fate; the largest
+/// is a V2 chunk-reuse claim (48-byte header, 436-byte payload).
+const CONTROL_SCAN_BYTES: usize = 512;
 const BLOB_MAGIC: &[u8; 8] = b"WRC11BLB";
 
 pub(super) struct SelectedTerminalState {
@@ -188,8 +190,11 @@ fn inspect_control(
     Ok(())
 }
 
-/// Large selected chunk/node frames are not rehashed merely to abort. A
-/// deferred control frame cannot be silently mistaken for unrelated data.
+/// Large selected frames are not rehashed merely to abort. Only kinds that
+/// `inspect_control` ignores may exceed the control scan: chunk (2), tree
+/// node (3), drop-set manifests (7, 9, 13), reclaim descriptors (8, 14, 16),
+/// original-drop reservation (10) and dedupe quarantine (12). A deferred
+/// frame of any other kind cannot be silently mistaken for unrelated data.
 fn inspect_deferred(
     reader: &PhysicalRecordReader,
     record: PersistedRecordIdentity,
@@ -216,7 +221,7 @@ fn inspect_deferred(
         }
         used += count;
     }
-    if &prefix[..8] == BLOB_MAGIC && !matches!(prefix[8], 2 | 3 | 7) {
+    if &prefix[..8] == BLOB_MAGIC && !matches!(prefix[8], 2 | 3 | 7..=10 | 12..=14 | 16) {
         return Err(BlobTerminalFailure::Format(BlobRecordDenial::FrameTooLarge));
     }
     Ok(())

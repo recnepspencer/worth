@@ -3,7 +3,8 @@
 
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
-    decode_canonical_redo_v3, PersistedPhysicalRecoveryProjection, PhysicalRecordFormatDeclaration,
+    decode_canonical_redo_v3, PersistedPhysicalRecoveryOperation,
+    PersistedPhysicalRecoveryProjection, PhysicalRecordFormatDeclaration,
     PhysicalRecoveryProjectionDecodeLimits, PhysicalRewriteRedo, CANONICAL_REDO_V3_DOMAIN,
     REWRITE_REDO_DOMAIN,
 };
@@ -105,6 +106,8 @@ impl PublicationRoster {
             .ok_or(PhysicalWalOpenFailure::CounterOverflow)
     }
 
+    /// Retains one publication member and returns whether it is a released
+    /// drop.
     pub(super) fn observe(
         &mut self,
         frame: VerifiedWalFramePayload<'_>,
@@ -114,7 +117,7 @@ impl PublicationRoster {
         context: PhysicalBindingDecodingContext,
         active_segment_bytes: u64,
         active_frame_views_bytes: u64,
-    ) -> Result<(), PhysicalWalOpenFailure> {
+    ) -> Result<bool, PhysicalWalOpenFailure> {
         let mut payload = frame.payload();
         let binding_bytes = field(&mut payload)?;
         let redo = field(&mut payload)?;
@@ -144,7 +147,8 @@ impl PublicationRoster {
                 required,
             },
         )?;
-        let metadata = decode_metadata(redo, frame.lsn_range(), format, available)?;
+        let (metadata, released_drop) =
+            decode_metadata(redo, frame.lsn_range(), format, available)?;
         let group = binding.group();
         let mutation = binding.mutation();
         self.members
@@ -166,7 +170,7 @@ impl PublicationRoster {
             member_identity: binding.member().member_identity().bytes(),
             idempotency_identity: binding.idempotency_identity().bytes(),
         });
-        Ok(())
+        Ok(released_drop)
     }
 
     pub(super) fn finish(

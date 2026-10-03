@@ -106,7 +106,7 @@ fn damaged_dirty_basis_remains_selectively_skipped_during_ordinary_reopen() {
     assert_eq!(observation.binding_records_read(), expected.binding_records);
     assert_eq!(
         observation.checkpoint_integrity_admissions(),
-        expected.binding_records + 3
+        expected.binding_records + expected.certificate_records + 3
     );
     reopened.close();
 }
@@ -114,7 +114,7 @@ fn damaged_dirty_basis_remains_selectively_skipped_during_ordinary_reopen() {
 fn inject_dirty_basis(root: &std::path::Path) {
     const HEADER_BYTES: usize = 164;
     const DIRTY_BYTES: usize = 68;
-    const FOOTER_BYTES: usize = 156;
+    const FOOTER_BYTES: usize = 204;
     let mut dirty = vec![0_u8; DIRTY_BYTES];
     dirty[..8].copy_from_slice(b"WCP7REC\0");
     dirty[8] = 1;

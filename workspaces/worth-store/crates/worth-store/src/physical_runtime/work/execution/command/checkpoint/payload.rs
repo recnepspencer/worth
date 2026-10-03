@@ -1,11 +1,11 @@
-//! Checkpoint bytes retain their admitted storage through command and retry ownership.
+//! Checkpoint bytes: owned command records, or sealed certificate frames that
+//! keep their capture envelope alive through command and retry ownership.
 
-use crate::physical_runtime::durability::{FundedCheckpointCommandFrame, FundedCheckpointFrame};
+use crate::physical_runtime::durability::CheckpointCertificateFrame;
 
 pub(in crate::physical_runtime) enum PhysicalCheckpointCommandPayload {
     Owned(Box<[u8]>),
-    Certificate(FundedCheckpointFrame),
-    Command(FundedCheckpointCommandFrame),
+    Certificate(CheckpointCertificateFrame),
 }
 
 impl std::ops::Deref for PhysicalCheckpointCommandPayload {
@@ -15,7 +15,6 @@ impl std::ops::Deref for PhysicalCheckpointCommandPayload {
         match self {
             Self::Owned(bytes) => bytes,
             Self::Certificate(frame) => frame.bytes(),
-            Self::Command(frame) => frame.bytes(),
         }
     }
 }

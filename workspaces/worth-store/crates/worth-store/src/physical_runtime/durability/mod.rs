@@ -53,8 +53,8 @@ pub(in crate::physical_runtime) use admission::{
     ReopenedPhysicalDurabilityRuntimeOwner,
 };
 pub(in crate::physical_runtime) use checkpoint::{
-    reopen_binding_compaction, CompletedDurableCheckpointWitness, FundedCheckpointCommandBuffer,
-    FundedCheckpointCommandFrame, NamespaceDurableCheckpointPublication,
+    reopen_binding_compaction, select_no_release_marker, CompletedDurableCheckpointWitness,
+    NamespaceDurableCheckpointPublication, NamespaceDurablePhysicalBindingCompactionReopen,
     PhysicalCheckpointCaptureFoundation, PhysicalCheckpointRuntimeOwner,
     PhysicalCheckpointWorkPort, ReopenedPhysicalBindingCompaction,
 };
@@ -185,9 +185,9 @@ pub(in crate::physical_runtime) use observation::{
 pub(in crate::physical_runtime) use publication::{
     publish_manifest_residue_candidate, publish_retirement_candidate, publish_tier_epoch_candidate,
     replace_root_candidate, synchronize_root_namespace, AdmittedFailedIngestDrop,
-    AdmittedManifestResidueRetirement, AdmittedReleasedGenerationDrop, CheckpointCustodyDenial,
-    CheckpointCustodyOrigin, FundedCheckpointBufferPreparation, FundedCheckpointCommandBufferLease,
-    FundedCheckpointFrame, ManifestResidueDisplacement, ManifestResidueProof,
+    AdmittedManifestResidueRetirement, AdmittedReleasedGenerationDrop, CheckpointCertificateFrame,
+    CheckpointCustodyCandidate, CheckpointCustodyDenial, CheckpointCustodyOrigin,
+    CleanReopenCheckpointCustody, ManifestResidueDisplacement, ManifestResidueProof,
     NamespaceDurableManifestResidueRoot, NamespaceDurableRetirementRoot,
     NamespaceDurableTierEpochRoot, PhysicalBlobReclaimAdmissionDenial, PhysicalBlobSessionClaim,
     PhysicalBlobSessionClaimDenial, PhysicalBlobTerminalAdmissionDenial, PhysicalCurrentRootOwner,
@@ -222,11 +222,13 @@ pub use settlement::{
     PhysicalMutationProvenNoEffectCause, PhysicalMutationRootPreparationFailure,
     PhysicalRootPreparationEffectPosture, ProvenNoEffectPhysicalMutation,
 };
+#[cfg(test)]
+pub(in crate::physical_runtime) use wal::RetainedWalHistory;
 pub(in crate::physical_runtime) use wal::{
     reopen_wal_inventory, CompletionBoundPhysicalWalAppendSettlement, PhysicalWalAppendPort,
     PhysicalWalBindingReopenCutoff, PhysicalWalReclamationFoundation, PhysicalWalReclamationOwner,
     PhysicalWalRuntimeOwner, ReopenedWalPublicationGroup, ReservedPhysicalWalGroupMembers,
-    ScheduledMaintenanceDenial,
+    RetainedWalReleaseEvidence, ScheduledMaintenanceDenial,
 };
 pub use wal::{
     CanonicalRedoRecords, IndeterminatePhysicalWalGroupAppend, PhysicalWalAppendDeclaration,

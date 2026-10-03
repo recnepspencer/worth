@@ -84,7 +84,7 @@ impl ReleaseLedgerState {
             prior_tip: Some(tip),
             prior_terminal: accumulator.terminal(),
             allocation_custody: None,
-            checkpoint_backing: None,
+            capture_custody: None,
         }))
     }
 }

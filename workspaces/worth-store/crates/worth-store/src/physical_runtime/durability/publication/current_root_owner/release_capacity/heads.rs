@@ -63,7 +63,6 @@ pub(in crate::physical_runtime::durability::publication::current_root_owner) str
     root: Option<ReleaseCustodyHeadBlockReferenceV1>,
     /// Canonical key order is also the checkpoint roster digest order.
     entries: Vec<ReleaseCustodyHeadEntryV1>,
-    allocation_custody: Option<std::sync::Arc<super::backing::LiveReleaseAllocation>>,
 }
 
 impl SelectedReleaseHeadRoster {
@@ -86,7 +85,6 @@ impl SelectedReleaseHeadRoster {
         Self {
             root: None,
             entries: Vec::new(),
-            allocation_custody: None,
         }
     }
 
@@ -130,7 +128,6 @@ impl SelectedReleaseHeadRoster {
         let mut roster = Self {
             root,
             entries: Vec::new(),
-            allocation_custody: None,
         };
         let mut prior_key = None;
         for entry in entries {
@@ -173,7 +170,6 @@ impl SelectedReleaseHeadRoster {
         let roster = Self {
             root,
             entries: selected,
-            allocation_custody: None,
         };
         roster
             .commitment()
@@ -190,7 +186,6 @@ impl SelectedReleaseHeadRoster {
         Ok(Self {
             root: self.root,
             entries,
-            allocation_custody: None,
         })
     }
 

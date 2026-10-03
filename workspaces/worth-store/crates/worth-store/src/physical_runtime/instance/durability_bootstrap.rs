@@ -1,9 +1,10 @@
 use worth_store_physical_backend::QualifiedFilesystemMedia;
 
 use crate::physical_runtime::durability::{
-    rebuild_idempotency, reopen_binding_compaction, reopen_wal_inventory,
+    rebuild_idempotency, reopen_wal_inventory, CheckpointCustodyCandidate, CheckpointCustodyOrigin,
     PhysicalDurabilityRuntimeOwner, PhysicalWalBindingReopenCutoff, PhysicalWalRuntimeOwner,
-    ReopenedPhysicalBindingCompaction, ReopenedPhysicalDurabilityRuntimeOwner,
+    PreparedRecoveredCheckpointCustody, ReopenedPhysicalBindingCompaction,
+    ReopenedPhysicalDurabilityRuntimeOwner,
 };
 use crate::physical_runtime::{
     PhysicalBindingCompactionReopenFailure, PhysicalIdempotencyReopenFailure,
@@ -15,6 +16,16 @@ pub(in crate::physical_runtime) struct PhysicalDurabilityReopenBasis {
     wal: PhysicalWalRuntimeOwner,
     unresolved_retirements: Vec<crate::physical_runtime::durability::RetirementRecord>,
     selected_checkpoint_sequence: u64,
+    checkpoint_custody_origin: CheckpointCustodyOrigin,
+}
+
+/// The selected checkpoint as ordinary open read it, the custody open
+/// verified against the loaded root, and any C.8 recovered custody.
+pub(in crate::physical_runtime) struct OpenedCheckpointCustody {
+    pub(in crate::physical_runtime) checkpoint:
+        Result<ReopenedPhysicalBindingCompaction, PhysicalBindingCompactionReopenFailure>,
+    pub(in crate::physical_runtime) candidate: CheckpointCustodyCandidate,
+    pub(in crate::physical_runtime) recovered: Option<PreparedRecoveredCheckpointCustody>,
 }
 
 pub(in crate::physical_runtime) struct ReopenedPhysicalDurabilityOwners {
@@ -31,6 +42,9 @@ pub enum PhysicalDurabilityStateReopenFailure {
     Checkpoint(PhysicalBindingCompactionReopenFailure),
     Wal(PhysicalWalOpenFailure),
     Idempotency(PhysicalIdempotencyReopenFailure),
+    /// The current root carries a tier anchor whose clean reopen custody the
+    /// retained WAL suffix does not admit; C.8 recovery must install it.
+    RecoveredCheckpointCustodyRequired,
 }
 
 pub(in crate::physical_runtime) fn reopen_durability_basis(
@@ -40,12 +54,14 @@ pub(in crate::physical_runtime) fn reopen_durability_basis(
     durability: &PhysicalDurabilityRuntimeOwner,
     record_format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
     reopen_grant: &worth_store_buffer_pool::OperationAllocationGrant,
-    pending_release: Option<&worth_store_recovery_physics::VerifiedPendingWalReleaseCustody>,
+    custody: &OpenedCheckpointCustody,
 ) -> Result<PhysicalDurabilityReopenBasis, PhysicalDurabilityStateReopenFailure> {
     let observation = durability.observation();
-    let checkpoint = reopen_binding_compaction(media)
-        .map_err(PhysicalDurabilityStateReopenFailure::Checkpoint)?;
-    let selected_checkpoint_sequence = match &checkpoint {
+    let checkpoint = custody
+        .checkpoint
+        .as_ref()
+        .map_err(|failure| PhysicalDurabilityStateReopenFailure::Checkpoint(*failure))?;
+    let selected_checkpoint_sequence = match checkpoint {
         ReopenedPhysicalBindingCompaction::GenerationZero => 0,
         ReopenedPhysicalBindingCompaction::NamespaceDurable(reopened) => {
             reopened.rebuild_basis().checkpoint().sequence().get()
@@ -55,7 +71,7 @@ pub(in crate::physical_runtime) fn reopen_durability_basis(
         ReopenedPhysicalBindingCompaction::GenerationZero => {
             PhysicalWalBindingReopenCutoff::GenerationZero
         }
-        ReopenedPhysicalBindingCompaction::NamespaceDurable(ref reopened) => {
+        ReopenedPhysicalBindingCompaction::NamespaceDurable(reopened) => {
             PhysicalWalBindingReopenCutoff::after_checkpoint(reopened.wal_cutoff_lsn_exclusive())
         }
     };
@@ -73,6 +89,15 @@ pub(in crate::physical_runtime) fn reopen_durability_basis(
         reopen_grant,
     )
     .map_err(PhysicalDurabilityStateReopenFailure::Wal)?;
+    let checkpoint_custody_origin = custody.candidate.admit(inventory.release_evidence());
+    if custody.candidate.requires_clean_custody()
+        && !matches!(
+            checkpoint_custody_origin,
+            CheckpointCustodyOrigin::CleanReopen(_)
+        )
+    {
+        return Err(PhysicalDurabilityStateReopenFailure::RecoveredCheckpointCustodyRequired);
+    }
     let members = inventory.take_members();
     let retirement_spans = inventory.take_retirement_spans();
     let records = inventory.take_retirement_records();
@@ -92,12 +117,16 @@ pub(in crate::physical_runtime) fn reopen_durability_basis(
         runtime,
         observation.policy_identity(),
         observation.idempotency_policy(),
-        &checkpoint,
+        checkpoint,
         members,
         retirement_spans,
     )
     .map_err(PhysicalDurabilityStateReopenFailure::Idempotency)?;
-    if let Some(pending) = pending_release {
+    if let Some(pending) = custody
+        .recovered
+        .as_ref()
+        .and_then(|custody| custody.pending_wal_release())
+    {
         rebuilt
             .reconcile_verified_pending_release(pending)
             .map_err(PhysicalDurabilityStateReopenFailure::Idempotency)?;
@@ -115,12 +144,19 @@ pub(in crate::physical_runtime) fn reopen_durability_basis(
         wal,
         unresolved_retirements,
         selected_checkpoint_sequence,
+        checkpoint_custody_origin,
     })
 }
 
 impl PhysicalDurabilityReopenBasis {
     pub(in crate::physical_runtime) fn wal(&self) -> &PhysicalWalRuntimeOwner {
         &self.wal
+    }
+
+    pub(in crate::physical_runtime) const fn checkpoint_custody_origin(
+        &self,
+    ) -> CheckpointCustodyOrigin {
+        self.checkpoint_custody_origin
     }
 
     pub(in crate::physical_runtime) fn install(

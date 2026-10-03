@@ -28,6 +28,10 @@ pub(super) fn empty_inventory(
         byte_count: 0,
         peak_buffer_bytes: 0,
         requires_inspection: false,
+        release_evidence: super::super::RetainedWalReleaseEvidence::new(
+            false,
+            super::super::RetainedWalHistory::Empty,
+        ),
         segments: PhysicalWalSegmentInventory::empty(),
         members: Vec::new(),
         retirement_spans: Vec::new(),
@@ -36,3 +40,6 @@ pub(super) fn empty_inventory(
         retirement_locations: Vec::new(),
     })
 }
+
+#[cfg(test)]
+mod tests;

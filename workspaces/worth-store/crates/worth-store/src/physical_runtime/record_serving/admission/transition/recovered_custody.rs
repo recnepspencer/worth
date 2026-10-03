@@ -2,7 +2,7 @@
 //! This phase completes before Core progression or Serving owner installation.
 
 use crate::physical_runtime::{
-    durability::PreparedRecoveredCheckpointCustody,
+    durability::{CheckpointCustodyCandidate, PreparedRecoveredCheckpointCustody},
     instance::PhysicalResidencyOwner,
     record_serving::{RecordBootstrapDenial, RecordServingState},
     MediaOwnedPhysicalRuntime,
@@ -11,13 +11,17 @@ use worth_store_buffer_pool::OperationAllocationGrant;
 
 pub(super) fn prepare(
     custody: Option<super::super::recovered_custody::RecoveredCheckpointCustodyEvidence>,
+    clean: CheckpointCustodyCandidate,
     runtime: &MediaOwnedPhysicalRuntime,
     state: &RecordServingState,
     residency: &PhysicalResidencyOwner,
     grant: &mut OperationAllocationGrant,
 ) -> Result<Option<PreparedRecoveredCheckpointCustody>, RecordBootstrapDenial> {
     let Some(custody) = custody else {
-        return if state.current_root.tier_epoch_anchor().is_some()
+        // A tier-anchored root opens without C.8 only through clean tier
+        // custody; a release custody head always requires C.8.
+        return if (state.current_root.tier_epoch_anchor().is_some()
+            && !clean.requires_clean_custody())
             || state.current_root.release_custody_head_root().is_some()
         {
             Err(RecordBootstrapDenial::RecoveredCheckpointCustodyMismatch)

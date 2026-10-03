@@ -1,6 +1,5 @@
-//! The checkpoint fold moves its independently funded roster into the ledger.
+//! The checkpoint fold moves its roster, inside the capture envelope, into the ledger.
 use super::*;
-use std::sync::Arc;
 
 impl SelectedReleaseHeadRoster {
     #[cfg(test)]
@@ -10,23 +9,14 @@ impl SelectedReleaseHeadRoster {
         Self {
             root: self.root,
             entries,
-            allocation_custody: None,
         }
     }
-    pub(in super::super) fn prepare_fold_capacity(
-        &mut self,
-        count: usize,
-        window: &mut super::super::backing::LiveBackingWindow<'_>,
-    ) -> Result<(), ReleaseCertificateCapacityDenial> {
-        let additional = count.saturating_sub(self.entries.len());
-        window.grow_vec(&mut self.entries, additional)
-    }
-
-    pub(in super::super) fn retain_fold_charge(
-        &mut self,
-        custody: Arc<super::super::backing::LiveReleaseAllocation>,
-    ) {
-        self.allocation_custody = Some(custody);
+    /// An empty fold target at the envelope's admitted head population.
+    pub(in super::super) fn with_fold_capacity(count: usize) -> Self {
+        Self {
+            root: None,
+            entries: Vec::with_capacity(count),
+        }
     }
 
     pub(in super::super) fn copy_into_preallocated(

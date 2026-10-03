@@ -3,6 +3,8 @@ use std::num::NonZeroU64;
 #[cfg(test)]
 mod allocation_test_ports;
 mod insertion;
+mod leaf_cells;
+use leaf_cells::{write_leaf_cell, LeafCellWrite};
 mod replacements;
 pub(in crate::physical_runtime) use insertion::{
     insert_registered_node, write_registered_cell, InsertedLayoutTree, InsertionSource,
@@ -163,21 +165,16 @@ impl<'a, 'runtime> TreeWriter<'a, 'runtime> {
         value: &[u8],
     ) -> Result<InsertedNode, PhysicalLayoutMaintenanceFailure> {
         let mut cells = node.cells().to_vec();
-        match cells.binary_search_by(|cell| cell.key().cmp(key)) {
-            Ok(index) if cells[index].leaf_value() == Some(value) => {
-                return Ok(InsertedNode {
-                    root: old_record,
-                    level: 0,
-                    split: None,
-                    changed: false,
-                    replaced: ReplacementPath::empty(),
-                });
-            }
-            Ok(index) if cells[index].leaf_value() == self.superseded.as_deref() => {
-                cells[index] = BTreeNodeCellV1::leaf(key.to_vec(), value.to_vec());
-            }
-            Ok(_) => return Err(PhysicalLayoutMaintenanceFailure::ConflictingKey),
-            Err(index) => cells.insert(index, BTreeNodeCellV1::leaf(key.to_vec(), value.to_vec())),
+        if write_leaf_cell(&mut cells, key, value, self.superseded.as_deref())?
+            == LeafCellWrite::Unchanged
+        {
+            return Ok(InsertedNode {
+                root: old_record,
+                level: 0,
+                split: None,
+                changed: false,
+                replaced: ReplacementPath::empty(),
+            });
         }
         let candidate = BTreeNodeV1::leaf(self.family_code, cells.clone(), None, None)
             .map_err(PhysicalLayoutMaintenanceFailure::NodeFormat)?;

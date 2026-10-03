@@ -1,4 +1,5 @@
-//! Publication and checkpoint backing are admitted together before release effects.
+//! Publication backing and the checkpoint reservation are admitted together
+//! before release effects.
 use super::super::PhysicalCurrentRootOwner;
 use super::*;
 
@@ -79,30 +80,12 @@ impl PhysicalCurrentRootOwner {
                 },
             )
         })?;
-        let combined = ledger
-            .retained_requirement(self.recovery_allocation, closure_bytes, fence_bytes)?
-            .checked_add(ledger.checkpoint_backing_requirement(Some(key), anchored)?)
-            .ok_or(ReleaseCertificateCapacityDenial::CapacityExhausted)?;
-        if combined > self.recovery_allocation.byte_limit() {
-            return Err(ReleaseCertificateCapacityDenial::Resident(
-                crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial::BudgetExceeded {
-                    required: combined,
-                    admitted: self.recovery_allocation.byte_limit(),
-                },
-            ));
-        }
-        let root_frame = ledger.prepare_publication_backing(
+        let root_frame = ledger.admit_drop_backing(
             &self.release_allocation,
             self.recovery_allocation,
             closure_bytes,
             fence_bytes,
             key,
-        )?;
-        ledger.prepare_checkpoint_backing(
-            &self.release_allocation,
-            self.recovery_allocation,
-            Some(key),
-            anchored,
         )?;
         active.release_certificate_pending = Some(ReleaseCertificatePending {
             key,

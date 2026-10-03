@@ -37,6 +37,11 @@ impl ServingPhysicalRuntime {
             .map_err(|_| crate::physical_runtime::PhysicalWorkRetryFailure::DerivedStateUnavailable)
     }
 
+    /// The checkpoint-capture envelope the next capture holds, in bytes.
+    pub fn certification_checkpoint_capture_envelope_bytes(&self) -> Option<u64> {
+        self.parts.publication.checkpoint_capture_envelope_bytes()
+    }
+
     pub fn certification_pending_publication_count(&self) -> usize {
         self.parts.publication.pending_publication_count()
     }

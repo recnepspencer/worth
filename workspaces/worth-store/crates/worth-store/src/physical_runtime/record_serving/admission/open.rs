@@ -257,7 +257,7 @@ fn publication_roots(
     Ok((prior, root_lengths))
 }
 
-fn load_root_manifest(
+pub(super) fn load_root_manifest(
     admission: &CurrentRootAdmission<'_>,
     record_route: bool,
 ) -> Result<(DurablePhysicalRootManifest, u64), BootstrapTransitionFailure> {

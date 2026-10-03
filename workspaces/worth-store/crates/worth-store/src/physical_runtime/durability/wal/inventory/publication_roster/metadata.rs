@@ -1,4 +1,6 @@
 //! Grant-bounded decoding of one authenticated WAL publication member.
+//! The returned flag reports a released drop: V3 `RecordsDropped` with a
+//! release-custody head effect.
 
 use super::*;
 
@@ -7,7 +9,7 @@ pub(super) fn decode_metadata(
     range: WalLsnRange,
     format: PhysicalRecordFormatDeclaration,
     available_bytes: u64,
-) -> Result<ReopenedPublicationMemberMetadata, PhysicalWalOpenFailure> {
+) -> Result<(ReopenedPublicationMemberMetadata, bool), PhysicalWalOpenFailure> {
     let mut body = redo;
     let domain = field(&mut body)?;
     // The format decoder holds at most the input-sized record, frame and
@@ -58,10 +60,9 @@ pub(super) fn decode_metadata(
         total_entries: bounded.saturating_mul(3),
         inline_allocations: bounded,
     };
-    let (source_root_generation, successor_manifest_capacity, inserted_records) = if domain
-        == CANONICAL_REDO_V3_DOMAIN
-    {
-        let (_, projection) = decode_canonical_redo_v3(
+    let (source_root_generation, successor_manifest_capacity, inserted_records, released_drop) =
+        if domain == CANONICAL_REDO_V3_DOMAIN {
+            let (_, projection) = decode_canonical_redo_v3(
             redo,
             range.start().get(),
             range.end_exclusive().get(),
@@ -84,45 +85,52 @@ pub(super) fn decode_metadata(
             }
             _ => PhysicalWalOpenFailure::MemberPayloadRejected,
         })?;
-        (
-            projection.source_root_generation(),
-            Some(projection.root_state().successor_manifest_capacity()),
-            projection.record_identities().len() as u64,
-        )
-    } else if domain == REWRITE_REDO_DOMAIN {
-        // This is a fixed-size descriptor; candidate_bytes is a physical
-        // work bound, not a decoder allocation charged to this grant.
-        let rewrite = PhysicalRewriteRedo::decode(redo, u64::MAX)
-            .map_err(|_| PhysicalWalOpenFailure::MemberPayloadRejected)?;
-        if range.end_exclusive().get()
-            != range
-                .start()
-                .get()
-                .checked_add(1)
-                .ok_or(PhysicalWalOpenFailure::MemberPayloadRejected)?
-            || rewrite.page_lsn() != range.start().get()
-            || rewrite.resulting_root_generation()
-                != rewrite
-                    .source_root_generation()
+            (
+                projection.source_root_generation(),
+                Some(projection.root_state().successor_manifest_capacity()),
+                projection.record_identities().len() as u64,
+                matches!(
+                    projection.operation(),
+                    PersistedPhysicalRecoveryOperation::RecordsDropped {
+                        head_effect: Some(_),
+                        ..
+                    }
+                ),
+            )
+        } else if domain == REWRITE_REDO_DOMAIN {
+            // This is a fixed-size descriptor; candidate_bytes is a physical
+            // work bound, not a decoder allocation charged to this grant.
+            let rewrite = PhysicalRewriteRedo::decode(redo, u64::MAX)
+                .map_err(|_| PhysicalWalOpenFailure::MemberPayloadRejected)?;
+            if range.end_exclusive().get()
+                != range
+                    .start()
+                    .get()
                     .checked_add(1)
                     .ok_or(PhysicalWalOpenFailure::MemberPayloadRejected)?
-        {
-            return Err(PhysicalWalOpenFailure::MemberPayloadRejected);
-        }
-        (rewrite.source_root_generation(), None, 0)
-    } else if domain == COPY_PUBLICATION_DOMAIN {
-        let lsn = take_u64(&mut body)?;
-        let encoded = field(&mut body)?;
-        if lsn != range.start().get()
-            || range.end_exclusive().get()
-                != lsn
-                    .checked_add(1)
-                    .ok_or(PhysicalWalOpenFailure::MemberPayloadRejected)?
-            || !body.is_empty()
-        {
-            return Err(PhysicalWalOpenFailure::MemberPayloadRejected);
-        }
-        let projection = PersistedPhysicalRecoveryProjection::decode(encoded, limits, format)
+                || rewrite.page_lsn() != range.start().get()
+                || rewrite.resulting_root_generation()
+                    != rewrite
+                        .source_root_generation()
+                        .checked_add(1)
+                        .ok_or(PhysicalWalOpenFailure::MemberPayloadRejected)?
+            {
+                return Err(PhysicalWalOpenFailure::MemberPayloadRejected);
+            }
+            (rewrite.source_root_generation(), None, 0, false)
+        } else if domain == COPY_PUBLICATION_DOMAIN {
+            let lsn = take_u64(&mut body)?;
+            let encoded = field(&mut body)?;
+            if lsn != range.start().get()
+                || range.end_exclusive().get()
+                    != lsn
+                        .checked_add(1)
+                        .ok_or(PhysicalWalOpenFailure::MemberPayloadRejected)?
+                || !body.is_empty()
+            {
+                return Err(PhysicalWalOpenFailure::MemberPayloadRejected);
+            }
+            let projection = PersistedPhysicalRecoveryProjection::decode(encoded, limits, format)
             .map_err(|denial| match denial {
                 worth_store_physical_format::PhysicalRecoveryProjectionDenial::EntryLimit => {
                     PhysicalWalOpenFailure::ReopenAllocationLimitExceeded {
@@ -137,23 +145,27 @@ pub(super) fn decode_metadata(
                 }
                 _ => PhysicalWalOpenFailure::MemberPayloadRejected,
             })?;
-        if !matches!(
-            projection.payload(),
-            worth_store_physical_format::PersistedPhysicalRecoveryPayload::SourceCopy(_)
-        ) {
+            if !matches!(
+                projection.payload(),
+                worth_store_physical_format::PersistedPhysicalRecoveryPayload::SourceCopy(_)
+            ) {
+                return Err(PhysicalWalOpenFailure::MemberPayloadRejected);
+            }
+            (
+                projection.source_root_generation(),
+                Some(projection.root_state().successor_manifest_capacity()),
+                0,
+                false,
+            )
+        } else {
             return Err(PhysicalWalOpenFailure::MemberPayloadRejected);
-        }
-        (
-            projection.source_root_generation(),
-            Some(projection.root_state().successor_manifest_capacity()),
-            0,
-        )
-    } else {
-        return Err(PhysicalWalOpenFailure::MemberPayloadRejected);
-    };
-    Ok(ReopenedPublicationMemberMetadata {
-        source_root_generation,
-        successor_manifest_capacity,
-        inserted_records,
-    })
+        };
+    Ok((
+        ReopenedPublicationMemberMetadata {
+            source_root_generation,
+            successor_manifest_capacity,
+            inserted_records,
+        },
+        released_drop,
+    ))
 }

@@ -5,7 +5,6 @@ pub enum PhysicalCheckpointCaptureFailureKind {
     SequenceExhausted,
     CheckpointCustodyUnavailable,
     CheckpointCustodyBacking(crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial),
-    CheckpointCommandBackingUnavailable,
     RuntimeUnavailable,
     NoDurableWalSource,
     SourceAuthorityMismatch,
@@ -64,9 +63,6 @@ impl PhysicalCheckpointCaptureFailure {
     pub(super) fn from_initial_action(failure: PhysicalCheckpointActionFailure) -> Self {
         use PhysicalCheckpointActionFailure as Action;
         let kind = match failure {
-            Action::CheckpointCommandBackingUnavailable => {
-                PhysicalCheckpointCaptureFailureKind::CheckpointCommandBackingUnavailable
-            }
             Action::RuntimeReleased => PhysicalCheckpointCaptureFailureKind::RuntimeUnavailable,
             Action::SubmissionDenied
             | Action::SubmissionDeferred

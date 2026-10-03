@@ -1,5 +1,6 @@
 //! Root-atomic checkpoint custody snapshot. Reopen cannot infer an empty
-//! certificate ledger; C8 must install a selected basis before certification.
+//! certificate ledger: either ordinary reopen verifies the clean case itself
+//! or C8 installs a selected basis before certification.
 
 use std::sync::Arc;
 
@@ -20,17 +21,16 @@ pub(in crate::physical_runtime) enum CheckpointCustodyDenial {
     Backing(crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial),
 }
 
-use super::release_capacity::checkpoint_backing::{
+pub(in crate::physical_runtime) use super::release_capacity::capture_envelope::CheckpointCertificateFrame;
+use super::release_capacity::capture_envelope::{
     CheckpointCertificateViews, SealedCheckpointStorage,
-};
-pub(in crate::physical_runtime) use super::release_capacity::checkpoint_backing::{
-    FundedCheckpointBufferPreparation, FundedCheckpointCommandBufferLease, FundedCheckpointFrame,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(in crate::physical_runtime) enum CheckpointCustodyOrigin {
     FreshGenesis,
     ReopenRequiresC8,
+    CleanReopen(super::clean_reopen::CleanReopenCheckpointCustody),
 }
 
 pub(super) enum CheckpointCustodyState {
@@ -163,9 +163,34 @@ impl CheckpointCustodyState {
             {
                 Self::VerifiedLegacyNoCertificates
             }
+            CheckpointCustodyOrigin::CleanReopen(custody) => Self::from_clean_reopen(custody, root),
             CheckpointCustodyOrigin::FreshGenesis | CheckpointCustodyOrigin::ReopenRequiresC8 => {
                 Self::Unavailable
             }
+        }
+    }
+
+    fn from_clean_reopen(
+        custody: super::clean_reopen::CleanReopenCheckpointCustody,
+        root: &DurablePhysicalRootManifest,
+    ) -> Self {
+        use super::clean_reopen::CleanReopenCheckpointCustody as Clean;
+        match (custody, root.tier_epoch_anchor()) {
+            (Clean::TrustedGenesis { .. } | Clean::SelectedNoRelease { tier: None, .. }, None) => {
+                Self::VerifiedLegacyNoCertificates
+            }
+            (
+                Clean::SelectedNoRelease {
+                    tier: Some(tier), ..
+                },
+                Some(anchor),
+            ) if tier.anchor() == anchor => SealedTierEpochCustodyBasis::new(
+                tier.intent(),
+                tier.intent_frame(),
+                tier.completed_frame(),
+            )
+            .map_or(Self::Unavailable, Self::CertifiedTier),
+            _ => Self::Unavailable,
         }
     }
 }
@@ -198,13 +223,8 @@ impl SelectedCheckpointCustodySnapshot {
     pub(in crate::physical_runtime) fn certificate_frame(
         &self,
         index: usize,
-    ) -> Option<FundedCheckpointFrame> {
+    ) -> Option<CheckpointCertificateFrame> {
         self.storage.frame(index)
-    }
-    pub(in crate::physical_runtime) fn take_command_buffer(
-        &self,
-    ) -> Option<FundedCheckpointCommandBufferLease> {
-        self.storage.take_command_buffer()
     }
     pub(super) fn storage(&self) -> &Arc<SealedCheckpointStorage> {
         &self.storage
@@ -212,20 +232,34 @@ impl SelectedCheckpointCustodySnapshot {
 }
 
 impl PhysicalCurrentRootOwner {
+    /// The envelope the next capture holds, so a journey can check the
+    /// capture's real allocations against it.
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn checkpoint_capture_envelope_bytes(&self) -> Option<u64> {
+        let state = self.lock_publication_state();
+        let tier = matches!(
+            state.checkpoint_custody,
+            CheckpointCustodyState::CertifiedTier(_)
+        );
+        let ledger = state.release_ledger.selected()?;
+        let envelope = ledger.checkpoint_capture_envelope(None, tier).ok()?;
+        Some(envelope.bytes())
+    }
+
+    /// Consumes the standing checkpoint reservation, before any effect, then
+    /// materializes the selected certificates into its plain buffers.
     pub(in crate::physical_runtime) fn checkpoint_custody_snapshot(
         &self,
         checkpoint: PhysicalCheckpointIdentity,
         format: PhysicalRecordFormatDeclaration,
     ) -> Result<SelectedCheckpointCustodySnapshot, CheckpointCustodyDenial> {
-        let mut state = self.lock_publication_state();
-        if matches!(
-            state.checkpoint_custody,
-            CheckpointCustodyState::ReleaseCertificatePending { .. }
-        ) {
-            return Err(CheckpointCustodyDenial::ReleaseCertificateUnavailable);
-        }
+        let mut guard = self.lock_publication_state();
+        let state = &mut *guard;
         let root = state.current_root.clone();
-        match &state.checkpoint_custody {
+        let tier = match &state.checkpoint_custody {
+            CheckpointCustodyState::ReleaseCertificatePending { .. } => {
+                return Err(CheckpointCustodyDenial::ReleaseCertificateUnavailable)
+            }
             CheckpointCustodyState::Unavailable => {
                 return Err(CheckpointCustodyDenial::Unavailable)
             }
@@ -234,67 +268,36 @@ impl PhysicalCurrentRootOwner {
             {
                 return Err(CheckpointCustodyDenial::AnchorMismatch)
             }
-            _ => {}
-        }
-        let tier = matches!(
-            state.checkpoint_custody,
-            CheckpointCustodyState::CertifiedTier(_)
-        );
+            CheckpointCustodyState::VerifiedLegacyNoCertificates => None,
+            CheckpointCustodyState::CertifiedTier(basis) => Some(basis),
+        };
         let ledger = state
             .release_ledger
             .selected_mut()
             .ok_or(CheckpointCustodyDenial::Unavailable)?;
-        // Genesis/recovered capture has no earlier local drop promise. An existing
-        // completed drop always has the concrete preparation installed pre-effect.
-        if ledger.checkpoint_backing.is_none() || ledger.pending_drop_count() == 0 {
-            ledger.prepare_checkpoint_backing(
-                &self.release_allocation,
-                self.recovery_allocation,
-                None,
-                tier,
-            )?;
-        }
-        let slot = Arc::clone(ledger.checkpoint_backing.as_ref().unwrap());
-        let mut available = slot.available.lock().unwrap_or_else(|p| p.into_inner());
-        let capsule = available
-            .as_mut()
-            .and_then(Arc::get_mut)
+        let mut preparation = ledger.prepare_capture(
+            &self.release_allocation,
+            self.recovery_allocation,
+            tier.is_some(),
+        )?;
+        let observer = &mut preparation.observer;
+        observer.scratch = root
+            .encode_in_reserved(format, std::mem::take(&mut observer.scratch))
             .ok_or(CheckpointCustodyDenial::ReleaseCertificateUnavailable)?;
-        let mut preparation = capsule.take_preparation();
-        let result: Result<[u8; 32], CheckpointCustodyDenial> = (|| {
-            preparation.observer.clear();
-            preparation.observer.scratch = root
-                .encode_in_reserved(format, std::mem::take(&mut preparation.observer.scratch))
+        let root_sha256 = Sha256::digest(&observer.scratch).into();
+        if let Some(basis) = tier {
+            let payload = basis.bind(checkpoint, &root, root_sha256)?;
+            observer.scratch = payload
+                .encode_in_reserved(std::mem::take(&mut observer.scratch))
                 .ok_or(CheckpointCustodyDenial::ReleaseCertificateUnavailable)?;
-            let root_sha256 = Sha256::digest(&preparation.observer.scratch).into();
-            if let CheckpointCustodyState::CertifiedTier(basis) = &state.checkpoint_custody {
-                let payload = basis.bind(checkpoint, &root, root_sha256)?;
-                preparation.observer.scratch = payload
-                    .encode_in_reserved(std::mem::take(&mut preparation.observer.scratch))
-                    .ok_or(CheckpointCustodyDenial::ReleaseCertificateUnavailable)?;
-                preparation
-                    .observer
-                    .push(CheckpointCertificateKind::TierEpoch)?;
-            }
-            state
-                .release_ledger
-                .selected()
-                .unwrap()
-                .materialize_certificates(checkpoint, &root, root_sha256, &mut preparation)?;
-            Ok(root_sha256)
-        })();
-        if result.is_err() {
-            preparation.observer.clear();
+            observer.push(CheckpointCertificateKind::TierEpoch)?;
         }
-        capsule.put_preparation(preparation);
-        let root_sha256 = result?;
-        let storage = Arc::clone(available.as_ref().unwrap());
-        drop(available);
+        ledger.materialize_certificates(checkpoint, &root, root_sha256, &mut preparation)?;
         Ok(SelectedCheckpointCustodySnapshot {
             checkpoint,
             root,
             root_sha256,
-            storage,
+            storage: Arc::new(SealedCheckpointStorage::from_prepared(preparation)),
         })
     }
 }

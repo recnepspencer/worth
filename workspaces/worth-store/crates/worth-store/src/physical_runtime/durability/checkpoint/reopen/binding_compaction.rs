@@ -3,13 +3,14 @@ use worth_store_physical_backend::{
 };
 use worth_store_physical_format::{
     CheckpointBindingCompactionHeader, CheckpointStreamFooter, PhysicalCheckpointIdentity,
-    CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES, CHECKPOINT_BINDING_RECORD_PREFIX_BYTES,
-    CHECKPOINT_CERTIFIED_FOOTER_RECORD_BYTES, CHECKPOINT_CERTIFIED_SCHEMA,
-    CHECKPOINT_DIRTY_FRAME_RECORD_BYTES, CHECKPOINT_STREAM_FOOTER_RECORD_BYTES,
-    CHECKPOINT_STREAM_HEADER_RECORD_BYTES, MAX_CHECKPOINT_CERTIFICATE_BYTES,
-    MAX_CHECKPOINT_CERTIFICATE_RECORDS,
+    PhysicalCheckpointSource, CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES,
+    CHECKPOINT_BINDING_RECORD_PREFIX_BYTES, CHECKPOINT_CERTIFIED_FOOTER_RECORD_BYTES,
+    CHECKPOINT_CERTIFIED_SCHEMA, CHECKPOINT_DIRTY_FRAME_RECORD_BYTES,
+    CHECKPOINT_STREAM_FOOTER_RECORD_BYTES, CHECKPOINT_STREAM_HEADER_RECORD_BYTES,
+    MAX_CHECKPOINT_CERTIFICATE_BYTES, MAX_CHECKPOINT_CERTIFICATE_RECORDS,
 };
 
+use super::certificate_body::read_certificate_body;
 use super::integrity_admission::{
     admit_binding_compaction, admit_footer_envelope, admit_stream_header, physical_range,
 };
@@ -20,7 +21,8 @@ use super::{
 
 pub(in crate::physical_runtime) struct NamespaceDurablePhysicalBindingCompactionReopen {
     artifact: ArtifactTreeFile,
-    checkpoint: PhysicalCheckpointIdentity,
+    source: PhysicalCheckpointSource,
+    certificates: Box<[Box<[u8]>]>,
     header: CheckpointBindingCompactionHeader,
     footer: CheckpointStreamFooter,
     artifact_bytes: u64,
@@ -38,6 +40,8 @@ pub(in crate::physical_runtime) struct PhysicalBindingCompactionRebuildBasis<'re
     records_offset: u64,
     binding_end_offset: u64,
     footer_record_bytes: u64,
+    certificate_records: u64,
+    certificate_bytes: u64,
     expected_records: u64,
     expected_encoded_bytes: u64,
     expected_digest: [u8; 32],
@@ -77,17 +81,29 @@ impl NamespaceDurablePhysicalBindingCompactionReopen {
         self.header.wal_cutoff_lsn_exclusive()
     }
 
+    /// The selected checkpoint's identity and source root basis.
+    pub(in crate::physical_runtime) const fn source(&self) -> PhysicalCheckpointSource {
+        self.source
+    }
+
+    /// The footer-admitted tag-7 certificate frames, in stream order.
+    pub(in crate::physical_runtime) fn certificate_records(&self) -> &[Box<[u8]>] {
+        &self.certificates
+    }
+
     pub(in crate::physical_runtime) fn rebuild_basis(
         &self,
     ) -> PhysicalBindingCompactionRebuildBasis<'_> {
         PhysicalBindingCompactionRebuildBasis {
             artifact: &self.artifact,
-            checkpoint: self.checkpoint,
+            checkpoint: self.source.identity(),
             artifact_bytes: self.artifact_bytes,
             compaction_offset: self.compaction_offset,
             records_offset: self.records_offset,
             binding_end_offset: self.binding_end_offset,
             footer_record_bytes: self.artifact_bytes - self.footer_offset,
+            certificate_records: self.footer.certificate_record_count(),
+            certificate_bytes: self.footer.certificate_record_bytes(),
             expected_records: self.footer.binding_record_count(),
             expected_encoded_bytes: self.footer.binding_record_bytes(),
             expected_digest: self.footer.binding_records_digest(),
@@ -138,8 +154,8 @@ impl NamespaceDurablePhysicalBindingCompactionReopen {
         let records_offset = compaction_offset
             .checked_add(CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES as u64)
             .ok_or(PhysicalBindingCompactionReopenFailure::CounterOverflow)?;
-        // Idempotency replay owns the binding body, not the following C.8/C.9
-        // certificate body. Its length still participates in exact layout.
+        // Idempotency replay owns the binding body; the following C.8/C.9
+        // certificate body is read for clean reopen custody.
         let binding_end_offset = footer_offset
             .checked_sub(footer.certificate_record_bytes())
             .ok_or(PhysicalBindingCompactionReopenFailure::ArtifactLayoutMismatch)?;
@@ -180,9 +196,11 @@ impl NamespaceDurablePhysicalBindingCompactionReopen {
         if footer.binding_record_count() > footer.binding_record_bytes() / minimum_record_bytes {
             return Err(PhysicalBindingCompactionReopenFailure::ArtifactLayoutMismatch);
         }
+        let certificates = read_certificate_body(tree, &artifact, binding_end_offset, footer)?;
         Ok(Self {
             artifact,
-            checkpoint: source.identity(),
+            source,
+            certificates,
             header,
             footer,
             artifact_bytes,
@@ -230,9 +248,11 @@ impl PhysicalBindingCompactionRebuildBasis<'_> {
     {
         let checkpoint_bytes_read = fixed_read_bytes(self.footer_record_bytes)?
             .checked_add(self.expected_encoded_bytes)
+            .and_then(|bytes| bytes.checked_add(self.certificate_bytes))
             .ok_or(PhysicalBindingCompactionReopenFailure::CounterOverflow)?;
         let integrity_admissions = records_read
-            .checked_add(3)
+            .checked_add(self.certificate_records)
+            .and_then(|admissions| admissions.checked_add(3))
             .ok_or(PhysicalBindingCompactionReopenFailure::CounterOverflow)?;
         Ok(PhysicalBindingCompactionReopenCounters {
             checkpoint_artifact_bytes: self.artifact_bytes,

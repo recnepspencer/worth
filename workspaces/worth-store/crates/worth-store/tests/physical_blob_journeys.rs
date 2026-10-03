@@ -84,6 +84,12 @@ mod blob_tier_epoch_wal;
 mod blob_tier_movement;
 #[path = "physical_blob_journeys/cache_retention.rs"]
 mod cache_retention;
+#[cfg(feature = "certification-test-authority")]
+#[path = "physical_blob_journeys/checkpoint_capture_envelope.rs"]
+mod checkpoint_capture_envelope;
+#[cfg(feature = "certification-test-authority")]
+#[path = "physical_blob_journeys/clean_reopen_custody.rs"]
+mod clean_reopen_custody;
 #[path = "physical_blob_journeys/facade_status.rs"]
 mod facade_status;
 #[path = "physical_blob_journeys/fixture.rs"]
@@ -98,6 +104,9 @@ mod layout_dedupe;
 #[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/layout_dedupe_collision.rs"]
 mod layout_dedupe_collision;
+#[cfg(feature = "certification-test-authority")]
+#[path = "physical_blob_journeys/layout_dedupe_routed.rs"]
+mod layout_dedupe_routed;
 #[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/layout_node_fixture.rs"]
 mod layout_node_fixture;
@@ -138,7 +147,11 @@ fn c11_blob_child_role() {
         #[cfg(feature = "certification-test-authority")]
         "crash-reclaim-cleanup-selector" => blob_reclaim_cleanup_crash::child(&root),
         #[cfg(feature = "certification-test-authority")]
-        "crash-released-first-wal" => blob_reclaim_released_crash::child(&root, &role),
+        "crash-released-first-wal" | "crash-released-tier-first-wal" => {
+            blob_reclaim_released_crash::child(&root, &role)
+        }
+        #[cfg(feature = "certification-test-authority")]
+        "checkpoint-envelope" => checkpoint_capture_envelope::child(&root),
         "crash-expiry-wal" | "crash-expiry-root" => blob_expiry_crash::child(&root, &role),
         "crash-declaration"
         | "crash-chunk"
