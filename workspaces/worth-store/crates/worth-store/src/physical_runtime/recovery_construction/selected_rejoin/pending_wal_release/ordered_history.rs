@@ -55,25 +55,21 @@ pub(super) fn verify_roster_with_storage<S: RouteWalkStorage>(
     let mut previous_topology = checkpoint_topology;
     let mut previous_end = cutoff;
     for edge in history.edges() {
-        let (source, result, operation, range) = match edge {
-            VerifiedOrderedRootEdge::Ordinary(step) => (
-                step.source_topology(),
-                step.result_topology(),
-                step.operation(),
-                step.lsn_range().ok_or(Denial::WalFate)?,
-            ),
-            VerifiedOrderedRootEdge::Released(step) => (
-                step.transition().source_topology(),
-                step.transition().result_topology(),
-                step.operation(),
-                step.lsn(),
-            ),
-        };
-        if source != previous_topology || range.start().get() < previous_end {
+        if edge.source_topology() != previous_topology {
+            return Err(Denial::WalFate);
+        }
+        previous_topology = edge.result_topology();
+        // A retirement edge has no member: its checkpoint-retired WAL orders
+        // before every member edge, and its basis is rejoined per edge.
+        if let VerifiedOrderedRootEdge::Retirement(_) = edge {
+            continue;
+        }
+        let operation = edge.operation().ok_or(Denial::WalFate)?;
+        let range = edge.member_lsn().ok_or(Denial::WalFate)?;
+        if range.start().get() < previous_end {
             return Err(Denial::WalFate);
         }
         operations.push(operation);
-        previous_topology = result;
         previous_end = range.end_exclusive().get();
     }
     if previous_topology != history.selected_topology() {

@@ -83,6 +83,7 @@ impl SamplingCapacity {
             vector_bytes::<usize>(members)?,
             vector_bytes::<(usize, RetirementRecord)>(retirements)?,
             vector_bytes::<StoreRecoveryRetirementObligation>(retirements)?,
+            vector_bytes::<worth_store_recovery_physics::RetirementReleaseIntent>(retirements)?,
             vector_bytes::<(WalLsnRange, Vec<u8>)>(copies)?,
             vector_bytes::<Observation>(cleanups)?,
             redo_bytes.min(maximum_redo),

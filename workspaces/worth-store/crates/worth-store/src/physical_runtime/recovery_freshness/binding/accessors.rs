@@ -23,6 +23,7 @@ impl StoreRecoveryBindingFreshnessSample {
         bytes(&self.operations)?
             .checked_add(bytes(&self.wal_members)?)?
             .checked_add(bytes(&self.retirements)?)?
+            .checked_add(bytes(&self.release_intents)?)?
             .checked_add(bytes(&self.extent_copy_frames)?)?
             .checked_add(bytes(&self.blob_manifest_residue_cleanups)?)
     }
@@ -71,6 +72,11 @@ impl StoreRecoveryBindingFreshnessSample {
     }
     pub fn retirements(&self) -> &[StoreRecoveryRetirementObligation] {
         &self.retirements
+    }
+    /// Every sampled retirement-release intent, including resolved ones and
+    /// those below the checkpoint cutoff; data for the ordered root history.
+    pub fn release_intents(&self) -> &[worth_store_recovery_physics::RetirementReleaseIntent] {
+        &self.release_intents
     }
 }
 

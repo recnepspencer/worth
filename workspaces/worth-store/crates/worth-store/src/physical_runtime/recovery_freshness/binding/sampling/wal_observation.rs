@@ -16,6 +16,7 @@ use super::{
 };
 use crate::physical_runtime::durability::RetirementRecord;
 use worth_store_physical_format::{BlobManifestResidueCleanup, TierEpochActivationV1};
+use worth_store_recovery_physics::RetirementReleaseIntent;
 use worth_store_wal::WalLsnRange;
 
 pub(super) fn observe_wal<'frame, Frame: RecoveryWalFrameInput + 'frame>(
@@ -34,7 +35,7 @@ pub(super) fn observe_wal<'frame, Frame: RecoveryWalFrameInput + 'frame>(
             .map_err(|denial| storage.failure(denial))?;
         match payload {
             ClassifiedWalPayload::Retirement(record) => {
-                observe_retirement(storage, ordinal, record)?
+                observe_retirement(storage, ordinal, range, record)?
             }
             ClassifiedWalPayload::ExtentCopy(bytes) => {
                 observe_copy(storage, range, bytes, maximum_operations)?
@@ -71,11 +72,23 @@ pub(super) fn observe_wal<'frame, Frame: RecoveryWalFrameInput + 'frame>(
     Ok(())
 }
 
+/// Every release intent is kept with its WAL range, resolved or not: the
+/// ordered root history decides which one, if any, authorizes a root edge.
 fn observe_retirement(
     storage: &mut SamplingStorage,
     ordinal: usize,
+    range: WalLsnRange,
     record: RetirementRecord,
 ) -> Result<(), StoreRecoveryBindingSampleFailure> {
+    if let (false, Some(release)) = (record.completion, record.release) {
+        let intent = RetirementReleaseIntent::new(
+            range,
+            release.source_generation(),
+            release.candidate_generation(),
+            release.candidate_digest(),
+        );
+        push(&mut storage.release_intents, intent).map_err(|denial| storage.failure(denial))?;
+    }
     push(&mut storage.retirement_records, (ordinal, record))
         .map_err(|denial| storage.failure(denial))
 }

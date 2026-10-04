@@ -53,7 +53,7 @@ impl AdmittedPhysicalRedoMembers {
             old_operation,
             record,
             (extent, generation),
-            history.edges().iter().map(EdgeIdentity::of),
+            history.edges().iter().filter_map(EdgeIdentity::of),
         )?;
         Some(HistoricalRetiredTargetWitness {
             selected_root_identity,
@@ -151,8 +151,9 @@ pub(super) struct EdgeIdentity {
 }
 
 impl EdgeIdentity {
-    fn of(edge: &VerifiedOrderedRootEdge) -> Self {
-        match edge {
+    /// A retirement edge binds no C.9 member, so it has no identity here.
+    fn of(edge: &VerifiedOrderedRootEdge) -> Option<Self> {
+        Some(match edge {
             VerifiedOrderedRootEdge::Ordinary(step) => Self {
                 operation: step.operation(),
                 group: step.group(),
@@ -167,6 +168,7 @@ impl EdgeIdentity {
                 redo_sha256: edge.redo_sha256(),
                 ordinary: false,
             },
-        }
+            VerifiedOrderedRootEdge::Retirement(_) => return None,
+        })
     }
 }

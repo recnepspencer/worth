@@ -58,7 +58,8 @@ fn claim_memory(claim: &VerifiedPendingWalReleaseCustody) -> u64 {
     let ordered = claim.ordered_history().map_or(0, |history| {
         let edges = history.edges().iter().fold(0_u64, |sum, edge| {
             let projected = match edge {
-                worth_store_recovery_physics::VerifiedOrderedRootEdge::Ordinary(_) => 0,
+                worth_store_recovery_physics::VerifiedOrderedRootEdge::Ordinary(_)
+                | worth_store_recovery_physics::VerifiedOrderedRootEdge::Retirement(_) => 0,
                 worth_store_recovery_physics::VerifiedOrderedRootEdge::Released(release) => {
                     4 * std::mem::size_of_val(release.transition().projected()) as u64
                 }

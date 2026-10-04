@@ -48,6 +48,7 @@ pub struct StoreRecoveryBindingFreshnessSample {
     operations: Vec<StoreRecoveryOperationEvidence>,
     wal_members: Vec<StoreRecoveryWalMember>,
     retirements: Vec<StoreRecoveryRetirementObligation>,
+    release_intents: Vec<worth_store_recovery_physics::RetirementReleaseIntent>,
     extent_copy_frames: Vec<(WalLsnRange, Vec<u8>)>,
     blob_manifest_residue_cleanups: Vec<(WalLsnRange, BlobManifestResidueCleanup, bool)>,
     tier_epoch_activation: Option<StoreTierEpochActivationObservation>,

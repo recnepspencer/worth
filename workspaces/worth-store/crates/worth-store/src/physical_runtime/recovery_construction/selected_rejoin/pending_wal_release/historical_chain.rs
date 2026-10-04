@@ -23,7 +23,7 @@ use crate::physical_runtime::{
 mod completed;
 pub(super) use completed::verify_completed_ordinary_step;
 
-const DISCOVERY_HEADROOM: u64 = 64 << 20;
+pub(super) const DISCOVERY_HEADROOM: u64 = 64 << 20;
 const OPERATION_ROSTER_WIDTH: u64 = 4 * std::mem::size_of::<[u8; 32]>() as u64;
 
 /// The first V3 edge is deliberately excluded here: its exact descriptor,

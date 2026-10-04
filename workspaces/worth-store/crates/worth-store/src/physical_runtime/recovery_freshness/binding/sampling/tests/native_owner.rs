@@ -30,6 +30,7 @@ fn capacity() -> SamplingCapacity {
         + (2 * size_of::<usize>()) as u64
         + (2 * size_of::<(usize, RetirementRecord)>()) as u64
         + (2 * size_of::<StoreRecoveryRetirementObligation>()) as u64
+        + (2 * size_of::<worth_store_recovery_physics::RetirementReleaseIntent>()) as u64
         + (2 * size_of::<(WalLsnRange, Vec<u8>)>()) as u64
         + (2 * size_of::<Observation>()) as u64
         + 64
@@ -170,6 +171,8 @@ fn native_sample_owner_funds_all_retained_capacities_and_releases_scratch_then_r
                 * size_of::<StoreRecoveryOperationEvidence>()
                 + sample.wal_members.capacity() * size_of::<StoreRecoveryWalMember>()
                 + sample.retirements.capacity() * size_of::<StoreRecoveryRetirementObligation>()
+                + sample.release_intents.capacity()
+                    * size_of::<worth_store_recovery_physics::RetirementReleaseIntent>()
                 + sample.extent_copy_frames.capacity() * size_of::<(WalLsnRange, Vec<u8>)>()
                 + sample.blob_manifest_residue_cleanups.capacity() * size_of::<Observation>()
                 + sample

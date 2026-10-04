@@ -30,6 +30,7 @@ pub(crate) fn execute(
         fates: &reopened.state.fates,
         unresolved_retirement: !reopened.state.freshness.retirements().is_empty()
             || reopened.state.freshness.extent_copy_frames().len() != 0,
+        release_intents: reopened.state.freshness.release_intents(),
         limits,
     });
     let command_basis = RecoveryCleanupCommandBasis::from_reopened(

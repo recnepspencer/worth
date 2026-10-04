@@ -244,6 +244,7 @@ fn observe(
         placements,
         &absent_targets,
         admitted_redo,
+        tier_evidence.sample.release_intents(),
         &selected_source,
         format,
         &mut budget,

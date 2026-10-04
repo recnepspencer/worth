@@ -23,6 +23,7 @@ pub(super) struct SamplingStorage {
     pub(super) group_scratch: Vec<usize>,
     pub(super) retirement_records: Vec<(usize, RetirementRecord)>,
     pub(super) retirement_output: Vec<StoreRecoveryRetirementObligation>,
+    pub(super) release_intents: Vec<worth_store_recovery_physics::RetirementReleaseIntent>,
     pub(super) copies: Vec<(WalLsnRange, Vec<u8>)>,
     pub(super) cleanups: ManifestCleanupObservations,
     pub(super) cleanup_count: usize,
@@ -50,6 +51,7 @@ impl SamplingStorage {
         let group_scratch = reserve_vector(capacity.members)?;
         let retirement_records = reserve_vector(capacity.retirements)?;
         let retirement_output = reserve_vector(capacity.retirements)?;
+        let release_intents = reserve_vector(capacity.retirements)?;
         let copies = reserve_vector(capacity.copies)?;
         let frames = reserve_vector(capacity.cleanups)?;
         let cleanups = ManifestCleanupObservations::prepare(frames, cleanup_limit)
@@ -61,6 +63,7 @@ impl SamplingStorage {
             group_scratch,
             retirement_records,
             retirement_output,
+            release_intents,
             copies,
             cleanups,
             cleanup_count: 0,

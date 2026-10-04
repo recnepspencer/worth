@@ -50,8 +50,10 @@ pub use ordered_historical_release_custody::{
     OrderedHistoricalReleaseCustodyDenial, VerifiedOrderedHistoricalReleaseCustody,
 };
 pub use ordered_root_history::{
-    OrderedRootHistoryBuilder, OrderedRootHistoryDenial, VerifiedOrderedRootEdge,
-    VerifiedOrderedRootHistory, VerifiedReleasedRootEdge,
+    decide_ordered_root_step_basis, is_retirement_prefix, CheckpointRetiredReleaseIntent,
+    OrderedRootHistoryBuilder, OrderedRootHistoryDenial, OrderedRootStepBasis,
+    RetirementReleaseIntent, VerifiedOrderedRootEdge, VerifiedOrderedRootHistory,
+    VerifiedReleasedRootEdge, VerifiedRetirementRootEdge,
 };
 pub use ordinary_root_step::{
     ObservedOrdinaryRootMember, OrdinaryRootStepDenial, VerifiedOrdinaryRootStep,

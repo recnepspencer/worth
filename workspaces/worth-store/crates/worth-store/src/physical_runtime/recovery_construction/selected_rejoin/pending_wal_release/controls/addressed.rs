@@ -11,8 +11,7 @@ use worth_store_physical_format::{
     DURABLE_EXTENT_FRAME_HEADER_BYTES, EXTENT_CHUNK_METADATA_BYTES,
 };
 use worth_store_recovery_physics::{
-    VerifiedAddressedCheckpointReleaseBase, VerifiedOrderedRootEdge,
-    VerifiedPendingWalReleaseCustody,
+    VerifiedAddressedCheckpointReleaseBase, VerifiedPendingWalReleaseCustody,
 };
 
 use super::super::super::{
@@ -37,10 +36,11 @@ pub(super) fn observe(
     Denial,
 > {
     let history = claim.ordered_history().ok_or(Denial::CertificateRoster)?;
-    let first_topology = match history.edges().first().ok_or(Denial::CertificateRoster)? {
-        VerifiedOrderedRootEdge::Ordinary(step) => step.source_topology(),
-        VerifiedOrderedRootEdge::Released(edge) => edge.transition().source_topology(),
-    };
+    let first_topology = history
+        .edges()
+        .first()
+        .ok_or(Denial::CertificateRoster)?
+        .source_topology();
     let checkpoint = addressed_root::observe(
         discovery,
         base.checkpoint_root().generation(),

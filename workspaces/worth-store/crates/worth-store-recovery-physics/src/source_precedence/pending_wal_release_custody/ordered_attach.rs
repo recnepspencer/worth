@@ -72,18 +72,17 @@ impl VerifiedPendingWalReleaseCustody {
                 .end_exclusive()
                 .get(),
             Some(VerifiedOrderedRootEdge::Released(step)) => step.lsn().end_exclusive().get(),
-            None => return Err(Denial::SourceBinding),
+            // A retirement edge is only ever first, so a history ending in one
+            // has no released edge for this pending release to follow.
+            Some(VerifiedOrderedRootEdge::Retirement(_)) | None => {
+                return Err(Denial::SourceBinding)
+            }
         };
         if release_ordinal != batches.len()
             || final_lsn_end > self.wal_fate.lsn_start()
             || retained_bytes > maximum_retained_bytes
-            || history.edges().iter().any(|edge| match edge {
-                VerifiedOrderedRootEdge::Ordinary(step) => {
-                    step.operation() == self.descriptor.custody().request().idempotency()
-                }
-                VerifiedOrderedRootEdge::Released(step) => {
-                    step.operation() == self.descriptor.custody().request().idempotency()
-                }
+            || history.edges().iter().any(|edge| {
+                edge.operation() == Some(self.descriptor.custody().request().idempotency())
             })
         {
             return Err(Denial::ControlBinding);

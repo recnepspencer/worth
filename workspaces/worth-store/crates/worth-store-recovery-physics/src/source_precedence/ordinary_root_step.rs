@@ -208,7 +208,7 @@ impl VerifiedOrdinaryRootStep {
     }
 }
 
-fn transcript(
+pub(super) fn transcript(
     view: ReleasedInventoryView<'_>,
     format: PhysicalRecordFormatDeclaration,
     limit: u64,

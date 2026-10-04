@@ -181,15 +181,7 @@ fn match_step_inner(
         return Err(Denial::WalFate);
     }
     let bound = member.canonical_redo().len() as u64;
-    let limits = PhysicalRecoveryProjectionDecodeLimits {
-        frames: bound,
-        record_identities: bound,
-        placements: bound,
-        segment_updates: bound,
-        manifests: bound,
-        total_entries: bound.saturating_mul(3),
-        inline_allocations: bound,
-    };
+    let limits = decode_limits(bound);
     let (projection, retained_scratch_bytes) = decode(
         member.canonical_redo(),
         range.start().get(),
@@ -206,4 +198,18 @@ fn match_step_inner(
         lsn_range: range,
         retained_scratch_bytes,
     })
+}
+
+/// One member's projection may hold no more entries of any kind than its
+/// canonical redo has bytes.
+pub(super) fn decode_limits(bound: u64) -> PhysicalRecoveryProjectionDecodeLimits {
+    PhysicalRecoveryProjectionDecodeLimits {
+        frames: bound,
+        record_identities: bound,
+        placements: bound,
+        segment_updates: bound,
+        manifests: bound,
+        total_entries: bound.saturating_mul(3),
+        inline_allocations: bound,
+    }
 }

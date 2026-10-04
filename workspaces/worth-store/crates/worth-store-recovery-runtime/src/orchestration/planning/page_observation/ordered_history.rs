@@ -8,8 +8,9 @@ use worth_store_physical_format::{
     PersistedPhysicalRecoveryOperation, PhysicalRecordFormatDeclaration,
 };
 use worth_store_recovery_physics::{
-    AdmittedPhysicalRedoMembers, OrderedRootHistoryBuilder, PhysicalSourceSelection,
-    ReleasedInventoryView, VerifiedOrderedRootHistory, VerifiedOrdinaryRootStep,
+    decide_ordered_root_step_basis, AdmittedPhysicalRedoMembers, OrderedRootHistoryBuilder,
+    OrderedRootStepBasis, PhysicalSourceSelection, ReleasedInventoryView, RetirementReleaseIntent,
+    VerifiedOrderedRootHistory, VerifiedOrdinaryRootStep, VerifiedRetirementRootEdge,
 };
 
 use crate::integrity_ingress::RecoveryIntegrityIngressTrace;
@@ -46,6 +47,7 @@ pub(super) fn admit(
     selected_inventory: &RecoverySelectedSourceInventory,
     selected_routes: &[CurrentPhysicalRecordPlacement],
     redo: &AdmittedPhysicalRedoMembers,
+    release_intents: &[RetirementReleaseIntent],
     format: PhysicalRecordFormatDeclaration,
     budget: &mut ManifestEntryBudget,
     byte_limit: u64,
@@ -84,14 +86,15 @@ pub(super) fn admit(
         format,
         maximum_entries,
     )?;
+    let cutoff = checkpoint
+        .checkpoint()
+        .compaction_cutover()
+        .wal_cutoff_lsn_exclusive();
     let mut history = OrderedRootHistoryBuilder::begin(
         &checkpoint_root,
         &checkpoint_inventory.free_space,
         checkpoint.source_root_frame_sha256(),
-        checkpoint
-            .checkpoint()
-            .compaction_cutover()
-            .wal_cutoff_lsn_exclusive(),
+        cutoff,
         initial,
         format,
         selected_root
@@ -110,10 +113,18 @@ pub(super) fn admit(
         let mut matching = redo.admitted_root_step_members().filter(|member| {
             member.materialization().source_root_generation() == current_root.generation()
         });
-        let member = matching.next()?;
+        let member = matching.next();
         if matching.next().is_some() {
             return None;
         }
+        let basis = decide_ordered_root_step_basis(
+            current_root.generation(),
+            history.retirement_prefix(),
+            cutoff,
+            member.is_some(),
+            release_intents,
+        )
+        .ok()?;
         let next_generation = current_root.generation().checked_add(1)?;
         let next_root = if next_generation == selected_root.generation() {
             selected_root.clone()
@@ -175,8 +186,26 @@ pub(super) fn admit(
             &result_segments,
             &result_inventory.free_entries,
         );
-        match member.materialization().operation() {
-            PersistedPhysicalRecoveryOperation::RecordsDropped { .. } => {
+        let member = match (basis, member) {
+            (OrderedRootStepBasis::RetirementIntent(basis), _) => {
+                let edge = VerifiedRetirementRootEdge::admit(
+                    source,
+                    result,
+                    basis,
+                    format,
+                    maximum_entries,
+                )
+                .ok()?;
+                history
+                    .advance_retirement(edge, &next_root, &result_inventory.free_space, format)
+                    .ok()?;
+                None
+            }
+            (OrderedRootStepBasis::WalMember, member) => Some(member?),
+        };
+        match member.map(|member| (member, member.materialization().operation())) {
+            None => {}
+            Some((member, PersistedPhysicalRecoveryOperation::RecordsDropped { .. })) => {
                 released_edge::admit(
                     discovery,
                     budget,
@@ -200,7 +229,7 @@ pub(super) fn admit(
                     &mut retained,
                 )?;
             }
-            _ => {
+            Some((member, _)) => {
                 let transition = VerifiedOrdinaryRootStep::admit_preplanning(
                     source,
                     result,

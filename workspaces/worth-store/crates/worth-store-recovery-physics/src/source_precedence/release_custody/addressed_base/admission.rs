@@ -19,7 +19,7 @@ use crate::source_precedence::release_custody::{
 };
 use crate::{
     PhysicalSourceSelection, ReconciledOperationFates, ReleasedInventoryView,
-    VerifiedOrderedRootEdge, VerifiedOrderedRootHistory,
+    VerifiedOrderedRootHistory,
 };
 
 impl VerifiedAddressedCheckpointReleaseBase {
@@ -54,8 +54,7 @@ impl VerifiedAddressedCheckpointReleaseBase {
         let root_sha: [u8; 32] = Sha256::digest(checkpoint_root.encode(format)).into();
         let free_sha: [u8; 32] = Sha256::digest(checkpoint_free.encode(format)).into();
         let first_topology = match history.edges().first() {
-            Some(VerifiedOrderedRootEdge::Ordinary(step)) => step.source_topology(),
-            Some(VerifiedOrderedRootEdge::Released(step)) => step.transition().source_topology(),
+            Some(edge) => edge.source_topology(),
             None => return Err(denial),
         };
         if checkpoint_root.generation() != root_basis.generation()

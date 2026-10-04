@@ -39,6 +39,8 @@ mod historical_chain;
 mod historical_first;
 #[path = "pending_wal_release/lineage.rs"]
 mod lineage;
+#[path = "pending_wal_release/member_absence.rs"]
+mod member_absence;
 #[path = "pending_wal_release/ordered_history.rs"]
 mod ordered_history;
 #[path = "pending_wal_release/ordered_released.rs"]
@@ -49,6 +51,8 @@ pub(super) mod ordered_walk;
 mod ordinary_member;
 #[path = "pending_wal_release/resident_budget.rs"]
 mod resident_budget;
+#[path = "pending_wal_release/retirement_edge.rs"]
+mod retirement_edge;
 #[path = "pending_wal_release/selection.rs"]
 pub(super) mod selection;
 #[path = "pending_wal_release/topology.rs"]

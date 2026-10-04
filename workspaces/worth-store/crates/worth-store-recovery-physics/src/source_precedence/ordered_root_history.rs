@@ -15,6 +15,13 @@ use worth_store_wal::WalLsnRange;
 use super::{VerifiedOrdinaryRootStep, VerifiedReleasedV3InventoryTransition};
 use crate::{AdmittedRootStepMemberView, PhysicalRedoGroupBinding, RecoveryOperationFate};
 
+#[path = "ordered_root_history/retirement.rs"]
+mod retirement;
+pub use retirement::{
+    decide_ordered_root_step_basis, is_retirement_prefix, CheckpointRetiredReleaseIntent,
+    OrderedRootStepBasis, RetirementReleaseIntent, VerifiedRetirementRootEdge,
+};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OrderedRootHistoryDenial {
     Source,
@@ -83,6 +90,7 @@ impl VerifiedReleasedRootEdge {
 pub enum VerifiedOrderedRootEdge {
     Ordinary(VerifiedOrdinaryRootStep),
     Released(VerifiedReleasedRootEdge),
+    Retirement(VerifiedRetirementRootEdge),
 }
 
 #[derive(Debug, Clone)]
@@ -101,7 +109,9 @@ impl VerifiedOrderedRootHistory {
             .ok()?
             .checked_mul(u64::try_from(std::mem::size_of::<VerifiedOrderedRootEdge>()).ok()?)?;
         self.edges.iter().try_fold(edges, |sum, edge| match edge {
-            VerifiedOrderedRootEdge::Ordinary(_) => Some(sum),
+            VerifiedOrderedRootEdge::Ordinary(_) | VerifiedOrderedRootEdge::Retirement(_) => {
+                Some(sum)
+            }
             VerifiedOrderedRootEdge::Released(released) => {
                 sum.checked_add(released.transition.owned_heap_bytes()?)
             }
@@ -276,6 +286,14 @@ impl OrderedRootHistoryBuilder {
         {
             return Err(OrderedRootHistoryDenial::WalOrder);
         }
+        self.reserve_edge(effect_scratch, retained_projected_increment)
+    }
+
+    fn reserve_edge(
+        &mut self,
+        effect_scratch: u64,
+        retained_projected_increment: u64,
+    ) -> Result<(), OrderedRootHistoryDenial> {
         let count = self
             .edges
             .len()

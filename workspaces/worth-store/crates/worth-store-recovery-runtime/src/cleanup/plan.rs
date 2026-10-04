@@ -2,17 +2,20 @@ use std::collections::BTreeMap;
 
 use worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity;
 use worth_store_physical_format::{PhysicalCheckpointIdentity, RecordArtifactFile};
-use worth_store_recovery_physics::PhysicalSourceSelection;
+use worth_store_recovery_physics::{PhysicalSourceSelection, RetirementReleaseIntent};
 
 use crate::entry::PhysicalRecoveryLimitDeclaration;
 use crate::handoff::RecoveryOperationFateSet;
 use crate::progression::{RecoveryBaseImagePlan, RecoveryPublicationExpectation};
+
+use covered_wal::{classify_covered_wal, CoveredWalBasis, CoveredWalFacts};
 
 use super::{
     RecoveryCleanupDeferralReason, RecoveryCleanupDisposition, RecoveryCleanupDispositionKind,
     RecoveryCleanupEligibility, RecoveryCleanupTarget,
 };
 
+mod covered_wal;
 mod identity;
 #[cfg(test)]
 mod tests;
@@ -31,6 +34,8 @@ pub(crate) struct RecoveryCleanupPlanBasis<'a> {
     pub(crate) publication: &'a RecoveryPublicationExpectation,
     pub(crate) fates: &'a RecoveryOperationFateSet,
     pub(crate) unresolved_retirement: bool,
+    /// Every sampled retirement-release intent, resolved ones included.
+    pub(crate) release_intents: &'a [RetirementReleaseIntent],
     pub(crate) limits: PhysicalRecoveryLimitDeclaration,
 }
 
@@ -41,6 +46,7 @@ pub(crate) fn build_plan(basis: RecoveryCleanupPlanBasis<'_>) -> RecoveryCleanup
         publication,
         fates,
         unresolved_retirement,
+        release_intents,
         limits,
     } = basis;
     let checkpoint = publication.checkpoint_identity();
@@ -48,7 +54,13 @@ pub(crate) fn build_plan(basis: RecoveryCleanupPlanBasis<'_>) -> RecoveryCleanup
     dispositions.extend(consumed_publication_candidates(
         publication.created_artifacts(),
     ));
-    let covered_wal = admit_checkpoint_covered_wal(selection, fates, unresolved_retirement, limits);
+    let covered_wal = admit_checkpoint_covered_wal(
+        selection,
+        fates,
+        unresolved_retirement,
+        release_intents,
+        limits,
+    );
     let candidates = covered_wal.candidates;
     dispositions.extend(covered_wal.dispositions);
     dispositions.extend(selection.residue().iter().map(|residue| {
@@ -83,37 +95,46 @@ fn admit_checkpoint_covered_wal(
     selection: &PhysicalSourceSelection,
     fates: &RecoveryOperationFateSet,
     unresolved_retirement: bool,
+    release_intents: &[RetirementReleaseIntent],
     limits: PhysicalRecoveryLimitDeclaration,
 ) -> CheckpointCoveredWalAdmission {
-    let mut admission = CheckpointCoveredWalAdmission {
-        candidates: Vec::new(),
-        dispositions: Vec::new(),
-    };
-    let mut candidate_bytes = 0_u64;
+    let covered = selection.wal_tail().checkpoint_covered();
+    let facts = covered
+        .iter()
+        .map(|artifact| CoveredWalFacts {
+            lsn_range: artifact.lsn_range(),
+            byte_count: artifact.byte_count(),
+            cleanup_safe: artifact.cleanup_safe(),
+        })
+        .collect::<Vec<_>>();
     let protected_start = selection
         .wal_tail()
         .protected_checkpoint_covered()
         .first()
-        .map(|artifact| artifact.identity());
-    let mut preserving_continuation = false;
-    for covered in selection.wal_tail().checkpoint_covered() {
-        preserving_continuation |= protected_start == Some(covered.identity());
-        let kind = if preserving_continuation {
-            RecoveryCleanupDispositionKind::Retained
-        } else {
-            checkpoint_covered_disposition(CheckpointCoveredWalDecision {
-                cleanup_safe: covered.cleanup_safe(),
-                unresolved_retirement,
-                unresolved: fates.indeterminate() != 0,
-                next_count: admission.candidates.len() as u64 + 1,
-                next_bytes: candidate_bytes.checked_add(covered.byte_count()),
-                limits,
-            })
-        };
+        .and_then(|first| {
+            covered
+                .iter()
+                .position(|artifact| artifact.identity() == first.identity())
+        });
+    let kinds = classify_covered_wal(
+        &facts,
+        CoveredWalBasis {
+            protected_start,
+            checkpoint_generation: selection
+                .checkpoint()
+                .map(|checkpoint| checkpoint.checkpoint().source().root().generation()),
+            release_intents,
+            unresolved_retirement,
+            unresolved: fates.indeterminate() != 0,
+            limits,
+        },
+    );
+    let mut admission = CheckpointCoveredWalAdmission {
+        candidates: Vec::new(),
+        dispositions: Vec::new(),
+    };
+    for (covered, kind) in covered.iter().zip(kinds) {
         if kind == RecoveryCleanupDispositionKind::Eligible {
-            candidate_bytes = candidate_bytes
-                .checked_add(covered.byte_count())
-                .expect("bounded cleanup byte sum");
             admission
                 .candidates
                 .push(RecoveryCleanupEligibility::new(covered.clone()));
@@ -127,40 +148,6 @@ fn admit_checkpoint_covered_wal(
         ));
     }
     admission
-}
-
-struct CheckpointCoveredWalDecision {
-    cleanup_safe: bool,
-    unresolved_retirement: bool,
-    unresolved: bool,
-    next_count: u64,
-    next_bytes: Option<u64>,
-    limits: PhysicalRecoveryLimitDeclaration,
-}
-
-fn checkpoint_covered_disposition(
-    decision: CheckpointCoveredWalDecision,
-) -> RecoveryCleanupDispositionKind {
-    if !decision.cleanup_safe {
-        RecoveryCleanupDispositionKind::QuarantinedOrUnsupported
-    } else if decision.unresolved_retirement {
-        RecoveryCleanupDispositionKind::Deferred(
-            RecoveryCleanupDeferralReason::UnresolvedRetirement,
-        )
-    } else if decision.unresolved {
-        RecoveryCleanupDispositionKind::Deferred(
-            RecoveryCleanupDeferralReason::UnresolvedOperationFate,
-        )
-    } else if decision.next_count > decision.limits.cleanup_candidates {
-        RecoveryCleanupDispositionKind::Deferred(RecoveryCleanupDeferralReason::CandidateLimit)
-    } else if decision
-        .next_bytes
-        .is_none_or(|bytes| bytes > decision.limits.cleanup_bytes)
-    {
-        RecoveryCleanupDispositionKind::Deferred(RecoveryCleanupDeferralReason::ByteLimit)
-    } else {
-        RecoveryCleanupDispositionKind::Eligible
-    }
 }
 
 fn retained_dispositions(

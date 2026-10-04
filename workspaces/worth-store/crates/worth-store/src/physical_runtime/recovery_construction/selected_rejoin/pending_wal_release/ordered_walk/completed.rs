@@ -15,7 +15,8 @@ use super::super::super::{
     SelectedMediaRejoinDenial as Denial, MAX_DISCOVERY_BYTES, MAX_DISCOVERY_ENTRIES,
 };
 use super::super::{
-    addressed_root, delta, historical_chain, lineage, ordered_history, ordered_released,
+    addressed_root, delta, historical_chain, lineage, member_absence, ordered_history,
+    ordered_released, retirement_edge,
 };
 use crate::physical_runtime::{
     IntegrityAdmittedRecoveryWalFrame, PhysicalRecoveryReadAllocation,
@@ -46,10 +47,11 @@ pub(super) fn verify_edges(
     ),
     Denial,
 > {
-    let first_topology = match history.edges().first().ok_or(Denial::CertificateRoster)? {
-        VerifiedOrderedRootEdge::Ordinary(step) => step.source_topology(),
-        VerifiedOrderedRootEdge::Released(edge) => edge.transition().source_topology(),
-    };
+    let first_topology = history
+        .edges()
+        .first()
+        .ok_or(Denial::CertificateRoster)?
+        .source_topology();
     if effective.ordered_replays().len() != batches.len() {
         return Err(Denial::CertificateRoster);
     }
@@ -103,7 +105,30 @@ pub(super) fn verify_edges(
     let mut topology = first_topology;
     let mut release_index = 0;
     for (edge_index, edge) in history.edges().iter().enumerate() {
+        retirement_edge::verify_basis(
+            history.edges(),
+            edge_index,
+            generation,
+            cutoff,
+            sample,
+            || {
+                member_absence::member_leaves_with_storage(
+                    sample, cutoff, generation, format, window, resident,
+                )
+            },
+        )?;
         let (next, part) = match edge {
+            VerifiedOrderedRootEdge::Retirement(step) => retirement_edge::verify_completed(
+                media,
+                window,
+                resident,
+                raw,
+                fold,
+                step,
+                generation,
+                format,
+                selected_root.node_capacity(),
+            )?,
             VerifiedOrderedRootEdge::Ordinary(step) => {
                 historical_chain::verify_completed_ordinary_step(
                     media,
@@ -159,10 +184,7 @@ pub(super) fn verify_edges(
         drop(storage);
         media = next;
         generation = generation.checked_add(1).ok_or(Denial::BoundExceeded)?;
-        topology = match edge {
-            VerifiedOrderedRootEdge::Ordinary(step) => step.result_topology(),
-            VerifiedOrderedRootEdge::Released(step) => step.transition().result_topology(),
-        };
+        topology = edge.result_topology();
     }
     if release_index != batches.len()
         || generation != selected_root.generation()
