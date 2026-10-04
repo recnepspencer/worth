@@ -153,6 +153,10 @@ pub(super) fn validate_blob_semantic(
             }
             directory.record()
         }
+        // A terminal head retirement member carries no data record at all.
+        PersistedPhysicalRecoveryOperation::TerminalReleaseHeadRetired(_) => {
+            return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
+        }
     };
     validate_binding(binding, identity, bytes, projection)
 }

@@ -40,6 +40,19 @@ fn copy_fixture() -> (
 }
 
 #[test]
+fn no_release_custody_does_not_yet_admit_a_terminal_head_retirement_member() {
+    let retirement = crate::physical_runtime::terminal_head_retirement_fixture::projection();
+    assert!(matches!(
+        tail_drop(retirement.operation()),
+        Err(Denial::WalFate)
+    ));
+    assert!(matches!(
+        tail_drop(&PersistedPhysicalRecoveryOperation::None),
+        Ok(None)
+    ));
+}
+
+#[test]
 fn sampled_copy_publication_requires_one_exact_earlier_durable_intent() {
     let (format, recipe, range, bytes) = copy_fixture();
     assert!(!matches_exact_copy_intent(

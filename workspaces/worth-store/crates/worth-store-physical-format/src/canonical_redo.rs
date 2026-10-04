@@ -164,7 +164,11 @@ fn decode_in_storage<S: PhysicalRecoveryDecodeStorage>(
         return Err(CanonicalRedoWireDenial::WrongDomain.into());
     }
     let count = cursor.u64()?;
-    if count == 0 || count != expected_end_lsn_exclusive.saturating_sub(expected_start_lsn) {
+    // A record-less member still occupies exactly one LSN. Only a terminal
+    // head retirement projection decodes without records, because any other
+    // projection carries a frame that no record target would then cover.
+    let span = expected_end_lsn_exclusive.saturating_sub(expected_start_lsn);
+    if span != count.max(1) {
         return Err(CanonicalRedoWireDenial::LsnRangeMismatch.into());
     }
     if count > maximum_targets {

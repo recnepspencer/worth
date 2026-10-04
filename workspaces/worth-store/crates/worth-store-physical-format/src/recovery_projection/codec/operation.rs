@@ -68,6 +68,14 @@ pub(super) fn write_operation(
             binding_bytes.push(8);
             *binding
         }
+        PersistedPhysicalRecoveryOperation::TerminalReleaseHeadRetired(retirement) => {
+            binding_bytes.push(9);
+            write_record(&mut binding_bytes, retirement.declaration_record());
+            binding_bytes.extend_from_slice(&retirement.declaration_frame_sha256());
+            field(target, &binding_bytes);
+            field(target, &encode_terminal_head_retirement(retirement));
+            return;
+        }
     };
     write_binding(&mut binding_bytes, binding);
     field(target, &binding_bytes);
@@ -184,7 +192,7 @@ pub(super) fn read_operation<S: PhysicalRecoveryDecodeStorage>(
                 }
                 7 => PersistedPhysicalRecoveryOperation::ChunkReused(value),
                 8 => PersistedPhysicalRecoveryOperation::DedupeQuarantined(value),
-                _ => unreachable!("known operation tag"),
+                _ => return Err(PhysicalRecoveryProjectionDenial::Malformed.into()),
             }
         }
         6 => {
@@ -231,6 +239,24 @@ pub(super) fn read_operation<S: PhysicalRecoveryDecodeStorage>(
                 binding: directory,
                 retirement,
             }
+        }
+        9 => {
+            let declaration_record = read_record(&mut binding)?;
+            let declaration_frame_sha256 = binding
+                .take(32)?
+                .try_into()
+                .map_err(|_| PhysicalRecoveryProjectionDenial::Malformed)?;
+            PersistedPhysicalRecoveryOperation::TerminalReleaseHeadRetired(
+                decode_terminal_head_retirement(
+                    cursor.field()?,
+                    declaration_record,
+                    declaration_frame_sha256,
+                    source_root_generation,
+                    remaining_entries,
+                    format.ok_or(PhysicalRecoveryProjectionDenial::Malformed)?,
+                    storage,
+                )?,
+            )
         }
         _ => return Err(PhysicalRecoveryProjectionDenial::Malformed.into()),
     };

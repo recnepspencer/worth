@@ -11,6 +11,8 @@ pub(crate) mod decode_storage;
 mod frame;
 mod head_effect;
 mod operation;
+mod release_head_retirement;
+mod release_head_tree_claim;
 mod released_directory_replacement;
 mod retained_storage;
 mod root_state;
@@ -21,6 +23,8 @@ pub use operation::{
     PersistedBlobSemanticRecordBinding, PersistedDerivedDirectoryRecordBinding,
     PersistedPhysicalRecoveryOperation,
 };
+pub use release_head_retirement::PersistedTerminalReleaseHeadRetirementV1;
+pub use release_head_tree_claim::PersistedReleaseHeadTreeClaim;
 pub use released_directory_replacement::PersistedReleasedDirectoryReplacementV1;
 pub use root_state::{PersistedInlineSegmentAllocation, PersistedPhysicalRecoveryRootState};
 pub use source_copy::PersistedExtentCopyRecipe;
@@ -168,9 +172,17 @@ impl PersistedPhysicalRecoveryProjection {
         operation: PersistedPhysicalRecoveryOperation,
         storage: &mut S,
     ) -> Result<Self, PhysicalRecoveryDecodeFailure<S::Denial>> {
+        // A terminal head retirement is the one record-less member: it moves no
+        // data, so it carries no record, frame, placement or inline delta.
+        let record_less = operation.is_terminal_release_head_retired();
         (source_root_generation != 0
-            && !record_identities.is_empty()
-            && !frames.is_empty()
+            && record_identities.is_empty() == record_less
+            && frames.is_empty() == record_less
+            && (!record_less
+                || (segment_updates.is_empty()
+                    && manifests.is_empty()
+                    && root_state.inline_allocations().is_empty()
+                    && root_state.last_inline_record().is_none()))
             && unique_in_storage(record_identities.iter().copied(), storage)?
             && unique_in_storage(
                 frames.iter().map(|frame| (frame.subject, frame.coordinate)),

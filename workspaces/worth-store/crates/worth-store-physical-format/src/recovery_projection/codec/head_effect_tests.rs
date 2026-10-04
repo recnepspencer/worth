@@ -159,9 +159,9 @@ fn v16_head_upsert_round_trips_and_rejects_substituted_node_bytes() {
     );
 }
 
-#[test]
-fn canonical_redo_decodes_v16_only_with_its_actual_record_format() {
-    let (projection, format) = upsert_projection();
+/// One canonical v3 member whose single record targets the fixture's extent
+/// chunk at LSN 12, carrying `projection` as its recovery projection.
+pub(super) fn one_record_member(projection: &[u8]) -> Vec<u8> {
     let field = |target: &mut Vec<u8>, bytes: &[u8]| {
         target.extend_from_slice(&(bytes.len() as u64).to_le_bytes());
         target.extend_from_slice(bytes);
@@ -188,7 +188,14 @@ fn canonical_redo_decodes_v16_only_with_its_actual_record_format() {
     field(&mut member, &target);
     member.extend_from_slice(&<[u8; 32]>::from(Sha256::digest([3])));
     field(&mut member, &[3]);
-    field(&mut member, &projection.encode());
+    field(&mut member, projection);
+    member
+}
+
+#[test]
+fn canonical_redo_decodes_v16_only_with_its_actual_record_format() {
+    let (projection, format) = upsert_projection();
+    let member = one_record_member(&projection.encode());
     let limits = PhysicalRecoveryProjectionDecodeLimits {
         frames: 1,
         record_identities: 1,
@@ -212,7 +219,7 @@ fn canonical_redo_decodes_v16_only_with_its_actual_record_format() {
     );
 }
 
-fn assert_funded_canonical_decode(
+pub(super) fn assert_funded_canonical_decode(
     member: &[u8],
     limits: PhysicalRecoveryProjectionDecodeLimits,
     format: PhysicalRecordFormatDeclaration,

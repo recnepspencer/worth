@@ -48,6 +48,7 @@
 //! let dropped = PersistedPhysicalRecoveryOperation::RecordsDropped {
 //!     binding,
 //!     head_effect: Some(head),
+//!     directory_replacement: None,
 //! };
 //! let directory = PersistedPhysicalRecoveryOperation::DerivedDirectory {
 //!     binding: PersistedDerivedDirectoryRecordBinding::new(binding, None),

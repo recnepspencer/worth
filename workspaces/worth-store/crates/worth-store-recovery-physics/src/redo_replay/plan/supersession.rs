@@ -36,18 +36,14 @@ pub(super) fn admit_scratch_bytes(
         .and_then(|count| count.checked_mul(4096))
         .and_then(|bytes| retained.checked_add(bytes))
         .ok_or(PhysicalRedoPlanningDenial::CounterOverflow)?;
-    if let worth_store_physical_format::PersistedPhysicalRecoveryOperation::RecordsDropped {
-        head_effect: Some(effect),
-        ..
-    } = projection.operation()
-    {
+    if let Some(claim) = projection.operation().release_head_tree_claim() {
         // The encoded WAL frame, decoded path/writes, and the pure planner's
         // recomputed writes can coexist. Charge all three frame rosters plus
         // conservative Vec/tree overhead before retaining this member.
-        let framed = effect
+        let framed = claim
             .framed_bytes()
             .ok_or(PhysicalRedoPlanningDenial::CounterOverflow)?;
-        let entries = effect
+        let entries = claim
             .entry_count()
             .ok_or(PhysicalRedoPlanningDenial::CounterOverflow)?;
         observed = observed

@@ -5,9 +5,9 @@
 
 use worth_store_physical_format::{
     DurablePhysicalRootManifest, PersistedPhysicalRecoveryOperation,
-    PersistedReleaseCustodyHeadEffectV1, PhysicalRecordFormatDeclaration,
-    ReleaseCustodyHeadBlockReferenceV1, ReleaseCustodyHeadNodeWriteV1,
-    ReleaseCustodyHeadPathNodeV1,
+    PersistedReleaseCustodyHeadEffectV1, PersistedReleaseHeadTreeClaim,
+    PhysicalRecordFormatDeclaration, ReleaseCustodyHeadBlockReferenceV1,
+    ReleaseCustodyHeadNodeWriteV1, ReleaseCustodyHeadPathNodeV1,
 };
 use worth_store_wal::WalLsnRange;
 
@@ -20,10 +20,16 @@ mod addressed;
 #[cfg(test)]
 #[path = "head_replay/budget_tests.rs"]
 mod budget_tests;
+#[path = "head_replay/selected_path.rs"]
+mod selected_path;
+#[path = "head_replay/terminal_retirement.rs"]
+mod terminal_retirement;
+pub use terminal_retirement::VerifiedSelectedTerminalHeadRetirementReplay;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SelectedReleaseHeadReplayDenial {
     NotAdmittedUpsert,
+    NotAdmittedTerminalHeadRetirement,
     SourceRoot,
     SourcePath,
     BoundExceeded,
@@ -70,12 +76,7 @@ impl VerifiedSelectedReleaseHeadReplayV14 {
         Read: FnMut(ReleaseCustodyHeadBlockReferenceV1, u64) -> Result<Vec<u8>, ReadError>,
     {
         Self::admit_effect(
-            match member.materialization().operation() {
-                PersistedPhysicalRecoveryOperation::RecordsDropped { head_effect, .. } => {
-                    head_effect.as_ref()
-                }
-                _ => None,
-            },
+            upsert_effect(member.materialization().operation()),
             selected.root().selected().manifest(),
             selected.root().selected().selector().format(),
             maximum_effect_bytes,
@@ -109,12 +110,7 @@ impl VerifiedSelectedReleaseHeadReplayV14 {
             .filter(|digest| plan.admits_exact_member_redo_digest(projection, *digest))
             .ok_or(SelectedReleaseHeadReplayDenial::NotAdmittedUpsert)?;
         Self::admit_effect(
-            match projection.materialization().operation() {
-                PersistedPhysicalRecoveryOperation::RecordsDropped { head_effect, .. } => {
-                    head_effect.as_ref()
-                }
-                _ => None,
-            },
+            upsert_effect(projection.materialization().operation()),
             selected.root().selected().manifest(),
             selected.root().selected().selector().format(),
             maximum_effect_bytes,
@@ -146,50 +142,24 @@ impl VerifiedSelectedReleaseHeadReplayV14 {
         Read: FnMut(ReleaseCustodyHeadBlockReferenceV1, u64) -> Result<Vec<u8>, ReadError>,
     {
         let effect = effect.ok_or(SelectedReleaseHeadReplayDenial::NotAdmittedUpsert)?;
-        let next = match effect.mutation() {
-            worth_store_physical_format::ReleaseCustodyHeadMutationV1::Upsert { next, .. } => next,
-            _ => return Err(SelectedReleaseHeadReplayDenial::NotAdmittedUpsert),
-        };
-        if source.generation() != next.source_root_generation()
+        if source.generation() != effect.next().source_root_generation()
             || source.tree_identity() != effect.tree_identity()
             || source.release_custody_head_root() != effect.source_root()
             || source.next_release_custody_head_block() != effect.source_next_block()
         {
             return Err(SelectedReleaseHeadReplayDenial::SourceRoot);
         }
-        let total = effect
-            .framed_bytes()
-            .ok_or(SelectedReleaseHeadReplayDenial::BoundExceeded)?;
-        if total > maximum_effect_bytes {
-            return Err(SelectedReleaseHeadReplayDenial::BoundExceeded);
-        }
-        let verification_peak = effect
-            .verification_additional_peak_bytes(format)
-            .ok_or(SelectedReleaseHeadReplayDenial::BoundExceeded)?;
-        let clone_bytes = effect
-            .owned_heap_bytes()
-            .ok_or(SelectedReleaseHeadReplayDenial::BoundExceeded)?;
-        let read_buffer = u64::from(format.page_size().bytes());
-        if verification_peak.max(read_buffer).max(clone_bytes) > remaining_additional_heap_bytes {
-            return Err(SelectedReleaseHeadReplayDenial::BoundExceeded);
-        }
+        let claim = PersistedReleaseHeadTreeClaim::Upsert(effect);
+        selected_path::require_claim_bounds(
+            claim,
+            format,
+            maximum_effect_bytes,
+            remaining_additional_heap_bytes,
+        )?;
         effect
             .verify_exact(source.generation(), format)
             .map_err(|_| SelectedReleaseHeadReplayDenial::NotAdmittedUpsert)?;
-        let mut read_bytes = 0_u64;
-        for node in effect.source_path() {
-            let frame = read(node.reference(), u64::from(format.page_size().bytes()))
-                .map_err(|_| SelectedReleaseHeadReplayDenial::Read)?;
-            read_bytes = read_bytes
-                .checked_add(
-                    u64::try_from(frame.len())
-                        .map_err(|_| SelectedReleaseHeadReplayDenial::BoundExceeded)?,
-                )
-                .ok_or(SelectedReleaseHeadReplayDenial::BoundExceeded)?;
-            if read_bytes > maximum_effect_bytes || frame != node.frame() {
-                return Err(SelectedReleaseHeadReplayDenial::SourcePath);
-            }
-        }
+        let read_bytes = selected_path::reread_source_path(claim, format, read)?;
         Ok(Self {
             effect: effect.clone(),
             lsn_range,
@@ -233,5 +203,16 @@ impl VerifiedSelectedReleaseHeadReplayV14 {
     }
     pub fn node_writes(&self) -> &[ReleaseCustodyHeadNodeWriteV1] {
         self.effect.node_writes()
+    }
+}
+
+/// The keyed upsert an operation carries. A terminal head retirement is a
+/// different replay and is never admitted as an upsert.
+fn upsert_effect(
+    operation: &PersistedPhysicalRecoveryOperation,
+) -> Option<&PersistedReleaseCustodyHeadEffectV1> {
+    match operation.release_head_tree_claim() {
+        Some(PersistedReleaseHeadTreeClaim::Upsert(effect)) => Some(effect),
+        Some(PersistedReleaseHeadTreeClaim::TerminalHeadRetired(_)) | None => None,
     }
 }

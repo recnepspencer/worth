@@ -25,20 +25,17 @@ impl PersistedPhysicalRecoveryProjection {
         bytes = self.manifests.iter().try_fold(bytes, |sum, manifest| {
             sum.checked_add(u64::try_from(manifest.bytes.len()).ok()?)
         })?;
-        match &self.operation {
-            PersistedPhysicalRecoveryOperation::DerivedDirectory {
-                retirement: Some(retirement),
-                ..
-            } => {
-                bytes = bytes.checked_add(boxed_bytes::<PersistedRecordIdentity>(
-                    retirement.dropped_records.len(),
-                )?)?;
-            }
-            PersistedPhysicalRecoveryOperation::RecordsDropped {
-                head_effect: Some(effect),
-                ..
-            } => bytes = bytes.checked_add(effect.owned_heap_bytes()?)?,
-            _ => {}
+        if let PersistedPhysicalRecoveryOperation::DerivedDirectory {
+            retirement: Some(retirement),
+            ..
+        } = &self.operation
+        {
+            bytes = bytes.checked_add(boxed_bytes::<PersistedRecordIdentity>(
+                retirement.dropped_records.len(),
+            )?)?;
+        }
+        if let Some(claim) = self.operation.release_head_tree_claim() {
+            bytes = bytes.checked_add(claim.owned_heap_bytes()?)?;
         }
         match &self.payload {
             PersistedPhysicalRecoveryPayload::Frames(frames) => {

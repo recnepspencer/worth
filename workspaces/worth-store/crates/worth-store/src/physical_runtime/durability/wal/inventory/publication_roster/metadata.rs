@@ -1,6 +1,7 @@
 //! Grant-bounded decoding of one authenticated WAL publication member.
 //! The returned flag reports a released drop: V3 `RecordsDropped` with a
-//! release-custody head effect.
+//! release-custody head effect. A terminal head retirement member is not yet
+//! admitted to the reopened roster.
 
 use super::*;
 
@@ -85,6 +86,9 @@ pub(super) fn decode_metadata(
             }
             _ => PhysicalWalOpenFailure::MemberPayloadRejected,
         })?;
+            if projection.operation().is_terminal_release_head_retired() {
+                return Err(PhysicalWalOpenFailure::MemberPayloadRejected);
+            }
             (
                 projection.source_root_generation(),
                 Some(projection.root_state().successor_manifest_capacity()),

@@ -25,6 +25,8 @@ mod projection_mutants;
 mod rewrite_payload;
 #[path = "plan_tests/supersession.rs"]
 mod supersession;
+#[path = "plan_tests/terminal_head_retirement.rs"]
+mod terminal_head_retirement;
 
 use fixtures::*;
 

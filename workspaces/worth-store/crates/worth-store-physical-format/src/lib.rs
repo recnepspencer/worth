@@ -304,7 +304,8 @@ pub use recovery_projection::{
     PersistedPhysicalRecoveryManifest, PersistedPhysicalRecoveryOperation,
     PersistedPhysicalRecoveryPayload, PersistedPhysicalRecoveryProjection,
     PersistedPhysicalRecoveryRootState, PersistedReleaseCustodyHeadEffectV1,
-    PersistedReleasedDirectoryReplacementV1, PhysicalRecoveryDecodeFailure,
+    PersistedReleaseHeadTreeClaim, PersistedReleasedDirectoryReplacementV1,
+    PersistedTerminalReleaseHeadRetirementV1, PhysicalRecoveryDecodeFailure,
     PhysicalRecoveryDecodeStorage, PhysicalRecoveryProjectionDecodeLimits,
     PhysicalRecoveryProjectionDenial,
 };

@@ -200,6 +200,28 @@ fn the_same_valid_member_admits_with_sufficient_grant_and_denies_with_one_entry_
     ));
 }
 
+#[test]
+fn wal_open_does_not_yet_admit_a_terminal_head_retirement_member() {
+    let redo = crate::physical_runtime::terminal_head_retirement_fixture::canonical_redo();
+    let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
+    let bound = redo.len() as u64;
+    let limits = PhysicalRecoveryProjectionDecodeLimits {
+        frames: bound,
+        record_identities: bound,
+        placements: bound,
+        segment_updates: bound,
+        manifests: bound,
+        total_entries: bound * 3,
+        inline_allocations: bound,
+    };
+    // The member itself is well formed; the roster is what refuses it.
+    assert!(decode_canonical_redo_v3(&redo, 1, 2, bound, None, limits, format).is_ok());
+    assert_eq!(
+        decode_metadata(&redo, range_lsn(), format, u64::MAX),
+        Err(PhysicalWalOpenFailure::MemberPayloadRejected)
+    );
+}
+
 fn range_lsn() -> WalLsnRange {
     range(1, 2)
 }

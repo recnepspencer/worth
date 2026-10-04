@@ -230,6 +230,42 @@ fn ordinary_append_delta_rejects_unrelated_route_free_and_root_hint_changes() {
 }
 
 #[test]
+fn a_terminal_head_retirement_is_never_an_ordinary_root_step() {
+    use crate::redo_replay::terminal_head_retirement_fixture as retirement;
+    let format = retirement::format();
+    let routes = [route(1, 1, 0)];
+    let entries = [free_entry(8192, 12288, 1)];
+    let generation = retirement::SOURCE_GENERATION;
+    let (source_root, source_free) = snapshot(generation, &routes, &entries, 3, None, format);
+    let (result_root, result_free) = snapshot(generation + 1, &routes, &entries, 3, None, format);
+    let source = ReleasedInventoryView::new(&source_root, &source_free, &routes, &[], &entries);
+    let result = ReleasedInventoryView::new(&result_root, &result_free, &routes, &[], &entries);
+    let selected = retirement::selected_terminal_head(vec![
+        retirement::terminal_head(),
+        retirement::survivor(),
+    ]);
+    let projection = retirement::projection(selected.retirement);
+    let group = PhysicalRedoGroupBinding::new([1; 32], [2; 32], 1, 1, [3; 32]).unwrap();
+    let range = WalLsnRange::new(LogSequenceNumber::new(10), LogSequenceNumber::new(11)).unwrap();
+    assert_eq!(
+        VerifiedOrdinaryRootStep::check(
+            source,
+            result,
+            Some(range),
+            [4; 32],
+            group,
+            RecoveryOperationFate::Indeterminate,
+            [5; 32],
+            &projection,
+            format,
+            16,
+            1 << 20,
+        ),
+        Err(OrdinaryRootStepDenial::InvalidMember)
+    );
+}
+
+#[test]
 fn store_recheck_requires_exact_member_and_independent_topology() {
     let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
     let source_routes = [route(1, 1, 0), route(2, 2, 4096)];

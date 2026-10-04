@@ -5,7 +5,8 @@ use crate::{
 
 use super::{
     PersistedDerivedDirectoryRetirement, PersistedReleaseCustodyHeadEffectV1,
-    PersistedReleasedDirectoryReplacementV1,
+    PersistedReleaseHeadTreeClaim, PersistedReleasedDirectoryReplacementV1,
+    PersistedTerminalReleaseHeadRetirementV1,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -75,6 +76,9 @@ pub enum PersistedPhysicalRecoveryOperation {
     },
     ChunkReused(PersistedBlobSemanticRecordBinding),
     DedupeQuarantined(PersistedBlobSemanticRecordBinding),
+    /// A terminal release head left the head tree. The only operation whose
+    /// member carries no data record.
+    TerminalReleaseHeadRetired(PersistedTerminalReleaseHeadRetirementV1),
 }
 
 impl PersistedBlobSemanticRecordBinding {
@@ -104,6 +108,35 @@ impl PersistedBlobSemanticRecordBinding {
 }
 
 impl PersistedPhysicalRecoveryOperation {
+    pub const fn is_terminal_release_head_retired(&self) -> bool {
+        matches!(self, Self::TerminalReleaseHeadRetired(_))
+    }
+
+    /// The head-tree frames this operation carries, if any. Exhaustive, so a
+    /// new operation must state whether it owns such a claim.
+    pub const fn release_head_tree_claim(&self) -> Option<PersistedReleaseHeadTreeClaim<'_>> {
+        match self {
+            Self::RecordsDropped {
+                head_effect: Some(effect),
+                ..
+            } => Some(PersistedReleaseHeadTreeClaim::Upsert(effect)),
+            Self::TerminalReleaseHeadRetired(retirement) => Some(
+                PersistedReleaseHeadTreeClaim::TerminalHeadRetired(retirement),
+            ),
+            Self::None
+            | Self::SessionDeclared(_)
+            | Self::GenerationPublished(_)
+            | Self::SessionFrontier(_)
+            | Self::SessionAbandoned(_)
+            | Self::RecordsDropped {
+                head_effect: None, ..
+            }
+            | Self::DerivedDirectory { .. }
+            | Self::ChunkReused(_)
+            | Self::DedupeQuarantined(_) => None,
+        }
+    }
+
     pub(super) fn admits(
         &self,
         source_root_generation: u64,
@@ -112,6 +145,10 @@ impl PersistedPhysicalRecoveryOperation {
     ) -> bool {
         let binding = match self {
             Self::None => return true,
+            Self::TerminalReleaseHeadRetired(retirement) => {
+                return placements.is_empty()
+                    && retirement.source_root_generation() == source_root_generation;
+            }
             Self::DerivedDirectory {
                 binding,
                 retirement,

@@ -2,7 +2,8 @@ use sha2::{Digest, Sha256};
 use worth_store_physical_format::store_namespace::StableStoreIdentity;
 use worth_store_physical_format::{
     BlobReclaimSourceBasisV1, BlobRecordV1, PersistedPhysicalRecoveryOperation,
-    PersistedPhysicalRecoveryProjection, PhysicalRecordFormatDeclaration,
+    PersistedPhysicalRecoveryProjection, PersistedReleaseHeadTreeClaim,
+    PersistedTerminalReleaseHeadRetirementV1, PhysicalRecordFormatDeclaration,
     ReleaseCustodyHeadMutationV1,
 };
 
@@ -14,12 +15,12 @@ pub(super) fn validate_release_head_effect(
     store: StableStoreIdentity,
     format: PhysicalRecordFormatDeclaration,
 ) -> Result<(), PhysicalRedoPlanningDenial> {
-    let PersistedPhysicalRecoveryOperation::RecordsDropped {
-        head_effect: Some(effect),
-        ..
-    } = projection.operation()
-    else {
-        return Ok(());
+    let effect = match projection.operation().release_head_tree_claim() {
+        None => return Ok(()),
+        Some(PersistedReleaseHeadTreeClaim::TerminalHeadRetired(retirement)) => {
+            return validate_terminal_head_retirement(retirement, store, format);
+        }
+        Some(PersistedReleaseHeadTreeClaim::Upsert(effect)) => effect,
     };
     let Some(record) = records.first() else {
         return invalid();
@@ -96,9 +97,28 @@ fn validate_head_descriptor(
     Ok(())
 }
 
+/// A terminal head retirement moves no data, so C.9 has no record to bind it
+/// to. C.9 binds the claim to this store and recomputes the exact removal from
+/// the carried path; the selected tree and the bound session declaration are
+/// joined by the owners that read media.
+fn validate_terminal_head_retirement(
+    retirement: &PersistedTerminalReleaseHeadRetirementV1,
+    store: StableStoreIdentity,
+    format: PhysicalRecordFormatDeclaration,
+) -> Result<(), PhysicalRedoPlanningDenial> {
+    if retirement.source_basis().publication().store() != store.bytes() {
+        return invalid();
+    }
+    retirement
+        .verify_exact(format)
+        .map_err(|_| PhysicalRedoPlanningDenial::InvalidRecoveryProjection)
+}
+
 fn invalid<T>() -> Result<T, PhysicalRedoPlanningDenial> {
     Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)
 }
 
+#[cfg(test)]
+mod terminal_retirement_tests;
 #[cfg(test)]
 mod tests;

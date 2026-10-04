@@ -5,8 +5,9 @@
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 use worth_store_physical_format::{
-    decode_canonical_redo_v3, PersistedPhysicalRecoveryOperation, PhysicalExtentCopyRecord,
-    PhysicalRecordFormatDeclaration, PhysicalRecoveryProjectionDecodeLimits,
+    decode_canonical_redo_v3, PersistedBlobSemanticRecordBinding,
+    PersistedPhysicalRecoveryOperation, PhysicalExtentCopyRecord, PhysicalRecordFormatDeclaration,
+    PhysicalRecoveryProjectionDecodeLimits,
 };
 use worth_store_recovery_physics::{
     admit_current_source_copy_publication, VerifiedSelectedNoReleaseCustody,
@@ -120,15 +121,33 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn verif
             format,
         )
         .map_err(|_| Denial::WalFate)?;
-        if let PersistedPhysicalRecoveryOperation::RecordsDropped { binding, .. } =
-            projection.operation()
-        {
+        if let Some(binding) = tail_drop(projection.operation())? {
             if !controls.admits_drop(*binding) || !seen_drops.insert(binding.record()) {
                 return Err(Denial::WalFate);
             }
         }
     }
     Ok(())
+}
+
+/// The drop a selected-tail member carries, if any. NoRelease custody does
+/// not yet admit a terminal head retirement member.
+fn tail_drop(
+    operation: &PersistedPhysicalRecoveryOperation,
+) -> Result<Option<&PersistedBlobSemanticRecordBinding>, Denial> {
+    use PersistedPhysicalRecoveryOperation as Operation;
+    match operation {
+        Operation::RecordsDropped { binding, .. } => Ok(Some(binding)),
+        Operation::TerminalReleaseHeadRetired(_) => Err(Denial::WalFate),
+        Operation::None
+        | Operation::SessionDeclared(_)
+        | Operation::GenerationPublished(_)
+        | Operation::SessionFrontier(_)
+        | Operation::SessionAbandoned(_)
+        | Operation::ChunkReused(_)
+        | Operation::DedupeQuarantined(_)
+        | Operation::DerivedDirectory { .. } => Ok(None),
+    }
 }
 
 fn matches_exact_copy_intent<'a>(

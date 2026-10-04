@@ -183,6 +183,16 @@ impl AdmittedPhysicalRedoMembers {
         self,
         observations: Vec<RecoveryPageObservation>,
     ) -> Result<ImmutablePhysicalRedoPlan, PhysicalRedoPlanningDenial> {
+        // A record-less member has no page decision to carry its fate or its
+        // group through the plan, so no plan may contain one.
+        if self.members.iter().any(|member| {
+            member
+                .projection
+                .operation()
+                .is_terminal_release_head_retired()
+        }) {
+            return Err(PhysicalRedoPlanningDenial::TerminalHeadRetirementUnsupported);
+        }
         let superseded = super::supersession::observed_predecessors(&self.members, &observations)?;
         let group_allocations = self.group_allocations;
         let mut page_cursor = RecoveryPageCursor::new(observations)?;

@@ -2,6 +2,8 @@ mod cursor;
 mod denial;
 mod plan;
 mod record;
+#[cfg(test)]
+pub(crate) mod terminal_head_retirement_fixture;
 
 pub use cursor::{
     HistoricalReleasedDropTargetWitness, HistoricalRetiredTargetWitness, RecoveryPageObservation,
@@ -18,6 +20,7 @@ pub use plan::{
     PhysicalRedoGroupBinding, PhysicalRedoMemberInput, PhysicalRedoPlanCounters,
     PhysicalRedoProjection, PhysicalRewriteAdmission, SelectedReleaseHeadReplayDenial,
     VerifiedOrderedReleasedHeadReplayV14, VerifiedSelectedReleaseHeadReplayV14,
+    VerifiedSelectedTerminalHeadRetirementReplay,
 };
 pub use record::{
     decode_physical_redo_records, PhysicalRedoExtentCoordinate, PhysicalRedoRecord,

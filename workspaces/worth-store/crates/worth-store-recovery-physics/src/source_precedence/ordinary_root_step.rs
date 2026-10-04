@@ -149,7 +149,10 @@ impl VerifiedOrdinaryRootStep {
             return Err(Denial::BoundExceeded);
         }
         if matches!(fate, RecoveryOperationFate::ProvenNoEffect)
-            || matches!(projection.operation(), Semantic::RecordsDropped { .. })
+            || matches!(
+                projection.operation(),
+                Semantic::RecordsDropped { .. } | Semantic::TerminalReleaseHeadRetired(_)
+            )
             || projection.source_root_generation() != source.root.generation()
             || source.root.generation().checked_add(1) != Some(result.root.generation())
             || result.root.generation() != result.free.generation()

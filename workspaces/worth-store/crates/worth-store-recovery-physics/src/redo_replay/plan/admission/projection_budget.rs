@@ -42,15 +42,11 @@ pub(super) fn consume_projection_limits(
         .saturating_add(projection.manifests().len()) as u64;
     let consumed_entries = consumed_entries
         .checked_add(
-            (match projection.operation() {
-                worth_store_physical_format::PersistedPhysicalRecoveryOperation::RecordsDropped {
-                    head_effect,
-                    ..
-                } => head_effect.as_ref(),
-                _ => None,
-            })
-                .map(|effect| {
-                    effect
+            projection
+                .operation()
+                .release_head_tree_claim()
+                .map(|claim| {
+                    claim
                         .entry_count()
                         .ok_or(PhysicalRedoPlanningDenial::CounterOverflow)
                 })

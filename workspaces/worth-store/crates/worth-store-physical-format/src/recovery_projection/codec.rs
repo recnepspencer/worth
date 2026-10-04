@@ -20,6 +20,11 @@ mod operation;
 use operation::{read_operation, write_operation};
 mod placement;
 use placement::{read_placement, write_placement};
+mod release_head_retirement;
+use release_head_retirement::{decode_terminal_head_retirement, encode_terminal_head_retirement};
+#[cfg(test)]
+#[path = "codec/release_head_retirement_tests.rs"]
+mod release_head_retirement_tests;
 mod segment_update;
 use segment_update::{read_segment_update, write_segment_update};
 mod sequence;

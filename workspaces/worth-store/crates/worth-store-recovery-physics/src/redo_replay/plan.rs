@@ -80,7 +80,7 @@ pub use admission::{
 };
 pub use head_replay::{
     SelectedReleaseHeadReplayDenial, VerifiedOrderedReleasedHeadReplayV14,
-    VerifiedSelectedReleaseHeadReplayV14,
+    VerifiedSelectedReleaseHeadReplayV14, VerifiedSelectedTerminalHeadRetirementReplay,
 };
 pub use historical_consumed::HistoricalConsumedOperationSet;
 

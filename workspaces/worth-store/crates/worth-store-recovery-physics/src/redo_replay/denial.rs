@@ -5,7 +5,10 @@ pub enum PhysicalRedoPlanningDenial {
     RecordCountLimit,
     TargetLimit,
     DistinctTargetLimit,
-    RecoveryMemoryLimit { observed: u64, admitted: u64 },
+    RecoveryMemoryLimit {
+        observed: u64,
+        admitted: u64,
+    },
     InvalidRecordOrder,
     NonCanonicalTargetOrder,
     LsnRangeMismatch,
@@ -17,4 +20,7 @@ pub enum PhysicalRedoPlanningDenial {
     PageDigestMismatch,
     ProvenNoEffectHasWalAttempt,
     CounterOverflow,
+    /// A terminal head retirement member was admitted by C.9 but cannot yet
+    /// be planned.
+    TerminalHeadRetirementUnsupported,
 }

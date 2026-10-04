@@ -31,6 +31,8 @@ mod root_admission;
 mod runtime;
 mod shutdown;
 pub mod stability;
+#[cfg(test)]
+mod terminal_head_retirement_fixture;
 mod work;
 
 pub use admission::{
