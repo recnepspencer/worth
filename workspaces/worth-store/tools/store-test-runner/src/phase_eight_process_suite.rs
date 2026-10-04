@@ -8,6 +8,11 @@ mod child;
 const WRITER_ENV: &str = "WORTH_STORE_PHASE8_WRITER";
 const OBSERVER_ENV: &str = "WORTH_STORE_PHASE8_OBSERVER";
 const RECOVERY_ENV: &str = "WORTH_STORE_PHASE8_RECOVERY";
+// The children are killed, never power-cut, so they skip the OS flush exactly
+// as the in-process suites do.
+const WRITER_FEATURES: &str = "volatile-sync-for-tests";
+const RECOVERY_FEATURES: &str =
+    "worth-store-recovery-runtime/certification-test-authority,worth-store/volatile-sync-for-tests";
 
 struct ProcessBinaries {
     target: PathBuf,
@@ -50,7 +55,7 @@ impl ProcessBinaries {
             &target,
             "worth-store",
             "physical_store_c8_writer",
-            None,
+            Some(WRITER_FEATURES),
         )?;
         build(
             workspace,
@@ -64,7 +69,7 @@ impl ProcessBinaries {
             &target,
             "worth-store-recovery-runtime",
             "physical_store_recover",
-            Some("worth-store-recovery-runtime/certification-test-authority"),
+            Some(RECOVERY_FEATURES),
         )?;
         Ok(Self {
             writer: executable(&target, "physical_store_c8_writer")?,
