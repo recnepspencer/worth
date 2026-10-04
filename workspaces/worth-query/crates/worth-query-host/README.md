@@ -81,6 +81,12 @@ controls and child artifact limits only narrow the relevant dimensions. A handle
 `settle(&request)` owns bounded progression and reports `Pending` when necessary;
 applications do not implement retry counts in query-work units.
 
+Before delivering stored output values, select one fresh retained observation.
+Its `require_current_output_demand` checks a direct root/dependent settlement;
+`require_current_program_output` checks the whole program settlement. Both require
+native source lineage at that same observation, including receipt-free checkpoint
+reuse. Read the descriptive fields through that retained request after admission.
+
 For ordinary candidate declarations, use
 `ApplicationCandidateResourceCeiling::representation_bytes(bytes)` (or omit
 `validator_work` in the mutation-binding macro). Installation derives validator

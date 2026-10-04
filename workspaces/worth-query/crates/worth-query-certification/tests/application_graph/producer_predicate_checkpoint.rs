@@ -1,8 +1,11 @@
 //! A real producer's handler predicate survives captured output readmission.
+use std::num::NonZeroUsize;
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationOutputDemandProgress, WorthQueryApplicationRequestExt,
+    WorthQueryOutputCurrentnessDenial,
 };
 use worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster;
+use worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind;
 use worth_relational::facade::identity::EntityId;
 
 use super::document_retention_model::{
@@ -21,7 +24,7 @@ use program::{validated_program, AssessmentRoot};
 
 #[test]
 fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_change() {
-    let (checkpoint, subject) = {
+    let (checkpoint, subject, foreign_settlement) = {
         let host = publish(
             validated_program(),
             WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
@@ -61,7 +64,7 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
             sections.accepted_output_bytes(),
             subject,
         );
-        (checkpoint, subject)
+        (checkpoint, subject, settled)
     };
     let restored = restore(
         validated_program(),
@@ -109,13 +112,29 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
             .entity_id(),
         subject
     );
-    drop(settled);
+    let unchanged = request.retain_read().unwrap();
+    assert!(matches!(request.at(&unchanged)
+        .require_current_output_demand(&foreign_settlement, NonZeroUsize::new(4096).unwrap()),
+        Err(WorthQueryOutputCurrentnessDenial::Output(e)) if e.kind()==WorthQueryOutputDemandDenialKind::ForeignSettlement));
+    drop(foreign_settlement);
+    request
+        .at(&unchanged)
+        .require_current_output_demand(&settled, NonZeroUsize::new(4096).unwrap())
+        .expect("receipt-free restored output has current native lineage");
+    assert!(matches!(request.at(&unchanged)
+        .require_current_output_demand(&settled, NonZeroUsize::new(1).unwrap()),
+        Err(WorthQueryOutputCurrentnessDenial::Output(e)) if e.kind()==WorthQueryOutputDemandDenialKind::WorkBudgetExceeded));
     drop(handle);
 
     assert_eq!(
         settle(set_retention(&restored, restored.current_world(), 6, 871)),
         RetentionVerdict::Performed(6)
     );
+    let current = request.retain_read().unwrap();
+    assert!(matches!(request.at(&current)
+        .require_current_output_demand(&settled, NonZeroUsize::new(4096).unwrap()),
+        Err(WorthQueryOutputCurrentnessDenial::Output(e)) if e.kind()==WorthQueryOutputDemandDenialKind::Superseded));
+    drop(settled);
     let mut changed = request
         .demand(RetentionAssessmentDemand::new(DOCUMENT_IDENTITY))
         .start_in_program::<_, AssessmentRoot>(&restored)
@@ -127,6 +146,11 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
     };
     assert_eq!(refreshed.producer_contacts_in_this_demand(), 1);
     assert!(refreshed.application_commit_receipt().is_some());
+    let current = request.retain_read().unwrap();
+    request
+        .at(&current)
+        .require_current_output_demand(&refreshed, NonZeroUsize::new(4096).unwrap())
+        .expect("fresh producer settlement is current");
 }
 
 fn assert_captured_document_predicate(bytes: &[u8], accepted_bytes: usize, subject: EntityId) {
