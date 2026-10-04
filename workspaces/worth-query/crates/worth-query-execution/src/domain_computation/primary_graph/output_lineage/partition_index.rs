@@ -12,7 +12,7 @@ use super::{
 pub(super) struct OutputPartitionIndex {
     slots: HashMap<
         SemanticSource,
-        HashMap<ProductBranchIncarnation, HashMap<[u8; 32], BTreeMap<u64, usize>>>,
+        HashMap<ProductBranchIncarnation, BTreeMap<Option<[u8; 32]>, BTreeMap<u64, usize>>>,
     >,
 }
 
@@ -22,7 +22,7 @@ impl OutputPartitionIndex {
         source: SemanticSource,
         occurrence: ProductBranchIncarnation,
         generation: u64,
-        partition: [u8; 32],
+        partition: Option<[u8; 32]>,
         slot: usize,
     ) {
         assert!(
@@ -49,7 +49,7 @@ impl OutputPartitionIndex {
         self.slots
             .get(source)?
             .get(&occurrence)?
-            .get(&partition)?
+            .get(&Some(partition))?
             .get(&generation)
             .copied()
     }
@@ -63,7 +63,7 @@ impl OutputPartitionIndex {
         self.slots
             .get(source)?
             .get(&coordinate.occurrence)?
-            .get(&partition)?
+            .get(&Some(partition))?
             .range(..=coordinate.generation)
             .next_back()
             .map(|(generation, slot)| (*generation, *slot))
@@ -78,12 +78,54 @@ impl OutputPartitionIndex {
 }
 
 impl WorthQueryApplicationOutputLineage {
+    #[allow(clippy::type_complexity)]
+    pub(super) fn family_partition_heads_budgeted(
+        &self,
+        source: &SemanticSource,
+        coordinate: ProductCoordinate,
+        maximum_work: usize,
+    ) -> Result<(Vec<(Option<[u8; 32]>, &RecordedOutput)>, usize), ()> {
+        if maximum_work == 0 {
+            return Err(());
+        }
+        let mut heads = Vec::new();
+        let mut work = 0usize;
+        if let Some(partitions) = self
+            .partition_index
+            .slots
+            .get(source)
+            .and_then(|occurrences| occurrences.get(&coordinate.occurrence))
+        {
+            for (partition, generations) in partitions {
+                work = work.checked_add(1).ok_or(())?;
+                if work > maximum_work {
+                    return Err(());
+                }
+                if let Some((generation, slot)) =
+                    generations.range(..=coordinate.generation).next_back()
+                {
+                    heads.push((
+                        *partition,
+                        self.recorded_at_partition_slot(
+                            source,
+                            coordinate.occurrence,
+                            *generation,
+                            *partition,
+                            *slot,
+                        ),
+                    ));
+                }
+            }
+        }
+        Ok((heads, work.max(1)))
+    }
+
     fn recorded_at_partition_slot(
         &self,
         source: &SemanticSource,
         occurrence: ProductBranchIncarnation,
         generation: u64,
-        partition: [u8; 32],
+        partition: Option<[u8; 32]>,
         slot: usize,
     ) -> &RecordedOutput {
         let recorded = self
@@ -94,8 +136,7 @@ impl WorthQueryApplicationOutputLineage {
             .and_then(|records| records.get(slot))
             .expect("a partition locator must reference retained output authority");
         assert_eq!(
-            recorded.source_partition_identity,
-            Some(partition),
+            recorded.source_partition_identity, partition,
             "a partition locator must reference the same semantic partition"
         );
         recorded
@@ -119,7 +160,7 @@ impl WorthQueryApplicationOutputLineage {
                     source,
                     coordinate.occurrence,
                     generation,
-                    partition,
+                    Some(partition),
                     slot,
                 )
             });
@@ -140,7 +181,7 @@ impl WorthQueryApplicationOutputLineage {
             .slots
             .get(source)
             .and_then(|occurrences| occurrences.get(&coordinate.occurrence))
-            .and_then(|partitions| partitions.get(&partition))
+            .and_then(|partitions| partitions.get(&Some(partition)))
         {
             for (generation, slot) in generations.range(..=coordinate.generation).rev() {
                 work = work.checked_add(1).ok_or(())?;
@@ -151,7 +192,7 @@ impl WorthQueryApplicationOutputLineage {
                     source,
                     coordinate.occurrence,
                     *generation,
-                    partition,
+                    Some(partition),
                     *slot,
                 );
                 if matches(recorded) {

@@ -83,7 +83,7 @@ impl WorthQueryApplicationOutputLineage {
             source,
             occurrence,
             generation_number,
-            source_partition_identity,
+            Some(source_partition_identity),
             slot,
         );
         self.live_occurrences
@@ -152,7 +152,7 @@ impl WorthQueryApplicationOutputLineage {
             source,
             occurrence,
             generation,
-            source_partition_identity,
+            Some(source_partition_identity),
             slot,
         );
         self.live_occurrences.insert(occurrence);

@@ -1,5 +1,6 @@
 //! Complete construction of one contribution-composed in-memory application.
 
+mod checkpoint_lineage;
 mod denial;
 mod limits;
 mod profile;
@@ -290,5 +291,6 @@ where
                 .transpose()?
                 .unwrap_or_default(),
         );
+    checkpoint_lineage::restore(&application).map_err(Denial::Graph)?;
     Ok(application)
 }

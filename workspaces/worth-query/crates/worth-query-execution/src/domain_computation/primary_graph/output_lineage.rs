@@ -2,6 +2,7 @@
 
 mod current_output;
 mod denial;
+mod family_selection;
 mod partition_index;
 mod qualification;
 mod recorded_source_identity;
@@ -207,92 +208,13 @@ impl WorthQueryApplicationOutputLineage {
             observed_source_facts: Some(evidence.retain_observed_source_facts()),
             resources: None,
         });
-        if let Some(partition) = partition {
-            self.partition_index.insert(
-                source,
-                coordinate.occurrence,
-                coordinate.generation,
-                partition,
-                slot,
-            );
-        }
-    }
-
-    pub(super) fn resolve_current_family(
-        &self,
-        runtime_authority: u64,
-        schema: &ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-        family: &str,
-        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-        generation: u64,
-        maximum_source_lookups: usize,
-    ) -> Result<WorthQueryCurrentOutputFamilyResolution, ()> {
-        let Some(bindings) = self.output_families.get(family) else {
-            return Ok(WorthQueryCurrentOutputFamilyResolution {
-                family_installed: false,
-                candidates: Vec::new(),
-                source_lookups: 1,
-            });
-        };
-        let mut candidates = Vec::new();
-        let mut source_lookups = 0_usize;
-        for (output_binding, output_role) in bindings {
-            let source = SemanticSource {
-                runtime_authority,
-                schema: schema.clone(),
-                scope,
-                output_binding: *output_binding,
-            };
-            source_lookups = source_lookups.saturating_add(1);
-            if source_lookups > maximum_source_lookups {
-                return Err(());
-            }
-            let Some(versions) = self.by_source.get(&source) else {
-                continue;
-            };
-            let mut coordinate = ProductCoordinate {
-                occurrence,
-                generation,
-            };
-            loop {
-                source_lookups = source_lookups.saturating_add(1);
-                if source_lookups > maximum_source_lookups {
-                    return Err(());
-                }
-                if let Some(recorded) = versions
-                    .get(&coordinate.occurrence)
-                    .and_then(|history| history.range(..=coordinate.generation).next_back())
-                    .and_then(|(_, recorded)| {
-                        recorded
-                            .iter()
-                            .rev()
-                            .find(|recorded| recorded.observed_source_facts.is_some())
-                    })
-                {
-                    candidates.push(WorthQueryCurrentOutputCandidate {
-                        correspondence: Arc::clone(&recorded.correspondence),
-                        output_role: output_role.clone(),
-                        observed_source_facts: Arc::clone(
-                            recorded
-                                .observed_source_facts
-                                .as_ref()
-                                .expect("a current-output candidate has source facts"),
-                        ),
-                    });
-                    break;
-                }
-                let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {
-                    break;
-                };
-                coordinate = parent;
-            }
-        }
-        Ok(WorthQueryCurrentOutputFamilyResolution {
-            family_installed: true,
-            candidates,
-            source_lookups,
-        })
+        self.partition_index.insert(
+            source,
+            coordinate.occurrence,
+            coordinate.generation,
+            partition,
+            slot,
+        );
     }
 
     pub(super) fn resolve_binding<Binding: 'static>(
