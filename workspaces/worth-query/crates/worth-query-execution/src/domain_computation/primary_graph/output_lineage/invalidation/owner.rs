@@ -25,6 +25,8 @@ pub(in crate::domain_computation) struct SourceInvalidationOwner {
     pub(super) runtime_instance_id: u64,
     pub(super) resources: WorthQueryInvalidationResources,
     pub(super) branches: Mutex<BranchCells>,
+    /// Released rows that have not left yet. The next release retries them.
+    pub(super) released: Mutex<Vec<Arc<super::super::RecordedSettlementIdentity>>>,
 }
 
 pub(super) struct BranchCells {
@@ -54,6 +56,7 @@ impl SourceInvalidationOwner {
                 branch_name_bytes: 0,
                 retained_capacity: None,
             }),
+            released: Mutex::new(Vec::new()),
         }
     }
 
@@ -136,12 +139,12 @@ impl SourceInvalidationOwner {
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
         )?;
         let mut initial = BranchMarkRoot::initial();
-        retention::admit_state(
+        retention::admit_first(
             Arc::get_mut(&mut initial.current).expect("new state is exclusive"),
             &self.resources,
             admission,
         )?;
-        retention::admit_root(&mut initial, &self.resources, admission)?;
+        retention::admit_root(&mut initial, None, &self.resources, admission)?;
         Ok(Arc::new(initial))
     }
 
@@ -249,15 +252,17 @@ impl RelationalPublicationCompanion for SourceInvalidationOwner {
                 next_delivery: delivered,
             },
         );
+        let mut left = None;
         if root.past.len() > self.resources.installation().maximum_retained_positions {
             context.ordered_remove::<Option<worth_relational::facade::publication::PatchStreamPosition>, HistoricalMarkState>(root.past.len())?;
             if let Some(oldest) = root.past.get_min().map(|(position, _)| *position) {
-                root.past.remove(&oldest);
+                left = root.past.remove(&oldest);
             }
         }
         root.current = Arc::new(state);
         root.last_native_marking = Some(report);
-        retention::admit_root(&mut root, &self.resources, context)?;
+        let left = left.as_ref().map(|left| &*left.state);
+        retention::admit_root(&mut root, left, &self.resources, context)?;
         let mut effect = context.seal_replacement(reserved, Arc::new(root))?;
         if !selected.is_empty() {
             let retained = retention::reserve(

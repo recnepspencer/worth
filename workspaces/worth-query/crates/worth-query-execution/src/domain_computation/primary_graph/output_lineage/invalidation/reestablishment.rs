@@ -155,6 +155,7 @@ impl SourceInvalidationOwner {
             }
         }
 
+        let before = admission.charged_bytes();
         admission.bytes(
             index_capacity::arc_bytes::<SettlementMarks>()
                 .and_then(|bytes| {
@@ -176,7 +177,7 @@ impl SourceInvalidationOwner {
         )?;
         next.settlements
             .insert(Arc::clone(identity), Arc::new(replacement));
-        self.install_live_state(cell, image, next, admission)?;
+        self.install_live_state(cell, image, (next, before), admission)?;
         Ok(true)
     }
 }

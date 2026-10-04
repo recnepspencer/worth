@@ -5,6 +5,8 @@
 mod current_registration;
 #[path = "native_journey_tests/dirty_clearance_tests.rs"]
 mod dirty_clearance_tests;
+#[path = "native_journey_tests/displaced_generation.rs"]
+mod displaced_generation;
 #[path = "native_journey_tests/equal_field_write.rs"]
 mod equal_field_write;
 #[path = "native_journey_tests/equality.rs"]
@@ -27,6 +29,8 @@ mod precommit_chain;
 mod replay_propagation;
 #[path = "native_journey_tests/required_hints.rs"]
 mod required_hints;
+#[path = "native_journey_tests/shared_versions.rs"]
+mod shared_versions;
 #[path = "native_journey_tests/undeclared_change.rs"]
 mod undeclared_change;
 #[path = "native_journey_tests/verified_current.rs"]

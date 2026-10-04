@@ -6,6 +6,7 @@ mod ready;
 mod schedule_progression;
 mod source_guard;
 use schedule_progression::{OwnStages, ScheduleProgression};
+use source_guard::SourceGuard;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -34,14 +35,22 @@ where
         const WAITING: OwnStages = OwnStages::Answer(WorthQueryOutputDemandAdvance::Pending);
         let disclosed_value = disclosure.value();
         let disclosed_source = disclosure.source();
-        self.prepare_progression_entry(
+        if let SourceGuard::Replaced = self.prepare_progression_entry(
             demand,
             disclosed_source,
             &commit_authority,
             entry,
             &schedule_progression,
             request_admission,
-        )?;
+        )? {
+            // Decided before the row is begun, so nothing is claimed.
+            return self.leave_replaced_source(
+                demand,
+                disclosure,
+                schedule_progression.is_selected(),
+                request_admission,
+            );
+        }
         if schedule_progression.is_selected() {
             // Validate the immutable selected input before changing registry state.
             entry::validate_progression_resources(
@@ -98,12 +107,6 @@ where
         let successor_of = loop {
             match admission_phase {
                 Admission::Schedule(performed_source) => {
-                    self.require_progression_source(
-                        interest,
-                        demand,
-                        disclosed_source,
-                        &schedule_progression,
-                    )?;
                     let mut result = match &schedule_progression {
                         ScheduleProgression::Ordinary => self.schedule_selected_output_producer(
                             &demand.selected,
@@ -150,18 +153,6 @@ where
                 }
                 Admission::Pending => return Ok(WAITING),
                 Admission::AdvanceCheckpoint { claim, checkpoint } => {
-                    if !schedule_progression.source_matches(demand, disclosed_source) {
-                        let denial = self
-                            .output_demands
-                            .finish_superseded(interest, Family::IDENTITY);
-                        self.output_demands.finish_checkpoint(
-                            interest,
-                            claim,
-                            checkpoint,
-                            Some(&denial),
-                        )?;
-                        return Err(denial);
-                    }
                     return Ok(
                         if self.advance_output_checkpoint(
                             interest,
@@ -189,7 +180,6 @@ where
                 Admission::Execute { successor_of } => break successor_of,
             }
         };
-        self.require_progression_source(interest, demand, disclosed_source, &schedule_progression)?;
         let required_output = match interest.required_context(
             &self.primary_provider.graph.source_owner.invalidation_owner,
             request_admission,

@@ -298,7 +298,9 @@ fn publish_with_snapshot(
         .prepared_lineage_slot
         .take()
         .map(|slot| slot.record(&completed, Arc::clone(&consumed_outputs)));
-    let settlement_identity = recorded.as_ref().map(|(identity, _)| Arc::clone(identity));
+    let settlement_identity = recorded
+        .as_ref()
+        .map(|recorded| Arc::clone(&recorded.identity));
     if let Some(identity) = settlement_identity.as_ref() {
         completed.retain_exact_output_settlement(Arc::clone(identity));
     }
@@ -335,7 +337,7 @@ fn publish_with_snapshot(
             work_membership,
             recorded
                 .as_ref()
-                .and_then(|(_, witness)| witness.as_ref())
+                .and_then(|recorded| recorded.output_witness.as_ref())
                 .and_then(|witness| witness.get()),
             admission,
         );
@@ -352,8 +354,16 @@ fn publish_with_snapshot(
             }
         }
     }
-    if let Some(superseded) = superseded {
-        superseded.retire(&provider.graph.source_owner.invalidation_owner);
+    // The newest row is registered: the generation it displaced retires,
+    // with whatever its demand supersedes when a demand manages it.
+    let owner = &provider.graph.source_owner.invalidation_owner;
+    let displaced = recorded.and_then(|recorded| recorded.displaced);
+    match (superseded, displaced) {
+        (Some(superseded), displaced) => superseded.retire(displaced, owner),
+        (None, Some(displaced)) => {
+            drop(owner.retire_released([displaced], &mut owner.edit_admission()));
+        }
+        (None, None) => {}
     }
     let settled = completed
         .committed_product_publication()

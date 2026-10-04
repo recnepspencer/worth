@@ -196,6 +196,8 @@ mod settlement_progression;
 mod settlement_retirement;
 mod succession;
 use settlement_retirement::SupersededSettlements;
+mod row_stage;
+pub(in crate::domain_computation::primary_graph) use row_stage::OutputRowStage;
 mod source_custody;
 mod source_readmission;
 pub(in crate::domain_computation::primary_graph) use source_readmission::RetainedOutputReadmissionSource;
@@ -303,7 +305,6 @@ struct DemandRegistryState {
     required_reserved_bytes: usize,
     required_custody_retained_bytes: Arc<std::sync::atomic::AtomicUsize>,
     settlement_keys: settlement_index::SettlementIndex,
-    released_settlements: settlement_retirement::ReleasedSettlements,
     pending_cleanup_head: Option<Arc<WorthQueryOutputDemandKey>>,
     source_preparations:
         HashMap<worth_runtime_world::facade::ProductBranchIncarnation, SourcePreparationState>,
@@ -326,7 +327,6 @@ impl Default for DemandRegistryState {
             required_reserved_bytes: 0,
             required_custody_retained_bytes: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
             settlement_keys: settlement_index::SettlementIndex::default(),
-            released_settlements: Vec::new(),
             pending_cleanup_head: None,
             source_preparations: HashMap::new(),
             source_custody: HashMap::new(),

@@ -1,7 +1,8 @@
 # Milestone 9.17.6.3: Exact Invalidation And Parallel Computation
 
-> **Status:** In progress. Phases 1 to 4 are implemented and reviewed. Phases 5
-> to 8 remain. Successor to [9.17.6](./milestone-9.17.6.md). This is the
+> **Status:** In progress. Phases 1 to 4 are implemented and reviewed. Phase 5
+> has one open item. Phases 6 to 8 remain. Successor to
+> [9.17.6](./milestone-9.17.6.md). This is the
 > one plan for exact invalidation and parallel execution in WORTH. It replaces the
 > canceled Signal Milestones 14 to 17 and the 9.17.6 rules that kept touched
 > records as evidence only. Every phase depends only on completed work. Portable
@@ -1719,11 +1720,11 @@ before machinery for another lands.
     promotion follows the caller's own refresh line, and the newer refresh
     takes the older one's custody slot. Custody stays steady and the chain
     stays live.
-  - At that retention the first registration each cycle is denied, so the
-    last consumer's producer is contacted twice per cycle. Accepted posture:
-    retiring the superseded rows before that registration takes its own root
-    replacement in the invalidation owner, and that replacement spends the
-    retained room a later publication needs.
+  - At that retention the index keeps every row of the chain. No
+    registration is refused, and every cycle refreshes each row once, from
+    the first:
+    `checkpoint_recovery/required_chain/required_queue/steady_retention.rs`,
+    `the_required_chain_stays_live_for_a_hundred_cycles_at_small_retention`.
   - While a dependent's demand is open, the upstreams it consumes are
     required, transitively. A dependent opened after every chain demand
     closed refreshes its stale, undemanded upstream and settles over it in
@@ -1852,10 +1853,16 @@ before machinery for another lands.
     source query, no producer contact and no decision.
   - A consumer of an equally republished root decides again when the root
     then changes, instead of waiting forever on the older equal row.
+  - *Not completed:* a never-settled demand that joins a refreshing row and
+    meets a replaced source before the row's Ready stops the row, and a
+    settled holder whose delivery was delayed then answers `Superseded`
+    with no newer row to rejoin. The stop must end only that demand's
+    interest, as it does on a Ready row.
   - A settled demand that stays open keeps following its output: through a
-    refresh of its equal republication under the same source, and through a
-    demand of a newer source that closes or is superseded before it
-    publishes. That demand's row gives the occurrence back to the newest
+    refresh of its equal republication under the same source, through a
+    refresh whose delivery has not arrived when the next commit lands, and
+    through a demand of a newer source that closes or is superseded before
+    it publishes. That demand's row gives the occurrence back to the newest
     Ready it replaced, for a fresh demand as for a refresh. Rows of one
     source order by their refresh, so the refreshed alias is the newest, in
     whichever order the held demands advance.
@@ -1899,14 +1906,48 @@ before machinery for another lands.
       aspect contract revision, commits without touches and reaches delivery
       the same way; the installed schema fixes the revision, and Query
       issues no schema transition.
-    - Program adoption over settled outputs. A changed source is produced
-      by the adopted program under its own commit, and the carried instance
-      refuses the assessment settled before the change:
+    - Program adoption preserves settled outputs. A row is keyed by producer
+      identity and source epoch, and a runtime installs one producer under
+      an identity, so two programs cannot supply different producer code
+      under one row key. A clean output settled before the adoption answers
+      a demand under the adopted program with its original commit and no
+      producer contact, and input cutoff keys reuse on the installed
+      producer edition, with no program:
       `worth-query-certification/tests/application_graph/adoption/live_outputs.rs`,
-      `a_changed_source_is_produced_by_the_adopted_program`. Adoption
-      commits as an ordinary transaction with exact touches, and a demand
-      typed on a program its branch no longer runs stops `PublicationStale`.
-      The courtroom fixture installs one program.
+      `a_clean_output_settled_before_adoption_answers_under_the_adopted_program`.
+      A changed source is produced by the adopted program under its own
+      commit, and the carried instance refuses the assessment settled before
+      the change: `a_changed_source_is_produced_by_the_adopted_program`.
+      Adoption commits as an ordinary transaction with exact touches, and a
+      demand typed on a program its branch no longer runs stops
+      `PublicationStale`. The courtroom fixture installs one program.
+    - Retained capacity. The versions of a branch's marks are persistent
+      and share every node their own edits did not copy, so a reservation
+      follows the allocation that owns the bytes. A version reserves what
+      its edits copied, never more than its whole index, and the root
+      reserves what its oldest version shares with versions that have left.
+      A window of deliveries over one row holds that row once, released
+      with the last version that held it:
+      `output_lineage/invalidation/native_journey_tests/shared_versions.rs`,
+      `versions_sharing_a_row_reserve_it_once_and_release_it_with_the_last`.
+      No history reserves more than one whole index per retained version.
+      An index with no room for a registration, or for the delivery of a
+      producer's own commit, stops that advance `RetentionBudgetExceeded`.
+      Retention is the budget of the advance that met it, never the
+      producer's failure, so the row stays claimable:
+      `checkpoint_recovery/required_chain/required_queue/exhausted_index.rs`,
+      `an_index_too_small_for_a_commit_stops_the_advance_for_retention`.
+    - Row lifetime. The lineage owns it. Every publication retires the row
+      of the generation its record displaces, whether or not a demand
+      manages it, and the lineage never names that generation again, so the
+      invalidation owner keeps a released row it could not retire and
+      retries it at the next release:
+      `output_lineage/invalidation/native_journey_tests/displaced_generation.rs`,
+      `a_publication_without_prerequisites_retires_the_row_its_generation_displaces`
+      and `a_release_the_owner_could_not_admit_retires_at_the_next_release`.
+      Every courtroom publication belongs to a demand. The public consumer
+      journey commits program actions that none manages, and CI runs it
+      beside the courtroom.
     - Branch merge. Product history is single-rooted and never merges, so
       no output demand meets one. A native Relational merge emits exact
       touches: `worth-relational/src/tests/history/milestone_7d_phase_d/merge_descriptive_touches.rs`,
@@ -1940,32 +1981,6 @@ before machinery for another lands.
       its dependents. Equality is certified by input cutoff only.
     - No public observation counts fact checks or fallback events. The
       courtroom reads source-query runs and producer contacts.
-
-  *Not completed:*
-  - A clean row across a program adoption. A row is keyed by producer and
-    source and its currentness is decided by its facts, so an output
-    settled under P0 answers a demand under P1 with P0's commit and no
-    producer contact, and the carried instance accepts it
-    (`adoption/live_outputs.rs`,
-    `a_clean_output_settled_before_adoption_answers_under_the_adopted_program`).
-    The value is the one P1 produces only because both programs supply the
-    same producer. 9.17.5 requires validated equivalence for reuse, and
-    nothing validates it across programs here: either the row carries the
-    program that produced it and a different program produces again, or
-    adoption is stated to preserve settled outputs. The reuse key's program
-    comparison (`output_lineage/input_reuse_key.rs`) runs only inside input
-    cutoff, and no fixture reaches it across programs: every source field
-    the adoption model fetches is a handler fact, and an equal write is a
-    domain denial.
-  - Retained invalidation capacity under program-action commits. Every
-    live version of the mark state reserves a bound for all its settlement
-    rows, and a program-action commit with a prepared lineage slot registers
-    a row that only a managed producer publication retires. The
-    `consumer_root` journey, installed with 128 MiB over 128 retained
-    positions, has its forty-first commit deferred with
-    `RetainedCompanionCapacityExhausted`
-    (`output_correspondence/source_aba.rs`). Its budget is unchanged. Decide
-    what retires such a row, or what a version reserves.
 - Checkpoint readmission rebuilds the original complete Native output-aspect
   witness from captured facts. *Completed:*
   - It verifies those original revisions and supported producer facts against

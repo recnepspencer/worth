@@ -51,7 +51,7 @@ use denial::{
     scope_rejected,
 };
 use input_identity::encode_input;
-use input_reuse::{prepared_key, resolve_program};
+use input_reuse::{prepared_key, require_selected_program};
 pub(super) use installed::TypedInstalledProducer;
 use outcome::PreparedProducerExecutionOutcome;
 pub(super) use outcome::ProducerExecutionOutcome;

@@ -19,7 +19,7 @@ pub(in crate::domain_computation::primary_graph) use registry::SelectedRequiredW
 pub use registry::WorthQueryOutputDemandNotifications;
 pub(super) use registry::{
     AcceptedCheckpointFactSource, BoundOutputSource, DemandAdmissionKind, OutputRefreshPredecessor,
-    PreparedOutputRootKind, PreparedReadyBacking, PreparedSelectedCheckpointFinish,
+    OutputRowStage, PreparedOutputRootKind, PreparedReadyBacking, PreparedSelectedCheckpointFinish,
     ReadyCompletion, RequiredOutputCustodyCapacity, SelectedCheckpointFinishStop,
     WorthQueryAcceptedOutputAuthority, WorthQueryAcceptedOutputCheckpointIdentity,
     WorthQueryAcceptedOutputCheckpointPosture, WorthQueryCompletedOutputDemand,

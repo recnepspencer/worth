@@ -28,12 +28,6 @@ impl<Schema, Operation, Input, Scope>
         self.required_output_demand = Some(context);
     }
 
-    pub(in crate::domain_computation) fn required_output_demand_mut(
-        &mut self,
-    ) -> Option<&mut RequiredOutputDemandContext> {
-        self.required_output_demand.as_mut()
-    }
-
     pub(in crate::domain_computation) fn take_required_output_demand(
         &mut self,
     ) -> Option<RequiredOutputDemandContext> {

@@ -39,19 +39,9 @@ where
             // actor/native proof before it can be Current.
             return Ok(OwnStages::Answer(WorthQueryOutputDemandAdvance::Pending));
         }
-        if !demand.matches_observed_source(disclosure.source()) {
-            // A demand that settled on this output follows it to the newly
-            // selected source in this same interest, as do a Stable alias
-            // and a restored output. One that never settled on a committed
-            // output does not: its caller demands again. The stop is this
-            // demand's alone, so the Ready stays for the demands settled on it.
-            if matches!(&completion.authority, Authority::Committed(_)) && !demand.settled {
-                return Err(denial(
-                    WorthQueryOutputDemandDenialKind::Superseded,
-                    Family::IDENTITY,
-                ));
-            }
-        } else if let ReadyVerdict::Settled(settlement) =
+        // The disclosed source is the one this demand names: a replaced
+        // source left through `leave_replaced_source` before the row began.
+        if let ReadyVerdict::Settled(settlement) =
             self.certify_ready(demand, &completion, delivery_branch)?
         {
             return Ok(OwnStages::Answer(WorthQueryOutputDemandAdvance::Settled(
@@ -63,7 +53,7 @@ where
             demand,
             disclosed_value,
             disclosed_source,
-            &completion.authority,
+            Some(&completion.authority),
             request_admission,
         )?;
         Ok(OwnStages::Refreshed)

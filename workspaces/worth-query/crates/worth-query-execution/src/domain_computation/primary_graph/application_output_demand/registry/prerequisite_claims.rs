@@ -379,7 +379,6 @@ impl PreparedPrerequisiteClaims {
         self.published = true;
         drop(state);
         drop(old);
-        let evicted = self.context.take_evicted_settlement();
-        super::SupersededSettlements::new(owner, Arc::clone(self.context.key_arc()), evicted)
+        super::SupersededSettlements::new(owner, Arc::clone(self.context.key_arc()))
     }
 }

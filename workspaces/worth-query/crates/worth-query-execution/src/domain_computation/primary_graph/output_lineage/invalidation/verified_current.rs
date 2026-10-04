@@ -187,6 +187,7 @@ impl SourceInvalidationOwner {
             }));
         }
 
+        let before = admission.charged_bytes();
         admission.bytes(
             index_capacity::arc_bytes::<MarkState>()
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
@@ -200,14 +201,14 @@ impl SourceInvalidationOwner {
         if has_pending {
             equality::discharge_selected_downstream(&mut next, identity, admission)?;
         }
-        retention::admit_state(&mut next, &self.resources, admission)?;
+        retention::admit_replacement(&mut next, before, &self.resources, admission)?;
         admission.bytes(
             index_capacity::arc_bytes::<BranchMarkRoot>()
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
         )?;
         let mut root = (**image.payload()).clone();
         root.current = Arc::new(next);
-        retention::admit_root(&mut root, &self.resources, admission)?;
+        retention::admit_root(&mut root, None, &self.resources, admission)?;
         self.prepare_root_replacement(cell, image, Arc::new(root), admission)
             .map(|prepared| Some(PreparedVerifiedCurrent::LiveEdit(prepared)))
     }

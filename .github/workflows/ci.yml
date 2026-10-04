@@ -65,6 +65,11 @@ jobs:
           --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml
           -p worth-query-topology-entry
           -- --test-threads=1
+      - name: Prove the public consumer journey end to end
+        run: >-
+          cargo run
+          --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml
+          -p worth-query-consumer-root
       - name: Prove featured topology courts
         run: >-
           cargo test

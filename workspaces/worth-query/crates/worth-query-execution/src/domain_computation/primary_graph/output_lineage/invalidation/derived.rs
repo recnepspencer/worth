@@ -285,6 +285,7 @@ impl SourceInvalidationOwner {
             }
             SettlementReadAlignment::Retained
         };
+        let before = admission.charged_bytes();
         admission.bytes(
             index_capacity::arc_bytes::<super::mark_state::MarkState>()
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
@@ -330,14 +331,14 @@ impl SourceInvalidationOwner {
             .then(|| row.work_membership.as_ref().map(Arc::clone))
             .flatten()
         });
-        retention::admit_state(&mut state, &self.resources, admission)?;
+        retention::admit_replacement(&mut state, before, &self.resources, admission)?;
         admission.bytes(
             index_capacity::arc_bytes::<BranchMarkRoot>()
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
         )?;
         let mut root = (**image.payload()).clone();
         root.current = Arc::new(state);
-        retention::admit_root(&mut root, &self.resources, admission)?;
+        retention::admit_root(&mut root, None, &self.resources, admission)?;
         let mut prepared = self.prepare_root_replacement(cell, image, Arc::new(root), admission)?;
         if let Some(membership) = work_cue {
             prepared.retain_work_cue(membership, registered_identity);

@@ -35,9 +35,8 @@ struct Retained {
 }
 
 impl Retained {
-    /// A window no courtroom history outgrows. Every live version of a mark
-    /// root reserves a conservative bound for its whole window, so the
-    /// reservation ceiling grows with the square of the window.
+    /// A window no courtroom history outgrows, and room for every row its
+    /// retained versions hold.
     const AMPLE: Self = Self {
         bytes: 1 << 40,
         commit_positions: 512,
@@ -272,3 +271,5 @@ mod older_observation;
 mod other_entries;
 mod randomized;
 mod replaced_ready;
+#[cfg(feature = "test-output-delivery-faults")]
+mod undelivered_refresh;

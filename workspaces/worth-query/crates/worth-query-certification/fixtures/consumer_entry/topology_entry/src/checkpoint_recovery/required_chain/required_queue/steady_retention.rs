@@ -145,15 +145,10 @@ fn cycle_chain_at_small_retention(
     let mut queries = None;
     for cycle in 0..cycles {
         change_root_input!(request, application, 2 + cycle % 2, 0x9176_3c00_u64 + cycle);
-        // Once this small index fills it refuses the marks of the chain's
-        // last refreshed row, and that row refreshes once more in the same
-        // advance. The count is compared once every retained position has
-        // rotated, like the retained bytes.
-        if cycle < 2 * retained_positions as u64 {
-            settled_in_one_advance!(d, request, "the unrelated required demand");
-        } else {
-            unrelated_settles_unverified!(queries, cycle, d, request);
-        }
+        // The retained versions share the rows they hold, so this small
+        // index keeps every row of the chain: no registration is refused,
+        // and each cycle refreshes each row once, from the first.
+        unrelated_settles_unverified!(queries, cycle, d, request);
         settled_in_one_advance!(c, request, "the last consumer");
         settled_in_one_advance!(b, request, "the middle consumer");
         settled_in_one_advance!(a, request, "the open root demand");

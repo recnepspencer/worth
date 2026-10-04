@@ -22,6 +22,8 @@ pub(super) enum EqualOutputCurrentness {
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct BranchMarkRoot {
     pub(super) retained_capacity: Option<Arc<crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity>>,
+    /// What the oldest retained version shares with versions that have left.
+    pub(super) inherited_capacity: Option<Arc<crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity>>,
     pub(super) current: Arc<MarkState>,
     pub(super) last_native_marking: Option<super::logical_marking::NativeMarkingReport>,
     pub(super) past: OrdMap<Option<PatchStreamPosition>, HistoricalMarkState>,
@@ -55,6 +57,7 @@ impl BranchMarkRoot {
     pub(super) fn initial() -> Self {
         Self {
             retained_capacity: None,
+            inherited_capacity: None,
             current: Arc::new(MarkState::initial()),
             last_native_marking: None,
             past: OrdMap::new(),

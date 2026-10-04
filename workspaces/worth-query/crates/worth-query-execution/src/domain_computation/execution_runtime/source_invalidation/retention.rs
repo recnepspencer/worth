@@ -53,6 +53,12 @@ pub(in crate::domain_computation) struct RetainedInvalidationCapacity {
     bytes: u64,
 }
 
+impl RetainedInvalidationCapacity {
+    pub(in crate::domain_computation) const fn bytes(&self) -> u64 {
+        self.bytes
+    }
+}
+
 impl Drop for RetainedInvalidationCapacity {
     fn drop(&mut self) {
         self.ledger

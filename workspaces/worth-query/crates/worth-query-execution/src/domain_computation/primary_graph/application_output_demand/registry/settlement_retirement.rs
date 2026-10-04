@@ -5,15 +5,21 @@
 //!
 //! Retirement is an owner derived edit after the effect has committed. It runs
 //! under the owner's own edit admission, so it can neither fail nor starve the
-//! request that published; a denied retirement waits for the next one.
+//! request that published; a denied retirement waits for the next one. A
+//! superseded settlement waits in this index, which names it again. A
+//! released one has left this index and waits with the invalidation owner.
 //!
 //! A row retired for custody drops its postings and keeps its lineage, so a
 //! lineage head no row posts is an evicted one. Only a row holds the claims on
 //! what its record consumed: an evicted head that consumed upstream outputs is
 //! never replayed, and the next start of its producer succeeds it. One that
 //! consumed none is replayed while its dependencies match, and its row posts
-//! it again. Either way the publication that succeeds an evicted head retires
-//! its settlement, which no row is left to supersede.
+//! it again.
+//!
+//! Every publication also retires the settlement of the generation its record
+//! displaced. A row of this occurrence usually posts it, and the supersession
+//! names it; when none does, as after an eviction, it retires as a released
+//! settlement does.
 
 use std::sync::Arc;
 
@@ -26,44 +32,37 @@ use crate::domain_computation::primary_graph::output_lineage::{
 
 type Identity = Arc<RecordedSettlementIdentity>;
 
-/// Released settlements a live dependent row still held; the next cleanup
-/// that releases settlements retries them.
-pub(super) type ReleasedSettlements = Vec<Identity>;
-
 /// Returned by a settlement publication. Retiring needs the newest row
 /// registered with the invalidation owner, so the publisher calls it after.
 #[must_use = "superseded settlements stay retained until retired"]
 pub(in crate::domain_computation::primary_graph) struct SupersededSettlements {
     registry: WorthQueryOutputDemandRegistry,
     key: Arc<WorthQueryOutputDemandKey>,
-    /// The settlement of the evicted lineage head the publication succeeded.
-    evicted: Option<Identity>,
 }
 
 impl SupersededSettlements {
     pub(super) fn new(
         registry: WorthQueryOutputDemandRegistry,
         key: Arc<WorthQueryOutputDemandKey>,
-        evicted: Option<Identity>,
     ) -> Self {
-        Self {
-            registry,
-            key,
-            evicted,
-        }
+        Self { registry, key }
     }
 
+    /// `displaced` is the settlement of the generation the publication's
+    /// record displaced in the lineage.
     pub(in crate::domain_computation::primary_graph) fn retire(
         self,
+        displaced: Option<Identity>,
         owner: &SourceInvalidationOwner,
     ) {
-        self.registry
+        let named = self
+            .registry
             .retire_superseded_settlements(&self.key, owner);
-        // An evicted settlement left the index with its row, so it retires
-        // as a released one does.
-        if let Some(evicted) = self.evicted {
+        // A named settlement is retried by the next supersession. One no row
+        // of this occurrence posts retires as a released settlement does.
+        if let Some(displaced) = displaced.filter(|displaced| !named.contains(displaced)) {
             self.registry
-                .retire_released_settlements(vec![(evicted, 0)], owner);
+                .retire_released_settlements(vec![(displaced, 0)], owner);
         }
     }
 }
@@ -88,23 +87,23 @@ impl WorthQueryOutputDemandRegistry {
     /// Called after the newest settlement of `key` is registered. Rows still
     /// read by a live dependent stay, and a later supersession retries them:
     /// a replaced row hands its postings to the newest row of its occurrence,
-    /// so every publication of the occurrence names them again.
+    /// so every publication of the occurrence names them again. Returns the
+    /// settlements it named.
     fn retire_superseded_settlements(
         &self,
         key: &WorthQueryOutputDemandKey,
         owner: &SourceInvalidationOwner,
-    ) {
+    ) -> Vec<Identity> {
         let mut admission = owner.edit_admission();
         let candidates = {
             let state = self
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            if state.charge_record_lookup(key, &mut admission).is_err() {
-                return;
-            }
-            if !state.records.contains_key(key) {
-                return;
+            if state.charge_record_lookup(key, &mut admission).is_err()
+                || !state.records.contains_key(key)
+            {
+                return Vec::new();
             }
             let mut candidates = Vec::new();
             for (other, record) in occurrence_rows(&state.records, key) {
@@ -118,7 +117,7 @@ impl WorthQueryOutputDemandRegistry {
                 if admission.charge_external_work(1).is_err()
                     || admit_slots(superseded, &mut admission).is_err()
                 {
-                    return;
+                    return Vec::new();
                 }
                 candidates.extend(
                     record.settlements[..superseded]
@@ -126,18 +125,18 @@ impl WorthQueryOutputDemandRegistry {
                         .map(|(identity, _)| Arc::clone(identity)),
                 );
             }
-            if candidates.is_empty() {
-                return;
-            }
             candidates
         };
-        drop(self.retire_settlements(&candidates, owner, &mut admission));
+        if !candidates.is_empty() {
+            drop(self.retire_settlements(&candidates, owner, &mut admission));
+        }
+        candidates
     }
 
     /// Released settlements already left this index; their rows may still
-    /// hold upstream rows of other demands, which leave with them. Rows a live
-    /// dependent still reads, or a denied retirement, wait for the next
-    /// release, as a superseded row waits for the next supersession.
+    /// hold upstream rows of other demands, which leave with them. The owner
+    /// keeps the ones that cannot leave yet and retries them at the next
+    /// release.
     pub(super) fn retire_released_settlements(
         &self,
         released: Vec<(Identity, usize)>,
@@ -146,26 +145,10 @@ impl WorthQueryOutputDemandRegistry {
         if released.is_empty() {
             return;
         }
-        let mut candidates = std::mem::take(
-            &mut self
-                .state
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .released_settlements,
-        );
-        candidates.extend(released.into_iter().map(|(identity, _)| identity));
         let mut admission = owner.edit_admission();
-        let retired = if admit_slots(candidates.len(), &mut admission).is_ok() {
-            self.retire_settlements(&candidates, owner, &mut admission)
-        } else {
-            Vec::new()
-        };
-        candidates.retain(|identity| !retired.contains(identity));
-        self.state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .released_settlements
-            .append(&mut candidates);
+        let released = released.into_iter().map(|(identity, _)| identity);
+        let retired = owner.retire_released(released, &mut admission);
+        self.forget_retired(&retired, &mut admission);
     }
 
     /// The candidates the invalidation owner retired.
@@ -176,15 +159,20 @@ impl WorthQueryOutputDemandRegistry {
         admission: &mut InvalidationEditAdmission,
     ) -> Vec<Identity> {
         let retired = owner.retire_settlements(candidates, admission);
+        self.forget_retired(&retired, admission);
+        retired
+    }
+
+    /// Rows the owner retired leave this index with them.
+    fn forget_retired(&self, retired: &[Identity], admission: &mut InvalidationEditAdmission) {
         if retired.is_empty() {
-            return retired;
+            return;
         }
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.forget_retired_settlements(&retired, admission);
-        retired
+        state.forget_retired_settlements(retired, admission);
     }
 }
 

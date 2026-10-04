@@ -4,6 +4,10 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
+    /// Move `demand` to a row admitted under the disclosed source. The Ready
+    /// it held is the new row's `predecessor`. A row that held none has no
+    /// accepted output to succeed: the new row executes Fresh, and its
+    /// admission supersedes the older rows of the occurrence.
     pub(super) fn refresh_output_demand<Family>(
         &self,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -11,7 +15,7 @@ where
         observed_source: crate::domain_computation::primary_graph::WorthQueryObservedSource<
             FamilySourceQuery<Schema, Family>,
         >,
-        predecessor: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority,
+        predecessor: Option<&crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority>,
         request_admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial>
     where
@@ -36,7 +40,9 @@ where
             .interest
             .as_ref()
             .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::Closed, Family::IDENTITY))?;
-        let predecessor = crate::domain_computation::primary_graph::application_output_demand::OutputRefreshPredecessor::of(predecessor, interest);
+        let predecessor = predecessor.map(|accepted| {
+            crate::domain_computation::primary_graph::application_output_demand::OutputRefreshPredecessor::of(accepted, interest)
+        });
         let profile_kind = Family::profile_kind(&source);
         let mut refreshed = self.admit_output_demand_with_source_admitted::<Family>(
             &source,
@@ -47,7 +53,7 @@ where
             None,
             demand.admission_kind,
             None,
-            Some(predecessor),
+            predecessor,
             demand.retained_program_basis.clone(),
             super::admission::SourceAdmissionSelection::Ordinary,
             request_admission,

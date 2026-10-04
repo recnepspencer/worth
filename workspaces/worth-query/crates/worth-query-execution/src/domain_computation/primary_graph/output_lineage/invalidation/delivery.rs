@@ -146,7 +146,7 @@ pub(super) fn mark(
         }
         Err(stop) => return Err(stop),
     };
-    match retention::admit_state(&mut state, resources, context) {
+    match retention::admit_version(&mut state, marking_bytes, resources, context) {
         Ok(()) => {}
         Err(CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }) => {
             drop((state, kept));
@@ -167,7 +167,7 @@ pub(super) fn mark(
 }
 
 /// The unmarked prior state publishes under a new discontinuity epoch. Its
-/// version is admitted like any other; a refusal here is not degradable.
+/// version copies no node; a refusal of the version itself is not degradable.
 fn discontinuity(
     observed: &MarkState,
     commit: CommitId,
@@ -178,7 +178,7 @@ fn discontinuity(
     let mut state = observed.clone();
     state.delivery_epoch = DeliveryEpoch::after_discontinuity(commit);
     state.last_discontinuity = Some(FullVerificationReason::DeclaredChangeUnavailable);
-    retention::admit_state(&mut state, resources, context)?;
+    retention::admit_version(&mut state, 0, resources, context)?;
     Ok(MarkedDelivery {
         state,
         report: NativeMarkingReport { commit, precision },

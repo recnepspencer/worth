@@ -118,7 +118,6 @@ impl InvalidationEditAdmission {
         self.with_totals(|totals| totals.work)
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn charged_bytes(&self) -> u64 {
         self.with_totals(|totals| totals.bytes)
     }

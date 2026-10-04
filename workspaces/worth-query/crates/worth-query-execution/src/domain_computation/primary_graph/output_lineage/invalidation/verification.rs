@@ -173,6 +173,7 @@ impl SourceInvalidationOwner {
         if runtime_instance_id != self.runtime_instance_id {
             return Err(SettlementVerificationStop::Alignment);
         }
+        let before = admission.charged_bytes();
         admission.bytes(
             index_capacity::arc_bytes::<SettlementMarks>()
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
@@ -189,14 +190,14 @@ impl SourceInvalidationOwner {
             state.settlements.len(),
         )?;
         state.settlements.insert(identity, Arc::new(replacement));
-        retention::admit_state(&mut state, &self.resources, admission)?;
+        retention::admit_replacement(&mut state, before, &self.resources, admission)?;
         admission.bytes(
             index_capacity::arc_bytes::<BranchMarkRoot>()
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
         )?;
         let mut root = (**image.payload()).clone();
         root.current = Arc::new(state);
-        retention::admit_root(&mut root, &self.resources, admission)?;
+        retention::admit_root(&mut root, None, &self.resources, admission)?;
         let prepared = self
             .prepare_root_replacement(cell, image, Arc::new(root), admission)
             .map_err(SettlementVerificationStop::from)?;

@@ -8,19 +8,16 @@ use worth_query_installation::facade::ApplicationSchema;
 use super::{denial, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
 use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
 
-/// Actual selected program meaning, resolved before canonical input work.
-/// Only this module constructs the progression consumed by `prepared_key`.
-pub(super) struct ResolvedProducerProgram {
-    selected: Option<crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspection>,
-}
-
-pub(super) fn resolve_program<Schema: ApplicationSchema>(
+/// A program-bound producer commits under the program its occurrence
+/// actually selects. This checks the commit authority before canonical input
+/// work; the prepared input's reuse key holds no program.
+pub(super) fn require_selected_program<Schema: ApplicationSchema>(
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
     authority: &WorthQueryProducerCommitAuthority,
     admission: &mut InvalidationEditAdmission,
-) -> Result<ResolvedProducerProgram, WorthQueryOutputDemandDenial> {
-    let selected_program = match authority {
-        WorthQueryProducerCommitAuthority::Ordinary => None,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    match authority {
+        WorthQueryProducerCommitAuthority::Ordinary => {}
         WorthQueryProducerCommitAuthority::ProgramOutput
         | WorthQueryProducerCommitAuthority::SelectedProgram { .. } => {
             admission
@@ -52,21 +49,16 @@ pub(super) fn resolve_program<Schema: ApplicationSchema>(
                     ));
                 }
             }
-            Some(actual)
         }
-    };
-    Ok(ResolvedProducerProgram {
-        selected: selected_program,
-    })
+    }
+    Ok(())
 }
 
 /// An incomplete restored source cannot authorize a contact-free cutoff.
-/// Program meaning is carried from the earlier selected occurrence check.
 pub(super) fn prepared_key<Query>(
     source: &WorthQueryObservedSource<Query>,
     input_identity: [u8; 32],
     edition: InstalledProducerEdition,
-    program: ResolvedProducerProgram,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<PreparedInputReuseKey>, WorthQueryOutputDemandDenial> {
     admission
@@ -75,14 +67,10 @@ pub(super) fn prepared_key<Query>(
     let Some(selection) = source.retain_selected_membership() else {
         return Ok(None);
     };
-    let selected_program = program
-        .selected
-        .map(|actual| (actual.identity().clone(), *actual.revision()));
     Ok(Some(PreparedInputReuseKey::new(
         selection,
         input_identity,
         edition,
-        selected_program,
     )))
 }
 

@@ -110,6 +110,7 @@ impl SourceInvalidationOwner {
         admission.ordered_read(image.payload().past.len())?;
         let aligned = SnapshotAlignedMarkState::observe_image(&image, selected)
             .map_err(|_| SettlementVerificationStop::Alignment)?;
+        let before = admission.charged_bytes();
         admission.bytes(
             index_capacity::arc_bytes::<MarkState>()
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
@@ -127,25 +128,26 @@ impl SourceInvalidationOwner {
         if !carried {
             return Ok(());
         }
-        self.install_live_state(cell, image, next, admission)
+        self.install_live_state(cell, image, (next, before), admission)
     }
 
     /// Replaces the live mark state of the image it was prepared against.
+    /// `before` is the admission's byte total when the edit of `next` began.
     pub(super) fn install_live_state(
         &self,
         cell: CompanionBranchCell<BranchMarkRoot>,
         image: CompanionBranchImage<BranchMarkRoot>,
-        mut next: MarkState,
+        (mut next, before): (MarkState, u64),
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), SettlementVerificationStop> {
-        retention::admit_state(&mut next, &self.resources, admission)?;
+        retention::admit_replacement(&mut next, before, &self.resources, admission)?;
         admission.bytes(
             index_capacity::arc_bytes::<BranchMarkRoot>()
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
         )?;
         let mut root = (**image.payload()).clone();
         root.current = Arc::new(next);
-        retention::admit_root(&mut root, &self.resources, admission)?;
+        retention::admit_root(&mut root, None, &self.resources, admission)?;
         let prepared = self
             .prepare_root_replacement(cell, image, Arc::new(root), admission)
             .map_err(SettlementVerificationStop::from)?;

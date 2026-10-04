@@ -37,6 +37,29 @@ impl SourceInvalidationOwner {
             .unwrap_or_default()
     }
 
+    /// Retires rows whose owner released them: a demand record that ended, or
+    /// a publication whose record displaced their generation. No index names
+    /// a released row again, so the ones a live row still reads, or an
+    /// admission stop left in place, wait here for the next release. Returns
+    /// the identities no branch retains any more.
+    pub(in crate::domain_computation::primary_graph) fn retire_released(
+        &self,
+        released: impl IntoIterator<Item = Identity>,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Vec<Identity> {
+        let waiting = || {
+            self.released
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+        };
+        let mut candidates = std::mem::take(&mut *waiting());
+        candidates.extend(released);
+        let retired = self.retire_settlements(&candidates, admission);
+        candidates.retain(|identity| !retired.contains(identity));
+        waiting().append(&mut candidates);
+        retired
+    }
+
     fn retire_settlements_admitted(
         &self,
         candidates: &[Identity],
@@ -106,6 +129,7 @@ impl SourceInvalidationOwner {
     ) -> Result<(Arc<MarkState>, Option<PreparedSettlementRegistration>), SettlementRegistrationStop>
     {
         let image = cell.read_image();
+        let before = admission.charged_bytes();
         admission.bytes(
             arc_bytes::<MarkState>()
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
@@ -162,7 +186,7 @@ impl SourceInvalidationOwner {
         if !changed {
             return Ok((Arc::clone(&image.payload().current), None));
         }
-        retention::admit_state(&mut state, &self.resources, admission)?;
+        retention::admit_replacement(&mut state, before, &self.resources, admission)?;
         admission.bytes(
             arc_bytes::<BranchMarkRoot>()
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
@@ -170,7 +194,7 @@ impl SourceInvalidationOwner {
         let state = Arc::new(state);
         let mut root = (**image.payload()).clone();
         root.current = Arc::clone(&state);
-        retention::admit_root(&mut root, &self.resources, admission)?;
+        retention::admit_root(&mut root, None, &self.resources, admission)?;
         let prepared = self.prepare_root_replacement(cell, image, Arc::new(root), admission)?;
         Ok((state, Some(prepared)))
     }

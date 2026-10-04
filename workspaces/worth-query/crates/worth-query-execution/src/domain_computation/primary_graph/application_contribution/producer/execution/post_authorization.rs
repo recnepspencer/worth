@@ -52,7 +52,7 @@ where
             SourceQuery<Schema, Binding>,
         >,
 {
-    let selected_program = resolve_program(selected, &commit_authority, request_admission)?;
+    require_selected_program(selected, &commit_authority, request_admission)?;
     let source_epoch = observed_source.idempotency_identity();
     let key = provider.idempotency_key(&source, &source_epoch.bytes());
     let identities = encode_input::<Schema, Operation<Schema, Binding>>(
@@ -65,7 +65,6 @@ where
         &observed_source,
         *identities.input_identity(),
         edition,
-        selected_program,
         request_admission,
     )?;
     let prepared_context = if let Some(contract) = Binding::INPUT_REUSE.filter(|contract| {

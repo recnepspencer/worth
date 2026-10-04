@@ -93,14 +93,8 @@ impl<Schema, Operation, Input, Scope>
             if replays && !unposted {
                 return Ok((head.idempotency_key_identity, dependency));
             }
-            // This execution commits as the head's successor. A head no row
-            // posts lost its row to custody, so no row supersedes it: this
-            // publication retires its settlement.
-            if unposted {
-                if let Some(context) = self.read_set.admission.required_output_demand_mut() {
-                    context.record_evicted_settlement(std::sync::Arc::clone(&head.settlement));
-                }
-            }
+            // This execution commits as the head's successor. Its record
+            // displaces the head, whose settlement the publication retires.
         }
         let prior_head = head
             .map(|head| head.idempotency_key_identity)

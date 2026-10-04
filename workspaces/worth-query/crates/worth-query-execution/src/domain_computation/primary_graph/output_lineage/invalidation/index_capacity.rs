@@ -31,8 +31,8 @@ fn ordered_node_bytes<K, V>() -> Option<u64> {
 }
 
 /// Conservative retained capacity: every nonempty node owns at least one
-/// entry. Concurrent roots each retain their own bound, even when they share
-/// physical nodes; retiring one cannot release another root's custody.
+/// entry. The allocation that owns the nodes holds the bound, so whatever
+/// shares them shares it.
 pub(super) fn retained_map_bytes<K, V>(entries: usize) -> Option<u64> {
     ordered_node_bytes::<K, V>()?.checked_mul(u64::try_from(entries.checked_add(1)?).ok()?)
 }

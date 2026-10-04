@@ -59,6 +59,17 @@ impl PreparedStableLineagePublication<'_, '_> {
         &self.address.identity
     }
 
+    /// The settlement of the generation this alias displaces as the latest
+    /// output of its partition: the verified output it restates, when that
+    /// belongs to the alias's own occurrence.
+    pub(in crate::domain_computation::primary_graph) fn displaced_settlement(
+        &self,
+    ) -> Option<Arc<RecordedSettlementIdentity>> {
+        let displaced = self.address.verified.candidate.settlement_identity();
+        (displaced.coordinate().occurrence == self.address.coordinate.occurrence)
+            .then(|| Arc::clone(displaced))
+    }
+
     pub(in crate::domain_computation::primary_graph) fn consumed_outputs(
         &self,
     ) -> &[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence]

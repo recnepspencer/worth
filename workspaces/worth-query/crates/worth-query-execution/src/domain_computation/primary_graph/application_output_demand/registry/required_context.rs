@@ -33,10 +33,6 @@ pub(in crate::domain_computation) struct RequiredOutputDemandContext {
     prepared_input_reuse_key:
         Option<crate::domain_computation::primary_graph::output_lineage::PreparedInputReuseKey>,
     actual_resources: Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>,
-    /// The settlement of the evicted lineage head this execution succeeds.
-    evicted_settlement: Option<
-        Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
-    >,
 }
 
 /// Both parts are issued together before an installed producer can execute.
@@ -152,23 +148,6 @@ impl RequiredOutputDemandContext {
         self.prepared_input_reuse_key.take()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn record_evicted_settlement(
-        &mut self,
-        settlement: Arc<
-            crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
-        >,
-    ) {
-        self.evicted_settlement = Some(settlement);
-    }
-
-    pub(super) fn take_evicted_settlement(
-        &mut self,
-    ) -> Option<
-        Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
-    > {
-        self.evicted_settlement.take()
-    }
-
     pub(super) fn key_arc(&self) -> &Arc<WorthQueryOutputDemandKey> {
         &self.key
     }
@@ -272,7 +251,6 @@ impl WorthQueryOutputDemandInterest {
             completed_decision_reuse: None,
             prepared_input_reuse_key: None,
             actual_resources: None,
-            evicted_settlement: None,
         })
     }
 }

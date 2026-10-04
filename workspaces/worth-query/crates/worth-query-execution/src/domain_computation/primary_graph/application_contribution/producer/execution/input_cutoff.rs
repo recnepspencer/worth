@@ -177,6 +177,7 @@ where
             crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop::Admission(stop) => cutoff_admission_denial(stop),
             _ => denial(WorthQueryOutputDemandDenialKind::PublicationStale, "producer input cutoff source changed during preparation"),
         })?;
+    let displaced = publication.displaced_settlement();
     let published = publication.publish::<Operation<Schema, Binding>, _, _, _, _>(
         operation,
         observation,
@@ -189,7 +190,7 @@ where
     })?;
     prerequisites
         .publish(Arc::clone(published.exact_settlement()))
-        .retire(source_owner);
+        .retire(displaced, source_owner);
     Ok(ProducerInputProgression::StablePublished(published))
 }
 

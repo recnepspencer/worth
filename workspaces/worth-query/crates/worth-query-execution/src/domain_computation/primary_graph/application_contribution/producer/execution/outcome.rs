@@ -76,6 +76,11 @@ pub(super) fn commit_receipt(
             return Err(request_authority_stop(identity, authority));
         }
     }
+    // A companion with no room for this commit met a budget of the advance
+    // that ran it; the producer did not fail, and its row stays claimable.
+    if let Some(kind) = refused_budget(&outcome) {
+        return Err(denial(kind, identity.to_owned()));
+    }
     match outcome {
         WorthQueryApplicationCommitOutcome::Committed(receipt)
         | WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => Ok(receipt),
@@ -130,5 +135,92 @@ pub(super) fn commit_receipt(
             ))
         }
         outcome => Err(failed(identity, outcome)),
+    }
+}
+
+/// The budget a publication companion had no room in when it refused the
+/// commit: the request's work, or what the index and its preparation retain.
+fn refused_budget(
+    outcome: &WorthQueryApplicationCommitOutcome,
+) -> Option<WorthQueryOutputDemandDenialKind> {
+    use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDeferredKind as Deferred;
+    use worth_relational::facade::mvcc::{
+        CompanionPreflightStop as Stop, RelationalPublicationDeferred::CompanionPreflight,
+    };
+    let stop = match outcome {
+        WorthQueryApplicationCommitOutcome::NoEffect(no_effect) => match no_effect.cause() {
+            WorthQueryApplicationNoEffectCause::RelationalDeferred(CompanionPreflight(stop)) => {
+                stop
+            }
+            _ => return None,
+        },
+        WorthQueryApplicationCommitOutcome::Deferred(deferred) => match deferred.kind() {
+            Deferred::RelationalDeferred(CompanionPreflight(stop)) => stop,
+            _ => return None,
+        },
+        _ => return None,
+    };
+    match stop {
+        Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => {
+            Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)
+        }
+        Stop::CellCapacityExhausted { .. }
+        | Stop::PreparationMemoryExhausted { .. }
+        | Stop::PreparationMemoryCounterOverflow
+        | Stop::RetainedCompanionCapacityExhausted { .. } => {
+            Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)
+        }
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain_computation::provider_session::{
+        WorthQueryProviderSessionCommitDeferred, WorthQueryProviderSessionCommitDeferredKind,
+    };
+    use worth_relational::facade::mvcc::{
+        CompanionPreflightStop as Stop, RelationalPublicationDeferred,
+    };
+
+    fn stopped(stop: Stop) -> WorthQueryOutputDemandDenialKind {
+        let deferred = WorthQueryProviderSessionCommitDeferred::new(
+            WorthQueryProviderSessionCommitDeferredKind::RelationalDeferred(
+                RelationalPublicationDeferred::CompanionPreflight(stop),
+            ),
+            "",
+        );
+        commit_receipt(
+            "producer",
+            WorthQueryApplicationCommitOutcome::Deferred(
+                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDeferred::from_provider_session(deferred),
+            ),
+        )
+        .unwrap_err()
+        .kind()
+    }
+
+    #[test]
+    fn a_commit_a_companion_has_no_room_for_stops_for_that_budget() {
+        use WorthQueryOutputDemandDenialKind as Kind;
+        let retained = Stop::RetainedCompanionCapacityExhausted {
+            requested: 2,
+            retained: 1,
+            maximum: 2,
+        };
+        assert_eq!(stopped(retained), Kind::RetentionBudgetExceeded);
+        let prepared = Stop::PreparationMemoryExhausted {
+            required: 2,
+            maximum: 1,
+        };
+        assert_eq!(stopped(prepared), Kind::RetentionBudgetExceeded);
+        let work = Stop::WorkExhausted {
+            required: 2,
+            maximum: 1,
+        };
+        assert_eq!(stopped(work), Kind::WorkBudgetExceeded);
+        // A companion that is not ready is no budget of the advance.
+        assert_eq!(stopped(Stop::TopologyPending), Kind::ProducerUnavailable);
     }
 }

@@ -82,6 +82,17 @@ impl CancelledLineageSlot {
     }
 }
 
+/// What filling a prepared slot hands its publication.
+pub(in crate::domain_computation::primary_graph) struct RecordedLineageSlot {
+    pub(in crate::domain_computation::primary_graph) identity: Arc<RecordedSettlementIdentity>,
+    pub(in crate::domain_computation::primary_graph) output_witness:
+        Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
+    /// The settlement of the generation this record displaced as the latest
+    /// output of its partition. Its row is this publication's to retire.
+    pub(in crate::domain_computation::primary_graph) displaced:
+        Option<Arc<RecordedSettlementIdentity>>,
+}
+
 impl PreparedOutputLineageSlot {
     pub(in crate::domain_computation::primary_graph) fn retain_actual_resources(
         &mut self,
@@ -132,10 +143,7 @@ impl PreparedOutputLineageSlot {
         mut self,
         application: &WorthQueryPrimaryGraphCommittedApplication,
         consumed_outputs: Arc<[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence]>,
-    ) -> (
-        Arc<RecordedSettlementIdentity>,
-        Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
-    ) {
+    ) -> RecordedLineageSlot {
         let output_witness = self.native_output_witness.as_ref().map(Arc::clone);
         let completed_handler_facts = self.completed_handler_facts.take();
         let completed_decision_reuse = self.completed_decision_reuse.take();
@@ -144,12 +152,15 @@ impl PreparedOutputLineageSlot {
             .retained_capacity
             .take()
             .expect("prepared lineage retains host custody through publication");
-        let identity = {
+        let (identity, displaced) = {
             let mut lineage = self
                 .owner
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            lineage.record_prepared(
+            let displaced = self.partition.and_then(|partition| {
+                lineage.displaced_settlement(&self.source, self.coordinate, partition)
+            });
+            let identity = lineage.record_prepared(
                 application,
                 consumed_outputs,
                 &self,
@@ -157,10 +168,15 @@ impl PreparedOutputLineageSlot {
                 completed_decision_reuse,
                 prepared_input_reuse_key,
                 retained_capacity,
-            )
+            );
+            (identity, displaced)
         };
         self.filled = true;
-        (identity, output_witness)
+        RecordedLineageSlot {
+            identity,
+            output_witness,
+            displaced,
+        }
     }
 }
 

@@ -12,8 +12,8 @@ pub(super) use stable_publication::PreparedStablePartitionLocator;
 use worth_runtime_world::facade::ProductBranchIncarnation;
 
 use super::{
-    prepared_slot::CancelledLineageSlot, ProductCoordinate, RecordedOutput, SemanticSource,
-    WorthQueryApplicationOutputLineage,
+    prepared_slot::CancelledLineageSlot, ProductCoordinate, RecordedOutput,
+    RecordedSettlementIdentity, SemanticSource, WorthQueryApplicationOutputLineage,
 };
 
 type Generations = BTreeMap<u64, Arc<OnceLock<usize>>>;
@@ -195,6 +195,34 @@ impl OutputPartitionIndex {
 }
 
 impl WorthQueryApplicationOutputLineage {
+    /// The settlement of the generation a record at `coordinate` displaces as
+    /// the latest output of its partition in its own occurrence. The walk
+    /// passes only this partition's prepared vacancies and allocates nothing.
+    pub(super) fn displaced_settlement(
+        &self,
+        source: &SemanticSource,
+        coordinate: ProductCoordinate,
+        partition: [u8; 32],
+    ) -> Option<Arc<RecordedSettlementIdentity>> {
+        let below = ProductCoordinate {
+            generation: coordinate.generation.checked_sub(1)?,
+            ..coordinate
+        };
+        let (generation, slot) = self
+            .partition_index
+            .latest(source, below, partition, usize::MAX)
+            .ok()?
+            .0?;
+        let displaced = self.recorded_at_partition_slot(
+            source,
+            coordinate.occurrence,
+            generation,
+            partition,
+            slot,
+        );
+        Some(Arc::clone(&displaced.settlement_identity))
+    }
+
     fn recorded_at_partition_slot(
         &self,
         source: &SemanticSource,
