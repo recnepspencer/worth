@@ -13,6 +13,9 @@ const RELEASES: usize = MAX_CHECKPOINT_CERTIFICATE_RECORDS as usize - 1;
 const CHUNKS: usize = RELEASES + 1;
 // BlobTreeBuilder's 4,096-entry fanout writes one leaf/root for 64 chunks.
 const TREE_NODE_RECORDS: usize = 1;
+// An ingest checkpoints one resume frontier at its 64th chunk. The release
+// owes it like the chunks and takes it before any of them.
+const FRONTIER_RECORDS: usize = 1;
 // The selected scan includes each payload, one publication, and at most four
 // control records per completed V3 batch; 16 covers fixed ingress metadata.
 const SELECTED_RECORD_LIMIT: u64 = (CHUNKS + 4 * RELEASES + 16) as u64;
@@ -104,10 +107,11 @@ pub(super) fn checkpointed_partial_release_world() -> PhysicalResidencyStoreWorl
             assert_ne!(receipt.dropped_records(), &[publication_record]);
         }
         // The publication is dropped first but is not counted among the
-        // reachable chunks and tree nodes in `remaining_payload_records`.
+        // frontier, reachable chunks and tree nodes in
+        // `remaining_payload_records`.
         assert_eq!(
             receipt.remaining_payload_records(),
-            (CHUNKS + TREE_NODE_RECORDS - ordinal) as u64,
+            (CHUNKS + TREE_NODE_RECORDS + FRONTIER_RECORDS - ordinal) as u64,
             "partial V3 {ordinal} preserves the next live chunk"
         );
     }

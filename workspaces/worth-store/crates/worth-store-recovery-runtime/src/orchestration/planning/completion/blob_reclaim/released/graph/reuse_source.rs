@@ -91,10 +91,7 @@ fn verify(
     }
     // A selected source publication, when present, must be the exact V2
     // witness. Absence is permitted only because this is an admitted V2 claim.
-    if routes
-        .binary_search_by_key(&claim.source_publication(), |route| route.record())
-        .is_ok()
-    {
+    if super::routed(routes, claim.source_publication()).is_some() {
         let bytes = read_selected(
             discovery,
             format,
@@ -206,10 +203,7 @@ fn read_selected(
     trace: &mut RecoveryIntegrityIngressTrace,
     scratch: &mut u64,
 ) -> Option<Vec<u8>> {
-    let index = routes
-        .binary_search_by_key(&record_id, |route| route.record())
-        .ok()?;
-    let route = routes[index];
+    let route = super::routed(routes, record_id)?;
     if !matches!(route, CurrentPhysicalRecordPlacement::Extent(_))
         || route.content_class() != SelectedRecordContentClass::Blob(kind)
     {

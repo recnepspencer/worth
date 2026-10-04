@@ -10,12 +10,18 @@ use worth_store_physical_format::{BlobRecordV1, PersistedRecordIdentity};
 #[cfg(test)]
 #[path = "external_edges/drop_result_tests.rs"]
 mod drop_result_tests;
+#[cfg(test)]
+#[path = "external_edges/frontier_tests.rs"]
+mod frontier_tests;
 
 #[derive(Clone)]
 pub(super) struct ExternalBlobFact {
     record: PersistedRecordIdentity,
     frame_sha256: [u8; 32],
     same_session: bool,
+    /// A resume frontier the released session wrote for itself: residue that
+    /// leaves with the release, never an outside owner of the chunk it names.
+    own_frontier: bool,
     edges: Vec<(u8, PersistedRecordIdentity)>,
 }
 
@@ -35,6 +41,10 @@ impl ExternalBlobFact {
             }
             _ => false,
         };
+        let own_frontier = matches!(
+            fact,
+            BlobRecordV1::SessionFrontier(value) if value.session() == source_session
+        );
         let mut edges = Vec::new();
         match fact {
             BlobRecordV1::TreeNode(node) => {
@@ -60,6 +70,7 @@ impl ExternalBlobFact {
             record,
             frame_sha256,
             same_session,
+            own_frontier,
             edges,
         }
     }
@@ -72,7 +83,8 @@ pub(super) struct ExternalEdgeAudit {
 }
 
 /// Mirrors the producer's semantic result, not merely its drop ordering hash:
-/// no live child may be stranded, and terminality means no owned payload remains.
+/// no live child may be stranded, no selected frontier may outlive a record of
+/// its session, and terminality means no owned payload or frontier remains.
 pub(super) fn validates_drop_result(
     reached: &BTreeSet<PersistedRecordIdentity>,
     facts: &[ExternalBlobFact],
@@ -83,12 +95,16 @@ pub(super) fn validates_drop_result(
     let unconnected = facts.iter().any(|fact| {
         fact.same_session && !reached.contains(&fact.record) && !protected.contains(&fact.record)
     });
+    let kept = |fact: &ExternalBlobFact| dropped.binary_search(&fact.record).is_err();
     let remaining = facts.iter().any(|fact| {
-        fact.same_session
-            && reached.contains(&fact.record)
-            && dropped.binary_search(&fact.record).is_err()
+        (fact.own_frontier || (fact.same_session && reached.contains(&fact.record))) && kept(fact)
     });
+    // A selected frontier names a selected chunk prefix, so every frontier of
+    // the session leaves before, or together with, its first record.
+    let frontier_stranded = facts.iter().any(|fact| fact.own_frontier && kept(fact))
+        && facts.iter().any(|fact| fact.same_session && !kept(fact));
     !unconnected
+        && !frontier_stranded
         && terminal == !remaining
         && facts.iter().all(|fact| {
             dropped.binary_search(&fact.record).is_err()
@@ -102,6 +118,24 @@ pub(super) fn validates_drop_result(
                             })
                 })
         })
+}
+
+/// A released drop names only its publication, resume frontiers of the
+/// released session, and unprotected records of the authenticated closure.
+pub(super) fn admits_dropped_records(
+    publication: PersistedRecordIdentity,
+    reached: &BTreeSet<PersistedRecordIdentity>,
+    facts: &[ExternalBlobFact],
+    dropped: &[PersistedRecordIdentity],
+    protected: &BTreeSet<PersistedRecordIdentity>,
+) -> bool {
+    dropped.iter().all(|record| {
+        *record == publication
+            || (reached.contains(record) && !protected.contains(record))
+            || facts
+                .binary_search_by_key(record, |fact| fact.record)
+                .is_ok_and(|index| facts[index].own_frontier)
+    })
 }
 
 pub(super) fn audit(
@@ -145,7 +179,9 @@ pub(super) fn audit(
                 u8::from(target_same_session),
             ]);
             publication_referenced |= target == publication;
-            if target_reachable || target_same_session {
+            // The row above is the same for every source. Only an owner
+            // outside the released session keeps what it names.
+            if !source.own_frontier && (target_reachable || target_same_session) {
                 protected.insert(target);
             }
         }
@@ -200,12 +236,14 @@ mod tests {
                 record: record(1),
                 frame_sha256: [3; 32],
                 same_session: false,
+                own_frontier: false,
                 edges: vec![(5, record(2))],
             },
             ExternalBlobFact {
                 record: record(2),
                 frame_sha256: [4; 32],
                 same_session: true,
+                own_frontier: false,
                 edges: Vec::new(),
             },
         ];
@@ -244,18 +282,21 @@ mod tests {
                 record: record(1),
                 frame_sha256: [1; 32],
                 same_session: false,
+                own_frontier: false,
                 edges: vec![(2, record(2))],
             },
             ExternalBlobFact {
                 record: record(2),
                 frame_sha256: [2; 32],
                 same_session: true,
+                own_frontier: false,
                 edges: vec![(1, record(3))],
             },
             ExternalBlobFact {
                 record: record(3),
                 frame_sha256: [3; 32],
                 same_session: true,
+                own_frontier: false,
                 edges: Vec::new(),
             },
         ];

@@ -33,11 +33,33 @@ pub(crate) fn request_with_configuration(
     recovery_memory_bytes: u64,
     configuration: PhysicalRecoveryStaticConfiguration,
 ) -> PhysicalRecoveryOpenRequest {
+    declare(root, recovery_memory_bytes, 4096, configuration)
+}
+
+/// Recovery of a world whose WAL holds one whole 66-chunk ingest and whose
+/// release batches fill a manifest. The WAL payloads alone pass the memory of
+/// the two-chunk worlds, and proving 64 dropped records absent from a result
+/// root reads more manifest entries than those worlds ever route.
+pub(crate) fn request_for_long_ingest(root: &Path) -> PhysicalRecoveryOpenRequest {
+    declare(
+        root,
+        32 << 20,
+        16384,
+        PhysicalRecoveryStaticConfiguration::current(),
+    )
+}
+
+fn declare(
+    root: &Path,
+    recovery_memory_bytes: u64,
+    manifest_entries: u64,
+    configuration: PhysicalRecoveryStaticConfiguration,
+) -> PhysicalRecoveryOpenRequest {
     let limits = PhysicalRecoveryLimits::admit(PhysicalRecoveryLimitDeclaration {
         selector_candidates: 4,
         checkpoint_candidates: 64,
         manifest_bytes: 64 << 20,
-        manifest_entries: 4096,
+        manifest_entries,
         wal_segments: 64,
         wal_frames: 4096,
         wal_bytes: 64 << 20,

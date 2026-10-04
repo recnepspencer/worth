@@ -18,6 +18,9 @@ use crate::{
     orchestration::planning::manifest_entry_budget::ManifestEntryBudget,
 };
 
+#[cfg(test)]
+#[path = "graph/child_tests.rs"]
+mod child_tests;
 #[path = "graph/reuse_source.rs"]
 mod reuse_source;
 
@@ -65,23 +68,15 @@ pub(super) fn authenticate(
         kind: ExpectedKind::Root,
     }];
     if terminal
-        && routes
-            .iter()
-            .all(|route| route.record() != publication.root_record())
+        && routed(routes, publication.root_record()).is_none()
         && closure_evidence.settles_absent_root(publication.root_record())
     {
         transcript.update(0_u64.to_le_bytes());
         return Some(transcript.finalize().into());
     }
     while let Some(edge) = pending.pop() {
-        let Some(route) = routes
-            .iter()
-            .copied()
-            .find(|route| route.record() == edge.record)
-        else {
-            if edge.parent.is_some() && closure_evidence.settles_absent_child(edge.record) {
-                continue;
-            }
+        let Some(route) = routed(routes, edge.record) else {
+            // Only the graph root is queued without a route of its own.
             return None;
         };
         edge_count = edge_count.checked_add(1)?;
@@ -132,7 +127,14 @@ pub(super) fn authenticate(
                     return None;
                 }
                 if reached.insert(edge.record)
-                    && !push_children(&mut pending, &node, edge.record, edge.start, routes.len())
+                    && !push_children(
+                        &mut pending,
+                        &node,
+                        edge.record,
+                        edge.start,
+                        routes,
+                        closure_evidence,
+                    )
                 {
                     return None;
                 }
@@ -147,7 +149,14 @@ pub(super) fn authenticate(
                     return None;
                 }
                 if reached.insert(edge.record)
-                    && !push_children(&mut pending, &node, edge.record, edge.start, routes.len())
+                    && !push_children(
+                        &mut pending,
+                        &node,
+                        edge.record,
+                        edge.start,
+                        routes,
+                        closure_evidence,
+                    )
                 {
                     return None;
                 }
@@ -211,16 +220,31 @@ fn update_record(transcript: &mut Sha256, record: Option<PersistedRecordIdentity
     transcript.update(ordinal.to_le_bytes());
 }
 
+/// The route the source root holds for `record`. The selected inventory
+/// admits `routes` only in ascending record order.
+pub(super) fn routed(
+    routes: &[CurrentPhysicalRecordPlacement],
+    record: PersistedRecordIdentity,
+) -> Option<CurrentPhysicalRecordPlacement> {
+    routes
+        .binary_search_by_key(&record, |route| route.record())
+        .ok()
+        .map(|index| routes[index])
+}
+
+/// Queues the children of `node` that the source root still routes. A child
+/// it no longer routes must be settled by the closure evidence: an earlier
+/// batch of this release dropped it. A tree queues each routed record once,
+/// so a queue as long as `routes` already holds a record named more than
+/// once: the closure is denied there, and the queue never outgrows `routes`.
 fn push_children(
     pending: &mut Vec<ExpectedEdge>,
     node: &worth_store_physical_format::BlobTreeNodeV1,
     parent: PersistedRecordIdentity,
     start: u64,
-    maximum: usize,
+    routes: &[CurrentPhysicalRecordPlacement],
+    closure_evidence: ReleasedClosureEvidence<'_>,
 ) -> bool {
-    if pending.len().saturating_add(node.entries().len()) > maximum {
-        return false;
-    }
     let mut child_start = start;
     for (index, entry) in node.entries().iter().enumerate() {
         let kind = match node.occurrence().kind() {
@@ -232,15 +256,22 @@ fn push_children(
                 ExpectedKind::Tree(level)
             }
         };
-        pending.push(ExpectedEdge {
-            parent: Some(parent),
-            entry_index: index as u16,
-            record: entry.record(),
-            digest: entry.digest(),
-            start: child_start,
-            covered: entry.covered_bytes(),
-            kind,
-        });
+        if routed(routes, entry.record()).is_some() {
+            if pending.len() >= routes.len() {
+                return false;
+            }
+            pending.push(ExpectedEdge {
+                parent: Some(parent),
+                entry_index: index as u16,
+                record: entry.record(),
+                digest: entry.digest(),
+                start: child_start,
+                covered: entry.covered_bytes(),
+                kind,
+            });
+        } else if !closure_evidence.settles_absent_child(entry.record()) {
+            return false;
+        }
         let Some(next_start) = child_start.checked_add(entry.covered_bytes()) else {
             return false;
         };

@@ -5,7 +5,9 @@ use crate::physical_runtime::PhysicalRecordReader;
 
 use super::super::super::{scan, BlobReclaimDeferral, BlobReclaimFailure, BlobReclaimLimits};
 use super::chain::ValidatedReleaseChain;
-use super::graph_types::{is_exclusive_target, target_session};
+use super::graph_types::{
+    is_exclusive_target, own_frontier, released_with_session, target_session,
+};
 use super::inventory::{SelectedBlobFact, SelectedReleaseFact, SelectedReleaseInventory};
 use super::transcript;
 
@@ -41,7 +43,7 @@ pub(super) fn select_post_order(
     let owned = inventory
         .facts
         .iter()
-        .filter(|fact| fact.reachable && target_session(fact, session))
+        .filter(|fact| released_with_session(fact, session))
         .count();
     let unconnected = inventory
         .facts
@@ -83,6 +85,17 @@ pub(super) fn select_post_order(
             0,
             inventory.basis.publication_record(),
         );
+    }
+    // A selected frontier names a selected chunk prefix, so the session's
+    // frontiers leave before any chunk: a batch too small for every frontier
+    // takes no chunk. The stage byte is a transcript tag, not a position.
+    for fact in &inventory.facts {
+        if dropped.len() == capacity {
+            break;
+        }
+        if own_frontier(fact, session) {
+            push_drop(&mut dropped, &mut ordered, 3, fact.record);
+        }
     }
     // Leaves precede their parents even in a publication's first batch. A
     // shared source chunk keeps every ancestor selected for historical reads.
@@ -129,7 +142,7 @@ pub(super) fn select_post_order(
         .filter(|record| {
             inventory
                 .fact(**record)
-                .is_some_and(|fact| target_session(fact, session))
+                .is_some_and(|fact| released_with_session(fact, session))
         })
         .count();
     let remaining = owned

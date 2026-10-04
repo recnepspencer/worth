@@ -44,11 +44,13 @@ const ROLE_ENV: &str = "WORTH_C11_PENDING_V3_CHILD_ROLE";
 const MARKER_ENV: &str = "WORTH_C11_PENDING_V3_CHILD_MARKER";
 const ROOT_ENV: &str = "WORTH_C11_PENDING_V3_CHILD_ROOT";
 const WAL_SEGMENT_BYTES_ENV: &str = "WORTH_C11_PENDING_V3_WAL_SEGMENT_BYTES";
+const FIRST_WORLD_ENV: &str = "WORTH_C11_PENDING_V3_FIRST_WORLD";
 const CHILD_TEST: &str = "pending_wal_world::pending_wal_child";
 const CHUNK: usize = 64 << 10;
 
 pub(super) struct PendingWalWorld {
     root: PathBuf,
+    first: first::World,
     _marker: tempfile::TempDir,
     next_descriptor: Cell<u64>,
 }
@@ -56,6 +58,13 @@ pub(super) struct PendingWalWorld {
 impl PendingWalWorld {
     pub(super) fn root(&self) -> &Path {
         &self.root
+    }
+
+    /// A recovery request with the limits this world's WAL and batches need.
+    pub(super) fn recovery_request(
+        &self,
+    ) -> worth_store_recovery_runtime::PhysicalRecoveryOpenRequest {
+        self.first.recovery_request(&self.root)
     }
 
     pub(super) fn kill_second_after_certified_retirement(&self) {
@@ -72,9 +81,11 @@ impl PendingWalWorld {
         self.kill_next_descriptor("successor-first", false);
     }
 
-    /// Parks the batch that drops the whole remainder of the first object.
-    pub(super) fn kill_terminal_successor_of_first_object(&self) {
-        self.kill_next_descriptor("successor-first-terminal", false);
+    /// Parks the next batch of the first object at the whole manifest
+    /// capacity. A remainder that fits leaves whole, which makes the batch
+    /// terminal.
+    pub(super) fn kill_full_batch_successor_of_first_object(&self) {
+        self.kill_next_descriptor("successor-first-full", false);
     }
 
     /// Parks the next one-record batch of the one distinct object.
@@ -94,6 +105,7 @@ impl PendingWalWorld {
         let mut child = Command::new(std::env::current_exe().unwrap())
             .args(["--exact", CHILD_TEST, "--nocapture", "--test-threads=1"])
             .env(ROLE_ENV, role)
+            .env(FIRST_WORLD_ENV, self.first.role())
             .env(ROOT_ENV, &self.root)
             .env(MARKER_ENV, &marker)
             .stdout(Stdio::piped())
@@ -141,34 +153,32 @@ impl Drop for PendingWalWorld {
 }
 
 pub(super) fn first() -> PendingWalWorld {
-    first_with_segment_bytes(None, false)
+    first_with_segment_bytes(None, first::World::TwoChunks)
 }
 
 pub(super) fn first_with_wal_segment_bytes(bytes: NonZeroU64) -> PendingWalWorld {
-    first_with_segment_bytes(Some(bytes), false)
+    first_with_segment_bytes(Some(bytes), first::World::TwoChunks)
 }
 
 pub(super) fn first_with_failed_ingest_control() -> PendingWalWorld {
-    first_with_segment_bytes(None, true)
+    first_with_segment_bytes(None, first::World::FailedIngestControl)
+}
+
+/// The first object is long enough to have checkpointed a resume frontier.
+pub(super) fn first_with_resume_frontier() -> PendingWalWorld {
+    first_with_segment_bytes(None, first::World::ResumeFrontier)
 }
 
 fn first_with_segment_bytes(
     wal_segment_bytes: Option<NonZeroU64>,
-    failed_ingest_control: bool,
+    first: first::World,
 ) -> PendingWalWorld {
     let marker_dir = tempfile::tempdir().unwrap();
     let marker = marker_dir.path().join("ready");
     let mut command = Command::new(std::env::current_exe().unwrap());
     command
         .args(["--exact", CHILD_TEST, "--nocapture", "--test-threads=1"])
-        .env(
-            ROLE_ENV,
-            if failed_ingest_control {
-                "mixed-first"
-            } else {
-                "first"
-            },
-        )
+        .env(ROLE_ENV, first.role())
         .env(MARKER_ENV, &marker)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
@@ -195,6 +205,7 @@ fn first_with_segment_bytes(
     assert!(root.is_dir());
     PendingWalWorld {
         root,
+        first,
         _marker: marker_dir,
         next_descriptor: Cell::new(0),
     }
@@ -295,9 +306,10 @@ fn pending_wal_child() {
         return;
     };
     let marker = PathBuf::from(std::env::var_os(MARKER_ENV).expect("child marker"));
+    if let Some(first) = role.to_str().and_then(first::World::of_role) {
+        return first::child(&marker, first);
+    }
     match role.to_str() {
-        Some("first") => first::child(&marker, false),
-        Some("mixed-first") => first::child(&marker, true),
         Some("second") => second::child(
             Path::new(&std::env::var_os(ROOT_ENV).expect("second source root")),
             &marker,
@@ -312,11 +324,11 @@ fn pending_wal_child() {
             successor::FIRST_OBJECT,
             1,
         ),
-        Some("successor-first-terminal") => successor::child(
+        Some("successor-first-full") => successor::child(
             Path::new(&std::env::var_os(ROOT_ENV).expect("successor source root")),
             &marker,
             successor::FIRST_OBJECT,
-            successor::TERMINAL_BATCH,
+            successor::FULL_BATCH,
         ),
         Some("successor-distinct") => successor::child(
             Path::new(&std::env::var_os(ROOT_ENV).expect("successor source root")),

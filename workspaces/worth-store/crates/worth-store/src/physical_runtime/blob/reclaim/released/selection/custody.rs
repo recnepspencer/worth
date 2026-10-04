@@ -9,7 +9,7 @@ use crate::physical_runtime::{
 };
 
 use super::super::super::{scan, BlobReclaimFailure, BlobReclaimLimits};
-use super::{chain, graph, inventory::SelectedReleaseInventory, plan, resources};
+use super::{chain, external_edges, graph, inventory::SelectedReleaseInventory, plan, resources};
 
 /// The only Store custody eligible for V3: it was re-derived under the exact
 /// protected source root selected *after* the reservation publication.
@@ -156,7 +156,7 @@ pub(in crate::physical_runtime::blob::reclaim) fn certify(
         &mut work,
     )?;
     let (reader, publication_referenced, external) =
-        graph::protect_external_edges(reader, &mut inventory, limits, &mut scratch, &mut work)?;
+        external_edges::protect(reader, &mut inventory, limits, &mut scratch, &mut work)?;
     graph::propagate_protected_subtrees(&reader, &mut inventory, limits, &mut scratch, &mut work)?;
     let planned = plan::select_post_order(
         &reader,

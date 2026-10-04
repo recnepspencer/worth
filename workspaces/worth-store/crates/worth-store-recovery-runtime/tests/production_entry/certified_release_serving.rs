@@ -23,7 +23,8 @@ use tamper::{
 #[path = "certified_release_serving/request.rs"]
 mod recovery_request;
 pub(super) use recovery_request::{
-    request, request_with_configuration, request_with_memory, request_with_memory_and_format,
+    request, request_for_long_ingest, request_with_configuration, request_with_memory,
+    request_with_memory_and_format,
 };
 #[path = "certified_release_serving/plain_serving.rs"]
 mod plain_serving;

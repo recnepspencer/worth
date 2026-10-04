@@ -1,5 +1,7 @@
-//! First released-generation batch: all selected typed routes are inspected
-//! before recovery removes the publication and any V3-proven descendants.
+//! Every released-generation batch: all selected typed routes are inspected
+//! before recovery removes what the batch names. A batch without a
+//! predecessor removes the publication; any batch may also remove resume
+//! frontiers of the released session and V3-proven descendants.
 
 use std::collections::BTreeSet;
 
@@ -296,10 +298,13 @@ pub(super) fn verify_initial(
                         descriptor.terminal(),
                     )
                     && audit.digest == custody.external_edge_audit_sha256()
-                    && manifest.dropped().iter().all(|record| {
-                        *record == source.publication_record()
-                            || (reached.contains(record) && !audit.protected.contains(record))
-                    })
+                    && external_edges::admits_dropped_records(
+                        source.publication_record(),
+                        &reached,
+                        &external_facts,
+                        manifest.dropped(),
+                        &audit.protected,
+                    )
             }) && closure_digest == Some(custody.authenticated_closure_edge_sha256())
                 && postorder::digest(
                     source.publication_record(),
@@ -318,11 +323,7 @@ pub(super) fn verify_initial(
             {
                 return false;
             }
-            let Some(route) = source_routes
-                .iter()
-                .copied()
-                .find(|route| route.record() == claim.selected_chunk())
-            else {
+            let Some(route) = graph::routed(source_routes, claim.selected_chunk()) else {
                 return false;
             };
             let Ok(bytes) = record::read(

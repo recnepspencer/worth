@@ -18,6 +18,7 @@ use inventory::{
 };
 mod chain;
 mod custody;
+mod external_edges;
 mod graph;
 mod graph_types;
 mod plan;
@@ -359,7 +360,7 @@ pub(in crate::physical_runtime::blob::reclaim) fn select(
         &mut work,
     )?;
     let (reader, publication_referenced, _) =
-        graph::protect_external_edges(reader, &mut inventory, limits, &mut scratch, &mut work)?;
+        external_edges::protect(reader, &mut inventory, limits, &mut scratch, &mut work)?;
     graph::propagate_protected_subtrees(&reader, &mut inventory, limits, &mut scratch, &mut work)?;
     let planned = plan::select_post_order(
         &reader,

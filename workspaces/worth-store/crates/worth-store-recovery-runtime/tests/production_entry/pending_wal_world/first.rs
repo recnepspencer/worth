@@ -3,7 +3,100 @@
 use super::*;
 use worth_store::physical_runtime::{BlobReclaimDisposition, BlobTerminalLimits};
 
-pub(super) fn child(marker: &Path, failed_ingest_control: bool) {
+/// What the first child leaves selected under the release it parks.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum World {
+    /// One two-chunk object, published above the baseline checkpoint.
+    TwoChunks,
+    /// The two-chunk object, after a failed ingest left its drop controls.
+    FailedIngestControl,
+    /// One object with two resume frontiers: the ingest checkpoints one at
+    /// its first chunk and another by itself 64 chunks later, one chunk
+    /// before its end. A checkpoint covers the ingest: above a checkpoint,
+    /// recovery blocks on the inline pages an ingest this long allocated and
+    /// retired (`PageAdmission`), which is not what this world is about.
+    ResumeFrontier,
+}
+
+impl World {
+    const ALL: [Self; 3] = [
+        Self::TwoChunks,
+        Self::FailedIngestControl,
+        Self::ResumeFrontier,
+    ];
+
+    /// The child role that builds this world.
+    pub(super) const fn role(self) -> &'static str {
+        match self {
+            Self::TwoChunks => "first",
+            Self::FailedIngestControl => "mixed-first",
+            Self::ResumeFrontier => "frontier-first",
+        }
+    }
+
+    pub(super) fn of_role(role: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|world| world.role() == role)
+    }
+
+    /// The first world of the root a later child was started on.
+    pub(super) fn of_child_root() -> Self {
+        std::env::var(FIRST_WORLD_ENV)
+            .ok()
+            .and_then(|role| Self::of_role(&role))
+            .expect("first world of the child root")
+    }
+
+    const fn chunks(self) -> usize {
+        match self {
+            Self::TwoChunks | Self::FailedIngestControl => 2,
+            Self::ResumeFrontier => 66,
+        }
+    }
+
+    pub(super) fn recovery_request(
+        self,
+        root: &Path,
+    ) -> worth_store_recovery_runtime::PhysicalRecoveryOpenRequest {
+        match self {
+            Self::TwoChunks | Self::FailedIngestControl => {
+                super::super::certified_release_serving::request(root)
+            }
+            Self::ResumeFrontier => {
+                super::super::certified_release_serving::request_for_long_ingest(root)
+            }
+        }
+    }
+}
+
+/// Distinct whole chunks, so every one is its own selected record. The first
+/// two are the bytes of the two-chunk world.
+fn chunk(ordinal: usize) -> Vec<u8> {
+    let mut chunk = vec![if ordinal % 2 == 0 { 0x83 } else { 0x94 }; CHUNK];
+    let salt = ((ordinal / 2) as u64).to_le_bytes();
+    for (byte, salt) in chunk.iter_mut().zip(salt) {
+        *byte ^= salt;
+    }
+    chunk
+}
+
+fn checkpoint(world: &PhysicalResidencyStoreWorld, key: u8, stage: &str) {
+    let checkpoint = PhysicalCheckpointRequest::fuzzy(
+        PhysicalCheckpointIdempotencyKey::new([key; 32]),
+        PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+    );
+    let TransitionOutcome::Success(handle) =
+        world.serving().checkpoints().start(checkpoint).into_raw()
+    else {
+        panic!("{stage} checkpoint must admit")
+    };
+    assert!(matches!(
+        handle.wait(),
+        PhysicalCheckpointOutcome::Completed(_)
+    ));
+}
+
+pub(super) fn child(marker: &Path, shape: World) {
+    let chunks = shape.chunks();
     let world = match std::env::var(WAL_SEGMENT_BYTES_ENV) {
         Ok(value) => PhysicalResidencyStoreWorld::initialize_for_recovery_with_wal_segment_bytes(
             "c11-pending-v3",
@@ -38,22 +131,10 @@ pub(super) fn child(marker: &Path, failed_ingest_control: bool) {
         prepared.execute(),
         PhysicalMutationOutcome::Completed(_)
     ));
-    if failed_ingest_control {
+    if shape == World::FailedIngestControl {
         create_failed_ingest_control(&world);
     }
-    let checkpoint = PhysicalCheckpointRequest::fuzzy(
-        PhysicalCheckpointIdempotencyKey::new([0xa1; 32]),
-        PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
-    );
-    let TransitionOutcome::Success(handle) =
-        world.serving().checkpoints().start(checkpoint).into_raw()
-    else {
-        panic!("baseline NoRelease checkpoint must admit")
-    };
-    assert!(matches!(
-        handle.wait(),
-        PhysicalCheckpointOutcome::Completed(_)
-    ));
+    checkpoint(&world, 0xa1, "baseline NoRelease");
     let scope = admitted_blob_scope("c11.recovery.pending-v3.scope");
     let blobs = world.serving().blobs().unwrap();
     let read = BlobReadLimits::new(NonZeroU64::new(128).unwrap());
@@ -61,7 +142,7 @@ pub(super) fn child(marker: &Path, failed_ingest_control: bool) {
     let declaration = BlobIngestDeclaration::new(
         object,
         BlobChunkSize::from_bytes(CHUNK as u64).unwrap(),
-        (2 * CHUNK) as u64,
+        (chunks * CHUNK) as u64,
         &scope,
         BlobCheckpointLimit::bounded_horizon(16).unwrap(),
         PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
@@ -70,8 +151,12 @@ pub(super) fn child(marker: &Path, failed_ingest_control: bool) {
     let mut ingest = blobs
         .begin_ingest(declaration, world.placement(), CHUNK as u64, read)
         .unwrap();
-    ingest.push(&vec![0x83; CHUNK]).unwrap();
-    ingest.push(&vec![0x94; CHUNK]).unwrap();
+    for ordinal in 0..chunks {
+        ingest.push(&chunk(ordinal)).unwrap();
+        if shape == World::ResumeFrontier && ordinal == 0 {
+            ingest.checkpoint().unwrap();
+        }
+    }
     let published = match ingest.finish() {
         Ok(published) | Err(BlobIngestFailure::PublishedIndexPending { published, .. }) => {
             published
@@ -87,6 +172,9 @@ pub(super) fn child(marker: &Path, failed_ingest_control: bool) {
     assert_eq!(published.object(), object);
     assert_eq!(published.generation().sequence(), 1);
     assert!(publication.root_generation() > 1);
+    if shape == World::ResumeFrontier {
+        checkpoint(&world, 0xa2, "published frontier object");
+    }
     let proof = AdmittedBlobReleaseProof::certification_admit(
         world.serving().store_identity().bytes(),
         object.bytes(),

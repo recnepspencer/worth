@@ -1,13 +1,11 @@
 use sha2::{Digest, Sha256};
-use worth_store_physical_format::{
-    decode_blob_record, BlobRecordV1, BlobTreeNodeKind, SelectedRecordContentClass,
-};
+use worth_store_physical_format::{decode_blob_record, BlobRecordV1, BlobTreeNodeKind};
 
 use crate::physical_runtime::PhysicalRecordReader;
 
 use super::super::super::{scan, BlobReclaimFailure, BlobReclaimLimits};
 use super::chain::ValidatedReleaseChain;
-use super::graph_types::{leaf_occurrence_matches, target_session, ExpectedEdge, ExpectedKind};
+use super::graph_types::{leaf_occurrence_matches, ExpectedEdge, ExpectedKind};
 use super::inventory::{SelectedBlobFact, SelectedReleaseInventory};
 use super::transcript;
 
@@ -226,103 +224,6 @@ pub(super) fn authenticate_selected_closure(
     }
     transcript_hash.update(visited.to_le_bytes());
     Ok(transcript_hash.finalize().into())
-}
-
-/// Marks incoming selected references from outside this release closure.
-/// A released publication's own root edge is intentionally excluded.
-pub(super) fn protect_external_edges(
-    reader: PhysicalRecordReader,
-    inventory: &mut SelectedReleaseInventory,
-    limits: BlobReclaimLimits,
-    scratch: &mut [u8],
-    work: &mut scan::ReclaimInspectionWork,
-) -> Result<(PhysicalRecordReader, bool, [u8; 32]), BlobReclaimFailure> {
-    let publication_record = inventory.basis.publication_record();
-    let session = inventory.basis.session();
-    let mut publication_referenced = false;
-    let mut audit = Sha256::new();
-    audit.update(transcript::EXTERNAL_DOMAIN);
-    let mut source_count = 0_u64;
-    let mut edge_count = 0_u64;
-    let reader = scan::walk_classified(
-        reader,
-        limits,
-        scratch,
-        work,
-        |record, class, _, _, bytes| {
-            if class == SelectedRecordContentClass::UnknownLegacy {
-                return Err(BlobReclaimFailure::ConflictingSelectedFate);
-            }
-            if !matches!(class, SelectedRecordContentClass::Blob(_)) {
-                return Ok(());
-            }
-            let source_inside = inventory.fact(record).is_some_and(|fact| fact.reachable);
-            if source_inside || record == publication_record {
-                return Ok(());
-            }
-            audit.update([0]);
-            transcript::record_id(&mut audit, record);
-            audit.update(
-                inventory
-                    .fact(record)
-                    .ok_or(BlobReclaimFailure::ConflictingSelectedFate)?
-                    .frame_sha256,
-            );
-            source_count = source_count
-                .checked_add(1)
-                .ok_or(BlobReclaimFailure::ScanBoundExhausted)?;
-            let mut mark = |kind: u8, target| -> Result<(), BlobReclaimFailure> {
-                let selected_target = inventory.fact(target).copied();
-                let target_reachable = selected_target.is_some_and(|fact| fact.reachable);
-                let same_session =
-                    selected_target.is_some_and(|fact| target_session(&fact, session));
-                audit.update([1, kind]);
-                transcript::record_id(&mut audit, record);
-                transcript::record_id(&mut audit, target);
-                audit.update([
-                    u8::from(target == publication_record),
-                    u8::from(target_reachable),
-                    u8::from(same_session),
-                ]);
-                edge_count = edge_count
-                    .checked_add(1)
-                    .ok_or(BlobReclaimFailure::ScanBoundExhausted)?;
-                if target == publication_record {
-                    publication_referenced = true;
-                }
-                if let Some(fact) = inventory.fact_mut(target) {
-                    if fact.reachable || target_session(fact, session) {
-                        fact.protected = true;
-                    }
-                }
-                Ok(())
-            };
-            match decode_blob_record(bytes).map_err(BlobReclaimFailure::Format)? {
-                BlobRecordV1::TreeNode(node) => {
-                    for entry in node.entries() {
-                        mark(1, entry.record())?;
-                    }
-                }
-                BlobRecordV1::GenerationPublished(value) => mark(2, value.root_record())?,
-                BlobRecordV1::ChunkReuseClaim(value) => {
-                    mark(3, value.source_publication())?;
-                    mark(4, value.selected_chunk())?;
-                }
-                BlobRecordV1::ChunkReuseClaimV2(value) => mark(5, value.claim().selected_chunk())?,
-                BlobRecordV1::DedupeQuarantine(value) => {
-                    mark(6, value.source_publication())?;
-                    mark(7, value.source_chunk())?;
-                    mark(8, value.conflicting_chunk())?;
-                }
-                BlobRecordV1::SessionFrontier(value) => mark(9, value.last_chunk_record())?,
-                _ => {}
-            }
-            Ok(())
-        },
-    )?;
-    audit.update(source_count.to_le_bytes());
-    audit.update(edge_count.to_le_bytes());
-    Ok((reader, publication_referenced, audit.finalize().into()))
 }
 
 pub(super) fn propagate_protected_subtrees(

@@ -39,6 +39,10 @@ pub(super) enum SelectedBlobFact {
         covered_bytes: u64,
         chunk_size: u32,
     },
+    /// A resume frontier, owned by the session that wrote it.
+    Frontier {
+        session: [u8; 16],
+    },
 }
 
 #[derive(Clone, Copy)]
@@ -195,6 +199,11 @@ impl SelectedReleaseInventory {
                                 content_digest: claim.stored_digest(),
                                 covered_bytes: u64::from(claim.chunk_length()),
                                 chunk_size: claim.chunk_size(),
+                            };
+                        }
+                        BlobRecordV1::SessionFrontier(frontier) => {
+                            fact.blob = SelectedBlobFact::Frontier {
+                                session: frontier.session(),
                             };
                         }
                         BlobRecordV1::GenerationPublished(publication)

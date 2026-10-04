@@ -45,12 +45,24 @@ pub(super) fn target_session(fact: &SelectedReleaseFact, session: [u8; 16]) -> b
         SelectedBlobFact::Tree { session: value, .. }
         | SelectedBlobFact::Chunk { session: value, .. }
         | SelectedBlobFact::ReuseClaim { session: value, .. } => value == session,
-        SelectedBlobFact::Other => false,
+        SelectedBlobFact::Other | SelectedBlobFact::Frontier { .. } => false,
     }
 }
 
 pub(super) fn is_exclusive_target(fact: &SelectedReleaseFact, session: [u8; 16]) -> bool {
     fact.reachable && target_session(fact, session) && !fact.protected
+}
+
+/// A resume frontier the released session wrote for itself. It is residue of
+/// that session and leaves with the release; it is never an outside owner of
+/// the chunk it names.
+pub(super) fn own_frontier(fact: &SelectedReleaseFact, session: [u8; 16]) -> bool {
+    matches!(fact.blob, SelectedBlobFact::Frontier { session: value } if value == session)
+}
+
+/// Every selected record the release must drop before its head is terminal.
+pub(super) fn released_with_session(fact: &SelectedReleaseFact, session: [u8; 16]) -> bool {
+    own_frontier(fact, session) || (fact.reachable && target_session(fact, session))
 }
 
 #[cfg(test)]

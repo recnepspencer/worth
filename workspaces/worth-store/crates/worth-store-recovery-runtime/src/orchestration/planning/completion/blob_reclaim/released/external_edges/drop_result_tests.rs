@@ -12,12 +12,14 @@ fn a_parent_drop_cannot_strand_a_live_child_or_claim_false_terminality() {
             record: record(1),
             frame_sha256: [1; 32],
             same_session: true,
+            own_frontier: false,
             edges: vec![(1, record(2))],
         },
         ExternalBlobFact {
             record: record(2),
             frame_sha256: [2; 32],
             same_session: true,
+            own_frontier: false,
             edges: vec![],
         },
     ];
@@ -68,12 +70,14 @@ fn same_session_residue_outside_the_publication_closure_cannot_be_abandoned() {
             record: record(1),
             frame_sha256: [1; 32],
             same_session: true,
+            own_frontier: false,
             edges: vec![],
         },
         ExternalBlobFact {
             record: record(2),
             frame_sha256: [2; 32],
             same_session: true,
+            own_frontier: false,
             edges: vec![],
         },
     ];

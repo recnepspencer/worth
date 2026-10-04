@@ -22,12 +22,12 @@ use super::park_at_descriptor_wal;
 pub(super) const FIRST_OBJECT: [u8; 32] = [0x71; 32];
 /// Issuer evidence of the object a distinct child released.
 pub(super) const DISTINCT_OBJECT: [u8; 32] = [0x72; 32];
-/// Larger than any fixture closure, so the batch drops the whole remainder.
-pub(super) const TERMINAL_BATCH: u16 = 64;
+/// The whole manifest capacity. A remainder that fits leaves in one batch.
+pub(super) const FULL_BATCH: u16 = 64;
 
 pub(super) fn child(root: &Path, marker: &Path, issuer_evidence: [u8; 32], batch_records: u16) {
     let outcome = worth_store_recovery_runtime::WorthStoreRecovery::recover(
-        super::super::certified_release_serving::request(root),
+        super::first::World::of_child_root().recovery_request(root),
     );
     let handoff = match outcome {
         worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) => handoff,

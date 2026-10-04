@@ -1,6 +1,8 @@
 //! Independent ordered-drop transcript over an authenticated selected closure.
 //! The manifest is identity-sorted; physical removal order is publication,
-//! leaves, then tree levels. A digest never proves exclusivity by itself.
+//! the session's resume frontiers, leaves, then tree levels. A stage byte is
+//! a transcript tag, not a position. A digest never proves exclusivity by
+//! itself.
 
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{BlobRecordKind, PersistedRecordIdentity};
@@ -26,6 +28,7 @@ pub(super) fn digest(
     {
         return None;
     }
+    let mut frontiers = Vec::new();
     let mut leaves = Vec::new();
     let mut trees = Vec::new();
     let mut publication_dropped = false;
@@ -43,6 +46,7 @@ pub(super) fn digest(
                 leaves.push(record);
             }
             (BlobRecordKind::TreeNode, Some(level)) => trees.push((level, record)),
+            (BlobRecordKind::SessionFrontier, None) => frontiers.push(record),
             _ => return None,
         }
     }
@@ -53,6 +57,10 @@ pub(super) fn digest(
     if publication_dropped {
         transcript.update([0]);
         write_record(&mut transcript, publication);
+    }
+    for record in frontiers {
+        transcript.update([3]);
+        write_record(&mut transcript, record);
     }
     for record in leaves {
         transcript.update([1]);
@@ -113,5 +121,53 @@ mod tests {
         assert_eq!(observed, <[u8; 32]>::from(expected.finalize()));
         assert!(digest(record(3), &[record(2), record(2)], &closure).is_none());
         assert!(digest(record(3), &[record(2), record(5)], &closure).is_none());
+    }
+
+    #[test]
+    fn resume_frontiers_leave_after_the_publication_and_before_every_leaf() {
+        let record = |ordinal| PersistedRecordIdentity::new([7; 16], ordinal).unwrap();
+        let closure = [
+            TypedClosureRecord {
+                record: record(1),
+                kind: BlobRecordKind::Chunk,
+                tree_level: None,
+            },
+            TypedClosureRecord {
+                record: record(2),
+                kind: BlobRecordKind::TreeNode,
+                tree_level: Some(0),
+            },
+            TypedClosureRecord {
+                record: record(4),
+                kind: BlobRecordKind::SessionFrontier,
+                tree_level: None,
+            },
+            TypedClosureRecord {
+                record: record(5),
+                kind: BlobRecordKind::SessionDeclared,
+                tree_level: None,
+            },
+            TypedClosureRecord {
+                record: record(6),
+                kind: BlobRecordKind::SessionFrontier,
+                tree_level: None,
+            },
+        ];
+        let dropped = [record(1), record(2), record(3), record(4), record(6)];
+        let observed = digest(record(3), &dropped, &closure).unwrap();
+        let mut expected = Sha256::new();
+        expected.update(b"store.physical.released-drop-postorder.v1");
+        expected.update([7; 16]);
+        expected.update(3_u64.to_le_bytes());
+        // Both frontiers, in record order, before the one leaf.
+        for (stage, ordinal) in [(0_u8, 3_u64), (3, 4), (3, 6), (1, 1), (2, 2)] {
+            expected.update([stage]);
+            expected.update([7; 16]);
+            expected.update(ordinal.to_le_bytes());
+        }
+        expected.update(5_u64.to_le_bytes());
+        assert_eq!(observed, <[u8; 32]>::from(expected.finalize()));
+        // The declaration is never part of a released drop.
+        assert!(digest(record(3), &[record(4), record(5)], &closure).is_none());
     }
 }

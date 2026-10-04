@@ -5,23 +5,26 @@ use std::num::{NonZeroU16, NonZeroU32, NonZeroU64};
 
 use worth_proof::{AdmittedBlobReleaseProof, TransitionOutcome};
 use worth_store::physical_runtime::{
-    certification::CertificationReleaseHeadObservation, BlobCheckpointLimit, BlobIngestDeclaration,
-    BlobIngestFailure, BlobIngestSession, BlobObjectId, BlobReadLimits, BlobReclaimDisposition,
-    BlobReclaimLimits, BlobReclaimReceipt, BlobReclaimRequest, BlobReclaimRetirement,
-    BlobReclaimRetirementBudget, BlobResumeToken, BlobTerminalHeadRetirementDenial as Denial,
-    BlobTerminalHeadRetirementFailure as Failure, BlobTerminalHeadRetirementReceipt,
-    BlobTerminalHeadRetirementRequest, PhysicalCheckpointDeadline,
-    PhysicalCheckpointIdempotencyKey, PhysicalCheckpointOutcome, PhysicalCheckpointRequest,
-    PhysicalMutationDeadline, PhysicalWalObservation, ServingPhysicalRuntime,
+    certification::CertificationReleaseHeadObservation, BlobReclaimDisposition, BlobReclaimLimits,
+    BlobReclaimReceipt, BlobReclaimRequest, BlobReclaimRetirement, BlobReclaimRetirementBudget,
+    BlobTerminalHeadRetirementDenial as Denial, BlobTerminalHeadRetirementFailure as Failure,
+    BlobTerminalHeadRetirementReceipt, BlobTerminalHeadRetirementRequest,
+    PhysicalCheckpointDeadline, PhysicalCheckpointIdempotencyKey, PhysicalCheckpointOutcome,
+    PhysicalCheckpointRequest, PhysicalMutationDeadline, PhysicalWalObservation,
+    ServingPhysicalRuntime,
 };
-use worth_store_blob_chunks::BlobChunkSize;
 
-use super::fixture::{admitted_blob_scope, placement, serving_from_initialization};
+use super::fixture::{placement, serving_from_initialization};
+use publication::{again, begin, publish_chunks, publish_resumable, Published};
 
 #[path = "terminal_head_retirement/denials.rs"]
 mod denials;
+#[path = "terminal_head_retirement/frontier.rs"]
+mod frontier;
 #[path = "terminal_head_retirement/non_reissue.rs"]
 mod non_reissue;
+#[path = "terminal_head_retirement/publication.rs"]
+mod publication;
 
 const SCOPE: &str = "c11.blob.terminal.head.retired.scope";
 const CHUNK: usize = 64 << 10;
@@ -224,85 +227,6 @@ fn publish(serving: &ServingPhysicalRuntime, seed: u8) -> AdmittedBlobReleasePro
     let published = publish_resumable(serving, seed, HORIZON);
     expire_declarations(serving, seed);
     published.proof
-}
-
-/// One published generation: its admitted release, and what its ended
-/// session and its object can still be asked.
-struct Published {
-    proof: AdmittedBlobReleaseProof,
-    token: BlobResumeToken,
-    object: BlobObjectId,
-}
-
-fn read_limits() -> BlobReadLimits {
-    BlobReadLimits::new(NonZeroU64::new(128).unwrap())
-}
-
-/// Declares one two-chunk ingest of `object`, resumable for `horizon`
-/// completed checkpoints.
-fn begin(
-    serving: &ServingPhysicalRuntime,
-    object: BlobObjectId,
-    horizon: u64,
-) -> Result<BlobIngestSession<'_>, BlobIngestFailure> {
-    let scope = admitted_blob_scope(SCOPE);
-    let declaration = BlobIngestDeclaration::new(
-        object,
-        BlobChunkSize::from_bytes(CHUNK as u64).unwrap(),
-        (2 * CHUNK) as u64,
-        &scope,
-        BlobCheckpointLimit::bounded_horizon(horizon).unwrap(),
-        deadline(),
-    )
-    .unwrap();
-    let blobs = serving.blobs().unwrap();
-    blobs.begin_ingest(declaration, placement(), CHUNK as u64, read_limits())
-}
-
-/// Publishes one two-chunk generation and admits its release proof. Its
-/// session stays resumable for `horizon` completed checkpoints.
-fn publish_resumable(serving: &ServingPhysicalRuntime, seed: u8, horizon: u64) -> Published {
-    let blobs = serving.blobs().unwrap();
-    let object = blobs.issue_object_id(read_limits()).unwrap();
-    let mut ingest = begin(serving, object, horizon).unwrap();
-    let token = ingest.resume_token();
-    ingest.push(&vec![seed; CHUNK]).unwrap();
-    ingest.push(&vec![!seed; CHUNK]).unwrap();
-    let published = ingest.finish().unwrap();
-    let marker = serving
-        .certification_selected_latest_blob_publication()
-        .unwrap()
-        .expect("published generation has a selected marker");
-    let record = marker.record();
-    let proof = AdmittedBlobReleaseProof::certification_admit(
-        serving.store_identity().bytes(),
-        object.bytes(),
-        published.generation().sequence(),
-        record.allocation_epoch(),
-        record.ordinal(),
-        marker.encoded_digest(),
-        [0x71; 32],
-    )
-    .unwrap();
-    Published {
-        proof,
-        token,
-        object,
-    }
-}
-
-/// The fixture issuer admits the same release again for a repeated request.
-fn again(proof: &AdmittedBlobReleaseProof) -> AdmittedBlobReleaseProof {
-    AdmittedBlobReleaseProof::certification_admit(
-        proof.store(),
-        proof.object(),
-        proof.generation(),
-        proof.publication_allocation_epoch(),
-        proof.publication_record_ordinal(),
-        proof.publication_frame_sha256(),
-        proof.issuer_evidence_sha256(),
-    )
-    .unwrap()
 }
 
 fn release_request(

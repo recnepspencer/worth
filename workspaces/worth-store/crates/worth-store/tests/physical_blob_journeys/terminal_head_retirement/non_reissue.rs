@@ -46,7 +46,7 @@ fn unexpired_checkpoints(
 
 /// Completes the checkpoints, keyed from `first_key`, that durably expire the
 /// still unexpired declaration, then retires its head.
-fn retire_once_expired(
+pub(super) fn retire_once_expired(
     serving: &ServingPhysicalRuntime,
     proof: &AdmittedBlobReleaseProof,
     first_key: u8,
@@ -77,7 +77,10 @@ fn resume(
 /// Resume, abort and expiry of a released session each answer the release,
 /// and none of them appends: the WAL end, the selected root and the release
 /// ledger stay exactly as they were.
-fn assert_release_is_the_sessions_fate(serving: &ServingPhysicalRuntime, token: BlobResumeToken) {
+pub(super) fn assert_release_is_the_sessions_fate(
+    serving: &ServingPhysicalRuntime,
+    token: BlobResumeToken,
+) {
     let before = fixed(serving);
     let scope = admitted_blob_scope(SCOPE);
     let resumed = resume(serving, token).err();
@@ -137,10 +140,13 @@ fn selected_publications(serving: &ServingPhysicalRuntime, published: &Published
 /// answers the release, the object cannot be declared again, the release and
 /// the retirement repeat without effect, and no publication of the identity
 /// is selected.
-fn assert_retired_identity_stays_ended(serving: &ServingPhysicalRuntime, published: &Published) {
+pub(super) fn assert_retired_identity_stays_ended(
+    serving: &ServingPhysicalRuntime,
+    published: &Published,
+) {
     assert_release_is_the_sessions_fate(serving, published.token);
     let before = fixed(serving);
-    let begun = begin(serving, published.object, LONG_HORIZON).err();
+    let begun = begin(serving, published.object, 2, LONG_HORIZON).err();
     assert!(
         matches!(begun, Some(BlobIngestFailure::ObjectAlreadyDeclared)),
         "the retired object was declared again: {begun:?}"

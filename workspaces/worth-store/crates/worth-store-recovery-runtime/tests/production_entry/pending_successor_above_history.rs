@@ -4,18 +4,22 @@
 //! checkpoint and ordered history, and then rejoin it as completed history.
 
 use super::*;
-use std::{fs, path::Path};
+use pending_wal_world::PendingWalWorld;
+use std::fs;
 use worth_store_recovery_runtime::{
     PhysicalRecoveryOutcome, RecoveredPhysicalRuntimeHandoff, WorthStoreRecovery,
 };
 
-fn recover(root: &Path, stage: &str) -> RecoveredPhysicalRuntimeHandoff {
-    match WorthStoreRecovery::recover(certified_release_serving::request(root)) {
+fn recover(world: &PendingWalWorld, stage: &str) -> RecoveredPhysicalRuntimeHandoff {
+    match WorthStoreRecovery::recover(world.recovery_request()) {
         PhysicalRecoveryOutcome::Recovered(handoff) => handoff,
         PhysicalRecoveryOutcome::Blocked(block) => panic!(
-            "{stage} blocked: kind={:?}; artifact={:?}; cause={:?}; effects={}",
+            "{stage} blocked: kind={:?}; artifact={:?}; limit={:?}; sources={:?}; cause={:?}; \
+             effects={}",
             block.kind,
             block.evidence().artifact.as_deref(),
+            block.evidence().limit,
+            block.evidence().source_denials,
             block.evidence().planning_denial,
             block.recovery_effects()
         ),
@@ -31,8 +35,20 @@ fn recover(root: &Path, stage: &str) -> RecoveredPhysicalRuntimeHandoff {
 
 /// Recovers the parked batch, seals Serving on it, and publishes a
 /// head-bearing checkpoint whose source roster carries every released object.
-fn recover_and_checkpoint(root: &Path, stage: &str, key: [u8; 32]) -> usize {
-    let seal = recover(root, stage).into_core().into_checkpoint_custody();
+fn recover_and_checkpoint(world: &PendingWalWorld, stage: &str, key: [u8; 32]) -> usize {
+    let heads = checkpoint_heads(world, stage, key);
+    assert!(heads.iter().all(|head| !head.terminal()));
+    heads.len()
+}
+
+/// The heads of the checkpoint published over the recovered world.
+fn checkpoint_heads(
+    world: &PendingWalWorld,
+    stage: &str,
+    key: [u8; 32],
+) -> Vec<worth_store_physical_format::ReleaseCustodyHeadEntryV1> {
+    let root = world.root();
+    let seal = recover(world, stage).into_core().into_checkpoint_custody();
     let serving = certified_release_serving::admit_serving_with_seal(
         root,
         seal.expect("recovered batch custody seal"),
@@ -51,17 +67,15 @@ fn recover_and_checkpoint(root: &Path, stage: &str, key: [u8; 32]) -> usize {
     serving.close();
     let checkpoint = fs::read(root.join("families/checkpoint.current")).unwrap();
     let (_, accumulator) = release_reopen::selected_release_certificates_from_bytes(&checkpoint);
-    let heads = release_reopen::selected_head_oracle::selected_heads(root, accumulator);
-    assert!(heads.iter().all(|head| !head.terminal()));
-    heads.len()
+    release_reopen::selected_head_oracle::selected_heads(root, accumulator)
 }
 
 /// The pending batch must redo and seal, and the next recovery must rejoin
 /// it as completed history, both from the unchanged checkpoint.
-fn assert_pending_then_completed(world: &pending_wal_world::PendingWalWorld, stage: &str) {
+fn assert_pending_then_completed(world: &PendingWalWorld, stage: &str) {
     let root = world.root();
     let checkpoint = fs::read(root.join("families/checkpoint.current")).unwrap();
-    let pending = recover(root, stage);
+    let pending = recover(world, stage);
     assert!(pending.core().recovery_effect_count() > 0);
     let seal = pending
         .into_core()
@@ -73,7 +87,7 @@ fn assert_pending_then_completed(world: &pending_wal_world::PendingWalWorld, sta
         checkpoint,
         "{stage}: the redone successor must stay above the same checkpoint",
     );
-    let completed = recover(root, stage);
+    let completed = recover(world, stage);
     assert_eq!(completed.core().recovery_effect_count(), 0);
     let seal = completed
         .into_core()
@@ -101,11 +115,13 @@ fn pending_successor_of_an_ordered_release_above_a_head_checkpoint_recovers() {
 #[test]
 fn pending_successor_of_a_checkpoint_head_above_foreign_history_recovers() {
     let world = pending_wal_world::first();
-    let root = world.root();
-    assert_eq!(recover_and_checkpoint(root, "first object", [0xd1; 32]), 1);
+    assert_eq!(
+        recover_and_checkpoint(&world, "first object", [0xd1; 32]),
+        1
+    );
     world.kill_distinct_release_before_checkpoint();
     assert_eq!(
-        recover_and_checkpoint(root, "distinct object", [0xd2; 32]),
+        recover_and_checkpoint(&world, "distinct object", [0xd2; 32]),
         2
     );
     world.kill_successor_of_first_object();
@@ -119,10 +135,10 @@ fn pending_successor_of_a_checkpoint_head_above_foreign_history_recovers() {
 fn pending_terminal_successor_of_a_checkpoint_head_recovers() {
     let world = pending_wal_world::first();
     assert_eq!(
-        recover_and_checkpoint(world.root(), "first object", [0xd3; 32]),
+        recover_and_checkpoint(&world, "first object", [0xd3; 32]),
         1
     );
-    world.kill_terminal_successor_of_first_object();
+    world.kill_full_batch_successor_of_first_object();
     assert_pending_then_completed(&world, "pending terminal successor of a checkpoint head");
 }
 
@@ -133,4 +149,28 @@ fn pending_successor_of_a_first_release_without_a_checkpoint_head_recovers() {
     let world = pending_wal_world::first();
     world.kill_successor_of_first_object();
     assert_pending_then_completed(&world, "pending successor of an ordered first release");
+}
+
+/// The object checkpointed two resume frontiers during its ingest. The first
+/// batch drops only its publication and is headed by a checkpoint. The next
+/// batch, killed, drops both frontiers and the chunks beside them; the last
+/// one, killed, drops the chunks left and their root node, so the head
+/// recovered from it is terminal.
+#[test]
+fn pending_successors_of_a_generation_with_a_resume_frontier_recover_to_a_terminal_head() {
+    let world = pending_wal_world::first_with_resume_frontier();
+    assert_eq!(
+        recover_and_checkpoint(&world, "frontier object", [0xd4; 32]),
+        1
+    );
+    world.kill_full_batch_successor_of_first_object();
+    assert_pending_then_completed(&world, "pending successor that drops a resume frontier");
+    world.kill_full_batch_successor_of_first_object();
+    assert_pending_then_completed(&world, "pending terminal successor after a resume frontier");
+    let heads = checkpoint_heads(&world, "released frontier object", [0xd5; 32]);
+    assert_eq!(heads.len(), 1);
+    assert!(
+        heads[0].terminal(),
+        "the release stayed nonterminal: {heads:?}"
+    );
 }
