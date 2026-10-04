@@ -1,3 +1,4 @@
+mod external_input;
 use super::{authentication, resources, seed};
 use crate::{ConsumerProgram, ConsumerSchema};
 use std::sync::{
@@ -177,7 +178,7 @@ pub(super) fn assert_repeated_optional_member_correspondence(world: &ConsumerWor
     };
     use worth_query_consumer_values::{PlanarOperation, PositiveLength};
     use worth_query_host::facade::declaration::application_program::ApplicationOptionalMemberEdit;
-    use worth_query_topology_entry::{EditPlanar, PlanarEditBinding};
+    use worth_query_topology_entry::PlanarEditBinding;
 
     let correspondence = world
         .application
@@ -232,44 +233,7 @@ pub(super) fn assert_repeated_optional_member_correspondence(world: &ConsumerWor
     assert_eq!(second.initial_member(), None);
     assert_eq!(second.required_source(), "source-b");
 
-    let external = world
-        .application
-        .installed_program()
-        .external_input_provider::<
-            EditPlanar,
-            crate::application_program::external_input::NeutralExternalProvider,
-        >()
-        .expect("the neutral external provider slot is installed on the action");
-    let provider = crate::application_program::external_input::NeutralExternalProvider::new(7);
-    let changed = external.resolve(&provider, "material").unwrap();
-    assert_eq!(changed.resolution().provenance(), &"neutral-catalog");
-    provider.change(8);
-    assert_eq!(
-        changed.admit(&provider).err(),
-        Some(crate::application_program::external_input::NeutralExternalDenial::Changed)
-    );
-    let removed = external.resolve(&provider, "material").unwrap();
-    provider.remove();
-    assert_eq!(
-        removed.admit(&provider).err(),
-        Some(crate::application_program::external_input::NeutralExternalDenial::Removed)
-    );
-    provider.change(9);
-    let invalid = external.resolve(&provider, "material").unwrap();
-    provider.invalidate();
-    assert_eq!(
-        invalid.admit(&provider).err(),
-        Some(crate::application_program::external_input::NeutralExternalDenial::Invalid)
-    );
-    provider.change(10);
-    let admitted = external
-        .resolve(&provider, "material")
-        .unwrap()
-        .admit(&provider)
-        .unwrap()
-        .into_resolution();
-    assert_eq!(admitted.values(), &10);
-    assert_eq!(admitted.revision(), &10);
+    external_input::assert_external_inputs(world);
 }
 
 pub(super) fn install_with_candidate_bytes(
