@@ -20,7 +20,8 @@ use crate::domain_computation::primary_graph::{
 
 use super::{
     super::invalidation::{
-        InvalidationEditAdmission, SettlementRegistrationStop, VerifiedCurrentCleanup,
+        FullVerificationReason, InvalidationEditAdmission, SettlementRegistrationStop,
+        VerifiedCurrentCleanup,
     },
     AcceptedCurrentCandidate,
 };
@@ -96,6 +97,28 @@ pub(in crate::domain_computation::primary_graph) enum CurrentAcceptedStop {
 }
 
 impl AcceptedCurrentCandidate {
+    /// A row verified in full executes again and reads the outputs it
+    /// consumed. The first of them that changed refreshes before it does, so
+    /// that execution reads every consumed output current.
+    pub(in crate::domain_computation::primary_graph) fn pending_consumed_output<'selected>(
+        &self,
+        owner: &SourceInvalidationOwner,
+        runtime: &RelationalRuntime,
+        snapshot: &SnapshotHandle,
+        selected: &'selected PositionedRelationalSnapshot,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<Option<SelectedPendingConsumedOutput<'selected>>, ConsumedOutputVerificationStop>
+    {
+        ConsumedOutputEvidence::select_exact_pending_dependency(
+            &self.selected.recorded().consumed_outputs,
+            owner,
+            runtime,
+            snapshot,
+            selected,
+            admission,
+        )
+    }
+
     /// A complete actor posting set makes Clean a zero-fact-check proof. The
     /// recorded row and exact accepted cell remain pinned throughout the edit.
     pub(in crate::domain_computation::primary_graph) fn certify_current<'basis>(
@@ -136,18 +159,28 @@ impl AcceptedCurrentCandidate {
         if self.selected.native_output_witness().is_none() {
             return Ok(CurrentAcceptedResult::NeedsDisclosure);
         }
-        let facts = {
+        let (requirement, facts) = {
             let row = recorded
                 .mutable
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            if row.verification_requirement.is_some() {
+            if row.verification_requirement == Some(FullVerificationReason::CheckpointRestore) {
                 return Ok(CurrentAcceptedResult::NeedsDisclosure);
             }
-            let Some(facts) = row.observed_source_facts.as_ref() else {
-                return Ok(CurrentAcceptedResult::NeedsDisclosure);
+            (
+                row.verification_requirement,
+                row.observed_source_facts.as_ref().map(Arc::clone),
+            )
+        };
+        let (None, Some(facts)) = (requirement, facts) else {
+            return match self.pending_consumed_output(owner, runtime, snapshot, selected, admission)
+            {
+                Ok(Some(pending)) => Ok(CurrentAcceptedResult::PendingExact(pending)),
+                Ok(None) | Err(ConsumedOutputVerificationStop::Unavailable) => {
+                    Ok(CurrentAcceptedResult::NeedsDisclosure)
+                }
+                Err(reason) => Err(CurrentAcceptedStop::Closure(reason)),
             };
-            Arc::clone(facts)
         };
         match ConsumedOutputEvidence::verify_many_with_admission(
             &recorded.consumed_outputs,
@@ -162,6 +195,8 @@ impl AcceptedCurrentCandidate {
                 return ConsumedOutputEvidence::select_exact_pending_dependency(
                     &recorded.consumed_outputs,
                     owner,
+                    runtime,
+                    snapshot,
                     selected,
                     admission,
                 )
@@ -175,6 +210,8 @@ impl AcceptedCurrentCandidate {
                 return ConsumedOutputEvidence::select_exact_pending_dependency(
                     &recorded.consumed_outputs,
                     owner,
+                    runtime,
+                    snapshot,
                     selected,
                     admission,
                 )

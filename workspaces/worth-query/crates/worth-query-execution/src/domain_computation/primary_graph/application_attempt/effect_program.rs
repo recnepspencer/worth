@@ -280,12 +280,7 @@ impl<Schema, Operation, Input, Scope>
         self.read_set
             .admission
             .validate_current_authority()
-            .map_err(|_| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::CurrentAuthorityDenied,
-                    self.read_set.admission.operation(),
-                )
-            })?;
+            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         self.output_correspondence.validate_effects(&self.effects)?;
         let validator_work_admission = self.candidate_reservation.as_ref().map_or_else(
             WorthQueryCandidateValidatorWorkAdmission::unreserved_internal,

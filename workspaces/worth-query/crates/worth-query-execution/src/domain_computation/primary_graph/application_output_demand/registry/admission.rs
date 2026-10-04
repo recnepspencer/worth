@@ -256,9 +256,16 @@ impl WorthQueryOutputDemandRegistry {
                     })
             );
             if existing_record && reopens_exact_ready {
-                record.state = DemandState::Admitted;
+                let DemandState::Output(reopened) =
+                    std::mem::replace(&mut record.state, DemandState::Admitted)
+                else {
+                    unreachable!("the reopened row was checked Ready above");
+                };
                 record.performed_source = None;
-                record.successor_of = Some(successor.key_identity());
+                record.successor_of = Some(super::succession::Succession::reopening(
+                    successor.key_identity(),
+                    reopened,
+                ));
                 record.wake.notify();
             }
         }

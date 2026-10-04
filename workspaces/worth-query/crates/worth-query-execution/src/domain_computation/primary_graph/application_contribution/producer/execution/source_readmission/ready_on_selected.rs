@@ -3,7 +3,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::{
     application_contribution::producer::demand::{
-        MatchedRequiredPredecessor, ResolvedRequiredPredecessor,
+        MatchedRequiredPredecessors, ResolvedRequiredPredecessors,
     },
     application_query::{FreshQueryPermissionStop, PreparedApplicationQueryPermission},
     product_operation::{SelectedQueryBasisRetentionStop, SharedSelectedProductOperation},
@@ -35,7 +35,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     positioned: &'basis PositionedRelationalSnapshot,
     retained: &WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
     candidate: Option<&'basis AcceptedCurrentCandidate>,
-    resolved: Option<&ResolvedRequiredPredecessor<'_, Schema>>,
+    resolved: Option<&ResolvedRequiredPredecessors<'_, Schema>>,
     limits: WorthQueryOutputDemandLimits,
     producer_contacts_in_this_demand: usize,
     admission: &mut InvalidationEditAdmission,
@@ -50,7 +50,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
             BoundPrincipalIdentity<Schema, Binding>,
             BoundScope<Schema, Binding>,
         >,
-        Option<MatchedRequiredPredecessor<'_>>,
+        Option<MatchedRequiredPredecessors<'_>>,
         &mut InvalidationEditAdmission,
     ) -> Result<
         super::super::required_cue::RequiredCueProgress<'basis, Schema>,
@@ -192,21 +192,47 @@ where
                         )?;
                         Ok(RequiredCueProgress::Current(settled))
                     }
-                    CurrentAcceptedResult::PendingExact(pending) => {
+                    CurrentAcceptedResult::PendingExact(mut pending) => {
                         if let Some(resolved) = resolved {
-                            if let Some(matched) = resolved
-                                .match_pending(runtime, &pending, positioned, admission)
-                                .map_err(ProducerExecutionStop::ExecutionStopped)?
-                            {
-                                drop(sealed);
-                                return on_disclosure(permission, Some(matched), admission);
-                            }
-                            if resolved
-                                .names_current_upstream(runtime, &pending, positioned, admission)
-                                .map_err(ProducerExecutionStop::ExecutionStopped)?
-                            {
-                                drop(sealed);
-                                return on_disclosure(permission, None, admission);
+                            // Every pending consumed edge must have resolved on
+                            // this wave before the consumer refreshes; the first
+                            // unresolved one is the next upstream to schedule.
+                            let mut matched = None;
+                            loop {
+                                let old = match resolved
+                                    .match_pending(runtime, &pending, positioned, admission)
+                                    .map_err(ProducerExecutionStop::ExecutionStopped)?
+                                {
+                                    Some(old) => Some(old),
+                                    None => resolved
+                                        .match_current_upstream(runtime, &pending, positioned, admission)
+                                        .map_err(ProducerExecutionStop::ExecutionStopped)?,
+                                };
+                                let Some(old) = old else {
+                                    break;
+                                };
+                                MatchedRequiredPredecessors::join(&mut matched, old, positioned, admission)
+                                    .map_err(ProducerExecutionStop::ExecutionStopped)?;
+                                let next = handle
+                                    .with_runtime(|relational| {
+                                        pending.next_pending(
+                                            &handle.source_owner.invalidation_owner,
+                                            relational,
+                                            sealed.snapshot_handle(),
+                                            admission,
+                                        )
+                                    })
+                                    .map_err(|stop| ready::ready_currentness_denial(
+                                        Binding::IDENTITY,
+                                        CurrentAcceptedStop::Closure(stop),
+                                    ))?;
+                                match next {
+                                    Some(next) => pending = next,
+                                    None => {
+                                        drop(sealed);
+                                        return on_disclosure(permission, matched, admission);
+                                    }
+                                }
                             }
                         }
                         // The evidence is an owned, ticketed pin. Only its

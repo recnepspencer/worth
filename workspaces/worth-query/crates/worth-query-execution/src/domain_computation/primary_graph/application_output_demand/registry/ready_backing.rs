@@ -91,7 +91,10 @@ impl PreparedReadyBacking {
             .and_then(|bytes| bytes.checked_add(Self::retained_bytes()))
             .ok_or_else(capacity_denial)?;
         if !state.has_required_capacity(indexed) {
-            return Err(capacity_denial());
+            return Err(super::required_custody::full_custody_denial(
+                Self::retained_bytes(),
+                state.required_budget_bytes,
+            ));
         }
         admission
             .charge_external_work(1)

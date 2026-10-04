@@ -198,6 +198,7 @@ pub(in crate::domain_computation::primary_graph) use restoration::WorthQueryRest
 mod settlement_index;
 mod settlement_progression;
 mod settlement_retirement;
+mod succession;
 use settlement_retirement::SupersededSettlements;
 mod source_custody;
 mod source_readmission;
@@ -273,7 +274,7 @@ struct DemandRecord {
     state: DemandState,
     performed_source: Option<WorthQueryPerformedOutputDemandSource>,
     readmission_source: Option<Arc<source_readmission::RequiredOutputReadmission>>,
-    successor_of: Option<[u8; 32]>,
+    successor_of: Option<succession::Succession>,
     /// A terminal stop met while certifying or refreshing this row as required
     /// work. Dependents still pending on it, or on an older row of its
     /// occurrence, fail with it instead of waiting for work no advance runs.

@@ -3,7 +3,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::{
     application_contribution::producer::demand::{
-        MatchedRequiredPredecessor, ResolvedRequiredPredecessor,
+        MatchedRequiredPredecessors, ResolvedRequiredPredecessors,
     },
     application_output_demand::{RetainedOutputReadmissionSource, SelectedReadyReadmission},
     output_lineage::AcceptedCurrentCandidate,
@@ -31,7 +31,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         positioned: &'basis PositionedRelationalSnapshot,
         selected: &SelectedReadyReadmission,
         candidate: Option<&'basis AcceptedCurrentCandidate>,
-        resolved: Option<&ResolvedRequiredPredecessor<'_, Schema>>,
+        resolved: Option<&ResolvedRequiredPredecessors<'_, Schema>>,
         installed: &super::super::registry::InstalledProducerProvider<Schema>,
         delivery_branch: WorthQueryProductBranch,
         producer_contacts_in_this_demand: usize,
@@ -50,7 +50,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
             '_,
             Schema,
         >,
-        matched_predecessor: Option<MatchedRequiredPredecessor<'_>>,
+        matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
         required_output: RequiredOutputExecution,
         input: ValidatedProducerInput<'_>,
         successor_of: Option<[u8; 32]>,
@@ -121,7 +121,7 @@ where
         positioned: &'basis PositionedRelationalSnapshot,
         selected: &SelectedReadyReadmission,
         candidate: Option<&'basis AcceptedCurrentCandidate>,
-        resolved: Option<&ResolvedRequiredPredecessor<'_, Schema>>,
+        resolved: Option<&ResolvedRequiredPredecessors<'_, Schema>>,
         installed: &super::super::registry::InstalledProducerProvider<Schema>,
         delivery_branch: WorthQueryProductBranch,
         producer_contacts_in_this_demand: usize,
@@ -170,7 +170,7 @@ where
             selected.limits(),
             producer_contacts_in_this_demand,
             request_admission,
-            |permission, matched_predecessor, admission| {
+            |permission, matched_predecessors, admission| {
                 admission
                     .charge_external_work(
                         std::mem::size_of::<super::super::InstalledProducerEdition>() as u64,
@@ -180,10 +180,15 @@ where
                     .output_demands
                     .claim_required_ready_refresh(selected, admission)
                     .map_err(ProducerExecutionStop::ExecutionStopped)?
+                    // The selected Ready moved before its refresh was claimed:
+                    // a later wave selects the row as it is now.
                     .ok_or_else(|| {
                         WorthQueryOutputDemandDenial::new(
-                            WorthQueryOutputDemandDenialKind::Superseded,
+                            WorthQueryOutputDemandDenialKind::PublicationStale,
                             Binding::IDENTITY,
+                        )
+                        .with_recovery_posture(
+                            crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable,
                         )
                     })?;
                 let fresh = source_readmission::disclose_prepared_on_selected::<Schema, Binding>(
@@ -206,7 +211,7 @@ where
                         principal,
                         request_scope,
                         delivery_branch,
-                        matched_predecessor,
+                        matched_predecessors,
                         admission,
                     )
                     .map_err(ProducerExecutionStop::ExecutionStopped)?;
@@ -225,7 +230,7 @@ where
             '_,
             Schema,
         >,
-        matched_predecessor: Option<MatchedRequiredPredecessor<'_>>,
+        matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
         required_output: RequiredOutputExecution,
         input: ValidatedProducerInput<'_>,
         successor_of: Option<[u8; 32]>,
@@ -318,7 +323,7 @@ where
             source,
             observed_source,
             input,
-            matched_predecessor,
+            matched_predecessors,
             resources,
             successor_of,
             commit_authority,

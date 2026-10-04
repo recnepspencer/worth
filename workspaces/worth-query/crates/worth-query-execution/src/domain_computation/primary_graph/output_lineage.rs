@@ -125,11 +125,14 @@ pub(super) struct WorthQueryExactRecordedOutput {
         Option<super::application_contribution::WorthQueryProducerDemandResources>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub(super) struct WorthQueryProducerLineageHead {
     pub(super) occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     pub(super) dependency_identity: Option<[u8; 32]>,
     pub(super) idempotency_key_identity: [u8; 32],
+    /// The head's settlement when its record consumed upstream outputs. Only
+    /// a row that posts it holds the claims on them.
+    pub(super) claiming_settlement: Option<Arc<RecordedSettlementIdentity>>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]

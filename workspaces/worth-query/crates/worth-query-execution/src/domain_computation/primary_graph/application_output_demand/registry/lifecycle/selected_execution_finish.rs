@@ -178,7 +178,7 @@ impl PreparedSelectedExecutionFinish<'_> {
             return;
         }
         let (released_bytes, obligations) = if rescheduled {
-            record.state = DemandState::Scheduled;
+            record.leave_refresh_unclaimed(DemandState::Scheduled);
             (0, Vec::new())
         } else {
             record.state = DemandState::Failed(retained_denial(denial));
@@ -215,14 +215,13 @@ fn retained_denial(source: &WorthQueryOutputDemandDenial) -> WorthQueryOutputDem
 }
 
 pub(super) fn relinquish_record(record: &mut DemandRecord) {
-    if matches!(record.state, DemandState::Scheduling | DemandState::Running) {
-        record.state = match std::mem::replace(&mut record.state, DemandState::Admitted) {
-            DemandState::Scheduling => DemandState::Admitted,
-            DemandState::Running => DemandState::Scheduled,
-            _ => unreachable!("relinquished state was checked above"),
-        };
-        record.wake.notify();
-    }
+    let unclaimed = match record.state {
+        DemandState::Scheduling => DemandState::Admitted,
+        DemandState::Running => DemandState::Scheduled,
+        _ => return,
+    };
+    record.leave_refresh_unclaimed(unclaimed);
+    record.wake.notify();
 }
 
 fn empty_work_denial() -> WorthQueryOutputDemandDenial {

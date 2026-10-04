@@ -69,11 +69,22 @@ where
     }
 }
 
+/// What resuming the successor of a dependent's upstream row left the wave.
+pub(in crate::domain_computation::primary_graph) enum HeldUpstream {
+    /// The successor finished with the row's Ready.
+    Ready(SelectedReadyReadmission),
+    /// The successor deferred, or none was held.
+    Unfinished,
+    /// The World superseded the successor before it published. The Ready it
+    /// replaced answers for the occurrence again; certify the row once more.
+    GaveBack,
+}
+
 /// Resume the successor that refreshes `key`'s row: from `custody`, or from
-/// the registry, where a queue frame left it. Returns the row's Ready once
-/// it completes; a deferred or absent successor returns `None`. A finished
-/// successor is `custody`'s newest entry: the predecessor edge its
-/// dependents still name resolves through it.
+/// the registry, where a queue frame left it. A finished successor is
+/// `custody`'s newest entry: the predecessor edge its dependents still name
+/// resolves through it. One whose source moved before it published is
+/// dropped, and its occurrence goes back to the Ready it replaced.
 pub(in crate::domain_computation::primary_graph) fn resume_held_upstream<Schema>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -82,13 +93,14 @@ pub(in crate::domain_computation::primary_graph) fn resume_held_upstream<Schema>
     custody: &mut RequiredContinuations<Schema>,
     key: &WorthQueryOutputDemandKey,
     admission: &mut InvalidationEditAdmission,
-) -> Result<Option<SelectedReadyReadmission>, WorthQueryOutputDemandDenial>
+) -> Result<HeldUpstream, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
 {
     if let Some(index) = custody.position_of(key, admission)? {
         let result = custody.entries[index].resume(runtime, principal, request, branch, admission);
-        if matches!(result, Ok(Some(_))) {
+        let finished = matches!(result, Ok(Some(_)));
+        if finished || result.is_err() {
             let moved = (custody.entries.len() - index)
                 .checked_mul(std::mem::size_of::<RequiredFreshProgress<Schema>>())
                 .and_then(|work| u64::try_from(work).ok())
@@ -96,12 +108,27 @@ where
             admission
                 .charge_external_work(moved)
                 .map_err(|_| work_denial())?;
+        }
+        if finished {
             custody.entries[index..].rotate_left(1);
         }
-        return result;
+        return match result {
+            Ok(Some(ready)) => Ok(HeldUpstream::Ready(ready)),
+            Ok(None) => Ok(HeldUpstream::Unfinished),
+            Err(stop)
+                if superseded(&stop)
+                    && runtime
+                        .output_demands
+                        .give_back_replaced_ready(key, admission)? =>
+            {
+                drop(custody.entries.remove(index));
+                Ok(HeldUpstream::GaveBack)
+            }
+            Err(stop) => Err(stop),
+        };
     }
     let Some(held) = runtime.output_demands.take_held_successor(key, admission)? else {
-        return Ok(None);
+        return Ok(HeldUpstream::Unfinished);
     };
     let mut held = held
         .downcast::<HeldFrameSuccessor<Schema>>()
@@ -109,15 +136,28 @@ where
     let result = held
         .progress
         .resume(runtime, principal, request, branch, admission);
-    let Ok(Some(ready)) = result else {
-        // An unfinished successor returns to its row, which drops it if the
-        // row has moved on meanwhile.
-        drop(
-            runtime
-                .output_demands
-                .hold_required_successor(held, held_key::<Schema>),
-        );
-        return result;
+    let ready = match result {
+        Ok(Some(ready)) => ready,
+        Err(stop)
+            if superseded(&stop)
+                && runtime
+                    .output_demands
+                    .give_back_replaced_ready(key, admission)? =>
+        {
+            drop(stop);
+            drop(held);
+            return Ok(HeldUpstream::GaveBack);
+        }
+        unfinished => {
+            // An unfinished successor returns to its row, which drops it if
+            // the row has moved on meanwhile.
+            drop(
+                runtime
+                    .output_demands
+                    .hold_required_successor(held, held_key::<Schema>),
+            );
+            return unfinished.map(|_| HeldUpstream::Unfinished);
+        }
     };
     let HeldFrameSuccessor { progress, .. } = *held;
     let slot = custody.prepare_slot(&runtime.output_demands, admission)?;
@@ -125,7 +165,13 @@ where
         .charge_external_work(slot.installation_work())
         .map_err(|_| work_denial())?;
     slot.push(progress);
-    Ok(Some(ready))
+    Ok(HeldUpstream::Ready(ready))
+}
+
+/// Only the World superseding the successor gives its occurrence back; any
+/// other stop is the wave's to report.
+fn superseded(stop: &WorthQueryOutputDemandDenial) -> bool {
+    stop.kind() == super::super::WorthQueryOutputDemandDenialKind::Superseded
 }
 
 impl<Schema> RequiredFreshProgress<Schema>

@@ -43,8 +43,9 @@ mod drive;
 mod queued;
 mod resolved;
 mod selection;
+use resolved::ResolvedOnWave;
 pub(in crate::domain_computation::primary_graph) use resolved::{
-    MatchedRequiredPredecessor, ResolvedRequiredPredecessor,
+    MatchedRequiredPredecessors, ResolvedRequiredPredecessors,
 };
 use selection::{reselect_required_wave, select_required_wave};
 
@@ -193,7 +194,7 @@ pub(super) fn certify_required_ready<Schema>(
     wave: &RequiredWaveSelection<'_, Schema>,
     selected: &SelectedReadyReadmission,
     caller_installed: Option<&InstalledProducerProvider<Schema>>,
-    resolved: Option<&ResolvedRequiredPredecessor<'_, Schema>>,
+    resolved: Option<&ResolvedRequiredPredecessors<'_, Schema>>,
     producer_contacts_in_this_demand: usize,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<RequiredWaveStep<Schema>, WorthQueryOutputDemandDenial>

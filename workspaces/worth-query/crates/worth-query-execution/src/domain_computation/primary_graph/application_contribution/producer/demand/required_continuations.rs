@@ -2,7 +2,9 @@
 //!
 //! A fresh required admission can replace a Ready interest before it reaches
 //! Ready itself. Its typed demand, not just its key, must survive a Pending or
-//! post-admission refusal so a later request can resume the real interest.
+//! post-admission refusal so a later request can resume the real interest. A
+//! stop that returned its row to the Ready it reopened ends it instead: the
+//! next wave claims that refresh again, after the entry frees its custody.
 
 use std::any::{Any, TypeId};
 
@@ -31,7 +33,7 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
 
-pub(in crate::domain_computation::primary_graph) use held::resume_held_upstream;
+pub(in crate::domain_computation::primary_graph) use held::{resume_held_upstream, HeldUpstream};
 
 pub(in crate::domain_computation::primary_graph) enum RequiredFreshOutcome {
     Advanced,
@@ -267,6 +269,8 @@ where
         registry: &WorthQueryOutputDemandRegistry,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedRequiredContinuationSlot<'_, Schema>, WorthQueryOutputDemandDenial> {
+        // Ended refreshes free their custody before this slot reserves any.
+        self.end_restored(registry, admission)?;
         let old_len = self.entries.len();
         // Installation compares the new successor with each held entry.
         admission
@@ -334,19 +338,28 @@ where
         self.installation_work
     }
 
-    pub(super) fn last(&self) -> Option<&RequiredFreshProgress<Schema>> {
-        self.caller.entries.last()
-    }
-
-    pub(super) fn install(self, progress: RequiredFreshProgress<Schema>) -> RequiredFreshOutcome {
-        self.push(progress).take_outcome()
+    pub(super) fn entries(&self) -> &[RequiredFreshProgress<Schema>] {
+        &self.caller.entries
     }
 
     /// Install `progress` as the last entry, ending any it supersedes.
     fn push(
         mut self,
         progress: RequiredFreshProgress<Schema>,
-    ) -> &'caller mut RequiredFreshProgress<Schema> {
+    ) -> &'caller mut RequiredContinuations<Schema> {
+        // A newer successor of the same occurrence, from a newer source or a
+        // second refresh of the same row, ends the custody of the older one:
+        // dropping its typed demand releases what only it held.
+        let newest = progress.successor.interest();
+        self.caller
+            .entries
+            .retain(|entry| !newest.supersedes(entry.successor.interest()));
+        // The slot it freed holds the newer one; growth prepared for an
+        // additional entry ends unused with its ticket.
+        if self.caller.entries.len() < self.caller.entries.capacity() {
+            drop(self.replacement.take());
+            drop(self.capacity.take());
+        }
         if let Some(mut replacement) = self.replacement.take() {
             replacement.append(&mut self.caller.entries);
             let retired_entries = std::mem::replace(&mut self.caller.entries, replacement);
@@ -356,19 +369,9 @@ where
             drop(retired_entries);
             drop(retired_capacity);
         }
-        // A newer successor of the same occurrence, from a newer source or a
-        // second refresh of the same row, ends the custody of the older one:
-        // dropping its typed demand releases what only it held.
-        let newest = progress.successor.interest();
-        self.caller
-            .entries
-            .retain(|entry| !newest.supersedes(entry.successor.interest()));
         let caller = self.caller;
         caller.entries.push(progress);
         caller
-            .entries
-            .last_mut()
-            .expect("prepared slot installs one successor")
     }
 }
 

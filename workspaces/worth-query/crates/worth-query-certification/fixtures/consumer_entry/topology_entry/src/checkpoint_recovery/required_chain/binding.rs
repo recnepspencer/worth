@@ -15,9 +15,52 @@ use worth_query_host::facade::primary_graph::{
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub(super) struct ChainInput {
     pub scope_key: String,
-    pub upstream_key: String,
+    /// Every upstream output this node consumes; its decision reads each
+    /// one's Length. A diamond's shared dependent consumes two.
+    pub upstreams: Vec<ChainUpstream>,
     pub value: PositiveLength,
 }
+
+/// One consumed output: a root planar output, or another chain node's.
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
+pub(super) struct ChainUpstream {
+    pub key: String,
+    pub root: bool,
+}
+
+/// Each completed decision's scope and the consumed upstream Lengths it read.
+static DECISIONS: std::sync::Mutex<Vec<(String, Vec<u64>)>> = std::sync::Mutex::new(Vec::new());
+
+/// The upstream Lengths each decision for `scope_key` read since the last
+/// take, in order. Other scopes' decisions are discarded.
+pub(super) fn take_decisions(scope_key: &str) -> Vec<Vec<u64>> {
+    std::mem::take(
+        &mut *DECISIONS
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner),
+    )
+    .into_iter()
+    .filter_map(|(scope, values)| (scope == scope_key).then_some(values))
+    .collect()
+}
+/// A request to cancel from inside one scope's next decision, so its refresh
+/// is interrupted after its row was claimed.
+#[allow(clippy::type_complexity)]
+static CANCEL_DURING_DECISION: std::sync::Mutex<
+    Option<(String, authentication::WorthQueryCancellationSource)>,
+> = std::sync::Mutex::new(None);
+
+/// Cancels `cancellation` while `scope_key`'s next decision runs.
+pub(super) fn cancel_during_next_decision(
+    scope_key: &str,
+    cancellation: authentication::WorthQueryCancellationSource,
+) {
+    *CANCEL_DURING_DECISION
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner) =
+        Some((scope_key.to_owned(), cancellation));
+}
+
 worth_query_structured_value_binding!(pub(super) ChainInputBinding for ChainInput {
     identity: "worth.query.certification.consumed-chain-input.v1"
 });
@@ -97,7 +140,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, ChainBinding<Schema
         reader: &mut DecisionReader<'_, '_, '_, Schema, ChainBinding<Schema>>,
     ) -> HandlerResult<(), PlanarMutationDenial> {
         // The target's actual decision read establishes effect selection for
-        // the candidate; the upstream read below establishes the consumed edge.
+        // the candidate; each upstream read below establishes a consumed edge.
         let target = match reader.resolve_entity(BodyKey::reference(), input.scope_key.clone()) {
             Ok(entity) => entity,
             Err(error) => return HandlerResult::ExecutionDenied(error),
@@ -107,34 +150,33 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, ChainBinding<Schema
             Ok(_) => return HandlerResult::DomainDenied(PlanarMutationDenial::MissingCoordinate),
             Err(error) => return HandlerResult::ExecutionDenied(error),
         }
-        let upstream = match reader.resolve_entity(BodyKey::reference(), input.upstream_key.clone())
-        {
-            Ok(entity) => entity,
-            Err(error) => return HandlerResult::ExecutionDenied(error),
-        };
-        let selected = if input.upstream_key == "anchor-a" {
-            reader.current_output::<PlanarOutputFamily, Body, Body>(
-                &upstream,
-                WorthQueryCurrentOutputRole::new("anchor"),
-            )
-        } else {
-            reader.current_output::<ChainFamily, Body, Body>(
-                &upstream,
-                WorthQueryCurrentOutputRole::new("anchor"),
-            )
-        };
-        let output = match selected {
-            Ok(WorthQueryCurrentOutputSelection::Unique(output)) => output,
-            Ok(_) => {
-                return HandlerResult::DomainDenied(PlanarMutationDenial::CurrentOutputMissing)
+        let mut consumed = Vec::with_capacity(input.upstreams.len());
+        for upstream in &input.upstreams {
+            match consumed_length(upstream, reader) {
+                HandlerResult::Completed(value) => consumed.push(PositiveLength::get(&value)),
+                HandlerResult::DomainDenied(denial) => return HandlerResult::DomainDenied(denial),
+                HandlerResult::ExecutionDenied(error) => {
+                    return HandlerResult::ExecutionDenied(error)
+                }
+                HandlerResult::Cancelled => return HandlerResult::Cancelled,
+                HandlerResult::DeadlineExceeded => return HandlerResult::DeadlineExceeded,
             }
-            Err(error) => return HandlerResult::ExecutionDenied(error),
-        };
-        match reader.field(&output, BodyKey::reference()) {
-            Ok(Some(key)) if key == input.upstream_key => HandlerResult::Completed(()),
-            Ok(_) => HandlerResult::DomainDenied(PlanarMutationDenial::UnexpectedCurrentOutput),
-            Err(error) => HandlerResult::ExecutionDenied(error),
         }
+        let mut cancel = CANCEL_DURING_DECISION
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if cancel
+            .as_ref()
+            .is_some_and(|(scope, _)| *scope == input.scope_key)
+        {
+            cancel.take().expect("the armed scope matched").1.cancel();
+        }
+        drop(cancel);
+        DECISIONS
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push((input.scope_key.clone(), consumed));
+        HandlerResult::Completed(())
     }
     fn candidate_requirements(&self, _: &ChainInput, _: &()) -> ApplicationCandidateRequirements {
         ChainBinding::<Schema>::CANDIDATES
@@ -163,6 +205,44 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, ChainBinding<Schema
             Ok(result) => HandlerResult::Completed(result),
             Err(error) => HandlerResult::ExecutionDenied(error),
         }
+    }
+}
+
+/// The Length the upstream's actual current output carries. The
+/// `current_output` read is what records the consumed edge.
+fn consumed_length<Schema: TopologySchemaBinding>(
+    upstream: &ChainUpstream,
+    reader: &mut DecisionReader<'_, '_, '_, Schema, ChainBinding<Schema>>,
+) -> HandlerResult<PositiveLength, PlanarMutationDenial> {
+    let entity = match reader.resolve_entity(BodyKey::reference(), upstream.key.clone()) {
+        Ok(entity) => entity,
+        Err(error) => return HandlerResult::ExecutionDenied(error),
+    };
+    let selected = if upstream.root {
+        reader.current_output::<PlanarOutputFamily, Body, Body>(
+            &entity,
+            WorthQueryCurrentOutputRole::new("anchor"),
+        )
+    } else {
+        reader.current_output::<ChainFamily, Body, Body>(
+            &entity,
+            WorthQueryCurrentOutputRole::new("anchor"),
+        )
+    };
+    let output = match selected {
+        Ok(WorthQueryCurrentOutputSelection::Unique(output)) => output,
+        Ok(_) => return HandlerResult::DomainDenied(PlanarMutationDenial::CurrentOutputMissing),
+        Err(error) => return HandlerResult::ExecutionDenied(error),
+    };
+    match reader.field(&output, BodyKey::reference()) {
+        Ok(Some(key)) if key == upstream.key => {}
+        Ok(_) => return HandlerResult::DomainDenied(PlanarMutationDenial::UnexpectedCurrentOutput),
+        Err(error) => return HandlerResult::ExecutionDenied(error),
+    }
+    match reader.field(&output, Length::reference()) {
+        Ok(Some(value)) => HandlerResult::Completed(value),
+        Ok(None) => HandlerResult::DomainDenied(PlanarMutationDenial::CurrentOutputMissing),
+        Err(error) => HandlerResult::ExecutionDenied(error),
     }
 }
 

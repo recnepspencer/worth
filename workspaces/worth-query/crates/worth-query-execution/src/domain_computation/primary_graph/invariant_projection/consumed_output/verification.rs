@@ -7,6 +7,7 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 
 use super::ConsumedOutputEvidence;
 
+mod replaced;
 mod work_budget;
 use crate::domain_computation::primary_graph::{
     application_attempt::{WorthQueryApplicationObservedFact, WorthQuerySourceCurrentnessFailure},

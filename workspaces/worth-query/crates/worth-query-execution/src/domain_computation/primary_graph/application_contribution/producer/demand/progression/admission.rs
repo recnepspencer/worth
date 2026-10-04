@@ -233,5 +233,6 @@ where
             SourceAdmissionSelection::Ordinary,
             &mut admission,
         )
+        .map_err(|stop| self.starting_custody_stop(stop, &mut admission))
     }
 }

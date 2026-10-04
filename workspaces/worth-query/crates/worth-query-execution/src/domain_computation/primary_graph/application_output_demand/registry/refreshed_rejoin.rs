@@ -96,21 +96,25 @@ pub(super) fn superseded(record: &DemandRecord) -> bool {
 }
 
 /// The newest row of an occurrence belongs to the owners still holding its
-/// superseded rows, not to whichever advance refreshed it. It keeps its
-/// required membership and source custody until each owner rejoins or closes.
+/// superseded rows, not to whichever advance refreshed it: a demand, or a
+/// dependent whose settled row consumed one. While a dependent is open the
+/// outputs it consumes stay required, through every refresh of them. The row
+/// keeps its required membership and source custody until each owner rejoins
+/// or releases.
 pub(super) fn awaited_by_stale_owner(
     records: &BTreeMap<WorthQueryOutputDemandKey, DemandRecord>,
     key: &WorthQueryOutputDemandKey,
 ) -> bool {
     let mut awaited = false;
-    for (other, record) in records {
-        if other == key || !other.same_occurrence(key) {
+    for (other, record) in occurrence_rows(records, key) {
+        if other == key {
             continue;
         }
         match other.replacement_order(key) {
             Some(std::cmp::Ordering::Greater) => return false,
             Some(std::cmp::Ordering::Less) => {
-                awaited |= record.interests != 0 && superseded(record);
+                awaited |= (record.interests != 0 || record.framework_required_count != 0)
+                    && superseded(record);
             }
             _ => {}
         }
@@ -124,14 +128,28 @@ pub(super) fn newest_of_occurrence(
     records: &BTreeMap<WorthQueryOutputDemandKey, DemandRecord>,
     key: &WorthQueryOutputDemandKey,
 ) -> Option<WorthQueryOutputDemandKey> {
-    records
-        .keys()
-        .filter(|other| {
-            other.same_occurrence(key)
-                && other.replacement_order(key) == Some(std::cmp::Ordering::Greater)
-        })
+    occurrence_rows(records, key)
+        .map(|(other, _)| other)
+        .filter(|other| other.replacement_order(key) == Some(std::cmp::Ordering::Greater))
         .max_by_key(|other| other.source.observation_generation())
         .cloned()
+}
+
+/// The rows of `key`'s occurrence. Keys order by producer and occurrence
+/// before generation, so they are the contiguous run of rows around `key`.
+pub(super) fn occurrence_rows<'records>(
+    records: &'records BTreeMap<WorthQueryOutputDemandKey, DemandRecord>,
+    key: &'records WorthQueryOutputDemandKey,
+) -> impl Iterator<Item = (&'records WorthQueryOutputDemandKey, &'records DemandRecord)> {
+    use std::ops::Bound::{Excluded, Included, Unbounded};
+    let before = records
+        .range::<WorthQueryOutputDemandKey, _>((Unbounded, Excluded(key)))
+        .rev()
+        .take_while(move |(other, _)| other.same_occurrence(key));
+    let from = records
+        .range::<WorthQueryOutputDemandKey, _>((Included(key), Unbounded))
+        .take_while(move |(other, _)| other.same_occurrence(key));
+    before.chain(from)
 }
 
 fn work_denial() -> WorthQueryOutputDemandDenial {

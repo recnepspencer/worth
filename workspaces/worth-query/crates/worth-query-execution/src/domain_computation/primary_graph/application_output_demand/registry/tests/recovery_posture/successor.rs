@@ -2,7 +2,7 @@ use super::super::super::{ReadyCompletion, WorthQueryCompletedOutputDemand};
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputAdvancement;
 use crate::domain_computation::primary_graph::application_output_demand::{
-    DemandAdmissionKind, OutputRefreshPredecessor,
+    DemandAdmissionKind, OutputRefreshPredecessor, WorthQueryPerformedOutputDemandSource,
 };
 
 #[test]
@@ -56,10 +56,47 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
     let record = &state.records[&demand_key];
     assert!(matches!(record.state, DemandState::Admitted));
     assert_eq!(
-        record.successor_of,
+        record
+            .successor_of
+            .as_ref()
+            .map(super::super::super::succession::Succession::predecessor),
         Some(*receipt.idempotency_binding().key_identity())
     );
     assert_eq!(record.interests, 2);
+    drop(state);
+
+    // A claimed refresh that stops without publishing returns the row to the
+    // Ready it reopened, so the next wave certifies and claims it again. A
+    // performed source attached during that refresh is newer than the
+    // reopen and stays with the row.
+    let mut performed = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application_with_output_demand_observation();
+    let change = performed
+        .take_performed_relational_product_change()
+        .expect("the real performed application retains its product change");
+    let observation = performed
+        .committed_product_publication()
+        .take_output_demand_observation()
+        .expect("the real performed application retains its read basis");
+    {
+        let mut state = registry.state.lock().unwrap();
+        let record = state.records.get_mut(&demand_key).unwrap();
+        record.state = DemandState::Running;
+        record.performed_source = Some(WorthQueryPerformedOutputDemandSource {
+            receipt: performed,
+            change: Arc::new(change),
+            observation,
+            output_source_identity: None,
+        });
+    }
+    registry.relinquish_execution(&replacement);
+    let state = registry.state.lock().unwrap();
+    let record = &state.records[&demand_key];
+    assert!(record.has_cached_ready());
+    assert!(record.successor_of.is_none());
+    assert!(
+        record.performed_source.is_some(),
+        "the performed source attached during the refresh is kept"
+    );
 }
 
 #[test]

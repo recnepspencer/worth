@@ -3,15 +3,23 @@ use std::marker::PhantomData;
 use worth_query_host::facade::application_contribution::*;
 
 pub(super) struct ChainFamily;
-const APPLICABILITY: WorthQueryProducerApplicability = WorthQueryProducerApplicability::new(
-    "consumed-chain",
-    WorthQueryProducerLifecyclePosture::Initial,
-);
+// Every chain node reads its upstream values: once one changes, its retained
+// output's read facts are stale and the refresh selects Preserve over it.
+const APPLICABILITY: &[WorthQueryProducerApplicability] = &[
+    WorthQueryProducerApplicability::new(
+        "consumed-chain",
+        WorthQueryProducerLifecyclePosture::Initial,
+    ),
+    WorthQueryProducerApplicability::new(
+        "consumed-chain",
+        WorthQueryProducerLifecyclePosture::Preserve,
+    ),
+];
 
 impl<Schema: TopologySchemaBinding> WorthQueryProducerOutputFamily<Schema> for ChainFamily {
     type Source = PlanarOutputReadBinding<Schema>;
     const IDENTITY: &'static str = "worth.query.certification.consumed-chain-family.v1";
-    const SUPPORTED: &'static [WorthQueryProducerApplicability] = &[APPLICABILITY];
+    const SUPPORTED: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
     fn profile_kind(_: &PlanarOutputReadResult) -> &'static str {
         "consumed-chain"
     }
@@ -39,7 +47,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     type Provider = ChainProvider;
     const IDENTITY: &'static str = "worth.query.certification.consumed-chain-producer.v1";
     const OUTPUT_ROLE: &'static str = "anchor";
-    const APPLICABILITY: &'static [WorthQueryProducerApplicability] = &[APPLICABILITY];
+    const APPLICABILITY: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
     const RESOURCE_POLICY: &'static str = "bounded-synchronous";
     const REUSE_POLICY: &'static str = "exact-source";
@@ -54,14 +62,22 @@ impl<Schema: TopologySchemaBinding>
 {
     const SEMANTIC_IDENTITY: &'static str = "worth.query.certification.consumed-chain-provider.v1";
     fn operation_input(&self, source: &PlanarOutputReadResult) -> ChainInput {
+        let upstreams: &[(&str, bool)] = match source.body_key.as_str() {
+            "anchor-b" => &[("anchor-a", true)],
+            "anchor-c" => &[("anchor-b", false)],
+            // The diamond's shared dependent consumes both root outputs.
+            "diamond-join" => &[("diamond-left", true), ("diamond-right", true)],
+            _ => panic!("the courtroom declares only three downstream nodes"),
+        };
         ChainInput {
             scope_key: source.body_key.clone(),
-            upstream_key: match source.body_key.as_str() {
-                "anchor-b" => "anchor-a",
-                "anchor-c" => "anchor-b",
-                _ => panic!("the courtroom declares only two downstream nodes"),
-            }
-            .to_owned(),
+            upstreams: upstreams
+                .iter()
+                .map(|(key, root)| ChainUpstream {
+                    key: (*key).to_owned(),
+                    root: *root,
+                })
+                .collect(),
             value: source.value,
         }
     }

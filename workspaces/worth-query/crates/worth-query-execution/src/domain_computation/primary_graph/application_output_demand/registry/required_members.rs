@@ -61,7 +61,10 @@ impl DemandRegistryState {
             .checked_add(bytes)
             .is_none_or(|required| !self.has_required_capacity(required))
         {
-            return Err(capacity_denial());
+            return Err(super::required_custody::full_custody_denial(
+                bytes,
+                self.required_budget_bytes,
+            ));
         }
         Ok(Some(PreparedRequiredMember {
             key: Arc::new(key.clone()),

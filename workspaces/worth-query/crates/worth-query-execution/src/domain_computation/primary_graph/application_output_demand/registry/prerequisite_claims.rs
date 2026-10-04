@@ -185,14 +185,19 @@ impl RequiredOutputDemandContext {
         admission
             .charge_external_work(1)
             .map_err(|_| work_denial())?;
-        let required = state
-            .required_reserved_bytes
-            .checked_add(predecessor_slots_bytes)
-            .and_then(|bytes| bytes.checked_add(additional_members))
+        let claimed = predecessor_slots_bytes
+            .checked_add(additional_members)
             .and_then(|bytes| bytes.checked_add(settlement_growth))
             .ok_or_else(capacity_denial)?;
+        let required = state
+            .required_reserved_bytes
+            .checked_add(claimed)
+            .ok_or_else(capacity_denial)?;
         if !state.has_required_capacity(required) {
-            return Err(capacity_denial());
+            return Err(super::required_custody::full_custody_denial(
+                claimed,
+                state.required_budget_bytes,
+            ));
         }
         // Vec growth holds the old backing until the replacement is ready.
         let settlement_preparation = if settlement_growth == 0 {
@@ -374,6 +379,7 @@ impl PreparedPrerequisiteClaims {
         self.published = true;
         drop(state);
         drop(old);
-        super::SupersededSettlements::new(owner, Arc::clone(self.context.key_arc()))
+        let evicted = self.context.take_evicted_settlement();
+        super::SupersededSettlements::new(owner, Arc::clone(self.context.key_arc()), evicted)
     }
 }

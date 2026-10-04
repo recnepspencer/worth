@@ -1,6 +1,6 @@
 use worth_query_installation::facade::ApplicationSchema;
 
-use crate::domain_computation::primary_graph::application_contribution::producer::demand::MatchedRequiredPredecessor;
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::MatchedRequiredPredecessors;
 use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
 use crate::domain_computation::primary_graph::WorthQueryObservedSource;
 
@@ -16,7 +16,7 @@ where
     ReturnPending,
     ContinueScheduled {
         shared: &'selection SharedSelectedProductOperation<'runtime, Schema>,
-        matched_predecessor: Option<MatchedRequiredPredecessor<'selection>>,
+        matched_predecessors: Option<MatchedRequiredPredecessors<'selection>>,
     },
 }
 

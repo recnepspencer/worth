@@ -6,6 +6,7 @@ pub(in crate::domain_computation::primary_graph) use selected_checkpoint_finish:
     PreparedSelectedCheckpointFinish, SelectedCheckpointFinishStop,
 };
 
+use super::succession::Succession;
 use super::*;
 
 impl WorthQueryOutputDemandRegistry {
@@ -80,7 +81,10 @@ impl WorthQueryOutputDemandRegistry {
         admission
             .charge_external_work(copy_work)
             .map_err(|_| empty_begin_work_denial())?;
-        Ok(start_scheduled(state, record.successor_of))
+        Ok(start_scheduled(
+            state,
+            Succession::predecessor_of(&record.successor_of),
+        ))
     }
 }
 
@@ -93,7 +97,9 @@ fn begin_record(
             record.state = DemandState::Scheduling;
             WorthQueryOutputDemandAdvanceAdmission::Schedule(record.performed_source.take())
         }
-        state @ DemandState::Scheduled => start_scheduled(state, record.successor_of),
+        state @ DemandState::Scheduled => {
+            start_scheduled(state, Succession::predecessor_of(&record.successor_of))
+        }
         DemandState::Scheduling | DemandState::Running => {
             WorthQueryOutputDemandAdvanceAdmission::Pending
         }
@@ -238,11 +244,11 @@ impl WorthQueryOutputDemandRegistry {
         if demand_record_is_closed(record) {
             return;
         }
-        record.state = if rescheduled {
-            DemandState::Scheduled
+        if rescheduled {
+            record.leave_refresh_unclaimed(DemandState::Scheduled);
         } else {
-            DemandState::Failed(denial.clone())
-        };
+            record.state = DemandState::Failed(denial.clone());
+        }
         let released = if rescheduled {
             0
         } else {

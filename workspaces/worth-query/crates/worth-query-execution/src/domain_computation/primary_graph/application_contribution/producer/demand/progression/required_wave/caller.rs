@@ -10,6 +10,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::{
     registry::InstalledProducerEdition, WorthQueryProducerCommitAuthority,
 };
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
 
 /// Check actual selected required work before the caller's ordinary Ready
@@ -43,7 +44,8 @@ where
         return Ok(None);
     };
     // An Idle Ready is not itself a dirty required target. Genesis and full
-    // verification cases retain the established output verifier. An authentic
+    // verification cases retain the established output verifier once the
+    // outputs they consumed are current. An authentic
     // Clean recorded row uses the selected Current proof without a source read;
     // only Dirty/Pending marks can extend the dependency closure.
     preclaim_required_settlement_arguments(admission)?;
@@ -89,7 +91,26 @@ where
         posture,
         SourceSettlementCurrentness::FullVerificationRequired(_)
     ) {
-        return Ok(None);
+        // The established verifier executes the caller again, and that reads
+        // the outputs it consumed. Those stay required while it is open: one
+        // that changed refreshes on this wave first, whether or not anything
+        // else demands it.
+        let snapshot = wave.shared.selected().application_basis().snapshot_handle();
+        let graph = &runtime.primary_provider.graph;
+        let pending = graph.with_runtime(|relational| {
+            candidate.pending_consumed_output(
+                &graph.source_owner.invalidation_owner,
+                relational,
+                snapshot,
+                &wave.positioned,
+                admission,
+            )
+        });
+        match pending {
+            Ok(Some(_)) => {}
+            Err(ConsumedOutputVerificationStop::WorkExhausted) => return Err(work_denial()),
+            Ok(None) | Err(_) => return Ok(None),
+        }
     }
     let mut queue = RequiredQueueFrames::new();
     // A queue frame refreshes rows for owners outside this request. Its

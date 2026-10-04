@@ -41,7 +41,7 @@ where
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
         delivery_branch: crate::basis::WorthQueryProductBranch,
-        matched_predecessor: Option<MatchedRequiredPredecessor<'_>>,
+        matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<RequiredFreshProgress<Schema>, WorthQueryOutputDemandDenial>
     where
@@ -93,7 +93,7 @@ where
                             installed,
                             mode,
                             shared,
-                            matched_predecessor,
+                            matched_predecessors,
                             admission,
                         )
                     }

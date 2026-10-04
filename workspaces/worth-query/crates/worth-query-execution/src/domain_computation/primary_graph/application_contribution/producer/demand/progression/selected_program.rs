@@ -143,15 +143,16 @@ where
                 format!("selected-program output {identity:?} revision {revision} is not active"),
             ));
         }
-        let mut admission = self.demand_request_admission();
-        self.advance_output_demand_with_prepared_source(
-            demand,
-            principal,
-            request_scope,
-            delivery_branch,
-            disclosure,
-            WorthQueryProducerCommitAuthority::SelectedProgram { identity, revision },
-            &mut admission,
-        )
+        self.advance_as_caller(demand, |demand, admission| {
+            self.advance_output_demand_with_prepared_source(
+                demand,
+                principal,
+                request_scope,
+                delivery_branch,
+                disclosure,
+                WorthQueryProducerCommitAuthority::SelectedProgram { identity, revision },
+                admission,
+            )
+        })
     }
 }

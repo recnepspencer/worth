@@ -32,7 +32,7 @@ pub(super) fn advance_input_cutoff<Schema, Binding, OperationType, Input, Scope>
     required_output: RequiredOutputDemandContext,
     key: Option<PreparedInputReuseKey>,
     context: Option<PreparedDecisionReuseContext>,
-    matched_predecessor: Option<super::super::demand::MatchedRequiredPredecessor<'_>>,
+    matched_predecessors: Option<super::super::demand::MatchedRequiredPredecessors<'_>>,
     resources: super::super::WorthQueryProducerDemandResources,
     admission: &mut InvalidationEditAdmission,
     currentness: &mut InvalidationEditAdmission,
@@ -78,6 +78,25 @@ where
             context: Some(context),
         });
     };
+    // Eviction degrades to Fresh. Only a row holds the claims on what its
+    // record consumed and answers its pending edges. A candidate of this
+    // occurrence that consumed upstream outputs and that no row posts lost its
+    // row to custody: it is neither reused nor waited on, and the execution
+    // commits as its successor.
+    let settlement = candidate.settlement_identity();
+    if !candidate.consumed_outputs().is_empty()
+        && settlement.address().0 == observation.lifecycle_incarnation()
+        && !required_output
+            .registry()
+            .posts_settlement(settlement, admission)?
+    {
+        return Ok(ProducerInputProgression::FreshPrepared {
+            required_output,
+            source,
+            key: Some(key),
+            context: Some(context),
+        });
+    }
     // The Native owner authenticates and funds the exact issued handle once.
     // Verification consumes this paired proof instead of resolving it again.
     let basis = handle
@@ -94,7 +113,7 @@ where
             candidate.verify_for_reuse(
                 key,
                 context,
-                matched_predecessor,
+                matched_predecessors,
                 relational,
                 &basis,
                 source_owner,

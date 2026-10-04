@@ -87,10 +87,17 @@ impl From<WorthQueryOutputDemandDenial> for ProducerExecutionStop {
     }
 }
 
+/// A request that lost its authority mid-attempt stops only that request:
+/// the row it claimed stays for a later advance.
 pub(super) fn execution_failed(
     subject: &str,
     error: MutationHandlerExecutionDenial,
-) -> WorthQueryOutputDemandDenial {
+) -> ProducerExecutionStop {
+    if let MutationHandlerExecutionDenial::Attempt(attempt) = &error {
+        if let Some(authority) = attempt.request_authority() {
+            return request_authority_denied(subject, authority.clone());
+        }
+    }
     if matches!(
         error,
         MutationHandlerExecutionDenial::Attempt(ref denial)
@@ -104,8 +111,9 @@ pub(super) fn execution_failed(
             WorthQueryOutputDemandDenialKind::Superseded,
             subject.to_owned(),
         )
+        .into()
     } else {
-        failed(subject, error)
+        failed(subject, error).into()
     }
 }
 

@@ -153,6 +153,27 @@ impl SettlementIndex {
         self.retained_bytes -= released;
         released
     }
+
+    /// Point `identity`'s posting at `key`, the row that now answers for it.
+    pub(super) fn repoint(
+        &self,
+        identity: &RecordedSettlementIdentity,
+        key: Arc<WorthQueryOutputDemandKey>,
+    ) {
+        let posting = self
+            .sources
+            .get(identity.source())
+            .and_then(|source| source.get(&identity.address()))
+            .expect("retained exact settlement address");
+        let mut held = posting
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some((recorded, answering)) = held.as_mut() {
+            if recorded.as_ref() == identity {
+                *answering = key;
+            }
+        }
+    }
 }
 
 impl DemandRegistryState {

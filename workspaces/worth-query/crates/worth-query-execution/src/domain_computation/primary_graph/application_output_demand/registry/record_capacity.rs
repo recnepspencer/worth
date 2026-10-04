@@ -198,7 +198,7 @@ impl DemandRegistryState {
             state: DemandState::Admitted,
             performed_source: None,
             readmission_source: None,
-            successor_of,
+            successor_of: successor_of.map(super::succession::Succession::new),
             required_stop: None,
             held_successor: None,
             wake,

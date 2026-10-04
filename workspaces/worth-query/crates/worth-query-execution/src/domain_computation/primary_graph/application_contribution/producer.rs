@@ -8,7 +8,7 @@ use worth_query_declaration::facade::application_schema::ApplicationStructuredVa
 use worth_query_installation::facade::ApplicationSchema;
 
 mod demand;
-pub(in crate::domain_computation::primary_graph) use demand::MatchedRequiredPredecessor;
+pub(in crate::domain_computation::primary_graph) use demand::MatchedRequiredPredecessors;
 pub use demand::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial,
     WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture,

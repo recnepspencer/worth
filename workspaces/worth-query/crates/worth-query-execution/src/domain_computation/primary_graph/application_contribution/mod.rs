@@ -27,7 +27,7 @@ pub use contracts::{
     WorthQueryApplicationContractCatalog, WorthQueryApplicationContributionContracts,
 };
 pub(in crate::domain_computation::primary_graph) use producer::{
-    install_output_readiness_routes, InstalledProducerEdition, MatchedRequiredPredecessor,
+    install_output_readiness_routes, InstalledProducerEdition, MatchedRequiredPredecessors,
     PendingOutputReadiness, TypedPendingOutputReadiness, WorthQueryInstalledOutputProducerRoutes,
     WorthQueryInstalledOutputReadinessRoutes, WorthQueryProducerCommitAuthority,
 };

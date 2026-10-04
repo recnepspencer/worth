@@ -8,6 +8,8 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::primary_graph::query_read_kernel_entries_on_this_thread_for_test as query_entries;
 
 mod binding;
+#[cfg(feature = "test-query-execution-observer")]
+mod diamond;
 mod performed_head_movement;
 mod producer;
 mod program;

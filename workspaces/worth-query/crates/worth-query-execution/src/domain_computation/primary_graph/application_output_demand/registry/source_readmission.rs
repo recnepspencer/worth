@@ -9,6 +9,7 @@ use super::{
     WorthQueryOutputDemandRegistry,
 };
 use crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::{
     WorthQueryObservedSource, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
@@ -69,6 +70,7 @@ impl WorthQueryOutputDemandRegistry {
         retained_program_basis: Option<
             Arc<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>,
         >,
+        admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedOutputReadmissionSource<Query>, WorthQueryOutputDemandDenial> {
         let bytes = std::mem::size_of::<RetainedOutputReadmissionSource<Query>>()
             .checked_add(std::mem::size_of::<RequiredOutputReadmission>())
@@ -76,7 +78,9 @@ impl WorthQueryOutputDemandRegistry {
             .ok_or_else(capacity_denial)?;
         // This wrapper is registry custody. The producer's retained-output
         // limit governs its output, while the shared required registry limit
-        // governs this readmission source.
+        // governs this readmission source. A cached Ready nothing holds
+        // gives way to it.
+        self.reclaim_cached_rows(bytes, admission)?;
         let capacity = self.reserve_required_custody_capacity(bytes)?;
         let source = Arc::new(RetainedOutputReadmissionSource {
             source,

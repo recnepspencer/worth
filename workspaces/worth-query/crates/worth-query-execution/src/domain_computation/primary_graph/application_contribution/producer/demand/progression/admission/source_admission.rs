@@ -57,6 +57,7 @@ where
             observed_source,
             limits,
             retained_program_basis.clone(),
+            registry_admission,
         )?;
         let before_selection = registry_admission.remaining_work();
         let mut remaining_source_work = before_selection;

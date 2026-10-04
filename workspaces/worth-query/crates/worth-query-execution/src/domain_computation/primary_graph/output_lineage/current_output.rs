@@ -61,6 +61,8 @@ impl WorthQueryApplicationOutputLineage {
                         occurrence: coordinate.occurrence,
                         dependency_identity: recorded.producer_dependency_identity,
                         idempotency_key_identity: recorded.idempotency_key_identity,
+                        claiming_settlement: (!recorded.consumed_outputs.is_empty())
+                            .then(|| Arc::clone(&recorded.settlement_identity)),
                     }),
                     work,
                 ));

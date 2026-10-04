@@ -27,7 +27,9 @@ fn an_unrelated_caller_advances_for_many_cycles_under_tight_custody() {
     let _guard = checkpoint_recovery_test_guard();
     let row = worth_query_host::facade::primary_graph::required_ready_custody_bytes_for_test();
     // Three Ready rows per settled demand fail every queued refresh the
-    // unrelated caller runs as a frame; five let those refreshes finish.
+    // unrelated caller runs as a frame; five let those refreshes finish. A
+    // refresh that cannot finish returns its row to the Ready it reopened,
+    // which stays cached for an equivalent later demand like any Ready row.
     for rows_per_demand in [3, 5] {
         let retained_positions = 8;
         let (application, invalidation) = limited_application(
@@ -46,16 +48,55 @@ fn an_unrelated_caller_advances_for_many_cycles_under_tight_custody() {
             assert_steady!(steady, cycle, retained_positions, application, invalidation);
         }
         // A refreshed row belongs to its own demand, never to the caller
-        // that happened to run it: once the chain's demands close, custody
-        // is back within what the settled set held.
+        // that happened to run it, so closing the chain leaves no more custody
+        // than the settled chain held. The middle consumer then reopens alone
+        // over its stale, undemanded root. At five rows it refreshes that
+        // root and settles in one advance. At three, custody cannot keep the
+        // middle refresh at once: the advance stops retryable and ends the
+        // refreshes it carried, which leaves less custody held than before
+        // it, so the retry settles beside the unrelated caller's open Ready.
         drop((a, b, c));
         let closed_custody = application.required_custody_bytes_for_test();
         assert!(
             closed_custody <= settled_custody,
+            "{rows_per_demand} rows per demand: closing the chain holds no more than it settled with"
+        );
+        let mut b = request
+            .demand(ChainDemand("anchor-b".to_owned()))
+            .start_dependent_in_program::<program::ChainProgram, program::ChainConnection>(
+                &application,
+            )
+            .unwrap();
+        if rows_per_demand == 3 {
+            let stopped = b.advance(&request);
+            assert!(
+                matches!(
+                    &stopped,
+                    Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial))
+                        if denial.kind() == WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
+                            && denial.recovery_posture()
+                                == primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable
+                ),
+                "a refresh custody cannot keep at once stops retryable: {:?}",
+                stopped.as_ref().err()
+            );
+            assert!(
+                application.required_custody_bytes_for_test() < closed_custody,
+                "the stop holds less than the advance began with"
+            );
+        }
+        settled_in_one_advance!(b, request, "the reopened middle consumer");
+        drop(b);
+        assert!(
+            application.required_custody_bytes_for_test() <= settled_custody,
             "{rows_per_demand} rows per demand: the unrelated caller retains no refreshed chain row"
         );
         settled_in_one_advance!(d, request, "the unrelated required demand");
         drop(d);
+        assert!(
+            application.required_custody_bytes_for_test() <= settled_custody,
+            "{rows_per_demand} rows per demand: custody returns within the settled chain's"
+        );
     }
 }
 

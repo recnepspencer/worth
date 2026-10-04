@@ -135,7 +135,7 @@ where
         entry: &InstalledProducerProvider<Schema>,
         commit_authority: WorthQueryProducerCommitAuthority,
         shared: &crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation<'_, Schema>,
-        matched_predecessor: Option<MatchedRequiredPredecessor<'_>>,
+        matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
         request_admission: &mut InvalidationEditAdmission,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
     where
@@ -153,7 +153,7 @@ where
             commit_authority,
             ScheduleProgression::ContinueScheduled {
                 shared,
-                matched_predecessor,
+                matched_predecessors,
             },
             request_admission,
         )

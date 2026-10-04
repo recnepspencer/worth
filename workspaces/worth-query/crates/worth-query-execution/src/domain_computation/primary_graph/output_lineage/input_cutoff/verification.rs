@@ -20,7 +20,7 @@ use crate::domain_computation::primary_graph::{
         PreparedDecisionReuseContext, WorthQueryApplicationObservedFact,
         WorthQuerySourceCurrentnessFailure,
     },
-    application_contribution::MatchedRequiredPredecessor,
+    application_contribution::MatchedRequiredPredecessors,
     invariant_projection::{
         ConsumedOutputEvidence, ConsumedOutputVerification, ConsumedOutputVerificationStop,
     },
@@ -69,7 +69,7 @@ impl RetainedInputCutoffCandidate {
         self,
         fresh_key: PreparedInputReuseKey,
         fresh_context: PreparedDecisionReuseContext,
-        matched_predecessor: Option<MatchedRequiredPredecessor<'_>>,
+        matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
         runtime: &RelationalRuntime,
         basis: &'selected PreparedInputCutoffBasis<'_>,
         owner: &SourceInvalidationOwner,
@@ -80,7 +80,7 @@ impl RetainedInputCutoffCandidate {
         let verified_facts = self.eligible_for_reuse(
             &fresh_key,
             &fresh_context,
-            matched_predecessor,
+            matched_predecessors,
             runtime,
             snapshot,
             selected,
@@ -107,7 +107,7 @@ impl RetainedInputCutoffCandidate {
         &self,
         fresh_key: &PreparedInputReuseKey,
         fresh_context: &PreparedDecisionReuseContext,
-        matched_predecessor: Option<MatchedRequiredPredecessor<'_>>,
+        matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
@@ -154,30 +154,18 @@ impl RetainedInputCutoffCandidate {
             SourceSettlementCurrentness::Clean => {}
             SourceSettlementCurrentness::Dirty(ordinals) => dirty_prefix = Some(ordinals),
             SourceSettlementCurrentness::PendingUpstream(edges) => {
-                if let Some(matched) = matched_predecessor.as_ref() {
-                    if matched_consumed_root(self.consumed_outputs(), matched, selected, admission)?
+                if let Some(matched) = &matched_predecessors {
+                    if matched_roots::consumed_roots(
+                        self.consumed_outputs(),
+                        matched,
+                        selected,
+                        admission,
+                    )? && matched_roots::names_every_edge(&edges, matched, admission)?
                     {
-                        admission.charge_external_work(3)?;
-                        if edges.len() == 1 {
-                            let identity_work = std::mem::size_of::<
-                                crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
-                            >()
-                            .checked_mul(2)
-                            .and_then(|work| work.checked_add(2))
-                            .and_then(|work| u64::try_from(work).ok())
-                            .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-                            admission.charge_external_work(identity_work)?;
-                            if edges
-                                .iter()
-                                .next()
-                                .is_some_and(|edge| edge.as_ref() == matched.old_identity())
-                            {
-                                // The certified successor replaced this one old consumed
-                                // output. Its pending mark cannot authorize reuse, but the
-                                // retained key and completed context may enter Fresh.
-                                return Ok(None);
-                            }
-                        }
+                        // Certified successors replaced exactly these old consumed
+                        // outputs. Their pending marks cannot authorize reuse, but
+                        // the retained key and completed context may enter Fresh.
+                        return Ok(None);
                     }
                 }
                 return Err(InputCutoffVerificationStop::PendingUpstream);
@@ -231,23 +219,22 @@ impl RetainedInputCutoffCandidate {
                 return Ok(None);
             }
             Err(ConsumedOutputVerificationStop::PendingUpstream) => {
-                if let Some(matched) = matched_predecessor.as_ref() {
-                    if matched_consumed_root(self.consumed_outputs(), matched, selected, admission)?
-                    {
-                        use super::super::invalidation::ConsumedOutputCurrentness;
-                        if matches!(
-                            owner.consumed_output_currentness(
-                                selected,
-                                matched.old_identity(),
-                                admission,
-                            )?,
-                            ConsumedOutputCurrentness::PendingEqualSuccessor
-                        ) {
-                            // Only the exact root's pending equality may be replaced by
-                            // its already certified current successor. A deeper pending
-                            // dependency must remain deferred.
-                            return Ok(None);
-                        }
+                if let Some(matched) = &matched_predecessors {
+                    if matched_roots::consumed_roots(
+                        self.consumed_outputs(),
+                        matched,
+                        selected,
+                        admission,
+                    )? && matched_roots::pending_equalities_replaced(
+                        self.consumed_outputs(),
+                        matched,
+                        owner,
+                        runtime,
+                        snapshot,
+                        selected,
+                        admission,
+                    )? {
+                        return Ok(None);
                     }
                 }
                 return Err(InputCutoffVerificationStop::PendingUpstream);
@@ -264,27 +251,6 @@ impl RetainedInputCutoffCandidate {
         }
         Ok(Some(facts))
     }
-}
-
-fn matched_consumed_root(
-    roots: &[ConsumedOutputEvidence],
-    matched: &MatchedRequiredPredecessor<'_>,
-    selected: &PositionedRelationalSnapshot,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<bool, InputCutoffVerificationStop> {
-    admission.charge_external_work(3)?;
-    if roots.len() != 1 || !matched.matches_cutoff_root(selected, admission)? {
-        return Ok(false);
-    }
-    let identity_work = std::mem::size_of::<
-        crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
-    >()
-    .checked_mul(2)
-    .and_then(|work| work.checked_add(2))
-    .and_then(|work| u64::try_from(work).ok())
-    .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-    admission.charge_external_work(identity_work)?;
-    Ok(roots[0].identity().as_ref() == matched.old_identity())
 }
 
 /// Whether the marked facts, or the full-verification prefix, still permit
@@ -352,5 +318,6 @@ fn fact_is_current(
     Ok(current)
 }
 
+mod matched_roots;
 #[cfg(test)]
 mod tests;

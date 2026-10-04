@@ -59,6 +59,15 @@ impl WorthQueryOutputDemandRegistry {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<SelectedRequiredRefreshClaim>, WorthQueryOutputDemandDenial> {
         let key = selected.membership.key.as_ref();
+        let key_bytes = std::mem::size_of::<super::super::WorthQueryOutputDemandInterest>()
+            .checked_add(key.producer.len())
+            .ok_or_else(capacity_denial)?;
+        // The refresh retains one more Ready. A producer is not contacted for
+        // an output custody cannot keep; the row stays Ready for a later claim.
+        let kept = key_bytes
+            .checked_add(super::super::ready_backing::PreparedReadyBacking::retained_bytes())
+            .ok_or_else(capacity_denial)?;
+        self.reclaim_cached_rows(kept, admission)?;
         let mut state = self
             .state
             .lock()
@@ -72,7 +81,17 @@ impl WorthQueryOutputDemandRegistry {
         let Some(record) = state.records.get(key) else {
             return Ok(None);
         };
-        let same_member = record.is_required()
+        // The wave selected this row as required: held, or awaited by an
+        // owner that has yet to rejoin it. Its claim accepts the same rows.
+        if !record.is_required() {
+            admission
+                .charge_external_work(
+                    u64::try_from(state.records.len()).map_err(|_| work_denial())?,
+                )
+                .map_err(|_| work_denial())?;
+        }
+        let same_member = (record.is_required()
+            || super::super::refreshed_rejoin::awaited_by_stale_owner(&state.records, key))
             && record
                 .work_membership
                 .as_ref()
@@ -114,9 +133,16 @@ impl WorthQueryOutputDemandRegistry {
         // The mutable row selection below is a second ordered descent after
         // the first immutable Ready validation.
         state.charge_record_lookup(key, admission)?;
-        let key_bytes = std::mem::size_of::<super::super::WorthQueryOutputDemandInterest>()
-            .checked_add(key.producer.len())
+        let refreshed = state
+            .required_reserved_bytes
+            .checked_add(kept)
             .ok_or_else(capacity_denial)?;
+        if !state.has_required_capacity(refreshed) {
+            return Err(super::super::required_custody::full_custody_denial(
+                kept,
+                state.required_budget_bytes,
+            ));
+        }
         admission
             .admit_read_scratch(u64::try_from(key_bytes).map_err(|_| capacity_denial())?)
             .map_err(|_| capacity_denial())?;

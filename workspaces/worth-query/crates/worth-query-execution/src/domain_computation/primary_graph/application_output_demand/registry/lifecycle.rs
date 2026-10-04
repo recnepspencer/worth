@@ -1,3 +1,5 @@
+mod cached_reclaim;
+mod closed_retirement;
 mod occurrence_retirement;
 mod selected_execution_finish;
 
@@ -234,6 +236,9 @@ impl WorthQueryOutputDemandRegistry {
         if remove {
             if let Some(record) = state.records.remove(&interest.key) {
                 released_bytes += record.obligation_reserved_bytes();
+                if record.unpublished_new_key_refresh() {
+                    state.revive_replaced_ready(&interest.key);
+                }
             }
         }
         if !state
@@ -246,6 +251,10 @@ impl WorthQueryOutputDemandRegistry {
         // A held successor ends with its row's work or with the last owner
         // awaiting that row; it drops after the lock.
         let mut finished = state.take_finished_successor(&interest.key);
+        let unawaited = state
+            .records
+            .get_mut(&interest.key)
+            .and_then(DemandRecord::take_unawaited_reopened);
         // A closing stale owner may have been the last one awaiting the
         // newest row of its occurrence.
         if terminal {
@@ -259,10 +268,24 @@ impl WorthQueryOutputDemandRegistry {
         state.obligation_reserved_bytes = state
             .obligation_reserved_bytes
             .saturating_sub(released_bytes);
+        // The closing row, and each upstream its released claims leave
+        // unheld, keeps only what it can still answer for.
+        let candidates = std::iter::once(interest.key.clone())
+            .chain(
+                released_prerequisites
+                    .iter()
+                    .flatten()
+                    .map(|upstream| upstream.as_ref().clone()),
+            )
+            .collect();
+        let (retired, released_claims) = state.retire_closed_rows(candidates);
         state.prune_completed_custody();
         drop(state);
+        drop(retired);
+        drop(released_claims);
         drop(released_prerequisites);
         drop(finished);
+        drop(unawaited);
     }
 }
 

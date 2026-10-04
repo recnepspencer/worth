@@ -74,7 +74,7 @@ where
             let work = std::mem::size_of::<WorthQueryProducerCommitAuthority>()
                 .checked_add(3)
                 .and_then(|work| {
-                    std::mem::size_of::<Option<MatchedRequiredPredecessor<'_>>>()
+                    std::mem::size_of::<Option<MatchedRequiredPredecessors<'_>>>()
                         .checked_mul(2)
                         .and_then(|move_work| work.checked_add(move_work))
                 })
@@ -241,13 +241,13 @@ where
             ),
             ScheduleProgression::ContinueScheduled {
                 shared,
-                matched_predecessor,
+                matched_predecessors,
             } => entry.executor.execute_on_selected(
                 self,
                 principal,
                 request_scope,
                 shared,
-                matched_predecessor.take(),
+                matched_predecessors.take(),
                 required_execution,
                 input,
                 successor_of,

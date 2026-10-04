@@ -33,6 +33,10 @@ pub(in crate::domain_computation) struct RequiredOutputDemandContext {
     prepared_input_reuse_key:
         Option<crate::domain_computation::primary_graph::output_lineage::PreparedInputReuseKey>,
     actual_resources: Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>,
+    /// The settlement of the evicted lineage head this execution succeeds.
+    evicted_settlement: Option<
+        Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
+    >,
 }
 
 /// Both parts are issued together before an installed producer can execute.
@@ -148,6 +152,23 @@ impl RequiredOutputDemandContext {
         self.prepared_input_reuse_key.take()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn record_evicted_settlement(
+        &mut self,
+        settlement: Arc<
+            crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
+        >,
+    ) {
+        self.evicted_settlement = Some(settlement);
+    }
+
+    pub(super) fn take_evicted_settlement(
+        &mut self,
+    ) -> Option<
+        Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
+    > {
+        self.evicted_settlement.take()
+    }
+
     pub(super) fn key_arc(&self) -> &Arc<WorthQueryOutputDemandKey> {
         &self.key
     }
@@ -190,6 +211,10 @@ impl WorthQueryOutputDemandInterest {
     ) -> Result<RequiredOutputDemandContext, WorthQueryOutputDemandDenial> {
         self.owner
             .drain_terminal_cleanup_admitted(source_owner, admission)?;
+        self.owner.reclaim_cached_rows(
+            context_bytes(&self.key)?.saturating_add(PreparedReadyBacking::retained_bytes()),
+            admission,
+        )?;
         let mut state = self
             .owner
             .state
@@ -206,24 +231,16 @@ impl WorthQueryOutputDemandInterest {
             ));
         };
         let work_membership = record.work_membership.clone();
-        // The Arc header, one owned key and the slot for the producer's actual
-        // resources are held through the precommit phase. SourceEpoch cloning
-        // shares its admitted meaning.
-        let bytes = std::mem::size_of::<WorthQueryOutputDemandKey>()
-            .checked_add(2 * std::mem::size_of::<usize>())
-            .and_then(|bytes| {
-                bytes.checked_add(std::mem::size_of::<
-                    Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>,
-                >())
-            })
-            .and_then(|bytes| bytes.checked_add(self.key.producer.len()))
-            .ok_or_else(capacity_denial)?;
+        let bytes = context_bytes(&self.key)?;
         let required = state
             .required_reserved_bytes
             .checked_add(bytes)
             .ok_or_else(capacity_denial)?;
         if !state.has_required_capacity(required) {
-            return Err(capacity_denial());
+            return Err(super::required_custody::full_custody_denial(
+                bytes,
+                state.required_budget_bytes,
+            ));
         }
         let ready_backing = PreparedReadyBacking::prepare(&state, admission, bytes)?;
         admission
@@ -255,6 +272,7 @@ impl WorthQueryOutputDemandInterest {
             completed_decision_reuse: None,
             prepared_input_reuse_key: None,
             actual_resources: None,
+            evicted_settlement: None,
         })
     }
 }
@@ -271,4 +289,19 @@ fn capacity_denial() -> WorthQueryOutputDemandDenial {
         WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
         "required output context exceeds registry custody capacity",
     )
+}
+
+/// The Arc header, one owned key and the slot for the producer's actual
+/// resources are held through the precommit phase, beside the Ready cell the
+/// execution fills. SourceEpoch cloning shares its admitted meaning.
+fn context_bytes(key: &WorthQueryOutputDemandKey) -> Result<usize, WorthQueryOutputDemandDenial> {
+    std::mem::size_of::<WorthQueryOutputDemandKey>()
+        .checked_add(2 * std::mem::size_of::<usize>())
+        .and_then(|bytes| {
+            bytes.checked_add(std::mem::size_of::<
+                Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>,
+            >())
+        })
+        .and_then(|bytes| bytes.checked_add(key.producer.len()))
+        .ok_or_else(capacity_denial)
 }

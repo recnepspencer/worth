@@ -46,6 +46,17 @@ impl DemandRegistryState {
         prior
     }
 
+    /// The rows a released dependent claim on `upstream` may have been the
+    /// last to require: the row itself, and the newest row of its occurrence
+    /// when a refresh superseded it.
+    fn released_by_claim(
+        &self,
+        upstream: &WorthQueryOutputDemandKey,
+    ) -> impl Iterator<Item = WorthQueryOutputDemandKey> {
+        let newest = super::refreshed_rejoin::newest_of_occurrence(&self.records, upstream);
+        std::iter::once(upstream.clone()).chain(newest)
+    }
+
     pub(super) fn release_record_prerequisites_detached(
         &mut self,
         key: &WorthQueryOutputDemandKey,
@@ -101,14 +112,16 @@ impl DemandRegistryState {
                 .get_mut(upstream.as_ref())
                 .expect("framework prerequisite record remains retained");
             record.framework_required_count -= 1;
-            if let Some(retired) = retired_members.as_deref_mut() {
-                let member = self.remove_required_member_if_released_detached(upstream);
-                refund = refund
-                    .checked_add(member.refund_required_bytes)
-                    .expect("admitted required member charge fits");
-                retired.push(member);
-            } else {
-                self.remove_required_member_if_released(upstream);
+            for released in self.released_by_claim(upstream) {
+                if let Some(retired) = retired_members.as_deref_mut() {
+                    let member = self.remove_required_member_if_released_detached(&released);
+                    refund = refund
+                        .checked_add(member.refund_required_bytes)
+                        .expect("admitted required member charge fits");
+                    retired.push(member);
+                } else {
+                    self.remove_required_member_if_released(&released);
+                }
             }
         }
         for upstream in &prior {
@@ -173,7 +186,9 @@ impl DemandRegistryState {
                     .get_mut(upstream.as_ref())
                     .expect("framework prerequisite record remains retained");
                 record.framework_required_count -= 1;
-                self.remove_required_member_if_released(upstream);
+                for released in self.released_by_claim(upstream) {
+                    self.remove_required_member_if_released(&released);
+                }
             }
         }
         for prior in &released {

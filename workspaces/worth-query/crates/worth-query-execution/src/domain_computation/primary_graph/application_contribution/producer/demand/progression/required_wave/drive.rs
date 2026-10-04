@@ -1,7 +1,9 @@
 //! One wave's required chain: the caller's own Ready first, then the dirty
 //! records popped from the shared queue as frames.
 
-use super::super::super::required_continuations::{resume_held_upstream, RequiredContinuations};
+use super::super::super::required_continuations::{
+    resume_held_upstream, HeldUpstream, RequiredContinuations,
+};
 use super::super::super::RequiredFreshOutcome;
 use super::super::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryProducerOutputFamily,
@@ -39,12 +41,10 @@ where
     let mut stack = RequiredWaveStack::new();
     let mut current: Option<SelectedReadyReadmission> = None;
     let mut current_contacts = 0usize;
-    // Whether the current frame is the successor this wave just installed.
-    let mut current_is_successor = false;
-    let mut last_resolved: Option<(
-        SelectedReadyReadmission,
-        std::sync::Arc<WorthQueryOutputDemandSettlement>,
-    )> = None;
+    let mut current_role = FrameRole::Reached;
+    // Rows certified Current on this wave; a dependent of several outputs
+    // is readmitted once each of its pending edges has resolved here.
+    let mut resolved_on_wave = ResolvedOnWave::default();
     // A queue chain that cannot finish on this wave keeps its item for a
     // later advance; only budget exhaustion ends the queue work.
     macro_rules! hold_queue_frame {
@@ -74,7 +74,8 @@ where
             queue.finish_caller($outcome);
             stack.frames.clear();
             current = None;
-            last_resolved = None;
+            current_role = FrameRole::Reached;
+            resolved_on_wave.clear();
             continue $label
         }};
     }
@@ -85,7 +86,7 @@ where
             };
             current = Some(frame);
             current_contacts = 0;
-            current_is_successor = false;
+            current_role = FrameRole::Reached;
         }
         // One fixed scheduling step borrows the selected pin. Actual stack
         // writes and continuation installation are charged by their owners.
@@ -116,9 +117,7 @@ where
         let mut installation = admission
             .reserve_external_work(installation_work)
             .map_err(admission_denial)?;
-        let resolved = last_resolved.as_ref().map(|(ready, settled)| {
-            ResolvedRequiredPredecessor::from_current(slot.last(), ready, settled)
-        });
+        let resolved = resolved_on_wave.view(slot.entries());
         let result = certify_required_ready(
             runtime,
             principal,
@@ -161,6 +160,7 @@ where
                             &runtime.output_demands,
                             &wave.caller_ready,
                             selected,
+                            current_role == FrameRole::CallerSuccessor,
                             &demand.selected.identity,
                             commit_authority,
                             installed_edition,
@@ -205,6 +205,7 @@ where
                         .map_err(|_| work_denial())?;
                 }
                 if let Some(resolved) = current.take() {
+                    let resolved_role = std::mem::replace(&mut current_role, FrameRole::Reached);
                     if stack.frames.is_empty() && queue.active() {
                         // The queued record itself is Current on this wave.
                         queue.discharge_frame(admission)?;
@@ -212,14 +213,17 @@ where
                         // later frames: their consumed edges still name the old
                         // identity, and each match is proven exactly. Any other
                         // discharged chain resolves nothing for the next one.
-                        last_resolved = current_is_successor.then_some((resolved, settlement));
+                        resolved_on_wave.clear();
+                        if resolved_role != FrameRole::Reached {
+                            resolved_on_wave.push(resolved, settlement, admission)?;
+                        }
                         continue;
                     }
-                    last_resolved = Some((resolved, settlement));
+                    resolved_on_wave.push(resolved, settlement, admission)?;
                     if let Some(downstream) = stack.pop() {
                         current = Some(downstream);
                         current_contacts = 0;
-                        current_is_successor = false;
+                        current_role = FrameRole::Reached;
                     }
                     // An empty stack returns to the retained caller Ready.
                     continue;
@@ -230,9 +234,7 @@ where
                 drop(slot);
                 if upstream.same_record(selected, admission)?
                     || upstream.same_record(&wave.caller_ready, admission)?
-                    || last_resolved.as_ref().is_some_and(|(prior, _)| {
-                        prior.completion().same_cell(upstream.completion())
-                    })
+                    || resolved_on_wave.contains(&upstream)
                 {
                     if queue.active() {
                         hold_queue_frame!('required, None)
@@ -249,9 +251,17 @@ where
                 }
                 current = Some(upstream);
                 current_contacts = 0;
-                current_is_successor = false;
+                current_role = FrameRole::Reached;
             }
             RequiredWaveStep::Fresh(progress) => {
+                let successor_role = if stack.frames.is_empty()
+                    && !queue.active()
+                    && (current.is_none() || current_role == FrameRole::CallerSuccessor)
+                {
+                    FrameRole::CallerSuccessor
+                } else {
+                    FrameRole::Successor
+                };
                 match slot.install(progress) {
                     RequiredFreshOutcome::Advanced => {}
                     RequiredFreshOutcome::Refused(stop) => {
@@ -284,11 +294,11 @@ where
                         current_contacts = successor.producer_contacts();
                         if committed_ready(&ready, admission)? {
                             wave = reselect_required_wave(runtime, wave, admission)?;
-                            last_resolved = None;
+                            resolved_on_wave.clear();
                             queue.wave_moved();
                         }
                         current = Some(ready);
-                        current_is_successor = true;
+                        current_role = successor_role;
                         continue 'required;
                     }
                     admission
@@ -326,22 +336,24 @@ where
                     &head,
                     admission,
                 ) {
-                    Ok(Some(ready)) => {
+                    Ok(HeldUpstream::Ready(ready)) => {
                         runtime.output_demands.clear_required_stop(&head);
                         if committed_ready(&ready, admission)? {
                             wave = reselect_required_wave(runtime, wave, admission)?;
-                            last_resolved = None;
+                            resolved_on_wave.clear();
                             queue.wave_moved();
                         }
                         // Certify the same row again against the finished upstream.
                         continue 'required;
                     }
-                    Ok(None) => {
+                    Ok(HeldUpstream::Unfinished) => {
                         if queue.active() {
                             hold_queue_frame!('required, None)
                         }
                         finish_caller!('required, WorthQueryOutputDemandAdvance::Pending)
                     }
+                    // The Ready the superseded successor replaced answers again.
+                    Ok(HeldUpstream::GaveBack) => continue 'required,
                     Err(stop) => stopped!('required, &head, stop),
                 }
             }
@@ -353,6 +365,16 @@ where
             }
         }
     }
+}
+
+/// What the current frame is to this wave. A caller successor is a refresh
+/// of the caller's Ready, or of an earlier caller successor, reached with no
+/// stacked downstream outside queue work.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum FrameRole {
+    Reached,
+    Successor,
+    CallerSuccessor,
 }
 
 /// A committed Ready moved the wave past its selected position.

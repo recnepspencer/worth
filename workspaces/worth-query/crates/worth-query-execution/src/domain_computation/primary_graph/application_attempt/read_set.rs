@@ -118,12 +118,9 @@ where
                 admission.operation(),
             ));
         }
-        admission.validate_current_authority().map_err(|_| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::CurrentAuthorityDenied,
-                admission.operation(),
-            )
-        })?;
+        admission
+            .validate_current_authority()
+            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         let graph = self.runtime.primary_graph().ok_or_else(|| {
             denial(
                 WorthQueryApplicationAttemptDenialKind::ForeignApplication,
@@ -217,12 +214,9 @@ where
                 admission.operation(),
             ));
         }
-        admission.validate_current_authority().map_err(|_| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::CurrentAuthorityDenied,
-                admission.operation(),
-            )
-        })?;
+        admission
+            .validate_current_authority()
+            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         let graph = self.runtime.primary_graph().ok_or_else(|| {
             denial(
                 WorthQueryApplicationAttemptDenialKind::ForeignApplication,

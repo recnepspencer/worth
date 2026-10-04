@@ -4,6 +4,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use super::{DemandRegistryState, WorthQueryOutputDemandRegistry};
+
+mod caller_chain;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
@@ -49,7 +51,7 @@ impl DemandRegistryState {
             .checked_add(required)
             .is_none_or(|total| total > self.required_budget_bytes)
         {
-            return Err(capacity_denial());
+            return Err(full_custody_denial(bytes, self.required_budget_bytes));
         }
         self.required_custody_retained_bytes
             .fetch_add(bytes, Ordering::AcqRel);
@@ -92,6 +94,7 @@ impl WorthQueryOutputDemandRegistry {
                 }
                 _ => capacity_denial(),
             })?;
+        self.reclaim_cached_rows(bytes, admission)?;
         let state = self
             .state
             .lock()
@@ -126,6 +129,7 @@ impl WorthQueryOutputDemandRegistry {
                 }
                 _ => capacity_denial(),
             })?;
+        self.reclaim_cached_rows(peak_bytes, admission)?;
         let state = self
             .state
             .lock()
@@ -145,5 +149,18 @@ fn capacity_denial() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(
         WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
         "required output custody exceeds retained capacity",
+    )
+}
+
+/// Custody frees as other required rows release, so a reservation that fits
+/// the budget on its own may succeed on a later advance. The caller's advance,
+/// or its start, decides whether one can: see `caller_chain`.
+pub(super) fn full_custody_denial(bytes: usize, budget: usize) -> WorthQueryOutputDemandDenial {
+    let denial = capacity_denial();
+    if bytes > budget {
+        return denial;
+    }
+    denial.with_recovery_posture(
+        crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable,
     )
 }

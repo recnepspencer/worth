@@ -14,13 +14,14 @@ use crate::domain_computation::primary_graph::output_lineage::invalidation::Inva
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 mod admission;
+mod caller_custody;
 mod refresh;
 mod rejoin;
 mod required_fresh;
 mod required_wave;
 mod retained_read;
 pub(in crate::domain_computation::primary_graph) use required_wave::{
-    MatchedRequiredPredecessor, ResolvedRequiredPredecessor,
+    MatchedRequiredPredecessors, ResolvedRequiredPredecessors,
 };
 pub(super) mod resources;
 mod selected_program;
@@ -64,16 +65,17 @@ where
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        let mut admission = self.demand_request_admission();
-        self.advance_output_demand_with_commit_authority(
-            demand,
-            principal,
-            request_scope,
-            delivery_branch,
-            disclosure,
-            WorthQueryProducerCommitAuthority::Ordinary,
-            &mut admission,
-        )
+        self.advance_as_caller(demand, |demand, admission| {
+            self.advance_output_demand_with_commit_authority(
+                demand,
+                principal,
+                request_scope,
+                delivery_branch,
+                disclosure,
+                WorthQueryProducerCommitAuthority::Ordinary,
+                admission,
+            )
+        })
     }
 
     /// Reenter the admitted demand's frozen source selector, parameters and
@@ -94,15 +96,16 @@ where
                 > + 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        let mut admission = self.demand_request_admission();
-        self.advance_retained_with_commit_authority(
-            demand,
-            principal,
-            request_scope,
-            delivery_branch,
-            WorthQueryProducerCommitAuthority::Ordinary,
-            &mut admission,
-        )
+        self.advance_as_caller(demand, |demand, admission| {
+            self.advance_retained_with_commit_authority(
+                demand,
+                principal,
+                request_scope,
+                delivery_branch,
+                WorthQueryProducerCommitAuthority::Ordinary,
+                admission,
+            )
+        })
     }
 
     /// Reenter the frozen source under the commit authority the demand was
@@ -163,16 +166,40 @@ where
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        let mut admission = self.demand_request_admission();
-        self.advance_output_demand_with_commit_authority(
-            demand,
-            principal,
-            request_scope,
-            delivery_branch,
-            disclosure,
-            WorthQueryProducerCommitAuthority::ProgramOutput,
-            &mut admission,
+        self.advance_as_caller(demand, |demand, admission| {
+            self.advance_output_demand_with_commit_authority(
+                demand,
+                principal,
+                request_scope,
+                delivery_branch,
+                disclosure,
+                WorthQueryProducerCommitAuthority::ProgramOutput,
+                admission,
+            )
+        })
+    }
+
+    /// One advance a caller starts, on a fresh request meter. A custody
+    /// refusal reaches the caller as that caller meets it; advances nested
+    /// in this one keep the rows' own stops.
+    pub(super) fn advance_as_caller<Family>(
+        &self,
+        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
+        advance: impl FnOnce(
+            &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
+            &mut InvalidationEditAdmission,
         )
+            -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>,
+    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    {
+        let mut admission = self.demand_request_admission();
+        let stop = match advance(demand, &mut admission) {
+            Ok(progress) => return Ok(progress),
+            Err(stop) => stop,
+        };
+        Err(self.caller_custody_stop(demand, stop, &mut admission))
     }
 
     pub(in crate::domain_computation::primary_graph) fn advance_output_demand_with_commit_authority<

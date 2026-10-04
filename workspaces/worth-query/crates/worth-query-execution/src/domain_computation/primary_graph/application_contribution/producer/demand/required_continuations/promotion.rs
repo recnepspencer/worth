@@ -56,8 +56,10 @@ where
     Schema: ApplicationSchema + 'static,
 {
     /// Promote only the last installed successor of this caller's exact
-    /// predecessor Ready. Every fallible authority check precedes the pop;
-    /// a refused typed extraction restores the same move-only Progress.
+    /// predecessor Ready, or of a successor on the caller's own refresh line
+    /// of this wave (`continues_caller`). Every fallible authority check
+    /// precedes the pop; a refused typed extraction restores the same
+    /// move-only Progress.
     pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn promote_caller_successor<
         Family,
     >(
@@ -65,6 +67,7 @@ where
         registry: &WorthQueryOutputDemandRegistry,
         caller_ready: &SelectedReadyReadmission,
         selected_ready: &SelectedReadyReadmission,
+        continues_caller: bool,
         producer: &str,
         supplied_mode: &WorthQueryProducerCommitAuthority,
         installed_edition: &InstalledProducerEdition,
@@ -91,17 +94,18 @@ where
         if !progress.is_family::<Family>() || progress.producer_identity() != producer {
             return Ok(None);
         }
-        if !progress
-            .predecessor()
-            .same_ready_cell(caller_ready, admission)?
+        // A caller successor that cannot be certified is refreshed again on
+        // this wave, and the newer refresh ends the older one's custody. Its
+        // predecessor is then that earlier successor, which the wave reached
+        // only through the caller's exact Ready.
+        if !continues_caller
+            && !progress
+                .predecessor()
+                .same_ready_cell(caller_ready, admission)?
         {
             return Ok(None);
         }
-        if !registry.required_successor_is_live(
-            progress.predecessor(),
-            progress.interest(),
-            admission,
-        )? {
+        if !registry.required_successor_is_live(caller_ready, progress.interest(), admission)? {
             return Ok(None);
         }
         if !selected_ready.matches_interest(progress.interest(), admission)? {

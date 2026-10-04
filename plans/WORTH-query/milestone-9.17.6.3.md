@@ -206,7 +206,8 @@ budget or determinism contract.
 - A program installation, an aspect contract-revision change, a delivery
   overflow, a checkpoint restore, a reopen from outside the retained commit
   window, and a branch switch.
-- Workflow definition and capacity facts changing under waiting work.
+- A workflow definition or capacity change under a waiting instance, which
+  keeps its pinned revision while a new start reads the new one.
 
 Required:
 
@@ -413,10 +414,10 @@ at its declared breadth and is counted and reported.
     index-membership records, and, from Phase 4, the scope path at the depth
     Signal sealed it.
   - Delivery runs in commit order and synchronously with commit visibility.
-  - Conditional operations and workflow coverage consume the same
-    subscription, and their correspondence-based matching is replaced by
-    marking. Signal correspondences keep delivering to Signal-hosted nodes and
-    never feed Query marking. No second path feeds Query invalidation.
+  - Conditional operations consume the same subscription, and their
+    correspondence-based matching is replaced by marking. Signal
+    correspondences keep delivering to Signal-hosted nodes and never feed
+    Query marking. No second path feeds Query invalidation.
   - Live queries are caused by committed application emissions, delivered in
     Product commit order by Query's commit-causality source. They invalidate
     nothing, so they are not a second invalidation path. Each delivery
@@ -512,10 +513,11 @@ at its declared breadth and is counted and reported.
   re-verification.
 - **Equivalence check.** A debug and certification mode runs full verification
   beside marking and fails on any difference.
-- **One mechanism.** Workflow definition and capacity facts mark through the same
-  path. A workflow history basis is pinned to an immutable snapshot and is never
-  marked. One invalidation mechanism serves outputs, conditional operations and
-  workflow coverage, and no parallel lane remains.
+- **One mechanism.** One invalidation mechanism serves outputs and conditional
+  operations, and no parallel lane remains. Workflow coverage needs none: a
+  waiting instance pins its definition revision and history basis, which are
+  never marked, and start and migration admission read definition and lineage
+  capacity fresh.
 - **Charging.** Work budgets charge marking and dirty verification, never a scan
   of clean state.
 
@@ -1658,11 +1660,33 @@ before machinery for another lands.
     newest commit, a carried dependency that changes differently again
     escalates to `RefreshAll`, and `RefreshAll` absorbs everything owed. A
     healed lagging cursor's batch carries `RefreshAll`. *Completed.*
-  - Workflow coverage reads the subscription. *Not completed.*
+  - Workflow coverage needs no marking. Running instances pin their definition
+    revision, and a new revision supersedes it only for new starts. Capacity
+    bounds live instances per definition lineage, so it limits new starts. A
+    definition or capacity change therefore leaves nothing to reconsider for a
+    waiting instance, whose pinned basis is never marked; start and migration
+    admission read definition and capacity fresh. The pin covers only facts
+    read from the pinned definition, and lineage capacity is a live fact. No
+    waiting step reads it: the `WorkflowInstanceCapacity` fact is built only at
+    start (`application_attempt/workflow_instance_program.rs:148-155`).
+    *Not completed:*
+    - The neutral courtroom shows a waiting instance keeps its pin across a
+      definition and capacity change while a new start sees the new revision.
+    - The courtroom shows that no waiting step's decision reads a lineage
+      capacity key, or that any step that does re-reads it at advance as a
+      currentness check against current state, never the pinned basis.
+    - The workflow projections in `invalidation/fact_keys.rs` (~179-232) gain
+      a real consumer or are deleted.
 - Land the settle-time reverse index with insertion replay, commit-time
   marking, upstream propagation, selection and lineage marking. *Completed.*
 - Close multi-root (diamond) dependencies: one advance follows every consumed
-  output edge into a shared dependent. *Not completed.*
+  output edge into a shared dependent. *Completed:* after both roots change,
+  one caller advance settles the shared dependent reading both new values,
+  each producer contacted once; a dependent whose upstream an earlier advance
+  already refreshed resolves against that Current row instead of waiting on it.
+  - Every chain node's decision reads its upstream values. A root that returns
+    to an earlier value settles the shared dependent in one advance again,
+    reading the value it returned to.
 - Land clean reuse, the input-value reuse key and cutoff, stable
   republication, the required set and one-call advancement. *Completed:*
   - One C advance discharges an unchanged-input upstream cutoff without
@@ -1674,9 +1698,71 @@ before machinery for another lands.
 - Public reuse holds under explicit, independent source and producer resource
   policies. *Completed.*
 - Retry an interrupted successor on the same caller: the caller's next advance
-  resumes B. *Not completed:* today C retries, not B.
+  resumes B. *Completed:* a request that loses its authority mid-refresh stops
+  as that request's own Cancelled or TimedOut, and a refresh that stops without
+  publishing returns its row to the Ready it reopened, so the next advance
+  claims B again without contacting the settled root.
 - Consume the required-work queue in production advance, and keep retained
   custody steady across cycles. *Completed.*
+  - Under alternating input at small retention, a middle consumer that reads
+    its upstream values settles in one advance every cycle. A caller successor
+    whose settlement cannot be retained is refreshed again on the same wave:
+    promotion follows the caller's own refresh line, and the newer refresh
+    takes the older one's custody slot. Custody stays steady and the chain
+    stays live.
+  - At that retention the first registration each cycle is denied, so the
+    last consumer's producer is contacted twice per cycle. Retiring the
+    superseded rows before that registration takes its own root replacement
+    in the invalidation owner, and that replacement spends the retained room
+    a later publication needs. The fix folds retirement into the
+    registration's single root replacement.
+  - While a dependent's demand is open, the upstreams it consumes are
+    required, transitively. A dependent opened after every chain demand
+    closed refreshes its stale, undemanded upstream and settles over it in
+    one advance. A refresh the World supersedes before it publishes gives its
+    occurrence back to the newest Ready it replaced, so the wave refreshes
+    that row again instead of failing the dependent.
+  - A caller whose advance is refused required custody ends the refreshes
+    it carried, so it never waits holding custody. The stop is retryable
+    when one of those refreshes had published, or when another demand holds
+    custody its advance or close moves: a demand open outside the caller's
+    chain, or one open on a chain row that is stale or still refreshing.
+    Otherwise a retry would meet the same custody, so the stop is terminal
+    for that caller and leaves the rows claimable: retention is the caller's
+    budget. A demand refused at its start holds no row yet, so every open
+    demand counts as another one. Every refusal of the shared budget takes
+    this one posture.
+  - Required work first retires closed cached rows nothing holds, and a
+    superseded row retires once its own demands close and the newest row of
+    its occurrence has settled Ready, handing its settlements and
+    dependents' claims to that row. However a refresh stops, a continuation
+    whose row returned to the Ready it reopened ends before the next claim
+    reserves custody, so a retry holds no more custody. A refresh under a
+    new key that its last owner lets go before it publishes gives the
+    occurrence back to the Ready it replaced. At three Ready rows per
+    settled demand, a reopened dependent's first advance stops retryable,
+    and its retry settles beside the unrelated caller's open Ready.
+  - Eviction degrades to Fresh, never to reuse and never to a standing
+    deferral. *Completed:* a row retired for custody drops its settlement
+    postings and keeps its lineage. Only a row holds the claims on what its
+    record consumed and answers its pending edges, so a lineage head that
+    consumed upstream outputs and that no row posts is an evicted one, and
+    the next start of its producer succeeds it. Input cutoff neither reuses
+    nor awaits it, the commit is its successor instead of a replay, and the
+    successor's publication retires its settlement. This is the single rule
+    because every Ready row of a dependent then holds claims on what it
+    consumed: no upstream row is evicted beneath a live dependent, so no
+    pending edge is left without a row to answer it. Evicting the lineage
+    alone would not hold, since the World would replay the old commit into a
+    Ready with no claims. A head that consumed nothing needs no row, and
+    reuses or replays as before. The newest settlement of an occurrence also
+    supersedes those of the rows it replaced, so postings handed to the
+    newest row retire and repeated refreshes hold steady custody. At eight
+    to ten rows, a dependent restarted after its upstream refreshed decides
+    again and settles within eight advances.
+  - Conservative posture: before a dependent's first claim, its upstream
+    owner reads as a demand open outside its chain, so a refusal there
+    offers a retry. This ends once that demand closes.
 - Land the full-verification fallback and the equivalence-check mode.
   *Completed.* CI runs the checkpoint courtroom with the equivalence check,
   the execution observer and World operation control.
