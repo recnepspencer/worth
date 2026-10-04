@@ -20,6 +20,7 @@ pub use joined_outcome::{
     PhysicalSignalSettlementOutcome, PhysicalWorkBatchDenial, PhysicalWorkExecutionBatchOutcome,
     PhysicalWorkExecutionOutcome,
 };
+pub use outcome::PhysicalEffectRecoveryObligation;
 pub use outcome::{
     CompletedPhysicalCheckpointAction, CompletedPhysicalPublicationEffect,
     CompletedPhysicalWalBarrier, CompletedPhysicalWalReclamationAction,
@@ -27,8 +28,7 @@ pub use outcome::{
 pub(in crate::physical_runtime) use outcome::{
     IndeterminatePhysicalCheckpointAction, IndeterminatePhysicalPublicationEffect,
     IndeterminatePhysicalWalBarrier, IndeterminatePhysicalWalReclamationAction,
-    PhysicalEffectRecoveryObligation, PhysicalExecutorDispatch, PhysicalExecutorOutcome,
-    PhysicalResidencyWritebackCompletion,
+    PhysicalExecutorDispatch, PhysicalExecutorOutcome, PhysicalResidencyWritebackCompletion,
 };
 pub(in crate::physical_runtime) use settlement::PhysicalWorkSettlement;
 pub use settlement::{

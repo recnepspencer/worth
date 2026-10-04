@@ -13,9 +13,10 @@ use crate::physical_runtime::{
         PhysicalSchedulerAdmissionOwner, PhysicalStoreWorkRuntime, RecordSchedulerReservationDenial,
     },
     record_serving::RecordWorkAdmission,
-    PhysicalDurabilityObservation, PhysicalExecutorCommand, PhysicalMutationWorkRequest,
-    PhysicalSchedulerDemand, PhysicalWorkAdmission, PhysicalWorkExecution, PhysicalWorkReadiness,
-    PhysicalWorkScheduler, PhysicalWorkSettlementEvidence, SealedPhysicalDurabilityGroupMembers,
+    PhysicalDurabilityObservation, PhysicalEffectRecoveryObligation, PhysicalExecutorCommand,
+    PhysicalMutationWorkRequest, PhysicalSchedulerDemand, PhysicalWorkAdmission,
+    PhysicalWorkExecution, PhysicalWorkReadiness, PhysicalWorkScheduler,
+    PhysicalWorkSettlementEvidence, SealedPhysicalDurabilityGroupMembers,
     WalDurablePhysicalMutationMembers,
 };
 
@@ -177,7 +178,7 @@ impl PhysicalWalGroupBarrierPort {
         let Some((_expected_scope, expected_binding_digest)) =
             command.wal_barrier_completion_binding()
         else {
-            return indeterminate(appended);
+            return indeterminate(appended, PhysicalEffectRecoveryObligation::Cleared);
         };
         let outcome = match self.execution.execute_physical_work(command) {
             Ok(outcome) => outcome,
@@ -189,6 +190,7 @@ impl PhysicalWalGroupBarrierPort {
             }
         };
         let settled = outcome.into_settled();
+        let recovery = settled.recovery_obligation();
         let work = settled.intent().identity();
         match settled.into_evidence() {
             PhysicalWorkSettlementEvidence::WalBarrier {
@@ -203,19 +205,19 @@ impl PhysicalWalGroupBarrierPort {
                     expected_work,
                     expected_binding_digest,
                 ) else {
-                    return indeterminate(appended);
+                    return indeterminate(appended, recovery);
                 };
                 if !self.wal.record_durable_barrier(
                     declaration.scope().lsn_start(),
                     declaration.scope().lsn_end_exclusive(),
                 ) {
-                    return indeterminate(appended);
+                    return indeterminate(appended, recovery);
                 }
                 match WalDurablePhysicalMutationMembers::derive(appended, settlement) {
                     Ok(durable) => PhysicalWalGroupBarrierOutcome::Durable(durable),
                     Err(appended) => {
                         self.wal.seal_for_inspection();
-                        indeterminate(appended)
+                        indeterminate(appended, recovery)
                     }
                 }
             }
@@ -227,13 +229,16 @@ impl PhysicalWalGroupBarrierPort {
                     ),
                 }
             }
-            _ => indeterminate(appended),
+            _ => indeterminate(appended, recovery),
         }
     }
 }
 
-fn indeterminate(appended: SealedPhysicalDurabilityGroupMembers) -> PhysicalWalGroupBarrierOutcome {
+fn indeterminate(
+    appended: SealedPhysicalDurabilityGroupMembers,
+    recovery: PhysicalEffectRecoveryObligation,
+) -> PhysicalWalGroupBarrierOutcome {
     PhysicalWalGroupBarrierOutcome::Indeterminate(IndeterminatePhysicalWalGroupBarrier::new(
-        appended,
+        appended, recovery,
     ))
 }

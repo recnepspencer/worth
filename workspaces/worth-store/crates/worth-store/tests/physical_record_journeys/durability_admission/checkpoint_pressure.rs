@@ -264,6 +264,9 @@ fn assert_checkpoint_io(
     records: &[&[u8]],
 ) {
     const PHYSICAL_EFFECT_RECOVERY_RECORD_BYTES: u64 = 160;
+    // Candidate and namespace synchronization are pure flushes: they journal
+    // no recovery record unless their outcome is retained.
+    const SYNCHRONIZATION_ONLY_ACTIONS: u64 = 2;
 
     let delta = |role| {
         after
@@ -271,21 +274,24 @@ fn assert_checkpoint_io(
             .saturating_sub(before.attempts_for(role))
     };
     let checkpoint_actions = records.len() as u64 + 3;
-    assert_eq!(delta(MediaOperationRole::CreateNew), checkpoint_actions + 1);
+    let journaled_actions = checkpoint_actions - SYNCHRONIZATION_ONLY_ACTIONS;
+    assert_eq!(delta(MediaOperationRole::CreateNew), journaled_actions + 1);
     assert_eq!(
         delta(MediaOperationRole::PositionedWrite),
         records.len() as u64
     );
-    assert_eq!(delta(MediaOperationRole::Append), checkpoint_actions);
+    assert_eq!(delta(MediaOperationRole::Append), journaled_actions);
     assert_eq!(
         delta(MediaOperationRole::SynchronizeFileState),
-        checkpoint_actions + 1
+        journaled_actions + 1
     );
-    assert_eq!(delta(MediaOperationRole::Delete), checkpoint_actions);
+    assert_eq!(delta(MediaOperationRole::Delete), journaled_actions);
     assert_eq!(delta(MediaOperationRole::AtomicReplace), 1);
+    // Each journaled action: its record's barrier and its durable retirement.
+    // Plus the published namespace's barrier.
     assert_eq!(
         delta(MediaOperationRole::SynchronizeDirectoryPublication),
-        checkpoint_actions * 2 + 1
+        2 * journaled_actions + 1
     );
     assert_eq!(
         after.completed_bytes_for(MediaOperationRole::PositionedWrite)
@@ -298,7 +304,7 @@ fn assert_checkpoint_io(
     assert_eq!(
         after.completed_bytes_for(MediaOperationRole::Append)
             - before.completed_bytes_for(MediaOperationRole::Append),
-        checkpoint_actions * PHYSICAL_EFFECT_RECOVERY_RECORD_BYTES
+        journaled_actions * PHYSICAL_EFFECT_RECOVERY_RECORD_BYTES
     );
 }
 

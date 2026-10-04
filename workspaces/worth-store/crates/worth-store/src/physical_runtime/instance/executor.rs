@@ -45,13 +45,19 @@ impl PhysicalWorkExecutor {
         media: &QualifiedFilesystemMedia,
         limit: usize,
     ) -> crate::physical_runtime::work::PhysicalEffectRecoveryInventory {
-        crate::physical_runtime::work::PhysicalEffectJournal::inspect(media, limit)
+        crate::physical_runtime::work::PhysicalEffectRecoveryInventory::inspect(media, limit)
     }
 
     pub(in crate::physical_runtime) const fn record_serving_media(
         &self,
     ) -> &QualifiedFilesystemMedia {
         &self.media
+    }
+
+    pub(in crate::physical_runtime) fn recovery_journal_counters(
+        &self,
+    ) -> crate::physical_runtime::PhysicalRecoveryJournalCounters {
+        self.recovery.counters()
     }
 
     pub(in crate::physical_runtime) fn into_media(self) -> QualifiedFilesystemMedia {

@@ -298,8 +298,8 @@ pub use work::{
     PhysicalExecutorCommand, PhysicalExecutorCommandDenial, PhysicalMetadataReadWorkRequest,
     PhysicalMutationSubmission, PhysicalMutationWorkRequest, PhysicalOperationIdentity,
     PhysicalPublicationEffect, PhysicalReadSubmission, PhysicalReadWorkRequest,
-    PhysicalRetryCommand, PhysicalSchedulerDemand, PhysicalSchedulerDenial,
-    PhysicalSignalAspectBinding, PhysicalSignalAspectBindingDigest,
+    PhysicalRecoveryJournalCounters, PhysicalRetryCommand, PhysicalSchedulerDemand,
+    PhysicalSchedulerDenial, PhysicalSignalAspectBinding, PhysicalSignalAspectBindingDigest,
     PhysicalSignalAspectBindingObservation, PhysicalSignalAspectBindingSet,
     PhysicalSignalAspectDeclaration, PhysicalSignalAspectRole, PhysicalSignalAspectSubscription,
     PhysicalSignalBindingDenial, PhysicalSignalProfileIdentity, PhysicalSignalSettlementOutcome,
@@ -347,11 +347,12 @@ pub use worth_store_physical_backend::{
     RecoveryStagingWriteOutcome, RecoveryWalObservationIdentity,
 };
 
+pub use work::PhysicalEffectRecoveryObligation;
 pub(in crate::physical_runtime) use work::{
-    PhysicalEffectRecoveryObligation, PhysicalExecutorDispatch, PhysicalExecutorOutcome,
-    PhysicalPublicationExecutorCommand, PhysicalReadExecutorCommand,
-    PhysicalResidencyWritebackCompletion, PhysicalResidencyWritebackExecutorCommand,
-    PhysicalRetryPayload, PhysicalRootPublicationWorkAction, PhysicalRootPublicationWorkScope,
+    PhysicalExecutorDispatch, PhysicalExecutorOutcome, PhysicalPublicationExecutorCommand,
+    PhysicalReadExecutorCommand, PhysicalResidencyWritebackCompletion,
+    PhysicalResidencyWritebackExecutorCommand, PhysicalRetryPayload,
+    PhysicalRootPublicationWorkAction, PhysicalRootPublicationWorkScope,
     PhysicalWalBarrierExecutorCommand, PhysicalWalFrameCompletionBinding, PhysicalWorkSettlement,
     PhysicalWriteExecutorCommand,
 };

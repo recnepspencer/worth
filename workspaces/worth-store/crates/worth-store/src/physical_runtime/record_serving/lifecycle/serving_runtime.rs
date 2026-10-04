@@ -183,6 +183,12 @@ impl ServingPhysicalRuntime {
             .counters()
     }
 
+    pub fn physical_recovery_journal_counters(
+        &self,
+    ) -> crate::physical_runtime::PhysicalRecoveryJournalCounters {
+        self.parts.work_runtime.executor.recovery_journal_counters()
+    }
+
     pub const fn root_protocol_counters(
         &self,
     ) -> crate::physical_runtime::RootProtocolRouteCounters {

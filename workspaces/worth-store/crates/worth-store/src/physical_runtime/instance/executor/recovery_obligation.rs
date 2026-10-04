@@ -42,8 +42,12 @@ impl PhysicalWorkExecutor {
         physical: PhysicalEffectRecoveryObligation,
     ) -> PhysicalEffectRecoveryObligation {
         match physical {
-            PhysicalEffectRecoveryObligation::Retained => {
-                PhysicalEffectRecoveryObligation::Retained
+            PhysicalEffectRecoveryObligation::Retained
+            | PhysicalEffectRecoveryObligation::RetainedWithoutRecord => {
+                match self.recovery.retain(&self.media, prepared) {
+                    Ok(()) => PhysicalEffectRecoveryObligation::Retained,
+                    Err(()) => PhysicalEffectRecoveryObligation::RetainedWithoutRecord,
+                }
             }
             PhysicalEffectRecoveryObligation::Cleared => {
                 if self.recovery.finish(&self.media, prepared).is_ok() {
