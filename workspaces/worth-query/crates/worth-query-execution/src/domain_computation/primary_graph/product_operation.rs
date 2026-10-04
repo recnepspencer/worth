@@ -10,6 +10,7 @@ mod context;
 mod generated_materialization;
 pub(in crate::domain_computation::primary_graph) use generated_materialization::admit_required_invariants;
 mod history;
+mod observation_room;
 mod operation;
 mod program_adoption;
 mod query;

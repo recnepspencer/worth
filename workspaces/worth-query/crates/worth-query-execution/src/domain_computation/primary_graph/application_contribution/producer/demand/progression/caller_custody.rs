@@ -15,11 +15,6 @@
 //! not the rows: retention is the caller's budget, so the rows stay
 //! claimable for any demand that fits. A demand refused at its start holds
 //! no row yet, so every open demand is another one.
-//!
-//! A caller the branch refused a product observation frees the one a closed
-//! cached row keeps, so its retry does not meet the same refusal. With no
-//! such row the observations belong to open demands and other observers of
-//! the World, whose release the registry cannot see: the stop stays retryable.
 
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -29,12 +24,6 @@ use super::super::{
 };
 use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
-
-/// The branch has no room for one more product observation now.
-const OBSERVATION_REFUSED: WorthQueryOutputDemandDenialKind =
-    WorthQueryOutputDemandDenialKind::ProductSelection(
-        crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationCapacityExhausted,
-    );
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -51,7 +40,6 @@ where
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        let stop = self.observation_stop(stop, admission);
         if stop.kind() != WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
             || stop.recovery_posture() != WorthQueryOutputDemandRecoveryPosture::Retryable
         {
@@ -88,7 +76,6 @@ where
         stop: WorthQueryOutputDemandDenial,
         admission: &mut InvalidationEditAdmission,
     ) -> WorthQueryOutputDemandDenial {
-        let stop = self.observation_stop(stop, admission);
         if stop.kind() != WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
             || stop.recovery_posture() != WorthQueryOutputDemandRecoveryPosture::Retryable
             || self.output_demands.a_demand_holds_custody(admission) != Some(false)
@@ -96,18 +83,5 @@ where
             return stop;
         }
         stop.with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Terminal)
-    }
-
-    /// A caller refused a product observation frees one a cached row keeps.
-    /// Request work that cannot fund the reclaim leaves the refusal as it is.
-    fn observation_stop(
-        &self,
-        stop: WorthQueryOutputDemandDenial,
-        admission: &mut InvalidationEditAdmission,
-    ) -> WorthQueryOutputDemandDenial {
-        if stop.kind() == OBSERVATION_REFUSED {
-            drop(self.output_demands.reclaim_cached_observation(admission));
-        }
-        stop
     }
 }

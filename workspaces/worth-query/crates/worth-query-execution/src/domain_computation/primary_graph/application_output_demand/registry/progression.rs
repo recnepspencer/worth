@@ -1,3 +1,4 @@
+mod ordinary_begin;
 mod replacement;
 mod selected_begin;
 mod selected_checkpoint_finish;
@@ -10,21 +11,6 @@ use super::succession::Succession;
 use super::*;
 
 impl WorthQueryOutputDemandRegistry {
-    pub(in crate::domain_computation::primary_graph) fn begin(
-        &self,
-        interest: &WorthQueryOutputDemandInterest,
-    ) -> WorthQueryOutputDemandAdvanceAdmission {
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let record = state
-            .records
-            .get_mut(&interest.key)
-            .expect("live demand interest retains its owner record");
-        begin_record(record, "output advancement claim identity exhausted")
-    }
-
     /// The selected required wave pays the first registry transition before
     /// changing the record. The ordinary entry retains its historical class.
     pub(in crate::domain_computation::primary_graph) fn begin_admitted<'a>(

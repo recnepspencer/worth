@@ -111,11 +111,12 @@ impl WorthQueryOutputDemandRegistry {
             return Ok(None);
         }
         if selected.completion.producer_mode().is_none() {
-            // A restored output no demand has advanced: the wave has no mode
-            // to execute its producer in until a demand of that output does.
+            // A restored output no advance has reached, met by queued work
+            // for another owner: it has no mode to execute its producer in
+            // until its own demand or a dependent's chain advances it.
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                "restored required output awaits the first advance of its own demand",
+                "restored required output awaits the first advance that reaches it",
             )
             .with_recovery_posture(
                 crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable,

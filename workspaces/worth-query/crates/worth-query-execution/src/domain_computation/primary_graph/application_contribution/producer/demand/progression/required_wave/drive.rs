@@ -95,6 +95,11 @@ where
             .charge_external_work(6)
             .map_err(|_| work_denial())?;
         let selected = current.as_ref().unwrap_or(&wave.caller_ready);
+        if !queue.active() {
+            // A restored output the caller's own chain consumed takes the
+            // caller's mode when no demand of it has advanced.
+            selected.completion().advanced_in(commit_authority);
+        }
         admission
             .charge_external_work(3)
             .map_err(|_| work_denial())?;

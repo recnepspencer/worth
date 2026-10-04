@@ -7,6 +7,7 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 
 use super::ConsumedOutputEvidence;
 
+mod at_observation;
 mod replaced;
 mod work_budget;
 use crate::domain_computation::primary_graph::{
@@ -275,12 +276,7 @@ impl ConsumedOutputEvidence {
                 continue;
             }
             visited.insert(Arc::clone(evidence.identity));
-            let observed = &evidence.selected_native_root;
-            if selected.runtime_instance_id() != observed.runtime_instance_id()
-                || selected.branch_id() != observed.branch_id()
-                || selected.version_id() < observed.version_id()
-                || selected.position() < observed.position()
-            {
+            if !at_observation::reads_at_or_after(selected, evidence.selected_native_root) {
                 return Ok(ConsumedOutputVerification::ChangedUpstream);
             }
             let currentness = owner
@@ -347,32 +343,19 @@ impl ConsumedOutputEvidence {
                 unmarked @ (SourceSettlementCurrentness::Clean
                 | SourceSettlementCurrentness::Dirty(_)
                 | SourceSettlementCurrentness::FullVerificationRequired(_)) => {
-                    for (ordinal, fact) in evidence.source_facts.iter().enumerate() {
-                        if !fact_is_current(fact, runtime, snapshot, admission)? {
-                            return Ok(if direct {
-                                ConsumedOutputVerification::ChangedDirectFact(ordinal)
-                            } else {
-                                ConsumedOutputVerification::ChangedUpstream
-                            });
-                        }
+                    let changed =
+                        Self::compare_own(evidence, direct, runtime, snapshot, admission)?;
+                    if let Some(changed) = changed {
+                        return Ok(changed);
                     }
-                    if let Some(witness) = evidence.native_output_witness {
-                        let witness = witness
-                            .get()
-                            .ok_or(ConsumedOutputVerificationStop::Unavailable)?;
-                        if !witness
-                            .unchanged_in(runtime, snapshot, admission)
-                            .map_err(map_admission_stop)?
-                        {
-                            return Ok(ConsumedOutputVerification::ChangedUpstream);
-                        }
-                        if matches!(
+                    if evidence.native_output_witness.is_some()
+                        && matches!(
                             unmarked,
                             SourceSettlementCurrentness::FullVerificationRequired(_)
-                        ) {
-                            reserve_pending(verified, 1, admission)?;
-                            verified.push((evidence, direct));
-                        }
+                        )
+                    {
+                        reserve_pending(verified, 1, admission)?;
+                        verified.push((evidence, direct));
                     }
                     charge_external(admission, evidence.upstream.len())?;
                     reserve_pending(&mut pending, evidence.upstream.len(), admission)?;

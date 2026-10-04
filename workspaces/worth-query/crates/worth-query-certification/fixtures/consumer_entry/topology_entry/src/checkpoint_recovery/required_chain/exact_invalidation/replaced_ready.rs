@@ -140,3 +140,63 @@ fn a_held_chain_outlives_a_newer_demand_the_next_commit_supersedes() {
         "{at}: the stopped demand follows the refreshed root"
     );
 }
+
+/// A held chain is not advanced while its root input is edited and more
+/// commits follow than the window retains, so no mark of that edit is left.
+/// Each held demand still follows its output in one advance, whichever is
+/// advanced first, and both consumers decide once over the new root output.
+#[test]
+fn a_held_chain_follows_an_edit_the_window_no_longer_retains() {
+    let _guard = checkpoint_recovery_test_guard();
+    for order in [['a', 'b', 'c'], ['c', 'b', 'a'], ['b', 'a', 'c']] {
+        let application = install(
+            None,
+            ring_world::seed::<3>,
+            Retained {
+                commit_positions: 4,
+                ..Retained::AMPLE
+            },
+        );
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        let court = Court::new(&application, &request, 0x9176_3ec0);
+        let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
+        take_all_decisions();
+        let at = format!("held order {order:?}, before the commits");
+        let mut a = root!(court, rings[2].key("a"), at);
+        let mut b = consumer!(court, rings[2].key("b"), at);
+        let mut c = consumer!(court, rings[2].key("c"), at);
+        settled!(court, a, at);
+        settled!(court, b, at);
+        settled!(court, c, at);
+        judge_decisions(&mut rings, &at);
+
+        let at = format!("held order {order:?}, after the window moved past the edit");
+        rings[2].a_y = 5;
+        court.write_y(&rings[2].key("a"), 5, &at);
+        for y in [2, 3, 4, 5, 6, 2, 3, 4] {
+            rings[1].a_y = y;
+            court.write_y(&rings[1].key("a"), y, &at);
+        }
+        let held = order.map(|role| match role {
+            'a' => settled!(court, a, at),
+            'b' => settled!(court, b, at),
+            _ => settled!(court, c, at),
+        });
+        assert!(
+            held.iter().all(|cost| cost.producer_contacts <= 1)
+                && judge_decisions(&mut rings, &at) == 2,
+            "{at}: no producer is contacted twice and both consumers decide once: {held:?}"
+        );
+        court.judge_chain(&rings[2], &at);
+        let clean = [
+            settled!(court, a, at),
+            settled!(court, b, at),
+            settled!(court, c, at),
+        ];
+        assert!(
+            clean.iter().all(Cost::is_free) && judge_decisions(&mut rings, &at) == 0,
+            "{at}: the followed chain is clean: {clean:?}"
+        );
+    }
+}

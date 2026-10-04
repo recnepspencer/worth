@@ -7,8 +7,9 @@
 //! cache could have avoided.
 //!
 //! A cached Ready's settlement also keeps the product observation it reads.
-//! Required work the branch refuses an observation retires one closed cached
-//! row, so the refusal it reports as retryable is one a retry gets past.
+//! A caller the branch refuses an observation retires one closed cached row,
+//! or with none left releases a performed source nobody holds, and asks
+//! again: a refusal it still reports is one no unheld observation caused.
 
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -52,14 +53,16 @@ impl WorthQueryOutputDemandRegistry {
         reclaimed
     }
 
-    /// Release the product observation one closed cached row keeps, by
-    /// retiring the row. Whether a row retired.
-    pub(in crate::domain_computation::primary_graph) fn reclaim_cached_observation(
+    /// Release one product observation nothing holds: retire a closed
+    /// cached row, or with none left release an unheld performed source.
+    /// Whether one was released.
+    pub(in crate::domain_computation::primary_graph) fn reclaim_unheld_observation(
         &self,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         let mut retired = Vec::new();
         let mut claims = Vec::new();
+        let mut released = None;
         let reclaimed = {
             let mut state = self
                 .state
@@ -70,10 +73,19 @@ impl WorthQueryOutputDemandRegistry {
             if !retired.is_empty() {
                 state.prune_completed_custody();
             }
-            reclaimed
+            match reclaimed {
+                Ok(false) => state
+                    .release_unheld_performed_source(admission)
+                    .map(|source| {
+                        released = source;
+                        released.is_some()
+                    }),
+                reclaimed => reclaimed,
+            }
         };
         drop(retired);
         drop(claims);
+        drop(released);
         reclaimed
     }
 }
@@ -190,9 +202,9 @@ fn claimed_only(record: &DemandRecord) -> bool {
         && record.held_successor.is_none()
 }
 
-fn work_denial() -> WorthQueryOutputDemandDenial {
+pub(super) fn work_denial() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(
         WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-        "cached row reclamation exceeds request work",
+        "unheld custody reclamation exceeds request work",
     )
 }

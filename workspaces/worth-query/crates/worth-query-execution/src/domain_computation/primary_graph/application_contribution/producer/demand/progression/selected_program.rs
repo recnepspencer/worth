@@ -38,13 +38,14 @@ where
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
+        let mut disclosure = Some(disclosure);
         self.advance_selected_program_output_demand_with_source(
             access,
             demand,
             principal,
             request_scope,
             delivery_branch,
-            |_, _| Ok(disclosure),
+            |_, _| Ok(disclosure.take()),
             identity,
             revision,
         )
@@ -87,6 +88,7 @@ where
                     limits,
                     admission,
                 )
+                .map(Some)
             },
             identity,
             revision,
@@ -100,15 +102,17 @@ where
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
         delivery_branch: crate::basis::WorthQueryProductBranch,
-        disclosure: impl FnOnce(
+        disclosure: impl FnMut(
             &crate::domain_computation::primary_graph::WorthQueryObservedSource<
                 FamilySourceQuery<Schema, Family>,
             >,
             &mut super::InvalidationEditAdmission,
         ) -> Result<
-            WorthQueryApplicationOutputDemandSource<
-                FamilySourceQuery<Schema, Family>,
-                FamilySourceValue<Schema, Family>,
+            Option<
+                WorthQueryApplicationOutputDemandSource<
+                    FamilySourceQuery<Schema, Family>,
+                    FamilySourceValue<Schema, Family>,
+                >,
             >,
             WorthQueryOutputDemandDenial,
         >,

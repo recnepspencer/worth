@@ -41,8 +41,10 @@ impl From<WorthQueryOutputDemandDenial> for StablePublicationStop {
     }
 }
 
-/// Minted only after the exact current source image and its immutable lineage
-/// row have been installed together inside the World owner's currentness scope.
+/// Minted after the exact current source image and its immutable lineage row
+/// have been installed together inside the World owner's currentness scope,
+/// or for the row a retained observation selects, which its reader verifies
+/// at that observation before using it.
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct PublishedStableLineage {
     cell: Arc<OnceLock<RecordedOutput>>,

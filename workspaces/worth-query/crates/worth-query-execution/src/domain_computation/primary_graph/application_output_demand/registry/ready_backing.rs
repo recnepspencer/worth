@@ -3,7 +3,8 @@
 //! The cell also keeps the mode a required wave executes the output's producer
 //! in again. An executed output has the mode that executed it. A restored
 //! output was executed by no demand of this runtime: it takes the mode of the
-//! first demand that advances it.
+//! first advance that reaches it, its own demand's or that of a dependent
+//! whose chain consumed it.
 
 use std::ops::Deref;
 use std::sync::{Arc, OnceLock};
@@ -171,15 +172,16 @@ impl ReadyCompletion {
     }
 
     /// The mode a required wave executes this output's producer in again.
-    /// A restored output has none until a demand advances it.
+    /// A restored output has none until an advance reaches it.
     pub(in crate::domain_computation::primary_graph) fn producer_mode(
         &self,
     ) -> Option<&ProducerMode> {
         self.0.producer_mode.get()
     }
 
-    /// The demand advancing this output does so in `mode`. A restored output
-    /// keeps the first such mode; an executed one keeps its own.
+    /// An advance in `mode` reaches this output: its own demand's, or a
+    /// dependent's whose chain consumed it. A restored output keeps the first
+    /// such mode; an executed one keeps its own.
     pub(in crate::domain_computation::primary_graph) fn advanced_in(&self, mode: &ProducerMode) {
         if self.0.producer_mode.get().is_none() {
             drop(self.0.producer_mode.set(mode.clone()));

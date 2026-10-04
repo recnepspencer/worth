@@ -334,10 +334,21 @@ where
         WorthQueryApplicationOutputDemandDenial,
     > {
         let limits = self.resolved_limits();
-        let admitted = self
-            .application
-            .admit_output_demand::<Family<Schema, Demand>>(source_result, limits)
-            .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
+        // A demand at a retained observation settles on the output current
+        // there; commits after it do not apply.
+        let admitted = match self.observation.as_deref() {
+            Some(observation) => self
+                .application
+                .admit_output_demand_at::<Family<Schema, Demand>>(
+                    source_result,
+                    limits,
+                    observation,
+                ),
+            None => self
+                .application
+                .admit_output_demand::<Family<Schema, Demand>>(source_result, limits),
+        }
+        .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
         Ok(self.handle(admitted))
     }
 

@@ -101,13 +101,16 @@ where
         entry: &InstalledProducerProvider<Schema>,
         commit_authority: WorthQueryProducerCommitAuthority,
         request_admission: &mut InvalidationEditAdmission,
-    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
+    ) -> Result<CallerPass, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        self.advance_validated_output_demand_with_schedule(
+        use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandAdvanceAdmission as Admission;
+        const WAITING: CallerPass = CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending);
+        let wave_authority = commit_authority.clone();
+        match self.advance_validated_output_demand_with_schedule(
             demand,
             principal,
             request_scope,
@@ -115,9 +118,52 @@ where
             disclosure,
             entry,
             commit_authority,
-            ScheduleProgression::ReturnPending,
+            ScheduleProgression::Ordinary,
             request_admission,
-        )
+        )? {
+            OwnStages::Answer(advance) => return Ok(CallerPass::Answer(advance)),
+            OwnStages::Refreshed => return Ok(CallerPass::Refreshed),
+            OwnStages::Checkpoint => {}
+        }
+        // The checkpoint this call published or moved is its own to finish.
+        // A stage that did not move waits on a delivery outside this call.
+        let completion = loop {
+            let interest = demand
+                .interest
+                .as_ref()
+                .expect("a published row retains its live Interest");
+            match self.output_demands.begin_published(interest) {
+                Admission::AdvanceCheckpoint { claim, checkpoint } => {
+                    if !self.advance_output_checkpoint(
+                        interest,
+                        &demand.selected.identity,
+                        claim,
+                        checkpoint,
+                    )? {
+                        return Ok(WAITING);
+                    }
+                }
+                Admission::Ready(completion) => break completion,
+                Admission::Failed(denial) => return Err(denial),
+                _ => return Ok(WAITING),
+            }
+        };
+        // The Ready this call reached is certified as any Ready is: by the
+        // required wave when it has one, and otherwise on its own proof.
+        if let Some(advance) = super::super::required_wave::advance_required_before_caller(
+            self,
+            demand,
+            principal,
+            request_scope,
+            delivery_branch,
+            &wave_authority,
+            &entry.edition,
+            request_admission,
+        )? {
+            return Ok(CallerPass::Answer(advance));
+        }
+        self.settle_own_ready(demand, &completion, delivery_branch)
+            .map(CallerPass::Answer)
     }
 
     pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) fn advance_validated_required_fresh_on_selected<
@@ -143,19 +189,30 @@ where
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        self.advance_validated_output_demand_with_schedule(
-            demand,
-            principal,
-            request_scope,
-            delivery_branch,
-            disclosure,
-            entry,
-            commit_authority,
-            ScheduleProgression::ContinueScheduled {
-                shared,
-                matched_predecessors,
+        // The wave rejoins the successor this call published and drives its
+        // checkpoint itself.
+        Ok(
+            match self.advance_validated_output_demand_with_schedule(
+                demand,
+                principal,
+                request_scope,
+                delivery_branch,
+                disclosure,
+                entry,
+                commit_authority,
+                ScheduleProgression::Selected {
+                    shared,
+                    matched_predecessors,
+                },
+                request_admission,
+            )? {
+                OwnStages::Answer(advance) => advance,
+                // A selected pass never refreshes: its Ready waits on the
+                // wave that selected it.
+                OwnStages::Checkpoint | OwnStages::Refreshed => {
+                    WorthQueryOutputDemandAdvance::Pending
+                }
             },
-            request_admission,
         )
     }
 }

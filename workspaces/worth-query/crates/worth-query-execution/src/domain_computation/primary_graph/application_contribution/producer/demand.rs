@@ -246,6 +246,13 @@ where
         Option<super::super::super::application_output_demand::WorthQueryOutputCheckpoint>,
     interest:
         Option<super::super::super::application_output_demand::WorthQueryOutputDemandInterest>,
+    // A demand at an observation older than the head holds no registry row.
+    // Its settlement was verified at its own snapshot when it was admitted.
+    settled_at_observation: Option<
+        std::sync::Arc<
+            super::super::super::application_output_demand::WorthQueryOutputDemandSettlement,
+        >,
+    >,
 }
 
 impl<Schema, Family> WorthQueryAdmittedOutputDemand<Schema, Family>
@@ -289,6 +296,7 @@ where
     pub fn close(&mut self) {
         self.required_continuations = RequiredContinuations::default();
         self.interest.take();
+        self.settled_at_observation.take();
     }
 }
 
@@ -300,6 +308,7 @@ where
     fn drop(&mut self) {
         self.required_continuations = RequiredContinuations::default();
         self.interest.take();
+        self.settled_at_observation.take();
     }
 }
 

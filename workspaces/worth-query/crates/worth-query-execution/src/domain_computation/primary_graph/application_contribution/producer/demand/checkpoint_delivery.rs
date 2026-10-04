@@ -29,23 +29,30 @@ where
         producer_identity: &str,
         claim: WorthQueryOutputClaimIdentity,
         checkpoint: Checkpoint,
-    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
+    ) -> Result<bool, WorthQueryOutputDemandDenial> {
         match checkpoint {
             Checkpoint::Published {
                 receipt,
                 delivery,
                 ready_backing,
-            } => self.deliver_output_checkpoint_with_finish(
-                producer_identity,
-                receipt,
-                delivery,
-                ready_backing,
-                false,
-                None,
-                |checkpoint, denial| {
-                    self.finish_output_checkpoint(interest, claim, checkpoint, denial)
-                },
-            ),
+            } => {
+                // A delivery that is still waiting leaves the checkpoint
+                // Published: nothing moved, so the caller does not spin on it.
+                let mut delivered = false;
+                self.deliver_output_checkpoint_with_finish(
+                    producer_identity,
+                    receipt,
+                    delivery,
+                    ready_backing,
+                    false,
+                    None,
+                    |checkpoint, denial| {
+                        delivered = matches!(&checkpoint, Checkpoint::Delivered { .. });
+                        self.finish_output_checkpoint(interest, claim, checkpoint, denial)
+                    },
+                )?;
+                Ok(delivered)
+            }
             Checkpoint::Delivered {
                 receipt,
                 delivery,
@@ -58,16 +65,18 @@ where
                 ) {
                     Ok(readiness) => readiness,
                     Err(cause) => {
-                        return self.finish_output_checkpoint(
-                            interest,
-                            claim,
-                            Checkpoint::Delivered {
-                                receipt,
-                                delivery,
-                                ready_backing,
-                            },
-                            Some(cause),
-                        )
+                        return self
+                            .finish_output_checkpoint(
+                                interest,
+                                claim,
+                                Checkpoint::Delivered {
+                                    receipt,
+                                    delivery,
+                                    ready_backing,
+                                },
+                                Some(cause),
+                            )
+                            .map(|_| false)
                     }
                 };
                 let resources = self
@@ -82,7 +91,13 @@ where
                     readiness,
                     resources,
                 });
-                self.finish_output_checkpoint(interest, claim, Checkpoint::Ready(completion), None)
+                self.finish_output_checkpoint(
+                    interest,
+                    claim,
+                    Checkpoint::Ready(completion),
+                    None,
+                )?;
+                Ok(true)
             }
             Checkpoint::Ready(_) => unreachable!("ready output opens reads without a claim"),
         }

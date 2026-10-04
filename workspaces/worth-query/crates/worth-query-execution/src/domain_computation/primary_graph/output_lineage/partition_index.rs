@@ -203,20 +203,55 @@ impl WorthQueryApplicationOutputLineage {
         partition: [u8; 32],
         slot: usize,
     ) -> &RecordedOutput {
-        let recorded = self
+        self.cell_at_partition_slot(source, occurrence, generation, partition, slot)
+            .get()
+            .expect("a partition locator must reference retained output authority")
+    }
+
+    fn cell_at_partition_slot(
+        &self,
+        source: &SemanticSource,
+        occurrence: ProductBranchIncarnation,
+        generation: u64,
+        partition: [u8; 32],
+        slot: usize,
+    ) -> &Arc<OnceLock<RecordedOutput>> {
+        let cell = self
             .by_source
             .get(source)
             .and_then(|occurrences| occurrences.get(&occurrence))
             .and_then(|history| history.get(&generation))
             .and_then(|records| records.get(slot))
-            .and_then(|cell| cell.get())
+            .filter(|cell| cell.get().is_some())
             .expect("a partition locator must reference retained output authority");
         assert_eq!(
-            recorded.source_partition_identity,
+            cell.get()
+                .and_then(|recorded| recorded.source_partition_identity),
             Some(partition),
             "a partition locator must reference the same semantic partition"
         );
-        recorded
+        cell
+    }
+
+    /// The filled cell of the latest output a reader at `coordinate` selects
+    /// in this partition. Holding the cell keeps its row.
+    pub(super) fn latest_cell_in_partition_budgeted(
+        &self,
+        source: &SemanticSource,
+        coordinate: ProductCoordinate,
+        partition: [u8; 32],
+        maximum_work: usize,
+    ) -> Result<(Option<&Arc<OnceLock<RecordedOutput>>>, usize), ()> {
+        if maximum_work == 0 {
+            return Err(());
+        }
+        let (location, work) =
+            self.partition_index
+                .latest(source, coordinate, partition, maximum_work)?;
+        let cell = location.map(|(generation, slot)| {
+            self.cell_at_partition_slot(source, coordinate.occurrence, generation, partition, slot)
+        });
+        Ok((cell, work))
     }
 
     pub(super) fn latest_output_in_partition_budgeted(

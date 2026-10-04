@@ -13,7 +13,7 @@ where
         >,
         predecessor: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority,
         request_admission: &mut InvalidationEditAdmission,
-    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
+    ) -> Result<(), WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
         FamilySourceValue<Schema, Family>: 'static,
@@ -63,6 +63,6 @@ where
             )?;
         }
         *demand = refreshed;
-        Ok(WorthQueryOutputDemandAdvance::Pending)
+        Ok(())
     }
 }

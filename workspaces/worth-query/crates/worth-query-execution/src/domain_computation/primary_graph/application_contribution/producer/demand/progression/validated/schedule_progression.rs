@@ -6,15 +6,26 @@ use crate::domain_computation::primary_graph::WorthQueryObservedSource;
 
 use super::super::*;
 
-/// Ordinary advancement yields after scheduling. A required wave continues
-/// only with the same owner-issued Product it used for disclosure.
+/// What one pass over a row's own stages reached.
+pub(super) enum OwnStages {
+    /// Settled, or waiting on something outside this call.
+    Answer(WorthQueryOutputDemandAdvance),
+    /// This call published the row's checkpoint or moved it a stage.
+    Checkpoint,
+    /// This call replaced the row's Ready with a row admitted under the
+    /// disclosed source.
+    Refreshed,
+}
+
+/// Both entries drive a row's own stages in one call. A required wave does
+/// so only with the same owner-issued Product it used for disclosure.
 pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression)
 enum ScheduleProgression<'selection, 'runtime, Schema>
 where
     Schema: ApplicationSchema,
 {
-    ReturnPending,
-    ContinueScheduled {
+    Ordinary,
+    Selected {
         shared: &'selection SharedSelectedProductOperation<'runtime, Schema>,
         matched_predecessors: Option<MatchedRequiredPredecessors<'selection>>,
     },
@@ -25,7 +36,7 @@ where
     Schema: ApplicationSchema,
 {
     pub(super) fn is_selected(&self) -> bool {
-        matches!(self, Self::ContinueScheduled { .. })
+        matches!(self, Self::Selected { .. })
     }
 
     pub(super) fn source_matches<Family>(
@@ -37,10 +48,10 @@ where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
         match self {
-            Self::ReturnPending => demand.matches_observed_source(source),
+            Self::Ordinary => demand.matches_observed_source(source),
             // The selected source is validated once before registry.begin,
             // while refusal can still leave the exact Interest retryable.
-            Self::ContinueScheduled { .. } => true,
+            Self::Selected { .. } => true,
         }
     }
 }

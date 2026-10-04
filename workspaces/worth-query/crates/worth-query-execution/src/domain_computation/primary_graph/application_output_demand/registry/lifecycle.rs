@@ -2,6 +2,7 @@ mod cached_reclaim;
 mod closed_retirement;
 mod joined_ready;
 mod occurrence_retirement;
+mod performed_release;
 mod selected_execution_finish;
 
 use super::*;

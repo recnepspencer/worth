@@ -17,7 +17,7 @@ use super::support::request_scope;
 use super::{authentication, journey};
 
 #[test]
-fn a_spent_round_reports_pending_and_a_later_call_resumes_the_same_demand() {
+fn one_source_reading_settles_and_a_later_call_answers_the_same_demand() {
     let fixture = world();
     let approver = fixture.authenticate(APPROVER);
     let scope = request_scope();
@@ -38,21 +38,21 @@ fn a_spent_round_reports_pending_and_a_later_call_resumes_the_same_demand() {
     assert!(
         matches!(
             workflow.settle_payment_assessment(&mut demand),
-            Ok(BankApprovedPaymentAssessmentProgress::Pending)
+            Ok(BankApprovedPaymentAssessmentProgress::Settled(_))
         ),
-        "one source reading cannot settle the assessment"
+        "one round of one source reading settles the assessment"
     );
-    let assessment = (0..8)
-        .find_map(|_| match workflow.settle_payment_assessment(&mut demand) {
-            Ok(BankApprovedPaymentAssessmentProgress::Settled(settled)) => Some(settled),
-            Ok(BankApprovedPaymentAssessmentProgress::Pending) => None,
-            Err(denial) => panic!("the resumed demand must keep advancing: {denial}"),
-        })
-        .expect("later calls resume the same demand to settlement");
+    let assessment = match workflow.settle_payment_assessment(&mut demand) {
+        Ok(BankApprovedPaymentAssessmentProgress::Settled(settled)) => settled,
+        Ok(BankApprovedPaymentAssessmentProgress::Pending) => {
+            panic!("a settled demand answers its settlement again")
+        }
+        Err(denial) => panic!("a settled demand answers its settlement again: {denial}"),
+    };
     require_completed(
         workflow
             .accept_assessment(instance, authority, &assessment, &key("assessment:accept"))
-            .expect("the resumed assessment is accepted"),
+            .expect("the settled assessment is accepted"),
         "review/payment",
     );
 }

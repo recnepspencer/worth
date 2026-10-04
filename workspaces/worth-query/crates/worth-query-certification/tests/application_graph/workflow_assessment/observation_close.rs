@@ -170,25 +170,25 @@ fn closing_one_observer_leaves_the_other_settling_the_shared_run() {
     assert!(
         matches!(
             progress(&application, &instance, &mut first),
-            Ok(WorthQueryWorkflowAssessmentDemandProgress::Pending)
+            Ok(WorthQueryWorkflowAssessmentDemandProgress::Settled(_))
         ),
-        "one settlement attempt leaves the run in flight",
+        "one settlement attempt settles the run its observer started",
     );
-    let mut second = observe(&application, &instance, 94_011, 64);
+    let mut second = observe(&application, &instance, 94_011, 1);
     let joined = second
         .notifications()
         .expect("an open observation has notifications")
         .generation();
     assert!(
         joined > 0,
-        "the second observer joins the run already in flight"
+        "the second observer joins the run the first one settled"
     );
     first.close();
     closed(first.notifications());
     closed(progress(&application, &instance, &mut first));
 
     let settled = settle(&application, &instance, &mut second)
-        .expect("the remaining observer settles the run the closed one started");
+        .expect("the remaining observer settles on the run the closed one started");
     accepted_past_assessment(&application, &instance, &settled, 94_012);
 }
 
@@ -199,9 +199,9 @@ fn closing_every_observer_leaves_the_instance_awaiting_its_assessment() {
     assert!(
         matches!(
             progress(&application, &instance, &mut closed_observer),
-            Ok(WorthQueryWorkflowAssessmentDemandProgress::Pending)
+            Ok(WorthQueryWorkflowAssessmentDemandProgress::Settled(_))
         ),
-        "the closed observer releases a run it had in flight",
+        "the closed observer settles a run it never accepts",
     );
     closed_observer.close();
     drop(observe(&application, &instance, 94_111, 64));

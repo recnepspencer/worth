@@ -2,6 +2,7 @@ use worth_query_installation::facade::ApplicationSchema;
 
 mod dependent;
 mod restoration;
+mod retained_observation;
 mod selected_custody;
 mod selection_mode;
 mod source_admission;

@@ -126,11 +126,12 @@ where
         WorthQuerySelectedProductOperation<'runtime, Schema>,
         WorthQueryProductBranchAdmissionDenial,
     > {
-        self.application.on_product(
-            self.application
+        let application = self.application;
+        application.on_product(application.admit_with_observation_room(|| {
+            application
                 .product_runtime
-                .admit_product_occurrence(self.branch.occurrence())?,
-        )
+                .admit_product_occurrence(self.branch.occurrence())
+        })?)
     }
 }
 

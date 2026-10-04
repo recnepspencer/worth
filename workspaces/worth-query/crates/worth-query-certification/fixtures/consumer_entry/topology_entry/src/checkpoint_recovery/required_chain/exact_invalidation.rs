@@ -9,7 +9,6 @@ use worth_query_consumer_values::{
 };
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationOutputDemandDenial,
-    WorthQueryApplicationRequestQueryDenial,
 };
 use worth_query_host::facade::primary_graph::inexact_native_deliveries_on_this_thread_for_test as inexact_deliveries;
 
@@ -45,6 +44,10 @@ impl Retained {
     };
 }
 
+/// Product observations enough for every output a courtroom history leaves
+/// cached and every source its performed writes keep.
+const AMPLE_OBSERVATIONS: u64 = 64;
+
 /// A courtroom world over `seed`, with room for a hundred rings to keep their
 /// three demands open and for the rows a random history leaves behind.
 fn install(
@@ -52,7 +55,7 @@ fn install(
     seed: Seed,
     retained: Retained,
 ) -> Runtime {
-    install_observing(checkpoint, seed, retained, 64)
+    install_observing(checkpoint, seed, retained, AMPLE_OBSERVATIONS)
 }
 
 /// A courtroom world whose branch admits `observations` product observations
@@ -156,16 +159,14 @@ fn judge_decisions(rings: &mut [Ring], at: &str) -> usize {
 /// What settling one demand cost, from the existing observers.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct Cost {
-    advances: usize,
     producer_contacts: usize,
     source_queries: u64,
 }
 
 impl Cost {
-    /// A clean output: one advance, no producer contact, and no source query
-    /// ran again.
+    /// A clean output: no producer contact, and no source query ran again.
     fn is_free(&self) -> bool {
-        self.advances == 1 && self.producer_contacts == 0 && self.source_queries == 0
+        self.producer_contacts == 0 && self.source_queries == 0
     }
 }
 
@@ -184,52 +185,28 @@ fn offers_retry(stop: &WorthQueryApplicationOutputDemandDenial) -> bool {
 struct Open<Demand> {
     body: String,
     demand: Demand,
-    /// Whether the demand has settled before.
-    settled: bool,
 }
 
-/// The most advances that settle a demand which starts its own row: it walks
-/// the start stages of an equal republication, or of a producer contact.
-const START_STAGES: [usize; 2] = [3, 5];
-
-/// One advance settles `$demand`: every row is funded here, and the
-/// application never polls. A demand that has not settled before may walk
-/// the start stages of a row it produces itself, and only the one stop the
-/// court's world is sized to meet is asked again. The settlement is then
-/// judged on what it reports.
+/// One advance settles `$demand`, whether it starts its row or has settled
+/// before: every row is funded here, the branch makes room for every caller,
+/// and the application never polls or retries. The settlement is then judged
+/// on what it reports.
 macro_rules! settled {
     ($court:expr, $demand:expr, $at:expr) => {{
         let before = query_entries();
-        let starts = !std::mem::replace(&mut $demand.settled, true);
-        let mut advances = 0;
-        let settlement = loop {
-            advances += 1;
-            match $demand.demand.advance($court.request) {
-                Ok(WorthQueryApplicationOutputDemandProgress::Settled(settled)) => break settled,
-                Ok(WorthQueryApplicationOutputDemandProgress::Pending)
-                    if starts && advances < 64 => {}
-                Err(stop) if advances < 64 && $court.retries(&stop) => {}
-                answer => panic!(
-                    "{}: one advance settles the funded demand of {}; advance {advances} answers {:?}",
-                    $at,
-                    $demand.body,
-                    answer.map(|_| "Pending")
-                ),
-            }
+        let settlement = match $demand.demand.advance($court.request) {
+            Ok(WorthQueryApplicationOutputDemandProgress::Settled(settled)) => settled,
+            answer => panic!(
+                "{}: one advance settles the funded demand of {}; it answers {:?}",
+                $at,
+                $demand.body,
+                answer.map(|_| "Pending")
+            ),
         };
         let cost = Cost {
-            advances,
             producer_contacts: settlement.producer_contacts_in_this_demand(),
             source_queries: query_entries() - before,
         };
-        assert!(
-            advances == 1
-                || $court.retried.is_some()
-                || starts && advances <= START_STAGES[usize::from(cost.producer_contacts != 0)],
-            "{}: only the start of a row takes the demand of {} more than one advance: {cost:?}",
-            $at,
-            $demand.body
-        );
         $court.judge_settlement(&$demand.body, settlement.observation(), &$at);
         cost
     }};
@@ -245,11 +222,7 @@ macro_rules! root {
             .unwrap_or_else(|denial| {
                 panic!("{}: the root demand of {body} starts: {denial:?}", $at)
             });
-        Open {
-            body,
-            demand,
-            settled: false,
-        }
+        Open { body, demand }
     }};
 }
 
@@ -263,11 +236,7 @@ macro_rules! consumer {
                 $court.application,
             )
             .unwrap_or_else(|denial| panic!("{}: the demand of {body} starts: {denial:?}", $at));
-        Open {
-            body,
-            demand,
-            settled: false,
-        }
+        Open { body, demand }
     }};
 }
 
@@ -276,10 +245,6 @@ struct Court<'court, 'application, 'principal, 'scope> {
     application: &'application Runtime,
     request: &'court Request<'application, 'principal, 'scope>,
     idempotency: Cell<u64>,
-    /// The one retryable stop this world is sized to make a funded demand or
-    /// a read meet, and how often one did.
-    retried: Option<WorthQueryOutputDemandDenialKind>,
-    refusals: Cell<usize>,
 }
 
 impl<'court, 'application, 'principal, 'scope> Court<'court, 'application, 'principal, 'scope> {
@@ -292,52 +257,7 @@ impl<'court, 'application, 'principal, 'scope> Court<'court, 'application, 'prin
             application,
             request,
             idempotency: Cell::new(idempotency),
-            retried: None,
-            refusals: Cell::new(0),
         }
-    }
-}
-
-impl Court<'_, '_, '_, '_> {
-    /// Whether `stop` is the retryable stop this world is sized to meet.
-    fn retries(&self, stop: &WorthQueryApplicationOutputDemandDenial) -> bool {
-        let named = offers_retry(stop)
-            && matches!(
-                stop,
-                WorthQueryApplicationOutputDemandDenial::Demand(denial)
-                    if Some(denial.kind()) == self.retried
-            );
-        self.refusals.set(self.refusals.get() + usize::from(named));
-        named
-    }
-
-    /// Runs `read`. A read refused what this world is sized to refuse is
-    /// asked again, and a retry is admitted.
-    fn read<Output>(
-        &self,
-        mut read: impl FnMut() -> Result<Output, WorthQueryApplicationRequestQueryDenial>,
-    ) -> Output {
-        use primary_graph::{
-            WorthQueryApplicationQueryAdmissionDenialKind as Admission,
-            WorthQueryOperationAuthorizationDenialKind as Authorization,
-        };
-        for _ in 0..64 {
-            match read() {
-                Ok(output) => return output,
-                Err(WorthQueryApplicationRequestQueryDenial::Admission(refused))
-                    if matches!(
-                        refused.kind(),
-                        Admission::Authorization(Authorization::ProductSecurityBasis(product))
-                            if Some(WorthQueryOutputDemandDenialKind::ProductSelection(product))
-                                == self.retried
-                    ) =>
-                {
-                    self.refusals.set(self.refusals.get() + 1);
-                }
-                Err(denial) => panic!("a courtroom read is refused: {denial:?}"),
-            }
-        }
-        panic!("a read refused a product observation is never admitted again")
     }
 }
 
@@ -346,6 +266,9 @@ mod discontinuity;
 mod equal_republication;
 mod judges;
 mod locality;
+mod observation_room;
+mod older_observation;
+#[cfg(feature = "test-output-delivery-faults")]
 mod other_entries;
 mod randomized;
 mod replaced_ready;

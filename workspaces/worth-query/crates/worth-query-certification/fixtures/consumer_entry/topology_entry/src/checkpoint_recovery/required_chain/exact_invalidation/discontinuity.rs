@@ -300,3 +300,42 @@ fn a_restored_consumer_never_settles_over_a_stale_upstream() {
         "{at}: both consumers decide over the new root"
     );
 }
+
+/// A restored root's own demand is open and never advances. The chain that
+/// consumed it refreshes it: after an edit, advancing only the last consumer
+/// settles the whole chain over the new root.
+#[test]
+fn a_restored_chain_settles_through_its_last_consumer_alone() {
+    let _guard = checkpoint_recovery_test_guard();
+    let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
+    take_all_decisions();
+    let checkpoint = settled_checkpoint(&mut rings);
+
+    let application = install(Some(checkpoint), ring_world::seed::<3>, Retained::AMPLE);
+    let (scope, principal) = authenticate(&application);
+    let request = application.request(&principal, &scope);
+    let court = Court::new(&application, &request, 0x9176_3a80);
+    let at = "after the restore";
+    let mut a = root!(court, rings[0].key("a"), at);
+    let mut b = consumer!(court, rings[0].key("b"), at);
+    let mut c = consumer!(court, rings[0].key("c"), at);
+    settled!(court, b, at);
+    settled!(court, c, at);
+    assert_eq!(judge_decisions(&mut rings, at), 2);
+
+    let at = "an edit after the restore, only the last consumer advanced";
+    rings[0].a_y = 5;
+    court.write_y(&rings[0].key("a"), 5, at);
+    settled!(court, c, at);
+    assert_eq!(
+        judge_decisions(&mut rings, at),
+        2,
+        "{at}: both consumers decide over the new root"
+    );
+    court.judge_chain(&rings[0], at);
+    let rest = [settled!(court, a, at), settled!(court, b, at)];
+    assert!(
+        rest.iter().all(Cost::is_free) && judge_decisions(&mut rings, at) == 0,
+        "{at}: the root and the middle consumer settled on that advance: {rest:?}"
+    );
+}

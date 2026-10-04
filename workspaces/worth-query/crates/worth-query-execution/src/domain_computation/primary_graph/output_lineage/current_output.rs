@@ -1,3 +1,4 @@
+mod observation_reader;
 mod retained_candidates;
 
 use std::{

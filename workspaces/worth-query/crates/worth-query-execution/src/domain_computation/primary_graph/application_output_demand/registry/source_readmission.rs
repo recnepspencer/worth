@@ -100,6 +100,14 @@ impl WorthQueryOutputDemandRegistry {
 }
 
 impl<Query: 'static> PreparedOutputReadmissionSource<Query> {
+    /// The retained source of a demand that holds no registry row, so no
+    /// row readmits it.
+    pub(in crate::domain_computation::primary_graph) fn without_row(
+        self,
+    ) -> Arc<RetainedOutputReadmissionSource<Query>> {
+        self.source
+    }
+
     pub(in crate::domain_computation::primary_graph) fn install(
         self,
         interest: &WorthQueryOutputDemandInterest,

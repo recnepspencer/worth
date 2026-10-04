@@ -15,6 +15,8 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 
 mod admission;
 mod caller_custody;
+mod caller_pass;
+use caller_pass::CallerPass;
 mod refresh;
 mod rejoin;
 mod required_fresh;
@@ -144,6 +146,7 @@ where
                     limits,
                     admission,
                 )
+                .map(Some)
             },
             commit_authority,
             admission,
@@ -225,117 +228,13 @@ where
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
+        let mut disclosure = Some(disclosure);
         self.advance_output_demand_with_prepared_source(
             demand,
             principal,
             request_scope,
             delivery_branch,
-            |_, _| Ok(disclosure),
-            commit_authority,
-            request_admission,
-        )
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn advance_output_demand_with_prepared_source<
-        Family,
-    >(
-        &self,
-        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
-        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        request_scope: &WorthQueryRequestScope,
-        delivery_branch: crate::basis::WorthQueryProductBranch,
-        disclosure: impl FnOnce(
-            &crate::domain_computation::primary_graph::WorthQueryObservedSource<
-                FamilySourceQuery<Schema, Family>,
-            >,
-            &mut InvalidationEditAdmission,
-        ) -> Result<
-            crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
-                FamilySourceQuery<Schema, Family>,
-                FamilySourceValue<Schema, Family>,
-            >,
-            WorthQueryOutputDemandDenial,
-        >,
-        commit_authority: WorthQueryProducerCommitAuthority,
-        request_admission: &mut InvalidationEditAdmission,
-    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
-    where
-        Family: WorthQueryProducerOutputFamily<Schema>,
-        FamilySourceValue<Schema, Family>: 'static,
-        FamilySourceQuery<Schema, Family>: 'static,
-    {
-        if demand.runtime_authority != self.runtime.authority_identity().as_u64()
-            || demand.schema_binding != self.installed_schema.binding_identity()
-        {
-            return Err(denial(
-                WorthQueryOutputDemandDenialKind::ForeignDemand,
-                Family::IDENTITY,
-            ));
-        }
-        demand
-            .interest
-            .as_ref()
-            .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::Closed, Family::IDENTITY))?;
-        demand.rejoin_refreshed_output(&self.output_demands, request_admission)?;
-        request_admission
-            .charge_external_work((std::mem::size_of_val(&demand.installed_entry) + 1) as u64)
-            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
-        let installed_entry = std::sync::Arc::clone(&demand.installed_entry);
-        let entry = installed_entry.as_ref();
-        if !entry
-            .declaration
-            .applicability
-            .contains(&demand.selected.applicability)
-        {
-            return Err(denial(
-                WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-                format!(
-                    "{}: admitted applicability {:?} is no longer installed",
-                    demand.selected.identity, demand.selected.applicability
-                ),
-            ));
-        }
-        // A required successor carries the mode and installed edition that
-        // issued it. Check those before a Current-only required wave can
-        // acknowledge work without entering the validated execution core.
-        demand.progression_provenance.validate_for_execution(
-            &commit_authority,
-            &entry.edition,
-            request_admission,
-        )?;
-        if let Some(advance) = required_wave::advance_required_before_caller(
-            self,
-            demand,
-            principal,
-            request_scope,
-            delivery_branch,
-            &commit_authority,
-            &entry.edition,
-            request_admission,
-        )? {
-            return Ok(advance);
-        }
-        let disclosure = disclosure(&demand.observed_source, request_admission)?;
-        let disclosure = validate_disclosure(
-            self,
-            demand,
-            principal,
-            request_scope,
-            delivery_branch,
-            matches!(
-                commit_authority,
-                WorthQueryProducerCommitAuthority::ProgramOutput
-            ),
-            disclosure,
-            entry.edition,
-        )?;
-        self.advance_validated_output_demand(
-            demand,
-            principal,
-            request_scope,
-            delivery_branch,
-            disclosure,
-            entry,
+            |_, _| Ok(disclosure.take()),
             commit_authority,
             request_admission,
         )

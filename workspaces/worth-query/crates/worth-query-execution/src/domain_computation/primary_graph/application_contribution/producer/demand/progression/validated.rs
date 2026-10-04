@@ -5,13 +5,13 @@ mod entry;
 mod ready;
 mod schedule_progression;
 mod source_guard;
-pub(super) use schedule_progression::ScheduleProgression;
+use schedule_progression::{OwnStages, ScheduleProgression};
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
-    pub(super) fn advance_validated_output_demand_with_schedule<Family>(
+    fn advance_validated_output_demand_with_schedule<Family>(
         &self,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -25,12 +25,13 @@ where
         commit_authority: WorthQueryProducerCommitAuthority,
         mut schedule_progression: ScheduleProgression<'_, '_, Schema>,
         request_admission: &mut InvalidationEditAdmission,
-    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
+    ) -> Result<OwnStages, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
+        const WAITING: OwnStages = OwnStages::Answer(WorthQueryOutputDemandAdvance::Pending);
         let disclosed_value = disclosure.value();
         let disclosed_source = disclosure.source();
         self.prepare_progression_entry(
@@ -104,14 +105,13 @@ where
                         &schedule_progression,
                     )?;
                     let mut result = match &schedule_progression {
-                        ScheduleProgression::ReturnPending => self
-                            .schedule_selected_output_producer(
-                                &demand.selected,
-                                delivery_branch,
-                                &demand.observed_source,
-                                performed_source.as_ref(),
-                            ),
-                        ScheduleProgression::ContinueScheduled { shared, .. } => self
+                        ScheduleProgression::Ordinary => self.schedule_selected_output_producer(
+                            &demand.selected,
+                            delivery_branch,
+                            &demand.observed_source,
+                            performed_source.as_ref(),
+                        ),
+                        ScheduleProgression::Selected { shared, .. } => self
                             .schedule_selected_output_producer_on_selected(
                                 &demand.selected,
                                 delivery_branch,
@@ -131,25 +131,24 @@ where
                         );
                     }
                     match result {
-                    Ok(crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputSchedulingResult::Scheduled)
-                        if matches!(&schedule_progression, ScheduleProgression::ContinueScheduled { .. }) => {
-                            admission_phase = self.output_demands.begin_scheduled_admitted(
-                                interest,
-                                request_admission,
-                            )?;
-                            continue;
-                        },
+                    // The scheduled row is this call's to execute.
                     Ok(crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputSchedulingResult::Scheduled) => {
-                        return Ok(WorthQueryOutputDemandAdvance::Pending);
+                        admission_phase = if schedule_progression.is_selected() {
+                            self.output_demands
+                                .begin_scheduled_admitted(interest, request_admission)?
+                        } else {
+                            self.output_demands.begin(interest)
+                        };
+                        continue;
                     }
                     Ok(crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputSchedulingResult::Deferred) => {
-                        return Ok(WorthQueryOutputDemandAdvance::Pending);
+                        return Ok(WAITING);
                     }
                     Ok(crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputSchedulingResult::NoEffect(denial))
                     | Err(denial) => return Err(denial),
                 }
                 }
-                Admission::Pending => return Ok(WorthQueryOutputDemandAdvance::Pending),
+                Admission::Pending => return Ok(WAITING),
                 Admission::AdvanceCheckpoint { claim, checkpoint } => {
                     if !schedule_progression.source_matches(demand, disclosed_source) {
                         let denial = self
@@ -163,11 +162,17 @@ where
                         )?;
                         return Err(denial);
                     }
-                    return self.advance_output_checkpoint(
-                        interest,
-                        &demand.selected.identity,
-                        claim,
-                        checkpoint,
+                    return Ok(
+                        if self.advance_output_checkpoint(
+                            interest,
+                            &demand.selected.identity,
+                            claim,
+                            checkpoint,
+                        )? {
+                            OwnStages::Checkpoint
+                        } else {
+                            WAITING
+                        },
                     );
                 }
                 Admission::Ready(completion) => {
@@ -225,7 +230,7 @@ where
         };
         let required_execution = required_output.prepare_execution(published_mode);
         let result = disclosure.with_erased(|input| match &mut schedule_progression {
-            ScheduleProgression::ReturnPending => entry.executor.execute(
+            ScheduleProgression::Ordinary => entry.executor.execute(
                 self,
                 principal,
                 request_scope,
@@ -239,7 +244,7 @@ where
                 request_admission,
                 &mut demand.producer_contacts_in_this_demand,
             ),
-            ScheduleProgression::ContinueScheduled {
+            ScheduleProgression::Selected {
                 shared,
                 matched_predecessors,
             } => entry.executor.execute_on_selected(
@@ -284,7 +289,7 @@ where
                     self.output_demands
                         .publish_checkpoint(interest, checkpoint)?;
                 }
-                return Ok(WorthQueryOutputDemandAdvance::Pending);
+                return Ok(OwnStages::Checkpoint);
             }
             Err(super::super::super::execution::ProducerExecutionStop::RequestAdmissionDenied(
                 denial,
@@ -328,6 +333,6 @@ where
             self.output_demands
                 .publish_checkpoint(interest, checkpoint)?;
         }
-        Ok(WorthQueryOutputDemandAdvance::Pending)
+        Ok(OwnStages::Checkpoint)
     }
 }

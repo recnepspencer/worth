@@ -211,6 +211,7 @@ where
                 required_continuations: Default::default(),
                 unpublished_selected_checkpoint: None,
                 interest: Some(interest),
+                settled_at_observation: None,
             });
         }
         // Exact source currentness has already been proved by Query selection.
@@ -281,6 +282,7 @@ where
             required_continuations: Default::default(),
             unpublished_selected_checkpoint: None,
             interest: Some(interest),
+            settled_at_observation: None,
         })
     }
 }

@@ -14,14 +14,14 @@ impl Court<'_, '_, '_, '_> {
         settled: &worth_query_host::facade::application_entry::WorthQueryApplicationReadObservation,
         at: &str,
     ) {
-        let reported = self.read(|| {
-            self.request
-                .at(settled)
-                .query(PlanarOutputRead {
-                    body_key: body.to_owned(),
-                })
-                .execute()
-        });
+        let reported = self
+            .request
+            .at(settled)
+            .query(PlanarOutputRead {
+                body_key: body.to_owned(),
+            })
+            .execute()
+            .expect("the branch admits a courtroom read");
         assert_eq!(
             PositiveLength::get(&reported.rows()[0].value),
             self.length(body),
@@ -37,13 +37,13 @@ impl Court<'_, '_, '_, '_> {
 
     /// The published Length of `body`, read through the output query.
     pub(super) fn length(&self, body: &str) -> u64 {
-        let output = self.read(|| {
-            self.request
-                .query(PlanarOutputRead {
-                    body_key: body.to_owned(),
-                })
-                .execute()
-        });
+        let output = self
+            .request
+            .query(PlanarOutputRead {
+                body_key: body.to_owned(),
+            })
+            .execute()
+            .expect("the branch admits a courtroom read");
         PositiveLength::get(&output.rows()[0].value)
     }
 

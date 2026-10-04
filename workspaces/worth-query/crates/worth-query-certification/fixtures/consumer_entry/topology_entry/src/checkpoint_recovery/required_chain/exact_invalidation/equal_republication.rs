@@ -103,3 +103,49 @@ fn a_held_root_follows_a_refresh_of_its_equal_republication() {
     judge_decisions(&mut rings, at);
     court.judge_middle(&rings[0], at);
 }
+
+/// An equal republication clears the marks below it. The last consumer is
+/// demanded before its upstreams are: its one advance republishes the root
+/// equal, and the whole chain settles with no producer contact and no
+/// decision. Only the root's source query runs again.
+#[test]
+fn an_equal_root_republication_clears_the_marks_below_it() {
+    let _guard = checkpoint_recovery_test_guard();
+    let application = install(None, ring_world::seed::<1>, Retained::AMPLE);
+    let (scope, principal) = authenticate(&application);
+    let request = application.request(&principal, &scope);
+    let court = Court::new(&application, &request, 0x9176_3f80);
+    let mut rings = vec![Ring::seeded(0)];
+    take_all_decisions();
+    let at = "the first settlement";
+    let mut a = root!(court, rings[0].key("a"), at);
+    let mut b = consumer!(court, rings[0].key("b"), at);
+    let mut c = consumer!(court, rings[0].key("c"), at);
+    settled!(court, a, at);
+    settled!(court, b, at);
+    settled!(court, c, at);
+    assert_eq!(
+        judge_decisions(&mut rings, at),
+        2,
+        "{at}: both consumers decide"
+    );
+
+    let at = "a fetched field the root input omits changes";
+    rings[0].far_y = 11;
+    court.write_y(&rings[0].key("source-c"), 11, at);
+    let chain = [
+        settled!(court, c, at),
+        settled!(court, b, at),
+        settled!(court, a, at),
+    ];
+    assert_eq!(
+        (
+            chain.map(|cost| cost.producer_contacts),
+            chain.map(|cost| cost.source_queries),
+            judge_decisions(&mut rings, at)
+        ),
+        ([0; 3], [1, 0, 0], 0),
+        "{at}: the equal republication clears the chain below the root"
+    );
+    court.judge_chain(&rings[0], at);
+}
