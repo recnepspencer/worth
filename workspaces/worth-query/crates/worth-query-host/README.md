@@ -301,6 +301,11 @@ source evidence call `.expect_source(observed_source)` before idempotent executi
 The source-local comparison rejects missing, foreign, retired, ABA-changed, or
 changed sources while allowing sibling edits outside the recorded footprint.
 Sibling membership and selector-field changes can still invalidate that footprint.
+When a handler reads a current output, Query merges its retained source facts
+with the admitted query facts. Adjacency reads at the same native structural
+revision combine their endpoint coverage and comparison limits; different
+revisions still deny the attempt. A producer's own relation writes are rebased
+at the committed snapshot before becoming reusable output evidence.
 Bindings with input-selected subjects implement `expected_source_parameters` so
 the same Query boundary rejects mismatched selectors for rows, result sets and
 framework producers. A source query's type alone does not bind its parameters to

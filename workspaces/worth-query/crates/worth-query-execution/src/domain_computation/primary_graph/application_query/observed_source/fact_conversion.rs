@@ -90,7 +90,7 @@ impl<Query> WorthQueryObservedSource<Query> {
                 }
                 std::collections::btree_map::Entry::Occupied(entry) => {
                     let existing = &mut unique[*entry.get()];
-                    if !merge_same_source_fact(existing, fact) {
+                    if !existing.merge_same_source_fact(fact) {
                         return Err(WorthQuerySourceExpectationDenial::new(
                             WorthQuerySourceExpectationDenialKind::SourceChanged,
                             expected_query_identifier,
@@ -145,32 +145,6 @@ impl<Query> WorthQueryObservedSource<Query> {
             return Err(deny(Kind::ForeignModel));
         }
         Ok(())
-    }
-}
-
-fn merge_same_source_fact(existing: &mut Fact, duplicate: Fact) -> bool {
-    match (existing, duplicate) {
-        (
-            Fact::SourceAdjacencyRevision {
-                native_revision: first_revision,
-                comparison_work_limit: first_limit,
-                endpoints: first_endpoints,
-                ..
-            },
-            Fact::SourceAdjacencyRevision {
-                native_revision: second_revision,
-                comparison_work_limit: second_limit,
-                endpoints: second_endpoints,
-                ..
-            },
-        ) if *first_revision == second_revision => {
-            *first_limit = (*first_limit).max(second_limit);
-            first_endpoints.extend(second_endpoints);
-            first_endpoints.sort();
-            first_endpoints.dedup();
-            true
-        }
-        (existing, duplicate) => *existing == duplicate,
     }
 }
 
@@ -231,7 +205,7 @@ mod tests {
         runtime::RelationalAdjacencyDirection,
     };
 
-    use super::{merge_same_source_fact, Fact};
+    use super::Fact;
 
     #[test]
     fn overlapping_path_and_projection_adjacency_merge_at_one_native_revision() {
@@ -253,7 +227,7 @@ mod tests {
             comparison_work_limit: 1,
             endpoints: vec![],
         };
-        assert!(merge_same_source_fact(&mut projected, path));
+        assert!(projected.merge_same_source_fact(path));
         assert!(
             matches!(&projected, Fact::SourceAdjacencyRevision { endpoints, .. } if endpoints == &vec![endpoint])
         );
@@ -265,6 +239,6 @@ mod tests {
             comparison_work_limit: 1,
             endpoints: vec![],
         };
-        assert!(!merge_same_source_fact(&mut projected, changed));
+        assert!(!projected.merge_same_source_fact(changed));
     }
 }
