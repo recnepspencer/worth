@@ -15,6 +15,9 @@ use crate::physical_runtime::{
 use super::{AdmittedBlobScope, PublishedBlobGeneration};
 
 pub(in crate::physical_runtime) use selection::selected_blob_identity_exists;
+pub(in crate::physical_runtime::blob) use selection::{
+    selected_generation_publication, selected_session_declaration, walk_selected_reader,
+};
 
 /// A caller-admitted bound for identity issuance's selected-root walk.
 /// Indexed publication resolution and reads do not perform that walk; the

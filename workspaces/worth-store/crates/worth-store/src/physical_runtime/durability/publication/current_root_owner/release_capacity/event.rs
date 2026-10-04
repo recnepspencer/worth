@@ -11,7 +11,6 @@ use super::{
 #[derive(Clone, Copy)]
 pub(super) enum PendingReleaseEvent {
     Drop(CheckedDrop),
-    #[allow(dead_code)] // No live retirement writer yet; selected prefix still models it.
     Retirement(CheckedRetirement),
 }
 
@@ -68,7 +67,6 @@ impl PendingReleaseEvent {
         Ok(Self::Drop(CheckedDrop { batch, head_step }))
     }
 
-    #[allow(dead_code)] // No live retirement writer exists yet; checkpoint fold still models it.
     pub(super) fn for_retirement(
         head_step: SelectedReleaseHeadStep,
     ) -> Result<Self, ReleaseCertificateCapacityDenial> {

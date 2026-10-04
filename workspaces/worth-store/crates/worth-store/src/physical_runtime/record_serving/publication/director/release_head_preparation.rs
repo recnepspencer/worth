@@ -2,8 +2,8 @@
 //! before C9 encodes the descriptor's WAL member.
 
 use worth_store_physical_format::{
-    DurablePhysicalRootManifest, PersistedReleaseCustodyHeadEffectV1, ReleaseCustodyHeadDenial,
-    ReleaseCustodyHeadMutationV1, ReleaseCustodyHeadTransitionLimitsV1,
+    DurablePhysicalRootManifest, PersistedReleaseCustodyHeadEffectV1, PersistedReleaseHeadClaim,
+    ReleaseCustodyHeadDenial, ReleaseCustodyHeadMutationV1, ReleaseCustodyHeadTransitionLimitsV1,
     ReleaseCustodyHeadTransitionV1,
 };
 
@@ -12,6 +12,8 @@ use crate::physical_runtime::record_serving::{
     access::release_custody_head::read_release_head_path, publication::PreparedReleaseHeadBasis,
     PreparedPhysicalRootProjection, RecordAppendDenial, RecordAppendError,
 };
+
+mod terminal_head_retirement;
 
 const MAX_HEAD_PATH_NODES: u16 = 16;
 const MAX_HEAD_NEW_BLOCKS: u16 = 36;
@@ -61,12 +63,7 @@ impl RecordPublicationDirector {
         let next = basis
             .next_entry(*descriptor_record)
             .map_err(|_| damaged())?;
-        let limits = ReleaseCustodyHeadTransitionLimitsV1::new(
-            MAX_HEAD_PATH_NODES,
-            MAX_HEAD_NEW_BLOCKS,
-            release_head_reservation_bytes(self.format.declaration()).ok_or_else(damaged)?,
-        )
-        .ok_or_else(damaged)?;
+        let limits = release_head_limits(self.format.declaration())?;
         let source_path = read_release_head_path(
             allocation,
             self.residency.clone(),
@@ -105,12 +102,24 @@ impl RecordPublicationDirector {
         )
         .map_err(|_| damaged())?;
         prepared_root
-            .set_release_head_effect(effect)
+            .set_release_head_claim(PersistedReleaseHeadClaim::Upsert(effect))
             .ok_or(RecordAppendError::Denied(
                 RecordAppendDenial::PhysicalPressure,
             ))?;
         Ok(())
     }
+}
+
+/// One path and node-write bound for every one-key head-tree transition.
+fn release_head_limits(
+    format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
+) -> Result<ReleaseCustodyHeadTransitionLimitsV1, RecordAppendError> {
+    ReleaseCustodyHeadTransitionLimitsV1::new(
+        MAX_HEAD_PATH_NODES,
+        MAX_HEAD_NEW_BLOCKS,
+        release_head_reservation_bytes(format).ok_or_else(damaged)?,
+    )
+    .ok_or_else(damaged)
 }
 
 fn head_denial(denial: ReleaseCustodyHeadDenial) -> RecordAppendError {

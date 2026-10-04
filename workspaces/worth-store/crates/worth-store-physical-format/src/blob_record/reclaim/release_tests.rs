@@ -157,6 +157,50 @@ fn release_manifest_allows_continuation_but_rejects_foreign_store_and_malformed_
 }
 
 #[test]
+fn a_v3_manifest_prefix_names_its_source_without_its_dropped_identities() {
+    let source = BlobReclaimSourceBasisV1::ReleasedGeneration(release_basis());
+    let dropped = (4..64).map(record).collect();
+    let manifest = DropSetManifestV3::new([7; 16], [8; 16], source, dropped, 9).unwrap();
+    let frame = manifest.encode();
+    let window = DropSetManifestV3View::SOURCE_BASIS_PREFIX_BYTES;
+    assert_eq!(window, BLOB_RECORD_HEADER_BYTES + 35 + source.encoded_len());
+    assert!(window < frame.len());
+    assert_eq!(
+        DropSetManifestV3View::source_basis_in_prefix(&frame[..window]),
+        Ok(source)
+    );
+    assert_eq!(
+        DropSetManifestV3View::source_basis_in_prefix(&frame),
+        Ok(source)
+    );
+    assert_eq!(
+        DropSetManifestV3View::source_basis_in_prefix(&frame[..window - 1]),
+        Err(BlobRecordDenial::LengthMismatch)
+    );
+    assert_eq!(
+        DropSetManifestV3View::source_basis_in_prefix(&frame[..BLOB_RECORD_HEADER_BYTES - 1]),
+        Err(BlobRecordDenial::Truncated)
+    );
+    // The basis authenticates its own publication frame: one changed session
+    // byte is a denial, never another session's name.
+    let mut forged = frame[..window].to_vec();
+    forged[window - 100] ^= 1;
+    assert!(DropSetManifestV3View::source_basis_in_prefix(&forged).is_err());
+    for (offset, denial) in [
+        (0, BlobRecordDenial::WrongMagic),
+        (8, BlobRecordDenial::UnknownKind),
+        (9, BlobRecordDenial::UnsupportedVersion),
+    ] {
+        let mut other = frame[..window].to_vec();
+        other[offset] ^= 0x40;
+        assert_eq!(
+            DropSetManifestV3View::source_basis_in_prefix(&other),
+            Err(denial)
+        );
+    }
+}
+
+#[test]
 fn continuation_descriptor_binds_predecessor_and_cumulative_count() {
     let predecessor = ReleasedDropPredecessorV1::new(record(8), [9; 32]).unwrap();
     let descriptor = BlobReclaimDescriptorV2::new(

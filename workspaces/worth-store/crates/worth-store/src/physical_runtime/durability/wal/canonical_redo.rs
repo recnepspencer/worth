@@ -139,6 +139,25 @@ impl CanonicalRedoRecords {
         }
     }
 
+    /// A terminal head retired member carries no data record: its typed
+    /// recovery operation is the whole redo.
+    pub(in crate::physical_runtime) fn without_records(
+        projection: &PersistedPhysicalRecoveryProjection,
+    ) -> Self {
+        assert!(
+            projection.operation().is_terminal_release_head_retired(),
+            "only a terminal head retired member is record-less"
+        );
+        let records =
+            CanonicalVec::try_from_sorted(Vec::new()).expect("an empty record set is canonical");
+        let encoded = encode(records.as_slice(), projection);
+        Self {
+            digest: Sha256::digest(&encoded).into(),
+            records,
+            encoded,
+        }
+    }
+
     pub fn encoded(&self) -> &[u8] {
         &self.encoded
     }

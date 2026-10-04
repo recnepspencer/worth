@@ -108,11 +108,13 @@ pub(super) fn project_successor_root(
         prepared.last_inline_record,
         prepared.last_inline_segment,
     );
+    let head_claim = prepared.release_head_effect.as_ref();
+    let head_upsert = head_claim.and_then(|claim| claim.upsert());
     let routed = project_record_manifest(
         context,
         RootManifestProjection {
             derived_updates: prepared.derived_updates,
-            release_head_effect: prepared.release_head_effect.as_ref(),
+            release_head_effect: head_upsert,
             generation,
             free_space: &free_space_header,
             free_space_bytes: &free_space_bytes,
@@ -130,7 +132,7 @@ pub(super) fn project_successor_root(
     ));
     manifests.extend(segment.blocks);
     manifests.extend(routed.blocks);
-    if let Some(transition) = prepared.release_head_effect.as_ref() {
+    if let Some(transition) = head_upsert {
         manifests.extend(transition.node_writes().iter().map(|write| {
             let reference = write.reference();
             (

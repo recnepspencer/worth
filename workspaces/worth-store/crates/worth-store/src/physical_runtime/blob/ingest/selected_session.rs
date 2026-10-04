@@ -1,7 +1,7 @@
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
-    BlobAbandonmentReasonV1, BlobRecordDenial, BlobSessionAbandonedV1, BlobSessionDeclarationV1,
-    BLOB_RECORD_HEADER_BYTES,
+    BlobAbandonmentReasonV1, BlobReclaimSourceBasisV1, BlobRecordDenial, BlobSessionAbandonedV1,
+    BlobSessionDeclarationV1, BLOB_RECORD_HEADER_BYTES,
 };
 
 use crate::physical_runtime::{
@@ -112,11 +112,37 @@ pub(in crate::physical_runtime::blob) fn selected_abandonment_matches(
     }
 }
 
+/// Whether the source of a selected V3 drop-set manifest names this session
+/// or its object. Such a manifest means Store released the generation this
+/// session published: the session can neither resume nor be abandoned, or its
+/// identity would publish a second time.
+///
+/// The manifest is the one release control that names the object and the
+/// session; the descriptor and the reservation carry only a digest of the
+/// source. A release head binds its manifest record, and the retention law
+/// keeps the current head's control closure selected for as long as the head
+/// exists, so this answer cannot lapse while a head of the identity stands.
+pub(in crate::physical_runtime::blob) fn release_source_names_session(
+    source: BlobReclaimSourceBasisV1,
+    token: &BlobResumeToken,
+    declaration: BlobSessionDeclarationV1,
+) -> bool {
+    matches!(
+        source,
+        BlobReclaimSourceBasisV1::ReleasedGeneration(released)
+            if released.session() == token.session || released.object() == declaration.object()
+    )
+}
+
 /// Pure ordering only; the caller must supply the owner-minted completed
 /// checkpoint witness before this predicate may affect selected fate.
 fn expiry_order_admitted(recorded: u64, maximum: u64, selected: u64) -> bool {
     recorded > maximum && recorded <= selected
 }
+
+#[cfg(test)]
+#[path = "selected_session/fixture.rs"]
+pub(in crate::physical_runtime::blob::ingest) mod fixture;
 
 #[cfg(test)]
 mod expiry_tests {

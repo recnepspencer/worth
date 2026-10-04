@@ -165,14 +165,7 @@ fn inspect_selected(
     if manifest_attempts.capacity() != capacity {
         return Err(BlobReclaimFailure::ScratchUnavailable);
     }
-    let mut scratch = Vec::new();
-    scratch
-        .try_reserve_exact(scan::FRAME_WINDOW_BYTES)
-        .map_err(|_| BlobReclaimFailure::ScratchUnavailable)?;
-    scratch.resize(scan::FRAME_WINDOW_BYTES, 0);
-    if scratch.capacity() != scan::FRAME_WINDOW_BYTES {
-        return Err(BlobReclaimFailure::ScratchUnavailable);
-    }
+    let mut scratch = scan::frame_window()?;
     let store = runtime.store_identity().bytes();
     let basis_digest = basis.digest(store);
     let reader = scan::walk(reader, limits, &mut scratch, work, |record, bytes| {

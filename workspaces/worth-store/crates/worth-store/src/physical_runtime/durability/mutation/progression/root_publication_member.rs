@@ -15,7 +15,7 @@ pub struct RootPublicationPhysicalMutationMember {
     identity: PhysicalRootPublicationMemberIdentity,
     settled: SettledPhysicalMutationBasis,
     completion: PreparedRecordCompletionProjection,
-    release_head_effect: Option<worth_store_physical_format::PersistedReleaseCustodyHeadEffectV1>,
+    release_head_effect: Option<worth_store_physical_format::PersistedReleaseHeadClaim>,
 }
 
 impl RootPublicationPhysicalMutationMember {
@@ -28,9 +28,7 @@ impl RootPublicationPhysicalMutationMember {
     pub(in crate::physical_runtime) fn new(
         settled: SettledPhysicalMutationBasis,
         completion: PreparedRecordCompletionProjection,
-        release_head_effect: Option<
-            worth_store_physical_format::PersistedReleaseCustodyHeadEffectV1,
-        >,
+        release_head_effect: Option<worth_store_physical_format::PersistedReleaseHeadClaim>,
     ) -> Self {
         let binding = settled.group_binding();
         let identity = PhysicalRootPublicationMemberIdentity::new(
@@ -47,9 +45,9 @@ impl RootPublicationPhysicalMutationMember {
         }
     }
 
-    pub(in crate::physical_runtime) fn selected_head_transition(
+    pub(in crate::physical_runtime) fn selected_head_claim(
         &self,
-    ) -> Option<&worth_store_physical_format::PersistedReleaseCustodyHeadEffectV1> {
+    ) -> Option<&worth_store_physical_format::PersistedReleaseHeadClaim> {
         self.release_head_effect.as_ref()
     }
 

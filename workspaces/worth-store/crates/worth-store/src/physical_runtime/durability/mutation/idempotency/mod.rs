@@ -59,3 +59,6 @@ pub(in crate::physical_runtime) use runtime_owner::{
     PhysicalMutationBindingCompactionCutover, PhysicalMutationBindingCompactionRuntimeAuthority,
     PhysicalMutationIdempotencyRuntimeAuthority, PhysicalMutationIdempotencyRuntimeOwner,
 };
+pub(in crate::physical_runtime) use runtime_owner::{
+    TerminalHeadNoRetryClaim, TerminalHeadRetryClaimDenial,
+};

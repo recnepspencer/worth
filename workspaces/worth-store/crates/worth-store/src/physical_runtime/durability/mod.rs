@@ -176,6 +176,9 @@ pub(in crate::physical_runtime) use mutation::{
     DecodedPhysicalMutationBindingRecord, PersistedPhysicalMutationFate,
     PhysicalBindingCompactionRecordDecodeDenial, PhysicalPersistedBindingDecodeDenial,
 };
+pub(in crate::physical_runtime) use mutation::{
+    TerminalHeadNoRetryClaim, TerminalHeadRetryClaimDenial,
+};
 pub use observation::PhysicalMutationObservation;
 pub use observation::{PhysicalDurabilityObservation, PhysicalDurabilityReopenObservation};
 pub(in crate::physical_runtime) use observation::{
@@ -205,8 +208,16 @@ pub(in crate::physical_runtime) use publication::{
 pub(in crate::physical_runtime) use publication::{
     publish_tier_epoch_candidate, NamespaceDurableTierEpochRoot,
 };
+pub(in crate::physical_runtime) use publication::{
+    AdmittedTerminalHeadRetirement, CheckpointAttestedTerminalHead, PublicationStateLockHeld,
+    TerminalHeadAttestationDenial, TerminalHeadPublicationExcluded,
+    TerminalHeadRetirementAdmissionDenial, TerminalHeadRetirementAuthority,
+};
 #[cfg(feature = "certification-test-authority")]
-pub use publication::{CertificationReadRootCapturePauseGate, CertificationReadRootCaptureStage};
+pub use publication::{
+    CertificationReadRootCapturePauseGate, CertificationReadRootCaptureStage,
+    CertificationReleaseHeadObservation,
+};
 pub use publication::{
     CompletedPhysicalRootPublication, IndeterminatePhysicalCurrentRootAdvance,
     IndeterminatePhysicalRootNamespaceDurability, IndeterminatePhysicalRootPublicationPreparation,

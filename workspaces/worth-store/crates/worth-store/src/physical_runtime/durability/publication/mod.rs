@@ -2,6 +2,7 @@ mod current_root_owner;
 #[cfg(feature = "certification-test-authority")]
 pub use current_root_owner::{
     CertificationReadRootCapturePauseGate, CertificationReadRootCaptureStage,
+    CertificationReleaseHeadObservation,
 };
 pub use current_root_owner::{ReleaseCertificateCapacityDenial, SelectedReleaseHeadDenial};
 mod failure;
@@ -11,7 +12,13 @@ mod namespace_durability;
 mod preparation;
 mod replacement;
 mod retained_root;
+mod terminal_head_retirement_authority;
 mod work_port;
+pub(in crate::physical_runtime) use current_root_owner::{
+    AdmittedTerminalHeadRetirement, CheckpointAttestedTerminalHead, PublicationStateLockHeld,
+    TerminalHeadAttestationDenial, TerminalHeadPublicationExcluded,
+    TerminalHeadRetirementAdmissionDenial,
+};
 pub(in crate::physical_runtime) use maintenance::{
     publish_manifest_residue_candidate, publish_retirement_candidate,
     NamespaceDurableManifestResidueRoot, NamespaceDurableRetirementRoot,
@@ -20,6 +27,7 @@ pub(in crate::physical_runtime) use maintenance::{
 pub(in crate::physical_runtime) use maintenance::{
     publish_tier_epoch_candidate, NamespaceDurableTierEpochRoot,
 };
+pub(in crate::physical_runtime) use terminal_head_retirement_authority::TerminalHeadRetirementAuthority;
 
 #[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use current_root_owner::RecoveredReleaseLedgerDenial;

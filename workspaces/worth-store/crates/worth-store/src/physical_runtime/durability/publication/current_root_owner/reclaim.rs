@@ -9,7 +9,12 @@ pub(in crate::physical_runtime) use manifest_residue::{
 };
 mod released;
 mod settlement;
+mod terminal_head_retirement;
 pub(in crate::physical_runtime) use released::AdmittedReleasedGenerationDrop;
+pub(in crate::physical_runtime) use terminal_head_retirement::{
+    AdmittedTerminalHeadRetirement, PublicationStateLockHeld, TerminalHeadPublicationExcluded,
+    TerminalHeadRetirementAdmissionDenial,
+};
 
 use worth_store_physical_format::{
     FailedIngestReclaimBasisV1, PersistedRecordIdentity, RootPublicationCell,
@@ -148,12 +153,15 @@ enum ReclaimPhase {
     DropPublished,
     ResidueEffect,
     ResiduePublished,
+    RetirementEffect,
+    RetirementPublished,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum ReclaimPurpose {
     PayloadDrop,
     ManifestResidue,
+    TerminalHeadRetirement,
 }
 
 pub(super) struct ReclaimFenceState {
@@ -162,11 +170,12 @@ pub(super) struct ReclaimFenceState {
     manifest_mutation: Option<PhysicalMutationIdentity>,
     reservation_mutation: Option<PhysicalMutationIdentity>,
     drop_mutation: Option<PhysicalMutationIdentity>,
+    retirement_mutation: Option<PhysicalMutationIdentity>,
     drop_records: Vec<PersistedRecordIdentity>,
     displaced: Vec<crate::physical_runtime::durability::DisplacedArtifact>,
     phase: ReclaimPhase,
     purpose: ReclaimPurpose,
-    _capacity: DisplacedCapacityLease,
+    _capacity: Option<DisplacedCapacityLease>,
     _recovered_reservations: Vec<PhysicalRecoveredOriginalDropNoDurableEffect>,
     pub(super) release_certificate_pending: Option<ReleaseCertificatePending>,
 }
@@ -209,10 +218,14 @@ impl ReclaimFenceState {
     }
 
     pub(super) fn accepts(&self, mutation: PhysicalMutationIdentity) -> bool {
-        if self.purpose != ReclaimPurpose::PayloadDrop {
+        match self.purpose {
+            ReclaimPurpose::PayloadDrop => {}
+            ReclaimPurpose::TerminalHeadRetirement => {
+                return self.accepts_terminal_head_retirement(mutation);
+            }
             // The root-only WAL meaning is not installed yet. No record append
             // may borrow this fence's mutation slot in the meantime.
-            return false;
+            ReclaimPurpose::ManifestResidue => return false,
         }
         match self.phase {
             ReclaimPhase::BeforeEffect | ReclaimPhase::ManifestEffect => {
@@ -226,7 +239,9 @@ impl ReclaimFenceState {
             }
             ReclaimPhase::DropPublished
             | ReclaimPhase::ResidueEffect
-            | ReclaimPhase::ResiduePublished => false,
+            | ReclaimPhase::ResiduePublished
+            | ReclaimPhase::RetirementEffect
+            | ReclaimPhase::RetirementPublished => false,
         }
     }
 
@@ -236,7 +251,9 @@ impl ReclaimFenceState {
         root: RootPublicationCell,
     ) {
         self.expected_root = root;
-        self.phase = if self.manifest_mutation == Some(mutation) {
+        self.phase = if self.purpose == ReclaimPurpose::TerminalHeadRetirement {
+            ReclaimPhase::RetirementPublished
+        } else if self.manifest_mutation == Some(mutation) {
             ReclaimPhase::ManifestPublished
         } else if self.reservation_mutation == Some(mutation) {
             ReclaimPhase::ReservePublished
@@ -330,11 +347,12 @@ impl PhysicalCurrentRootOwner {
             manifest_mutation: None,
             reservation_mutation: None,
             drop_mutation: None,
+            retirement_mutation: None,
             drop_records: Vec::new(),
             displaced: retained,
             phase: ReclaimPhase::BeforeEffect,
             purpose: ReclaimPurpose::PayloadDrop,
-            _capacity: capacity,
+            _capacity: Some(capacity),
             _recovered_reservations: recovered_reservations,
             release_certificate_pending: None,
         });

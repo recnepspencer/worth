@@ -54,8 +54,10 @@ pub use blob::{
     BlobReclaimRequest, BlobReclaimRetirement, BlobReclaimRetirementBudget, BlobRecordReachability,
     BlobResidentComponent, BlobResumeFailure, BlobResumeLimits, BlobResumeObservation,
     BlobResumeToken, BlobResumeTokenDenial, BlobScrubTargetFailure, BlobSessionId,
-    BlobTerminalDisposition, BlobTerminalFailure, BlobTerminalLimits, BlobTerminalReceipt,
-    PhysicalBlobFacade, PublishedBlobGeneration,
+    BlobTerminalDisposition, BlobTerminalFailure, BlobTerminalHeadRetirementDenial,
+    BlobTerminalHeadRetirementFailure, BlobTerminalHeadRetirementReceipt,
+    BlobTerminalHeadRetirementRequest, BlobTerminalLimits, BlobTerminalReceipt, PhysicalBlobFacade,
+    PublishedBlobGeneration,
 };
 pub use diagnostics::{ProcessRuntimeCounterSnapshot, RuntimeCounterSnapshot};
 pub use durability::{
@@ -367,28 +369,7 @@ pub(in crate::physical_runtime) use durability::{
 };
 
 #[cfg(feature = "certification-test-authority")]
-pub mod certification {
-    pub use super::certification_input::CertificationDurableMutationInput;
-    pub use super::durability::{
-        CertificationPhysicalMutationCheckpoint, CertificationPhysicalMutationPauseGate,
-        CertificationReadRootCapturePauseGate, CertificationReadRootCaptureStage,
-    };
-    pub use super::instance::{
-        CertificationPhysicalClosePauseGate, CertificationPhysicalExecutionCheckpoint,
-        CertificationPhysicalExecutionPauseGate, CertificationPhysicalSignalPauseGate,
-    };
-    pub use super::media_evidence::{
-        lower_media_operation_summary, MediaEvidenceLoweringDenial, MediaOperationSummary,
-        StoreMediaPerformanceReceipt,
-    };
-    pub use super::record_serving::CertificationPhysicalRecordSubmission;
-    pub use super::work::CertificationPhysicalSubmissionPauseGate;
-    pub use worth_store_physical_backend::{
-        CertificationMediaFaultActivation, CertificationMediaFaultAuthority, MediaFaultDirective,
-        MediaFaultRule, MediaFaultSchedule, MediaFaultScheduleDenial, MediaOperationRole,
-        MediaPauseGate,
-    };
-}
+pub mod certification;
 
 pub mod production {
     pub use super::durability::{

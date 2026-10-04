@@ -159,6 +159,14 @@ fn c11_blob_relocation_requires_store_selected_hold() {
     );
 }
 
+#[test]
+fn c11_terminal_head_retirement_authority_is_owner_issued() {
+    let cases = trybuild::TestCases::new();
+    cases.compile_fail(
+        "tests/physical_runtime_authority/terminal_head_retirement_authority_is_sealed.rs",
+    );
+}
+
 fn record_chunk_view_cases(cases: &trybuild::TestCases) {
     cases.pass("tests/physical_runtime_authority/protected_record_reads_supported.rs");
     cases.compile_fail("tests/physical_runtime_authority/root_observation_cannot_mint_reader.rs");

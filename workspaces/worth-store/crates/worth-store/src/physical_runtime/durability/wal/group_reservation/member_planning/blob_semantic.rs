@@ -1,7 +1,8 @@
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
     BlobRecordKind, PersistedBlobSemanticRecordBinding, PersistedDerivedDirectoryRecordBinding,
-    PersistedPhysicalRecoveryOperation, PersistedReleasedDirectoryReplacementV1,
+    PersistedPhysicalRecoveryOperation, PersistedReleaseHeadClaim,
+    PersistedReleasedDirectoryReplacementV1,
 };
 
 use crate::physical_runtime::PreparedPhysicalRootProjection;
@@ -62,7 +63,10 @@ pub(super) fn blob_semantic(
         );
         return PersistedPhysicalRecoveryOperation::RecordsDropped {
             binding: descriptor,
-            head_effect: root.recovery_release_head_effect().cloned(),
+            head_effect: root
+                .recovery_release_head_claim()
+                .and_then(PersistedReleaseHeadClaim::upsert)
+                .cloned(),
             directory_replacement: Some(
                 PersistedReleasedDirectoryReplacementV1::new(
                     rebinding.expected_previous(),
@@ -112,7 +116,10 @@ pub(super) fn blob_semantic(
         | BlobRecordKind::ReclaimDescriptorV3 => {
             PersistedPhysicalRecoveryOperation::RecordsDropped {
                 binding,
-                head_effect: root.recovery_release_head_effect().cloned(),
+                head_effect: root
+                    .recovery_release_head_claim()
+                    .and_then(PersistedReleaseHeadClaim::upsert)
+                    .cloned(),
                 directory_replacement: None,
             }
         }

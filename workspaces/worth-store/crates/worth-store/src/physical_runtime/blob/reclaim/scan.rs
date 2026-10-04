@@ -37,6 +37,20 @@ impl ReclaimInspectionWork {
     }
 }
 
+/// The one frame window every reclaim pass reads through. It lives inside
+/// the operation's admitted blob allocation.
+pub(super) fn frame_window() -> Result<Vec<u8>, BlobReclaimFailure> {
+    let mut scratch = Vec::new();
+    scratch
+        .try_reserve_exact(FRAME_WINDOW_BYTES)
+        .map_err(|_| BlobReclaimFailure::ScratchUnavailable)?;
+    scratch.resize(FRAME_WINDOW_BYTES, 0);
+    if scratch.capacity() != FRAME_WINDOW_BYTES {
+        return Err(BlobReclaimFailure::ScratchUnavailable);
+    }
+    Ok(scratch)
+}
+
 pub(super) fn walk(
     reader: PhysicalRecordReader,
     limits: BlobReclaimLimits,

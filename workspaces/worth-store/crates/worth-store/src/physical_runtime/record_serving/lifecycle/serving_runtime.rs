@@ -17,6 +17,7 @@ mod physical_work;
 mod record_reader;
 mod retirement;
 mod scrub;
+mod terminal_head_retirement;
 
 pub struct ServingPhysicalRuntime {
     scrub: crate::physical_runtime::integrity::PhysicalIntegrityScrubOwner,

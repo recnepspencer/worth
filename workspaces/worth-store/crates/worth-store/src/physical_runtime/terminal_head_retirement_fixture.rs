@@ -21,7 +21,7 @@ fn record(ordinal: u64) -> PersistedRecordIdentity {
     PersistedRecordIdentity::new([1; 16], ordinal).unwrap()
 }
 
-fn basis() -> ReleasedGenerationReclaimBasisV1 {
+pub(super) fn basis() -> ReleasedGenerationReclaimBasisV1 {
     let publication = BlobGenerationPublicationV1::new(
         STORE,
         [2; 16],
@@ -63,7 +63,9 @@ fn terminal_head() -> ReleaseCustodyHeadEntryV1 {
     .unwrap()
 }
 
-pub(super) fn projection() -> PersistedPhysicalRecoveryProjection {
+/// Retires the only head of tree 6 at source generation 11: the result has
+/// no head root.
+pub(super) fn retirement() -> PersistedTerminalReleaseHeadRetirementV1 {
     let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
     let terminal_head = terminal_head();
     let leaf = ReleaseCustodyHeadBlockV1::leaf(TREE, 10, 1, vec![terminal_head], format).unwrap();
@@ -84,7 +86,7 @@ pub(super) fn projection() -> PersistedPhysicalRecoveryProjection {
         ReleaseCustodyHeadTransitionLimitsV1::new(1, 1, 8 * 65_536).unwrap(),
     )
     .unwrap();
-    let retirement = PersistedTerminalReleaseHeadRetirementV1::new(
+    PersistedTerminalReleaseHeadRetirementV1::new(
         SOURCE_GENERATION,
         record(2),
         [0x44; 32],
@@ -94,7 +96,10 @@ pub(super) fn projection() -> PersistedPhysicalRecoveryProjection {
         planned,
         format,
     )
-    .unwrap();
+    .unwrap()
+}
+
+pub(super) fn projection() -> PersistedPhysicalRecoveryProjection {
     PersistedPhysicalRecoveryProjection::new_with_operation(
         SOURCE_GENERATION,
         PersistedPhysicalRecoveryRootState::new(4096, 1, 32, vec![], None, None).unwrap(),
@@ -103,7 +108,7 @@ pub(super) fn projection() -> PersistedPhysicalRecoveryProjection {
         vec![],
         vec![],
         vec![],
-        PersistedPhysicalRecoveryOperation::TerminalReleaseHeadRetired(retirement),
+        PersistedPhysicalRecoveryOperation::TerminalReleaseHeadRetired(retirement()),
     )
     .unwrap()
 }

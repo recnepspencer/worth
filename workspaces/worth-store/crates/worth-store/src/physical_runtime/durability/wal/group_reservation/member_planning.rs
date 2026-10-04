@@ -128,7 +128,7 @@ fn plan_member(
     }
     let Some(end) = start
         .get()
-        .checked_add(u64::from(prepared.resources().record_count()))
+        .checked_add(u64::from(prepared.resources().wal_lsn_span()))
         .map(LogSequenceNumber::new)
     else {
         return Err((
@@ -136,8 +136,8 @@ fn plan_member(
             PhysicalWalReservationDenial::LsnExhausted,
         ));
     };
-    let lsn_range = WalLsnRange::new(start, end)
-        .expect("canonical redo is nonempty and therefore has a nonempty LSN range");
+    let lsn_range =
+        WalLsnRange::new(start, end).expect("every WAL member occupies at least one LSN");
     let PlannedPhysicalMutationParts {
         admission,
         batch,
@@ -206,6 +206,9 @@ fn plan_member(
             targets,
             &projection,
         ),
+        None if data.terminal_head_retirement().is_some() => {
+            CanonicalRedoRecords::without_records(&projection)
+        }
         None => CanonicalRedoRecords::from_source_copy(lsn_range, &projection),
     };
     let redo = match data.rewrite() {

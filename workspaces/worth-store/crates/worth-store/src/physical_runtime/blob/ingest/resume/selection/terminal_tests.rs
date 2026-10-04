@@ -1,35 +1,8 @@
+use super::super::super::selected_session::fixture::{basis, record};
 use super::*;
 use worth_store_physical_format::{
     BlobAbandonmentReasonV1, BlobChunkReuseClaimV1, BlobSessionAbandonedV1, BlobSessionFrontierV1,
 };
-
-fn record(epoch: u8, ordinal: u64) -> PersistedRecordIdentity {
-    PersistedRecordIdentity::new([epoch; 16], ordinal).unwrap()
-}
-
-fn basis() -> (BlobResumeToken, BlobSessionDeclarationV1) {
-    let token = BlobResumeToken {
-        store: [1; 16],
-        session: [2; 16],
-        declaration_record: record(3, 1),
-        declaration_digest: [4; 32],
-        chunk_size: 64 << 10,
-        total_bytes: 128 << 10,
-        max_checkpoint_sequence: 9,
-    };
-    let declaration = BlobSessionDeclarationV1::new(
-        token.store,
-        token.session,
-        [5; 16],
-        [6; 32],
-        token.chunk_size,
-        token.total_bytes,
-        6 << 20,
-        token.max_checkpoint_sequence,
-    )
-    .unwrap();
-    (token, declaration)
-}
 
 fn observe_terminal(
     token: BlobResumeToken,

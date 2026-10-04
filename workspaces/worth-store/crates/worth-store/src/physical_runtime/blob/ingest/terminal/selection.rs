@@ -1,6 +1,6 @@
 use worth_store_physical_format::{
-    decode_blob_record, BlobRecordDenial, BlobRecordV1, BlobSessionDeclarationV1,
-    PersistedRecordIdentity,
+    decode_blob_record, BlobRecordDenial, BlobRecordKind, BlobRecordV1, BlobSessionDeclarationV1,
+    DropSetManifestV3View, PersistedRecordIdentity,
 };
 
 use crate::physical_runtime::{
@@ -10,14 +10,38 @@ use crate::physical_runtime::{
 
 use super::super::{
     resume::BlobResumeToken,
-    selected_session::{read_authenticated_declaration, selected_abandonment_matches},
+    selected_session::{
+        read_authenticated_declaration, release_source_names_session, selected_abandonment_matches,
+    },
 };
 use super::{contracts::BlobTerminalLimits, BlobTerminalFailure};
 
 /// Covers every frame whose fields can decide the abort's fate; the largest
-/// is a V2 chunk-reuse claim (48-byte header, 436-byte payload).
+/// is a V2 chunk-reuse claim (48-byte header, 436-byte payload). A V3
+/// drop-set manifest may be larger, and decides by its leading window alone.
 const CONTROL_SCAN_BYTES: usize = 512;
 const BLOB_MAGIC: &[u8; 8] = b"WRC11BLB";
+/// The magic and the kind byte of a deferred frame.
+const KIND_PREFIX_BYTES: usize = 9;
+const MANIFEST_V3: u8 = BlobRecordKind::DropSetManifestV3 as u8;
+const MANIFEST_V3_WINDOW: usize = DropSetManifestV3View::SOURCE_BASIS_PREFIX_BYTES;
+/// The kinds whose fields cannot decide the fate: a frame of one of them may
+/// exceed the control scan unread.
+const UNREAD_WHEN_DEFERRED: &[BlobRecordKind] = &[
+    BlobRecordKind::Chunk,
+    BlobRecordKind::TreeNode,
+    BlobRecordKind::DropSetManifest,
+    BlobRecordKind::ReclaimDescriptor,
+    BlobRecordKind::DropSetManifestV2,
+    BlobRecordKind::OriginalDropReserved,
+    BlobRecordKind::DedupeQuarantine,
+    BlobRecordKind::ReclaimDescriptorV2,
+    BlobRecordKind::ReclaimDescriptorV3,
+];
+// Every deferred frame is longer than the control scan, so a deferred V3
+// manifest always holds its whole source window.
+const _: () = assert!(KIND_PREFIX_BYTES <= MANIFEST_V3_WINDOW);
+const _: () = assert!(MANIFEST_V3_WINDOW <= CONTROL_SCAN_BYTES);
 
 pub(super) struct SelectedTerminalState {
     pub(super) _reader: PhysicalRecordReader,
@@ -86,7 +110,13 @@ pub(super) fn select(
             }
         };
         if let Some((record, declared_bytes)) = deferred {
-            inspect_deferred(scan.protected_reader(), record, declared_bytes)?;
+            inspect_deferred(
+                scan.protected_reader(),
+                record,
+                declared_bytes,
+                &token,
+                declaration,
+            )?;
         }
         if complete {
             break;
@@ -155,11 +185,15 @@ fn inspect_control(
                 return Err(BlobTerminalFailure::ConflictingSelectedFate);
             }
         }
+        BlobRecordV1::DropSetManifestV3(manifest) => {
+            if release_source_names_session(manifest.source_basis(), &token, declaration) {
+                return Err(BlobTerminalFailure::AlreadyReleased);
+            }
+        }
         BlobRecordV1::Chunk(_)
         | BlobRecordV1::TreeNode(_)
         | BlobRecordV1::DropSetManifest(_)
         | BlobRecordV1::DropSetManifestV2(_)
-        | BlobRecordV1::DropSetManifestV3(_)
         | BlobRecordV1::OriginalDropReserved(_)
         | BlobRecordV1::ReclaimDescriptor(_)
         | BlobRecordV1::ReclaimDescriptorV2(_)
@@ -190,15 +224,14 @@ fn inspect_control(
     Ok(())
 }
 
-/// Large selected frames are not rehashed merely to abort. Only kinds that
-/// `inspect_control` ignores may exceed the control scan: chunk (2), tree
-/// node (3), drop-set manifests (7, 9, 13), reclaim descriptors (8, 14, 16),
-/// original-drop reservation (10) and dedupe quarantine (12). A deferred
-/// frame of any other kind cannot be silently mistaken for unrelated data.
+/// Large selected frames are not rehashed merely to abort: only the leading
+/// bytes that can decide the fate are read.
 fn inspect_deferred(
     reader: &PhysicalRecordReader,
     record: PersistedRecordIdentity,
     declared_bytes: u64,
+    token: &BlobResumeToken,
+    declaration: BlobSessionDeclarationV1,
 ) -> Result<(), BlobTerminalFailure> {
     let limit = u32::try_from(declared_bytes)
         .ok()
@@ -210,19 +243,53 @@ fn inspect_deferred(
             RecordReadLimits::new(limit),
         )
         .map_err(BlobTerminalFailure::Read)?;
-    let mut prefix = [0_u8; 9];
+    let mut prefix = [0_u8; MANIFEST_V3_WINDOW];
+    let mut wanted = KIND_PREFIX_BYTES;
     let mut used = 0;
-    while used < prefix.len() {
+    while used < wanted {
         let count = stream
-            .read_next(&mut prefix[used..])
+            .read_next(&mut prefix[used..wanted])
             .map_err(BlobTerminalFailure::Stream)?;
         if count == 0 {
             return Err(BlobTerminalFailure::Format(BlobRecordDenial::Truncated));
         }
         used += count;
+        if used == KIND_PREFIX_BYTES && prefix.starts_with(BLOB_MAGIC) && prefix[8] == MANIFEST_V3 {
+            wanted = MANIFEST_V3_WINDOW;
+        }
     }
-    if &prefix[..8] == BLOB_MAGIC && !matches!(prefix[8], 2 | 3 | 7..=10 | 12..=14 | 16) {
-        return Err(BlobTerminalFailure::Format(BlobRecordDenial::FrameTooLarge));
-    }
-    Ok(())
+    deferred_fate(&prefix[..used], token, declaration)
 }
+
+/// A V3 drop-set manifest decides by the source its leading window names.
+/// Only the kinds in `UNREAD_WHEN_DEFERRED` stay unread; a deferred frame of
+/// any other kind cannot be silently mistaken for unrelated data.
+fn deferred_fate(
+    prefix: &[u8],
+    token: &BlobResumeToken,
+    declaration: BlobSessionDeclarationV1,
+) -> Result<(), BlobTerminalFailure> {
+    if !prefix.starts_with(BLOB_MAGIC) {
+        return Ok(());
+    }
+    let kind = prefix[8];
+    if kind == MANIFEST_V3 {
+        let source = DropSetManifestV3View::source_basis_in_prefix(prefix)
+            .map_err(BlobTerminalFailure::Format)?;
+        if release_source_names_session(source, token, declaration) {
+            return Err(BlobTerminalFailure::AlreadyReleased);
+        }
+        return Ok(());
+    }
+    if UNREAD_WHEN_DEFERRED
+        .iter()
+        .any(|unread| *unread as u8 == kind)
+    {
+        return Ok(());
+    }
+    Err(BlobTerminalFailure::Format(BlobRecordDenial::FrameTooLarge))
+}
+
+#[cfg(test)]
+#[path = "selection/tests.rs"]
+mod tests;

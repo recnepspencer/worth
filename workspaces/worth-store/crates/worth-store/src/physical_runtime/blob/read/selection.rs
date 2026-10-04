@@ -2,10 +2,12 @@ use std::num::NonZeroU64;
 
 use worth_store_physical_format::{
     BlobGenerationPublicationV1, BlobRecordDenial, BlobSessionDeclarationV1,
+    PersistedRecordIdentity,
 };
 
 use crate::physical_runtime::{
     layout::{PhysicalIndexPointKey, PhysicalLayoutAccess},
+    record_serving::PhysicalRecordScanSession,
     BlobPhysicalAllocation, PhysicalRecordId, PhysicalRecordReader, RecordByteLimit,
     RecordCountLimit, RecordReadLimits, RecordScanOutcome, RecordScanRequest,
     ServingPhysicalRuntime,
@@ -172,17 +174,13 @@ pub(in crate::physical_runtime) fn selected_blob_identity_exists(
     max_records: NonZeroU64,
 ) -> Result<bool, BlobReadOpenFailure> {
     let mut found = false;
-    let _ = walk_selected(runtime, max_records, |payload, store| {
-        if is_control_kind(payload, 1) {
-            let declaration = BlobSessionDeclarationV1::decode(payload)
-                .map_err(BlobReadOpenFailure::PublicationDamaged)?;
+    let _ = walk_selected(runtime, max_records, |_, payload, store| {
+        if let Some(declaration) = selected_session_declaration(payload)? {
             if declaration.store() != store.bytes() {
                 return Err(BlobReadOpenFailure::ForeignStore);
             }
             found |= declaration.object() == identity || declaration.session() == identity;
-        } else if is_control_kind(payload, 4) {
-            let publication = BlobGenerationPublicationV1::decode(payload)
-                .map_err(BlobReadOpenFailure::PublicationDamaged)?;
+        } else if let Some(publication) = selected_generation_publication(payload)? {
             if publication.store() != store.bytes() {
                 return Err(BlobReadOpenFailure::ForeignStore);
             }
@@ -193,6 +191,30 @@ pub(in crate::physical_runtime) fn selected_blob_identity_exists(
     Ok(found)
 }
 
+/// The SessionDeclared control frame, when this selected payload is one.
+pub(in crate::physical_runtime::blob) fn selected_session_declaration(
+    payload: &[u8],
+) -> Result<Option<BlobSessionDeclarationV1>, BlobReadOpenFailure> {
+    if !is_control_kind(payload, 1) {
+        return Ok(None);
+    }
+    BlobSessionDeclarationV1::decode(payload)
+        .map(Some)
+        .map_err(BlobReadOpenFailure::PublicationDamaged)
+}
+
+/// The GenerationPublished control frame, when this selected payload is one.
+pub(in crate::physical_runtime::blob) fn selected_generation_publication(
+    payload: &[u8],
+) -> Result<Option<BlobGenerationPublicationV1>, BlobReadOpenFailure> {
+    if !is_control_kind(payload, 4) {
+        return Ok(None);
+    }
+    BlobGenerationPublicationV1::decode(payload)
+        .map(Some)
+        .map_err(BlobReadOpenFailure::PublicationDamaged)
+}
+
 fn is_control_kind(payload: &[u8], kind: u8) -> bool {
     payload.len() >= 9 && &payload[..8] == BLOB_MAGIC && payload[8] == kind
 }
@@ -200,7 +222,8 @@ fn is_control_kind(payload: &[u8], kind: u8) -> bool {
 fn walk_selected<'runtime>(
     runtime: &'runtime ServingPhysicalRuntime,
     max_records: NonZeroU64,
-    mut visit: impl FnMut(
+    visit: impl FnMut(
+        PersistedRecordIdentity,
         &[u8],
         worth_store_physical_format::store_namespace::StableStoreIdentity,
     ) -> Result<(), BlobReadOpenFailure>,
@@ -217,6 +240,24 @@ fn walk_selected<'runtime>(
     let reader = runtime
         .records()
         .map_err(BlobReadOpenFailure::RootProtection)?;
+    let scan = walk_selected_reader(reader, max_records, &mut scratch, visit)?;
+    Ok((scan.into_reader(), allocation))
+}
+
+/// One complete pass over a caller-protected reader. The finished scan is
+/// returned so its owner decides which read lane the reader keeps. The
+/// visitor receives every selected control payload together with the record
+/// that routes it.
+pub(in crate::physical_runtime::blob) fn walk_selected_reader(
+    reader: PhysicalRecordReader,
+    max_records: NonZeroU64,
+    scratch: &mut [u8],
+    mut visit: impl FnMut(
+        PersistedRecordIdentity,
+        &[u8],
+        worth_store_physical_format::store_namespace::StableStoreIdentity,
+    ) -> Result<(), BlobReadOpenFailure>,
+) -> Result<PhysicalRecordScanSession, BlobReadOpenFailure> {
     let mut scan = reader
         .scan_rebuild(
             RecordScanRequest::from_start()
@@ -229,13 +270,14 @@ fn walk_selected<'runtime>(
                 ),
         )
         .map_err(BlobReadOpenFailure::Scan)?;
+    let store = scan.store_identity();
     let mut examined = 0_u64;
     loop {
         if examined == max_records.get() {
             return Err(BlobReadOpenFailure::ScanBoundExhausted);
         }
         match scan
-            .read_next_into(&mut scratch)
+            .read_next_into(scratch)
             .map_err(BlobReadOpenFailure::Scan)?
         {
             RecordScanOutcome::Completed(_) => break,
@@ -244,7 +286,14 @@ fn walk_selected<'runtime>(
                     examined += 1;
                     let record = &batch.records()[index];
                     if let Some(payload) = batch.payload(index) {
-                        visit(payload, scan.store_identity())?;
+                        let id = PersistedRecordIdentity::new(
+                            record.record_id().allocation_epoch(),
+                            record.record_id().ordinal(),
+                        )
+                        .ok_or(BlobReadOpenFailure::PublicationDamaged(
+                            BlobRecordDenial::InvalidIdentity,
+                        ))?;
+                        visit(id, payload, store)?;
                     } else if record.declared_payload_bytes() <= MAX_SELECTED_CONTROL_BYTES {
                         return Err(BlobReadOpenFailure::PublicationDamaged(
                             BlobRecordDenial::Truncated,
@@ -257,5 +306,5 @@ fn walk_selected<'runtime>(
             }
         }
     }
-    Ok((scan.into_reader(), allocation))
+    Ok(scan)
 }

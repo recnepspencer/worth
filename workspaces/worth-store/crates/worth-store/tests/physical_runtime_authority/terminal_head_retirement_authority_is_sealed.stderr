@@ -1,0 +1,15 @@
+error[E0432]: unresolved imports `worth_store::physical_runtime::CheckpointAttestedTerminalHead`, `worth_store::physical_runtime::TerminalHeadIdentityNonReissue`, `worth_store::physical_runtime::TerminalHeadNoReaderOrRecoveryHold`, `worth_store::physical_runtime::TerminalHeadNoRetryClaim`, `worth_store::physical_runtime::TerminalHeadPublicationExcluded`, `worth_store::physical_runtime::TerminalHeadRetirementAuthority`
+ --> tests/physical_runtime_authority/terminal_head_retirement_authority_is_sealed.rs:5:5
+  |
+5 |     CheckpointAttestedTerminalHead, TerminalHeadIdentityNonReissue,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `TerminalHeadIdentityNonReissue` in `physical_runtime`
+  |     |
+  |     no `CheckpointAttestedTerminalHead` in `physical_runtime`
+6 |     TerminalHeadNoReaderOrRecoveryHold, TerminalHeadNoRetryClaim,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^ no `TerminalHeadNoRetryClaim` in `physical_runtime`
+  |     |
+  |     no `TerminalHeadNoReaderOrRecoveryHold` in `physical_runtime`
+7 |     TerminalHeadPublicationExcluded, TerminalHeadRetirementAuthority,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `TerminalHeadRetirementAuthority` in `physical_runtime`
+  |     |
+  |     no `TerminalHeadPublicationExcluded` in `physical_runtime`

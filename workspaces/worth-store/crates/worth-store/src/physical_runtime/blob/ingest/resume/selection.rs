@@ -13,8 +13,8 @@ use crate::physical_runtime::{
 
 use super::super::super::{AdmittedBlobScope, BlobIngestAllocation, BlobIngestFailure};
 use super::super::selected_session::{
-    read_authenticated_declaration, selected_abandonment_matches, SelectedSessionFailure,
-    DECLARATION_FRAME_BYTES,
+    read_authenticated_declaration, release_source_names_session, selected_abandonment_matches,
+    SelectedSessionFailure, DECLARATION_FRAME_BYTES,
 };
 use super::{
     claims::{validate_selected_claims, SelectedResumeClaim},
@@ -229,9 +229,14 @@ fn observe_selected_payload(
     }
     let decoded = decode_blob_record(payload).map_err(BlobResumeFailure::Format)?;
     let claim = match decoded {
+        BlobRecordV1::DropSetManifestV3(manifest) => {
+            if release_source_names_session(manifest.source_basis(), &token, declaration) {
+                return Err(BlobResumeFailure::AlreadyReleased);
+            }
+            None
+        }
         BlobRecordV1::DropSetManifest(_)
         | BlobRecordV1::DropSetManifestV2(_)
-        | BlobRecordV1::DropSetManifestV3(_)
         | BlobRecordV1::OriginalDropReserved(_)
         | BlobRecordV1::ReclaimDescriptor(_)
         | BlobRecordV1::ReclaimDescriptorV2(_)
@@ -352,6 +357,9 @@ fn observe_selected_payload(
     Ok(())
 }
 
+#[cfg(test)]
+#[path = "selection/released_tests.rs"]
+mod released_tests;
 #[cfg(test)]
 #[path = "selection/terminal_tests.rs"]
 mod terminal_tests;

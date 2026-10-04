@@ -5,6 +5,10 @@
 mod admission;
 pub(super) mod backing;
 pub(super) mod capture_envelope;
+#[cfg(feature = "certification-test-authority")]
+mod certification_observation;
+#[cfg(feature = "certification-test-authority")]
+pub use certification_observation::CertificationReleaseHeadObservation;
 mod charge;
 mod checkpoint_commit;
 mod commit;
@@ -18,6 +22,10 @@ mod reopen;
 #[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use reopen::RecoveredReleaseLedgerDenial;
 mod snapshot;
+mod terminal_head_retirement;
+pub(in crate::physical_runtime) use terminal_head_retirement::{
+    CheckpointAttestedTerminalHead, TerminalHeadAttestationDenial,
+};
 
 use std::sync::{Arc, Mutex};
 

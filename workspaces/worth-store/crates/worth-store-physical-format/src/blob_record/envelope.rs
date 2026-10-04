@@ -250,6 +250,29 @@ pub(super) fn decode(bytes: &[u8]) -> Result<DecodedEnvelope<'_>, BlobRecordDeni
     })
 }
 
+/// The leading payload bytes of a `kind` frame whose tail was not read. The
+/// envelope digest covers the unread tail, so nothing returned here is
+/// integrity-checked: a caller may trust only a field that authenticates
+/// itself.
+pub(super) fn payload_prefix(
+    prefix: &[u8],
+    kind: BlobRecordKind,
+) -> Result<&[u8], BlobRecordDenial> {
+    if prefix.len() < BLOB_RECORD_HEADER_BYTES {
+        return Err(BlobRecordDenial::Truncated);
+    }
+    if prefix[..8] != MAGIC {
+        return Err(BlobRecordDenial::WrongMagic);
+    }
+    if prefix[8] != kind as u8 {
+        return Err(BlobRecordDenial::UnknownKind);
+    }
+    if prefix[9] != BLOB_RECORD_VERSION {
+        return Err(BlobRecordDenial::UnsupportedVersion);
+    }
+    Ok(&prefix[BLOB_RECORD_HEADER_BYTES..])
+}
+
 pub(super) fn digest(parts: &[&[u8]]) -> [u8; 32] {
     let mut hasher = Sha256::new();
     for part in parts {

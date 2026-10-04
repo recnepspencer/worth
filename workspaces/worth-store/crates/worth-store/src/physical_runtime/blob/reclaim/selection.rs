@@ -111,14 +111,7 @@ pub(super) fn select(
     if occupied_attempts.capacity() != capacity {
         return Err(BlobReclaimFailure::ScratchUnavailable);
     }
-    let mut scratch = Vec::new();
-    scratch
-        .try_reserve_exact(scan::FRAME_WINDOW_BYTES)
-        .map_err(|_| BlobReclaimFailure::ScratchUnavailable)?;
-    scratch.resize(scan::FRAME_WINDOW_BYTES, 0);
-    if scratch.capacity() != scan::FRAME_WINDOW_BYTES {
-        return Err(BlobReclaimFailure::ScratchUnavailable);
-    }
+    let mut scratch = scan::frame_window()?;
     let mut declaration_seen = false;
     let mut abandoned = None;
     let reader = scan::walk(reader, limits, &mut scratch, &mut work, |record, bytes| {

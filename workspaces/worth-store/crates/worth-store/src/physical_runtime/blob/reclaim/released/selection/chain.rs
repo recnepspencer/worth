@@ -31,6 +31,9 @@ pub(super) fn validate(
         return Err(BlobReclaimFailure::ConflictingSelectedFate);
     }
     let Some(head) = selected_head.head() else {
+        if let Some(retired) = retired_terminal_tip(inventory) {
+            return Ok(retired);
+        }
         if !inventory.publication_selected
             || !inventory.descriptors.is_empty()
             || !inventory.manifests.is_empty()
@@ -60,6 +63,31 @@ pub(super) fn validate(
         cumulative_dropped: head.cumulative_dropped(),
         terminal: head.terminal(),
         settled_absence_authority: selected_head.authorizes_settled_absence(),
+    })
+}
+
+/// A terminal head retired leaves its terminal descriptor selected while the
+/// owner-attested roster for this exact root no longer holds the key. The
+/// root that routes a descriptor also installs its head, and only a terminal
+/// head retired removes one, so this absence is settled: the release is
+/// complete, and a further reclaim proves no effect and mints no head.
+fn retired_terminal_tip(inventory: &SelectedReleaseInventory) -> Option<ValidatedReleaseChain> {
+    if inventory.publication_selected {
+        return None;
+    }
+    let tip = inventory.descriptors.iter().find(|link| {
+        link.descriptor.terminal()
+            && link.descriptor.source_kind() == BlobReclaimSourceKind::ReleasedGeneration
+            && inventory.fact(link.record).is_some_and(|fact| {
+                fact.class == SelectedRecordContentClass::Blob(BlobRecordKind::ReclaimDescriptorV3)
+                    && fact.frame_sha256 == link.frame_sha256
+            })
+    })?;
+    Some(ValidatedReleaseChain {
+        predecessor: ReleasedDropPredecessorV1::new(tip.record, tip.frame_sha256).ok(),
+        cumulative_dropped: tip.descriptor.cumulative_dropped(),
+        terminal: true,
+        settled_absence_authority: true,
     })
 }
 

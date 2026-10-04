@@ -66,6 +66,12 @@ impl RecordPublicationDirector {
         self.root_owner.snapshot()
     }
 
+    pub(in crate::physical_runtime) fn release_head_observation(
+        &self,
+    ) -> Option<crate::physical_runtime::durability::CertificationReleaseHeadObservation> {
+        self.root_owner.certification_release_head_observation()
+    }
+
     pub(in crate::physical_runtime) fn fail_next_wal_member_before_effect(&self) {
         self.wal.fail_next_member_before_effect();
     }

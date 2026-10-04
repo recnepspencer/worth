@@ -42,6 +42,9 @@ pub enum BlobResumeFailure {
     DeclarationMismatch,
     ScopeMismatch,
     AlreadyPublished,
+    /// Store released the generation this session published. The session
+    /// never resumes: finishing it would publish its identity a second time.
+    AlreadyReleased,
     AlreadyAbandoned,
     Expired,
     ScanBoundExhausted,

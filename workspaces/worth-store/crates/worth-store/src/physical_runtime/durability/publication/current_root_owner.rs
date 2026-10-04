@@ -22,6 +22,8 @@ pub(in crate::physical_runtime) use recovered_custody::PreparedRecoveredCheckpoi
 #[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use release_capacity::RecoveredReleaseLedgerDenial;
 mod release_capacity;
+#[cfg(feature = "certification-test-authority")]
+pub use release_capacity::CertificationReleaseHeadObservation;
 pub use release_capacity::{ReleaseCertificateCapacityDenial, SelectedReleaseHeadDenial};
 mod root_basis;
 mod root_capture;
@@ -58,6 +60,13 @@ pub(in crate::physical_runtime) use reclaim::{
     AdmittedFailedIngestDrop, AdmittedManifestResidueRetirement, AdmittedReleasedGenerationDrop,
     ManifestResidueDisplacement, ManifestResidueProof, PhysicalBlobReclaimAdmissionDenial,
     PhysicalReclaimAttempt, PhysicalReconciledReclaimDescriptorFate, SelectedOriginalDropProof,
+};
+pub(in crate::physical_runtime) use reclaim::{
+    AdmittedTerminalHeadRetirement, PublicationStateLockHeld, TerminalHeadPublicationExcluded,
+    TerminalHeadRetirementAdmissionDenial,
+};
+pub(in crate::physical_runtime) use release_capacity::{
+    CheckpointAttestedTerminalHead, TerminalHeadAttestationDenial,
 };
 pub(in crate::physical_runtime) use release_capacity::{
     ReleaseCertificateCapacityLease, ReleaseHeadCapacityCharge, SelectedReleaseHeadBasis,

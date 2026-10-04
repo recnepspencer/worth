@@ -29,7 +29,7 @@ pub(in crate::physical_runtime) struct CompletedPhysicalMutationFact {
     completed_data_frames: Box<[RecordFrameCoordinate]>,
     observation: RecordAppendObservation,
     wal_frame_header_witness: Option<(u64, u64, [u8; 32], [u8; 32])>,
-    release_head_effect: Option<worth_store_physical_format::PersistedReleaseCustodyHeadEffectV1>,
+    release_head_effect: Option<worth_store_physical_format::PersistedReleaseHeadClaim>,
 }
 
 impl CompletedPhysicalMutation {
@@ -82,7 +82,16 @@ impl CompletedPhysicalMutation {
     pub(in crate::physical_runtime) fn selected_head_transition(
         &self,
     ) -> Option<&worth_store_physical_format::PersistedReleaseCustodyHeadEffectV1> {
-        self.fact.release_head_effect.as_ref()
+        let claim = self.fact.release_head_effect.as_ref()?;
+        claim.upsert()
+    }
+
+    /// The exact terminal head retirement this completed member published.
+    pub(in crate::physical_runtime) fn selected_terminal_head_retirement(
+        &self,
+    ) -> Option<&worth_store_physical_format::PersistedTerminalReleaseHeadRetirementV1> {
+        let claim = self.fact.release_head_effect.as_ref()?;
+        claim.terminal_head_retired()
     }
 
     pub fn into_acknowledgment(self) -> PhysicalMutationAcknowledgment {
@@ -140,7 +149,7 @@ impl CompletedPhysicalMutationFact {
             completed_data_frames: member.completed_data_frame_coordinates(),
             observation: member.observation(),
             wal_frame_header_witness: member.encoded_frame_header_witness(),
-            release_head_effect: member.selected_head_transition().cloned(),
+            release_head_effect: member.selected_head_claim().cloned(),
         })
     }
 

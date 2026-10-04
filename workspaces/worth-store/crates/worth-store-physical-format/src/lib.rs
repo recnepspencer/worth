@@ -304,10 +304,10 @@ pub use recovery_projection::{
     PersistedPhysicalRecoveryManifest, PersistedPhysicalRecoveryOperation,
     PersistedPhysicalRecoveryPayload, PersistedPhysicalRecoveryProjection,
     PersistedPhysicalRecoveryRootState, PersistedReleaseCustodyHeadEffectV1,
-    PersistedReleaseHeadTreeClaim, PersistedReleasedDirectoryReplacementV1,
-    PersistedTerminalReleaseHeadRetirementV1, PhysicalRecoveryDecodeFailure,
-    PhysicalRecoveryDecodeStorage, PhysicalRecoveryProjectionDecodeLimits,
-    PhysicalRecoveryProjectionDenial,
+    PersistedReleaseHeadClaim, PersistedReleaseHeadTreeClaim,
+    PersistedReleasedDirectoryReplacementV1, PersistedTerminalReleaseHeadRetirementV1,
+    PhysicalRecoveryDecodeFailure, PhysicalRecoveryDecodeStorage,
+    PhysicalRecoveryProjectionDecodeLimits, PhysicalRecoveryProjectionDenial,
 };
 pub use reference::{
     CheckpointAdjacencyPosture, CurrentRootManifestAdmission, ManifestMembershipDenial,

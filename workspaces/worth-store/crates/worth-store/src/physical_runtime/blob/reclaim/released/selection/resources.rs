@@ -16,13 +16,5 @@ pub(super) fn require_grant(
 }
 
 pub(super) fn scratch() -> Result<Vec<u8>, BlobReclaimFailure> {
-    let mut scratch = Vec::new();
-    scratch
-        .try_reserve_exact(scan::FRAME_WINDOW_BYTES)
-        .map_err(|_| BlobReclaimFailure::ScratchUnavailable)?;
-    scratch.resize(scan::FRAME_WINDOW_BYTES, 0);
-    if scratch.capacity() != scan::FRAME_WINDOW_BYTES {
-        return Err(BlobReclaimFailure::ScratchUnavailable);
-    }
-    Ok(scratch)
+    scan::frame_window()
 }

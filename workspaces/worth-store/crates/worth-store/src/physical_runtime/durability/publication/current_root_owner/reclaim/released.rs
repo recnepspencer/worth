@@ -8,6 +8,11 @@ use crate::physical_runtime::{durability::DisplacedArtifact, PhysicalRecordReade
 /// A different semantic source shares the same single Store root/drop fence.
 /// The proof is consumed before this capability exists; encoded basis alone
 /// cannot construct it or authorize another publication.
+///
+/// The released basis does not name its session's declaration record, so the
+/// rule that no drop removes one is enforced where the displaced set is
+/// resolved from the protected root: the director denies a record routed as
+/// SessionDeclared before any fence exists.
 pub(in crate::physical_runtime) struct AdmittedReleasedGenerationDrop {
     _reader: PhysicalRecordReader,
     attempt: PhysicalReclaimAttempt,

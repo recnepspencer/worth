@@ -132,6 +132,15 @@ fn validate(
     dispatched: &DataDispatchedPhysicalMutation,
 ) -> Result<(), PhysicalDataSettlementFailureCause> {
     let Some(expected) = dispatched.durable().data_frames() else {
+        if let Some(publication) = dispatched.durable().terminal_head_retirement() {
+            return if dispatched.effects().is_empty()
+                && publication == dispatched.durable().member_basis().lsn_range()
+            {
+                Ok(())
+            } else {
+                Err(PhysicalDataSettlementFailureCause::BasisSubstitution)
+            };
+        }
         let (copy, publication) = dispatched
             .durable()
             .source_copy()

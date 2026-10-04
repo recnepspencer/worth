@@ -27,6 +27,7 @@ pub(in crate::physical_runtime) enum PhysicalMutationOperationFamily {
     BTreeNodeAppend,
     SegmentRewrite,
     ExtentRewrite,
+    TerminalHeadRetirement,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -183,6 +184,7 @@ const fn operation_code(family: PhysicalMutationOperationFamily) -> u8 {
         PhysicalMutationOperationFamily::BTreeNodeAppend => 6,
         PhysicalMutationOperationFamily::SegmentRewrite => 2,
         PhysicalMutationOperationFamily::ExtentRewrite => 3,
+        PhysicalMutationOperationFamily::TerminalHeadRetirement => 7,
     }
 }
 

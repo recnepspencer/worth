@@ -10,6 +10,10 @@ use super::FailedIngestReclaimBasisV1;
 
 const RELEASED_SOURCE_DOMAIN: &[u8] = b"store.physical.released-generation-reclaim-basis.v1";
 const RELEASED_SOURCE_BYTES: usize = 24 + 32 + 32 + GENERATION_PUBLICATION_FRAME_BYTES;
+const FAILED_INGEST_SOURCE_BYTES: usize = 128;
+/// The longest encoded source basis is the released-generation form.
+pub(super) const MAXIMUM_SOURCE_BASIS_BYTES: usize = RELEASED_SOURCE_BYTES;
+const _: () = assert!(FAILED_INGEST_SOURCE_BYTES <= MAXIMUM_SOURCE_BASIS_BYTES);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -144,7 +148,7 @@ impl BlobReclaimSourceBasisV1 {
 
     pub(super) fn encoded_len(self) -> usize {
         match self {
-            Self::FailedIngest(_) => 128,
+            Self::FailedIngest(_) => FAILED_INGEST_SOURCE_BYTES,
             Self::ReleasedGeneration(_) => RELEASED_SOURCE_BYTES,
         }
     }

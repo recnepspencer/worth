@@ -10,6 +10,8 @@ use worth_store_physical_format::{
 use super::inline_segment_plan::InlineSegmentAllocation;
 use crate::physical_runtime::record_serving::publication::append_observation::PublicationObservation;
 
+#[path = "prepared_root_projection/record_less.rs"]
+mod record_less;
 #[path = "prepared_root_projection/released_directory_rebinding.rs"]
 mod released_directory_rebinding;
 
@@ -20,7 +22,7 @@ mod released_directory_rebinding;
 pub(in crate::physical_runtime) struct PreparedPhysicalRootProjection {
     pub(in crate::physical_runtime::record_serving) derived_updates: DerivedRootUpdates,
     pub(in crate::physical_runtime::record_serving) release_head_effect:
-        Option<worth_store_physical_format::PersistedReleaseCustodyHeadEffectV1>,
+        Option<worth_store_physical_format::PersistedReleaseHeadClaim>,
     pub(in crate::physical_runtime::record_serving) arena_reservations:
         Vec<super::super::arena::ArenaReservation>,
     pub(in crate::physical_runtime::record_serving) root_publication_allocation_bytes: NonZeroU64,
@@ -76,11 +78,11 @@ pub(in crate::physical_runtime::record_serving) struct DerivedRootUpdates {
 }
 
 impl PreparedPhysicalRootProjection {
-    pub(in crate::physical_runtime::record_serving) fn set_release_head_effect(
+    pub(in crate::physical_runtime::record_serving) fn set_release_head_claim(
         &mut self,
-        effect: worth_store_physical_format::PersistedReleaseCustodyHeadEffectV1,
+        effect: worth_store_physical_format::PersistedReleaseHeadClaim,
     ) -> Option<()> {
-        let bytes = effect.framed_bytes()?;
+        let bytes = effect.tree_claim().framed_bytes()?;
         self.root_publication_allocation_bytes = NonZeroU64::new(
             self.root_publication_allocation_bytes
                 .get()
@@ -90,9 +92,9 @@ impl PreparedPhysicalRootProjection {
         Some(())
     }
 
-    pub(in crate::physical_runtime) fn recovery_release_head_effect(
+    pub(in crate::physical_runtime) fn recovery_release_head_claim(
         &self,
-    ) -> Option<&worth_store_physical_format::PersistedReleaseCustodyHeadEffectV1> {
+    ) -> Option<&worth_store_physical_format::PersistedReleaseHeadClaim> {
         self.release_head_effect.as_ref()
     }
 
@@ -242,7 +244,8 @@ impl PreparedPhysicalRootProjection {
             .saturating_add(self.inserted_records)
             .max(1);
         let head_bytes = self.release_head_effect.as_ref().map_or(0, |effect| {
-            effect.node_writes().iter().fold(0_u64, |bytes, write| {
+            let writes = effect.tree_claim().node_writes().iter();
+            writes.fold(0_u64, |bytes, write| {
                 bytes.saturating_add(write.frame().len() as u64)
             })
         });

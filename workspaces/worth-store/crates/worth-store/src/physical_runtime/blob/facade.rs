@@ -82,6 +82,16 @@ impl<'runtime> PhysicalBlobFacade<'runtime> {
         self.runtime.reclaim_blob(request)
     }
 
+    /// Retires the checkpoint-attested terminal release head of one fully
+    /// released generation. Every denial precedes any WAL or root effect.
+    pub fn retire_terminal_head(
+        &self,
+        request: super::BlobTerminalHeadRetirementRequest,
+    ) -> Result<super::BlobTerminalHeadRetirementReceipt, super::BlobTerminalHeadRetirementFailure>
+    {
+        self.runtime.retire_terminal_blob_head(request)
+    }
+
     /// Resumes only bounded native retirement work for a receipt issued by
     /// this same Store runtime; it never repeats the selected drop.
     pub fn continue_reclaim_retirement(

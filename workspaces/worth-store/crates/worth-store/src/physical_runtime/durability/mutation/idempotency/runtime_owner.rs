@@ -19,6 +19,11 @@ use super::{
 
 #[path = "runtime_owner/original_drop.rs"]
 mod original_drop;
+#[path = "runtime_owner/terminal_head_retirement.rs"]
+mod terminal_head_retirement;
+pub(in crate::physical_runtime) use terminal_head_retirement::{
+    TerminalHeadNoRetryClaim, TerminalHeadRetryClaimDenial,
+};
 
 pub(in crate::physical_runtime) struct PhysicalMutationIdempotencyRuntimeOwner {
     registry: Mutex<PhysicalMutationIdempotencyRegistry>,

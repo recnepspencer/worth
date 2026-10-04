@@ -197,4 +197,19 @@ impl PhysicalRecordSubmission {
         };
         director.drop_reclaimed_records(admitted, descriptor, placement, request)
     }
+
+    pub(in crate::physical_runtime) fn prepare_terminal_head_retirement(
+        &self,
+        authority: &crate::physical_runtime::durability::TerminalHeadRetirementAuthority<'_>,
+        placement: AdmittedRecordPlacementPolicy,
+        request: PhysicalMutationRequest,
+    ) -> PhysicalMutationPreparationOutcome {
+        let Some(director) = self.director.upgrade() else {
+            return TransitionOutcome::stale(
+                PhysicalMutationPreparationStale::PublicationAuthorityReleased,
+            )
+            .into();
+        };
+        director.prepare_terminal_head_retirement(authority, placement, request)
+    }
 }

@@ -21,6 +21,16 @@ impl PhysicalMutationResourceShape {
         self.record_count
     }
 
+    /// LSNs the WAL member occupies: one per record, and one for a
+    /// record-less member.
+    pub(in crate::physical_runtime) const fn wal_lsn_span(self) -> u32 {
+        if self.record_count == 0 {
+            1
+        } else {
+            self.record_count
+        }
+    }
+
     pub const fn payload_bytes(self) -> u64 {
         self.payload_bytes
     }

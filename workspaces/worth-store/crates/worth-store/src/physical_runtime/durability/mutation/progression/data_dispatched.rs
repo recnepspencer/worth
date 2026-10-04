@@ -21,6 +21,20 @@ impl DataDispatchedPhysicalMutation {
             effects: Vec::new(),
         }
     }
+    /// A terminal head retired member writes no data frame: its root
+    /// publication is the whole effect.
+    pub(in crate::physical_runtime) fn from_terminal_head_retirement(
+        durable: WalDurablePhysicalMutation,
+    ) -> Self {
+        assert!(
+            durable.terminal_head_retirement().is_some(),
+            "record-less dispatch requires the typed terminal head retired lane"
+        );
+        Self {
+            durable,
+            effects: Vec::new(),
+        }
+    }
     pub(in crate::physical_runtime) fn new(
         durable: WalDurablePhysicalMutation,
         effects: Vec<PhysicalDataEffectSettlement>,

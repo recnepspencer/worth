@@ -27,6 +27,11 @@ use super::{frontier::BlobIngestProgress, BlobIngestClaimDenial};
 mod chunk_persistence;
 #[path = "session/declaration_admission.rs"]
 mod declaration_admission;
+#[path = "session/terminal_head_non_reissue.rs"]
+mod terminal_head_non_reissue;
+pub(in crate::physical_runtime) use terminal_head_non_reissue::{
+    TerminalHeadIdentityNonReissue, TerminalHeadNonReissueDenial,
+};
 
 #[derive(Debug)]
 pub enum BlobIngestFailure {

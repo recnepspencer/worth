@@ -24,7 +24,7 @@ pub use operation::{
     PersistedPhysicalRecoveryOperation,
 };
 pub use release_head_retirement::PersistedTerminalReleaseHeadRetirementV1;
-pub use release_head_tree_claim::PersistedReleaseHeadTreeClaim;
+pub use release_head_tree_claim::{PersistedReleaseHeadClaim, PersistedReleaseHeadTreeClaim};
 pub use released_directory_replacement::PersistedReleasedDirectoryReplacementV1;
 pub use root_state::{PersistedInlineSegmentAllocation, PersistedPhysicalRecoveryRootState};
 pub use source_copy::PersistedExtentCopyRecipe;

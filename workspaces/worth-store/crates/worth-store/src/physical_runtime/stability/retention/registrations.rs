@@ -13,6 +13,8 @@ use crate::physical_runtime::{
 
 mod reclaim_guard;
 mod retained_snapshot;
+mod terminal_head_hold;
+pub(in crate::physical_runtime) use terminal_head_hold::TerminalHeadNoReaderOrRecoveryHold;
 
 pub(in crate::physical_runtime) struct RootProtectionRegistry {
     runtime: RuntimeIdentity,

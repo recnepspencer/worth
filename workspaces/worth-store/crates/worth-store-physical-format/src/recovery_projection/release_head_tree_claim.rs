@@ -3,7 +3,8 @@
 //! write rosters, so every budget owner charges them through this one view.
 
 use crate::{
-    PhysicalRecordFormatDeclaration, ReleaseCustodyHeadNodeWriteV1, ReleaseCustodyHeadPathNodeV1,
+    PhysicalRecordFormatDeclaration, ReleaseCustodyHeadBlockReferenceV1,
+    ReleaseCustodyHeadMutationV1, ReleaseCustodyHeadNodeWriteV1, ReleaseCustodyHeadPathNodeV1,
     ReleaseCustodyHeadTransitionLimitsV1,
 };
 
@@ -19,7 +20,71 @@ pub enum PersistedReleaseHeadTreeClaim<'a> {
     TerminalHeadRetired(&'a PersistedTerminalReleaseHeadRetirementV1),
 }
 
+/// The head-tree claim one planned operation owns until its WAL member is
+/// encoded. An operation carries at most one: an upsert or a retirement.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PersistedReleaseHeadClaim {
+    Upsert(PersistedReleaseCustodyHeadEffectV1),
+    TerminalHeadRetired(PersistedTerminalReleaseHeadRetirementV1),
+}
+
+impl PersistedReleaseHeadClaim {
+    pub fn tree_claim(&self) -> PersistedReleaseHeadTreeClaim<'_> {
+        match self {
+            Self::Upsert(effect) => PersistedReleaseHeadTreeClaim::Upsert(effect),
+            Self::TerminalHeadRetired(retirement) => {
+                PersistedReleaseHeadTreeClaim::TerminalHeadRetired(retirement)
+            }
+        }
+    }
+
+    pub fn upsert(&self) -> Option<&PersistedReleaseCustodyHeadEffectV1> {
+        match self {
+            Self::Upsert(effect) => Some(effect),
+            Self::TerminalHeadRetired(_) => None,
+        }
+    }
+
+    pub fn terminal_head_retired(&self) -> Option<&PersistedTerminalReleaseHeadRetirementV1> {
+        match self {
+            Self::TerminalHeadRetired(retirement) => Some(retirement),
+            Self::Upsert(_) => None,
+        }
+    }
+}
+
 impl<'a> PersistedReleaseHeadTreeClaim<'a> {
+    /// The node frames the successor root publishes for this claim.
+    pub fn node_writes(self) -> &'a [ReleaseCustodyHeadNodeWriteV1] {
+        match self {
+            Self::Upsert(effect) => effect.node_writes(),
+            Self::TerminalHeadRetired(retirement) => retirement.node_writes(),
+        }
+    }
+
+    pub fn mutation(self) -> ReleaseCustodyHeadMutationV1 {
+        match self {
+            Self::Upsert(effect) => effect.mutation(),
+            Self::TerminalHeadRetired(retirement) => retirement.mutation(),
+        }
+    }
+
+    /// Absent only for the first upsert into an empty tree.
+    pub fn source_root(self) -> Option<ReleaseCustodyHeadBlockReferenceV1> {
+        match self {
+            Self::Upsert(effect) => effect.source_root(),
+            Self::TerminalHeadRetired(retirement) => Some(retirement.source_root()),
+        }
+    }
+
+    /// Absent only when a retirement removed the last head.
+    pub fn result_root(self) -> Option<ReleaseCustodyHeadBlockReferenceV1> {
+        match self {
+            Self::Upsert(effect) => Some(effect.result_root()),
+            Self::TerminalHeadRetired(retirement) => retirement.result_root(),
+        }
+    }
+
     /// The carried source path, still a WAL claim until each frame is re-read.
     pub fn source_path(self) -> &'a [ReleaseCustodyHeadPathNodeV1] {
         match self {

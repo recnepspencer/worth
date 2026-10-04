@@ -26,7 +26,7 @@ pub(in crate::physical_runtime::record_serving) struct PreparedRecordPayloadPlan
     pub(in crate::physical_runtime::record_serving) derived_updates:
         super::prepared_root_projection::DerivedRootUpdates,
     pub(in crate::physical_runtime::record_serving) release_head_effect:
-        Option<worth_store_physical_format::PersistedReleaseCustodyHeadEffectV1>,
+        Option<worth_store_physical_format::PersistedReleaseHeadClaim>,
     pub(in crate::physical_runtime::record_serving) arena_reservations:
         Vec<super::super::arena::ArenaReservation>,
     pub(in crate::physical_runtime::record_serving) source_root: DurablePhysicalRootManifest,

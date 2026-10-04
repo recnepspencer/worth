@@ -82,6 +82,9 @@ pub enum BlobTerminalFailure {
     DeclarationMismatch,
     ScopeMismatch,
     AlreadyPublished,
+    /// Store released the generation this session published. Its fate is
+    /// that release, never an abandonment.
+    AlreadyReleased,
     ConflictingSelectedFate,
     NotExpired {
         selected_checkpoint_sequence: u64,

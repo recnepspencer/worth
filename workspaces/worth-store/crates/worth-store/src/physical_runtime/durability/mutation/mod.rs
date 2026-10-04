@@ -61,6 +61,9 @@ pub(in crate::physical_runtime) use idempotency::{
     DecodedPhysicalMutationBindingRecord, PersistedPhysicalMutationFate,
     PhysicalBindingCompactionRecordDecodeDenial, PhysicalPersistedBindingDecodeDenial,
 };
+pub(in crate::physical_runtime) use idempotency::{
+    TerminalHeadNoRetryClaim, TerminalHeadRetryClaimDenial,
+};
 pub(in crate::physical_runtime) use request::PhysicalMutationDurabilityRequest;
 pub(in crate::physical_runtime) use request_fingerprint::{
     PhysicalMutationFingerprintInput, PhysicalMutationOperationFamily,

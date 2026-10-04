@@ -120,6 +120,7 @@ fn one_manifest_fence_reserves_one_slot_and_releases_only_before_effect() {
         manifest_mutation: None,
         reservation_mutation: None,
         drop_mutation: None,
+        retirement_mutation: None,
         drop_records: Vec::new(),
         displaced: vec![DisplacedArtifact {
             source_root: 1,
@@ -137,7 +138,7 @@ fn one_manifest_fence_reserves_one_slot_and_releases_only_before_effect() {
         }],
         phase: ReclaimPhase::BeforeEffect,
         purpose: ReclaimPurpose::ManifestResidue,
-        _capacity: capacity,
+        _capacity: Some(capacity),
         _recovered_reservations: Vec::new(),
         release_certificate_pending: None,
     })));

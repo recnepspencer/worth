@@ -66,6 +66,12 @@ impl WalDurablePhysicalMutation {
         self.appended.reserved().data().source_copy()
     }
 
+    pub(in crate::physical_runtime) fn terminal_head_retirement(
+        &self,
+    ) -> Option<worth_store_wal::WalLsnRange> {
+        self.appended.reserved().data().terminal_head_retirement()
+    }
+
     pub(in crate::physical_runtime) fn completed_data_frames(&self) -> usize {
         self.completed_data_prefix.len()
     }

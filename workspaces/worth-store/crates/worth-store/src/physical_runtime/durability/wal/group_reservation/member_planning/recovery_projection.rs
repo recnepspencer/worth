@@ -3,7 +3,7 @@ use worth_store_physical_format::{
     BlobRecordKind, PersistedDerivedDirectoryRetirement, PersistedInlineSegmentAllocation,
     PersistedPhysicalRecoveryFrame, PersistedPhysicalRecoveryManifest,
     PersistedPhysicalRecoveryOperation, PersistedPhysicalRecoveryProjection,
-    PersistedPhysicalRecoveryRootState,
+    PersistedPhysicalRecoveryRootState, PersistedReleaseHeadClaim,
 };
 
 use crate::physical_runtime::PreparedPhysicalRootProjection;
@@ -53,6 +53,27 @@ pub(super) fn recovery_projection(
         )
         .expect("copy adoption names a current root no older than its protected source");
     }
+    if data.terminal_head_retirement().is_some() {
+        assert!(
+            blob_record_kind.is_none() && derived_directory_basis.is_none(),
+            "a terminal head retired member carries no record"
+        );
+        let retirement = root
+            .recovery_release_head_claim()
+            .and_then(PersistedReleaseHeadClaim::terminal_head_retired)
+            .expect("the record-less lane carries its sealed retirement claim");
+        return PersistedPhysicalRecoveryProjection::new_with_operation(
+            root.source_root_generation(),
+            root_state,
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            PersistedPhysicalRecoveryOperation::TerminalReleaseHeadRetired(retirement.clone()),
+        )
+        .expect("a terminal head retired member is exactly its sealed retirement claim");
+    }
     let frames = data
         .frames()
         .expect("non-copy plan carries admitted frames")
@@ -90,7 +111,7 @@ pub(super) fn recovery_projection(
                 .expect("successor generation"),
         )
         .expect("nonzero successor generation");
-        assert!(root.recovery_release_head_effect().is_none());
+        assert!(root.recovery_release_head_claim().is_none());
         PersistedPhysicalRecoveryOperation::DerivedDirectory {
             binding: worth_store_physical_format::PersistedDerivedDirectoryRecordBinding::new_with_quarantine(
                 binding,
@@ -109,7 +130,7 @@ pub(super) fn recovery_projection(
         blob_semantic(blob_record_kind, prepared_bytes, root)
     };
     assert!(
-        root.recovery_release_head_effect().is_none()
+        root.recovery_release_head_claim().is_none()
             || matches!(
                 &operation,
                 PersistedPhysicalRecoveryOperation::RecordsDropped {

@@ -51,6 +51,14 @@ impl PhysicalPublicationAdmission {
         true
     }
 
+    /// A displaced extent whose retirement receipt is still outstanding.
+    pub(in crate::physical_runtime) fn has_outstanding_displaced_extent(&self) -> bool {
+        let state = self.lock();
+        state.garbage.iter().any(|(artifact, garbage)| {
+            !garbage.completed && matches!(artifact, RetiredArtifact::Extent { .. })
+        })
+    }
+
     pub(in crate::physical_runtime) fn next_displaced(&self) -> Option<DisplacedArtifact> {
         let state = self.lock();
         state.garbage.iter().find_map(|(artifact, garbage)| {

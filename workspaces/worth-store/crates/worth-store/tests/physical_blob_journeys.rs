@@ -129,6 +129,9 @@ mod layout_shape_corruption;
 #[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/reopened_drop_retirement.rs"]
 mod reopened_drop_retirement;
+#[cfg(feature = "certification-test-authority")]
+#[path = "physical_blob_journeys/terminal_head_retirement.rs"]
+mod terminal_head_retirement;
 
 #[test]
 fn c11_blob_child_role() {

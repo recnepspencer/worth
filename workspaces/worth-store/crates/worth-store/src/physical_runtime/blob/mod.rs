@@ -36,6 +36,9 @@ pub use ingest::{
     BlobResumeTokenDenial, BlobTerminalDisposition, BlobTerminalFailure, BlobTerminalLimits,
     BlobTerminalReceipt,
 };
+pub(in crate::physical_runtime) use ingest::{
+    TerminalHeadIdentityNonReissue, TerminalHeadNonReissueDenial,
+};
 pub use placement::{
     BlobMovementFailure, BlobMovementReadHold, BlobMovementReceipt, BlobMovementSession,
 };
@@ -51,6 +54,8 @@ pub use reclaim::{
     BlobReclaimDisposition, BlobReclaimFailure, BlobReclaimHandle, BlobReclaimLimitDenial,
     BlobReclaimLimits, BlobReclaimObservation, BlobReclaimPublicationStage, BlobReclaimReceipt,
     BlobReclaimRequest, BlobReclaimRetirement, BlobReclaimRetirementBudget,
+    BlobTerminalHeadRetirementDenial, BlobTerminalHeadRetirementFailure,
+    BlobTerminalHeadRetirementReceipt, BlobTerminalHeadRetirementRequest,
 };
 pub use scrub::BlobScrubTargetFailure;
 

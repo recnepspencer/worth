@@ -2,6 +2,7 @@ use super::ServingPhysicalRuntime;
 
 mod durable_publication;
 mod rebuild;
+mod release_head;
 mod retirement;
 mod root_completion;
 mod tier_epoch;

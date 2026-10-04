@@ -349,11 +349,12 @@ impl PhysicalCurrentRootOwner {
             manifest_mutation: None,
             reservation_mutation: None,
             drop_mutation: None,
+            retirement_mutation: None,
             drop_records: Vec::new(),
             displaced: retained,
             phase: ReclaimPhase::BeforeEffect,
             purpose: ReclaimPurpose::ManifestResidue,
-            _capacity: capacity,
+            _capacity: Some(capacity),
             _recovered_reservations: Vec::new(),
             release_certificate_pending: None,
         });

@@ -101,6 +101,23 @@ fn pre_effect_control_funding_denial_allocates_no_ledger_backing() {
 }
 
 #[test]
+fn a_retirement_its_envelope_cannot_fund_denies_with_no_ledger_backing() {
+    let fixture = fixture();
+    let mut ledger = SelectedReleaseCustodyLedger::trusted_genesis();
+    let charge = super::super::ReleaseHeadCapacityCharge::new(4096, 8192, 4096, 0, 312);
+    assert!(matches!(
+        ledger.fund_terminal_head_retirement(&fixture.owner, fixture.ceiling, key(), charge),
+        Err(Denial::Resident(
+            PhysicalRecoveryRejoinResidentDenial::BudgetExceeded { .. }
+        ))
+    ));
+    assert_eq!(fixture.ports.counters().active_operation_bytes(), 0);
+    assert!(ledger.allocation_custody.is_none());
+    assert_eq!(ledger.publication_backing_bytes(), Some(0));
+    assert_eq!(ledger.pending_events.capacity(), 0);
+}
+
+#[test]
 fn cancellation_and_drained_spare_capacity_keep_live_funding_until_disposal() {
     let fixture = fixture();
     let mut ledger = SelectedReleaseCustodyLedger::trusted_genesis();

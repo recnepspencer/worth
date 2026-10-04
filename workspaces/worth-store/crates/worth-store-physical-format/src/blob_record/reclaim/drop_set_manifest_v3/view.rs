@@ -2,10 +2,13 @@ use sha2::{Digest, Sha256};
 
 use crate::PersistedRecordIdentity;
 
-use super::super::super::envelope::{canonical_frame_sha256, nonzero_16};
+use super::super::super::envelope::{
+    canonical_frame_sha256, nonzero_16, payload_prefix, BLOB_RECORD_HEADER_BYTES,
+};
 use super::super::super::{BlobRecordDenial, BlobRecordKind};
 use super::super::basis::read_record;
 use super::super::drop_set_manifest::DROPPED_DIGEST_DOMAIN;
+use super::super::source_basis::MAXIMUM_SOURCE_BASIS_BYTES;
 use super::super::{BlobReclaimSourceBasisV1, BlobReclaimSourceKind, MAXIMUM_DROP_SET_RECORDS};
 use super::{DropSetManifestV3, MINIMUM_PAYLOAD_BYTES, NEVER_RESERVED};
 
@@ -28,7 +31,43 @@ pub struct DropSetManifestV3View<'a> {
     manifest_selected_generation: u64,
 }
 
+/// The source basis starts after the store, the attempt, the source kind and
+/// the source length.
+const SOURCE_BASIS_OFFSET: usize = 35;
+
+/// The length-tagged source basis and the payload offset it ends at.
+fn source_basis_field(
+    payload: &[u8],
+) -> Result<(BlobReclaimSourceBasisV1, usize), BlobRecordDenial> {
+    let tag = payload
+        .get(32..SOURCE_BASIS_OFFSET)
+        .ok_or(BlobRecordDenial::LengthMismatch)?;
+    let kind = BlobReclaimSourceKind::decode(tag[0])?;
+    let source_end = SOURCE_BASIS_OFFSET + usize::from(u16::from_le_bytes([tag[1], tag[2]]));
+    let source = payload
+        .get(SOURCE_BASIS_OFFSET..source_end)
+        .ok_or(BlobRecordDenial::LengthMismatch)?;
+    Ok((BlobReclaimSourceBasisV1::decode(kind, source)?, source_end))
+}
+
 impl<'a> DropSetManifestV3View<'a> {
+    /// The leading frame bytes that hold the source basis of every V3
+    /// manifest, whichever source it names.
+    pub const SOURCE_BASIS_PREFIX_BYTES: usize =
+        BLOB_RECORD_HEADER_BYTES + SOURCE_BASIS_OFFSET + MAXIMUM_SOURCE_BASIS_BYTES;
+
+    /// The source basis of a V3 manifest frame, from a leading window that
+    /// reaches the end of the basis. The dropped identities and the envelope
+    /// digest over them are not read: this names which session a manifest
+    /// releases, it does not authenticate the manifest. A released-generation
+    /// basis still authenticates its own publication frame.
+    pub fn source_basis_in_prefix(
+        prefix: &[u8],
+    ) -> Result<BlobReclaimSourceBasisV1, BlobRecordDenial> {
+        let payload = payload_prefix(prefix, BlobRecordKind::DropSetManifestV3)?;
+        source_basis_field(payload).map(|(source_basis, _)| source_basis)
+    }
+
     pub fn decode(bytes: &'a [u8]) -> Result<Self, BlobRecordDenial> {
         let frame = super::super::super::envelope::decode(bytes)?;
         if frame.kind != BlobRecordKind::DropSetManifestV3 {
@@ -41,18 +80,10 @@ impl<'a> DropSetManifestV3View<'a> {
         if payload.len() < MINIMUM_PAYLOAD_BYTES + 112 + 24 {
             return Err(BlobRecordDenial::LengthMismatch);
         }
-        let kind = BlobReclaimSourceKind::decode(payload[32])?;
-        let source_len = u16::from_le_bytes(payload[33..35].try_into().unwrap()) as usize;
-        let source_end = 35usize
-            .checked_add(source_len)
-            .ok_or(BlobRecordDenial::LengthMismatch)?;
-        let fixed_end = source_end
-            .checked_add(43)
-            .ok_or(BlobRecordDenial::LengthMismatch)?;
-        if payload.len() < fixed_end {
+        let (source_basis, source_end) = source_basis_field(payload)?;
+        if payload.len() < source_end + 43 {
             return Err(BlobRecordDenial::LengthMismatch);
         }
-        let source_basis = BlobReclaimSourceBasisV1::decode(kind, &payload[35..source_end])?;
         let count = u16::from_le_bytes(payload[source_end..source_end + 2].try_into().unwrap());
         if count == 0 || usize::from(count) > MAXIMUM_DROP_SET_RECORDS {
             return Err(BlobRecordDenial::InvalidDropSet);

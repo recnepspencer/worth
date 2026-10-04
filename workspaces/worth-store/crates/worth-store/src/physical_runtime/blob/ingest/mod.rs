@@ -18,6 +18,9 @@ pub use resume::{
     BlobResumeTokenDenial,
 };
 pub use session::{BlobIngestFailure, BlobIngestSession};
+pub(in crate::physical_runtime) use session::{
+    TerminalHeadIdentityNonReissue, TerminalHeadNonReissueDenial,
+};
 pub use terminal::{
     BlobTerminalDisposition, BlobTerminalFailure, BlobTerminalLimits, BlobTerminalReceipt,
 };

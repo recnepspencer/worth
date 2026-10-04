@@ -1,7 +1,8 @@
 use worth_proof::TransitionOutcome;
 use worth_store_physical_format::{
     BlobReclaimDescriptorV1, BlobRecordKind, CurrentPhysicalRecordPlacement, DropSetManifestV2,
-    OriginalDropReservationRequestV1, OriginalDropReservedV1, PersistedRecordIdentity,
+    DurableExtentRecordPlacement, OriginalDropReservationRequestV1, OriginalDropReservedV1,
+    PersistedRecordIdentity, SelectedRecordContentClass,
 };
 
 use super::RecordPublicationDirector;
@@ -293,9 +294,7 @@ impl RecordPublicationDirector {
             let placement = routing
                 .locate(allocation.operation_grant(), *record, &mut discoveries)
                 .map_err(|_| PhysicalBlobReclaimAdmissionDenial::RouteUnavailable)?;
-            let Some(CurrentPhysicalRecordPlacement::Extent(extent)) = placement else {
-                return Err(PhysicalBlobReclaimAdmissionDenial::RouteUnavailable);
-            };
+            let extent = droppable_extent(placement)?;
             displaced.push(DisplacedArtifact {
                 source_root: source,
                 artifact: RetiredArtifact::Extent {
@@ -318,3 +317,24 @@ impl RecordPublicationDirector {
         Ok(displaced)
     }
 }
+
+/// The one route every reclaim drop resolves its records through. A drop
+/// names only extent-placed records and never a SessionDeclared record,
+/// whatever its planner selected: the declaration stays routed for the life
+/// of the Store, which is what stops its session from being declared, and so
+/// its identity from being published, a second time.
+fn droppable_extent(
+    placement: Option<CurrentPhysicalRecordPlacement>,
+) -> Result<DurableExtentRecordPlacement, PhysicalBlobReclaimAdmissionDenial> {
+    let Some(CurrentPhysicalRecordPlacement::Extent(extent)) = placement else {
+        return Err(PhysicalBlobReclaimAdmissionDenial::RouteUnavailable);
+    };
+    if extent.content_class() == SelectedRecordContentClass::Blob(BlobRecordKind::SessionDeclared) {
+        return Err(PhysicalBlobReclaimAdmissionDenial::SelectedResidueInvalid);
+    }
+    Ok(extent)
+}
+
+#[cfg(test)]
+#[path = "blob_reclaim/tests.rs"]
+mod tests;

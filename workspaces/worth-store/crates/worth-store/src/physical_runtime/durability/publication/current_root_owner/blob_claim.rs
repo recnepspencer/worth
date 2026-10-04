@@ -219,6 +219,23 @@ impl PhysicalCurrentRootOwner {
 }
 
 #[cfg(test)]
+impl PhysicalBlobSessionClaim {
+    /// The one claim of `session` in a registry of its own.
+    pub(in crate::physical_runtime) fn fixture(session: [u8; 16]) -> Self {
+        Self::fixture_in(&Arc::new(BlobClaimRegistry::new(1)), session)
+    }
+
+    /// An inspecting claim of `session` in `registry`.
+    pub(super) fn fixture_in(registry: &Arc<BlobClaimRegistry>, session: [u8; 16]) -> Self {
+        registry.reserve(session).expect("fixture claim");
+        Self {
+            registry: Arc::clone(registry),
+            session,
+        }
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 

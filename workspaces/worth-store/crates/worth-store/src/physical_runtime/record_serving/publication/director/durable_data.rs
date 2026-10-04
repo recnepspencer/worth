@@ -45,6 +45,12 @@ impl RecordPublicationDirector {
                 crate::physical_runtime::DataDispatchedPhysicalMutation::from_source_copy(durable),
             );
         }
+        // A terminal head retired member has no data frame to dispatch.
+        if durable.terminal_head_retirement().is_some() {
+            return PhysicalDataDispatchOutcome::Dispatched(
+                crate::physical_runtime::DataDispatchedPhysicalMutation::from_terminal_head_retirement(durable),
+            );
+        }
         let declaration = match candidate_declaration(&durable, self.current_root().generation()) {
             Some(declaration) => declaration,
             None => {
