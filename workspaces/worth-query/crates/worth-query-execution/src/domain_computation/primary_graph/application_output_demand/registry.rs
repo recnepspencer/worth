@@ -1,3 +1,5 @@
+#[path = "registry/accepted_authority.rs"]
+mod accepted_authority;
 use std::collections::HashMap;
 use std::sync::{Arc, Condvar, Mutex};
 

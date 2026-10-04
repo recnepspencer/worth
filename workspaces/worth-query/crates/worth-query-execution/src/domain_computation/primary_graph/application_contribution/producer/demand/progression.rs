@@ -13,6 +13,7 @@ use super::{
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 mod admission;
+mod ready;
 mod resources;
 mod selected_program;
 mod source_recovery;
@@ -194,63 +195,13 @@ where
                         .output_demands
                         .finish_superseded(interest, Family::IDENTITY));
                 }
-                return match completion.authority {
-                    crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Committed(receipt) => {
-                        let current = self.on_branch(delivery_branch).select().map_err(|denial| {
-                            WorthQueryOutputDemandDenial::product_selection(
-                                denial,
-                                "ready output currentness basis could not be selected",
-                            )
-                        })?;
-                        match current.require_current_output_receipts(
-                            [&receipt],
-                            demand.currentness_work_limit(),
-                        ) {
-                            Ok(()) => {}
-                            Err(denial)
-                                if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded =>
-                            {
-                                return self.refresh_output_demand(
-                                    demand,
-                                    disclosed_value,
-                                    disclosed_source,
-                                    &receipt,
-                                );
-                            }
-                            Err(denial) => return Err(denial),
-                        }
-                        let settlement = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement::from_commit(
-                            self,
-                            &receipt,
-                            &completion.readiness,
-                            &demand.selected.identity,
-                            Family::IDENTITY,
-                            demand.producer_contacts_in_this_demand,
-                        );
-                        match settlement {
-                            Ok(settlement) => Ok(WorthQueryOutputDemandAdvance::Settled(settlement)),
-                            Err(denial)
-                                if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded =>
-                            {
-                                self.refresh_output_demand(
-                                    demand,
-                                    disclosed_value,
-                                    disclosed_source,
-                                    &receipt,
-                                )
-                            }
-                            Err(denial) => Err(denial),
-                        }
-                    }
-                    crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Restored(restored) => {
-                        crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement::from_restoration(
-                            self,
-                            &restored,
-                            Family::IDENTITY,
-                        )
-                        .map(WorthQueryOutputDemandAdvance::Settled)
-                    }
-                };
+                return self.advance_ready_output(
+                    demand,
+                    completion,
+                    disclosed_value,
+                    disclosed_source,
+                    delivery_branch,
+                );
             }
             Admission::Failed(denial) => return Err(denial),
             Admission::Execute { successor_of } => successor_of,
@@ -343,7 +294,7 @@ where
         observed_source: crate::domain_computation::primary_graph::WorthQueryObservedSource<
             FamilySourceQuery<Schema, Family>,
         >,
-        stale_receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        predecessor: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
@@ -370,7 +321,7 @@ where
             None,
             demand.admission_kind,
             None,
-            Some(stale_receipt),
+            Some(predecessor),
             demand.retained_program_basis.clone(),
         )?;
         refreshed.producer_contacts_in_this_demand = demand.producer_contacts_in_this_demand;

@@ -203,7 +203,7 @@ where
         admission_kind: crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind,
         expected_source_commit: Option<&worth_runtime_world::facade::CompositeCommitIdentity>,
         successor_of: Option<
-            &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+            &crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority,
         >,
         retained_program_basis: Option<
             std::sync::Arc<

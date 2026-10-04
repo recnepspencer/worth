@@ -18,9 +18,7 @@ impl WorthQueryOutputDemandRegistry {
         product_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         admission_kind: DemandAdmissionKind,
         expected_source_commit: Option<&worth_runtime_world::facade::CompositeCommitIdentity>,
-        successor_of: Option<
-            &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-        >,
+        successor_of: Option<&super::WorthQueryAcceptedOutputAuthority>,
     ) -> Result<WorthQueryOutputDemandInterest, WorthQueryOutputDemandDenial> {
         let mut state = self
             .state
@@ -113,9 +111,7 @@ impl WorthQueryOutputDemandRegistry {
             {
                 let matches_ready = output.checkpoint.as_ref().is_some_and(|checkpoint| {
                     matches!(checkpoint, super::WorthQueryOutputCheckpoint::Ready(completion)
-                        if matches!(&completion.authority,
-                            super::WorthQueryAcceptedOutputAuthority::Committed(receipt)
-                            if receipt.is_same_authoritative_commit(successor)))
+                        if completion.authority.is_same_output(successor))
                 });
                 if matches_ready {
                     if let super::WorthQueryOutputAdvancement::Stopped { denial, .. } =
@@ -170,7 +166,7 @@ impl WorthQueryOutputDemandRegistry {
                 source_scope,
                 prepared_source_commit.clone(),
                 admission_kind.is_required(),
-                successor_of.map(|receipt| *receipt.idempotency_binding().key_identity()),
+                successor_of.map(|authority| authority.idempotency_key()),
             )
         });
         if let Some(successor) = successor_of {
@@ -180,15 +176,13 @@ impl WorthQueryOutputDemandRegistry {
                     if matches!(output.advancement, super::WorthQueryOutputAdvancement::Idle)
                     && output.checkpoint.as_ref().is_some_and(|checkpoint| {
                         matches!(checkpoint, super::WorthQueryOutputCheckpoint::Ready(completion)
-                            if matches!(&completion.authority,
-                                super::WorthQueryAcceptedOutputAuthority::Committed(receipt)
-                                if receipt.is_same_authoritative_commit(successor)))
+                            if completion.authority.is_same_output(successor))
                     })
             );
             if existing_record && reopens_exact_ready {
                 record.state = DemandState::Admitted;
                 record.performed_source = None;
-                record.successor_of = Some(*successor.idempotency_binding().key_identity());
+                record.successor_of = Some(successor.idempotency_key());
                 record.wake.notify();
             }
         }

@@ -195,7 +195,9 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
             occurrence,
             super::super::DemandAdmissionKind::Ordinary,
             None,
-            Some(&receipt),
+            Some(&super::super::WorthQueryAcceptedOutputAuthority::Committed(
+                receipt.clone(),
+            )),
         )
         .expect("the exact stale ready receipt admits its forced successor");
     assert_eq!(replacement.key, demand_key);
@@ -242,7 +244,9 @@ fn stopped_ready_record_rejects_successor_without_reviving_custody() {
         occurrence,
         super::super::DemandAdmissionKind::Ordinary,
         None,
-        Some(&receipt),
+        Some(&super::super::WorthQueryAcceptedOutputAuthority::Committed(
+            receipt.clone(),
+        )),
     ) {
         Ok(_) => panic!("a stopped ready record was revived"),
         Err(denial) => denial,
@@ -292,7 +296,9 @@ fn failed_successor_admission_preserves_ready_custody() {
         occurrence,
         super::super::DemandAdmissionKind::Ordinary,
         None,
-        Some(&receipt),
+        Some(&super::super::WorthQueryAcceptedOutputAuthority::Committed(
+            receipt.clone(),
+        )),
     ) {
         Ok(_) => panic!("an older successor admission was accepted"),
         Err(denial) => denial,
