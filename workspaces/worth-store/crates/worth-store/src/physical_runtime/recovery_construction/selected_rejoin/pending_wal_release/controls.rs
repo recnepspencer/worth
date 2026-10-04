@@ -25,6 +25,8 @@ const MAX_TRANSCRIPT_ENTRIES: u64 =
 
 #[path = "controls/addressed.rs"]
 mod addressed;
+#[path = "controls/checkpoint_head_tree.rs"]
+mod checkpoint_head_tree;
 #[path = "controls/fingerprint.rs"]
 mod fingerprint;
 #[path = "controls/memory.rs"]
@@ -169,16 +171,22 @@ pub(super) fn observe(
         checkpoint_slices = slices;
         Some(observed)
     } else if let Some(base) = claim.selected_head_v2() {
-        if base.selected_root() != &selected.source_root
-            || base.checkpoint_source_root().release_custody_head_root()
-                != selected.source_root.release_custody_head_root()
-            || base
-                .checkpoint_source_root()
-                .next_release_custody_head_block()
-                != selected.source_root.next_release_custody_head_block()
-        {
+        // The pending edge leaves the root this base selected.
+        if base.selected_root() != &selected.source_root {
             return Err(Denial::CertificateRoster);
         }
+        // Store's own proof that this root's head tree is the checkpoint head
+        // tree, held apart from the roster physics minted: the two root
+        // frames Store read carry one tree, or `ordered_walk` replays every
+        // edge between them.
+        checkpoint_head_tree::require_unmoved_without_history(
+            &selected.checkpoint_source_root,
+            &selected.source_root,
+            claim.ordered_history().is_some(),
+        )?;
+        // No edge above the checkpoint unroutes a head or Batch control: a
+        // released edge unroutes exactly its manifest's graph drops
+        // (`ordered_released::verify_delta`), so these routes hold the closure.
         selected_head_v2_controls = Some(release_heads::observe_controls(
             discovery,
             format,

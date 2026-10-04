@@ -52,6 +52,10 @@ mod pending_wal_fold;
 mod selected_batch_multi_pending;
 
 #[cfg(feature = "certification-test-authority")]
+#[path = "production_entry/pending_successor_above_history.rs"]
+mod pending_successor_above_history;
+
+#[cfg(feature = "certification-test-authority")]
 #[path = "production_entry/three_batch_fold.rs"]
 mod three_batch_fold;
 

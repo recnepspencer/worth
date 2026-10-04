@@ -1,9 +1,11 @@
-//! A V3 predecessor is per released object; the selected Store-wide tip can
-//! also retain that exact predecessor after an idle checkpoint has no Batch.
+//! A V3 predecessor is per released object. An earlier same-object batch in
+//! the ordered post-checkpoint history is the predecessor when one exists;
+//! otherwise the checkpoint-source custody for that object is.
 
 use worth_store_physical_format::{
     BlobReclaimDescriptorV3, BlobReclaimSourceBasisV1, DropSetManifestV3, PersistedRecordIdentity,
-    ReleaseCheckpointBatchV1, ReleaseCustodyHeadKeyV1, ReleasedDropPredecessorV1,
+    ReleaseCheckpointBatchV1, ReleaseCustodyHeadEntryV1, ReleaseCustodyHeadKeyV1,
+    ReleasedDropPredecessorV1,
 };
 use worth_store_recovery_physics::{
     VerifiedOrderedPendingWalReleaseBatch, VerifiedPendingWalReleaseCustody,
@@ -11,74 +13,142 @@ use worth_store_recovery_physics::{
 
 use super::super::control_frames::ObservedSelectedControls;
 
+/// Batch/Accumulator custody of a pending claim that carries no head roster,
+/// with the selected controls Store observed for it.
+#[derive(Clone, Copy)]
+pub(super) struct LegacyBatchBase<'a> {
+    pub(super) claim: &'a VerifiedPendingWalReleaseCustody,
+    pub(super) controls: Option<&'a ObservedSelectedControls>,
+}
+
 pub(super) fn predecessor_matches(
     claim: &VerifiedPendingWalReleaseCustody,
     selected_base: Option<&ObservedSelectedControls>,
     current: BlobReclaimDescriptorV3,
     manifest: &DropSetManifestV3,
 ) -> bool {
-    let base = current.base();
-    if let Some(joined) = claim.selected_head_v2() {
-        let BlobReclaimSourceBasisV1::ReleasedGeneration(source) = manifest.source_basis() else {
-            return false;
-        };
-        let Some(key) = ReleaseCustodyHeadKeyV1::new(source.object(), source.generation()) else {
-            return false;
-        };
-        let prior = joined
-            .selected_heads()
-            .binary_search_by_key(&key, |entry| entry.key())
-            .ok()
-            .and_then(|index| joined.selected_heads().get(index))
-            .copied();
-        return match prior {
-            Some(head) => {
-                !head.terminal()
-                    && head.source_basis_digest() == base.source_basis_digest()
-                    && head.source_root_generation() < base.source_root_generation()
-                    && base.predecessor()
-                        == ReleasedDropPredecessorV1::new(
-                            head.descriptor_record(),
-                            head.descriptor_frame_sha256(),
-                        )
-                        .ok()
-                    && head
-                        .cumulative_dropped()
-                        .checked_add(u64::from(manifest.count()))
-                        == Some(base.cumulative_dropped())
-                    && !manifest.dropped().contains(&source.publication_record())
-            }
-            None => {
-                base.predecessor().is_none()
-                    && base.cumulative_dropped() == u64::from(manifest.count())
-                    && manifest.dropped().contains(&source.publication_record())
-            }
-        };
+    ordered_or_base_matches(
+        claim.ordered_released_batches(),
+        claim
+            .selected_head_v2()
+            .map(|joined| joined.selected_heads()),
+        Some(LegacyBatchBase {
+            claim,
+            controls: selected_base,
+        }),
+        current,
+        manifest,
+    )
+}
+
+/// The Store-wide edge order is not the per-object predecessor chain. A batch
+/// can follow a different object's batch, but a successor for the same source
+/// must name the exact prior descriptor frame and advance only that object's
+/// cumulative count. The first post-checkpoint batch of an object extends its
+/// checkpoint-source custody instead.
+pub(super) fn ordered_predecessor_matches(
+    prior: &[VerifiedOrderedPendingWalReleaseBatch],
+    checkpoint_heads: Option<&[ReleaseCustodyHeadEntryV1]>,
+    legacy_base: Option<LegacyBatchBase<'_>>,
+    current: &VerifiedOrderedPendingWalReleaseBatch,
+) -> bool {
+    ordered_or_base_matches(
+        prior,
+        checkpoint_heads,
+        legacy_base,
+        current.descriptor(),
+        &current.manifest(),
+    )
+}
+
+fn ordered_or_base_matches(
+    prior: &[VerifiedOrderedPendingWalReleaseBatch],
+    checkpoint_heads: Option<&[ReleaseCustodyHeadEntryV1]>,
+    legacy_base: Option<LegacyBatchBase<'_>>,
+    current: BlobReclaimDescriptorV3,
+    manifest: &DropSetManifestV3,
+) -> bool {
+    let source = manifest.source_basis();
+    let Some(earlier) = prior
+        .iter()
+        .rev()
+        .find(|earlier| earlier.manifest().source_basis() == source)
+    else {
+        return selected_base_predecessor_matches(checkpoint_heads, legacy_base, current, manifest);
+    };
+    current.base().predecessor().is_some_and(|predecessor| {
+        earlier.descriptor_frame().record() == predecessor.descriptor_record()
+            && earlier.descriptor_frame().payload_sha256() == predecessor.descriptor_frame_sha256()
+            && ordered_prior_matches(earlier, current, manifest)
+    })
+}
+
+/// The one owner of "this V3 extends the checkpoint-source custody of its
+/// object". A head roster decides when the checkpoint carries one; a Batch
+/// base without heads keeps its addressed-controls proof.
+pub(super) fn selected_base_predecessor_matches(
+    checkpoint_heads: Option<&[ReleaseCustodyHeadEntryV1]>,
+    legacy_base: Option<LegacyBatchBase<'_>>,
+    current: BlobReclaimDescriptorV3,
+    manifest: &DropSetManifestV3,
+) -> bool {
+    if let Some(heads) = checkpoint_heads {
+        return head_predecessor_matches(heads, current, manifest);
     }
-    match base.predecessor() {
-        None => {
-            !selected_base_matches_source(claim, selected_base, manifest)
-                && !claim
-                    .ordered_released_batches()
-                    .iter()
-                    .any(|earlier| earlier.manifest().source_basis() == manifest.source_basis())
-                && matches!(manifest.source_basis(),
-                BlobReclaimSourceBasisV1::ReleasedGeneration(source)
-                    if manifest.dropped().binary_search(&source.publication_record()).is_ok())
+    let Some(legacy) = legacy_base else {
+        return false;
+    };
+    if current.base().predecessor().is_some() {
+        return legacy_base_predecessor_matches(legacy.claim, legacy.controls, current, manifest);
+    }
+    !selected_base_matches_source(legacy.claim, legacy.controls, manifest)
+        && current.base().cumulative_dropped() == u64::from(manifest.count())
+        && matches!(manifest.source_basis(),
+            BlobReclaimSourceBasisV1::ReleasedGeneration(source)
+                if manifest.dropped().binary_search(&source.publication_record()).is_ok())
+}
+
+/// A head for the object is its exact predecessor: nonterminal, over the same
+/// source basis, with the cumulative count advancing by this manifest. With
+/// no head the batch is the object's first release and drops its publication.
+fn head_predecessor_matches(
+    heads: &[ReleaseCustodyHeadEntryV1],
+    current: BlobReclaimDescriptorV3,
+    manifest: &DropSetManifestV3,
+) -> bool {
+    let base = current.base();
+    let BlobReclaimSourceBasisV1::ReleasedGeneration(source) = manifest.source_basis() else {
+        return false;
+    };
+    let Some(key) = ReleaseCustodyHeadKeyV1::new(source.object(), source.generation()) else {
+        return false;
+    };
+    let prior = heads
+        .binary_search_by_key(&key, |entry| entry.key())
+        .ok()
+        .and_then(|index| heads.get(index))
+        .copied();
+    match prior {
+        Some(head) => {
+            !head.terminal()
+                && head.source_basis_digest() == base.source_basis_digest()
+                && head.source_root_generation() < base.source_root_generation()
+                && base.predecessor()
+                    == ReleasedDropPredecessorV1::new(
+                        head.descriptor_record(),
+                        head.descriptor_frame_sha256(),
+                    )
+                    .ok()
+                && head
+                    .cumulative_dropped()
+                    .checked_add(u64::from(manifest.count()))
+                    == Some(base.cumulative_dropped())
+                && !manifest.dropped().contains(&source.publication_record())
         }
-        Some(predecessor) => {
-            if let Some(earlier) = claim
-                .ordered_released_batches()
-                .iter()
-                .rev()
-                .find(|earlier| earlier.manifest().source_basis() == manifest.source_basis())
-            {
-                return earlier.descriptor_frame().record() == predecessor.descriptor_record()
-                    && earlier.descriptor_frame().payload_sha256()
-                        == predecessor.descriptor_frame_sha256()
-                    && ordered_prior_matches(earlier, current, manifest);
-            }
-            selected_base_predecessor_matches(claim, selected_base, current, manifest)
+        None => {
+            base.predecessor().is_none()
+                && base.cumulative_dropped() == u64::from(manifest.count())
+                && manifest.dropped().contains(&source.publication_record())
         }
     }
 }
@@ -117,7 +187,7 @@ pub(super) fn selected_base_matches_source(
         })
 }
 
-pub(super) fn selected_base_predecessor_matches(
+fn legacy_base_predecessor_matches(
     claim: &VerifiedPendingWalReleaseCustody,
     selected_base: Option<&ObservedSelectedControls>,
     current: BlobReclaimDescriptorV3,
@@ -286,43 +356,6 @@ fn same_source_and_cumulative(
         (BlobReclaimSourceBasisV1::ReleasedGeneration(before),
          BlobReclaimSourceBasisV1::ReleasedGeneration(after)) if before == after)
         && prior_dropped.checked_add(u64::from(current_count)) == Some(current_dropped)
-}
-
-/// The Store-wide edge order is not the per-object predecessor chain. An
-/// addressed batch can follow a different object's terminal batch with no
-/// predecessor, but a successor for the same source must name an exact prior
-/// descriptor frame and advance only that object's cumulative count.
-pub(super) fn ordered_predecessor_matches(
-    prior: &[VerifiedOrderedPendingWalReleaseBatch],
-    current: &VerifiedOrderedPendingWalReleaseBatch,
-) -> bool {
-    let base = current.descriptor().base();
-    let source = current.manifest().source_basis();
-    match base.predecessor() {
-        None => {
-            !prior
-                .iter()
-                .any(|earlier| earlier.manifest().source_basis() == source)
-                && base.cumulative_dropped() == u64::from(current.manifest().count())
-                && matches!(source,
-                    BlobReclaimSourceBasisV1::ReleasedGeneration(released)
-                        if current.manifest().dropped()
-                            .binary_search(&released.publication_record()).is_ok())
-        }
-        Some(predecessor) => {
-            let Some(earlier) = prior
-                .iter()
-                .rev()
-                .find(|earlier| earlier.manifest().source_basis() == source)
-            else {
-                return false;
-            };
-            earlier.descriptor_frame().record() == predecessor.descriptor_record()
-                && earlier.descriptor_frame().payload_sha256()
-                    == predecessor.descriptor_frame_sha256()
-                && ordered_prior_matches(earlier, current.descriptor(), &current.manifest())
-        }
-    }
 }
 
 #[cfg(test)]

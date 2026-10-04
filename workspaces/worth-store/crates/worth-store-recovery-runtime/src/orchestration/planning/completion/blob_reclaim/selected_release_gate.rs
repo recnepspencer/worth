@@ -22,12 +22,23 @@ mod posture_tests;
 mod resident_basis;
 
 pub(super) fn admit_pending_wal_release(
-    mut context: PlanningContext,
+    context: PlanningContext,
     basis: &mut ResolvedPlanningBasis,
     projection_index: usize,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     // A first release of another object has no predecessor, but a HeadV2
     // checkpoint still owns the source roster that the pending edge extends.
+    let context = admit_source_heads(context, basis)?;
+    pending_wal::admit(context, basis, projection_index)
+}
+
+/// Joins the checkpoint-source head roster before any release above a HeadV2
+/// checkpoint is judged against it. Other postures and an already resolved
+/// custody are left untouched.
+pub(super) fn admit_source_heads(
+    context: PlanningContext,
+    basis: &mut ResolvedPlanningBasis,
+) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     let posture = checkpoint_posture(
         &context.selection,
         context
@@ -39,9 +50,9 @@ pub(super) fn admit_pending_wal_release(
     if posture == Ok(CheckpointReleasePosture::HeadV2)
         && matches!(&basis.custody, PlanningCustody::Unresolved)
     {
-        context = head_v2::admit(context, basis)?;
+        return head_v2::admit(context, basis);
     }
-    pending_wal::admit(context, basis, projection_index)
+    Ok(context)
 }
 
 pub(super) fn verify(

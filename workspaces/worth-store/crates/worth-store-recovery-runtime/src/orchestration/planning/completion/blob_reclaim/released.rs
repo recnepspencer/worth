@@ -21,8 +21,12 @@ mod continuation;
 mod external_edges;
 #[path = "released/graph.rs"]
 mod graph;
+#[path = "released/head_predecessor.rs"]
+mod head_predecessor;
 #[path = "released/historical.rs"]
 mod historical;
+#[path = "released/historical_anchor.rs"]
+mod historical_anchor;
 #[path = "released/historical_predecessors.rs"]
 mod historical_predecessors;
 #[path = "released/historical_redo.rs"]
@@ -238,6 +242,9 @@ fn selected_blob_record(
     )
 }
 
+#[cfg(test)]
+#[path = "released/head_anchor_tests.rs"]
+mod head_anchor_tests;
 #[cfg(test)]
 #[path = "released/tests.rs"]
 mod tests;

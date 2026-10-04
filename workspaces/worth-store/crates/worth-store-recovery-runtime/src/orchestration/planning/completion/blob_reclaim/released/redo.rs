@@ -9,7 +9,7 @@ use worth_store_physical_format::{
 
 use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
 use super::{
-    binding_matches, closure_evidence::ReleasedClosureEvidence, continuation, selected,
+    binding_matches, closure_evidence::ReleasedClosureEvidence, historical_anchor, selected,
     selected_blob_record,
 };
 
@@ -22,9 +22,6 @@ pub(in crate::orchestration::planning::completion) fn preflight(
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     let base = descriptor.base();
     let custody = descriptor.custody();
-    if base.predecessor().is_some() {
-        context = super::super::selected_release_gate::verify(context, basis)?;
-    }
     let selected_generation = context
         .selection
         .root()
@@ -76,11 +73,21 @@ pub(in crate::orchestration::planning::completion) fn preflight(
     let BlobReclaimSourceBasisV1::ReleasedGeneration(source) = manifest.source_basis() else {
         return Err(context.redo_block(basis.planning_counters(), None));
     };
-    let residual = if base.predecessor().is_some() {
-        let (next, prior) =
-            continuation::authenticate(context, basis, base, source, manifest.count())?;
+    // A pending batch with a predecessor is judged by the same owner as a
+    // completed one: its chain against the ordered history and the
+    // checkpoint-source heads. Custody stays the joined source roster, which
+    // the pending WAL admission consumes next.
+    let chain = if base.predecessor().is_some() {
+        let (next, chain) = historical_anchor::authenticate_pending_chain(
+            context,
+            basis,
+            base,
+            source,
+            manifest.count(),
+            operation_id,
+        )?;
         context = next;
-        Some(prior)
+        Some(chain)
     } else {
         let (next, publication_bytes) = selected_blob_record(
             context,
@@ -99,6 +106,15 @@ pub(in crate::orchestration::planning::completion) fn preflight(
         None
     };
     let source_routes = context.selection.page_facts().placements().to_vec();
+    let predecessor_custody = match chain {
+        Some(chain) => {
+            let (next, custody) =
+                historical_anchor::observe(context, basis, source, chain, &source_routes)?;
+            context = next;
+            Some(custody)
+        }
+        None => None,
+    };
     context = selected::verify_initial(
         context,
         basis,
@@ -108,8 +124,8 @@ pub(in crate::orchestration::planning::completion) fn preflight(
         &source_routes,
         Some(custody),
         Some(descriptor_record),
-        match residual.as_ref() {
-            Some(residual) => ReleasedClosureEvidence::CheckpointResidual(residual),
+        match predecessor_custody.as_ref() {
+            Some(predecessor) => predecessor.evidence(),
             None => ReleasedClosureEvidence::FirstPublication,
         },
     )?;

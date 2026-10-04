@@ -9,11 +9,9 @@ use std::{
 use worth_proof::AdmittedBlobReleaseProof;
 use worth_store::physical_runtime::{
     BlobCheckpointLimit, BlobIngestDeclaration, BlobIngestFailure, BlobReadLimits,
-    BlobReclaimLimits, BlobReclaimRequest, PhysicalMutationDeadline, RecordByteLimit,
-    RecordCountLimit, RecordScanOutcome, RecordScanRequest,
+    BlobReclaimLimits, BlobReclaimRequest, PhysicalMutationDeadline,
 };
 use worth_store_blob_chunks::BlobChunkSize;
-use worth_store_physical_format::{decode_blob_record, BlobReclaimSourceBasisV1, BlobRecordV1};
 
 use super::park_at_descriptor_wal;
 
@@ -40,69 +38,8 @@ pub(super) fn child(root: &Path, marker: &Path) {
         .retire_displaced_segment()
         .expect("first recovered released drop must retire its native extent under C8 seal");
     assert!(serving.certification_charged_growth_bytes() < before_retirement);
-    let mut scan = serving
-        .records()
-        .unwrap()
-        .scan(
-            RecordScanRequest::from_start()
-                .with_batch_limit(RecordCountLimit::new(8).unwrap())
-                .with_payload_limit(RecordByteLimit::new(4096).unwrap()),
-        )
-        .unwrap();
-    let mut scratch = [0_u8; 8192];
-    let mut sources = Vec::new();
-    while let RecordScanOutcome::Batch(batch) = scan.read_next_into(&mut scratch).unwrap() {
-        for index in 0..batch.records().len() {
-            let Some(bytes) = batch.payload(index) else {
-                continue;
-            };
-            if let Ok(BlobRecordV1::DropSetManifestV3(value)) = decode_blob_record(bytes) {
-                if let BlobReclaimSourceBasisV1::ReleasedGeneration(source) = value.source_basis() {
-                    sources.push(source);
-                }
-            }
-        }
-        if batch.is_complete() {
-            break;
-        }
-    }
-    drop(scan);
-    let [source] = sources.as_slice() else {
-        panic!("first C8 drop must retain one selected V3 source manifest")
-    };
-    let proof = AdmittedBlobReleaseProof::certification_admit(
-        serving.store_identity().bytes(),
-        source.object(),
-        source.generation(),
-        source.publication_record().allocation_epoch(),
-        source.publication_record().ordinal(),
-        source.publication_frame_sha256(),
-        source.issuer_evidence_sha256(),
-    )
-    .unwrap();
-    let request = BlobReclaimRequest::released(
-        proof,
-        worth_store::physical_runtime::PhysicalRecordPlacementPolicy::builder()
-            .manifest_capacity(
-                worth_store::physical_runtime::ManifestEntryCapacity::new(64).unwrap(),
-            )
-            .admit(
-                worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
-                    worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
-                        .admit()
-                        .unwrap(),
-                ),
-            )
-            .unwrap(),
-        PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
-        BlobReclaimLimits::new(
-            NonZeroU64::new(128).unwrap(),
-            NonZeroU64::new(32 << 20).unwrap(),
-            NonZeroU16::new(1).unwrap(),
-        )
-        .unwrap(),
-    );
-    park_at_descriptor_wal(&serving, request, marker, b"second-descriptor-wal");
+    // Retirement leaves exactly the first object's V3 source selected.
+    super::successor::park_next_batch(&serving, marker, |_| true, 1);
 }
 
 pub(super) fn distinct_child(root: &Path, marker: &Path) {

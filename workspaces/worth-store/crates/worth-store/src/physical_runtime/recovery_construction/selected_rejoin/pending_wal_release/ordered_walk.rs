@@ -73,7 +73,8 @@ pub(super) fn verify(
         effective,
         format,
         retained,
-        Some((claim, controls)),
+        claim,
+        controls,
     )
 }
 
@@ -144,7 +145,8 @@ fn verify_edges(
     effective: &VerifiedEffectiveReleaseHeadRosterV14,
     format: PhysicalRecordFormatDeclaration,
     retained: u64,
-    pending: Option<(&VerifiedPendingWalReleaseCustody, &Controls)>,
+    claim: &VerifiedPendingWalReleaseCustody,
+    controls: &Controls,
 ) -> Result<
     (
         AdmittedRecoveryFilesystemMedia,
@@ -198,12 +200,10 @@ fn verify_edges(
         history,
         first_topology,
         cutoff,
-        pending.map(|(claim, _)| {
-            (
-                claim.descriptor().custody().request().idempotency(),
-                claim.wal_fate().lsn_start(),
-            )
-        }),
+        Some((
+            claim.descriptor().custody().request().idempotency(),
+            claim.wal_fate().lsn_start(),
+        )),
         MAX_DISCOVERY_ENTRIES,
         remaining,
     )?;
@@ -265,35 +265,17 @@ fn verify_edges(
                 if batch.edge_index() != edge_index || *attached_index != edge_index {
                     return Err(Denial::CertificateRoster);
                 }
-                let prior = &batches[..release_index];
-                if let Some((claim, controls)) = pending {
-                    let matches_prior = lineage::ordered_predecessor_matches(prior, batch);
-                    let has_prior_object = prior.iter().any(|earlier| {
-                        earlier.manifest().source_basis() == batch.manifest().source_basis()
-                    });
-                    if !has_prior_object
-                        && batch.descriptor().base().predecessor().is_none()
-                        && lineage::selected_base_matches_source(
-                            claim,
-                            controls.selected_base(),
-                            &batch.manifest(),
-                        )
-                    {
-                        return Err(Denial::ControlFrame);
-                    }
-                    let matches_selected_base = !has_prior_object
-                        && (claim.selected_release().is_some()
-                            || claim.addressed_release_base().is_some())
-                        && lineage::selected_base_predecessor_matches(
-                            claim,
-                            controls.selected_base(),
-                            batch.descriptor(),
-                            &batch.manifest(),
-                        );
-                    if !matches_prior && !matches_selected_base {
-                        return Err(Denial::ControlFrame);
-                    }
-                } else if !lineage::ordered_predecessor_matches(prior, batch) {
+                if !lineage::ordered_predecessor_matches(
+                    &batches[..release_index],
+                    claim
+                        .selected_head_v2()
+                        .map(|joined| joined.selected_heads()),
+                    Some(lineage::LegacyBatchBase {
+                        claim,
+                        controls: controls.selected_base(),
+                    }),
+                    batch,
+                ) {
                     return Err(Denial::ControlFrame);
                 }
                 release_index += 1;

@@ -127,8 +127,6 @@ impl VerifiedPendingWalReleaseCustody {
             || base.source_root_generation() != source_root.generation()
             || base.candidate_root_generation() != binding.candidate_root_generation()
             || source_root.generation().checked_add(1) != Some(base.candidate_root_generation())
-            || (matches!(&base_custody, PendingReleaseCheckpointBase::NoRelease(_))
-                && base.predecessor().is_some())
             || descriptor.custody().source_root_frame_sha256() != source_root_sha256
             || projection.materialization().source_root_generation() != source_root.generation()
             || projection.operation() != descriptor.custody().request().idempotency()

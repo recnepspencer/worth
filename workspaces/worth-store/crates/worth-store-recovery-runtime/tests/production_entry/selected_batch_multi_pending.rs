@@ -105,3 +105,35 @@ fn selected_batch_base_with_two_completed_and_one_pending_v3_reopens() {
         .expect("folded checkpoint must still yield a Store seal");
     certified_release_serving::open_serving_with_seal_without_checkpoint(world.root(), seal);
 }
+
+/// Once the killed descriptor is redone, a second recovery without any new
+/// checkpoint sees only completed history above the Batch base: a retirement
+/// edge, one release extending the checkpoint-source head, and two first
+/// releases. Store must rejoin that history from the checkpoint-source heads.
+#[test]
+fn selected_batch_base_with_three_completed_v3_recovers_again_before_checkpoint() {
+    let world = pending_wal_world::first();
+    world.kill_second_after_certified_retirement();
+    let checkpoint = fs::read(world.root().join("families/checkpoint.current")).unwrap();
+    world.kill_distinct_release_before_checkpoint();
+    world.kill_distinct_release_before_checkpoint();
+    let outcome = WorthStoreRecovery::recover(certified_release_serving::request(world.root()));
+    let PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
+        panic!("pending V3 above the Batch base must recover: {outcome:?}");
+    };
+    drop(handoff);
+    assert_eq!(
+        fs::read(world.root().join("families/checkpoint.current")).unwrap(),
+        checkpoint,
+        "the second recovery must still start from the Batch base",
+    );
+    let again = WorthStoreRecovery::recover(certified_release_serving::request(world.root()));
+    let PhysicalRecoveryOutcome::Recovered(handoff) = again else {
+        panic!("completed V3 history above the Batch base must recover: {again:?}");
+    };
+    let seal = handoff
+        .into_core()
+        .into_checkpoint_custody()
+        .expect("Store must seal the completed head-anchored history");
+    certified_release_serving::open_serving_with_seal_without_checkpoint(world.root(), seal);
+}

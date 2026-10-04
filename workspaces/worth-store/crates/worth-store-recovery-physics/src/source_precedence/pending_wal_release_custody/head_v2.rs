@@ -16,8 +16,10 @@ use crate::{
 };
 
 impl VerifiedPendingWalReleaseCustody {
-    /// First release from NoRelease also requires the exact WAL-chosen
-    /// path; a headless descriptor cannot mint this new claim.
+    /// A release above a NoRelease checkpoint requires the exact WAL-chosen
+    /// path; a headless descriptor cannot mint this new claim. A successor's
+    /// predecessor is the head this replay found in the selected tree, which
+    /// only ordered releases above the checkpoint can have put there.
     #[allow(clippy::too_many_arguments)]
     pub fn admit_with_head_replay(
         selected: &PhysicalSourceSelection,

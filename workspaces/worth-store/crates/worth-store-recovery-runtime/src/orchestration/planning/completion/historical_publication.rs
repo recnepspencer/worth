@@ -9,7 +9,9 @@ use worth_store_physical_format::{
 
 #[path = "historical_publication/route_inventory.rs"]
 mod route_inventory;
-pub(super) use route_inventory::observe_all_routes;
+pub(super) use route_inventory::{
+    observe_all_routes, observe_all_routes_of_root, RootRouteInventory,
+};
 
 use crate::integrity_ingress::{admit_addressed_root, RecoveryArtifactNamespaceJoin};
 use crate::orchestration::planning::{

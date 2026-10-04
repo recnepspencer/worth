@@ -2,7 +2,7 @@
 
 use worth_store_physical_format::{
     BlobReclaimDescriptorV3, BlobReclaimSourceBasisV1, DropSetManifestV3, OriginalDropReservedV1,
-    ReleasedDropWalFateWitnessV1,
+    ReleaseCustodyHeadEntryV1, ReleasedDropPredecessorV1, ReleasedDropWalFateWitnessV1,
 };
 
 use super::super::release_custody::{
@@ -13,6 +13,10 @@ use super::PendingWalReleaseCustodyDenial;
 use crate::{
     ReconciledOperationFates, RecoveryOperationFate, VerifiedSelectedReleaseHeadReplayV14,
 };
+
+#[cfg(test)]
+#[path = "verification/replaced_head_tests.rs"]
+mod replaced_head_tests;
 
 pub(super) fn verify_controls(
     descriptor: BlobReclaimDescriptorV3,
@@ -87,26 +91,16 @@ pub(super) fn verify_controls(
                 {
                     false
                 } else {
-                    match (predecessor, expected_prior) {
-                        (None, None) => {
-                            manifest
-                                .dropped()
-                                .binary_search(&source.publication_record())
-                                .is_ok()
-                                && base.cumulative_dropped() == u64::from(manifest.count())
-                        }
-                        (Some(prior), Some(head)) => {
-                            head.key() == next.key()
-                                && !head.terminal()
-                                && head.descriptor_record() == prior.descriptor_record()
-                                && head.descriptor_frame_sha256() == prior.descriptor_frame_sha256()
-                                && head
-                                    .cumulative_dropped()
-                                    .checked_add(u64::from(manifest.count()))
-                                    == Some(base.cumulative_dropped())
-                        }
-                        _ => false,
-                    }
+                    replaced_head_matches(
+                        predecessor,
+                        expected_prior,
+                        next,
+                        manifest
+                            .dropped()
+                            .binary_search(&source.publication_record())
+                            .is_ok(),
+                        manifest.count(),
+                    )
                 }
             }
             _ => false,
@@ -118,6 +112,36 @@ pub(super) fn verify_controls(
         return Err(PendingWalReleaseCustodyDenial::ControlBinding);
     }
     Ok(())
+}
+
+/// The descriptor's predecessor link fixes the head its replay replaces. A
+/// first release replaces nothing and drops its own source publication. A
+/// successor replaces exactly the live head its predecessor descriptor wrote
+/// and advances that head's count by this manifest. A successor that replayed
+/// no head, or a first release that replayed one, joins nothing.
+fn replaced_head_matches(
+    predecessor: Option<ReleasedDropPredecessorV1>,
+    expected_prior: Option<ReleaseCustodyHeadEntryV1>,
+    next: ReleaseCustodyHeadEntryV1,
+    drops_source_publication: bool,
+    manifest_count: u16,
+) -> bool {
+    match (predecessor, expected_prior) {
+        (None, None) => {
+            drops_source_publication && next.cumulative_dropped() == u64::from(manifest_count)
+        }
+        (Some(prior), Some(head)) => {
+            head.key() == next.key()
+                && !head.terminal()
+                && head.descriptor_record() == prior.descriptor_record()
+                && head.descriptor_frame_sha256() == prior.descriptor_frame_sha256()
+                && head
+                    .cumulative_dropped()
+                    .checked_add(u64::from(manifest_count))
+                    == Some(next.cumulative_dropped())
+        }
+        _ => false,
+    }
 }
 
 pub(super) fn verify_fate(

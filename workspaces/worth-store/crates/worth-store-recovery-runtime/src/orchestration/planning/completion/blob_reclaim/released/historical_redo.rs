@@ -5,7 +5,8 @@ use worth_store_physical_format::{BlobReclaimSourceBasisV1, BlobRecordKind, Blob
 
 use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
 use super::super::historical_publication::{self, HistoricalFailure};
-use super::{binding_matches, historical, historical_predecessors, selected, selected_blob_record};
+use super::closure_evidence::ReleasedClosureEvidence;
+use super::{binding_matches, historical, historical_anchor, selected, selected_blob_record};
 use crate::orchestration::planning::{
     page_observation::HistoricalDropEvidence, selected_source_inventory,
 };
@@ -104,20 +105,17 @@ pub(in crate::orchestration::planning::completion) fn verify_historical(
     let BlobReclaimSourceBasisV1::ReleasedGeneration(source) = manifest.source_basis() else {
         return Err(context.redo_block(basis.planning_counters(), None));
     };
-    let historical_dropped = if base.predecessor().is_some() {
-        let Some(releases) = basis.observed_pages.ordered_releases.as_deref() else {
-            return Err(context.redo_block(basis.planning_counters(), None));
-        };
-        let Some(dropped) = historical_predecessors::authenticate_no_release_chain(
+    let chain = if base.predecessor().is_some() {
+        let (next, chain) = historical_anchor::authenticate_completed_chain(
+            context,
+            basis,
             base,
             source,
             manifest.count(),
-            releases,
-            context.limits.manifest_entries,
-        ) else {
-            return Err(context.redo_block(basis.planning_counters(), None));
-        };
-        dropped
+            evidence.operation,
+        )?;
+        context = next;
+        Some(chain)
     } else {
         let (next, publication_bytes) = selected_blob_record(
             context,
@@ -133,21 +131,23 @@ pub(in crate::orchestration::planning::completion) fn verify_historical(
         {
             return Err(context.redo_block(basis.planning_counters(), None));
         }
-        Vec::new()
+        None
     };
-    let (next, source_routes) = historical_publication::observe_all_routes(
+    let (mut next, source_routes) = historical_publication::observe_all_routes(
         context,
         basis,
         base.source_root_generation(),
         base.manifest_record(),
     )?;
-    if historical_dropped.iter().any(|record| {
-        source_routes
-            .binary_search_by_key(record, |route| route.record())
-            .is_ok()
-    }) {
-        return Err(next.redo_block(basis.planning_counters(), None));
-    }
+    let predecessor_custody = match chain {
+        Some(chain) => {
+            let (observed, custody) =
+                historical_anchor::observe(next, basis, source, chain, &source_routes)?;
+            next = observed;
+            Some(custody)
+        }
+        None => None,
+    };
     context = selected::verify_initial(
         next,
         basis,
@@ -157,7 +157,10 @@ pub(in crate::orchestration::planning::completion) fn verify_historical(
         &source_routes,
         Some(custody),
         Some(evidence.descriptor_record),
-        super::closure_evidence::ReleasedClosureEvidence::RetainedHistory(&historical_dropped),
+        match predecessor_custody.as_ref() {
+            Some(predecessor) => predecessor.evidence(),
+            None => ReleasedClosureEvidence::RetainedHistory(&[]),
+        },
     )?;
     let mut removed = manifest.dropped().to_vec();
     let Some(projection) = basis

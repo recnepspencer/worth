@@ -4,8 +4,9 @@
 use worth_store_physical_format::ReleaseCustodyHeadMutationV1;
 
 use super::{
-    fold_entries, retained_storage, EffectiveReleaseHeadDenial as Denial,
-    PendingReleaseCheckpointBase, VerifiedPendingWalReleaseCustody,
+    fold_entries, retained_storage, unmoved_checkpoint_head_tree,
+    EffectiveReleaseHeadDenial as Denial, PendingReleaseCheckpointBase,
+    VerifiedPendingWalReleaseCustody,
 };
 
 impl VerifiedPendingWalReleaseCustody {
@@ -39,22 +40,12 @@ impl VerifiedPendingWalReleaseCustody {
                 (&[][..], None, 1)
             }
             PendingReleaseCheckpointBase::ReleasedHeadV2(base) => {
-                if base.selected_root() != &self.source_root
-                    || base.selected_root().release_custody_head_root()
-                        != base.checkpoint_source_root().release_custody_head_root()
-                    || base.selected_root().next_release_custody_head_block()
-                        != base
-                            .checkpoint_source_root()
-                            .next_release_custody_head_block()
-                {
-                    return Err(Denial::Source);
-                }
-                (
-                    base.selected_heads(),
-                    base.checkpoint_source_root().release_custody_head_root(),
-                    base.checkpoint_source_root()
-                        .next_release_custody_head_block(),
-                )
+                let (head_root, next_block) = unmoved_checkpoint_head_tree(
+                    base.selected_root(),
+                    base.checkpoint_source_root(),
+                    &self.source_root,
+                )?;
+                (base.selected_heads(), head_root, next_block)
             }
             _ => return Err(Denial::Source),
         };

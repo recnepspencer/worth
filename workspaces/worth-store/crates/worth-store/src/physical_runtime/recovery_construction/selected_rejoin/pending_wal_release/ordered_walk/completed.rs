@@ -156,7 +156,12 @@ pub(super) fn verify_edges(
                     .ok_or(Denial::CertificateRoster)?;
                 if batch.edge_index() != edge_index
                     || *attached_index != edge_index
-                    || !lineage::ordered_predecessor_matches(&batches[..release_index], batch)
+                    || !lineage::ordered_predecessor_matches(
+                        &batches[..release_index],
+                        Some(effective.checkpoint_source_heads()),
+                        None,
+                        batch,
+                    )
                 {
                     return Err(Denial::CertificateRoster);
                 }

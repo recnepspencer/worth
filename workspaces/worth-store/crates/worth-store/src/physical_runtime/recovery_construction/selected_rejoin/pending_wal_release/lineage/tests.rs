@@ -8,11 +8,14 @@ use worth_store_physical_format::{
     BlobGenerationPublicationV1, BlobReclaimDescriptorV2, BlobReclaimDescriptorV3,
     BlobReclaimSourceBasisV1, DropSetManifestV3, OriginalDropReservationRequestV1,
     PersistedRecordIdentity, PhysicalCheckpointIdentity, ReleaseCheckpointBatchV1,
-    ReleaseCheckpointCertificateV1, ReleasedDropCustodyV1, ReleasedDropPredecessorV1,
-    ReleasedDropWalFateWitnessV1, ReleasedGenerationReclaimBasisV1,
+    ReleaseCheckpointCertificateV1, ReleaseCustodyHeadEntryV1, ReleaseCustodyHeadKeyV1,
+    ReleasedDropCustodyV1, ReleasedDropPredecessorV1, ReleasedDropWalFateWitnessV1,
+    ReleasedGenerationReclaimBasisV1,
 };
 
-use super::{same_source_and_cumulative, selected_predecessor_matches};
+use super::{
+    same_source_and_cumulative, selected_base_predecessor_matches, selected_predecessor_matches,
+};
 use crate::physical_runtime::recovery_construction::selected_rejoin::control_frames::catalog::decode_predecessor_frames;
 
 fn record(ordinal: u64) -> PersistedRecordIdentity {
@@ -226,4 +229,100 @@ fn different_released_object_cannot_borrow_certified_batch_predecessor() {
     assert!(same_source_and_cumulative(prior, same, 1, 1, 2));
     assert!(!same_source_and_cumulative(prior, foreign, 1, 1, 2));
     assert!(!same_source_and_cumulative(prior, same, 1, 1, 3));
+}
+
+fn checkpoint_head(
+    source: BlobReclaimSourceBasisV1,
+    basis_digest: [u8; 32],
+    source_root: u64,
+    cumulative: u64,
+    terminal: bool,
+) -> ReleaseCustodyHeadEntryV1 {
+    let BlobReclaimSourceBasisV1::ReleasedGeneration(released) = source else {
+        panic!("released source");
+    };
+    ReleaseCustodyHeadEntryV1::new(
+        ReleaseCustodyHeadKeyV1::new(released.object(), released.generation()).unwrap(),
+        record(11),
+        [0x31; 32],
+        record(10),
+        [0x32; 32],
+        record(12),
+        [0x33; 32],
+        basis_digest,
+        None,
+        source_root,
+        cumulative,
+        terminal,
+    )
+    .unwrap()
+}
+
+/// The same head table planning's `head_predecessor` owner is tested with.
+#[test]
+fn checkpoint_head_is_the_exact_predecessor_of_the_first_batch_above_it() {
+    let source = released_source(0x21);
+    let manifest =
+        DropSetManifestV3::new([7; 16], [8; 16], source, vec![record(5), record(6)], 9).unwrap();
+    let digest = manifest.source_basis_digest();
+    let exact = checkpoint_head(source, digest, 9, 3, false);
+    let predecessor = ReleasedDropPredecessorV1::new(record(11), [0x31; 32]).unwrap();
+    let current = descriptor(&manifest, record(13), 12, Some(predecessor), 5);
+    let matches = |heads: &[ReleaseCustodyHeadEntryV1]| {
+        selected_base_predecessor_matches(Some(heads), None, current, &manifest)
+    };
+    assert!(matches(&[exact]));
+    assert!(!matches(&[checkpoint_head(
+        source, [0x77; 32], 9, 3, false
+    )]));
+    assert!(!matches(&[checkpoint_head(source, digest, 9, 3, true)]));
+    assert!(!matches(&[checkpoint_head(source, digest, 9, 4, false)]));
+    // The head must predate the root the batch was built on.
+    assert!(!matches(&[checkpoint_head(source, digest, 12, 3, false)]));
+    // A named predecessor with no head for the object has no custody at all.
+    assert!(!matches(&[]));
+    // Neither a head roster nor a Batch base: nothing attests the predecessor.
+    assert!(!selected_base_predecessor_matches(
+        None, None, current, &manifest
+    ));
+    let other_frame = ReleasedDropPredecessorV1::new(record(11), [0x34; 32]).unwrap();
+    let skipped = descriptor(&manifest, record(13), 12, Some(other_frame), 5);
+    assert!(!selected_base_predecessor_matches(
+        Some(&[exact]),
+        None,
+        skipped,
+        &manifest
+    ));
+    // The head already dropped the publication below the checkpoint.
+    let again =
+        DropSetManifestV3::new([7; 16], [8; 16], source, vec![record(4), record(5)], 9).unwrap();
+    let repeated = descriptor(&again, record(13), 12, Some(predecessor), 5);
+    assert!(!selected_base_predecessor_matches(
+        Some(&[exact]),
+        None,
+        repeated,
+        &again
+    ));
+}
+
+#[test]
+fn object_without_a_checkpoint_head_starts_at_its_publication() {
+    let source = released_source(0x21);
+    let first_manifest =
+        DropSetManifestV3::new([7; 16], [8; 16], source, vec![record(4), record(5)], 9).unwrap();
+    let first = descriptor(&first_manifest, record(13), 12, None, 2);
+    assert!(selected_base_predecessor_matches(
+        Some(&[]),
+        None,
+        first,
+        &first_manifest
+    ));
+    // An object the checkpoint already heads cannot restart its chain.
+    let head = checkpoint_head(source, first_manifest.source_basis_digest(), 9, 3, false);
+    assert!(!selected_base_predecessor_matches(
+        Some(&[head]),
+        None,
+        first,
+        &first_manifest
+    ));
 }

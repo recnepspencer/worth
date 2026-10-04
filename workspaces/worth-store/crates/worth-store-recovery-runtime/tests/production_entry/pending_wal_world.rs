@@ -29,6 +29,8 @@ mod first;
 mod second;
 #[path = "pending_wal_world/selected_media.rs"]
 mod selected_media;
+#[path = "pending_wal_world/successor.rs"]
+mod successor;
 #[path = "pending_wal_world/three_batch.rs"]
 mod three_batch;
 
@@ -62,6 +64,22 @@ impl PendingWalWorld {
 
     pub(super) fn kill_distinct_release_before_checkpoint(&self) {
         self.kill_next_descriptor("distinct", false);
+    }
+
+    /// Parks the next one-record batch of the first object. No retirement and
+    /// no checkpoint: the batch extends whatever the recovered world holds.
+    pub(super) fn kill_successor_of_first_object(&self) {
+        self.kill_next_descriptor("successor-first", false);
+    }
+
+    /// Parks the batch that drops the whole remainder of the first object.
+    pub(super) fn kill_terminal_successor_of_first_object(&self) {
+        self.kill_next_descriptor("successor-first-terminal", false);
+    }
+
+    /// Parks the next one-record batch of the one distinct object.
+    pub(super) fn kill_successor_of_distinct_object(&self) {
+        self.kill_next_descriptor("successor-distinct", false);
     }
 
     fn kill_next_descriptor(&self, role: &str, checkpoint_changes: bool) {
@@ -287,6 +305,24 @@ fn pending_wal_child() {
         Some("distinct") => second::distinct_child(
             Path::new(&std::env::var_os(ROOT_ENV).expect("distinct source root")),
             &marker,
+        ),
+        Some("successor-first") => successor::child(
+            Path::new(&std::env::var_os(ROOT_ENV).expect("successor source root")),
+            &marker,
+            successor::FIRST_OBJECT,
+            1,
+        ),
+        Some("successor-first-terminal") => successor::child(
+            Path::new(&std::env::var_os(ROOT_ENV).expect("successor source root")),
+            &marker,
+            successor::FIRST_OBJECT,
+            successor::TERMINAL_BATCH,
+        ),
+        Some("successor-distinct") => successor::child(
+            Path::new(&std::env::var_os(ROOT_ENV).expect("successor source root")),
+            &marker,
+            successor::DISTINCT_OBJECT,
+            1,
         ),
         other => panic!("unknown pending V3 child role: {other:?}"),
     }

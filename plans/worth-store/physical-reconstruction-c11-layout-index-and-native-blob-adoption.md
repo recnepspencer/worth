@@ -1215,7 +1215,13 @@ predecessor is authenticated against the selected per-object chain. Store's
 same-media rejoin also resolves that predecessor's exact selected descriptor
 and manifest, compares their released-object source basis to the successor,
 and checks nonterminal cumulative progression; a different object's valid
-Batch is not a substitute. A selected
+Batch is not a substitute. When a pending or historical V3's per-object
+predecessor is a checkpoint-source head, that head's Store-attested custody
+settles the object's closure records absent at the checkpoint source root;
+absence at a later source root is settled only by that key's exact retained
+post-checkpoint drops in the verified ordered root history, and a closure
+record removed by another key's edge, or absent under neither form, denies.
+Neither C.8 nor Store enumerates pre-checkpoint lifetime drops. A selected
 TierEpoch+NoRelease checkpoint has two distinct certificates, not an invalid
 extra tag: C.8 and Store bind the exact tier intent/completion, tier-anchored
 root/free header, NoRelease source marker, and complete WAL inventory before

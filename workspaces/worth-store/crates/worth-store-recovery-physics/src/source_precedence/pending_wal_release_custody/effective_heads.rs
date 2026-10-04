@@ -8,6 +8,8 @@ use worth_store_physical_format::{
     ReleaseCustodyHeadRosterDigestV1,
 };
 
+#[path = "effective_heads/checkpoint_head_tree.rs"]
+mod checkpoint_head_tree;
 #[path = "effective_heads/completed.rs"]
 mod completed;
 #[path = "effective_heads/ordered.rs"]
@@ -17,6 +19,7 @@ mod pending_preparation;
 #[path = "effective_heads/retained_storage.rs"]
 mod retained_storage;
 
+use checkpoint_head_tree::unmoved_checkpoint_head_tree;
 pub(super) use retained_storage::PreparedEffectiveHeadRosterV14;
 
 use super::{PendingReleaseCheckpointBase, VerifiedPendingWalReleaseCustody};
@@ -78,22 +81,12 @@ impl VerifiedEffectiveReleaseHeadRosterV14 {
                 (&[][..], None, 1)
             }
             PendingReleaseCheckpointBase::ReleasedHeadV2(base) => {
-                if base.selected_root() != &claim.source_root
-                    || base.selected_root().release_custody_head_root()
-                        != base.checkpoint_source_root().release_custody_head_root()
-                    || base.selected_root().next_release_custody_head_block()
-                        != base
-                            .checkpoint_source_root()
-                            .next_release_custody_head_block()
-                {
-                    return Err(Denial::Source);
-                }
-                (
-                    base.selected_heads(),
-                    base.checkpoint_source_root().release_custody_head_root(),
-                    base.checkpoint_source_root()
-                        .next_release_custody_head_block(),
-                )
+                let (head_root, next_block) = unmoved_checkpoint_head_tree(
+                    base.selected_root(),
+                    base.checkpoint_source_root(),
+                    &claim.source_root,
+                )?;
+                (base.selected_heads(), head_root, next_block)
             }
             _ => return Err(Denial::Source),
         };

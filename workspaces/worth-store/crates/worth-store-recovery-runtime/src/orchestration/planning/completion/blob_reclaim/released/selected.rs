@@ -43,16 +43,6 @@ pub(super) fn verify_initial(
     else {
         return Err(context.redo_block(basis.planning_counters(), None));
     };
-    if let ReleasedClosureEvidence::CheckpointResidual(residual) = closure_evidence {
-        if !residual.matches_source(
-            context.selection.root().selected().manifest(),
-            context.authority.record_format,
-            source,
-        ) || source_routes != context.selection.page_facts().placements()
-        {
-            return Err(context.redo_block(basis.planning_counters(), None));
-        }
-    }
     if descriptor.predecessor().is_some() != closure_evidence.has_predecessor()
         || (expected_custody.is_none()
             && (descriptor.terminal() || manifest.dropped() != [source.publication_record()]))
