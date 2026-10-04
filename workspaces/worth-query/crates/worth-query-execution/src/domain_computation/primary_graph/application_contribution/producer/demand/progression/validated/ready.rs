@@ -43,15 +43,13 @@ where
             // A demand that settled on this output follows it to the newly
             // selected source in this same interest, as do a Stable alias
             // and a restored output. One that never settled on a committed
-            // output does not: its caller demands again.
+            // output does not: its caller demands again. The stop is this
+            // demand's alone, so the Ready stays for the demands settled on it.
             if matches!(&completion.authority, Authority::Committed(_)) && !demand.settled {
-                let interest = demand
-                    .interest
-                    .as_ref()
-                    .expect("validated Ready retains its live Interest");
-                return Err(self
-                    .output_demands
-                    .finish_superseded(interest, Family::IDENTITY));
+                return Err(denial(
+                    WorthQueryOutputDemandDenialKind::Superseded,
+                    Family::IDENTITY,
+                ));
             }
         } else if let ReadyVerdict::Settled(settlement) =
             self.certify_ready(demand, &completion, delivery_branch)?

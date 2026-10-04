@@ -47,7 +47,6 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn s
         panic!("snapshot pressure requires one fresh committed source")
     };
     let receipt = performed.receipt().clone();
-    drop(performed);
 
     let mut retained = Vec::new();
     let mut exhausted = false;
@@ -82,7 +81,8 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn s
         .expect("snapshot pressure denies recovery without consuming its source");
     assert_eq!(
         denial.recovery_posture(),
-        WorthQueryRequiredOutputRecoveryPosture::Retryable
+        WorthQueryRequiredOutputRecoveryPosture::Retryable,
+        "snapshot pressure leaves a held source recoverable: {denial:?}"
     );
     assert!(matches!(
         denial,
@@ -95,6 +95,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn s
         )
     ), "recovery denial must expose snapshot capacity, not a proxy: {denial:?}");
     drop(retained);
+    drop(performed);
 
     let mut recovered = request
         .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(

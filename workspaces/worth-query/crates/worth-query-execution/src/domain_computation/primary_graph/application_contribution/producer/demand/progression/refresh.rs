@@ -22,12 +22,15 @@ where
         if demand.admission_kind
             == crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Recovery
         {
-            let interest = demand.interest.as_ref().ok_or_else(|| {
+            // A recovery names one publication and does not move. Its stop
+            // is its own: the row stays for the demands that follow it.
+            demand.interest.as_ref().ok_or_else(|| {
                 denial(WorthQueryOutputDemandDenialKind::Closed, Family::IDENTITY)
             })?;
-            return Err(self
-                .output_demands
-                .finish_superseded(interest, Family::IDENTITY));
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::Superseded,
+                Family::IDENTITY,
+            ));
         }
         let interest = demand
             .interest

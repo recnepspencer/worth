@@ -105,12 +105,12 @@ where
     #[cfg(feature = "test-primary-graph-faults")]
     pub(in crate::domain_computation::primary_graph) fn hold_world_snapshot_pressure_for_test(
         &self,
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        branch: crate::basis::WorthQueryProductBranch,
     ) -> Vec<crate::basis::WorthQueryProductBranchLease> {
         let mut held = Vec::new();
         let mut exhausted = false;
         for _ in 0..1_024 {
-            match self.product_runtime.integration_admit_product_branch(receipt.product_branch()) {
+            match self.product_runtime.integration_admit_product_branch(branch) {
                 Ok(observation) => held.push(observation),
                 Err(crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationCapacityExhausted) => {
                     exhausted = true;

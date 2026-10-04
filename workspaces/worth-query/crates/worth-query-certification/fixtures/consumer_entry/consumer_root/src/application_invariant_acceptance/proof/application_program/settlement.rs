@@ -84,13 +84,6 @@ pub(super) fn performed_source_settles_required_output(
     let mut performed = performed
         .start_required_outputs(&request, controls)
         .unwrap_or_else(|failure| panic!("required outputs start: {:?}", failure.denial()));
-    assert!(matches!(
-        performed
-            .required_output_mut()
-            .advance(&request)
-            .expect("Signal schedules the connected producer"),
-        WorthQueryApplicationProgramOutputProgress::Pending
-    ));
     world
         .application
         .delay_next_output_readiness_delivery_for_test();
@@ -149,16 +142,13 @@ pub(super) fn performed_source_settles_required_output(
         repeated_settlement.observation().selected_commit(),
         settled.observation().selected_commit()
     );
-    let original_settlement = settle(|| {
-        match performed
-            .required_output_mut()
-            .advance(&request)
-            .expect("the installed transitive outputs advance")
-        {
-            WorthQueryApplicationProgramOutputProgress::Pending => None,
-            WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
-        }
-    });
+    let WorthQueryApplicationProgramOutputProgress::Settled(original_settlement) = performed
+        .required_output_mut()
+        .advance(&request)
+        .expect("the installed transitive outputs advance")
+    else {
+        panic!("one call settles the delivered root and every output under it")
+    };
     assert_eq!(
         original_settlement.root_observation().selected_commit(),
         settled.observation().selected_commit()

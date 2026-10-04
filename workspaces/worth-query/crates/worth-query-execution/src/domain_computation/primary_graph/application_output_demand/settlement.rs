@@ -95,7 +95,7 @@ impl WorthQueryOutputDemandSettlement {
         #[cfg(feature = "test-primary-graph-faults")]
         let _held_world_observations =
             if runtime.primary_provider.take_ready_read_snapshot_pressure() {
-                Some(runtime.hold_world_snapshot_pressure_for_test(receipt))
+                Some(runtime.hold_world_snapshot_pressure_for_test(receipt.product_branch()))
             } else {
                 None
             };

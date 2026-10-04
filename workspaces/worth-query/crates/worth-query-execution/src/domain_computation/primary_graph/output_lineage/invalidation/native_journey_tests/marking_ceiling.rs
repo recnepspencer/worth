@@ -15,6 +15,7 @@ use crate::domain_computation::primary_graph::tests::fixture::{
     installed_authorization_world_with_product_resources, Account, AccountIdentity, AccountLabel,
     AuthorizationWorld,
 };
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 use worth_relational::facade::{
     identity::PartitionId,
     symbols::ClientKey,
@@ -27,13 +28,22 @@ use worth_relational::facade::{
 const CEILING: u64 = 1_024;
 
 fn ceiling_world() -> AuthorizationWorld {
+    world_installing(|defaults| WorthQueryInvalidationResourceInstallation {
+        maximum_marking_work: CEILING,
+        ..defaults
+    })
+}
+
+/// The fixture world with its invalidation resources installed as `adjust`
+/// states them over the test defaults.
+pub(super) fn world_installing(
+    adjust: impl FnOnce(
+        WorthQueryInvalidationResourceInstallation,
+    ) -> WorthQueryInvalidationResourceInstallation,
+) -> AuthorizationWorld {
     let (budgets, clock, defaults) = test_product_world_resources().into_parts();
     let invalidation =
-        WorthQueryInvalidationResources::install(WorthQueryInvalidationResourceInstallation {
-            maximum_marking_work: CEILING,
-            ..defaults.installation()
-        })
-        .unwrap();
+        WorthQueryInvalidationResources::install(adjust(defaults.installation())).unwrap();
     installed_authorization_world_with_product_resources(WorthQueryProductWorldResources::new(
         budgets,
         clock,
@@ -41,23 +51,16 @@ fn ceiling_world() -> AuthorizationWorld {
     ))
 }
 
-#[test]
-fn unwatched_commit_with_more_touch_keys_than_the_ceiling_publishes_exactly() {
-    let world = ceiling_world();
-    let graph = world.application.runtime.primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
-    let kind = graph
-        .layout()
-        .entity_kind(Account::reference().name())
-        .unwrap();
-    let locator = |entity, aspect, field| {
-        graph
-            .layout()
-            .field_locator(entity, aspect, field)
-            .unwrap()
-            .clone()
-    };
+/// One commit creating `count` accounts no reader watches. Every created
+/// entity touches at least its three written fields.
+pub(super) fn unwatched_accounts(
+    layout: &WorthQueryPrimaryGraphLayout,
+    count: u64,
+    name: &'static str,
+) -> WorkerIntentBatch {
+    let kind = layout.entity_kind(Account::reference().name()).unwrap();
+    let locator =
+        |entity, aspect, field| layout.field_locator(entity, aspect, field).unwrap().clone();
     let identity_ref = AccountIdentity::reference();
     let status_ref = AccountStatus::reference();
     let label_ref = AccountLabel::reference();
@@ -68,27 +71,29 @@ fn unwatched_commit_with_more_touch_keys_than_the_ceiling_publishes_exactly() {
     );
     let status = locator(status_ref.entity(), status_ref.aspect(), status_ref.field());
     let label = locator(label_ref.entity(), label_ref.aspect(), label_ref.field());
+    (0..count).fold(WorkerIntentBatch::new(name), |batch, ordinal| {
+        let value = |text: String| AspectValue::String(InternedString::Raw(text));
+        batch.push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+            partition_id: PartitionId::main(),
+            kind_id: kind,
+            client_key: ClientKey::raw(format!("{name}-{ordinal}")),
+            fields: AspectFieldPatch::from(BTreeMap::from([
+                (identity.clone(), value(format!("{name}-{ordinal}"))),
+                (status.clone(), value("neutral".to_owned())),
+                (label.clone(), value("neutral".to_owned())),
+            ])),
+        })))
+    })
+}
+
+#[test]
+fn unwatched_commit_with_more_touch_keys_than_the_ceiling_publishes_exactly() {
+    let world = ceiling_world();
+    let graph = world.application.runtime.primary_graph().unwrap();
+    let handle = graph.integration_handle();
+    let owner = &handle.source_owner.invalidation_owner;
+    let batch = unwatched_accounts(graph.layout(), CEILING, "marking-ceiling");
     handle.with_runtime_mut(|runtime| {
-        // Every created entity touches at least its three written fields.
-        let batch = (0..CEILING).fold(
-            WorkerIntentBatch::new("marking-ceiling-unwatched"),
-            |batch, ordinal| {
-                let value = |text: String| AspectValue::String(InternedString::Raw(text));
-                batch.push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-                    partition_id: PartitionId::main(),
-                    kind_id: kind,
-                    client_key: ClientKey::raw(format!("marking-ceiling-{ordinal}")),
-                    fields: AspectFieldPatch::from(BTreeMap::from([
-                        (
-                            identity.clone(),
-                            value(format!("marking-ceiling-{ordinal}")),
-                        ),
-                        (status.clone(), value("neutral".to_owned())),
-                        (label.clone(), value("neutral".to_owned())),
-                    ])),
-                })))
-            },
-        );
         let committed = write_batch(runtime, batch);
         release_test_commit_snapshot(runtime, &committed);
         let (after_handle, after) = snapshot(runtime);

@@ -2,7 +2,7 @@ use super::*;
 use crate::application_invariant_acceptance::proof::settle;
 
 mod running;
-pub(in crate::application_invariant_acceptance::proof::application_program) use running::running_root_supersession_preserves_sibling;
+pub(in crate::application_invariant_acceptance::proof::application_program) use running::running_roots_follow_the_newer_publication;
 
 pub(in crate::application_invariant_acceptance::proof::application_program) fn older_publication_starts_after_newer_root_binding(
     foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<

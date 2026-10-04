@@ -12,6 +12,8 @@ mod broader_scope;
 mod consumer_closure;
 #[path = "adoption/custody.rs"]
 mod custody;
+#[path = "adoption/live_outputs.rs"]
+mod live_outputs;
 #[path = "adoption/migration.rs"]
 mod migration;
 #[path = "adoption/program_codec.rs"]

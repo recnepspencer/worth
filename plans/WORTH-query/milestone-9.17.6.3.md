@@ -1808,7 +1808,13 @@ before machinery for another lands.
   - One advance settles every demand, whether it starts its row or has
     settled before, and the courtroom fails on a second one. `Pending` is
     answered only for work outside the call: another caller's running work,
-    or a source the application must disclose again.
+    a readiness delivery that has not arrived, or a source the application
+    must disclose again. The outputs of a performed write settle the same
+    way: the root and every level of its dependents in the call that settles
+    the root. A dependent refused its work fails that call with the root
+    published; the next call is refused again and publishes nothing. The
+    facade's `settlement_attempts` and the bank's rounds policy repeat an
+    advance across such waits and nothing else.
   - Observation capacity. The same sequences run in a branch that admits 16
     product observations, and no caller is refused one or asked to retry. A
     demand, a read or a mutation commit the branch has no observation for
@@ -1818,7 +1824,11 @@ before machinery for another lands.
     produced from the source its next demand discloses. A write-only caller
     cannot fill a branch for good: more writes than the branch admits
     observations are all performed, and a demand and another write follow.
-    A retired row's next demand produces it again.
+    A retired row costs its next demand one source query: a root then reuses
+    its input and reaches no producer, and a chain node is decided again by
+    one producer contact. A released write is no longer re-entered through
+    its receipt: recovery answers `RetainedBasisUnavailable`, and the same
+    request is answered as already committed, not performed again.
   - Discontinuities. A restored root is readmitted from its checkpoint facts
     with no source query and no producer contact. A restored consumer carries
     no upstream edges, so it goes Fresh: it executes once, decides over its
@@ -1855,7 +1865,9 @@ before machinery for another lands.
     selected source inside the same advance, which reads the retained source
     once more.
   - A demand that never settled stops `Superseded` when a commit replaces
-    its source; its caller demands again.
+    its source; its caller demands again. The stop ends only that demand's
+    interest: a committed Ready stays for its settled holders, which follow
+    their output whether they advance before or after the stop.
   - A native Relational writer that is not Query is delivered exactly and
     marks what the same write through a declared operation marks, for a root
     input and for a chain output. CI's featured run drives it.
@@ -1877,6 +1889,24 @@ before machinery for another lands.
       `matched_fan_out_above_the_ceiling_publishes_and_readers_fully_verify`.
       A fixture fact has at most three readers, and a ceiling that low also
       refuses settlement registration.
+    - Undeclared change. A commit delivered without touch keys starts the
+      same epoch: readers registered before it verify in full, an earlier
+      snapshot stays clean, and a reader registered after it is exact:
+      `output_lineage/invalidation/native_journey_tests/undeclared_change.rs`,
+      `a_commit_delivered_without_touch_keys_starts_a_fully_verified_epoch`.
+      The proof loses the keys of a commit whose selectors exceed
+      preparation memory. A Relational schema transition, which changes an
+      aspect contract revision, commits without touches and reaches delivery
+      the same way; the installed schema fixes the revision, and Query
+      issues no schema transition.
+    - Program adoption over settled outputs. A changed source is produced
+      by the adopted program under its own commit, and the carried instance
+      refuses the assessment settled before the change:
+      `worth-query-certification/tests/application_graph/adoption/live_outputs.rs`,
+      `a_changed_source_is_produced_by_the_adopted_program`. Adoption
+      commits as an ordinary transaction with exact touches, and a demand
+      typed on a program its branch no longer runs stops `PublicationStale`.
+      The courtroom fixture installs one program.
     - Branch merge. Product history is single-rooted and never merges, so
       no output demand meets one. A native Relational merge emits exact
       touches: `worth-relational/src/tests/history/milestone_7d_phase_d/merge_descriptive_touches.rs`,
@@ -1912,30 +1942,30 @@ before machinery for another lands.
       courtroom reads source-query runs and producer contacts.
 
   *Not completed:*
-  - Outputs of a performed write still take one call per tree level: the
-    root settles, the call answers `Pending`, and each level of children
-    starts on a later call with nothing external to wait for.
-  - A never-settled demand that stops `Superseded` on a committed Ready
-    stops the shared row, so a settled co-holder that advances afterwards
-    fails instead of following its output.
-  - A program adoption over live outputs. Adoption commits as an ordinary
-    transaction with exact touches, a demand typed on a program its branch
-    no longer runs stops `PublicationStale`, and an output's reuse key
-    carries its program identity and revision, so input cutoff reuses no
-    output across programs. Adoption itself is proven in
-    `worth-query-certification/tests/application_graph/adoption/`
-    (`branch_adoption.rs`,
-    `one_branch_adopts_p1_while_its_sibling_keeps_running_p0`). No test
-    adopts over settled outputs and demands them again, so the reuse key's
-    program comparison (`output_lineage/input_reuse_key.rs`) and what a
-    clean row answers under the adopted program are unproven. The fixture
-    installs one program, and its court and demands are typed on it.
-  - An aspect contract-revision change. A Relational schema transition
-    commits without touch keys, and delivery then starts the epoch the
-    overflow test above proves readers verify in full under. No test
-    delivers such a commit (`output_lineage/invalidation/delivery.rs`,
-    `apply` without keys). The installed schema fixes the revision, and
-    Query issues no schema transition.
+  - A clean row across a program adoption. A row is keyed by producer and
+    source and its currentness is decided by its facts, so an output
+    settled under P0 answers a demand under P1 with P0's commit and no
+    producer contact, and the carried instance accepts it
+    (`adoption/live_outputs.rs`,
+    `a_clean_output_settled_before_adoption_answers_under_the_adopted_program`).
+    The value is the one P1 produces only because both programs supply the
+    same producer. 9.17.5 requires validated equivalence for reuse, and
+    nothing validates it across programs here: either the row carries the
+    program that produced it and a different program produces again, or
+    adoption is stated to preserve settled outputs. The reuse key's program
+    comparison (`output_lineage/input_reuse_key.rs`) runs only inside input
+    cutoff, and no fixture reaches it across programs: every source field
+    the adoption model fetches is a handler fact, and an equal write is a
+    domain denial.
+  - Retained invalidation capacity under program-action commits. Every
+    live version of the mark state reserves a bound for all its settlement
+    rows, and a program-action commit with a prepared lineage slot registers
+    a row that only a managed producer publication retires. The
+    `consumer_root` journey, installed with 128 MiB over 128 retained
+    positions, has its forty-first commit deferred with
+    `RetainedCompanionCapacityExhausted`
+    (`output_correspondence/source_aba.rs`). Its budget is unchanged. Decide
+    what retires such a row, or what a version reserves.
 - Checkpoint readmission rebuilds the original complete Native output-aspect
   witness from captured facts. *Completed:*
   - It verifies those original revisions and supported producer facts against

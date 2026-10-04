@@ -23,6 +23,19 @@ struct Driven {
     restores: usize,
 }
 
+/// What a clean output costs its next demand once the branch has retired its
+/// closed row for room. The row's source is read again; a root then reuses
+/// its input and reaches no producer.
+const REREAD: Cost = Cost {
+    producer_contacts: 0,
+    source_queries: 1,
+};
+/// A retired chain node is also decided again, by one producer contact.
+const DECIDED_AGAIN: Cost = Cost {
+    producer_contacts: 1,
+    source_queries: 1,
+};
+
 /// The three held demands settle in `$order`; what each cost, in that order.
 macro_rules! held_settled {
     ($court:expr, $order:expr, $a:expr, $b:expr, $c:expr, $at:expr) => {
@@ -154,34 +167,41 @@ fn run(seed: u64, observations: u64, driven: &mut Driven) {
                         court.demand_ring(&mut rings, index, at);
                     }
                     // Nothing committed since, so every output is clean: an
-                    // open demand costs nothing, and a fresh one contacts no
-                    // producer and decides nothing while its closed row is
-                    // cached. Only a branch that admits few observations
-                    // retires such a row to admit a caller, and the row's
-                    // next demand then produces it again.
+                    // open demand costs nothing, and so does a fresh one
+                    // while its closed row is cached. Only a branch that
+                    // admits few observations retires such a row to admit a
+                    // caller, and the row's next demand then pays exactly
+                    // what a retired row costs.
                     let held = held_settled!(court, HELD_ORDERS[order], a, b, c, at);
                     assert!(
                         held.iter().all(Cost::is_free) && judge_decisions(&mut rings, at) == 0,
                         "{at}: an open demand of a clean output costs nothing: {held:?}"
                     );
-                    let mut contacts = 0;
-                    let mut decisions = 0;
+                    let mut retired = 0;
                     for index in 0..rings.len() {
-                        let (costs, decided) = court.demand_ring(&mut rings, index, at);
-                        contacts += costs
-                            .iter()
-                            .map(|cost| cost.producer_contacts)
-                            .sum::<usize>();
-                        decisions += decided;
+                        let ([a, b, c, successor], decided) =
+                            court.demand_ring(&mut rings, index, at);
+                        let roots = [a, successor];
+                        let nodes = [b, c];
+                        let decided_again = nodes.iter().filter(|cost| !cost.is_free()).count();
+                        assert!(
+                            roots.iter().all(|cost| cost.is_free() || *cost == REREAD)
+                                && nodes
+                                    .iter()
+                                    .all(|cost| cost.is_free() || *cost == DECIDED_AGAIN)
+                                && decided == decided_again,
+                            "{at}: a clean output costs nothing, or what its retired row \
+                             costs: roots {roots:?}, chain nodes {nodes:?}, {decided} decisions"
+                        );
+                        retired +=
+                            decided_again + roots.iter().filter(|cost| !cost.is_free()).count();
                     }
-                    let free = contacts == 0 && decisions == 0;
                     assert!(
-                        free || observations < AMPLE_OBSERVATIONS,
-                        "{at}: demanding clean outputs reaches no producer: \
-                         {contacts} contacts, {decisions} decisions"
+                        retired == 0 || observations < AMPLE_OBSERVATIONS,
+                        "{at}: a branch with room retires no clean output: {retired} retired"
                     );
-                    driven.free_rechecks += usize::from(free);
-                    driven.evicted_rechecks += usize::from(!free);
+                    driven.free_rechecks += usize::from(retired == 0);
+                    driven.evicted_rechecks += usize::from(retired != 0);
                 }
             }
             step += 1;

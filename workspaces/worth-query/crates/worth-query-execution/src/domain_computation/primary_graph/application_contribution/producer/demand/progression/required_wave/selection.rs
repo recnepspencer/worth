@@ -47,6 +47,12 @@ fn select_required_wave_from_ready<'runtime, Schema>(
 where
     Schema: ApplicationSchema + 'static,
 {
+    // A Ready the wave answers is read at this selection.
+    #[cfg(feature = "test-primary-graph-faults")]
+    let _held_world_observations = runtime
+        .primary_provider
+        .take_ready_read_snapshot_pressure()
+        .then(|| runtime.hold_world_snapshot_pressure_for_test(branch));
     let selected = runtime.on_branch(branch).select().map_err(|stop| {
         WorthQueryOutputDemandDenial::new(
             WorthQueryOutputDemandDenialKind::ProductSelection(stop),

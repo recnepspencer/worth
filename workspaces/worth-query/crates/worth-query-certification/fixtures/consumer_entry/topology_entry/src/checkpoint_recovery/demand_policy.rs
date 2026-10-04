@@ -202,46 +202,67 @@ fn installed_child_excess_is_denied_without_publishing_the_child() {
             Default::default(),
         )
         .expect("the sufficient parent starts independently of its child");
-    for _ in 0..64 {
-        let before = request.retain_read().unwrap();
+    // The call that settles the parent starts the child and is refused. The
+    // refusal is kept: the next call starts the child again, is refused
+    // again and publishes nothing.
+    let mut before = request.retain_read().unwrap();
+    for call in ["the call that settles the parent", "the next call"] {
         match output.advance(&request) {
-            Ok(WorthQueryApplicationProgramOutputProgress::Pending) => (),
-            Ok(WorthQueryApplicationProgramOutputProgress::Settled(_)) => {
-                panic!("an oversized child must not settle")
-            }
-            Err(cause) => {
-                assert!(matches!(cause,
-                    worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
-                        WorthQueryApplicationOutputDemandDenial::Demand(denial)
-                    ) if denial.kind() == WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-                ));
-                let after = request.retain_read().unwrap();
-                assert_eq!(before.selected_commit(), after.selected_commit());
-                let child_read = request
-                    .query(PlanarOutputRead {
-                        body_key: "final:anchor-a".to_owned(),
-                    })
-                    .execute();
-                assert!(matches!(child_read,
-                    Err(worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::ScopeResolution(denial))
-                        if denial.kind() == worth_query_host::facade::primary_graph::WorthQueryEntityResolutionDenialKind::UnknownEntity
-                            && denial.subject() == "BodyKey"
-                ));
-                let selected_child = request
-                    .demand(PlanarFinalOutputDemand::new("anchor-a"))
-                    .start_dependent_in_program::<InsufficientChildProgram, FinalConnection>(
-                    &application,
-                );
-                assert!(
-                    matches!(selected_child,
-                        Err(WorthQueryApplicationOutputDemandDenial::Demand(denial))
-                            if denial.kind() == WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-                    ),
-                    "direct selected-program demand must not bypass the artifact ceiling"
-                );
-                return;
-            }
+            Err(worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
+                WorthQueryApplicationOutputDemandDenial::Demand(denial),
+            )) if denial.kind() == WorthQueryOutputDemandDenialKind::WorkBudgetExceeded => {}
+            other => panic!(
+                "{call}: an oversized child is refused its work: {:?}",
+                other.map(|progress| matches!(
+                    progress,
+                    WorthQueryApplicationProgramOutputProgress::Settled(_)
+                ))
+            ),
         }
+        let after = request.retain_read().unwrap();
+        let (before_commit, after_commit) = (before.selected_commit(), after.selected_commit());
+        if call == "the next call" {
+            assert_eq!(
+                before_commit, after_commit,
+                "{call}: a refused child publishes nothing"
+            );
+        } else {
+            assert_ne!(
+                before_commit, after_commit,
+                "{call}: the parent is published"
+            );
+        }
+        before = after;
     }
-    panic!("the installed child resource denial was not reached");
+    let parent_read = request
+        .query(PlanarOutputRead {
+            body_key: "anchor-a".to_owned(),
+        })
+        .execute()
+        .expect("the parent output is published");
+    assert!(
+        !parent_read.rows().is_empty(),
+        "the parent output is readable while its child is refused"
+    );
+    let child_read = request
+        .query(PlanarOutputRead {
+            body_key: "final:anchor-a".to_owned(),
+        })
+        .execute();
+    assert!(matches!(child_read,
+        Err(worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::ScopeResolution(denial))
+            if denial.kind() == worth_query_host::facade::primary_graph::WorthQueryEntityResolutionDenialKind::UnknownEntity
+                && denial.subject() == "BodyKey"
+    ));
+    let selected_child =
+        request
+            .demand(PlanarFinalOutputDemand::new("anchor-a"))
+            .start_dependent_in_program::<InsufficientChildProgram, FinalConnection>(&application);
+    assert!(
+        matches!(selected_child,
+            Err(WorthQueryApplicationOutputDemandDenial::Demand(denial))
+                if denial.kind() == WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
+        ),
+        "direct selected-program demand must not bypass the artifact ceiling"
+    );
 }

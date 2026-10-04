@@ -27,6 +27,8 @@ mod precommit_chain;
 mod replay_propagation;
 #[path = "native_journey_tests/required_hints.rs"]
 mod required_hints;
+#[path = "native_journey_tests/undeclared_change.rs"]
+mod undeclared_change;
 #[path = "native_journey_tests/verified_current.rs"]
 mod verified_current;
 

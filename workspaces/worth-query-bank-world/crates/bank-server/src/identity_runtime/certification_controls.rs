@@ -21,6 +21,14 @@ impl BankIdentityRuntime {
             .fail_next_durable_append_for_test();
     }
 
+    /// Delays the next output-readiness delivery, once.
+    #[doc(hidden)]
+    pub fn delay_next_output_readiness_delivery_for_test(&self) {
+        self.application_program()
+            .runtime()
+            .delay_next_output_readiness_delivery_for_test();
+    }
+
     /// Drops the rebuildable workflow-instance progress projection.
     #[doc(hidden)]
     pub fn release_workflow_instance_progress_for_test(&self) {
