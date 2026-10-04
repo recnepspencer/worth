@@ -61,8 +61,10 @@ where
     /// its occurrence back to the Ready it replaced. A required wave's
     /// successor is never settled and its row is the wave's own: it ends.
     ///
-    /// A row another call drives, or one already stopped, answers as its
-    /// begin would.
+    /// A row that ended this way is one more stage a settled demand follows
+    /// from: it holds no Ready, so the demand moves on with no predecessor.
+    /// A row another call drives, or one stopped for any other reason,
+    /// answers as its begin would.
     pub(super) fn leave_replaced_source<Family>(
         &self,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -93,9 +95,14 @@ where
             OutputRowStage::Driven => {
                 return Ok(OwnStages::Answer(WorthQueryOutputDemandAdvance::Pending))
             }
-            OutputRowStage::Stopped(denial) => return Err(denial),
+            OutputRowStage::Stopped(denial)
+                if !demand.settled
+                    || denial.kind() != WorthQueryOutputDemandDenialKind::Superseded =>
+            {
+                return Err(denial)
+            }
             OutputRowStage::Ready(completion) => Some(completion),
-            OutputRowStage::BeforeReady => None,
+            OutputRowStage::Stopped(_) | OutputRowStage::BeforeReady => None,
         };
         let held = ready.as_ref().map(|completion| &completion.authority);
         if !demand.settled && !matches!(held, Some(Authority::Stable(_) | Authority::Restored(_))) {

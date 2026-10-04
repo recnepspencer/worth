@@ -1,7 +1,7 @@
 # Milestone 9.17.6.3: Exact Invalidation And Parallel Computation
 
 > **Status:** In progress. Phases 1 to 4 are implemented and reviewed. Phase 5
-> has one open item. Phases 6 to 8 remain. Successor to
+> is implemented. Phases 6 to 8 remain. Successor to
 > [9.17.6](./milestone-9.17.6.md). This is the
 > one plan for exact invalidation and parallel execution in WORTH. It replaces the
 > canceled Signal Milestones 14 to 17 and the 9.17.6 rules that kept touched
@@ -1853,11 +1853,6 @@ before machinery for another lands.
     source query, no producer contact and no decision.
   - A consumer of an equally republished root decides again when the root
     then changes, instead of waiting forever on the older equal row.
-  - *Not completed:* a never-settled demand that joins a refreshing row and
-    meets a replaced source before the row's Ready stops the row, and a
-    settled holder whose delivery was delayed then answers `Superseded`
-    with no newer row to rejoin. The stop must end only that demand's
-    interest, as it does on a Ready row.
   - A settled demand that stays open keeps following its output: through a
     refresh of its equal republication under the same source, through a
     refresh whose delivery has not arrived when the next commit lands, and
@@ -1865,7 +1860,12 @@ before machinery for another lands.
     it publishes. That demand's row gives the occurrence back to the newest
     Ready it replaced, for a fresh demand as for a refresh. Rows of one
     source order by their refresh, so the refreshed alias is the newest, in
-    whichever order the held demands advance.
+    whichever order the held demands advance. A never-settled demand that
+    joined the undelivered refresh ends that row when it stops, and the
+    settled holder moves on from the ended row with no predecessor,
+    whichever of the two advances first:
+    `exact_invalidation/undelivered_refresh.rs`,
+    `a_never_settled_stop_leaves_an_undelivered_refresh_to_its_settled_holder`.
   - A held chain left unadvanced while its root is edited, until the window
     no longer retains that edit's mark, follows the edit in one advance per
     demand, in any order. A settled demand follows its output to the newly
@@ -1934,7 +1934,10 @@ before machinery for another lands.
       An index with no room for a registration, or for the delivery of a
       producer's own commit, stops that advance `RetentionBudgetExceeded`.
       Retention is the budget of the advance that met it, never the
-      producer's failure, so the row stays claimable:
+      producer's failure, so the row stays claimable. The stop is terminal
+      for its caller, as retention is wherever no advance or close of a
+      demand frees the room: index room returns as later commits move the
+      window, and a later claim of the row then settles:
       `checkpoint_recovery/required_chain/required_queue/exhausted_index.rs`,
       `an_index_too_small_for_a_commit_stops_the_advance_for_retention`.
     - Row lifetime. The lineage owns it. Every publication retires the row
@@ -1981,6 +1984,16 @@ before machinery for another lands.
       its dependents. Equality is certified by input cutoff only.
     - No public observation counts fact checks or fallback events. The
       courtroom reads source-query runs and producer contacts.
+  - Stated limitations:
+    - A version pinned without its root past the window is covered only for
+      its own copies; its holders are call-scoped or certification-only.
+    - The registry index can lag the owner after an unmanaged retirement
+      until the next release: a late free, never a wrong answer, since the
+      owner answers `MissingSettlement`, which forces full verification.
+    - Replacing a root's reservation for what its oldest version shares
+      reserves the new amount before the old one frees, so a delivery
+      transiently needs up to one index of free room. A refusal there
+      defers the writer.
 - Checkpoint readmission rebuilds the original complete Native output-aspect
   witness from captured facts. *Completed:*
   - It verifies those original revisions and supported producer facts against
