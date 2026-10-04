@@ -16,7 +16,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::ProgramActivationUnresolved,
             stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
             detail: Some(std::sync::Arc::from(unresolved.detail())),
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -36,7 +36,7 @@ impl WorthQueryApplicationCommitDenial {
                 presented.as_str(),
                 active_identity.as_str()
             ))),
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -51,7 +51,7 @@ impl WorthQueryApplicationCommitDenial {
             detail: Some(std::sync::Arc::from(format!(
                 "program revision {revision} is no longer active on this host"
             ))),
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -73,7 +73,7 @@ impl WorthQueryApplicationCommitDenial {
                 active_identity.as_str(),
                 active_revision,
             ))),
-            custom_invariant: None,
+            cause: None,
         }
     }
 }

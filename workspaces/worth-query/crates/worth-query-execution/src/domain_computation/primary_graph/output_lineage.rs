@@ -1,6 +1,7 @@
 //! Product-local semantic output correspondence owned by Query publication.
 
 mod current_output;
+pub(in crate::domain_computation::primary_graph) use current_output::RetainedOutputCurrentnessRead;
 mod denial;
 mod input_cutoff;
 mod input_reuse_key;
@@ -130,9 +131,10 @@ pub(super) struct WorthQueryProducerLineageHead {
     pub(super) occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     pub(super) dependency_identity: Option<[u8; 32]>,
     pub(super) idempotency_key_identity: [u8; 32],
-    /// The head's settlement when its record consumed upstream outputs. Only
-    /// a row that posts it holds the claims on them.
-    pub(super) claiming_settlement: Option<Arc<RecordedSettlementIdentity>>,
+    pub(super) settlement: Arc<RecordedSettlementIdentity>,
+    /// The head's record consumed upstream outputs. Only a row that posts its
+    /// settlement holds the claims on them.
+    pub(super) claims_upstream: bool,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]

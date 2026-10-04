@@ -44,9 +44,8 @@ impl SelectedRequiredRefreshClaim {
     ) -> &crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority{
         self.selected
             .completion
-            .producer_commit_authority
-            .as_ref()
-            .expect("refresh claim is minted only from an executed Ready cell")
+            .producer_mode()
+            .expect("refresh claim is minted only from a Ready cell with a producer mode")
     }
 }
 
@@ -111,10 +110,15 @@ impl WorthQueryOutputDemandRegistry {
         if !same_member || !same_source || !same_ready || !state.required_keys.contains(key) {
             return Ok(None);
         }
-        if selected.completion.producer_commit_authority.is_none() {
+        if selected.completion.producer_mode().is_none() {
+            // A restored output no demand has advanced: the wave has no mode
+            // to execute its producer in until a demand of that output does.
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                "required Ready output has no executed producer mode",
+                "restored required output awaits the first advance of its own demand",
+            )
+            .with_recovery_posture(
+                crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable,
             ));
         }
         // The claim shares all three exact pins only after the current Ready,

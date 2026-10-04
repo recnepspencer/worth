@@ -7,6 +7,9 @@ use super::{adjacency, RebaseVerificationReason, WorthQueryApplicationObservedFa
 /// All resolutions are acquired before any original is consumed.
 pub(super) enum PreparedFactRebase {
     Keep,
+    /// A fact a source query read stays at the revision it read. The
+    /// committed effect itself moved it, so the settlement is born stale here.
+    KeepSuperseded,
     Field {
         locator: AspectFieldLocator,
         revision: RelationalFieldRevision,
@@ -103,6 +106,16 @@ impl PreparedFactRebase {
             | Fact::SourceFieldRevision {
                 native_revision: Some(_),
                 ..
+            } if producer_output => match fact.source_currentness_in(runtime, snapshot, 1) {
+                Ok((true, _)) => Ok(Self::Keep),
+                Ok((false, _)) => Ok(Self::KeepSuperseded),
+                Err(_) => Err(unavailable),
+            },
+            Fact::SourceEntity { .. }
+            | Fact::Entity { .. }
+            | Fact::SourceFieldRevision {
+                native_revision: Some(_),
+                ..
             } => Ok(Self::Keep),
             _ if producer_output => Err(RebaseVerificationReason::UnsupportedDecisionFact),
             _ => Ok(Self::Keep),
@@ -111,7 +124,7 @@ impl PreparedFactRebase {
 
     pub(super) fn apply(self, fact: Fact) -> Fact {
         match (self, fact) {
-            (Self::Keep, fact) => fact,
+            (Self::Keep | Self::KeepSuperseded, fact) => fact,
             (
                 Self::Field { locator, revision },
                 Fact::Field { entity_id, .. } | Fact::AbsentField { entity_id, .. },

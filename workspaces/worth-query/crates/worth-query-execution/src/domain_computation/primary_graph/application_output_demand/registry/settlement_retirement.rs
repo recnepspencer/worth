@@ -7,11 +7,13 @@
 //! under the owner's own edit admission, so it can neither fail nor starve the
 //! request that published; a denied retirement waits for the next one.
 //!
-//! A row retired for custody drops its postings and keeps its lineage. Only
-//! a row holds the claims on what its record consumed, so a record that
-//! consumed upstream outputs and that no row posts is an evicted one: the next
-//! start of its producer succeeds it, and the successor's publication retires
-//! its settlement.
+//! A row retired for custody drops its postings and keeps its lineage, so a
+//! lineage head no row posts is an evicted one. Only a row holds the claims on
+//! what its record consumed: an evicted head that consumed upstream outputs is
+//! never replayed, and the next start of its producer succeeds it. One that
+//! consumed none is replayed while its dependencies match, and its row posts
+//! it again. Either way the publication that succeeds an evicted head retires
+//! its settlement, which no row is left to supersede.
 
 use std::sync::Arc;
 
@@ -212,7 +214,7 @@ impl DemandRegistryState {
                 return;
             }
             let index_bytes = self.settlement_keys.remove(identity);
-            let key_bytes = self
+            let posting_bytes = self
                 .records
                 .get_mut(key.as_ref())
                 .and_then(|record| {
@@ -220,12 +222,20 @@ impl DemandRegistryState {
                         .settlements
                         .iter()
                         .position(|(settled, _)| settled == identity)?;
-                    Some(record.settlements.remove(at).1)
+                    let key_bytes = record.settlements.remove(at).1;
+                    // The slot leaves with its posting, unless a prepared
+                    // posting of this row is about to fill it.
+                    let slots = record.settlements.capacity();
+                    if record.prepared_prerequisite_claims == 0 {
+                        record.settlements.shrink_to_fit();
+                    }
+                    let freed = slots - record.settlements.capacity();
+                    Some(key_bytes + freed * std::mem::size_of::<(Identity, usize)>())
                 })
                 .unwrap_or(0);
             self.required_reserved_bytes = self
                 .required_reserved_bytes
-                .saturating_sub(index_bytes.saturating_add(key_bytes));
+                .saturating_sub(index_bytes.saturating_add(posting_bytes));
         }
     }
 }

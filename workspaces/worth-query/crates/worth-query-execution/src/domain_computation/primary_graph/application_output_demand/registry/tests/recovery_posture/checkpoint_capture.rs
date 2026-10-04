@@ -18,7 +18,6 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
         DemandState::Output(WorthQueryOutputProgress::new(
             WorthQueryOutputCheckpoint::Ready(super::super::super::ReadyCompletion::for_test(super::super::super::WorthQueryCompletedOutputDemand {
                 authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
-                producer_commit_authority: None,
                 readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
                 resources: Some(crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources::new(7, 8)),
             })),
@@ -46,7 +45,6 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
     let mut stopped = WorthQueryOutputProgress::new(WorthQueryOutputCheckpoint::Ready(
         super::super::super::ReadyCompletion::for_test(super::super::super::WorthQueryCompletedOutputDemand {
             authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
-            producer_commit_authority: None,
             readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
             resources: None,
         }),

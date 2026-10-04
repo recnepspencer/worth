@@ -205,15 +205,21 @@ impl WorthQueryApplicationCheckpoint {
                     }
                     (None, 0)
                 } else {
-                    if !matches!(fact_version, 5 | 6) {
-                        return Err(
-                            "checkpoint producer fact wire version is unsupported".to_owned()
-                        );
-                    }
                     let bytes = cursor.next_bytes(fact_len)?;
-                    match facts::decode_for_wire_version(bytes, fact_version)? {
-                        Some(_) => (Some(bytes.to_vec()), fact_version),
-                        None => (None, 0),
+                    match fact_version {
+                        facts::WIRE_VERSION => {
+                            facts::decode_for_wire_version(bytes, fact_version)?;
+                            (Some(bytes.to_vec()), fact_version)
+                        }
+                        // Captured before facts were kept for roots alone:
+                        // the row may have consumed other outputs. Its facts
+                        // are not read, and the row starts Fresh.
+                        5 | 6 => (None, 0),
+                        _ => {
+                            return Err(
+                                "checkpoint producer fact wire version is unsupported".to_owned()
+                            )
+                        }
                     }
                 }
             } else {

@@ -49,7 +49,7 @@ impl WorthQueryApplicationOutputLineage {
                         })
             })?;
         Some((
-            recorded.observed_source_facts()?,
+            recorded.checkpoint_source_facts()?,
             recorded.native_output_witness()?,
         ))
     }

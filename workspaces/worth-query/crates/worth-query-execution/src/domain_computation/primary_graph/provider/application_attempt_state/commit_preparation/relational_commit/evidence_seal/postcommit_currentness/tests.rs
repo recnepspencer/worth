@@ -109,6 +109,42 @@ fn producer_decision_absence_uses_native_presence_revision() {
 }
 
 #[test]
+fn a_source_revision_the_effect_moved_is_kept_and_reported_superseded() {
+    let world = installed_authorization_world(true);
+    let (entity, locator) = account_note(&world, "account-1");
+    let read = rebase_at_current(
+        &world,
+        vec![WorthQueryApplicationObservedFact::AbsentField {
+            entity_id: entity,
+            kind: world
+                .application
+                .runtime
+                .primary_graph()
+                .unwrap()
+                .layout
+                .entity_kind(AccountIdentity::reference().entity())
+                .unwrap(),
+            locator: planned(&locator),
+        }],
+    );
+    assert_eq!(
+        rebase_result_at_current(&world, read.to_vec()),
+        RebasedSourceFacts::Exact(Arc::clone(&read)),
+        "a source revision nothing moved stays exact"
+    );
+
+    set_note(&world, entity, locator, "moved");
+    assert_eq!(
+        rebase_result_at_current(&world, read.to_vec()),
+        RebasedSourceFacts::SupersededByOwnEffect {
+            facts: Arc::clone(&read),
+            ordinals: Arc::from([0]),
+        },
+        "the fact keeps the revision its source read and is reported stale"
+    );
+}
+
+#[test]
 fn unavailable_native_revision_never_authorizes_output_reuse() {
     let world = installed_authorization_world(true);
     let (entity, note) = account_note(&world, "account-1");
@@ -185,9 +221,7 @@ fn rebase_at_current(
 ) -> Arc<[WorthQueryApplicationObservedFact]> {
     match rebase_result_at_current(world, facts) {
         RebasedSourceFacts::Exact(facts) => facts,
-        RebasedSourceFacts::VerificationRequired { reason, .. } => {
-            panic!("fresh native facts must be exact: {reason:?}")
-        }
+        other => panic!("fresh native facts must be exact: {other:?}"),
     }
 }
 

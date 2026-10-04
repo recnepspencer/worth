@@ -38,6 +38,16 @@ impl From<CompanionPreflightStop> for SettlementVerificationStop {
     }
 }
 
+impl From<super::SettlementRegistrationStop> for SettlementVerificationStop {
+    fn from(stop: super::SettlementRegistrationStop) -> Self {
+        match stop {
+            super::SettlementRegistrationStop::Alignment(_) => Self::Alignment,
+            super::SettlementRegistrationStop::Admission(reason) => Self::Admission(reason),
+            super::SettlementRegistrationStop::Edit(reason) => Self::Edit(reason),
+        }
+    }
+}
+
 pub(in crate::domain_computation::primary_graph) enum DirtyReverification {
     Verified(VerifiedDirtySettlement),
     HistoricalCurrent,
@@ -189,17 +199,7 @@ impl SourceInvalidationOwner {
         retention::admit_root(&mut root, &self.resources, admission)?;
         let prepared = self
             .prepare_root_replacement(cell, image, Arc::new(root), admission)
-            .map_err(|stop| match stop {
-                super::SettlementRegistrationStop::Alignment(_) => {
-                    SettlementVerificationStop::Alignment
-                }
-                super::SettlementRegistrationStop::Admission(reason) => {
-                    SettlementVerificationStop::Admission(reason)
-                }
-                super::SettlementRegistrationStop::Edit(reason) => {
-                    SettlementVerificationStop::Edit(reason)
-                }
-            })?;
+            .map_err(SettlementVerificationStop::from)?;
         let cleanup = prepared
             .install()
             .map_err(|stopped| SettlementVerificationStop::Edit(stopped.reason()))?;

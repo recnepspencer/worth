@@ -223,6 +223,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
                 facts: Arc::from([]),
                 output_facts: None,
                 read_basis: after.clone(),
+                stale_at_read_basis: OrdSet::new(),
                 requirement: Some(FullVerificationReason::DeclaredChangeUnavailable),
                 upstream: OrdSet::unit(Arc::clone(&a)),
             },

@@ -79,7 +79,6 @@ where
                     .producer_resources_for_receipt(&receipt);
                 let completion = ready_backing.complete(WorthQueryCompletedOutputDemand {
                     authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
-                    producer_commit_authority: None,
                     readiness,
                     resources,
                 });

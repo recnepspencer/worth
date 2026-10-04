@@ -1,5 +1,6 @@
 mod cached_reclaim;
 mod closed_retirement;
+mod joined_ready;
 mod occurrence_retirement;
 mod selected_execution_finish;
 
@@ -190,6 +191,7 @@ impl WorthQueryOutputDemandRegistry {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut released_bytes = 0;
+        let replaced = refreshed_rejoin::replaced_under_refresh(&state.records, &interest.key);
         let remove = state.records.get_mut(&interest.key).is_some_and(|record| {
             record.interests = record.interests.saturating_sub(1);
             if interest.requires_output {
@@ -210,6 +212,7 @@ impl WorthQueryOutputDemandRegistry {
                 && record.prepared_prerequisite_claims == 0
                 && !record.pending_cleanup_queued
                 && ((!record.is_required() && !ready) || stopped)
+                && !(ready && replaced)
                 && record.performed_obligations.is_empty()
                 && record.performed_source.is_none()
                 && match &record.state {
@@ -236,7 +239,7 @@ impl WorthQueryOutputDemandRegistry {
         if remove {
             if let Some(record) = state.records.remove(&interest.key) {
                 released_bytes += record.obligation_reserved_bytes();
-                if record.unpublished_new_key_refresh() {
+                if record.unpublished_new_key() {
                     state.revive_replaced_ready(&interest.key);
                 }
             }
@@ -268,8 +271,8 @@ impl WorthQueryOutputDemandRegistry {
         state.obligation_reserved_bytes = state
             .obligation_reserved_bytes
             .saturating_sub(released_bytes);
-        // The closing row, and each upstream its released claims leave
-        // unheld, keeps only what it can still answer for.
+        // The closing row, each upstream its released claims leave unheld,
+        // and each row it replaced, keeps only what it can still answer for.
         let candidates = std::iter::once(interest.key.clone())
             .chain(
                 released_prerequisites
@@ -277,6 +280,10 @@ impl WorthQueryOutputDemandRegistry {
                     .flatten()
                     .map(|upstream| upstream.as_ref().clone()),
             )
+            .chain(refreshed_rejoin::replaced_by_published(
+                &state.records,
+                &interest.key,
+            ))
             .collect();
         let (retired, released_claims) = state.retire_closed_rows(candidates);
         state.prune_completed_custody();

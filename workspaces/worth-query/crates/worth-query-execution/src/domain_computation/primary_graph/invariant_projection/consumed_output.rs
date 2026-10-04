@@ -7,9 +7,13 @@ use crate::domain_computation::execution_runtime::source_invalidation::RetainedI
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryApplicationObservedFact,
     output_lineage::{
-        invalidation::{FullVerificationReason, RetainedConsumedOutputCapacity},
+        invalidation::{
+            FullVerificationReason, InvalidationEditAdmission, RetainedConsumedOutputCapacity,
+            SettlementRegistrationStop,
+        },
         RecordedSettlementIdentity, SealedNativeOutputWitness,
     },
+    SourceInvalidationOwner,
 };
 
 #[cfg(feature = "certification-invalidation-equivalence")]
@@ -97,5 +101,32 @@ impl ConsumedOutputEvidence {
         &self,
     ) -> &Arc<RecordedSettlementIdentity> {
         &self.identity
+    }
+
+    /// A consumed restored output gets its mark row at the basis this reader
+    /// compared it in full; any other output answers for its own row. Returns
+    /// whether a consumer may register over this output.
+    pub(in crate::domain_computation::primary_graph) fn establish_restored(
+        &self,
+        owner: &SourceInvalidationOwner,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<bool, SettlementRegistrationStop> {
+        if self.verification_requirement != Some(FullVerificationReason::CheckpointRestore) {
+            return Ok(true);
+        }
+        let witness = self.native_output_witness.as_ref();
+        let Some(witness) = witness.and_then(|witness| witness.get()) else {
+            return Ok(false);
+        };
+        if !self.upstream.is_empty() {
+            return Ok(false);
+        }
+        owner.establish_verified_root(
+            &self.selected_native_root,
+            &self.identity,
+            &self.source_facts,
+            witness,
+            admission,
+        )
     }
 }

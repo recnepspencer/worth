@@ -38,6 +38,7 @@ where
             if matches!(
                         &completion.authority,
                         crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Stable(_)
+                            | crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Restored(_)
                     ) {
                         let (disclosed_value, disclosed_source) = disclosure.into_parts();
                         return self.refresh_output_demand(
@@ -146,16 +147,42 @@ where
                         Ok(WorthQueryOutputDemandAdvance::Settled(settlement))
                     }
                     crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Restored(restored) => {
-                        crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement::from_restoration(
+                        let settlement = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement::from_restoration(
                             self,
                             restored,
                             Family::IDENTITY,
-                        )
-                        .and_then(|settlement| {
-                            self.output_demands
-                                .finish_settlement(interest, &completion.authority)?;
-                            Ok(WorthQueryOutputDemandAdvance::Settled(settlement))
-                        })
+                        )?;
+                        // The disclosure proves the source. The restored
+                        // output and its facts are compared here as well, and
+                        // that comparison is what gives the output its marks.
+                        let current = self.on_branch(delivery_branch).select().map_err(|denial| {
+                            WorthQueryOutputDemandDenial::product_selection(
+                                denial,
+                                "restored output currentness basis could not be selected",
+                            )
+                        })?;
+                        match current.require_current_output_settlements(
+                            [settlement.as_ref()],
+                            demand.currentness_work_limit(),
+                        ) {
+                            Ok(()) => {}
+                            Err(denial)
+                                if current_proof_unavailable(&denial) =>
+                            {
+                                let (disclosed_value, disclosed_source) = disclosure.into_parts();
+                                return self.refresh_output_demand(
+                                    demand,
+                                    disclosed_value,
+                                    disclosed_source,
+                                    &completion.authority,
+                                    request_admission,
+                                );
+                            }
+                            Err(denial) => return Err(denial),
+                        }
+                        self.output_demands
+                            .finish_settlement(interest, &completion.authority)?;
+                        Ok(WorthQueryOutputDemandAdvance::Settled(settlement))
                     }
                 }
     }

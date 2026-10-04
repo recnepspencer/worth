@@ -155,6 +155,7 @@ fn register(
                 facts,
                 output_facts: None,
                 read_basis: basis.clone(),
+                stale_at_read_basis: im::OrdSet::new(),
                 requirement: None,
                 upstream,
             },

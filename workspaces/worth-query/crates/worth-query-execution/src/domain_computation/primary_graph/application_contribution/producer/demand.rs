@@ -229,6 +229,9 @@ where
     resources: Option<super::WorthQueryProducerDemandResources>,
     resources_validated: bool,
     producer_contacts_in_this_demand: usize,
+    // Whether an advance of this demand has settled. Until one does, a cached
+    // Ready it joined at its start is still cache: see `caller_custody`.
+    settled: bool,
     admission_kind: super::super::super::application_output_demand::DemandAdmissionKind,
     retained_program_basis: Option<
         std::sync::Arc<

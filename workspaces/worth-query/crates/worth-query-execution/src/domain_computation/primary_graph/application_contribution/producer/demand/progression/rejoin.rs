@@ -6,22 +6,23 @@ use crate::domain_computation::primary_graph::application_output_demand::{
     DemandAdmissionKind, RetainedOutputReadmissionSource,
 };
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+impl<Schema, Family> WorthQueryAdmittedOutputDemand<Schema, Family>
 where
     Schema: ApplicationSchema + 'static,
+    Family: WorthQueryProducerOutputFamily<Schema>,
+    FamilySourceQuery<Schema, Family>: 'static,
 {
     /// Recovery demands name one exact publication and never move. Others
     /// take the refreshed row's interest and retained source; this demand
-    /// did not contact the producer for it.
-    pub(super) fn rejoin_refreshed_output<Family>(
-        &self,
-        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
+    /// did not contact the producer for it. A successor a dependent keeps
+    /// for an output it consumed follows the same way, so the row another
+    /// advance superseded is released.
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn rejoin_refreshed_output(
+        &mut self,
+        registry: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<(), WorthQueryOutputDemandDenial>
-    where
-        Family: WorthQueryProducerOutputFamily<Schema>,
-        FamilySourceQuery<Schema, Family>: 'static,
-    {
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        let demand = self;
         if demand.admission_kind == DemandAdmissionKind::Recovery {
             return Ok(());
         }
@@ -29,9 +30,7 @@ where
             .interest
             .as_ref()
             .expect("caller admission checked its live Interest");
-        let Some((rejoined, readmission)) =
-            self.output_demands.rejoin_refreshed(stale, admission)?
-        else {
+        let Some((rejoined, readmission)) = registry.rejoin_refreshed(stale, admission)? else {
             return Ok(());
         };
         let source = std::sync::Arc::clone(&readmission.source)

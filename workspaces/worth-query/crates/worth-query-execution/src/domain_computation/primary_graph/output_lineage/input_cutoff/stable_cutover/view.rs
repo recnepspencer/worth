@@ -52,11 +52,11 @@ impl PublishedStableLineage {
     ) -> [u8; 32] {
         self.recorded().idempotency_key_identity
     }
-    pub(in crate::domain_computation::primary_graph) fn observed_source_facts(
+    pub(in crate::domain_computation::primary_graph) fn checkpoint_source_facts(
         &self,
     ) -> Option<Arc<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>>
     {
-        self.recorded().observed_source_facts()
+        self.recorded().checkpoint_source_facts()
     }
     pub(in crate::domain_computation::primary_graph) fn observation(
         &self,

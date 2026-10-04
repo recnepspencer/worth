@@ -22,6 +22,24 @@ pub(in crate::domain_computation::primary_graph) enum OutputRefreshPredecessor<'
         interest: &'a WorthQueryOutputDemandInterest,
         published: &'a PublishedStableLineage,
     },
+    /// A restored output that is no longer current executes Fresh.
+    Restored(&'a super::WorthQueryRestoredAcceptedOutput),
+}
+
+impl<'a> OutputRefreshPredecessor<'a> {
+    pub(in crate::domain_computation::primary_graph) fn of(
+        authority: &'a WorthQueryAcceptedOutputAuthority,
+        interest: &'a WorthQueryOutputDemandInterest,
+    ) -> Self {
+        match authority {
+            WorthQueryAcceptedOutputAuthority::Committed(receipt) => Self::Committed(receipt),
+            WorthQueryAcceptedOutputAuthority::Stable(published) => Self::Stable {
+                interest,
+                published,
+            },
+            WorthQueryAcceptedOutputAuthority::Restored(restored) => Self::Restored(restored),
+        }
+    }
 }
 
 impl OutputRefreshPredecessor<'_> {
@@ -29,6 +47,7 @@ impl OutputRefreshPredecessor<'_> {
         match self {
             Self::Committed(receipt) => *receipt.idempotency_binding().key_identity(),
             Self::Stable { published, .. } => published.idempotency_key_identity(),
+            Self::Restored(restored) => restored.checkpoint.idempotency_key,
         }
     }
 
@@ -39,6 +58,10 @@ impl OutputRefreshPredecessor<'_> {
             }
             (Self::Stable { published, .. }, WorthQueryAcceptedOutputAuthority::Stable(actual)) => {
                 actual.same_publication(published)
+            }
+            (Self::Restored(expected), WorthQueryAcceptedOutputAuthority::Restored(actual)) => {
+                actual.checkpoint.idempotency_key == expected.checkpoint.idempotency_key
+                    && Arc::ptr_eq(&actual.correspondence, &expected.correspondence)
             }
             _ => false,
         }

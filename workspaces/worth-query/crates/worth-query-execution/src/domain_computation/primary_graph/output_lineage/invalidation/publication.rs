@@ -63,6 +63,19 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
         .ok_or(FullVerificationReason::NativeRevisionUnavailable)?;
     let upstream = collect_consumed_output_upstream(consumed_outputs, admission)
         .map_err(FullVerificationReason::MarkingAdmissionDenied)?;
+    for consumed in consumed_outputs {
+        // The reader compared a restored output in full at the basis it read.
+        // That output gets its row first: a consumer registered over a missing
+        // row would stay pending behind it.
+        if !consumed
+            .establish_restored(owner, admission)
+            .map_err(registration_reason)?
+        {
+            return Err(FullVerificationReason::MissingSettlement);
+        }
+    }
+    let stale_at_read_basis = own_effect_stale_ordinals(application, admission)
+        .map_err(FullVerificationReason::MarkingAdmissionDenied)?;
     let requirement = evidence.source_fact_verification_requirement().map(|reason| match reason {
         crate::domain_computation::primary_graph::provider::RebaseVerificationReason::NativeRevisionUnavailable => FullVerificationReason::NativeRevisionUnavailable,
         crate::domain_computation::primary_graph::provider::RebaseVerificationReason::UnsupportedDecisionFact => FullVerificationReason::UnsupportedFact,
@@ -76,20 +89,42 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
                 facts,
                 output_facts: Some(output_facts),
                 read_basis,
+                stale_at_read_basis,
                 requirement,
                 upstream,
             },
             admission,
         )
-        .map_err(|stop| match stop {
-            SettlementRegistrationStop::Alignment(reason) => reason,
-            SettlementRegistrationStop::Admission(stop) => {
-                FullVerificationReason::MarkingAdmissionDenied(stop)
-            }
-            SettlementRegistrationStop::Edit(stop) => {
-                FullVerificationReason::DerivedEditPending(stop)
-            }
-        })
+        .map_err(registration_reason)
+}
+
+fn registration_reason(stop: SettlementRegistrationStop) -> FullVerificationReason {
+    match stop {
+        SettlementRegistrationStop::Alignment(reason) => reason,
+        SettlementRegistrationStop::Admission(stop) => {
+            FullVerificationReason::MarkingAdmissionDenied(stop)
+        }
+        SettlementRegistrationStop::Edit(stop) => FullVerificationReason::DerivedEditPending(stop),
+    }
+}
+
+/// The registration reads at the post-effect snapshot, so no later delivery
+/// marks a source fact the effect itself moved. The row starts dirty there.
+fn own_effect_stale_ordinals(
+    application: &WorthQueryPrimaryGraphCommittedApplication,
+    admission: &mut super::InvalidationEditAdmission,
+) -> Result<im::OrdSet<usize>, worth_relational::facade::mvcc::CompanionPreflightStop> {
+    use super::admission::IndexAdmission;
+    let mut stale = im::OrdSet::new();
+    for ordinal in application
+        .commit_evidence()
+        .source_facts_superseded_by_own_effect()
+    {
+        admission.work(1)?;
+        admission.ordered_edit::<usize, ()>(stale.len())?;
+        stale.insert(*ordinal);
+    }
+    Ok(stale)
 }
 
 impl WorthQueryApplicationOutputLineage {

@@ -127,22 +127,35 @@ impl WorthQueryApplicationOutputLineage {
         let Some(output_binding) = correspondence.binding_type() else {
             return Ok(None);
         };
-        let pin = pin.ok_or(match authority {
-            WorthQueryAcceptedOutputAuthority::Committed(_) => {
-                FullVerificationReason::NativeRevisionUnavailable
-            }
-            WorthQueryAcceptedOutputAuthority::Stable(_) => {
-                FullVerificationReason::NativeRevisionUnavailable
-            }
-            WorthQueryAcceptedOutputAuthority::Restored(_) => {
-                FullVerificationReason::CheckpointRestore
-            }
-        })?;
         let source = SemanticSource {
             runtime_authority,
             schema: schema.clone(),
             scope,
             output_binding,
+        };
+        let pin = match (pin, authority) {
+            (Some(pin), _) => pin,
+            // A restored authority carries no settlement pin. Its recorded row
+            // is the one restoration placed at this exact partition address.
+            (None, WorthQueryAcceptedOutputAuthority::Restored(_)) => self
+                .partition_index
+                .at_generation(
+                    &source,
+                    coordinate.occurrence,
+                    coordinate.generation,
+                    partition,
+                )
+                .and_then(|slot| {
+                    self.by_source
+                        .get(&source)?
+                        .get(&coordinate.occurrence)?
+                        .get(&coordinate.generation)?
+                        .get(slot)?
+                        .get()
+                })
+                .map(|recorded| &recorded.settlement_identity)
+                .ok_or(FullVerificationReason::CheckpointRestore)?,
+            (None, _) => return Err(FullVerificationReason::NativeRevisionUnavailable),
         };
         if pin.source() != &source || pin.coordinate() != coordinate {
             return Err(FullVerificationReason::NativeRevisionUnavailable);

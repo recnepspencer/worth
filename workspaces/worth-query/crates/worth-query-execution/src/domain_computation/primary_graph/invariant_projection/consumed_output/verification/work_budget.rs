@@ -75,8 +75,8 @@ pub(super) fn charge_external(
         .map_err(map_admission_stop)
 }
 
-pub(super) fn reserve_pending<'a>(
-    pending: &mut Vec<(EvidenceView<'a>, bool)>,
+pub(super) fn reserve_pending<T>(
+    pending: &mut Vec<T>,
     additional: usize,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<(), ConsumedOutputVerificationStop> {
@@ -88,7 +88,7 @@ pub(super) fn reserve_pending<'a>(
         return Ok(());
     }
     let bytes = needed
-        .checked_mul(size_of::<(EvidenceView<'a>, bool)>())
+        .checked_mul(size_of::<T>())
         .and_then(|bytes| u64::try_from(bytes).ok())
         .ok_or(ConsumedOutputVerificationStop::Unavailable)?;
     admission
@@ -98,4 +98,33 @@ pub(super) fn reserve_pending<'a>(
     pending
         .try_reserve_exact(additional)
         .map_err(|_| ConsumedOutputVerificationStop::Unavailable)
+}
+
+pub(super) fn fact_is_current(
+    fact: &WorthQueryApplicationObservedFact,
+    runtime: &RelationalRuntime,
+    snapshot: &SnapshotHandle,
+    admission: &mut InvalidationEditAdmission,
+) -> Result<bool, ConsumedOutputVerificationStop> {
+    let available = admission.remaining_work();
+    if available == 0 {
+        return Err(ConsumedOutputVerificationStop::WorkExhausted);
+    }
+    let prepaid = fact
+        .exact_probe_work()
+        .map_err(|_| ConsumedOutputVerificationStop::WorkExhausted)?
+        .unwrap_or(0);
+    charge_external(admission, prepaid)?;
+    let (current, work) = fact
+        .source_currentness_in(runtime, snapshot, available)
+        .map_err(|failure| match failure {
+            WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => {
+                ConsumedOutputVerificationStop::WorkExhausted
+            }
+            WorthQuerySourceCurrentnessFailure::Unavailable => {
+                ConsumedOutputVerificationStop::Unavailable
+            }
+        })?;
+    charge_external(admission, work.saturating_sub(prepaid))?;
+    Ok(current)
 }

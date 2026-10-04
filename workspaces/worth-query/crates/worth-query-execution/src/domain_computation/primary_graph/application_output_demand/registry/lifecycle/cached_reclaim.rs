@@ -5,6 +5,10 @@
 //! be refused that custody, closed cached rows retire, with the rows only
 //! their claims kept, until the work fits. A refusal that remains is one no
 //! cache could have avoided.
+//!
+//! A cached Ready's settlement also keeps the product observation it reads.
+//! Required work the branch refuses an observation retires one closed cached
+//! row, so the refusal it reports as retryable is one a retry gets past.
 
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -47,6 +51,31 @@ impl WorthQueryOutputDemandRegistry {
         drop(claims);
         reclaimed
     }
+
+    /// Release the product observation one closed cached row keeps, by
+    /// retiring the row. Whether a row retired.
+    pub(in crate::domain_computation::primary_graph) fn reclaim_cached_observation(
+        &self,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<bool, WorthQueryOutputDemandDenial> {
+        let mut retired = Vec::new();
+        let mut claims = Vec::new();
+        let reclaimed = {
+            let mut state = self
+                .state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let reclaimed =
+                state.retire_next_cached_row(&mut None, &mut retired, &mut claims, admission);
+            if !retired.is_empty() {
+                state.prune_completed_custody();
+            }
+            reclaimed
+        };
+        drop(retired);
+        drop(claims);
+        reclaimed
+    }
 }
 
 impl DemandRegistryState {
@@ -59,6 +88,8 @@ impl DemandRegistryState {
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         // Each retired Ready cell returns its custody once it drops.
         let mut returning = 0_usize;
+        // The last superseded row a claim still held; rows are tried in order.
+        let mut still_claimed = None;
         loop {
             let retained = self
                 .required_custody_retained_bytes
@@ -69,25 +100,51 @@ impl DemandRegistryState {
                 .checked_add(retained)
                 .and_then(|total| total.checked_add(bytes))
                 .is_some_and(|total| total <= self.required_budget_bytes);
-            if fits {
+            if fits
+                || !self.retire_next_cached_row(&mut still_claimed, retired, claims, admission)?
+            {
                 return Ok(());
             }
-            let Some(key) = self.reclaimable_row(admission)? else {
-                return Ok(());
+            returning = returning.saturating_add(PreparedReadyBacking::retained_bytes());
+        }
+    }
+
+    /// Retire the next reclaimable row. Whether one was left to retire.
+    fn retire_next_cached_row(
+        &mut self,
+        still_claimed: &mut Option<WorthQueryOutputDemandKey>,
+        retired: &mut Vec<DemandRecord>,
+        claims: &mut Vec<Arc<WorthQueryOutputDemandKey>>,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<bool, WorthQueryOutputDemandDenial> {
+        loop {
+            let Some(key) = self.reclaimable_row(still_claimed.as_ref(), admission)? else {
+                return Ok(false);
             };
             for dependent in claimants_where(&self.records, &key, |_| true) {
                 self.follow_newest(&dependent, &key);
             }
+            // A claim that did not move still resolves through this row.
+            if self
+                .records
+                .get(&key)
+                .is_some_and(|record| record.framework_required_count != 0)
+            {
+                *still_claimed = Some(key);
+                continue;
+            }
             claims.extend(self.retire_row(&key, retired));
-            returning = returning.saturating_add(PreparedReadyBacking::retained_bytes());
+            return Ok(true);
         }
     }
 
     /// The first closed cached row nothing holds, or else the first closed
     /// superseded row only dependents' claims hold once the newest row of its
     /// occurrence is Ready: their edges already resolve through that row.
+    /// Superseded rows up to `still_claimed` kept a claim and are passed over.
     fn reclaimable_row(
         &self,
+        still_claimed: Option<&WorthQueryOutputDemandKey>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<WorthQueryOutputDemandKey>, WorthQueryOutputDemandDenial> {
         // One pass over the rows; each candidate compares the rows of its
@@ -105,7 +162,10 @@ impl DemandRegistryState {
                 if !held(&self.records, key, record) {
                     return Ok(Some(key.clone()));
                 }
-            } else if behind_ready.is_none() && closed_superseded(record) {
+            } else if behind_ready.is_none()
+                && closed_superseded(record)
+                && still_claimed.is_none_or(|claimed| key > claimed)
+            {
                 admission
                     .charge_external_work(rows.saturating_mul(2))
                     .map_err(|_| work_denial())?;

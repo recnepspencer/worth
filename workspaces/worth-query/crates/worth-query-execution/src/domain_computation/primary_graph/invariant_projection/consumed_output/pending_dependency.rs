@@ -153,6 +153,10 @@ impl ConsumedOutputEvidence {
                     SourceSettlementCurrentness::Dirty(_)
                     | SourceSettlementCurrentness::PendingUpstream(_),
                 ) => true,
+                // The edge reads an older row of a certified-equal chain whose
+                // newest row is marked: that upstream's own progression
+                // answers for the edge, exactly as for a directly marked row.
+                ConsumedOutputCurrentness::PendingEqualSuccessor => true,
                 // Marks no longer cover this edge: it is pending when its own
                 // facts or output show a change.
                 ConsumedOutputCurrentness::Direct(

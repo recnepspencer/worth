@@ -82,23 +82,24 @@ impl<Schema, Operation, Input, Scope>
         if let Some(head) = head.as_ref().filter(|head| head.occurrence == occurrence) {
             // A head that consumed upstream outputs is replayed only while a
             // row posts it: that row holds its claims, and a replay publishes
-            // none. A head no row posts lost its row to custody. This
-            // execution commits as its successor, and its publication retires
-            // the head's settlement.
-            let mut evicted = false;
-            if let Some(settlement) = &head.claiming_settlement {
-                evicted = !runtime
+            // none. A head that consumed none is replayed whenever its
+            // dependencies still match, and its row posts it again.
+            let replays = !force_successor && head.dependency_identity == Some(dependency);
+            let unposted = (head.claims_upstream || !replays)
+                && !runtime
                     .output_demands
-                    .posts_settlement(settlement, request_admission)
+                    .posts_settlement(&head.settlement, request_admission)
                     .map_err(|_| WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded)?;
-                if evicted {
-                    if let Some(context) = self.read_set.admission.required_output_demand_mut() {
-                        context.record_evicted_settlement(std::sync::Arc::clone(settlement));
-                    }
-                }
-            }
-            if !force_successor && !evicted && head.dependency_identity == Some(dependency) {
+            if replays && !unposted {
                 return Ok((head.idempotency_key_identity, dependency));
+            }
+            // This execution commits as the head's successor. A head no row
+            // posts lost its row to custody, so no row supersedes it: this
+            // publication retires its settlement.
+            if unposted {
+                if let Some(context) = self.read_set.admission.required_output_demand_mut() {
+                    context.record_evicted_settlement(std::sync::Arc::clone(&head.settlement));
+                }
             }
         }
         let prior_head = head

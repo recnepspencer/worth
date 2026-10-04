@@ -162,7 +162,9 @@ fn query_admission_denial(
     let kind = match stop.kind() {
         Kind::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
         Kind::DeadlineExceeded => WorthQueryOutputDemandDenialKind::TimedOut,
-        Kind::Authorization(kind) => WorthQueryOutputDemandDenialKind::RequestAuthorization(kind),
+        Kind::Authorization(kind) => {
+            WorthQueryOutputDemandDenialKind::of_request_authorization(kind)
+        }
         Kind::WorkLimitExceeded | Kind::CanonicalWorkDenied => {
             WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
         }
@@ -181,7 +183,9 @@ fn query_execution_denial(
     let kind = match stop.kind() {
         Kind::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
         Kind::DeadlineExceeded => WorthQueryOutputDemandDenialKind::TimedOut,
-        Kind::Authorization(kind) => WorthQueryOutputDemandDenialKind::RequestAuthorization(kind),
+        Kind::Authorization(kind) => {
+            WorthQueryOutputDemandDenialKind::of_request_authorization(kind)
+        }
         Kind::WorkLimitExceeded => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
         Kind::RetentionCapacityExhausted => {
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded

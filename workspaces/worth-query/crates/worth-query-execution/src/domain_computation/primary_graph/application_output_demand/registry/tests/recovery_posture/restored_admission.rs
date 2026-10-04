@@ -25,6 +25,8 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
         maximum_preparation_bytes: 8 * 1024 * 1024,
     });
 
+    let (_lineage, settlement) =
+        crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
     let (first, inserted) = registry
         .admit_restored(
             key_with_identity("restored", 1, 1, 80),
@@ -32,6 +34,7 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
             occurrence,
             super::super::super::DemandAdmissionKind::Ordinary,
             restored.clone(),
+            &settlement,
             &mut admission,
         )
         .expect("the recovered output admits its first demand");
@@ -42,6 +45,7 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
             occurrence,
             super::super::super::DemandAdmissionKind::Ordinary,
             restored,
+            &settlement,
             &mut admission,
         )
         .expect("a later observation joins the recovered semantic source");
@@ -51,6 +55,12 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
     assert_eq!(first.key, second.key);
     assert_eq!(registry.state.lock().unwrap().records.len(), 1);
     assert_eq!(registry.accepted_checkpoint_identities().len(), 1);
+    assert!(
+        registry
+            .posts_settlement(&settlement, &mut admission)
+            .unwrap(),
+        "a dependent claims the restored output through its posted settlement"
+    );
 }
 
 fn restored_output(

@@ -98,6 +98,7 @@ impl ApplicationProgramDefinition<CheckpointSchema> for ChainProgram {
             ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
                 .provides::<PlanarDerivedBodyOutput>()
                 .mutation::<PlanarEditBinding<CheckpointSchema>>()
+                .mutation::<VertexReplacementBinding<CheckpointSchema>>()
                 .conditional_operation::<MutatePlanar>()
                 .finish(),
         );

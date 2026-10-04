@@ -62,22 +62,24 @@ impl<Schema: TopologySchemaBinding>
 {
     const SEMANTIC_IDENTITY: &'static str = "worth.query.certification.consumed-chain-provider.v1";
     fn operation_input(&self, source: &PlanarOutputReadResult) -> ChainInput {
-        let upstreams: &[(&str, bool)] = match source.body_key.as_str() {
-            "anchor-b" => &[("anchor-a", true)],
-            "anchor-c" => &[("anchor-b", false)],
+        let upstream = |key: &str, root| ChainUpstream {
+            key: key.to_owned(),
+            root,
+        };
+        let upstreams = match source.body_key.as_str() {
+            "anchor-b" => vec![upstream("anchor-a", true)],
+            "anchor-c" => vec![upstream("anchor-b", false)],
             // The diamond's shared dependent consumes both root outputs.
-            "diamond-join" => &[("diamond-left", true), ("diamond-right", true)],
-            _ => panic!("the courtroom declares only three downstream nodes"),
+            "diamond-join" => vec![
+                upstream("diamond-left", true),
+                upstream("diamond-right", true),
+            ],
+            ring => vec![super::ring_world::upstream_of(ring)
+                .expect("the courtroom declares no other downstream node")],
         };
         ChainInput {
             scope_key: source.body_key.clone(),
-            upstreams: upstreams
-                .iter()
-                .map(|(key, root)| ChainUpstream {
-                    key: (*key).to_owned(),
-                    root: *root,
-                })
-                .collect(),
+            upstreams,
             value: source.value,
         }
     }

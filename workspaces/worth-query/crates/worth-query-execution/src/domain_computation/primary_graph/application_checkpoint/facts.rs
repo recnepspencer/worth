@@ -1,4 +1,4 @@
-//! Bounded v6 wire for postcommit producer facts and native output expectations.
+//! Bounded wire for postcommit producer facts and native output expectations.
 //! Unsupported decision facts are deliberately not checkpoint-reusable.
 
 use std::sync::Arc;
@@ -16,6 +16,11 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 
 mod indexed_selection;
 
+/// The wire version of producer facts. A checkpoint carries them at this
+/// version only for an output that consumed no other output: the restored
+/// row is verified against its own source facts and claims nothing upstream.
+/// Earlier versions made no such promise, and their payload is never read.
+pub(in crate::domain_computation::primary_graph) const WIRE_VERSION: u16 = 7;
 pub(super) const MAXIMUM_FACT_BYTES: usize = 1024 * 1024;
 pub(super) const MAXIMUM_FACTS: usize = 4096;
 const MAXIMUM_TEXT: usize = 4096;
@@ -109,15 +114,14 @@ pub(super) fn encode_with_capacity(facts: &[Fact], capacity: usize) -> Option<Ve
 pub(in crate::domain_computation::primary_graph) fn decode(
     bytes: &[u8],
 ) -> Result<Arc<[Fact]>, String> {
-    decode_for_wire_version(bytes, 6)?
-        .ok_or_else(|| "producer facts require verification".to_owned())
+    decode_for_wire_version(bytes, WIRE_VERSION)
 }
 
 pub(in crate::domain_computation::primary_graph) fn decode_for_wire_version(
     bytes: &[u8],
     wire_version: u16,
-) -> Result<Option<Arc<[Fact]>>, String> {
-    if !matches!(wire_version, 5 | 6) {
+) -> Result<Arc<[Fact]>, String> {
+    if wire_version != WIRE_VERSION {
         return Err("checkpoint producer fact wire version is unsupported".to_owned());
     }
     if bytes.len() < 5 || bytes.len() > MAXIMUM_FACT_BYTES {
@@ -130,7 +134,6 @@ pub(in crate::domain_computation::primary_graph) fn decode_for_wire_version(
         return Err("checkpoint producer fact count is invalid".to_owned());
     }
     let mut facts = Vec::with_capacity(count);
-    let mut ambiguous_legacy_absence = false;
     for _ in 0..count {
         let fact = match cursor.next_byte()? {
             1 => Fact::SourceEntity {
@@ -143,7 +146,6 @@ pub(in crate::domain_computation::primary_graph) fn decode_for_wire_version(
                 )
                 .ok_or_else(|| "checkpoint fact aspect is invalid".to_owned())?;
                 let native_revision = next_optional_version(&mut cursor)?.map(VersionId::as_u64);
-                ambiguous_legacy_absence |= wire_version == 5 && native_revision.is_none();
                 Fact::SourceAspectRevision {
                     entity_id,
                     aspect,
@@ -174,7 +176,6 @@ pub(in crate::domain_computation::primary_graph) fn decode_for_wire_version(
                     _ => return Err("checkpoint adjacency direction is invalid".to_owned()),
                 };
                 let native_revision = next_optional_version(&mut cursor)?;
-                ambiguous_legacy_absence |= wire_version == 5 && native_revision.is_none();
                 let comparison_work_limit = usize::try_from(cursor.next_u64()?)
                     .map_err(|_| "checkpoint adjacency work limit exceeds host".to_owned())?;
                 let endpoint_count = usize::try_from(cursor.next_u32()?)
@@ -199,7 +200,7 @@ pub(in crate::domain_computation::primary_graph) fn decode_for_wire_version(
                 entity_id: cursor.next_entity()?,
                 kind: KindId(cursor.next_u32()?),
             },
-            6 if wire_version >= 6 => indexed_selection::decode(&mut cursor)?,
+            6 => indexed_selection::decode(&mut cursor)?,
             _ => return Err("checkpoint producer fact kind is unsupported".to_owned()),
         };
         facts.push(fact);
@@ -207,7 +208,7 @@ pub(in crate::domain_computation::primary_graph) fn decode_for_wire_version(
     if !cursor.is_empty() {
         return Err("checkpoint producer fact payload length differs".to_owned());
     }
-    Ok((!ambiguous_legacy_absence).then(|| facts.into()))
+    Ok(facts.into())
 }
 
 fn put_locator(bytes: &mut Vec<u8>, locator: &AspectFieldLocator) -> Option<()> {

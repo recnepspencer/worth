@@ -182,6 +182,29 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         )
     }
 
+    /// A caller the branch refuses a product observation frees the one a
+    /// closed cached output keeps, as a demand does: its retry does not meet
+    /// the same refusal. A read and a mutation commit share the rule. With
+    /// no such output the refusal stands.
+    fn observation_refused(
+        &self,
+        refusal: WorthQueryProductBranchAdmissionDenial,
+    ) -> WorthQueryProductBranchAdmissionDenial {
+        if refusal == WorthQueryProductBranchAdmissionDenial::ObservationCapacityExhausted {
+            let mut admission = self
+                .primary_provider
+                .graph
+                .source_owner
+                .invalidation_owner
+                .request_admission();
+            drop(
+                self.output_demands
+                    .reclaim_cached_observation(&mut admission),
+            );
+        }
+        refusal
+    }
+
     fn admit_product_security_basis_with_query_basis<'basis>(
         &self,
         product: &impl WorthQueryProductObservationSource,
@@ -190,10 +213,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     ) -> Result<WorthQueryProductSecurityBasis<'basis>, WorthQueryProductBranchAdmissionDenial>
     {
         let selected = product.product_observation();
-        if let Some(guard) = product.current_security_guard() {
-            return self.product_runtime.with_product_observation(
-                guard.branch_identity(),
-                |current| {
+        let admitted = if let Some(guard) = product.current_security_guard() {
+            self.product_runtime
+                .with_product_observation(guard.branch_identity(), |current| {
                     if current.lifecycle_incarnation() != guard.lifecycle_incarnation()
                         || current.selected_commit() != guard.selected_commit()
                         || current
@@ -215,21 +237,24 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         application_basis,
                         _selected_program: selected_program,
                     })
-                },
-            );
-        }
-        self.product_runtime
-            .with_product_observation(selected.branch_identity(), |observation| {
-                if observation.lifecycle_incarnation() != selected.lifecycle_incarnation() {
-                    return Err(WorthQueryProductBranchAdmissionDenial::IncarnationChanged);
-                }
-                let (application_basis, selected_program) =
-                    self.retain_security_basis(&observation, query_basis, index_currency)?;
-                Ok(WorthQueryProductSecurityBasis {
-                    _observation: observation,
-                    application_basis,
-                    _selected_program: selected_program,
                 })
-            })
+        } else {
+            self.product_runtime.with_product_observation(
+                selected.branch_identity(),
+                |observation| {
+                    if observation.lifecycle_incarnation() != selected.lifecycle_incarnation() {
+                        return Err(WorthQueryProductBranchAdmissionDenial::IncarnationChanged);
+                    }
+                    let (application_basis, selected_program) =
+                        self.retain_security_basis(&observation, query_basis, index_currency)?;
+                    Ok(WorthQueryProductSecurityBasis {
+                        _observation: observation,
+                        application_basis,
+                        _selected_program: selected_program,
+                    })
+                },
+            )
+        };
+        admitted.map_err(|refusal| self.observation_refused(refusal))
     }
 }

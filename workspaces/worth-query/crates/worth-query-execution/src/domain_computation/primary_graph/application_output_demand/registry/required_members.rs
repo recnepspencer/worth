@@ -102,12 +102,12 @@ impl DemandRegistryState {
         &mut self,
         key: &WorthQueryOutputDemandKey,
     ) -> DetachedRequiredMember {
-        if self
-            .records
-            .get(key)
-            .is_some_and(super::DemandRecord::is_required)
-            || super::refreshed_rejoin::awaited_by_stale_owner(&self.records, key)
-        {
+        // Only a row is required or awaited: the member of one that left
+        // leaves with it.
+        if self.records.get(key).is_some_and(|record| {
+            record.is_required()
+                || super::refreshed_rejoin::awaited_by_stale_owner(&self.records, key)
+        }) {
             return DetachedRequiredMember::default();
         }
         let mut retired_source = None;

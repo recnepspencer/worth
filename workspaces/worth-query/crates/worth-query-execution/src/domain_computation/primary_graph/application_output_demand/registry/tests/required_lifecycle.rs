@@ -235,7 +235,6 @@ fn settlement_releases_only_the_ready_authority_it_accepted() {
     let actual = super::super::WorthQueryAcceptedOutputAuthority::Committed(replacement.clone());
     let completion = super::super::WorthQueryCompletedOutputDemand {
         authority: actual.clone(),
-        producer_commit_authority: None,
         readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
         resources: None,
     };

@@ -36,17 +36,14 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     && recovered_observation.lifecycle_incarnation()
                         == observation.lifecycle_incarnation()
                 {
-                    let Some(facts) = crate::domain_computation::primary_graph::application_checkpoint::decode_producer_facts_for_wire_version(
+                    let facts = crate::domain_computation::primary_graph::application_checkpoint::decode_producer_facts_for_wire_version(
                         fact_bytes,
                         checkpoint.producer_fact_wire_version,
                     )
                         .map_err(|error| WorthQueryOutputDemandDenial::new(
                             WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
                             error,
-                        ))?
-                    else {
-                        continue;
-                    };
+                        ))?;
                     lineage.record_restoration(
                         binding,
                         self.runtime.authority_identity().as_u64(),

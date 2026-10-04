@@ -57,6 +57,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
         facts: Arc::clone(&facts),
         output_facts: None,
         read_basis: before.clone(),
+        stale_at_read_basis: OrdSet::new(),
         requirement: None,
         upstream: OrdSet::new(),
     };
@@ -106,6 +107,23 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
     match currentness(owner, &after, &next) {
         SourceSettlementCurrentness::Dirty(ordinals) => assert!(ordinals.contains(&0)),
         _ => panic!("ordinary retained registration must mark the changed source fact"),
+    }
+    // A registrant that already knows its own effect moved a fact it read
+    // is not clean at the post-effect basis: no later delivery marks it.
+    let born_stale = RecordedSettlementIdentity::retain(&source, coordinate, 2);
+    owner
+        .register_settlement(
+            SettlementRegistration {
+                read_basis: after.clone(),
+                stale_at_read_basis: OrdSet::unit(0),
+                ..registration(Arc::clone(&born_stale))
+            },
+            &mut owner.edit_admission(),
+        )
+        .unwrap();
+    match currentness(owner, &after, &born_stale) {
+        SourceSettlementCurrentness::Dirty(ordinals) => assert_eq!(ordinals, OrdSet::unit(0)),
+        _ => panic!("a registration stale at its own read basis starts dirty"),
     }
     handle.with_runtime_mut(|runtime| {
         runtime

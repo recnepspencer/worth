@@ -102,10 +102,6 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryAcceptedOutputAu
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryCompletedOutputDemand {
     pub(in crate::domain_computation::primary_graph) authority: WorthQueryAcceptedOutputAuthority,
-    /// The actual producer mode that minted this checkpoint. Restored rows
-    /// have no execution-mode authority for a fresh required wave.
-    pub(in crate::domain_computation::primary_graph) producer_commit_authority:
-        Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority>,
     pub(in crate::domain_computation::primary_graph) readiness:
         super::WorthQueryOutputReadinessDeliveryEvidence,
     pub(in crate::domain_computation::primary_graph) resources:

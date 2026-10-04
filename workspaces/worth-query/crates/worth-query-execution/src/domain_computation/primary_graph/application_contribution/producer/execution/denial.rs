@@ -57,22 +57,18 @@ pub(super) fn request_authority_denied(
     subject: &str,
     error: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
 ) -> ProducerExecutionStop {
-    use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Kind;
-    let refusal = match error.kind() {
-        Kind::Cancelled => denial(
-            WorthQueryOutputDemandDenialKind::Cancelled,
-            subject.to_owned(),
-        ),
-        Kind::DeadlineExceeded => denial(
-            WorthQueryOutputDemandDenialKind::TimedOut,
-            subject.to_owned(),
-        ),
-        kind => denial(
-            WorthQueryOutputDemandDenialKind::RequestAuthorization(kind),
-            subject.to_owned(),
-        ),
-    };
-    request_admission_rejected(refusal)
+    request_admission_rejected(request_authority_stop(subject, error.kind()))
+}
+
+/// The stop of a request refused authorization.
+pub(super) fn request_authority_stop(
+    subject: &str,
+    kind: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+) -> WorthQueryOutputDemandDenial {
+    denial(
+        WorthQueryOutputDemandDenialKind::of_request_authorization(kind),
+        subject.to_owned(),
+    )
 }
 
 pub(super) fn request_admission_rejected(

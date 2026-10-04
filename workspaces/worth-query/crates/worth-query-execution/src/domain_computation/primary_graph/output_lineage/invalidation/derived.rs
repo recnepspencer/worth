@@ -167,7 +167,14 @@ impl SourceInvalidationOwner {
             return Ok(ConsumedOutputCurrentness::FullVerificationRequired);
         }
         let Some(cell) = self.cell_for_read(selected, admission)? else {
-            return Ok(ConsumedOutputCurrentness::FullVerificationRequired);
+            // Nothing committed on this branch since the runtime began, so no
+            // mark and no equality consequence exists: the evidence is
+            // compared in full.
+            return Ok(ConsumedOutputCurrentness::Direct(
+                SourceSettlementCurrentness::FullVerificationRequired(
+                    FullVerificationReason::MissingSettlement,
+                ),
+            ));
         };
         let image = cell.read_image();
         let past_len = image.payload().past.len();

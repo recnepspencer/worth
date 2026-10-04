@@ -176,56 +176,15 @@ pub(super) fn visit<E>(
                 projection.key(1, 0, || Key::EntityLifecycle(*candidate))?;
             }
         }
-        Fact::WorkflowDefinitionPredecessor {
-            relation_kind,
-            lineage,
-            expected_definition,
-            ..
-        } => {
-            let lineage = lineage.ok_or(FactKeyProjectionStop::FullVerificationRequired(
+        // No output's decision reads workflow definition or capacity truth:
+        // workflow attempts publish without an output binding. One that did
+        // would have no posting to mark it, so it verifies in full.
+        Fact::WorkflowDefinitionPredecessor { .. }
+        | Fact::WorkflowDefinitionCurrent { .. }
+        | Fact::WorkflowInstanceCapacity { .. } => {
+            return Err(FactKeyProjectionStop::FullVerificationRequired(
                 FullVerificationReason::UnsupportedFact,
-            ))?;
-            workflow_adjacency(
-                *relation_kind,
-                lineage,
-                Direction::Outgoing,
-                &mut projection,
-            )?;
-            if let Some(definition) = expected_definition {
-                projection.key(1, 0, || Key::EntityLifecycle(*definition))?;
-            }
-        }
-        Fact::WorkflowDefinitionCurrent {
-            relation_kind,
-            lineage,
-            expected_definition,
-            ..
-        } => {
-            workflow_adjacency(
-                *relation_kind,
-                *lineage,
-                Direction::Outgoing,
-                &mut projection,
-            )?;
-            projection.key(1, 0, || Key::EntityLifecycle(*expected_definition))?;
-        }
-        Fact::WorkflowInstanceCapacity {
-            relation_kind,
-            lineage,
-            instances,
-            ..
-        } => {
-            workflow_adjacency(
-                *relation_kind,
-                *lineage,
-                Direction::Incoming,
-                &mut projection,
-            )?;
-            projection.work(instances.len())?;
-            for instance in instances {
-                projection.key(1, 0, || Key::EntityLifecycle(instance.from))?;
-                projection.key(1, 0, || Key::EntityLifecycle(instance.to))?;
-            }
+            ));
         }
         // The basis names immutable native history. Its own retained lease is
         // checked at reuse and later commits cannot mutate that observation.
@@ -245,24 +204,6 @@ fn native_direction(
             Direction::Incoming
         }
     }
-}
-
-fn workflow_adjacency<E, A, F>(
-    kind: worth_relational::facade::identity::KindId,
-    anchor: worth_relational::facade::identity::EntityId,
-    direction: Direction,
-    projection: &mut Projection<A, F>,
-) -> Result<(), FactKeyProjectionStop<E>>
-where
-    A: FnMut(usize, usize) -> Result<(), E>,
-    F: FnMut(Key) -> Result<(), E>,
-{
-    projection.key(1, 0, || Key::EntityLifecycle(anchor))?;
-    projection.key(1, 0, || Key::Adjacency {
-        kind,
-        anchor,
-        direction,
-    })
 }
 
 fn locator_parts<'a, E, A, F>(

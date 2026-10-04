@@ -47,7 +47,6 @@ fn ready_ordinary_output_survives_close_and_reopens_without_scheduling() {
             },
         ),
         readiness: WorthQueryOutputReadinessDeliveryEvidence::without_execution(),
-        producer_commit_authority: None,
         resources: None,
     };
     let wake = Arc::new(DemandWake {

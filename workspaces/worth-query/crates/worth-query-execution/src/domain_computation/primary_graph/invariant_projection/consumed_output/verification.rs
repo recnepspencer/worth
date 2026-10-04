@@ -21,7 +21,9 @@ use crate::domain_computation::primary_graph::{
     SourceInvalidationOwner,
 };
 pub(super) use work_budget::map_admission_stop;
-use work_budget::{charge_external, debit_wrapper_work, map_verification_stop, reserve_pending};
+use work_budget::{
+    charge_external, debit_wrapper_work, fact_is_current, map_verification_stop, reserve_pending,
+};
 
 #[derive(Clone, Copy)]
 pub(in crate::domain_computation::primary_graph) struct EvidenceView<'a> {
@@ -212,16 +214,42 @@ impl ConsumedOutputEvidence {
         }
         #[cfg(feature = "certification-invalidation-equivalence")]
         let image = owner.capture_full_verification(runtime, snapshot, selected, admission);
-        let result =
-            Self::verify_marked_views(roots.clone(), owner, runtime, snapshot, selected, admission);
+        let mut verified = Vec::new();
+        let mut marked = Vec::new();
+        let result = Self::verify_marked_views(
+            roots.clone(),
+            owner,
+            runtime,
+            snapshot,
+            selected,
+            &mut verified,
+            &mut marked,
+            admission,
+        );
         #[cfg(feature = "certification-invalidation-equivalence")]
-        {
-            super::equivalence::check(roots, image, result, admission)
+        let result = super::equivalence::check(roots, image, result, admission);
+        if result == Ok(ConsumedOutputVerification::Current) {
+            // Each of these rows had its facts and output compared in full.
+            // Consumed rows come last, so they are re-established first and
+            // their consumers find them clean. A row that cannot be
+            // re-established keeps requiring verification. The caller's
+            // allowance pays for the comparison alone: recording it is the
+            // owner's edit, so the answer never depends on whether a row moves.
+            let mut edit = owner.edit_admission();
+            for (evidence, _) in verified.into_iter().rev() {
+                let _ = owner.reestablish_verified(
+                    runtime,
+                    snapshot,
+                    selected,
+                    evidence.identity,
+                    evidence.source_facts,
+                    &mut edit,
+                );
+            }
+            // Rows answered from their marks are verified through this image.
+            let _ = owner.carry_read_basis(runtime, snapshot, selected, &marked, &mut edit);
         }
-        #[cfg(not(feature = "certification-invalidation-equivalence"))]
-        {
-            result
-        }
+        result
     }
 
     fn verify_marked_views<'a>(
@@ -230,6 +258,8 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
+        verified: &mut Vec<(EvidenceView<'a>, bool)>,
+        marked: &mut Vec<Arc<RecordedSettlementIdentity>>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         let mut pending = Vec::new();
@@ -253,10 +283,6 @@ impl ConsumedOutputEvidence {
             {
                 return Ok(ConsumedOutputVerification::ChangedUpstream);
             }
-            if evidence.verification_requirement == Some(FullVerificationReason::CheckpointRestore)
-            {
-                return Err(ConsumedOutputVerificationStop::Unavailable);
-            }
             let currentness = owner
                 .consumed_output_currentness(selected, evidence.identity, admission)
                 .map_err(map_admission_stop)?;
@@ -269,7 +295,8 @@ impl ConsumedOutputEvidence {
                     admission
                         .charge_external_work(1)
                         .map_err(map_admission_stop)?;
-                    drop(successor);
+                    reserve_pending(marked, 2, admission)?;
+                    marked.extend([Arc::clone(evidence.identity), successor]);
                     continue;
                 }
                 ConsumedOutputCurrentness::PendingEqualSuccessor => {
@@ -281,7 +308,11 @@ impl ConsumedOutputEvidence {
             };
             match currentness {
                 SourceSettlementCurrentness::Clean
-                    if evidence.verification_requirement.is_none() => {}
+                    if evidence.verification_requirement.is_none() =>
+                {
+                    reserve_pending(marked, 1, admission)?;
+                    marked.push(Arc::clone(evidence.identity));
+                }
                 SourceSettlementCurrentness::PendingUpstream(_) => {
                     return Err(ConsumedOutputVerificationStop::PendingUpstream);
                 }
@@ -306,17 +337,16 @@ impl ConsumedOutputEvidence {
                         DirtyReverification::Verified(token) => {
                             let cleared = owner.clear_verified_dirty(token, admission);
                             cleared.map_err(map_verification_stop)?;
+                            reserve_pending(marked, 1, admission)?;
+                            marked.push(Arc::clone(evidence.identity));
                         }
                         DirtyReverification::HistoricalCurrent
                         | DirtyReverification::AlreadyCurrent => {}
                     }
                 }
-                SourceSettlementCurrentness::FullVerificationRequired(
-                    FullVerificationReason::CheckpointRestore,
-                ) => return Err(ConsumedOutputVerificationStop::Unavailable),
-                SourceSettlementCurrentness::Clean
+                unmarked @ (SourceSettlementCurrentness::Clean
                 | SourceSettlementCurrentness::Dirty(_)
-                | SourceSettlementCurrentness::FullVerificationRequired(_) => {
+                | SourceSettlementCurrentness::FullVerificationRequired(_)) => {
                     for (ordinal, fact) in evidence.source_facts.iter().enumerate() {
                         if !fact_is_current(fact, runtime, snapshot, admission)? {
                             return Ok(if direct {
@@ -336,6 +366,13 @@ impl ConsumedOutputEvidence {
                         {
                             return Ok(ConsumedOutputVerification::ChangedUpstream);
                         }
+                        if matches!(
+                            unmarked,
+                            SourceSettlementCurrentness::FullVerificationRequired(_)
+                        ) {
+                            reserve_pending(verified, 1, admission)?;
+                            verified.push((evidence, direct));
+                        }
                     }
                     charge_external(admission, evidence.upstream.len())?;
                     reserve_pending(&mut pending, evidence.upstream.len(), admission)?;
@@ -350,33 +387,4 @@ impl ConsumedOutputEvidence {
         }
         Ok(ConsumedOutputVerification::Current)
     }
-}
-
-fn fact_is_current(
-    fact: &WorthQueryApplicationObservedFact,
-    runtime: &RelationalRuntime,
-    snapshot: &SnapshotHandle,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<bool, ConsumedOutputVerificationStop> {
-    let available = admission.remaining_work();
-    if available == 0 {
-        return Err(ConsumedOutputVerificationStop::WorkExhausted);
-    }
-    let prepaid = fact
-        .exact_probe_work()
-        .map_err(|_| ConsumedOutputVerificationStop::WorkExhausted)?
-        .unwrap_or(0);
-    charge_external(admission, prepaid)?;
-    let (current, work) = fact
-        .source_currentness_in(runtime, snapshot, available)
-        .map_err(|failure| match failure {
-            WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => {
-                ConsumedOutputVerificationStop::WorkExhausted
-            }
-            WorthQuerySourceCurrentnessFailure::Unavailable => {
-                ConsumedOutputVerificationStop::Unavailable
-            }
-        })?;
-    charge_external(admission, work.saturating_sub(prepaid))?;
-    Ok(current)
 }

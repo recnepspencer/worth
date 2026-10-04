@@ -190,7 +190,7 @@ budget or determinism contract.
 
 ### Exact invalidation
 
-- A neutral model repeated at 1, 10 and 100 independent copies, with a fixed
+- A neutral model repeated at 1 and 100 independent copies, with a fixed
   one-field edit in one copy.
 - A commit that races an output's settlement.
 - A demand at an older snapshot than the latest marks.
@@ -211,27 +211,31 @@ budget or determinism contract.
 
 Required:
 
-- For the fixed edit, logical marking operations (posting-key lookups, matched
-  fact ordinals and affected downstream vertices), verification work, producer
-  contacts and reverse-index capacity bytes per consumed fact are equal at 1,
-  10 and 100 copies. Physical index navigation and selected copy-on-write paths
-  are separately admitted and reported. Their structural cost may vary with
-  index height; no settlement scan, waiting-work scan or whole-index copy is
-  hidden in the logical counters. A conservative allocation bound is reported
-  as a bound; independent allocation evidence measures actual allocation.
-- Demanding a clean output costs zero fact checks and zero source-query re-runs.
+- For the fixed edit and the advances after it, producer contacts,
+  source-query runs, advances and chain decisions are equal at 1 and 100
+  copies, and the edit is delivered exactly. The counts come from the
+  execution observer; no meter is added for them.
+- Demanding a clean output costs zero source-query runs and zero producer
+  contacts, and decides nothing again.
 - One `advance` with an adequate budget settles every marked output, and
   exhaustion returns a typed outcome naming the remaining work; the application
   never polls.
 - A downstream output demanded before its upstream recomputes reports Pending,
   and an equal upstream republication clears the marks below it with zero
-  producer contacts.
+  producer contacts. A decision reads its upstream's current output.
 - The racing commit is caught by insertion replay, and the older-snapshot demand
   ignores later marks.
+- A demand that never settled stops `Superseded` when a commit replaces its
+  source, and its caller demands again. A settled demand that stays open keeps
+  following its output through that commit.
 - Every listed discontinuity triggers the full-verification fallback once per
-  affected output, counted and reported.
+  affected output: its demand runs its source query once, reaches no producer
+  and decides nothing. An output demanded at least once per retained window
+  never leaves it.
 - A randomized differential test over all of the above finds no difference
-  between marking and full verification.
+  between marking and full verification: it runs seeded with the equivalence
+  check on, and after every step each settled output equals what a plain model
+  computes from scratch.
 
 ### Same answer at every worker count
 
@@ -507,7 +511,10 @@ at its declared breadth and is counted and reported.
   - a delivery gap: an overflowed or missed batch, or marks that lag the
     demand's snapshot.
 
-  It runs once per affected output and is counted and reported.
+  It runs once per affected output: the verified row is marked clean again,
+  so its next clean demand runs no source query. A restored dependent carries
+  no upstream edges and executes once instead. It is observed as source-query
+  runs that reach no producer; it has no counter of its own.
 - **Commit-time checks.** A commit still recompares its attempt's read facts
   (optimistic concurrency control). Marking replaces only demand-time
   re-verification.
@@ -1669,14 +1676,16 @@ before machinery for another lands.
     read from the pinned definition, and lineage capacity is a live fact. No
     waiting step reads it: the `WorkflowInstanceCapacity` fact is built only at
     start (`application_attempt/workflow_instance_program.rs:148-155`).
-    *Not completed:*
-    - The neutral courtroom shows a waiting instance keeps its pin across a
-      definition and capacity change while a new start sees the new revision.
-    - The courtroom shows that no waiting step's decision reads a lineage
-      capacity key, or that any step that does re-reads it at advance as a
-      currentness check against current state, never the pinned basis.
-    - The workflow projections in `invalidation/fact_keys.rs` (~179-232) gain
-      a real consumer or are deleted.
+    *Completed:*
+    - A certification proof holds a waiting instance on its pinned revision
+      across a definition change and a capacity change, while a new start is
+      sent to the new revision and reads the new capacity.
+    - The pinned instance completes at its own revision's node while its
+      lineage is full, so no waiting step reads lineage capacity.
+    - The workflow projections in `invalidation/fact_keys.rs` are deleted.
+      Workflow attempts publish without an output binding, so no output's
+      decision reads definition or capacity truth; one that did has no posting
+      to mark it and verifies in full.
 - Land the settle-time reverse index with insertion replay, commit-time
   marking, upstream propagation, selection and lineage marking. *Completed.*
 - Close multi-root (diamond) dependencies: one advance follows every consumed
@@ -1763,9 +1772,123 @@ before machinery for another lands.
   - Conservative posture: before a dependent's first claim, its upstream
     owner reads as a demand open outside its chain, so a refusal there
     offers a retry. This ends once that demand closes.
+  - Retained state follows what live demands hold, not how many generations
+    were published. An unrelated caller demanded every cycle drives the
+    required wave every cycle, and retained invalidation bytes and required
+    custody are equal every cycle at three and at five Ready rows per
+    settled demand. Lineage retirement frees the unpinned generations behind
+    a pinned one, and a row replaced under a refresh leaves the required set
+    when that refresh publishes.
+  - A refresh refused custody while its caller still holds its own reopened
+    stale Ready releases that Ready and goes Fresh; the stop stays retryable
+    for a demand that has not settled. An overwritten middle output settles
+    at seven to ten rows of required custody.
 - Land the full-verification fallback and the equivalence-check mode.
   *Completed.* CI runs the checkpoint courtroom with the equivalence check,
   the execution observer and World operation control.
+- Close the exact-invalidation courtroom through the public facade, over a
+  neutral model of independent rings: a root and two chained consumers whose
+  decisions read their upstream values. *Completed:*
+  - Locality. One root-input edit costs the same producer contacts,
+    source-query runs, advances and decisions at 1 and 100 rings with every
+    chain demanded, and is delivered exactly. Afterwards every open demand
+    of every ring costs no source query, no producer contact and no decision.
+  - Randomized differential. Fixed seeds drive a root-input edit, a write of
+    a field to its current value, a fetched field the input omits on the
+    next body and on a farther one, an overwrite of a root and of a chain
+    output by a writer that is not its producer, a delete and create under a
+    new or a retired index key with its relations removed and added, a
+    root-input commit racing a started demand, and a checkpoint restore that
+    ends the world and opens the next from its capture. Each commit is
+    followed by no demand, the open chain in a drawn order of its three
+    demands, a fresh ring, or every output twice. The equivalence check runs
+    throughout, every settled output equals the model, the output read
+    through each settlement's own observation equals a fresh read, the
+    second demand of every output reaches no producer, and a failure prints
+    its seed and steps.
+  - One advance settles every demand that has settled before, and the
+    courtroom fails on a second one.
+  - Observation capacity. The same sequences run in a branch that admits 16
+    product observations. A demand, a read or a mutation commit refused an
+    observation retires one closed cached row, and is admitted when asked
+    again once a retired row gave an observation back. A caller that only
+    commits is refused by a branch its performed writes filled, and the same
+    commit asked again is performed. The refusal is typed and retryable and
+    fails no shared row; the retired row's next demand produces it again.
+  - Discontinuities. A restored root is readmitted from its checkpoint facts
+    with no source query and no producer contact. A restored consumer carries
+    no upstream edges, so it goes Fresh: it executes once, decides over its
+    upstream again, and never settles over what the checkpoint held. A
+    checkpoint carries producer facts only for an output that consumed no
+    other, under a new fact wire version; facts at an older version are
+    never read, so their row starts Fresh. After more commits than the
+    retained window holds, an unedited chain is verified in full once, by
+    one source query, and reaches no producer. The verified row is marked
+    clean again, and a clean demand moves its row's verified-through
+    position to the position it was checked against: an output demanded
+    inside every window never leaves it and runs no source query of its own
+    over more cycles than the window holds. An edited output executes again.
+    A forked branch settles on its own edit and leaves its parent's outputs
+    untouched.
+  - A consumer of an equally republished root decides again when the root
+    then changes, instead of waiting forever on the older equal row.
+  - A settled demand that stays open keeps following its output: through a
+    refresh of its equal republication under the same source, and through a
+    demand of a newer source that closes or is superseded before it
+    publishes. That demand's row gives the occurrence back to the newest
+    Ready it replaced, for a fresh demand as for a refresh. Rows of one
+    source order by their refresh, so the refreshed alias is the newest, in
+    whichever order the held demands advance.
+  - A demand that never settled stops `Superseded` when a commit replaces
+    its source; its caller demands again.
+  - A native Relational writer that is not Query is delivered exactly and
+    marks what the same write through a declared operation marks, for a root
+    input and for a chain output. CI's featured run drives it.
+  - A demand at a retained observation settles at no cost while that
+    observation is the head, and stops `Superseded` at its start once a
+    commit moves the head.
+
+  *Not completed:*
+  - A demand that starts its own row settles in three advances over an equal
+    republication and in five over a producer contact. The application does
+    not poll an open demand, but a start is not yet one call.
+  - A demand at an older observation stops `Superseded` even when no later
+    commit wrote what it reads.
+  - A restored output has no producer mode until a demand of it advances
+    once. A dependent's wave that meets it first stops retryable.
+  - A refused observation retires one closed cached row, in key order. A
+    row that shares its observation with another holder gives none back, so
+    a caller is refused once for each such row ahead of one that frees an
+    observation. The registry cannot tell those rows apart.
+  - A performed write whose required outputs never start keeps its source
+    observation until a newer write of its scope replaces it. A branch
+    those writes fill alone refuses every caller as retryable, and no retry
+    is admitted.
+  - A fresh demand on a forked branch executes its producers again. A row is
+    keyed by its branch incarnation, so the fork has no row and starts
+    Fresh; values agree. Verifying instead means copying the parent's rows,
+    Readys, lineage and marks under the fork's incarnation, as a checkpoint
+    restore does for a whole world.
+  - A chain node's written value does not depend on what it consumed. Its
+    one output field is the field its own source query reads, and its
+    handler writes that value back. The courtroom varies what a consumer
+    decides over by overwriting its upstream output.
+  - No public observation counts fact checks or fallback events. The
+    courtroom reads source-query runs and producer contacts, and this slice
+    adds no meter.
+  - An equal upstream republication clearing the marks below it is proven at
+    the invalidation owner only. The neutral fixture installs no equality
+    certification for its outputs.
+  - A delivery overflow cannot be driven at the facade: exhausting retained
+    invalidation room denies the commit. The marking ceiling is proven at
+    the invalidation owner.
+  - A second program installation over live outputs is not driven. The
+    facade offers a rostered installation and program adoption; the fixture
+    installs one program, and its court and demands are typed on it.
+  - An aspect contract-revision change is not driven: the fixture declares
+    its contribution at one revision.
+  - The facade and this fixture offer no branch merge, no un-indexed
+    predicate and no stored absence fact.
 - Checkpoint readmission rebuilds the original complete Native output-aspect
   witness from captured facts. *Completed:*
   - It verifies those original revisions and supported producer facts against

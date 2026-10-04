@@ -29,7 +29,6 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
                 DemandState::Output(WorthQueryOutputProgress::new(
                     WorthQueryOutputCheckpoint::Ready(ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
                         authority: WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()),
-                        producer_commit_authority: None,
                         readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
                         resources: None,
                     })),
@@ -109,7 +108,6 @@ fn stopped_ready_record_rejects_successor_without_reviving_custody() {
     let mut output = WorthQueryOutputProgress::new(WorthQueryOutputCheckpoint::Ready(
         ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
             authority: WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()),
-            producer_commit_authority: None,
             readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
             resources: None,
         }),
@@ -172,7 +170,6 @@ fn failed_successor_admission_preserves_ready_custody() {
                 DemandState::Output(WorthQueryOutputProgress::new(
                     WorthQueryOutputCheckpoint::Ready(ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
                         authority: WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()),
-                        producer_commit_authority: None,
                         readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
                         resources: None,
                     })),

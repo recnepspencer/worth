@@ -34,14 +34,20 @@ static DECISIONS: std::sync::Mutex<Vec<(String, Vec<u64>)>> = std::sync::Mutex::
 /// The upstream Lengths each decision for `scope_key` read since the last
 /// take, in order. Other scopes' decisions are discarded.
 pub(super) fn take_decisions(scope_key: &str) -> Vec<Vec<u64>> {
+    take_all_decisions()
+        .into_iter()
+        .filter_map(|(scope, values)| (scope == scope_key).then_some(values))
+        .collect()
+}
+
+/// Every decision since the last take, in order: its scope and the upstream
+/// Lengths it read.
+pub(super) fn take_all_decisions() -> Vec<(String, Vec<u64>)> {
     std::mem::take(
         &mut *DECISIONS
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner),
     )
-    .into_iter()
-    .filter_map(|(scope, values)| (scope == scope_key).then_some(values))
-    .collect()
 }
 /// A request to cancel from inside one scope's next decision, so its refresh
 /// is interrupted after its row was claimed.

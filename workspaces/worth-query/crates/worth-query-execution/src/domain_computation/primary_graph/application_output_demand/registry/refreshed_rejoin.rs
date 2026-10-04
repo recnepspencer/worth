@@ -5,6 +5,7 @@
 //! the newest row of that occurrence instead of failing; a stop that was not
 //! a refresh, or a refresh that itself stopped, stays terminal.
 
+use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -56,8 +57,8 @@ impl WorthQueryOutputDemandRegistry {
             .filter(|(key, _)| key.same_occurrence(&stale.key))
             .max_by_key(|(key, _)| key.source.observation_generation())
             .map(|(key, _)| key.clone());
-        let Some(newest) = newest
-            .filter(|key| key.replacement_order(&stale.key) == Some(std::cmp::Ordering::Greater))
+        let Some(newest) =
+            newest.filter(|key| refresh_order(key, &stale.key) == Some(Ordering::Greater))
         else {
             return Ok(None);
         };
@@ -100,7 +101,8 @@ pub(super) fn superseded(record: &DemandRecord) -> bool {
 /// dependent whose settled row consumed one. While a dependent is open the
 /// outputs it consumes stay required, through every refresh of them. The row
 /// keeps its required membership and source custody until each owner rejoins
-/// or releases.
+/// or releases. A newer row takes the occurrence over once it publishes:
+/// one that ends first gives the occurrence back to this row.
 pub(super) fn awaited_by_stale_owner(
     records: &BTreeMap<WorthQueryOutputDemandKey, DemandRecord>,
     key: &WorthQueryOutputDemandKey,
@@ -110,9 +112,9 @@ pub(super) fn awaited_by_stale_owner(
         if other == key {
             continue;
         }
-        match other.replacement_order(key) {
-            Some(std::cmp::Ordering::Greater) => return false,
-            Some(std::cmp::Ordering::Less) => {
+        match refresh_order(other, key) {
+            Some(Ordering::Greater) if !record.unpublished_new_key() => return false,
+            Some(Ordering::Less) => {
                 awaited |= (record.interests != 0 || record.framework_required_count != 0)
                     && superseded(record);
             }
@@ -120,6 +122,37 @@ pub(super) fn awaited_by_stale_owner(
         }
     }
     awaited
+}
+
+/// Whether the Ready of `key`'s row, replaced by a refresh that has yet to
+/// publish, still answers for a stale owner. A refresh that ends unpublished
+/// gives the occurrence back to the Ready it replaced, never to an older one.
+pub(super) fn replaced_under_refresh(
+    records: &BTreeMap<WorthQueryOutputDemandKey, DemandRecord>,
+    key: &WorthQueryOutputDemandKey,
+) -> bool {
+    occurrence_rows(records, key)
+        .any(|(other, _)| refresh_order(other, key) == Some(Ordering::Greater))
+        && awaited_by_stale_owner(records, key)
+}
+
+/// The closed superseded rows the published row at `key` replaced. Kept
+/// while it refreshed, they answer for nothing once it has published.
+pub(super) fn replaced_by_published(
+    records: &BTreeMap<WorthQueryOutputDemandKey, DemandRecord>,
+    key: &WorthQueryOutputDemandKey,
+) -> Vec<WorthQueryOutputDemandKey> {
+    if !matches!(records.get(key), Some(record) if matches!(record.state, DemandState::Output(_))) {
+        return Vec::new();
+    }
+    occurrence_rows(records, key)
+        .filter(|(other, record)| {
+            refresh_order(other, key) == Some(Ordering::Less)
+                && record.interests == 0
+                && superseded(record)
+        })
+        .map(|(other, _)| other.clone())
+        .collect()
 }
 
 /// The newest row of `key`'s occurrence. A closing stale owner of `key` may
@@ -130,9 +163,25 @@ pub(super) fn newest_of_occurrence(
 ) -> Option<WorthQueryOutputDemandKey> {
     occurrence_rows(records, key)
         .map(|(other, _)| other)
-        .filter(|other| other.replacement_order(key) == Some(std::cmp::Ordering::Greater))
+        .filter(|other| refresh_order(other, key) == Some(Ordering::Greater))
         .max_by_key(|other| other.source.observation_generation())
         .cloned()
+}
+
+/// How `row` orders against `other` among the rows of one occurrence. A
+/// refreshed Stable alias keeps its semantic source and takes the newer
+/// observation, so two rows of one semantic source order by generation.
+pub(super) fn refresh_order(
+    row: &WorthQueryOutputDemandKey,
+    other: &WorthQueryOutputDemandKey,
+) -> Option<Ordering> {
+    row.replacement_order(other).map(|order| {
+        order.then_with(|| {
+            row.source
+                .observation_generation()
+                .cmp(&other.source.observation_generation())
+        })
+    })
 }
 
 /// The rows of `key`'s occurrence. Keys order by producer and occurrence

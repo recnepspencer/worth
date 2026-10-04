@@ -232,6 +232,18 @@ pub(super) fn limits(
     retained_composite_commits: u64,
     invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
 ) -> WorthQueryInMemoryApplicationLimits {
+    limits_with_room(retained_composite_commits, 16, 64, invalidation)
+}
+
+/// A world with room for a long history under open demands. Rows settled at
+/// different commits keep their own product observations active, and every
+/// open demand pins the exact components it settled on.
+pub(super) fn limits_with_room(
+    retained_composite_commits: u64,
+    active_observations: u64,
+    unique_exact_component_pins: u64,
+    invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
+) -> WorthQueryInMemoryApplicationLimits {
     WorthQueryInMemoryApplicationLimits::new(
         WorthQueryProductWorldResources::install(
             RuntimeWorldBudgetInstallation {
@@ -243,7 +255,7 @@ pub(super) fn limits(
                     history_metadata_bytes: 524_288,
                 },
                 observations: RuntimeWorldObservationBudgetInstallation {
-                    active_observations: 16,
+                    active_observations,
                 },
                 publication: RuntimeWorldPublicationBudgetInstallation {
                     active_publication_attempts: 4,
@@ -253,7 +265,7 @@ pub(super) fn limits(
                     retained_partial_metadata_bytes: 524_288,
                 },
                 retention: RuntimeWorldRetentionBudgetInstallation {
-                    unique_exact_component_pins: 64,
+                    unique_exact_component_pins,
                     in_flight_pin_acquisition_reservations: 16,
                 },
                 custody: RuntimeWorldCustodyBudgetInstallation {

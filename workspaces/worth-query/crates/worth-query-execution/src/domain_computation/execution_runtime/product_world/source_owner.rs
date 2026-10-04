@@ -24,7 +24,7 @@ pub struct WorthQueryRelationalSourceOwner {
     pub(super) bridge_head: Arc<Mutex<Option<RelationalBridgeBranchHeadLease>>>,
     pub(in crate::domain_computation) invalidation_owner:
         Arc<crate::domain_computation::primary_graph::SourceInvalidationOwner>,
-    _canonical_subscription: RelationalBridgeCanonicalSubscription,
+    canonical_subscription: RelationalBridgeCanonicalSubscription,
 }
 
 impl WorthQueryRelationalSourceOwner {
@@ -58,8 +58,19 @@ impl WorthQueryRelationalSourceOwner {
             source,
             bridge_head: Arc::new(Mutex::new(None)),
             invalidation_owner,
-            _canonical_subscription: subscription,
+            canonical_subscription: subscription,
         })
+    }
+
+    /// The registration stays here: the invalidation owner is its callback
+    /// and must not retain it.
+    pub(in crate::domain_computation) fn mint_mark_cell_at_head(
+        &self,
+        head: &worth_relational::facade::runtime::PositionedRelationalSnapshot,
+        admission: &mut crate::domain_computation::primary_graph::InvalidationEditAdmission,
+    ) -> Result<(), worth_relational::facade::mvcc::CompanionPreflightStop> {
+        self.invalidation_owner
+            .mint_cell_at_head(&self.canonical_subscription, head, admission)
     }
 
     pub fn with_runtime<T>(&self, read: impl FnOnce(&RelationalRuntime) -> T) -> T {

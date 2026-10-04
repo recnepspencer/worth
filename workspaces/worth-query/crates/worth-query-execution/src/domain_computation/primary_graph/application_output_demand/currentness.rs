@@ -58,23 +58,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::Superseded))?;
                 drop(lineage);
                 remaining_work -= read.work;
-                require_witnessed_output(
-                    relational,
-                    self.application_basis().snapshot_handle(),
-                    read.native_output_witness.as_ref(),
-                    &runtime
-                        .primary_provider
-                        .graph
-                        .source_owner
-                        .invalidation_owner,
-                    &mut remaining_work,
-                )?;
-                require_current_facts(
-                    relational,
-                    self.application_basis().snapshot_handle(),
-                    read.facts.iter(),
-                    &mut remaining_work,
-                )?;
+                self.require_current_read(relational, &read, &mut remaining_work)?;
             }
             Ok(())
         })
@@ -113,26 +97,63 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     .map_err(|()| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))?
                     .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::Superseded))?;
                 remaining_work -= read.work;
-                require_witnessed_output(
-                    relational,
-                    self.application_basis().snapshot_handle(),
-                    read.native_output_witness.as_ref(),
-                    &runtime
-                        .primary_provider
-                        .graph
-                        .source_owner
-                        .invalidation_owner,
-                    &mut remaining_work,
-                )?;
-                require_current_facts(
-                    relational,
-                    self.application_basis().snapshot_handle(),
-                    read.facts.iter(),
-                    &mut remaining_work,
-                )?;
+                self.require_current_read(relational, &read, &mut remaining_work)?;
             }
             Ok(())
         })
+    }
+
+    /// Compares the output witness and every source fact at this observation.
+    /// That full verification re-establishes the row's marks, so the next
+    /// demand at this image reads them instead of verifying again.
+    fn require_current_read(
+        &self,
+        relational: &worth_relational::facade::runtime::RelationalRuntime,
+        read: &crate::domain_computation::primary_graph::output_lineage::RetainedOutputCurrentnessRead,
+        remaining_work: &mut usize,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        let owner = &self
+            .application()
+            .primary_provider
+            .graph
+            .source_owner
+            .invalidation_owner;
+        let snapshot = self.application_basis().snapshot_handle();
+        require_witnessed_output(
+            relational,
+            snapshot,
+            read.native_output_witness.as_ref(),
+            owner,
+            remaining_work,
+        )?;
+        require_current_facts(relational, snapshot, read.facts.iter(), remaining_work)?;
+        if let Ok(selected) = relational.read_truth().positioned_snapshot(snapshot) {
+            let mut admission = owner.edit_admission();
+            let witness = read.native_output_witness.as_ref();
+            if let Some(witness) = witness
+                .and_then(|witness| witness.get())
+                .filter(|_| read.consumed_nothing)
+            {
+                // A restored output gets its row from this comparison.
+                let _ = owner.establish_verified_root(
+                    &selected,
+                    &read.identity,
+                    &read.facts,
+                    witness,
+                    &mut admission,
+                );
+            }
+            // A row that cannot be re-established keeps requiring verification.
+            let _ = owner.reestablish_verified(
+                relational,
+                snapshot,
+                &selected,
+                &read.identity,
+                &read.facts,
+                &mut admission,
+            );
+        }
+        Ok(())
     }
 }
 

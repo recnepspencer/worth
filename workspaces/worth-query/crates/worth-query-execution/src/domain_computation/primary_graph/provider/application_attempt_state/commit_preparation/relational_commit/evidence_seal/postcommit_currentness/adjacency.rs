@@ -189,8 +189,8 @@ mod tests {
                 super::super::RebasedSourceFacts::Exact(facts) => {
                     assert_eq!(facts.as_ref(), &[stale_revision])
                 }
-                super::super::RebasedSourceFacts::VerificationRequired { reason, .. } => {
-                    panic!("non-output evidence must retain its comparison posture: {reason:?}")
+                other => {
+                    panic!("non-output evidence must retain its comparison posture: {other:?}")
                 }
             }
         });

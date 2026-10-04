@@ -196,7 +196,10 @@ where
     {
         let mut admission = self.demand_request_admission();
         let stop = match advance(demand, &mut admission) {
-            Ok(progress) => return Ok(progress),
+            Ok(progress) => {
+                demand.settled |= matches!(progress, WorthQueryOutputDemandAdvance::Settled(_));
+                return Ok(progress);
+            }
             Err(stop) => stop,
         };
         Err(self.caller_custody_stop(demand, stop, &mut admission))
@@ -273,7 +276,7 @@ where
             .interest
             .as_ref()
             .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::Closed, Family::IDENTITY))?;
-        self.rejoin_refreshed_output(demand, request_admission)?;
+        demand.rejoin_refreshed_output(&self.output_demands, request_admission)?;
         request_admission
             .charge_external_work((std::mem::size_of_val(&demand.installed_entry) + 1) as u64)
             .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;

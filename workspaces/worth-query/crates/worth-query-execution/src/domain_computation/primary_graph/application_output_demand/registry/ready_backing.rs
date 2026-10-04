@@ -1,4 +1,9 @@
 //! One prepared Ready cell, retained through every reader of its completion.
+//!
+//! The cell also keeps the mode a required wave executes the output's producer
+//! in again. An executed output has the mode that executed it. A restored
+//! output was executed by no demand of this runtime: it takes the mode of the
+//! first demand that advances it.
 
 use std::ops::Deref;
 use std::sync::{Arc, OnceLock};
@@ -12,16 +17,18 @@ use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
 
+type ProducerMode =
+    crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority;
+
 struct ReadyCell {
     completion: OnceLock<WorthQueryCompletedOutputDemand>,
+    producer_mode: OnceLock<ProducerMode>,
     _capacity: RequiredOutputCustodyCapacity,
 }
 
 /// Prepared before an output effect. It cannot be read as a Ready completion.
 pub(in crate::domain_computation::primary_graph) struct PreparedReadyBacking {
     cell: Arc<ReadyCell>,
-    producer_commit_authority:
-        Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority>,
 }
 
 /// The completed cell pins the original authority and its refundable custody.
@@ -67,9 +74,9 @@ impl PreparedReadyBacking {
         Self {
             cell: Arc::new(ReadyCell {
                 completion: OnceLock::new(),
+                producer_mode: OnceLock::new(),
                 _capacity: capacity,
             }),
-            producer_commit_authority: None,
         }
     }
 
@@ -117,19 +124,17 @@ impl PreparedReadyBacking {
     /// Bind the mode selected for the actual producer execution before it
     /// publishes either a performed result or a Stable equality result.
     pub(in crate::domain_computation::primary_graph) fn bind_execution_mode(
-        mut self,
-        mode: crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
+        self,
+        mode: ProducerMode,
     ) -> Self {
-        assert!(self.producer_commit_authority.is_none());
-        self.producer_commit_authority = Some(mode);
+        assert!(self.cell.producer_mode.set(mode).is_ok());
         self
     }
 
     pub(in crate::domain_computation::primary_graph) fn complete(
         self,
-        mut completion: WorthQueryCompletedOutputDemand,
+        completion: WorthQueryCompletedOutputDemand,
     ) -> ReadyCompletion {
-        completion.producer_commit_authority = self.producer_commit_authority;
         assert!(self.cell.completion.set(completion).is_ok());
         ReadyCompletion(self.cell)
     }
@@ -163,6 +168,22 @@ impl Deref for ReadyCompletion {
 impl ReadyCompletion {
     pub(in crate::domain_computation::primary_graph) fn same_cell(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.0, &other.0)
+    }
+
+    /// The mode a required wave executes this output's producer in again.
+    /// A restored output has none until a demand advances it.
+    pub(in crate::domain_computation::primary_graph) fn producer_mode(
+        &self,
+    ) -> Option<&ProducerMode> {
+        self.0.producer_mode.get()
+    }
+
+    /// The demand advancing this output does so in `mode`. A restored output
+    /// keeps the first such mode; an executed one keeps its own.
+    pub(in crate::domain_computation::primary_graph) fn advanced_in(&self, mode: &ProducerMode) {
+        if self.0.producer_mode.get().is_none() {
+            drop(self.0.producer_mode.set(mode.clone()));
+        }
     }
 }
 

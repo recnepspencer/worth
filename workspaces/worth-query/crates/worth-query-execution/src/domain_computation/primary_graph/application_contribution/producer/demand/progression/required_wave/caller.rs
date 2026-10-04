@@ -43,6 +43,8 @@ where
     let Some(wave) = select_required_wave(runtime, interest, branch, admission)? else {
         return Ok(None);
     };
+    // A restored output takes its mode here, before any wave can select it.
+    wave.caller_ready.completion().advanced_in(commit_authority);
     // An Idle Ready is not itself a dirty required target. Genesis and full
     // verification cases retain the established output verifier once the
     // outputs they consumed are current. An authentic

@@ -10,6 +10,11 @@ use worth_query_host::facade::primary_graph::query_read_kernel_entries_on_this_t
 mod binding;
 #[cfg(feature = "test-query-execution-observer")]
 mod diamond;
+#[cfg(all(
+    feature = "test-query-execution-observer",
+    feature = "test-invalidation-equivalence"
+))]
+mod exact_invalidation;
 mod performed_head_movement;
 mod producer;
 mod program;
@@ -17,6 +22,7 @@ mod readiness;
 #[cfg(feature = "test-query-execution-observer")]
 mod required_queue;
 mod restored_currentness;
+mod ring_world;
 mod source_world;
 mod stable_alias_currentness;
 use binding::*;

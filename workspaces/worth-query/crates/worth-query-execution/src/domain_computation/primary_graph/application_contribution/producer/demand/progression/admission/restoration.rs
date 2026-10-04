@@ -18,12 +18,7 @@ where
         source_epoch: crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch,
         source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
         admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
-    ) -> Result<
-        Option<
-            crate::domain_computation::primary_graph::application_output_demand::WorthQueryRestoredAcceptedOutput,
-        >,
-        WorthQueryOutputDemandDenial,
-    >{
+    ) -> Result<Option<ReadmittedOutput>, WorthQueryOutputDemandDenial> {
         let checkpoint_source = source_epoch.checkpoint_identity();
         let Some(readmitted) = self
             .recovered_outputs
@@ -53,18 +48,33 @@ where
         {
             return Ok(None);
         }
+        // A restored row posts the settlement candidate selection recorded.
+        let Some(settlement) = self
+            .primary_provider
+            .graph
+            .output_lineage
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .restored_settlement_identity(
+                output_binding,
+                self.runtime.authority_identity().as_u64(),
+                self.installed_schema.binding_identity(),
+                source_scope,
+                observation,
+                readmitted.checkpoint.source_partition,
+            )
+        else {
+            return Ok(None);
+        };
         let Some(fact_bytes) = readmitted.checkpoint.producer_facts.as_deref() else {
             return Ok(None);
         };
-        let Some(observed_source_facts) =
+        let observed_source_facts =
             crate::domain_computation::primary_graph::application_checkpoint::decode_producer_facts_for_wire_version(
                 fact_bytes,
                 readmitted.checkpoint.producer_fact_wire_version,
             )
-            .map_err(|error| denial(WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage, error))?
-        else {
-            return Ok(None);
-        };
+            .map_err(|error| denial(WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage, error))?;
         // The checkpoint's expected output revisions are original facts, not
         // revisions projected from the recovered root. Select the disclosed
         // source's current Product and verify both the original revisions and
@@ -178,20 +188,23 @@ where
         ).map_err(restoration_resource_denial)? else {
             return Ok(None);
         };
-        let current = graph
-            .with_runtime(|relational| {
-                witness
-                    .get()
-                    .expect("checkpoint constructor sealed its witness")
-                    .checkpoint_facts_current_in(
-                        relational,
-                        selected.application_basis().snapshot_handle(),
-                        &observed_source_facts,
-                        admission,
-                    )
-            })
-            .map_err(restoration_resource_denial)?;
-        if !current {
+        let (current, verified_at) = graph.with_runtime(|relational| {
+            let snapshot = selected.application_basis().snapshot_handle();
+            let current = witness
+                .get()
+                .expect("checkpoint constructor sealed its witness")
+                .checkpoint_facts_current_in(
+                    relational,
+                    snapshot,
+                    &observed_source_facts,
+                    admission,
+                );
+            (
+                current,
+                relational.read_truth().positioned_snapshot(snapshot).ok(),
+            )
+        });
+        if !current.map_err(restoration_resource_denial)? {
             return Ok(None);
         }
         // The verified Arc travels through the restored carrier, registry
@@ -213,8 +226,8 @@ where
         admission
             .charge_external_work(witness_moves)
             .map_err(restoration_resource_denial)?;
-        Ok(Some(
-            crate::domain_computation::primary_graph::application_output_demand::WorthQueryRestoredAcceptedOutput {
+        Ok(Some(ReadmittedOutput {
+            restored: crate::domain_computation::primary_graph::application_output_demand::WorthQueryRestoredAcceptedOutput {
                 checkpoint: readmitted.checkpoint.clone(),
                 correspondence: std::sync::Arc::clone(&readmitted.correspondence),
                 observation: observation.clone(),
@@ -223,21 +236,26 @@ where
                 observed_source_facts,
                 native_output_witness: Some(witness),
             },
-        ))
+            settlement,
+            verified_at,
+        }))
     }
 
     pub(super) fn record_restored_output(
         &self,
         source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-        restored: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryRestoredAcceptedOutput,
+        readmitted: &ReadmittedOutput,
+        admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
+        let restored = &readmitted.restored;
         let output_binding = restored.correspondence.binding_type().ok_or_else(|| {
             denial(
                 WorthQueryOutputDemandDenialKind::ProducerUnavailable,
                 "checkpoint output has no installed output binding",
             )
         })?;
-        self.primary_provider
+        let recorded = self
+            .primary_provider
             .graph
             .output_lineage
             .lock()
@@ -259,8 +277,39 @@ where
                 restored.checkpoint.resources,
                 restored.native_output_witness.as_ref().map(std::sync::Arc::clone),
             );
+        let witness = restored
+            .native_output_witness
+            .as_ref()
+            .and_then(|witness| witness.get());
+        if let (Some(recorded), Some(witness), Some(head)) =
+            (recorded, witness, readmitted.verified_at.as_ref())
+        {
+            // Readmission is this output's one full comparison. Recording it
+            // as marks lets the next clean demand read them instead; a stop
+            // here leaves the output requiring verification.
+            let source_owner = &self.primary_provider.graph.source_owner;
+            if source_owner.mint_mark_cell_at_head(head, admission).is_ok() {
+                let _ = source_owner.invalidation_owner.establish_verified_root(
+                    head,
+                    &recorded.identity,
+                    &recorded.facts,
+                    witness,
+                    admission,
+                );
+            }
+        }
         Ok(())
     }
+}
+
+/// A checkpoint output whose facts and output were compared in full at
+/// `verified_at`, the head of its branch.
+pub(super) struct ReadmittedOutput {
+    pub(super) restored: crate::domain_computation::primary_graph::application_output_demand::WorthQueryRestoredAcceptedOutput,
+    pub(super) settlement: std::sync::Arc<
+        crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
+    >,
+    verified_at: Option<worth_relational::facade::runtime::PositionedRelationalSnapshot>,
 }
 
 fn restoration_resource_denial(

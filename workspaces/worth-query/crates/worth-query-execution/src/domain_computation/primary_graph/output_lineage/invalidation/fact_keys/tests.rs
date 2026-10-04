@@ -266,17 +266,44 @@ fn entity_local_field_and_anchor_postings_do_not_collide_across_unrelated_entiti
 }
 
 #[test]
-fn unanchored_workflow_predecessor_requires_typed_full_verification() {
-    let fact = Fact::WorkflowDefinitionPredecessor {
-        relation_kind: KindId(5),
-        lineage: None,
-        expected_definition: None,
-        maximum_work_units: 8,
-    };
-    assert!(matches!(
-        visit(&fact, |_, _| Ok::<_, ()>(()), |_| Ok::<_, ()>(())),
-        Err(FactKeyProjectionStop::FullVerificationRequired(
-            FullVerificationReason::UnsupportedFact
-        ))
-    ));
+fn workflow_definition_and_capacity_facts_require_typed_full_verification() {
+    let lineage = EntityId::new(PartitionId::main(), 7, 1);
+    let definition = EntityId::new(PartitionId::main(), 8, 1);
+    let facts = [
+        Fact::WorkflowDefinitionPredecessor {
+            relation_kind: KindId(5),
+            lineage: Some(lineage),
+            expected_definition: Some(definition),
+            maximum_work_units: 8,
+        },
+        Fact::WorkflowDefinitionCurrent {
+            relation_kind: KindId(5),
+            lineage,
+            expected_definition: definition,
+            maximum_work_units: 8,
+        },
+        Fact::WorkflowInstanceCapacity {
+            relation_kind: KindId(6),
+            lineage,
+            maximum_instances: 2,
+            instances: Vec::new(),
+        },
+    ];
+    for fact in facts {
+        let emitted = Cell::new(0_usize);
+        assert!(matches!(
+            visit(
+                &fact,
+                |_, _| Ok::<_, ()>(()),
+                |_| {
+                    emitted.set(emitted.get() + 1);
+                    Ok::<_, ()>(())
+                }
+            ),
+            Err(FactKeyProjectionStop::FullVerificationRequired(
+                FullVerificationReason::UnsupportedFact
+            ))
+        ));
+        assert_eq!(emitted.get(), 0, "no posting names a workflow fact");
+    }
 }

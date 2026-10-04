@@ -59,6 +59,16 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryRestoredOutput
     pub(in crate::domain_computation::primary_graph) partition: [u8; 32],
 }
 
+impl From<&super::WorthQueryRestoredAcceptedOutput> for WorthQueryRestoredOutputSource {
+    fn from(restored: &super::WorthQueryRestoredAcceptedOutput) -> Self {
+        Self {
+            scope: restored.source_scope,
+            identity: restored.source_identity,
+            partition: restored.checkpoint.source_partition,
+        }
+    }
+}
+
 impl WorthQueryOutputDemandSettlement {
     pub(in crate::domain_computation::primary_graph) fn belongs_to<Schema>(
         &self,
@@ -188,14 +198,7 @@ impl WorthQueryOutputDemandSettlement {
                 )
             })?;
         Ok(Arc::new(Self {
-            posture: match restored.checkpoint.posture {
-                super::WorthQueryAcceptedOutputCheckpointPosture::Performed => {
-                    WorthQueryOutputSettlementPosture::RecoveredPerformed
-                }
-                super::WorthQueryAcceptedOutputCheckpointPosture::StableReused => {
-                    WorthQueryOutputSettlementPosture::RecoveredStableReused
-                }
-            },
+            posture: restored.settlement_posture(),
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
             producer_identity: restored.checkpoint.producer.clone(),
@@ -203,11 +206,7 @@ impl WorthQueryOutputDemandSettlement {
             receipt: None,
             stable: None,
             output_correspondence: Arc::clone(&restored.correspondence),
-            restored_source: Some(WorthQueryRestoredOutputSource {
-                scope: restored.source_scope,
-                identity: restored.source_identity,
-                partition: restored.checkpoint.source_partition,
-            }),
+            restored_source: Some(restored.into()),
             readiness_delivery: None,
             producer_contacts_in_this_demand: 0,
             observation: WorthQueryApplicationReadObservation::from_product(

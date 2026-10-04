@@ -38,5 +38,7 @@ mod workflow_identity;
 mod workflow_participant;
 #[path = "adoption/workflow_participant_races.rs"]
 mod workflow_participant_races;
+#[path = "adoption/workflow_pinned_basis.rs"]
+mod workflow_pinned_basis;
 #[path = "adoption/workflow_vocabulary.rs"]
 mod workflow_vocabulary;

@@ -63,7 +63,8 @@ impl SourceInvalidationOwner {
     ) -> Result<CompanionBranchCell<BranchMarkRoot>, CompanionPreflightStop> {
         // The writer waits for the map like readers do. Every holder only
         // looks up, or mints and inserts one cell through atomic capacity
-        // counters; none calls out to another lock, so no cycle can form.
+        // counters and non-blocking registration probes; none waits on
+        // another lock, so no cycle can form.
         let mut branches = self
             .branches
             .lock()
@@ -80,11 +81,57 @@ impl SourceInvalidationOwner {
         if let Some(cell) = branches.cells.get(context.branch_id()) {
             return Ok(cell.clone());
         }
-        context.bytes(
+        let initial = self.initial_root(context)?;
+        let cell = context.mint_selected_branch_cell(initial)?;
+        let branch = context.branch_id().clone();
+        self.retain_cell(&mut branches, branch, &cell, context)?;
+        Ok(cell)
+    }
+
+    /// A branch gets its mark cell from its first publication. An output
+    /// compared in full at the head of a branch nothing has published to yet
+    /// gets the cell here, so that comparison can be recorded as marks.
+    /// `head` is the branch's current head: every publication mints, so a
+    /// branch without a cell has not moved since this owner registered.
+    pub(in crate::domain_computation) fn mint_cell_at_head(
+        &self,
+        registration: &worth_runtime_bridge::facade::RelationalBridgeCanonicalSubscription,
+        head: &worth_relational::facade::runtime::PositionedRelationalSnapshot,
+        admission: &mut super::InvalidationEditAdmission,
+    ) -> Result<(), CompanionPreflightStop> {
+        use worth_relational::facade::mvcc::PublicationCompanionRegistrationStop as Stop;
+        if head.runtime_instance_id() != self.runtime_instance_id {
+            return Err(CompanionPreflightStop::ForeignCell);
+        }
+        let mut branches = self
+            .branches
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        admission.ordered_read(branches.cells.len())?;
+        if branches.cells.contains_key(head.branch_id()) {
+            return Ok(());
+        }
+        let initial = self.initial_root(admission)?;
+        let cell = registration
+            .mint_branch_cell(head, initial)
+            .map_err(|stop| match stop {
+                Stop::CellCapacityExhausted { maximum_bytes } => {
+                    CompanionPreflightStop::CellCapacityExhausted { maximum_bytes }
+                }
+                _ => CompanionPreflightStop::RegistrationChanged,
+            })?;
+        self.retain_cell(&mut branches, head.branch_id().clone(), &cell, admission)
+    }
+
+    fn initial_root(
+        &self,
+        admission: &mut impl IndexAdmission,
+    ) -> Result<Arc<BranchMarkRoot>, CompanionPreflightStop> {
+        admission.bytes(
             index_capacity::arc_bytes::<BranchMarkRoot>()
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
         )?;
-        context.bytes(
+        admission.bytes(
             index_capacity::arc_bytes::<super::mark_state::MarkState>()
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
         )?;
@@ -92,11 +139,20 @@ impl SourceInvalidationOwner {
         retention::admit_state(
             Arc::get_mut(&mut initial.current).expect("new state is exclusive"),
             &self.resources,
-            context,
+            admission,
         )?;
-        retention::admit_root(&mut initial, &self.resources, context)?;
-        let cell = context.mint_selected_branch_cell(Arc::new(initial))?;
-        let branch_bytes = context.branch_id().0.len() as u64;
+        retention::admit_root(&mut initial, &self.resources, admission)?;
+        Ok(Arc::new(initial))
+    }
+
+    fn retain_cell(
+        &self,
+        branches: &mut BranchCells,
+        branch: BranchId,
+        cell: &CompanionBranchCell<BranchMarkRoot>,
+        context: &mut impl IndexAdmission,
+    ) -> Result<(), CompanionPreflightStop> {
+        let branch_bytes = branch.0.len() as u64;
         context.bytes(branch_bytes)?;
         context.work(branch_bytes)?;
         let next_name_bytes = branches
@@ -117,12 +173,10 @@ impl SourceInvalidationOwner {
         let capacity = retention::reserve(&self.resources, bound, context)?;
         context
             .ordered_edit::<BranchId, CompanionBranchCell<BranchMarkRoot>>(branches.cells.len())?;
-        branches
-            .cells
-            .insert(context.branch_id().clone(), cell.clone());
+        branches.cells.insert(branch, cell.clone());
         branches.branch_name_bytes = next_name_bytes;
         branches.retained_capacity = Some(capacity);
-        Ok(cell)
+        Ok(())
     }
 }
 

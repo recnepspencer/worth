@@ -71,7 +71,7 @@ fn fact_decode_rejects_unbounded_count_and_foreign_kind_before_allocation() {
 }
 
 #[test]
-fn legacy_optional_absence_requires_verification_while_fresh_v6_absence_is_exact() {
+fn optional_absence_is_exact_and_an_older_wire_version_is_never_read() {
     let entity = EntityId::new(worth_relational::facade::identity::PartitionId(1), 2, 1);
     let fact = Fact::SourceAspectRevision {
         entity_id: entity,
@@ -80,13 +80,14 @@ fn legacy_optional_absence_requires_verification_while_fresh_v6_absence_is_exact
     };
     let bytes = encode(std::slice::from_ref(&fact)).expect("fresh absence has a bounded wire");
     assert_eq!(
-        decode_for_wire_version(&bytes, 6)
-            .unwrap()
+        decode_for_wire_version(&bytes, WIRE_VERSION)
             .unwrap()
             .as_ref(),
         &[fact]
     );
-    assert!(decode_for_wire_version(&bytes, 5).unwrap().is_none());
+    for older in [5, 6] {
+        assert!(decode_for_wire_version(&bytes, older).is_err());
+    }
 }
 
 #[test]
@@ -121,11 +122,9 @@ fn indexed_selection_wire_preserves_semantic_definition_and_signed_zero() {
     };
     let bytes = encode(std::slice::from_ref(&fact)).expect("bounded native index fact encodes");
     assert_eq!(
-        decode_for_wire_version(&bytes, 6)
-            .unwrap()
+        decode_for_wire_version(&bytes, WIRE_VERSION)
             .unwrap()
             .as_ref(),
         &[fact]
     );
-    assert!(decode_for_wire_version(&bytes, 5).is_err());
 }

@@ -148,6 +148,11 @@ where
             drop(held);
             return Ok(HeldUpstream::GaveBack);
         }
+        // Refused custody, the successor ends instead of holding its own.
+        Err(stop) if super::progress::refused_custody(&stop) => {
+            drop(held);
+            return Err(stop);
+        }
         unfinished => {
             // An unfinished successor returns to its row, which drops it if
             // the row has moved on meanwhile.

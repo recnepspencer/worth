@@ -71,6 +71,7 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
                     facts: Arc::clone(&facts),
                     output_facts: None,
                     read_basis: basis.clone(),
+                    stale_at_read_basis: OrdSet::new(),
                     requirement: None,
                     upstream: OrdSet::new(),
                 },

@@ -1,4 +1,4 @@
-use super::denial::{denial, failed};
+use super::denial::{denial, failed, request_authority_stop};
 use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
 use crate::domain_computation::primary_graph::{
     HandlerResult, WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
@@ -69,6 +69,13 @@ pub(super) fn commit_receipt(
     identity: &str,
     outcome: WorthQueryApplicationCommitOutcome,
 ) -> Result<WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial> {
+    // A request refused authorization at commit time stops as that request
+    // does anywhere else; the producer did not fail.
+    if let WorthQueryApplicationCommitOutcome::Denied(commit_denial) = &outcome {
+        if let Some(authority) = commit_denial.request_authority() {
+            return Err(request_authority_stop(identity, authority));
+        }
+    }
     match outcome {
         WorthQueryApplicationCommitOutcome::Committed(receipt)
         | WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => Ok(receipt),

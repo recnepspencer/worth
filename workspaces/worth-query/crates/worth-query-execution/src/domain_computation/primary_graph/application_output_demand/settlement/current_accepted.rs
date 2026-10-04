@@ -13,15 +13,6 @@ impl WorthQueryOutputDemandSettlement {
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
         let completion = bound.completion();
-        if matches!(
-            &completion.authority,
-            WorthQueryAcceptedOutputAuthority::Restored(_)
-        ) {
-            return Err(WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                "restored Ready authority needs fresh source disclosure",
-            ));
-        }
         let retained_bytes = arc_backing_bytes::<Self>()
             .and_then(|bytes| {
                 bytes.checked_add(arc_backing_bytes::<WorthQueryApplicationReadObservation>()?)
@@ -40,21 +31,35 @@ impl WorthQueryOutputDemandSettlement {
         let custody = runtime
             .output_demands
             .reserve_settlement_custody_capacity(retained_bytes, admission)?;
-        let (posture, receipt, stable, correspondence) = match &completion.authority {
-            WorthQueryAcceptedOutputAuthority::Committed(receipt) => (
-                WorthQueryOutputSettlementPosture::Performed,
-                Some(SettlementReceiptCustody::Ready(completion.clone())),
-                None,
-                receipt.retain_output_correspondence(),
-            ),
-            WorthQueryAcceptedOutputAuthority::Stable(stable) => (
-                WorthQueryOutputSettlementPosture::StableReused,
-                None,
-                Some(stable.clone()),
-                Arc::clone(stable.output_correspondence()),
-            ),
-            WorthQueryAcceptedOutputAuthority::Restored(_) => unreachable!(),
-        };
+        let (posture, receipt, stable, correspondence, restored_source) =
+            match &completion.authority {
+                WorthQueryAcceptedOutputAuthority::Committed(receipt) => (
+                    WorthQueryOutputSettlementPosture::Performed,
+                    Some(SettlementReceiptCustody::Ready(completion.clone())),
+                    None,
+                    receipt.retain_output_correspondence(),
+                    None,
+                ),
+                WorthQueryAcceptedOutputAuthority::Stable(stable) => (
+                    WorthQueryOutputSettlementPosture::StableReused,
+                    None,
+                    Some(stable.clone()),
+                    Arc::clone(stable.output_correspondence()),
+                    None,
+                ),
+                // The bound proof is a clean row: this restored output was
+                // already compared in full on this runtime.
+                WorthQueryAcceptedOutputAuthority::Restored(restored) => (
+                    restored.settlement_posture(),
+                    None,
+                    None,
+                    Arc::clone(&restored.correspondence),
+                    Some(WorthQueryRestoredOutputSource::from(restored)),
+                ),
+            };
+        let readiness_delivery = restored_source
+            .is_none()
+            .then(|| completion.readiness.clone());
         Ok(Arc::new(Self {
             posture,
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
@@ -64,8 +69,8 @@ impl WorthQueryOutputDemandSettlement {
             receipt,
             stable,
             output_correspondence: correspondence,
-            restored_source: None,
-            readiness_delivery: Some(completion.readiness.clone()),
+            restored_source,
+            readiness_delivery,
             producer_contacts_in_this_demand,
             observation: WorthQueryApplicationReadObservation::from_product_funded(
                 runtime,

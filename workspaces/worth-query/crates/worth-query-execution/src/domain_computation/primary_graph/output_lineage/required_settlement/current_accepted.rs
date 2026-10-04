@@ -164,15 +164,19 @@ impl AcceptedCurrentCandidate {
                 .mutable
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            if row.verification_requirement == Some(FullVerificationReason::CheckpointRestore) {
-                return Ok(CurrentAcceptedResult::NeedsDisclosure);
-            }
             (
                 row.verification_requirement,
                 row.observed_source_facts.as_ref().map(Arc::clone),
             )
         };
-        let (None, Some(facts)) = (requirement, facts) else {
+        // A restored output has a mark row only once it was compared in full
+        // on this runtime. A clean row therefore discharges the restore
+        // requirement below; without one this read needs source disclosure.
+        let restored = requirement == Some(FullVerificationReason::CheckpointRestore);
+        if restored && facts.is_none() {
+            return Ok(CurrentAcceptedResult::NeedsDisclosure);
+        }
+        let (None, Some(facts)) = (requirement.filter(|_| !restored), facts) else {
             return match self.pending_consumed_output(owner, runtime, snapshot, selected, admission)
             {
                 Ok(Some(pending)) => Ok(CurrentAcceptedResult::PendingExact(pending)),
@@ -238,11 +242,11 @@ impl AcceptedCurrentCandidate {
         };
         // Restore or a local verification stop can change independently of the
         // actor image. The final check and same-image install share this guard.
-        let row = recorded
+        let mut row = recorded
             .mutable
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if row.verification_requirement.is_some()
+        if row.verification_requirement != requirement
             || !row
                 .observed_source_facts
                 .as_ref()
@@ -253,6 +257,9 @@ impl AcceptedCurrentCandidate {
             return Ok(CurrentAcceptedResult::NeedsDisclosure);
         }
         let installed = prepared.install();
+        if installed.is_ok() {
+            row.verification_requirement = None;
+        }
         drop(row);
         match installed {
             Ok(cleanup) => Ok(CurrentAcceptedResult::Current(CurrentAcceptedOutput {

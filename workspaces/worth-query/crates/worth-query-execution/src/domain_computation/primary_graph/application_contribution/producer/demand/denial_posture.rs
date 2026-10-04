@@ -44,6 +44,22 @@ impl WorthQueryOutputDemandDenialKind {
 }
 
 impl WorthQueryOutputDemandDenialKind {
+    /// The request was refused authorization: its interruption, the security
+    /// basis it could not select on the branch, or what it may do there. A
+    /// basis the branch has no room to observe now is a retryable product
+    /// selection stop, as it is for the demand's own selection.
+    pub(in crate::domain_computation::primary_graph) const fn of_request_authorization(
+        kind: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+    ) -> Self {
+        use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Kind;
+        match kind {
+            Kind::Cancelled => Self::Cancelled,
+            Kind::DeadlineExceeded => Self::TimedOut,
+            Kind::ProductSecurityBasis(admission) => Self::ProductSelection(admission),
+            other => Self::RequestAuthorization(other),
+        }
+    }
+
     /// The request's principal did not resolve: the request's interruption or
     /// budgets, or the principal it names. Never the producer's own stop.
     pub(in crate::domain_computation::primary_graph) const fn of_principal_resolution(

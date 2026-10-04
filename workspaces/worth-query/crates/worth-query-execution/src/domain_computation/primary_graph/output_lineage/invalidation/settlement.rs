@@ -36,6 +36,9 @@ pub(in crate::domain_computation::primary_graph) struct SettlementRegistration {
         Arc<[WorthQueryApplicationObservedFact]>,
     pub(in crate::domain_computation::primary_graph) output_facts: Option<RegisteredOutputFacts>,
     pub(in crate::domain_computation::primary_graph) read_basis: PositionedRelationalSnapshot,
+    /// Fact ordinals the registrant already knows are not current at
+    /// `read_basis`: no delivery after that basis would ever mark them.
+    pub(in crate::domain_computation::primary_graph) stale_at_read_basis: OrdSet<usize>,
     pub(in crate::domain_computation::primary_graph) requirement: Option<FullVerificationReason>,
     pub(in crate::domain_computation::primary_graph) upstream:
         OrdSet<Arc<RecordedSettlementIdentity>>,
@@ -66,6 +69,7 @@ pub(super) fn insert(
         facts,
         output_facts,
         read_basis,
+        stale_at_read_basis,
         requirement,
         upstream,
     } = input;
@@ -90,7 +94,7 @@ pub(super) fn insert(
         output_coverage,
         read_basis: Arc::new(read_basis),
         delivery_epoch: state.delivery_epoch,
-        dirty_ordinals: OrdSet::new(),
+        dirty_ordinals: stale_at_read_basis,
         pending_upstream: OrdSet::new(),
         verification_requirement,
         superseded: false,

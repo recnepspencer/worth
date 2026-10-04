@@ -183,6 +183,13 @@ impl WorthQueryPrimaryGraphCommitEvidence {
         self.observed_source_facts.retain_exact()
     }
 
+    /// Ordinals of the retained source facts the committed effect itself moved.
+    pub(in crate::domain_computation::primary_graph) fn source_facts_superseded_by_own_effect(
+        &self,
+    ) -> &[usize] {
+        self.observed_source_facts.superseded_by_own_effect()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn retain_verification_source_facts(
         &self,
     ) -> Option<std::sync::Arc<

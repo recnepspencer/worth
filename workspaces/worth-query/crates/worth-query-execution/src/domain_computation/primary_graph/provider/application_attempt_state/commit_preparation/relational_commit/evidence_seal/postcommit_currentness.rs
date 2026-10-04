@@ -8,6 +8,12 @@ mod resolution;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) enum RebasedSourceFacts {
     Exact(Arc<[WorthQueryApplicationObservedFact]>),
+    /// Every fact is exact, and the committed effect moved the source facts at
+    /// these ordinals past the revision their source query read.
+    SupersededByOwnEffect {
+        facts: Arc<[WorthQueryApplicationObservedFact]>,
+        ordinals: Arc<[usize]>,
+    },
     VerificationRequired {
         reason: RebaseVerificationReason,
         facts: Arc<[WorthQueryApplicationObservedFact]>,
@@ -28,6 +34,7 @@ pub(in crate::domain_computation::primary_graph::provider) struct PreparedSource
     facts: Vec<WorthQueryApplicationObservedFact>,
     actions: Vec<resolution::PreparedFactRebase>,
     rebased: Vec<WorthQueryApplicationObservedFact>,
+    superseded: Vec<usize>,
 }
 
 impl PreparedSourceFactRebase {
@@ -38,10 +45,13 @@ impl PreparedSourceFactRebase {
         actions.try_reserve_exact(facts.len())?;
         let mut rebased = Vec::new();
         rebased.try_reserve_exact(facts.len())?;
+        let mut superseded = Vec::new();
+        superseded.try_reserve_exact(facts.len())?;
         Ok(Self {
             facts,
             actions,
             rebased,
+            superseded,
         })
     }
 }
@@ -49,8 +59,17 @@ impl PreparedSourceFactRebase {
 impl RebasedSourceFacts {
     pub(super) fn retain_exact(&self) -> Option<Arc<[WorthQueryApplicationObservedFact]>> {
         match self {
-            Self::Exact(facts) => Some(Arc::clone(facts)),
+            Self::Exact(facts) | Self::SupersededByOwnEffect { facts, .. } => {
+                Some(Arc::clone(facts))
+            }
             Self::VerificationRequired { .. } => None,
+        }
+    }
+
+    pub(super) fn superseded_by_own_effect(&self) -> &[usize] {
+        match self {
+            Self::SupersededByOwnEffect { ordinals, .. } => ordinals,
+            Self::Exact(_) | Self::VerificationRequired { .. } => &[],
         }
     }
 
@@ -58,14 +77,14 @@ impl RebasedSourceFacts {
         &self,
     ) -> Option<Arc<[WorthQueryApplicationObservedFact]>> {
         match self {
-            Self::Exact(_) => None,
+            Self::Exact(_) | Self::SupersededByOwnEffect { .. } => None,
             Self::VerificationRequired { facts, .. } => Some(Arc::clone(facts)),
         }
     }
 
     pub(super) const fn verification_requirement(&self) -> Option<RebaseVerificationReason> {
         match self {
-            Self::Exact(_) => None,
+            Self::Exact(_) | Self::SupersededByOwnEffect { .. } => None,
             Self::VerificationRequired { reason, .. } => Some(*reason),
         }
     }
@@ -82,6 +101,7 @@ pub(super) fn rebase(
         facts,
         mut actions,
         mut rebased,
+        mut superseded,
     } = prepared;
     for fact in &facts {
         if let Some(meter) = admission.as_mut() {
@@ -126,10 +146,20 @@ pub(super) fn rebase(
             }
         }
     }
-    for (fact, action) in facts.into_iter().zip(actions) {
+    for (ordinal, (fact, action)) in facts.into_iter().zip(actions).enumerate() {
+        if matches!(action, resolution::PreparedFactRebase::KeepSuperseded) {
+            superseded.push(ordinal);
+        }
         rebased.push(action.apply(fact));
     }
-    RebasedSourceFacts::Exact(rebased.into())
+    if superseded.is_empty() {
+        RebasedSourceFacts::Exact(rebased.into())
+    } else {
+        RebasedSourceFacts::SupersededByOwnEffect {
+            facts: rebased.into(),
+            ordinals: superseded.into(),
+        }
+    }
 }
 #[cfg(test)]
 #[path = "postcommit_currentness/tests.rs"]

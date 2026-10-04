@@ -47,18 +47,15 @@ fn maximum_keys(fact: &WorthQueryApplicationObservedFact) -> Option<usize> {
         Fact::SourceAspectRevision { .. }
         | Fact::SourceFieldRevision { .. }
         | Fact::Field { .. }
-        | Fact::AbsentField { .. }
-        | Fact::WorkflowDefinitionPredecessor { .. }
-        | Fact::WorkflowDefinitionCurrent { .. } => Some(3),
+        | Fact::AbsentField { .. } => Some(3),
         Fact::SourceAdjacencyRevision { endpoints, .. } => endpoints.len().checked_add(2),
         Fact::Relation { .. } => Some(3),
-        Fact::Adjacency { relations, .. }
-        | Fact::WorkflowInstanceCapacity {
-            instances: relations,
-            ..
-        } => relations.len().checked_mul(2)?.checked_add(2),
+        Fact::Adjacency { relations, .. } => relations.len().checked_mul(2)?.checked_add(2),
         Fact::IndexedEntitySelection { candidates, .. } => candidates.len().checked_add(2),
-        Fact::WorkflowHistoryBasis { .. } => Some(0),
+        Fact::WorkflowDefinitionPredecessor { .. }
+        | Fact::WorkflowDefinitionCurrent { .. }
+        | Fact::WorkflowInstanceCapacity { .. }
+        | Fact::WorkflowHistoryBasis { .. } => Some(0),
     }
 }
 

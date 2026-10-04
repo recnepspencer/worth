@@ -270,7 +270,6 @@ where
                 let completion = ready_backing.complete(
                     crate::domain_computation::primary_graph::application_output_demand::WorthQueryCompletedOutputDemand {
                         authority: crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Stable(stable),
-                        producer_commit_authority: None,
                         readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::without_execution(),
                         resources: demand.resources,
                     },

@@ -168,7 +168,8 @@ where
         } else {
             None
         };
-        if let Some(restored) = restored {
+        if let Some(readmitted) = restored {
+            let restored = &readmitted.restored;
             let resources = restored.checkpoint.resources.ok_or_else(|| {
                 denial(
                     WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
@@ -186,10 +187,11 @@ where
                 product_occurrence,
                 admission_kind,
                 restored.clone(),
+                &readmitted.settlement,
                 registry_admission,
             )?;
             if newly_adopted {
-                self.record_restored_output(source_scope, &restored)?;
+                self.record_restored_output(source_scope, &readmitted, registry_admission)?;
             }
             let observed_source = observed_source.install(&interest)?;
             return Ok(WorthQueryAdmittedOutputDemand {
@@ -202,6 +204,7 @@ where
                 resources: Some(resources),
                 resources_validated: true,
                 producer_contacts_in_this_demand: 0,
+                settled: false,
                 admission_kind,
                 retained_program_basis,
                 progression_provenance: Default::default(),
@@ -271,6 +274,7 @@ where
             resources: Some(resources),
             resources_validated,
             producer_contacts_in_this_demand: 0,
+            settled: false,
             admission_kind,
             retained_program_basis,
             progression_provenance: Default::default(),

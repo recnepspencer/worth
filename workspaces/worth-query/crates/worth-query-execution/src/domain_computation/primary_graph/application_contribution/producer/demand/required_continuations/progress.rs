@@ -50,6 +50,51 @@ where
     }
 }
 
+impl<'caller, Schema> PreparedRequiredContinuationSlot<'caller, Schema>
+where
+    Schema: ApplicationSchema,
+{
+    pub(in super::super) fn installation_work(&self) -> u64 {
+        self.installation_work
+    }
+
+    pub(in super::super) fn entries(&self) -> &[RequiredFreshProgress<Schema>] {
+        &self.caller.entries
+    }
+
+    /// Install `progress` as the last entry, ending any it supersedes.
+    pub(super) fn push(
+        mut self,
+        progress: RequiredFreshProgress<Schema>,
+    ) -> &'caller mut RequiredContinuations<Schema> {
+        // A newer successor of the same occurrence, from a newer source or a
+        // second refresh of the same row, ends the custody of the older one:
+        // dropping its typed demand releases what only it held.
+        let newest = progress.successor.interest();
+        self.caller
+            .entries
+            .retain(|entry| !newest.supersedes(entry.successor.interest()));
+        // The slot it freed holds the newer one; growth prepared for an
+        // additional entry ends unused with its ticket.
+        if self.caller.entries.len() < self.caller.entries.capacity() {
+            drop(self.replacement.take());
+            drop(self.capacity.take());
+        }
+        if let Some(mut replacement) = self.replacement.take() {
+            replacement.append(&mut self.caller.entries);
+            let retired_entries = std::mem::replace(&mut self.caller.entries, replacement);
+            let retired_capacity =
+                std::mem::replace(&mut self.caller.capacity, self.capacity.take());
+            // The retired Vec backing dies before its final credit is refunded.
+            drop(retired_entries);
+            drop(retired_capacity);
+        }
+        let caller = self.caller;
+        caller.entries.push(progress);
+        caller
+    }
+}
+
 impl<Schema> PreparedRequiredContinuationSlot<'_, Schema>
 where
     Schema: ApplicationSchema + 'static,
@@ -74,14 +119,17 @@ where
     /// End each entry whose row went back to the Ready it reopened. However
     /// its refresh stopped, refused at admission, interrupted while it
     /// advanced, or stopped when resumed, the next wave claims that refresh
-    /// again; ending the entry first frees its custody for that claim.
+    /// again; ending the entry first frees its custody for that claim. An
+    /// entry whose row another advance superseded follows that refresh
+    /// first, as its dependent's own demand would.
     pub(super) fn end_restored(
         &mut self,
         registry: &WorthQueryOutputDemandRegistry,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let mut index = 0;
-        while let Some(entry) = self.entries.get(index) {
+        while let Some(entry) = self.entries.get_mut(index) {
+            entry.successor.follow_refresh(registry, admission)?;
             let restored = registry
                 .interest_ready_readmission(entry.interest(), admission)?
                 .is_some_and(|ready| {
@@ -120,4 +168,26 @@ where
         drop(self.take_all());
         Some(published)
     }
+
+    /// A queue frame refused required custody does not wait holding it, as
+    /// a caller does not: the refreshes this wave's frames carried end here.
+    /// Each unpublished row goes back to the Ready it replaced, so every
+    /// wave that meets the same refusal leaves the same rows behind it.
+    pub(in super::super) fn end_refused(
+        &mut self,
+        registry: &WorthQueryOutputDemandRegistry,
+        stop: &WorthQueryOutputDemandDenial,
+        admission: &mut InvalidationEditAdmission,
+    ) {
+        if refused_custody(stop) {
+            let _published = self.end_all(registry, admission);
+        }
+    }
+}
+
+/// A retryable refusal of required custody.
+pub(super) fn refused_custody(stop: &WorthQueryOutputDemandDenial) -> bool {
+    stop.kind() == super::super::WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
+        && stop.recovery_posture()
+            == crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable
 }

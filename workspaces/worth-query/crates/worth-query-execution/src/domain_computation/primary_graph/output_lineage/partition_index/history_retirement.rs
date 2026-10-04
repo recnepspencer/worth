@@ -4,12 +4,13 @@
 //! coordinate. The invalidation window keeps an occurrence's newest
 //! generations; a reader older than the window's oldest retained position
 //! verifies in full, as an invalidation reader older than `root.past` does.
-//! A generation is freed once each record in it is the oldest of its
-//! partition, a newer record of that partition is published at or below the
-//! oldest retained position, and nothing pins it: no handle on its cell,
-//! settlement or locator, and no fork that branched while it was selected.
-//! Freeing each partition oldest first leaves every retained reader's
-//! selection unchanged.
+//! A generation is freed once, for each record in it, a newer record of that
+//! partition is published at or below the oldest retained position, and
+//! nothing pins it: no handle on its cell, settlement or locator, and no fork
+//! that branched while it was selected. Every retained reader selects that
+//! newer record or one after it, so its selection is unchanged. An older
+//! generation that a live demand still pins does not keep the unpinned ones
+//! behind it: history is bounded by what is held, not by what was published.
 
 use std::sync::Arc;
 
@@ -100,10 +101,10 @@ impl WorthQueryApplicationOutputLineage {
             else {
                 return Ok(true);
             };
-            let oldest = generations.first_key_value();
-            if !oldest.is_some_and(|(oldest, locator)| {
-                *oldest == generation && Arc::strong_count(locator) == 1
-            }) {
+            if generations
+                .get(&generation)
+                .is_none_or(|locator| Arc::strong_count(locator) != 1)
+            {
                 return Ok(true);
             }
             // The newer record that readers at the oldest retained position

@@ -5,7 +5,6 @@ pub(super) fn ready() -> DemandState {
     let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let completion = super::super::WorthQueryCompletedOutputDemand {
         authority: super::super::WorthQueryAcceptedOutputAuthority::Committed(receipt),
-        producer_commit_authority: None,
         readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
         resources: None,
     };
@@ -81,6 +80,35 @@ fn a_closing_dependent_moves_its_claim_once_the_newest_row_is_ready() {
     assert!(!state.records.contains_key(&old));
     assert_eq!(state.records[&newest].framework_required_count, 1);
     assert_eq!(claims(&state.records[&dependent]), vec![newest]);
+}
+
+#[test]
+fn a_reclaim_keeps_a_superseded_row_whose_claim_did_not_move() {
+    let (registry, interest, old, newest) = claim_on_superseded(ready());
+    let dependent = interest.key.clone();
+    {
+        let mut state = registry.state.lock().unwrap();
+        // The newest row is no required member: the claim has no key to move to.
+        state.required_keys.clear();
+        state.required_budget_bytes = 0;
+    }
+    registry
+        .reclaim_cached_rows(1, &mut record_admission())
+        .unwrap();
+    {
+        let state = registry.state.lock().unwrap();
+        assert_eq!(state.records[&old].framework_required_count, 1);
+        assert_eq!(claims(&state.records[&dependent]), vec![old.clone()]);
+    }
+    // The dependent's own retirement releases the claim on a row still there.
+    drop(interest);
+    registry
+        .reclaim_cached_rows(1, &mut record_admission())
+        .unwrap();
+    let state = registry.state.lock().unwrap();
+    assert!(!state.records.contains_key(&dependent));
+    assert!(!state.records.contains_key(&old));
+    assert!(state.records.contains_key(&newest));
 }
 
 #[test]

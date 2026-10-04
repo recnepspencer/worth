@@ -36,6 +36,7 @@ impl WorthQueryOutputDemandRegistry {
             _ => {}
         }
         let denial = superseded_denial(subject);
+        let unpublished = record.unpublished_new_key();
         match &mut record.state {
             DemandState::Output(output) => output.stop(denial.clone()),
             _ => record.state = DemandState::Failed(denial.clone()),
@@ -43,6 +44,11 @@ impl WorthQueryOutputDemandRegistry {
         record.performed_source = None;
         let released = record.release_obligations();
         record.wake.notify();
+        if unpublished {
+            // The row ends without an output of its own: the newest Ready it
+            // replaced answers for the occurrence again.
+            state.revive_replaced_ready(&interest.key);
+        }
         let released_prerequisites = state.release_record_prerequisites(&interest.key);
         state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
         state.remove_required_member_if_released(&interest.key);

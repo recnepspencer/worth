@@ -21,7 +21,7 @@ use super::{
     },
     equality, index_capacity,
     mark_state::{FullVerificationReason, MarkState, SettlementCurrentness},
-    retention,
+    read_basis_carry, retention,
     source_alignment::{BranchMarkRoot, SnapshotAlignedMarkState},
     InvalidationEditAdmission, SourceInvalidationOwner,
 };
@@ -31,7 +31,9 @@ pub(in crate::domain_computation::primary_graph) enum PreparedVerifiedCurrent {
         cell: CompanionBranchCell<BranchMarkRoot>,
         image: CompanionBranchImage<BranchMarkRoot>,
     },
-    DownstreamDischarge(PreparedSettlementRegistration),
+    /// The clean row's read basis moves to the live image, and downstream
+    /// rows pending on it are discharged.
+    LiveEdit(PreparedSettlementRegistration),
 }
 
 pub(in crate::domain_computation::primary_graph) struct StoppedVerifiedCurrent {
@@ -87,7 +89,7 @@ impl PreparedVerifiedCurrent {
                     })
                 }
             }
-            Self::DownstreamDischarge(prepared) => prepared
+            Self::LiveEdit(prepared) => prepared
                 .install()
                 .map(|edited| VerifiedCurrentCleanup {
                     _observed: None,
@@ -175,7 +177,10 @@ impl SourceInvalidationOwner {
                 }
             }
         }
-        if !has_pending {
+        // A row found clean here is verified through this image, so its read
+        // basis moves to it; otherwise it would leave the retained window.
+        let carried = *row.read_basis != *selected;
+        if !has_pending && !carried {
             return Ok(Some(PreparedVerifiedCurrent::AlreadyCurrent {
                 cell,
                 image,
@@ -187,7 +192,14 @@ impl SourceInvalidationOwner {
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
         )?;
         let mut next = (**state).clone();
-        equality::discharge_selected_downstream(&mut next, identity, admission)?;
+        if carried {
+            read_basis_carry::carry_row(
+                &mut next, &aligned, selected, &mut None, identity, admission,
+            )?;
+        }
+        if has_pending {
+            equality::discharge_selected_downstream(&mut next, identity, admission)?;
+        }
         retention::admit_state(&mut next, &self.resources, admission)?;
         admission.bytes(
             index_capacity::arc_bytes::<BranchMarkRoot>()
@@ -197,6 +209,6 @@ impl SourceInvalidationOwner {
         root.current = Arc::new(next);
         retention::admit_root(&mut root, &self.resources, admission)?;
         self.prepare_root_replacement(cell, image, Arc::new(root), admission)
-            .map(|prepared| Some(PreparedVerifiedCurrent::DownstreamDischarge(prepared)))
+            .map(|prepared| Some(PreparedVerifiedCurrent::LiveEdit(prepared)))
     }
 }

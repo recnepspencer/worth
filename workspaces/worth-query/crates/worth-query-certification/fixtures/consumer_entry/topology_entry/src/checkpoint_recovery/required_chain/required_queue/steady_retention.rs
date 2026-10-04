@@ -22,6 +22,26 @@ macro_rules! assert_steady {
     };
 }
 
+/// One advance settles the unrelated demand, whose output no cycle touches.
+/// Demanded every cycle, it never leaves the retained window: the advance
+/// runs the source queries the dirty chain needs and none for its own
+/// output. A full verification each time the window rotates would add one
+/// to a cycle in every rotation, so every cycle compared runs exactly as
+/// many as the first of them.
+macro_rules! unrelated_settles_unverified {
+    ($queries:expr, $cycle:expr, $d:expr, $request:expr) => {{
+        let before = query_entries();
+        settled_in_one_advance!($d, $request, "the unrelated required demand");
+        let ran = query_entries() - before;
+        assert_eq!(
+            *$queries.get_or_insert(ran),
+            ran,
+            "cycle {}: the untouched output is never verified in full",
+            $cycle
+        );
+    }};
+}
+
 #[test]
 fn an_unrelated_caller_advances_for_many_cycles_under_tight_custody() {
     let _guard = checkpoint_recovery_test_guard();
@@ -42,9 +62,10 @@ fn an_unrelated_caller_advances_for_many_cycles_under_tight_custody() {
         let (a, b, c, mut d) = chain_with_unrelated!(application, request);
         let settled_custody = application.required_custody_bytes_for_test();
         let mut steady = None;
+        let mut queries = None;
         for cycle in 0..100_u64 {
             change_root_input!(request, application, 2 + cycle % 2, 0x9176_3d00_u64 + cycle);
-            settled_in_one_advance!(d, request, "the unrelated required demand");
+            unrelated_settles_unverified!(queries, cycle, d, request);
             assert_steady!(steady, cycle, retained_positions, application, invalidation);
         }
         // A refreshed row belongs to its own demand, never to the caller
@@ -115,13 +136,24 @@ fn cycle_chain_at_small_retention(
     cycles: u64,
     mut retained: impl FnMut(u64, QueryRetained, HistoryRetained),
 ) {
-    let (application, invalidation) = limited_application(4 * 1_024 * 1_024, 8 * 1_024 * 1_024, 8);
+    let retained_positions = 8;
+    let (application, invalidation) =
+        limited_application(4 * 1_024 * 1_024, 8 * 1_024 * 1_024, retained_positions);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let (mut a, mut b, mut c, mut d) = chain_with_unrelated!(application, request);
+    let mut queries = None;
     for cycle in 0..cycles {
         change_root_input!(request, application, 2 + cycle % 2, 0x9176_3c00_u64 + cycle);
-        settled_in_one_advance!(d, request, "the unrelated required demand");
+        // Once this small index fills it refuses the marks of the chain's
+        // last refreshed row, and that row refreshes once more in the same
+        // advance. The count is compared once every retained position has
+        // rotated, like the retained bytes.
+        if cycle < 2 * retained_positions as u64 {
+            settled_in_one_advance!(d, request, "the unrelated required demand");
+        } else {
+            unrelated_settles_unverified!(queries, cycle, d, request);
+        }
         settled_in_one_advance!(c, request, "the last consumer");
         settled_in_one_advance!(b, request, "the middle consumer");
         settled_in_one_advance!(a, request, "the open root demand");

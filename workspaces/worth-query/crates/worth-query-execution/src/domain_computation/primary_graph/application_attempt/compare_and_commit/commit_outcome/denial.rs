@@ -2,6 +2,7 @@
 
 mod capacity;
 mod program_binding;
+mod request_authority;
 mod workflow;
 
 /// Why a commit was refused before publication.
@@ -162,7 +163,7 @@ pub struct WorthQueryApplicationCommitDenial {
     kind: WorthQueryApplicationCommitDenialKind,
     stage: WorthQueryApplicationCommitDenialStage,
     detail: Option<std::sync::Arc<str>>,
-    custom_invariant: Option<crate::domain_computation::WorthQueryCustomInvariantDenial>,
+    cause: Option<request_authority::DenialCause>,
 }
 
 impl WorthQueryApplicationCommitDenial {
@@ -183,13 +184,13 @@ impl WorthQueryApplicationCommitDenial {
     pub fn custom_invariant_denial(
         &self,
     ) -> Option<&crate::domain_computation::WorthQueryCustomInvariantDenial> {
-        self.custom_invariant.as_ref()
+        self.custom_invariant()
     }
 
     pub fn custom_invariant_violation_identity(
         &self,
     ) -> Option<&worth_relational::facade::transactions::CustomInvariantSemanticIdentity> {
-        match self.custom_invariant.as_ref()? {
+        match self.custom_invariant()? {
             crate::domain_computation::WorthQueryCustomInvariantDenial::Violation { identity } => {
                 Some(identity)
             }
@@ -204,7 +205,7 @@ impl WorthQueryApplicationCommitDenial {
         worth_relational::facade::transactions::CustomInvariantFailurePhase,
         worth_relational::facade::transactions::ResultCustomInvariantFailureKind,
     )> {
-        match self.custom_invariant.as_ref()? {
+        match self.custom_invariant()? {
             crate::domain_computation::WorthQueryCustomInvariantDenial::Failure {
                 identity,
                 phase,
@@ -223,7 +224,9 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::CustomInvariantDenied,
             stage,
             detail: Some(detail.into()),
-            custom_invariant: Some(custom_invariant),
+            cause: Some(request_authority::DenialCause::CustomInvariant(
+                custom_invariant,
+            )),
         }
     }
 
@@ -234,7 +237,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::ProviderRejected,
             stage,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -246,7 +249,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::ProviderRejected,
             stage,
             detail: Some(detail.into()),
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -257,7 +260,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::ProductBasisStale,
             stage,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -267,7 +270,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift,
             stage: WorthQueryApplicationCommitDenialStage::Idempotency,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -277,7 +280,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::IdempotencyWindowExpired,
             stage: WorthQueryApplicationCommitDenialStage::Idempotency,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -287,7 +290,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::MutationBindingMismatch,
             stage: WorthQueryApplicationCommitDenialStage::Idempotency,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -297,7 +300,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::MutationInputMismatch,
             stage: WorthQueryApplicationCommitDenialStage::Idempotency,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -307,7 +310,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::ElevationTransitionRequired,
             stage: WorthQueryApplicationCommitDenialStage::ElevationTransition,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -317,7 +320,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::DelegationActivationRequired,
             stage: WorthQueryApplicationCommitDenialStage::DelegationTransition,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -327,7 +330,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::CapabilityRevocationRequired,
             stage: WorthQueryApplicationCommitDenialStage::DelegationTransition,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -336,7 +339,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired,
             stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
     pub(in crate::domain_computation::primary_graph::application_attempt) const fn elevation_request_program_mismatch(
@@ -345,7 +348,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::ElevationRequestProgramMismatch,
             stage: WorthQueryApplicationCommitDenialStage::ElevationTransition,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -355,7 +358,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::ElevationApprovalProgramMismatch,
             stage: WorthQueryApplicationCommitDenialStage::ElevationTransition,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -365,7 +368,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::ElevationCloseProgramMismatch,
             stage: WorthQueryApplicationCommitDenialStage::ElevationTransition,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -375,7 +378,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::MandatoryReviewProgramMismatch,
             stage: WorthQueryApplicationCommitDenialStage::ElevationTransition,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 }

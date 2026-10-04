@@ -157,6 +157,7 @@ fn register_alias(
                 facts: Arc::from([field_fact(runtime, handle, entity, locator)]),
                 output_facts: None,
                 read_basis: selected.clone(),
+                stale_at_read_basis: OrdSet::new(),
                 requirement: None,
                 upstream: OrdSet::new(),
             },

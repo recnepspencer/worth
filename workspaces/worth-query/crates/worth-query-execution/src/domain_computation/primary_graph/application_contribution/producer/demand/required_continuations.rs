@@ -51,6 +51,12 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
     fn predecessor(&self) -> &SelectedReadyReadmission;
     fn producer_contacts(&self) -> usize;
     fn continuations_empty(&self) -> bool;
+    /// Move to the newest row of the occurrence once this one is superseded.
+    fn follow_refresh(
+        &mut self,
+        registry: &WorthQueryOutputDemandRegistry,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<(), WorthQueryOutputDemandDenial>;
     fn advance_checkpoint(
         &mut self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -138,6 +144,17 @@ where
             demand.required_continuations.entries.is_empty()
                 && demand.required_continuations.capacity.is_none()
         })
+    }
+
+    fn follow_refresh(
+        &mut self,
+        registry: &WorthQueryOutputDemandRegistry,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        self.demand
+            .as_mut()
+            .expect("installed required successor retains its typed demand")
+            .rejoin_refreshed_output(registry, admission)
     }
 
     fn advance_checkpoint(
@@ -327,51 +344,6 @@ where
 
     pub(super) fn take_all(&mut self) -> Self {
         std::mem::take(self)
-    }
-}
-
-impl<'caller, Schema> PreparedRequiredContinuationSlot<'caller, Schema>
-where
-    Schema: ApplicationSchema,
-{
-    pub(super) fn installation_work(&self) -> u64 {
-        self.installation_work
-    }
-
-    pub(super) fn entries(&self) -> &[RequiredFreshProgress<Schema>] {
-        &self.caller.entries
-    }
-
-    /// Install `progress` as the last entry, ending any it supersedes.
-    fn push(
-        mut self,
-        progress: RequiredFreshProgress<Schema>,
-    ) -> &'caller mut RequiredContinuations<Schema> {
-        // A newer successor of the same occurrence, from a newer source or a
-        // second refresh of the same row, ends the custody of the older one:
-        // dropping its typed demand releases what only it held.
-        let newest = progress.successor.interest();
-        self.caller
-            .entries
-            .retain(|entry| !newest.supersedes(entry.successor.interest()));
-        // The slot it freed holds the newer one; growth prepared for an
-        // additional entry ends unused with its ticket.
-        if self.caller.entries.len() < self.caller.entries.capacity() {
-            drop(self.replacement.take());
-            drop(self.capacity.take());
-        }
-        if let Some(mut replacement) = self.replacement.take() {
-            replacement.append(&mut self.caller.entries);
-            let retired_entries = std::mem::replace(&mut self.caller.entries, replacement);
-            let retired_capacity =
-                std::mem::replace(&mut self.caller.capacity, self.capacity.take());
-            // The retired Vec backing dies before its final credit is refunded.
-            drop(retired_entries);
-            drop(retired_capacity);
-        }
-        let caller = self.caller;
-        caller.entries.push(progress);
-        caller
     }
 }
 

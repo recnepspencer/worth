@@ -63,6 +63,7 @@ where
             let stop = $stop;
             runtime.output_demands.record_required_stop($key, &stop);
             if queue.active() {
+                frame_custody.end_refused(&runtime.output_demands, &stop, admission);
                 hold_queue_frame!($label, Some(stop))
             }
             return Err(stop);

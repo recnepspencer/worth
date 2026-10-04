@@ -15,7 +15,6 @@ use super::*;
 use crate::domain_computation::primary_graph::{
     application_output_demand::{
         DemandAdmissionKind, OutputRefreshPredecessor, SelectedRequiredRefreshClaim,
-        WorthQueryAcceptedOutputAuthority,
     },
     application_query::WorthQueryObservedSourceCloneStop,
     product_operation::SharedSelectedProductOperation,
@@ -150,23 +149,10 @@ where
             .selected()
             .retained_program_basis()
             .map(std::sync::Arc::clone);
-        let predecessor = match &claim.selected().completion().authority {
-            WorthQueryAcceptedOutputAuthority::Committed(receipt) => {
-                OutputRefreshPredecessor::Committed(receipt)
-            }
-            WorthQueryAcceptedOutputAuthority::Stable(published) => {
-                OutputRefreshPredecessor::Stable {
-                    interest: claim.interest(),
-                    published,
-                }
-            }
-            WorthQueryAcceptedOutputAuthority::Restored(_) => {
-                return Err(denial(
-                    WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                    "restored predecessor cannot mint required Fresh",
-                ));
-            }
-        };
+        let predecessor = OutputRefreshPredecessor::of(
+            &claim.selected().completion().authority,
+            claim.interest(),
+        );
         self.admit_output_demand_with_source_admitted::<Family>(
             fresh.value(),
             retained_source,

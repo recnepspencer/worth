@@ -2,7 +2,8 @@
 
 use super::WorthQueryOutputDemandDenialKind as DemandKind;
 use super::{
-    denial, failed, request_admission_denied, request_admission_rejected, ProducerExecutionStop,
+    denial, failed, request_admission_denied, request_admission_rejected, request_authority_stop,
+    ProducerExecutionStop,
 };
 use crate::domain_computation::primary_graph::application_query::{
     WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind as ExecutionKind,
@@ -19,8 +20,10 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         | AdmissionKind::ForeignPrincipal
         | AdmissionKind::ForeignScope
         | AdmissionKind::StaleScope
-        | AdmissionKind::ScopeTypeMismatch
-        | AdmissionKind::Authorization(_) => request_admission_denied(subject, error),
+        | AdmissionKind::ScopeTypeMismatch => request_admission_denied(subject, error),
+        AdmissionKind::Authorization(kind) => {
+            request_admission_rejected(request_authority_stop(subject, kind))
+        }
         AdmissionKind::Cancelled => {
             request_admission_rejected(denial(DemandKind::Cancelled, subject.to_owned()))
         }
@@ -45,9 +48,12 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     error: WorthQueryApplicationOneShotDenial,
 ) -> ProducerExecutionStop {
     match error.kind() {
-        ExecutionKind::StalePrincipal
-        | ExecutionKind::StaleScope
-        | ExecutionKind::Authorization(_) => request_admission_denied(subject, error),
+        ExecutionKind::StalePrincipal | ExecutionKind::StaleScope => {
+            request_admission_denied(subject, error)
+        }
+        ExecutionKind::Authorization(kind) => {
+            request_admission_rejected(request_authority_stop(subject, kind))
+        }
         ExecutionKind::Cancelled => {
             request_admission_rejected(denial(DemandKind::Cancelled, subject.to_owned()))
         }

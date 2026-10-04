@@ -64,6 +64,19 @@ impl RecordedOutput {
             .clone()
     }
 
+    /// The facts a checkpoint may carry for this output. A restored row is
+    /// verified against its own source facts and claims nothing upstream, so
+    /// an output that consumed others carries none: after a restore it starts
+    /// Fresh and consumes its upstreams again, never a stale reuse.
+    pub(super) fn checkpoint_source_facts(
+        &self,
+    ) -> Option<Arc<[WorthQueryApplicationObservedFact]>> {
+        self.consumed_outputs
+            .is_empty()
+            .then(|| self.observed_source_facts())
+            .flatten()
+    }
+
     pub(super) fn resources(&self) -> Option<WorthQueryProducerDemandResources> {
         self.mutable
             .lock()
@@ -77,6 +90,11 @@ impl RecordedOutput {
         resources: Option<WorthQueryProducerDemandResources>,
         verified_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     ) {
+        if self.native_output_witness.get().is_some() {
+            // A verified restoration keeps its first proof, the facts that
+            // proof covers and the currentness established over them since.
+            return;
+        }
         let mut row = self
             .mutable
             .lock()

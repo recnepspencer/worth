@@ -67,6 +67,7 @@ fn retained_source_must_include_every_registered_upstream_edge() {
                         facts: Arc::from([]),
                         output_facts: None,
                         read_basis: (*selected).clone(),
+                        stale_at_read_basis: im::OrdSet::new(),
                         requirement: None,
                         upstream: consumed_upstream,
                     },

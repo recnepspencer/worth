@@ -33,14 +33,7 @@ where
             .interest
             .as_ref()
             .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::Closed, Family::IDENTITY))?;
-        let predecessor = match predecessor {
-            crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Committed(receipt) =>
-                crate::domain_computation::primary_graph::application_output_demand::OutputRefreshPredecessor::Committed(receipt),
-            crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Stable(published) =>
-                crate::domain_computation::primary_graph::application_output_demand::OutputRefreshPredecessor::Stable { interest, published },
-            crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Restored(_) =>
-                return Err(self.output_demands.finish_superseded(interest, Family::IDENTITY)),
-        };
+        let predecessor = crate::domain_computation::primary_graph::application_output_demand::OutputRefreshPredecessor::of(predecessor, interest);
         let profile_kind = Family::profile_kind(&source);
         let mut refreshed = self.admit_output_demand_with_source_admitted::<Family>(
             &source,
@@ -57,6 +50,7 @@ where
             request_admission,
         )?;
         refreshed.producer_contacts_in_this_demand = demand.producer_contacts_in_this_demand;
+        refreshed.settled = demand.settled;
         if let Some(interest) = demand.interest.as_ref() {
             self.output_demands.finish_replaced_interest(
                 interest,

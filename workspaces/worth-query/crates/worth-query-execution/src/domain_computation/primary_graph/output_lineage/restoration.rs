@@ -8,7 +8,50 @@ use super::{
     WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputLineage,
 };
 
+/// A recorded checkpoint output and the source facts its verification covers.
+pub(in crate::domain_computation::primary_graph) struct RestoredRecord {
+    pub(in crate::domain_computation::primary_graph) identity:
+        Arc<super::RecordedSettlementIdentity>,
+    pub(in crate::domain_computation::primary_graph) facts:
+        Arc<[super::super::application_attempt::WorthQueryApplicationObservedFact]>,
+}
+
 impl WorthQueryApplicationOutputLineage {
+    /// The settlement identity of the checkpoint output that candidate
+    /// selection recorded at `observation`.
+    pub(in crate::domain_computation::primary_graph) fn restored_settlement_identity(
+        &self,
+        output_binding: TypeId,
+        runtime_authority: u64,
+        schema: ApplicationSchemaBindingIdentity,
+        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        observation: &worth_runtime_world::facade::ProductBranchObservation,
+        source_partition_identity: [u8; 32],
+    ) -> Option<Arc<super::RecordedSettlementIdentity>> {
+        let source = SemanticSource {
+            runtime_authority,
+            schema,
+            scope,
+            output_binding,
+        };
+        let occurrence = observation.lifecycle_incarnation();
+        let generation = observation.reference_generation().get();
+        let slot = self.partition_index.at_generation(
+            &source,
+            occurrence,
+            generation,
+            source_partition_identity,
+        )?;
+        let recorded = self
+            .by_source
+            .get(&source)?
+            .get(&occurrence)?
+            .get(&generation)?
+            .get(slot)?
+            .get()?;
+        Some(Arc::clone(&recorded.settlement_identity))
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub(in crate::domain_computation::primary_graph) fn record_restoration(
         &mut self,
@@ -29,7 +72,7 @@ impl WorthQueryApplicationOutputLineage {
             super::super::application_contribution::WorthQueryProducerDemandResources,
         >,
         verified_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
-    ) {
+    ) -> Option<RestoredRecord> {
         let source = SemanticSource {
             runtime_authority,
             schema,
@@ -55,7 +98,7 @@ impl WorthQueryApplicationOutputLineage {
             )
         {
             // A selected World publication owns this invisible address.
-            return;
+            return None;
         }
         let generation = self
             .by_source
@@ -79,11 +122,18 @@ impl WorthQueryApplicationOutputLineage {
                 "one restored output partition keeps one exact identity"
             );
             recorded.restore(observed_source_facts, resources, verified_witness);
+            let restored = RestoredRecord {
+                identity: Arc::clone(&recorded.settlement_identity),
+                facts: recorded
+                    .observed_source_facts()
+                    .expect("a restored output retains its source facts"),
+            };
             self.live_occurrences
                 .insert(observation.lifecycle_incarnation());
-            return;
+            return Some(restored);
         }
         let slot = generation.len();
+        let facts = Arc::clone(&observed_source_facts);
         let recorded = RecordedOutput {
             performed_origin: None,
             _retained_capacity: None,
@@ -113,6 +163,7 @@ impl WorthQueryApplicationOutputLineage {
             producer_dependency_identity,
             idempotency_key_identity,
         };
+        let identity = Arc::clone(&recorded.settlement_identity);
         let cell = Arc::new(OnceLock::new());
         assert!(cell.set(recorded).is_ok());
         generation.push(cell);
@@ -125,6 +176,7 @@ impl WorthQueryApplicationOutputLineage {
         );
         self.live_occurrences
             .insert(observation.lifecycle_incarnation());
+        Some(RestoredRecord { identity, facts })
     }
 
     #[allow(clippy::too_many_arguments)]

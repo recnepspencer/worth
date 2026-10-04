@@ -82,11 +82,11 @@ where
                                     output_facts::encode(&facts, witness, &mut admission)
                                 }),
                             AcceptedCheckpointFactSource::Stable(stable) => stable
-                                .observed_source_facts()
+                                .checkpoint_source_facts()
                                 .and_then(|facts| facts::encode(&facts)),
                         };
                         identity.producer_fact_wire_version = if identity.producer_facts.is_some() {
-                            6
+                            facts::WIRE_VERSION
                         } else {
                             0
                         };

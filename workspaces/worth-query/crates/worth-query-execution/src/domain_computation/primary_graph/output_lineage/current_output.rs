@@ -15,10 +15,14 @@ use super::{
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 
 pub(in crate::domain_computation::primary_graph) struct RetainedOutputCurrentnessRead {
+    pub(in crate::domain_computation::primary_graph) identity:
+        Arc<super::RecordedSettlementIdentity>,
     pub(in crate::domain_computation::primary_graph) facts:
         Arc<[crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact]>,
     pub(in crate::domain_computation::primary_graph) native_output_witness:
         Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
+    /// The facts and the witness are everything this output depends on.
+    pub(in crate::domain_computation::primary_graph) consumed_nothing: bool,
     pub(in crate::domain_computation::primary_graph) work: usize,
 }
 
@@ -61,8 +65,8 @@ impl WorthQueryApplicationOutputLineage {
                         occurrence: coordinate.occurrence,
                         dependency_identity: recorded.producer_dependency_identity,
                         idempotency_key_identity: recorded.idempotency_key_identity,
-                        claiming_settlement: (!recorded.consumed_outputs.is_empty())
-                            .then(|| Arc::clone(&recorded.settlement_identity)),
+                        settlement: Arc::clone(&recorded.settlement_identity),
+                        claims_upstream: !recorded.consumed_outputs.is_empty(),
                     }),
                     work,
                 ));
@@ -280,8 +284,11 @@ fn retained_currentness_read(
         .and_then(|cell| cell.get())
         .unwrap_or(recorded);
     Ok(Some(RetainedOutputCurrentnessRead {
+        identity: Arc::clone(&recorded.settlement_identity),
         facts,
         native_output_witness: origin.native_output_witness_cell().map(Arc::clone),
+        consumed_nothing: recorded.consumed_outputs.is_empty()
+            && recorded.performed_origin.is_none(),
         work,
     }))
 }

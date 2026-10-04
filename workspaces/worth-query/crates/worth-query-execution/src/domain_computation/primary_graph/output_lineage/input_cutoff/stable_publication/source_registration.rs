@@ -41,6 +41,7 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
                 facts: Arc::clone(&self.facts),
                 output_facts: None,
                 read_basis: selected.clone(),
+                stale_at_read_basis: im::OrdSet::new(),
                 requirement: None,
                 upstream,
             },
