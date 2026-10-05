@@ -27,11 +27,11 @@ where
         request,
     } = progressed;
     let terminal = terminal_for(&outcome);
-    let snapshot_released = lease.release();
+    let snapshot_release = lease.release_custody();
     application
         .primary_provider
         .observe_managed_application_cleanup();
-    let completion = match cleanup.finish(running, terminal, snapshot_released) {
+    let completion = match cleanup.finish(running, terminal, snapshot_release) {
         Ok(completion) => completion,
         Err(()) => {
             return match outcome {
@@ -65,13 +65,6 @@ where
         if let Some(publication) = workflow_settlement_publication {
             publication.maintain(application, receipt);
         }
-        let touched = receipt
-            .mutation_work()
-            .into_iter()
-            .flat_map(|work| work.touched_records())
-            .map(|identity| identity.record().clone())
-            .collect::<Vec<_>>();
-        application.maintain_conditional_commit(receipt.commit_reference(), touched);
     }
     application.dispatch_committed_external_effect(committed, &request)
 }

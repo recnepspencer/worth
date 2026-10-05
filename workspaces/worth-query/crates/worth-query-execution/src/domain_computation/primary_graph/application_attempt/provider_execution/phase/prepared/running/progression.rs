@@ -266,6 +266,16 @@ where
     let commit_lane = application
         .primary_provider
         .application_branch_commit_lane(product.observation());
+    let commit_lane = match commit_lane {
+        Ok(lane) => lane,
+        Err(_) => {
+            return registered_session.deny(WorthQueryProviderProgressionOutcome::Denied(
+                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::retention_capacity_exhausted(
+                    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenialStage::DecisionReadSet,
+                ),
+            ));
+        }
+    };
     let coordination = commit_lane.enter();
     let authority = WorthQueryApplicationCommitProgressionAuthority {
         application,

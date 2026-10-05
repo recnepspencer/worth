@@ -10,6 +10,9 @@ use worth_runtime_bridge::facade::{
 use super::installed_policy::WorthQueryInstalledAuthorizationPolicy;
 use super::{WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind};
 
+mod admitted;
+pub(super) use admitted::{lower_bridge_observation_admitted, BridgeObservationPreparationStop};
+
 pub(super) fn lower_bridge_observation(
     installed: &WorthQueryInstalledAuthorizationPolicy,
     evidence: &RelationalAuthorizationObservationEvidence,

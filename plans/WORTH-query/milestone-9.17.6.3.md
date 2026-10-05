@@ -1,6 +1,8 @@
 # Milestone 9.17.6.3: Exact Invalidation And Parallel Computation
 
-> **Status:** Not started. Successor to [9.17.6](./milestone-9.17.6.md). This is the
+> **Status:** In progress. Phases 1 to 4 are implemented and reviewed. Phase 5
+> is implemented. Phases 6 to 8 remain. Successor to
+> [9.17.6](./milestone-9.17.6.md). This is the
 > one plan for exact invalidation and parallel execution in WORTH. It replaces the
 > canceled Signal Milestones 14 to 17 and the 9.17.6 rules that kept touched
 > records as evidence only. Every phase depends only on completed work. Portable
@@ -139,7 +141,7 @@ budget or determinism contract.
   with every commit. Bridge's direct correspondence path delivers them only for
   an installed correspondence with Signal targets, matched against that
   correspondence's dependency, and carries no index-membership records. Query
-  live queries and conditional operations consume those deliveries. Application
+  conditional operations consume those deliveries. Application
   outputs never read them. Instead:
   - reuse re-runs the source query and hashes its whole footprint
     (`identity_current`), so any revision change in the footprint forces a fresh
@@ -189,7 +191,7 @@ budget or determinism contract.
 
 ### Exact invalidation
 
-- A neutral model repeated at 1, 10 and 100 independent copies, with a fixed
+- A neutral model repeated at 1 and 100 independent copies, with a fixed
   one-field edit in one copy.
 - A commit that races an output's settlement.
 - A demand at an older snapshot than the latest marks.
@@ -205,25 +207,36 @@ budget or determinism contract.
 - A program installation, an aspect contract-revision change, a delivery
   overflow, a checkpoint restore, a reopen from outside the retained commit
   window, and a branch switch.
-- Workflow definition and capacity facts changing under waiting work.
+- A workflow definition or capacity change under a waiting instance, which
+  keeps its pinned revision while a new start reads the new one.
 
 Required:
 
-- For the fixed edit, marking work, verification work, producer contacts and
-  reverse-index bytes per consumed fact are equal at 1, 10 and 100 copies.
-- Demanding a clean output costs zero fact checks and zero source-query re-runs.
+- For the fixed edit and the advances after it, producer contacts,
+  source-query runs, advances and chain decisions are equal at 1 and 100
+  copies, and the edit is delivered exactly. The counts come from the
+  execution observer; no meter is added for them.
+- Demanding a clean output costs zero source-query runs and zero producer
+  contacts, and decides nothing again.
 - One `advance` with an adequate budget settles every marked output, and
   exhaustion returns a typed outcome naming the remaining work; the application
   never polls.
 - A downstream output demanded before its upstream recomputes reports Pending,
   and an equal upstream republication clears the marks below it with zero
-  producer contacts.
+  producer contacts. A decision reads its upstream's current output.
 - The racing commit is caught by insertion replay, and the older-snapshot demand
   ignores later marks.
+- A demand that never settled stops `Superseded` when a commit replaces its
+  source, and its caller demands again. A settled demand that stays open keeps
+  following its output through that commit.
 - Every listed discontinuity triggers the full-verification fallback once per
-  affected output, counted and reported.
+  affected output: its demand runs its source query once, reaches no producer
+  and decides nothing. An output demanded at least once per retained window
+  never leaves it.
 - A randomized differential test over all of the above finds no difference
-  between marking and full verification.
+  between marking and full verification: it runs seeded with the equivalence
+  check on, and after every step each settled output equals what a plain model
+  computes from scratch.
 
 ### Same answer at every worker count
 
@@ -396,16 +409,26 @@ at its declared breadth and is counted and reported.
   Index membership changes carry the old and new index keys, derived by
   Relational from the field changes and the installed index definitions, so a
   phantom match is caught.
+  Relational seals this description into the canonical commit envelope before
+  publication. Native segment and checkpoint entries write explicit touch-wire
+  version 3; version 2 entries readmit with `Unavailable` precision and require
+  full verification. A version 2 entry claiming exact touches is rejected.
 - **Delivery.** Marking consumes every committed patch envelope on the branch
   through one Query-owned Bridge subscription with no Signal targets.
   - It carries the full published aspect change with its field path, the
     index-membership records, and, from Phase 4, the scope path at the depth
     Signal sealed it.
   - Delivery runs in commit order and synchronously with commit visibility.
-  - Live queries, conditional operations and workflow coverage consume the same
-    subscription, and their correspondence-based matching is replaced by
-    marking. Signal correspondences keep delivering to Signal-hosted nodes and
-    never feed Query marking. No second path feeds Query invalidation.
+  - Conditional operations consume the same subscription, and their
+    correspondence-based matching is replaced by marking. Signal
+    correspondences keep delivering to Signal-hosted nodes and never feed
+    Query marking. No second path feeds Query invalidation.
+  - Live queries are caused by committed application emissions, delivered in
+    Product commit order by Query's commit-causality source. They invalidate
+    nothing, so they are not a second invalidation path. Each delivery
+    re-admits the principal and re-reads at the cause's Product observation. A
+    future live query whose result depends on data registers in the reverse
+    index like any other consumer.
 
 ### Marking
 
@@ -489,16 +512,20 @@ at its declared breadth and is counted and reported.
   - a delivery gap: an overflowed or missed batch, or marks that lag the
     demand's snapshot.
 
-  It runs once per affected output and is counted and reported.
+  It runs once per affected output: the verified row is marked clean again,
+  so its next clean demand runs no source query. A restored dependent carries
+  no upstream edges and executes once instead. It is observed as source-query
+  runs that reach no producer; it has no counter of its own.
 - **Commit-time checks.** A commit still recompares its attempt's read facts
   (optimistic concurrency control). Marking replaces only demand-time
   re-verification.
 - **Equivalence check.** A debug and certification mode runs full verification
   beside marking and fails on any difference.
-- **One mechanism.** Workflow definition and capacity facts mark through the same
-  path. A workflow history basis is pinned to an immutable snapshot and is never
-  marked. One invalidation mechanism serves outputs, live queries and workflow
-  coverage, and no parallel lane remains.
+- **One mechanism.** One invalidation mechanism serves outputs and conditional
+  operations, and no parallel lane remains. Workflow coverage needs none: a
+  waiting instance pins its definition revision and history basis, which are
+  never marked, and start and migration admission read definition and lineage
+  capacity fresh.
 - **Charging.** Work budgets charge marking and dirty verification, never a scan
   of clean state.
 
@@ -526,6 +553,137 @@ Input cutoff and output cutoff are one mechanism.
   cutoff.
 - **Determinism.** Cutoff and reuse depend on deterministic producers. The
   serial oracle and schedule perturbation certify them.
+
+#### Phase 5 decision-context and publication boundary
+
+The three-part reuse key identifies prepared input; it is not, by itself, proof
+that a completed handler has the same decision context. `DecisionReader` also
+exposes the request key, principal and operation scope. The installed producer
+declaration must explicitly state its deterministic reuse contract and these
+context dependencies before execution. An existing handler without that contract
+remains executable and is ineligible for input cutoff. Use the existing
+`worth-foundational::execution::DeterminismContract` vocabulary; changing this
+contract or its dependencies changes the installed producer edition.
+
+The handler boundary records actual context consumption only to enforce the
+installed declaration. It does not discover the dependency contract. A read of
+undeclared context, or a managed computation without retained currentness
+dependencies, prevents creation of the completed reuse proof. It must never
+silently omit a dependency. Declared key dependencies compare the original
+canonical key identity; principal dependencies compare owner-issued native
+identity and freshness evidence; scope dependencies compare exact operation
+affinity. These comparisons, their retained backing and canonical encoding draw
+from the same admitted request meter. Authentication and operation authorization
+precede reuse even when the handler declares independence from that context.
+The same completeness check covers the inner operation projection reader:
+public raw `reader()` access prevents input reuse in this phase. Its native
+version is one observation outside declared decision facts. Tracked outer
+projection methods borrow the private reader directly and remain eligible.
+
+The completed proof carries the handler fact prefix separately from the freshly
+read source suffix. Input sameness, the declared decision context, the dirty
+handler facts, consumed-output closure and the native output witness must all
+close before a sealed stable-output publication proof exists. Missing proof,
+including a restored row without live proof, selects ordinary execution or the
+specified full-verification fallback. No contact counter or matching digest may
+construct the publication proof. `ContractEquivalent` needs its installed
+identity-bearing predicate; its identifier alone cannot enable reuse.
+
+Stable publication belongs to the existing Query lineage and demand owners. It
+creates a new settlement identity at the actual current product observation,
+retains the original output correspondence and performed-receipt provenance,
+and installs fresh source facts and postings. It does not perform a new World
+commit, invent a successor generation or manufacture a commit receipt. The
+public settlement distinguishes stable reuse from a newly performed commit.
+Its readiness evidence reports zero producer and delivery contacts.
+
+The executor carries a typed progression: original prepared input custody goes
+to fresh execution, or owner-published stable lineage goes directly to Ready.
+Stable consumers preserve that authority rather than synthesizing a receipt or
+re-running delivery. The performed native output witness contributes exact
+entity-kind and aspect-revision facts to the alias's canonical fact set, so
+marking, consumed-output checks and downstream optimistic commits use the same
+authority.
+
+Settlement registration first projects source and output facts into one owned
+map of keys and composite fact ordinals. A consuming prepared-posting value
+then installs each unique key into the reverse index once. The immutable facts
+remain shared; grouping must preserve every matched ordinal and all admission
+and retained-capacity charges.
+
+Ready storage is prepared before effects and travels in the required-output
+execution envelope, then through published and delivered checkpoints to its
+terminal fill. The final shared completion owns its refundable capacity until
+the last reader releases it. Clean reuse admits the actual Query read and
+disclosure authorities without executing the source query. Its exact accepted
+candidate pins that completion; native currentness certification and Product
+basis binding produce sealed proof consumed by the settlement constructor while
+the admitted Query plan remains live. The constructor shares the accepted
+authority rather than copying its historical receipt or re-verifying facts.
+Partition reuse and required-wave scheduling consume this same handoff.
+
+Branch coordination has a finite installed aggregate retained-byte profile.
+One refundable ticket funds a lane and its Weak map entry until both observers
+release custody. All lane acquisition is fallible before owner effects. Stable
+publication also samples the admitted request's cancellation and expiry after
+blocking Product guard acquisition, immediately before source CAS. Its typed
+stop and full prepared custody leave both owner guards before denial allocation
+or cleanup.
+
+Prepare all lineage payload, retained capacity, prerequisite claims and registry
+handoff storage before cutover. The existing occurrence commit lane holds a
+prospective lineage address while the registry prepares its prerequisite
+vacancy. This address is preparation custody, not accepted output authority.
+The final lineage guard covers actual path admission, geometric backing growth
+preparation, and the product-currentness callback; any new empty path remains
+invisible under that same guard and has a prepaid inverse on failure. Existing
+record backings remain unchanged until CAS succeeds. Under that guard, validate the
+original partition locator and settlement, perform the source-owner CAS, then
+infallibly append the immutable stable row and replace its exact derived
+locator. Family reads and partition reads must select that same new row. A
+denial before CAS leaves the prior row, locator and postings usable. Historical
+rows and receipts remain immutable. Checkpoint capture preserves the stable
+reuse distinction and original provenance; restoration does not promote it to
+new performed authority and requires the existing reconstruction verification.
+The existing occurrence commit lane and owner-issued product observation pin
+remain held and currentness-checked through cutover; native actor CAS alone does
+not prove that the independently owned product reference stayed current. World's
+observation port holds its existing operation
+reservation and upgraded service for a short callback over the branch read
+guard. Only that callback issues the non-escaping `CurrentProductHead` witness
+required by Query's stable cutover. A retained observation alone cannot replace
+this witness. Native companion image allocation must also be prepared before
+that callback; its consuming CAS returns retired custody for later cleanup.
+Stable publication accepts only a current-source registration bound to the
+cutoff's exact native root, commit and position. Historical insertion replay
+remains available for ordinary post-effect registration; it cannot advance a
+stable cutoff across source movement. The performed receipt retains the exact
+owner-issued settlement address, so replacing a same-generation partition
+locator cannot hide its immutable original row.
+Lock order is lineage then source edit, with no reverse lineage acquisition from
+source preflight. No registry lock is acquired under that pair. The prepared
+row, locator and prerequisite handoff use only moves after CAS; displaced
+payload destruction is deferred until outside the critical window.
+
+The decisive tests include equal prepared input under changed request keys and
+principal identity revisions; handlers both dependent on and independent of
+each declared context field; an undeclared getter; an unavailable equivalence
+predicate; and managed computation without currentness evidence. Dependent or
+ineligible handlers execute, while lawfully independent handlers reuse with zero
+contacts. A forced actor-CAS conflict and a one-unit work or capacity shortfall
+must preserve the old settlement. Independent family, partition, retained-read
+and checkpoint observations must agree after successful stable publication.
+Bypassing context completeness, native output verification or the locator CAS
+must make the evidence fail.
+
+The existing certification topology supplies the first concrete producer cases:
+`anchor-a` uses tracked projection reads; `anchor-isolated` additionally calls
+the raw inner reader's native `version()`; `anchor-island` reads the undeclared
+request key. Editing each scope's successor position changes its source epoch
+without changing its canonical operation input. Re-demand must reuse the first
+case and enter the actual installed handler in both negative cases. Use public
+producer-contact work and current output observations as the oracles; fixture
+provider callbacks alone do not establish handler entry.
 
 ### The public definition is restored
 
@@ -800,6 +958,15 @@ Topological level alone proves none of these in a rewiring graph.
 - **Backpressure.** Ready queues, prepared packets, rewiring proposals and
   unpublished results are bounded by the lease. Exhaustion reduces admitted
   concurrency or rejects before dispatch.
+- **Checked result declaration.** A node may declare
+  `max_checked_result_heap_bytes`, the maximum additional heap of its checked
+  result, trace and keyed output; dependency capture has a separate bound.
+  `None` keeps adaptive admission and `Some(0)` explicitly declares a heap-free
+  result. Before callbacks, the epoch admits a common result grant at least as
+  large as every selected declaration or rejects the candidate. The checked
+  callback enforces each node's own limit. Fresh Signal snapshots write schema
+  3; schema 2 remains readable with an absent or null declaration, while a
+  schema 2 payload carrying a non-null declaration is rejected before restore.
 - **Node kinds.** Async-capable, temporal, previous-value and on-demand nodes run
   as singleton conflict groups, ordered canonically.
 - **Stays serial.** Parallel plan validation, condition preview and eligibility
@@ -1020,9 +1187,9 @@ executor and no second pool survives.
 
 | Contract | Bound |
 | --- | --- |
-| Commit-time marking | O(touched records + matched facts + marked downstream closure); no scan of settlements or waiting work |
+| Commit-time marking | O(touched records + matched facts + marked downstream closure) logical routing operations, plus separately bounded physical index navigation and selected copy-on-write paths; no scan of settlements or waiting work |
 | Clean demand | Zero fact checks and zero source-query re-runs |
-| Fixed edit at 1, 10 and 100 model copies | Equal marking work, verification work, producer contacts and reverse-index bytes per consumed fact |
+| Fixed edit at 1, 10 and 100 model copies | Equal logical marking operations, verification work, producer contacts and reverse-index capacity bytes per consumed fact; separately bounded and reported physical index navigation and selected copy-on-write paths |
 | Reverse index | Charged as derived retained bytes; entries reclaimed with their settlement |
 | Unchanged producer input or output encoding | Zero producer contacts downstream of it |
 | Charged work | Identical at every worker count and schedule for completed outcomes |
@@ -1164,6 +1331,176 @@ plans/WORTH_signal/milestone-{14,15,16,17}-plan.md       D  canceled
 
 Enforcement:
 
+Phase 5 refines the existing Query owners along their authority boundaries:
+
+```text
+worth-query-execution/src/domain_computation/primary_graph/
+  application_contribution/producer/
+    input_reuse_contract.rs                         N  static declaration, portable meaning
+    registry/{declaration,semantic_edition}.rs       R  installed contract and handler edition
+    execution/input_cutoff/                         N  admitted input -> verified reuse or execution
+      preparation.rs                               N  selection, declared context and dependency proof
+      publication.rs                               N  consumes proof through lineage/demand owners
+  handler/
+    invariant.rs                                   R  DecisionReader records context consumption
+    decision_context.rs                            N  finite consumption and completeness evidence
+  application_attempt/read_set/
+    handler_fact_boundary.rs                       R  complete prefix, independent of reuse eligibility
+    completed_input_reuse.rs                       N  sealed proof of the exact completed invocation
+  output_lineage/
+    input_cutoff.rs                                R  pins prior immutable owner record
+    stable_publication/                            N  same-observation publication lifecycle
+      preparation.rs                               N  payload, capacity and exact locator claim
+      cutover.rs                                   N  owner CAS and infallible row/locator install
+    partition_index/                               R  exact current locator replacement
+    invalidation/                                  R  canonical settlement posting and edge owner
+      settlement/postings.rs                       N  prepared unique keys and composite ordinals
+    required_settlement/current_accepted.rs         N  sealed exact accepted currentness proof
+  application_output_demand/
+    registry/record_capacity.rs                    N  ordered record storage and escaped wake custody
+    registry/required_custody.rs                    N  existing aggregate lifetime capacity
+    registry/ready_backing.rs                      N  prepared storage -> shared Ready completion
+    registry/stable_reuse.rs                        N  accepted stable authority and ready handoff
+    settlement/stable_reuse.rs                      N  current observation and original provenance
+    registry/accepted_checkpoint.rs                R  capture preserves publication posture
+```
+
+These are semantic destinations, not empty placeholders. The producer contract
+owns declared sameness, the handler/read-set boundary owns completion proof,
+lineage owns immutable output history, and the demand registry owns accepted
+readiness and prerequisite custody. Publication orchestration consumes these
+owners' proofs; it cannot mint their authority. Phase 6 adds partition preparation
+and reuse beside the producer cutoff boundary, and Phase 7 adds required-wave
+scheduling beside demand progression without moving these facades. Proof
+constructors remain visible only to their producing owner, and exhaustive
+accepted-authority matches enforce propagation through reads and recovery.
+
+The registry keeps one ordered record owner. Exact-key lookup charges the
+selected tree descent; insertion prepares key storage, possible tree splits and
+the wake's independent lifetime before visibility. Cached Ready values remain
+in that owner. Removing its last record preserves the empty tree's storage
+credit until the tree is destroyed, and an escaped notification retains its own
+credit until its final owner drops. This avoids a second readiness cache and
+keeps unrelated records out of current-demand lookup cost.
+
+Refreshing a demand carries its original request admission through retained
+producer selection and registry replacement. The existing reconstruction
+selector preserves its bounded remainder on both success and failure; its
+legacy Work is reconciled into that same admission. This bridge does not claim
+that inherited reconstruction copies have entered the new ordinary cost class.
+Replacement prepares matching obligation slots, exact missing commit
+provenance, retained record growth and required membership before either record
+changes. Failure leaves both records and their reservations usable. Retired
+backings keep their aggregate credits through destruction outside the registry
+guard; a prepaid owner cleanup refunds those exact credits afterward.
+
+Query permission preparation precedes graph-work construction. Its owner selects
+the Product basis, holds the security lease, validates the current principal and
+scope, and issues the installed policy authority with a reserved Query session
+identity. The sealed permission carries that exact basis and identity forward:
+Clean reuse consumes it with the exact accepted Ready completion; disclosure
+consumes it to construct graph work in the reserved session. Neither branch
+selects a replacement Product or repeats permission admission. Eligibility and
+resource refusal remain typed outcomes, distinct from policy denial.
+
+Producer mutation installation selects its exact operation obligations and
+validates their semantic owners once, against the final installed provider
+support. Admission retains that immutable selection and lowered resource basis
+in an opaque installation template; the template reserves no live capacity and
+grants no permission. Invocation consumes the current operation owner's proof,
+joins its full schema binding and obligation identity with that template, and
+checks the same installed support authority before a funded shallow retention.
+It derives only the unique invocation resource identity and reserves the actual
+participating capacity ports on the original request meter. Immutable obligation
+copies, selection walks, owner validation and resource strategy rediscovery do
+not belong to that hot invocation; its counters report those checks as zero.
+Selected session construction still consumes fresh permission and the exact
+retained Product basis. Required-wave and partition successors use these same
+installation and invocation boundaries rather than adding another authority or
+allowance.
+
+Installation also owns one immutable compiled operation contract value.
+Admitted invocations retain a funded shallow share of it; they do not copy its
+declaration vectors and strings. Borrowed contract inspection and content-based
+reinstallation comparison preserve their meaning. Sharing the representation
+does not grant current issuer authority or replace its schema and operation
+identity checks.
+
+Native principal probes, selected-index lookup, authorization traversal and
+framework-owned preparation use the carried request meter before reads, copies
+or allocation. The installed application principal decoder runs freshly, with
+its ordinary acceptance semantics. Application-authored decoder internals retain
+their existing application cost contract; native admission does not claim to
+meter arbitrary application instructions or allocations. Clean may not substitute
+prior decoder success for fresh principal acceptance.
+
+Permission prepares only its selected principal/scope field indexes. Missing
+currency reconstructs those exact fields through the native index owner on the
+same request meter; it does not materialize unrelated record aspects or rebuild
+the installed index catalog. Disclosure must additionally prepare the indexes
+consumed by its actual graph contract. Native generation retention keeps its
+existing native cost class; request scratch prepayment is not an aggregate
+native retained-byte ledger.
+
+Cursor teardown retains creation-time credit for present-row removal and inner
+entry destruction, and destroys extracted custody after the registry unlocks.
+An absent-occurrence lookup belongs to the existing Query Product-retirement
+cleanup lane: it allocates nothing and is bounded by the installed required
+capacity divided by the mandatory positive cursor-row claim. It can repeat per
+cleanup retry and is not charged as advance/read request Work.
+
+The retained read owns its final storage credit. Query permission, actor
+certification and any disclosure fallback continue on the same request meter.
+Private currentness proof is consumed while its exact selected basis remains
+pinned. These boundaries also serve partition reuse and required-wave scheduling
+without adding another authority or allowance. Phase 6 can add partition
+selection after permission, and Phase 7 can schedule prepared required work
+without changing either policy admission or publication authority.
+
+Serial required advancement holds one selected Product operation through each
+dependency wave. An actual performed publication requires selection of the
+authentic new World head before a downstream producer continues; that next wave
+starts inside the same caller advance. Each producer borrows the exact
+Product/native basis for its wave, validates its
+own installed source, principal, scope and policy, and uses the same request
+admission. Before the wave enters per-producer progression, a sealed shared
+selection phase funds one final-owner Arc around the already issued Query
+snapshot, Native retention obligation and selected-program interpretation. The
+ordinary exclusive lease remains inline. A producer retains a metered local
+identity and Product share of this custody; it does not register another Native
+snapshot or reinspect program support. A terminal receipt distinguishes local
+share disposal from physical Native release. Only final-owner release or drop
+closes the snapshot, Native obligation and program guard. Preparation refusal
+returns the still-exclusive selected operation intact.
+
+Disclosure may retain an admitted copy of that pinned selection; it
+cannot replace it with a fresh head selection. The registry pins the exact
+required row's Ready completion and retained source together under its token,
+version and Idle checks. This pin is storage custody, not currentness proof.
+
+When currentness reaches an unresolved consumed output, the lineage/actor owner
+returns the exact pending settlement with its funded evidence custody. The
+coordinator joins that identity through the existing exact settlement index and
+certifies that prerequisite's own source before retrying its dependent. It must
+not infer the prerequisite from a latest producer result, scan Clean rows, or
+acknowledge an unresolved edge. Missing evidence, unavailable Ready storage and
+resource refusal preserve pending custody. Only the actual accepted consequence
+permits the exact-version acknowledgement. The public A/B/C fixture must prove this
+handoff through real handler `current_output` reads, one caller advance, original
+performed provenance, no new World commit and zero downstream producer contacts.
+
+The native delivery owner counts its actual posting-key lookups, matched
+postings, newly marked fact ordinals, visited vertices and consumed downstream
+edges. A fixed diagnostic report travels in the existing branch image with the
+native commit identity; derived-only image edits preserve that report. Reading
+it requires the exact native root, commit and position, so a later image cannot
+be reported as another native delivery. An unavailable change retains an
+explicit discontinuity posture rather than fabricated per-row counts. Physical
+tree navigation and retained-capacity bounds continue through their existing
+admission owner. An independent native revision oracle over actual created rows
+at 1, 10 and 100 copies checks selected-mark locality; this owner proof does not
+substitute for public producer-contact or the full differential courtroom.
+
 - The boundary check registers `worth-execution` below Relational and Signal.
 - The threading rule covers every production source in `crates/` and
   `workspaces/`. It rejects `rayon`, thread spawning, scoped threads, thread
@@ -1248,22 +1585,524 @@ lease. The Signal and Query lanes remain on the ratchet list.
 
 Phase 7 may trust exact, parallel graph progression below Query.
 
+The phase boundary is a consuming progression: planned work becomes an opaque
+checked epoch selection, preparation consumes that selection and its resource
+grant, and apply consumes prepared proposals with their disjointness proof,
+caller lease and immutable resource summary. Legacy serial work has a separate
+variant. Publication consumes a fully prepared epoch; it does not repeat
+admission or discover a new memory policy after evaluation. Capacity bounds
+come from the storage and packet owners that allocate those structures. Phase 7
+passes its lease into this same boundary and consumes the resulting progress;
+it does not rebuild Signal admission or create a second execution lane.
+
+Each logical stage mints one readiness epoch and carries it in both admitted
+variants. Resource backpressure can split that stage into several publication
+epochs without changing its semantic readiness identity or canonical task
+order. Physical progress still counts the epochs that actually published.
+
+Before evaluator dispatch, Execution reserves the admitted apply and candidate
+maps' memory under their selected leases, including any Serial child and
+checkpoint contexts. Selection accounts for their simultaneous reservations
+inside the request. Candidate slots come from the selected producers' declared
+aspects; their storage bounds come from the reverse index and admitted output
+heap. Canonical output deltas later activate those slots, preserving scoped
+lookup. Consuming prepared-map values retain the reservations through
+settlement. They bind the preparation parent and physical accounting ledger;
+dispatch under a different parent is denied. Dispatch resolves current work,
+cancellation and deadlines and acquires workers then. It does not readmit the
+same memory or retain a stale work allowance. Host contention therefore cannot
+turn a successfully admitted epoch into a later apply or candidate memory denial.
+
+Prospective subscriber settlement distinguishes producer output edits from
+consumer operational edits before callback dispatch. Producer edits may replace
+artifacts and semantic diagnostics; consumer edits may change only topology,
+invalidation state and pending revalidation. Consumer preparation preserves cold
+artifacts and shares immutable warm companions through the node storage owner.
+The prepared mutation surface makes artifact writes unavailable to that role.
+A previously selected consumer becoming a producer requires the incremental
+producer capacity before dispatch; selection alone is insufficient proof.
+
+Node draft capacity comes from the unique selected-node union. Cause preparation
+accounts for selected pages, replacement cells, index paths and the actual peak
+of sequential staging. Request allocation and retained logical custody remain
+separate: shared historical roots do not become new request allocations, while
+their complete custody remains reserved by the retained storage owner. Moving
+between a cause map and its successor vectors releases predecessor scratch only
+when those allocations are actually gone. These changes preserve canonical
+cause handles, atomic publication and the original request limits.
+
+Canonical scope sets and prepared invalidation caches own only their populated
+scope vectors. Empty sets allocate no scope backing. Their public values and
+serialized sequence shape remain unchanged; every nonempty backing and copy is
+admitted at the existing scope or cache owner. Prepared caches move into the
+installed node's scope storage without duplicating strings. Persistent index
+forecasts account for the final shared index structure and one in-flight edit,
+rather than summing a complete retained path for each final page. Node root
+copy-on-write storage is admitted separately from node draft backing and from
+retained logical custody.
+
+QA for this refinement includes the real checked Bank rejected-descendant case
+at 4,096 outputs under its existing 16 MiB preparation limit, independent
+allocation evidence for shared-history cause edits, consumer-to-producer
+capacity upgrades, and retained preparation denial preserving both roots and
+observable artifacts. Bridge, World, WASM and Query consume the same prepared
+graph boundary; this refinement creates no additional execution authority.
+
 ### Phase 5: Exact invalidation
+
+The touched graph becomes the invalidation cause behind the public facade.
+Proofs use real A/B/C producer handlers and their `current_output`
+dependencies. Each open item closes one journey through the public facade
+before machinery for another lands.
 
 - Emit observable-revision touched records from Relational, with old and new
   index keys, and bump an aspect version only when one of its fields changed.
-- Deliver every committed patch envelope to one Query-owned Bridge subscription,
-  and move live queries, conditional operations and workflow coverage onto it.
-- Land the settle-time reverse index with insertion replay, commit-time marking,
-  upstream propagation, selection and lineage marking.
-- Land clean reuse, the input-value reuse key and cutoff, stable republication,
-  the required set and one-call advancement.
+  *Completed.*
+- Deliver every committed patch envelope to one Query-owned Bridge
+  subscription. *Completed.*
+  - Conditional operations read the subscription, so any writer's commit on
+    the branch reaches them. Invalidations an observation consumed are never
+    dropped: after a stale, reordered or failed clock reading they stay on the
+    operation for the next accepted or duplicate observation's batch. Owed
+    invalidations stay bounded: ones Query converges as one keep only the
+    newest commit, a carried dependency that changes differently again
+    escalates to `RefreshAll`, and `RefreshAll` absorbs everything owed. A
+    healed lagging cursor's batch carries `RefreshAll`. *Completed.*
+  - Workflow coverage needs no marking. Running instances pin their definition
+    revision, and a new revision supersedes it only for new starts. Capacity
+    bounds live instances per definition lineage, so it limits new starts. A
+    definition or capacity change therefore leaves nothing to reconsider for a
+    waiting instance, whose pinned basis is never marked; start and migration
+    admission read definition and capacity fresh. The pin covers only facts
+    read from the pinned definition, and lineage capacity is a live fact. No
+    waiting step reads it: the `WorkflowInstanceCapacity` fact is built only at
+    start (`application_attempt/workflow_instance_program.rs:148-155`).
+    *Completed:*
+    - A certification proof holds a waiting instance on its pinned revision
+      across a definition change and a capacity change, while a new start is
+      sent to the new revision and reads the new capacity.
+    - The pinned instance completes at its own revision's node while its
+      lineage is full, so no waiting step reads lineage capacity.
+    - The workflow projections in `invalidation/fact_keys.rs` are deleted.
+      Workflow attempts publish without an output binding, so no output's
+      decision reads definition or capacity truth; one that did has no posting
+      to mark it and verifies in full.
+- Land the settle-time reverse index with insertion replay, commit-time
+  marking, upstream propagation, selection and lineage marking. *Completed.*
+- Close multi-root (diamond) dependencies: one advance follows every consumed
+  output edge into a shared dependent. *Completed:* after both roots change,
+  one caller advance settles the shared dependent reading both new values,
+  each producer contacted once; a dependent whose upstream an earlier advance
+  already refreshed resolves against that Current row instead of waiting on it.
+  - Every chain node's decision reads its upstream values. A root that returns
+    to an earlier value settles the shared dependent in one advance again,
+    reading the value it returned to.
+- Land clean reuse, the input-value reuse key and cutoff, stable
+  republication, the required set and one-call advancement. *Completed:*
+  - One C advance discharges an unchanged-input upstream cutoff without
+    another World commit or C producer contact.
+  - When A publishes a replacement, one C advance follows it to the new World
+    head and keeps C's output entity.
+  - Reusing a retained Ready skips the source-query kernel, and changed input
+    reenters it.
+- Public reuse holds under explicit, independent source and producer resource
+  policies. *Completed.*
+- Retry an interrupted successor on the same caller: the caller's next advance
+  resumes B. *Completed:* a request that loses its authority mid-refresh stops
+  as that request's own Cancelled or TimedOut, and a refresh that stops without
+  publishing returns its row to the Ready it reopened, so the next advance
+  claims B again without contacting the settled root.
+- Consume the required-work queue in production advance, and keep retained
+  custody steady across cycles. *Completed.*
+  - Under alternating input at small retention, a middle consumer that reads
+    its upstream values settles in one advance every cycle. A caller successor
+    whose settlement cannot be retained is refreshed again on the same wave:
+    promotion follows the caller's own refresh line, and the newer refresh
+    takes the older one's custody slot. Custody stays steady and the chain
+    stays live.
+  - At that retention the index keeps every row of the chain. No
+    registration is refused, and every cycle refreshes each row once, from
+    the first:
+    `checkpoint_recovery/required_chain/required_queue/steady_retention.rs`,
+    `the_required_chain_stays_live_for_a_hundred_cycles_at_small_retention`.
+  - While a dependent's demand is open, the upstreams it consumes are
+    required, transitively. A dependent opened after every chain demand
+    closed refreshes its stale, undemanded upstream and settles over it in
+    one advance. A refresh the World supersedes before it publishes gives its
+    occurrence back to the newest Ready it replaced, so the wave refreshes
+    that row again instead of failing the dependent.
+  - A caller whose advance is refused required custody ends the refreshes
+    it carried, so it never waits holding custody. The stop is retryable
+    when one of those refreshes had published, or when another demand holds
+    custody its advance or close moves: a demand open outside the caller's
+    chain, or one open on a chain row that is stale or still refreshing.
+    Otherwise a retry would meet the same custody, so the stop is terminal
+    for that caller and leaves the rows claimable: retention is the caller's
+    budget. A demand refused at its start holds no row yet, so every open
+    demand counts as another one. Every refusal of the shared budget takes
+    this one posture.
+  - Required work first retires closed cached rows nothing holds, and a
+    superseded row retires once its own demands close and the newest row of
+    its occurrence has settled Ready, handing its settlements and
+    dependents' claims to that row. However a refresh stops, a continuation
+    whose row returned to the Ready it reopened ends before the next claim
+    reserves custody, so a retry holds no more custody. A refresh under a
+    new key that its last owner lets go before it publishes gives the
+    occurrence back to the Ready it replaced. At three Ready rows per
+    settled demand, a reopened dependent's first advance stops retryable,
+    and its retry settles beside the unrelated caller's open Ready.
+  - Eviction degrades to Fresh, never to reuse and never to a standing
+    deferral. *Completed:* a row retired for custody drops its settlement
+    postings and keeps its lineage. Only a row holds the claims on what its
+    record consumed and answers its pending edges, so a lineage head that
+    consumed upstream outputs and that no row posts is an evicted one, and
+    the next start of its producer succeeds it. Input cutoff neither reuses
+    nor awaits it, the commit is its successor instead of a replay, and the
+    successor's publication retires its settlement. This is the single rule
+    because every Ready row of a dependent then holds claims on what it
+    consumed: no upstream row is evicted beneath a live dependent, so no
+    pending edge is left without a row to answer it. Evicting the lineage
+    alone would not hold, since the World would replay the old commit into a
+    Ready with no claims. A head that consumed nothing needs no row, and
+    reuses or replays as before. The newest settlement of an occurrence also
+    supersedes those of the rows it replaced, so postings handed to the
+    newest row retire and repeated refreshes hold steady custody. At eight
+    to ten rows, a dependent restarted after its upstream refreshed decides
+    again and settles within eight advances.
+  - Conservative posture: before a dependent's first claim, its upstream
+    owner reads as a demand open outside its chain, so a refusal there
+    offers a retry. This ends once that demand closes.
+  - Retained state follows what live demands hold, not how many generations
+    were published. An unrelated caller demanded every cycle drives the
+    required wave every cycle, and retained invalidation bytes and required
+    custody are equal every cycle at three and at five Ready rows per
+    settled demand. Lineage retirement frees the unpinned generations behind
+    a pinned one, and a row replaced under a refresh leaves the required set
+    when that refresh publishes.
+  - A refresh refused custody while its caller still holds its own reopened
+    stale Ready releases that Ready and goes Fresh; the stop stays retryable
+    for a demand that has not settled. An overwritten middle output settles
+    at seven to ten rows of required custody.
 - Land the full-verification fallback and the equivalence-check mode.
-- Rename the Signal `Touched` observation tier to `Visited`.
+  *Completed.* CI runs the checkpoint courtroom with the equivalence check,
+  the execution observer and World operation control.
+- Close the exact-invalidation courtroom through the public facade, over a
+  neutral model of independent rings: a root and two chained consumers whose
+  decisions read their upstream values. *Completed:*
+  - Locality. One root-input edit costs the same producer contacts,
+    source-query runs, advances and decisions at 1 and 100 rings with every
+    chain demanded, and is delivered exactly. Afterwards every open demand
+    of every ring costs no source query, no producer contact and no decision.
+  - Randomized differential. Fixed seeds drive a root-input edit, a write of
+    a field to its current value, a fetched field the input omits on the
+    next body and on a farther one, an overwrite of a root and of a chain
+    output by a writer that is not its producer, a delete and create under a
+    new or a retired index key with its relations removed and added, a
+    root-input commit racing a started demand, and a checkpoint restore that
+    ends the world and opens the next from its capture. Each commit is
+    followed by no demand, the open chain in a drawn order of its three
+    demands, a fresh ring, or every output twice. The equivalence check runs
+    throughout, every settled output equals the model, the output read
+    through each settlement's own observation equals a fresh read, the
+    second demand of every output reaches no producer, and a failure prints
+    its seed and steps.
+  - One advance settles every demand, whether it starts its row or has
+    settled before, and the courtroom fails on a second one. `Pending` is
+    answered only for work outside the call: another caller's running work,
+    a readiness delivery that has not arrived, or a source the application
+    must disclose again. The outputs of a performed write settle the same
+    way: the root and every level of its dependents in the call that settles
+    the root. A dependent refused its work fails that call with the root
+    published; the next call is refused again and publishes nothing. The
+    facade's `settlement_attempts` and the bank's rounds policy repeat an
+    advance across such waits and nothing else.
+  - Observation capacity. The same sequences run in a branch that admits 16
+    product observations, and no caller is refused one or asked to retry. A
+    demand, a read or a mutation commit the branch has no observation for
+    retires closed cached rows, then releases the sources of performed
+    writes nobody holds, until it is admitted; admission is the one place
+    that reclaims. A released write keeps its obligation, and its output is
+    produced from the source its next demand discloses. A write-only caller
+    cannot fill a branch for good: more writes than the branch admits
+    observations are all performed, and a demand and another write follow.
+    A retired row costs its next demand one source query: a root then reuses
+    its input and reaches no producer, and a chain node is decided again by
+    one producer contact. A released write is no longer re-entered through
+    its receipt: recovery answers `RetainedBasisUnavailable`, and the same
+    request is answered as already committed, not performed again.
+  - Discontinuities. A restored root is readmitted from its checkpoint facts
+    with no source query and no producer contact. A restored consumer carries
+    no upstream edges, so it goes Fresh: it executes once, decides over its
+    upstream again, and never settles over what the checkpoint held. A
+    checkpoint carries producer facts only for an output that consumed no
+    other, under a new fact wire version; facts at an older version are
+    never read, so their row starts Fresh. After more commits than the
+    retained window holds, an unedited chain is verified in full once, by
+    one source query, and reaches no producer. The verified row is marked
+    clean again, and a clean demand moves its row's verified-through
+    position to the position it was checked against: an output demanded
+    inside every window never leaves it and runs no source query of its own
+    over more cycles than the window holds. An edited output executes again.
+    A forked branch settles on its own edit and leaves its parent's outputs
+    untouched.
+  - A restored output takes its producer mode from the first advance whose
+    chain reaches it: its own demand's or a dependent's. Demanding only the
+    last consumer of a restored chain settles the chain.
+  - Checkpoint format 8 has one decoder. Outputs of a format 5 to 7
+    checkpoint restore as descriptive rows: their facts are never read, no
+    tracked read precedes a demand, and the first demand executes once under
+    Preserve.
+  - Republication. A checkpoint restore stays Fresh until verified. A
+    restoration on the runtime that performed the output continues the
+    suspended performed record and seals a new witness; its first reader
+    verifies in full, and a row left without a sealed witness requires full
+    verification. A head without facts yields no candidate. A stable alias
+    is compared by its origin's witness.
+  - An exact selection is over a live output whose row carries a sealed
+    witness and a settlement the input cutoff verifies. The cutoff declines
+    a row still in its checkpoint posture and a settlement the owner cannot
+    place under the selected source: no row, another runtime or branch, or
+    a read before its basis. Selection asks the cutoff's own predicate,
+    `cutoff_declines` in `output_lineage/input_cutoff/verification.rs`, so
+    the two hold one list. A row of this runtime the cutoff declines, or
+    one without a sealed witness, is not exact: its demand selects the
+    Preserve posture, which runs once over the live output and is then
+    reused. A settlement that requires full verification for any other
+    reason is compared in full and reused with no producer contact:
+    `checkpoint_recovery/input_cutoff/unrebased_settlement.rs`. An exact
+    producer that declares no Preserve posture reuses its live output or is
+    refused `MissingApplicableProducer` before any effect: it never
+    executes over a live output. A refresh in a family whose other producer
+    declares Preserve switches to that producer, which runs once over the
+    live output: `checkpoint_recovery/generated_restoration.rs`.
+  - An equal republication of a root clears the marks below it. Demanding
+    the last consumer first settles the chain in one advance each, with one
+    source query, no producer contact and no decision.
+  - A consumer of an equally republished root decides again when the root
+    then changes, instead of waiting forever on the older equal row.
+  - A settled demand that stays open keeps following its output: through a
+    refresh of its equal republication under the same source, through a
+    refresh whose delivery has not arrived when the next commit lands, and
+    through a demand of a newer source that closes or is superseded before
+    it publishes. That demand's row gives the occurrence back to the newest
+    Ready it replaced, for a fresh demand as for a refresh. Rows of one
+    source order by their refresh, so the refreshed alias is the newest, in
+    whichever order the held demands advance. A never-settled demand that
+    joined the undelivered refresh ends that row when it stops, and the
+    settled holder moves on from the ended row with no predecessor,
+    whichever of the two advances first:
+    `exact_invalidation/undelivered_refresh.rs`,
+    `a_never_settled_stop_leaves_an_undelivered_refresh_to_its_settled_holder`.
+  - A held chain left unadvanced while its root is edited, until the window
+    no longer retains that edit's mark, follows the edit in one advance per
+    demand, in any order. A settled demand follows its output to the newly
+    selected source inside the same advance, which reads the retained source
+    once more.
+  - A demand that never settled stops `Superseded` when a commit replaces
+    its source; its caller demands again. The stop ends only that demand's
+    interest: a committed Ready stays for its settled holders, which follow
+    their output whether they advance before or after the stop.
+  - A native Relational writer that is not Query is delivered exactly and
+    marks what the same write through a declared operation marks, for a root
+    input and for a chain output. CI's featured run drives it.
+  - A demand at a retained observation older than the head ignores later
+    commits. It settles free on the output current at its own snapshot,
+    before and after the head settles on a later edit, holds no registry row
+    and decides nothing; the head demand settles on the new output. It stops
+    `Superseded` only when no retained output verifies current at its
+    snapshot. Output history below the retained window hands a reader the
+    older pinned generation in place of a freed one; that reader verifies it
+    in full at its own snapshot and never settles on it.
+  - Rules the neutral fixture cannot reach are proven at their owner. Paths
+    are under `worth-query-execution/src/domain_computation/primary_graph`
+    unless they name a crate.
+    - Delivery overflow. A commit whose marking exceeds the ceiling
+      publishes under a new delivery epoch; every reader then verifies in
+      full, and earlier snapshots stay clean:
+      `output_lineage/invalidation/native_journey_tests/marking_ceiling.rs`,
+      `matched_fan_out_above_the_ceiling_publishes_and_readers_fully_verify`.
+      A fixture fact has at most three readers, and a ceiling that low also
+      refuses settlement registration.
+    - Undeclared change. A commit delivered without touch keys starts the
+      same epoch: readers registered before it verify in full, an earlier
+      snapshot stays clean, and a reader registered after it is exact:
+      `output_lineage/invalidation/native_journey_tests/undeclared_change.rs`,
+      `a_commit_delivered_without_touch_keys_starts_a_fully_verified_epoch`.
+      The proof loses the keys of a commit whose selectors exceed
+      preparation memory. A Relational schema transition, which changes an
+      aspect contract revision, commits without touches and reaches delivery
+      the same way; the installed schema fixes the revision, and Query
+      issues no schema transition.
+    - Program adoption preserves settled outputs. A row is keyed by producer
+      identity and source epoch, and a runtime installs one producer under
+      an identity, so two programs cannot supply different producer code
+      under one row key. A clean output settled before the adoption answers
+      a demand under the adopted program with its original commit and no
+      producer contact, and input cutoff keys reuse on the installed
+      producer edition, with no program:
+      `worth-query-certification/tests/application_graph/adoption/live_outputs.rs`,
+      `a_clean_output_settled_before_adoption_answers_under_the_adopted_program`.
+      A changed source is produced by the adopted program under its own
+      commit, and the carried instance refuses the assessment settled before
+      the change: `a_changed_source_is_produced_by_the_adopted_program`.
+      Adoption commits as an ordinary transaction with exact touches, and a
+      demand typed on a program its branch no longer runs stops
+      `PublicationStale`. The courtroom fixture installs one program.
+    - Retained capacity. The versions of a branch's marks are persistent
+      and share every node their own edits did not copy, so a reservation
+      follows the allocation that owns the bytes. A version reserves what
+      its edits copied, never more than its whole index, and the root
+      reserves what its oldest version shares with versions that have left.
+      A window of deliveries over one row holds that row once, released
+      with the last version that held it:
+      `output_lineage/invalidation/native_journey_tests/shared_versions.rs`,
+      `versions_sharing_a_row_reserve_it_once_and_release_it_with_the_last`.
+      No history reserves more than one whole index per retained version.
+      An index with no room for a registration, or for the delivery of a
+      producer's own commit, stops that advance `RetentionBudgetExceeded`.
+      Retention is the budget of the advance that met it, never the
+      producer's failure, so the row stays claimable. The stop is terminal
+      for its caller, as retention is wherever no advance or close of a
+      demand frees the room: index room returns as later commits move the
+      window, and a later claim of the row then settles:
+      `checkpoint_recovery/required_chain/required_queue/exhausted_index.rs`,
+      `an_index_too_small_for_a_commit_stops_the_advance_for_retention`.
+    - Row lifetime. The lineage owns it. Every publication retires the row
+      of the generation its record displaces, whether or not a demand
+      manages it, and the lineage never names that generation again, so the
+      invalidation owner keeps a released row it could not retire and
+      retries it at the next release:
+      `output_lineage/invalidation/native_journey_tests/displaced_generation.rs`,
+      `a_publication_without_prerequisites_retires_the_row_its_generation_displaces`
+      and `a_release_the_owner_could_not_admit_retires_at_the_next_release`.
+      Every courtroom publication belongs to a demand. The public consumer
+      journey commits program actions that none manages, and CI runs it
+      beside the courtroom.
+    - Branch merge. Product history is single-rooted and never merges, so
+      no output demand meets one. A native Relational merge emits exact
+      touches: `worth-relational/src/tests/history/milestone_7d_phase_d/merge_descriptive_touches.rs`,
+      `native_merge_touches_only_changed_revision_and_both_index_membership_keys`.
+      The facade offers no merge.
+    - Un-indexed predicate. It is a root-path guard, witnessed by field and
+      adjacency facts: `tests/application_query/root_guard_basis.rs`,
+      `root_path_guard_reads_its_pinned_truth_version`, and
+      `tests/application_query/root_selection/result_set.rs`,
+      `empty_path_union_stales_when_a_matching_edge_is_inserted`. An output
+      demand's source is one owner-paired row selected by an indexed
+      equality, so the fixture declares no guard.
+    - Stored absence and selection facts. Each posts under the old and the
+      new index key and the absent field's address:
+      `output_lineage/invalidation/fact_keys/tests.rs`,
+      `indexed_selection_matches_old_key_and_definition_touches` and
+      `absent_field_and_native_revision_share_exact_addresses_after_admission`;
+      `tests/application_query/root_guard_basis.rs`,
+      `empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match`.
+      An output demand stores single-row source witnesses only; selection
+      facts come from workflow discovery, and the fixture declares none.
+  - Accepted postures:
+    - A fresh demand on a forked branch executes its producers again. A row
+      is keyed by its branch incarnation, so the fork has no row and starts
+      Fresh; values agree.
+    - A chain node's written value does not depend on what it consumed: its
+      handler writes back the field its own source query reads. The
+      courtroom varies what a consumer decides over by overwriting its
+      upstream output.
+    - A consumer that executes and writes an equal value does not cut off
+      its dependents. Equality is certified by input cutoff only.
+    - No public observation counts fact checks or fallback events. The
+      courtroom reads source-query runs and producer contacts.
+  - Stated limitations:
+    - A version pinned without its root past the window is covered only for
+      its own copies; its holders are call-scoped or certification-only.
+    - The registry index can lag the owner after an unmanaged retirement
+      until the next release: a late free, never a wrong answer, since the
+      owner answers `MissingSettlement`, which forces full verification.
+    - Replacing a root's reservation for what its oldest version shares
+      reserves the new amount before the old one frees, so a delivery
+      transiently needs up to one index of free room. A refusal there
+      defers the writer.
+    - `RetiredOutputEntity` is not an exact fact key: a row that decided on
+      one verifies in full under exact invalidation.
+    - Republication does not retire the displaced generation's mark row.
+    - A same-runtime restoration whose settlement could not be registered
+      is not verified in full and reused: its demand runs the family's
+      Preserve producer once. In a family that installs no Preserve producer
+      that demand is refused `MissingApplicableProducer`, and the refusal
+      persists while the output lives.
+    - A commit whose facts could not be rebased keeps them as its handler
+      read them. A field value read that way has no native revision to
+      compare, so full verification of that settlement answers
+      `RetainedBasisUnavailable`, first on the demand that committed it.
+      The fixture reaches a row verified in full through a certification
+      control that keeps the rebased facts under the requirement.
+    - Query's own delegation activation reads nothing about the child
+      grant, so a second activation for an existing child id commits. The
+      bank handler reads the child's absence. The platform fix changes a
+      declared contract and is tracked as its own task.
+    - An exact selection reports its producer's first declared posture, also
+      for a producer that declares Preserve and then runs over the live
+      output. The reported posture selects no behavior.
+    - A checkpoint-restored output that is suspended and restored executes
+      once under Preserve, where a full verification would reuse it.
+- Checkpoint readmission rebuilds the original complete Native output-aspect
+  witness from captured facts. *Completed:*
+  - It verifies those original revisions and supported producer facts against
+    the selected World before creating restored Ready authority.
+  - Missing, unsupported or changed evidence follows Fresh, and admission
+    exhaustion keeps its resource denial.
+  - Public Current may consume the verified restored witness, but fact-only
+    restoration is not enough.
+  - The owner proof changes output content while a producer field stays
+    current, and the combined verifier must reject the old witness.
+- An admitted demand keeps the immutable producer entry chosen by the existing
+  selector. *Completed:*
+  - Advancement consumes that entry after the exact Interest-to-Ready join, with
+    no second search by its copied name.
+  - Successor transfer is admitted only after the actual successor passes its
+    joins, and a Clean result pays its scalar contact reset.
+  - The displaced certification methods and the conversion-only cue adapter are
+    removed.
+  - Fresh request, principal and policy admission stay on the production path.
+- Source fact preparation resolves each observed field's installed contract
+  once. *Completed:*
+  - A private prepared materialization carries the validated field
+    observations and admitted storage into conversion, and conversion consumes
+    that proof without another layout lookup.
+  - Typed native locators keep first-occurrence fact order and
+    duplicate-conflict semantics, and Work follows each locator's own
+    initialized comparison bytes.
+  - Publication witness preparation stays under the same request admission.
+- Rename the Signal `Touched` observation tier to `Visited`, with one
+  spelling: no serde alias and no decoding of the pre-rename policy schema.
+  *Completed.*
 - Restore the public definition, rules and vocabulary in the same change, and
-  point the 9.17.6 plan here.
+  point the 9.17.6 plan here. *Completed:* the rules are in
+  [How WORTH Works §10.5](../../docs/how-it-works.md#105-marking-and-currentness)
+  and the glossary.
 - A neutral application proves the exact-invalidation courtroom with operation
-  counts, including the randomized differential test.
+  counts, locality evidence and the randomized differential test.
+  *Completed:* the courtroom above. Its oracle and seeded sequences run
+  through one neutral fixture, the topology entry.
+
+Work admission and capacity follow these rules. *Completed.*
+
+- Work admission counts named operations and bounded comparison or
+  initialized-copy payloads. It does not claim to count machine instructions.
+  Constant state transitions use their owner's fixed operation granule.
+- A borrowed carrier does not pay for hypothetical moves. Destruction visits
+  initialized elements, not unused Vec capacity.
+- Conditional continuation installation reserves its maximum on the original
+  request meter before Fresh effects and settles only the installation it
+  reached. The other branches refund that reservation without refunding
+  nested work.
+- Prepared and retained memory stay separate capacity claims, each with its
+  actual lifetime.
+- Static diagnostic subjects are borrowed and need no speculative String
+  allocation.
+- The contact fixture's 4,096 producer allowance stays artifact policy. Source
+  currentness has its own host-bounded allowance. Exact exhaustion and locality
+  evidence establish the accounting and scaling contract, not a constant fitted
+  to a fixture.
 
 The next phase may trust that the touched graph alone decides what recomputes.
 

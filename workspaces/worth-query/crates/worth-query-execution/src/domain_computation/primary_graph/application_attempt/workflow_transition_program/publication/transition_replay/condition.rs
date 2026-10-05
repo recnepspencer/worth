@@ -121,11 +121,11 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
             };
             if observed.runtime_authority != runtime.runtime.authority_identity().as_u64()
                 || observed.schema_binding != runtime.installed_schema().binding_identity()
-                || observed.query_identifier != operand.query
+                || observed.query_identifier.as_str() != operand.query
                 || observed.query_identity != *expected_query_identity
                 || observed.source_root() != admission.scope_entity_id()
                 || observed.selected_product_occurrence() != Some(selected_occurrence)
-                || &observed.branch != admission.graph_work_branch()
+                || observed.branch.as_ref() != admission.graph_work_branch()
             {
                 return Ok(None);
             }

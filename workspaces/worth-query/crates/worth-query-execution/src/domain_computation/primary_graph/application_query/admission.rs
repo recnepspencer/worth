@@ -16,8 +16,14 @@ mod denial;
 mod finish;
 mod governed_access;
 mod live_readmission;
+mod permission;
+mod source_readmission;
 mod work_limit;
 pub(in crate::domain_computation::primary_graph::application_query) use governed_access::prepare_governed_access;
+pub(in crate::domain_computation::primary_graph::application_query) use permission::SelectedIssuedAccessRoot;
+pub(in crate::domain_computation::primary_graph) use permission::{
+    FreshQueryPermissionStop, PreparedApplicationQueryPermission,
+};
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where

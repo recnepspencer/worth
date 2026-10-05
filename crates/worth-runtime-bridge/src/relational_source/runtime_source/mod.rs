@@ -7,6 +7,7 @@ use worth_relational::facade::runtime::RelationalRuntime;
 mod branch_basis;
 mod branch_head_bindings;
 mod branch_heads;
+mod canonical_subscription;
 mod committed_patches;
 mod continuity_lineage;
 mod observation_bindings;
@@ -18,6 +19,9 @@ mod source_profile;
 
 pub use branch_head_bindings::{
     RelationalBridgeBranchHeadLease, RelationalBridgeBranchHeadReleaseReceipt,
+};
+pub use canonical_subscription::{
+    PendingRelationalBridgeCanonicalSubscription, RelationalBridgeCanonicalSubscription,
 };
 pub use observation_bindings::{
     RelationalBridgeObservationLease, RelationalBridgeObservationReleaseReceipt,

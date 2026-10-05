@@ -28,12 +28,30 @@ impl SignalGraph {
         previous_output: Option<&OutputIdentity>,
         previous_continuity: Option<&ArtifactContinuityToken>,
         output_equivalence: OutputEquivalencePolicy,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<EffectComparison, SignalError> {
-        // The contract decision walks and normalizes only the fixed aspect
-        // domain (8 or 32 slots), never a provider-sized collection.
+        // Admit the fixed scan before observing its filtered construction
+        // width. Only changed produced aspects enter the canonical array.
         let aspects = crate::data::aspect::MAX_ASPECTS;
-        work.reserve(Some(8 * aspects * aspects + 8 * aspects))?;
+        work.reserve(Some(4 * aspects))?;
+        let previous = self.node_aspect_version(effect.operational.node)?;
+        let produced = self
+            .get_contract(effect.operational.node)?
+            .semantics
+            .produces;
+        let changed = previous
+            .slots()
+            .iter()
+            .zip(effect.operational.aspect_version.slots())
+            .enumerate()
+            .filter(|(index, (before, after))| {
+                before != after
+                    && produced.contains(crate::data::aspect::AspectMask::from_aspect(
+                        crate::data::aspect::Aspect::new(*index as u8),
+                    ))
+            })
+            .count();
+        work.reserve(crate::data::proof::invalidation::output_commit::NonEmptyCanonicalAspectChangeSet::construction_work_bound(changed))?;
         for token in [
             effect.output_identity().map(OutputIdentity::as_str),
             effect
@@ -46,9 +64,9 @@ impl SignalGraph {
             work.reserve(token.len().checked_mul(2).and_then(|n| n.checked_add(1)))?;
         }
         crate::data::proof::invalidation::output_commit::SemanticOutputCommitDecision::validate_declared_change(
-            self.node_aspect_version(effect.operational.node)?,
+            previous,
             effect.operational.aspect_version,
-            self.get_contract(effect.operational.node)?.semantics.produces,
+            produced,
             effect.operational.output_change == crate::data::output::OutputChange::Unchanged,
         )
         .map_err(|violation| {
@@ -99,7 +117,7 @@ impl SignalGraph {
         previous_output: Option<&OutputIdentity>,
         previous_continuity: Option<&ArtifactContinuityToken>,
         comparison: EffectComparison,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<Option<HotArtifactWrite>, SignalError> {
         if !verdict_retains_runtime_artifact(&effect.operational.verdict) {
             return Ok(None);
@@ -180,13 +198,12 @@ impl SignalGraph {
         Ok(write)
     }
 
-    #[cfg_attr(not(feature = "parallel"), allow(dead_code))]
     pub(crate) fn build_apply_commit_packet(
         &self,
         effect: EvaluationEffect,
         output_equivalence: OutputEquivalencePolicy,
         defer_snapshot_commit: bool,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<ApplyCommitPacket, SignalError> {
         let stored = if effect.previous_artifact_warm().is_none() {
             self.node_runtime_artifact_output_tokens(effect.operational.node)?

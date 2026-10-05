@@ -155,6 +155,61 @@ pub struct ApplicationQueryBindingDescriptor {
 }
 
 impl ApplicationQueryBindingDescriptor {
+    /// Initialized text and fixed field visits for comparing two installed
+    /// binding meanings. Reading these widths is allocation free; an admitted
+    /// caller pays the fixed measurement visits before calling this helper.
+    pub fn comparison_work_bound(&self, other: &Self) -> Option<usize> {
+        fn text_width(descriptor: &ApplicationQueryBindingDescriptor) -> Option<usize> {
+            let scope = descriptor.scope.field();
+            let principal = descriptor.principal();
+            let identity = principal.principal_identity_binding();
+            let texts = [
+                descriptor.identity(),
+                descriptor.input_identity().as_str(),
+                descriptor.query_name(),
+                descriptor.query_identity().as_str(),
+                descriptor.parameter_identity().as_str(),
+                descriptor.result_identity().as_str(),
+                descriptor.scope_identity().as_str(),
+                scope.locus().entity(),
+                scope.locus().aspect(),
+                scope.locus().field(),
+                scope.binding_identity().as_str(),
+                principal.name(),
+                principal.mapping_entity(),
+                principal.identity_aspect(),
+                principal.identity_field(),
+                principal.status_aspect(),
+                principal.status_field(),
+                principal.target_relation(),
+                principal.principal_entity(),
+                principal.principal_identity_aspect(),
+                principal.principal_identity_field(),
+                principal.principal_identity_value_type(),
+                identity.locus().entity(),
+                identity.locus().aspect(),
+                identity.locus().field(),
+                identity.binding_identity().as_str(),
+            ];
+            let mut width = 0usize;
+            for text in texts {
+                width = width.checked_add(text.len())?;
+            }
+            for optional in [
+                scope.unit().map(|value| value.as_str()),
+                scope.frame().map(|value| value.as_str()),
+                identity.unit().map(|value| value.as_str()),
+                identity.frame().map(|value| value.as_str()),
+            ] {
+                width = width.checked_add(optional.unwrap_or("").len())?;
+            }
+            Some(width)
+        }
+        text_width(self)?
+            .checked_add(text_width(other)?)?
+            .checked_add(64)
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn new<InputBinding, Query>(
         identity: &'static str,

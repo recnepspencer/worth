@@ -36,6 +36,7 @@ mod canonicalization;
 pub mod canonicalization_api;
 mod compatibility;
 mod diagnostics;
+mod execution;
 pub mod expression_api;
 mod expressions;
 pub mod facade;

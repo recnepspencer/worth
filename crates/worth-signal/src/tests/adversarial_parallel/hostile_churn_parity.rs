@@ -1,116 +1,102 @@
-use crate::facade::{AspectVersion, ChangedRegion, EvaluationContext, NodeEvaluationResult};
+use crate::facade::{
+    ChangedRegion, CheckedEvaluationContext, EvaluationContext, NodeEvaluationResult, NodeId,
+    SignalError,
+};
 use crate::presentation::harness::{signal_parity_suite, SignalProfileCatalog, SignalScenario};
+use crate::tests::leased_execution::support::{request, shared_authority};
 use crate::tests::support::{version_ab, ASPECT_A};
 use worth_harness::facade::{ComparisonMode, ComparisonProfile, ExecutionRequest};
 
-#[test]
-fn harness_parity_holds_for_branchy_partitioned_output_identity_graph() {
-    let mut scenario = SignalScenario::new("adversarial-branchy-parity");
-    let source = scenario.build_node("source", |graph| graph.node().output_identity().build());
-    let left = scenario.build_node("left", |graph| graph.node().partitioned_output().build());
-    let right = scenario.build_node("right", |graph| graph.node().partitioned_output().build());
-    let _dependent = scenario.node("dependent");
-    scenario
-        .partition_detail_dependency("left", "source", ASPECT_A, "wing", "rib-a")
-        .unwrap();
-    scenario
-        .partition_detail_dependency("right", "source", ASPECT_A, "wing", "rib-b")
-        .unwrap();
-    scenario.dependency("dependent", "left", ASPECT_A).unwrap();
-    scenario.dependency("dependent", "right", ASPECT_A).unwrap();
+use super::executor_policy::bounded_contract;
 
-    let fixture = scenario
-        .observe("dependent")
-        .with_evaluator(move |ctx: &mut EvaluationContext<'_, ()>| {
-            let node = ctx.node();
-            let result = if node == source {
-                ctx.finish(
-                    NodeEvaluationResult::from_version(version_ab(1, 0))
-                        .with_output_identity("wing-artifact")
-                        .with_changed_region(ChangedRegion::new("wing").with_detail("rib-a")),
-                )
-            } else if node == left || node == right {
-                let version = ctx.read_aspect_version(source, ASPECT_A)?;
-                ctx.finish(NodeEvaluationResult::from_version(version))
-            } else {
-                let left_v = ctx.read_aspect_version(left, ASPECT_A)?;
-                let right_v = ctx.read_aspect_version(right, ASPECT_A)?;
-                ctx.finish(NodeEvaluationResult::from_version(
-                    AspectVersion::from_updates([(
-                        ASPECT_A,
-                        left_v.get(ASPECT_A) + right_v.get(ASPECT_A),
-                    )]),
-                ))
-            };
-            Ok(result)
-        })
-        .fixture()
-        .unwrap();
-
-    let request = ExecutionRequest::target("observe-dependent", "dependent".to_string());
-    let report = signal_parity_suite(
-        fixture,
-        request,
-        SignalProfileCatalog::serial("serial-baseline"),
-    )
-    .comparison_profile(ComparisonProfile {
-        mode: ComparisonMode::Semantic,
-        include_extensions: false,
-        numeric_tolerance: None,
+fn branch_output(
+    node: NodeId,
+    source: NodeId,
+    branches: &[NodeId],
+    mut read: impl FnMut(NodeId) -> Result<u64, SignalError>,
+) -> Result<NodeEvaluationResult, SignalError> {
+    let value = if node == source {
+        1
+    } else if branches.contains(&node) {
+        read(source)?
+    } else {
+        branches.iter().try_fold(0_u64, |sum, &branch| {
+            Ok::<_, SignalError>(sum + read(branch)?)
+        })?
+    };
+    let result = NodeEvaluationResult::from_version(version_ab(value, 0));
+    Ok(if node == source {
+        result
+            .with_output_identity("wing-artifact")
+            .with_changed_region(ChangedRegion::new("wing").with_detail("rib-a"))
+    } else {
+        result
     })
-    .candidates([
-        SignalProfileCatalog::staged_parallel("staged-parallel-candidate"),
-        SignalProfileCatalog::full_parallel("full-parallel-candidate"),
-    ])
-    .compare()
-    .unwrap();
-
-    assert!(report.matched);
 }
 
-#[test]
-#[ignore = "stress coverage for wide-graph full-parallel parity loops"]
-fn stress_repeated_parallel_parity_on_wide_branch_graph() {
-    let mut scenario = SignalScenario::new("stress-parity");
-    let source = scenario.node("source");
-    let mids: Vec<_> = (0..24)
-        .map(|index| scenario.node(format!("mid-{index}")))
-        .collect();
-    let _target = scenario.node("target");
-    for (index, _) in mids.iter().enumerate() {
+fn scenario(width: usize) -> SignalScenario {
+    let mut scenario = SignalScenario::new("adversarial-branch-parity");
+    let source = scenario.build_node("source", |graph| {
+        graph
+            .node()
+            .with_contract(bounded_contract(&[]))
+            .output_identity()
+            .build()
+    });
+    let branches = (0..width)
+        .map(|index| {
+            scenario.build_node(format!("branch-{index}"), |graph| {
+                graph
+                    .node()
+                    .with_contract(bounded_contract(&[source]))
+                    .partitioned_output()
+                    .build()
+            })
+        })
+        .collect::<Vec<_>>();
+    scenario.build_node("target", |graph| {
+        graph
+            .node()
+            .with_contract(bounded_contract(&branches))
+            .build()
+    });
+    for index in 0..width {
         scenario
-            .dependency(&format!("mid-{index}"), "source", ASPECT_A)
+            .partition_detail_dependency(
+                &format!("branch-{index}"),
+                "source",
+                ASPECT_A,
+                "wing",
+                format!("rib-{index}"),
+            )
             .unwrap();
         scenario
-            .dependency("target", &format!("mid-{index}"), ASPECT_A)
+            .dependency("target", &format!("branch-{index}"), ASPECT_A)
             .unwrap();
     }
-
-    let fixture = scenario
-        .observe("target")
-        .with_evaluator(move |ctx: &mut EvaluationContext<'_, ()>| {
-            let node = ctx.node();
-            let result = if node == source {
-                ctx.finish(version_ab(1, 0))
-            } else if mids.contains(&node) {
-                let version = ctx.read_aspect_version(source, ASPECT_A)?;
-                ctx.finish(NodeEvaluationResult::from_version(version))
-            } else {
-                let mut total = 0_u64;
-                for &mid in &mids {
-                    total += ctx.read_aspect_version(mid, ASPECT_A)?.get(ASPECT_A);
-                }
-                ctx.finish(NodeEvaluationResult::from_version(
-                    AspectVersion::from_updates([(ASPECT_A, total)]),
-                ))
-            };
-            Ok(result)
+    let serial_branches = branches.clone();
+    scenario.set_evaluator(move |ctx: &mut EvaluationContext<'_, ()>| {
+        branch_output(ctx.node(), source, &serial_branches, |node| {
+            ctx.read_aspect_version(node, ASPECT_A)
+                .map(|version| version.get(ASPECT_A))
         })
-        .fixture()
-        .unwrap();
+    });
+    scenario.set_checked_evaluator(
+        move |ctx: &mut CheckedEvaluationContext<'_, '_, '_, '_, ()>| {
+            branch_output(ctx.node(), source, &branches, |node| {
+                ctx.read(node, ASPECT_A)
+            })
+        },
+    );
+    scenario
+        .observe("target")
+        .with_execution_authority(shared_authority().clone(), request(4, 2_000_000))
+}
 
-    let request = ExecutionRequest::target("target", "target".to_string());
-    for _ in 0..25 {
+fn compare_scenario(width: usize, repetitions: usize) {
+    let fixture = scenario(width).fixture().unwrap();
+    let request = ExecutionRequest::target("observe-target", "target".to_string());
+    for _ in 0..repetitions {
         let report = signal_parity_suite(
             fixture.clone(),
             request.clone(),
@@ -122,11 +108,22 @@ fn stress_repeated_parallel_parity_on_wide_branch_graph() {
             numeric_tolerance: None,
         })
         .candidates([
-            SignalProfileCatalog::staged_parallel("staged-parallel-candidate"),
-            SignalProfileCatalog::full_parallel("full-parallel-candidate"),
+            SignalProfileCatalog::staged_parallel("checked-staged"),
+            SignalProfileCatalog::full_parallel("checked-full"),
         ])
         .compare()
         .unwrap();
         assert!(report.matched);
     }
+}
+
+#[test]
+fn harness_parity_holds_for_branchy_partitioned_output_identity_graph() {
+    compare_scenario(2, 1);
+}
+
+#[test]
+#[ignore = "stress coverage for wide-graph leased parity loops"]
+fn stress_repeated_parallel_parity_on_wide_branch_graph() {
+    compare_scenario(24, 25);
 }

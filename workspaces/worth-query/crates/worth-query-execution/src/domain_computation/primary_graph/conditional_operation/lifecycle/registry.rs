@@ -11,7 +11,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryConditionalOpe
     Schema,
 > {
     installed: Arc<BTreeMap<String, WorthQueryConditionalOperationCell<Schema>>>,
-    route_publication: Arc<std::sync::Mutex<()>>,
     marker: std::marker::PhantomData<fn() -> Schema>,
 }
 
@@ -19,7 +18,6 @@ impl<Schema> Default for WorthQueryConditionalOperationRegistry<Schema> {
     fn default() -> Self {
         Self {
             installed: Arc::new(BTreeMap::new()),
-            route_publication: Arc::default(),
             marker: std::marker::PhantomData,
         }
     }
@@ -31,7 +29,6 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
     pub(in crate::domain_computation::primary_graph) fn snapshot(&self) -> Self {
         Self {
             installed: Arc::clone(&self.installed),
-            route_publication: Arc::clone(&self.route_publication),
             marker: std::marker::PhantomData,
         }
     }
@@ -125,19 +122,17 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
     pub(in crate::domain_computation::primary_graph) fn apply_derived_runtime_reinstallation(
         &self,
         mut prepared: BTreeMap<String, super::WorthQueryPreparedConditionalRuntimeBinding>,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     ) {
         for (identity, operation) in self.installed.iter() {
-            let mut installed = operation.lock_operation();
-            installed.apply_derived_runtime_reinstallation(
-                prepared
-                    .remove(identity)
-                    .expect("prepared conditional inventory matches installed registry"),
-            );
-            operation.publish_routes(installed.as_ref());
+            operation
+                .lock_operation()
+                .apply_derived_runtime_reinstallation(
+                    prepared
+                        .remove(identity)
+                        .expect("prepared conditional inventory matches installed registry"),
+                );
         }
         assert!(prepared.is_empty());
-        self.synchronize_commit_routes(runtime);
     }
 
     pub(in crate::domain_computation::primary_graph) fn reconcile_prepared_runtime_reinstallation(
@@ -189,39 +184,9 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
         >,
     ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
         for cell in self.installed.values() {
-            let mut operation = cell.lock_operation();
-            operation.reconstruct(runtime)?;
-            cell.publish_routes(operation.as_ref());
+            cell.lock_operation().reconstruct(runtime)?;
         }
-        self.synchronize_commit_routes(runtime);
         Ok(())
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn synchronize_commit_routes(
-        &self,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    ) {
-        let _publication = self
-            .route_publication
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let mut records = std::collections::BTreeSet::new();
-        let mut whole_graph = false;
-        let mut bootstrap_identities = Vec::new();
-        for (identity, operation) in self.installed.iter() {
-            let (operation_records, operation_whole_graph, operation_bootstrap) =
-                operation.commit_routes();
-            records.extend(operation_records);
-            whole_graph |= operation_whole_graph;
-            if operation_bootstrap {
-                bootstrap_identities.push(identity.clone());
-            }
-        }
-        runtime.primary_provider.replace_conditional_commit_routes(
-            records,
-            whole_graph,
-            bootstrap_identities,
-        );
     }
 
     pub(in crate::domain_computation::primary_graph) fn reconcile_all(

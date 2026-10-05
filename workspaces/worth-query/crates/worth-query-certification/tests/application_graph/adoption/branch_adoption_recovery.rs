@@ -1,11 +1,16 @@
 //! Exact World recovery for a branch adoption whose Relational effect already exists.
 
 use worth_query_host::facade::application_entry::{
+    WorthQueryApplicationProgramAdoptionPreparationDenial,
     WorthQueryApplicationProgramAdoptionRecoveryFailure, WorthQueryApplicationRequestExt,
     WorthQueryBranchAdoptionPublicationOutcome, WorthQueryBranchAdoptionRecoveryOutcome,
+    WorthQueryPreparedBranchAdoption,
 };
 use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
+use worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial;
 use worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionRecoveryDenial;
+use worth_query_host::facade::runtime::NoEffectCause;
+use worth_relational::facade::mvcc::{CompanionPreflightStop, RelationalPublicationDeferred};
 
 use crate::document_retention_model::host::publish_on_first_program;
 use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
@@ -245,10 +250,30 @@ fn two_same_head_adoptions_report_one_performed_world_transition() {
             .programs()
             .adopt(&requirements)
             .prepare(64)
-            .expect("both attempts prepare against the same head")
     };
-    let first = prepare();
-    let second = prepare();
+    // A same-head publisher meeting the winner mid-flight is told to retry
+    // unchanged. Publishing consumes the prepared attempt, so the retry
+    // prepares again from the same requirements once the winner has settled,
+    // and that preparation sees the moved product.
+    let settled = (std::sync::Mutex::new(false), std::sync::Condvar::new());
+    let publish = |mut attempt: WorthQueryPreparedBranchAdoption| {
+        for _ in 0..SAME_HEAD_RETRIES {
+            let outcome = attempt.publish();
+            if let WorthQueryBranchAdoptionPublicationOutcome::NoEffect(no_effect) = &outcome {
+                if winner_in_flight(no_effect.cause()) {
+                    await_settled(&settled);
+                    attempt = prepare()?;
+                    continue;
+                }
+            }
+            mark_settled(&settled);
+            return Ok(outcome);
+        }
+        panic!("a same-head loser observes the stale head within {SAME_HEAD_RETRIES} retries")
+    };
+    let publish = &publish;
+    let first = prepare().expect("both attempts prepare against the same head");
+    let second = prepare().expect("both attempts prepare against the same head");
     let (first_start, first_ready) = std::sync::mpsc::sync_channel(1);
     let (second_start, second_ready) = std::sync::mpsc::sync_channel(1);
 
@@ -257,13 +282,13 @@ fn two_same_head_adoptions_report_one_performed_world_transition() {
             first_ready
                 .recv_timeout(std::time::Duration::from_secs(10))
                 .expect("the first prepared adoption receives its bounded start signal");
-            first.publish()
+            publish(first)
         });
         let second = threads.spawn(move || {
             second_ready
                 .recv_timeout(std::time::Duration::from_secs(10))
                 .expect("the second prepared adoption receives its bounded start signal");
-            second.publish()
+            publish(second)
         });
         first_start
             .send(())
@@ -277,6 +302,17 @@ fn two_same_head_adoptions_report_one_performed_world_transition() {
     let mut performed = 0;
     let mut retained = 0;
     for outcome in [first, second] {
+        let outcome = match outcome {
+            Ok(outcome) => outcome,
+            Err(denial) => {
+                retained += 1;
+                assert!(
+                    retry_saw_moved_head(&denial),
+                    "a retry prepared after the winner sees the stale head: {denial:?}"
+                );
+                continue;
+            }
+        };
         match outcome {
             WorthQueryBranchAdoptionPublicationOutcome::Performed(adoption) => {
                 performed += 1;
@@ -294,10 +330,7 @@ fn two_same_head_adoptions_report_one_performed_world_transition() {
             }
             WorthQueryBranchAdoptionPublicationOutcome::NoEffect(no_effect) => {
                 retained += 1;
-                assert_eq!(
-                    no_effect.cause(),
-                    worth_query_host::facade::runtime::NoEffectCause::StaleExpectedProductHead
-                );
+                assert_eq!(no_effect.cause(), NoEffectCause::StaleExpectedProductHead);
             }
         }
     }
@@ -320,4 +353,46 @@ fn two_same_head_adoptions_report_one_performed_world_transition() {
         P1_VALUE,
         "the post-race World must expose one coherent component combination"
     );
+}
+
+const SAME_HEAD_RETRIES: usize = 64;
+
+/// The only deferral a same-head loser may see: the winner holds the
+/// companion reservation while the expected head is still unchanged.
+fn winner_in_flight(cause: NoEffectCause) -> bool {
+    cause
+        == NoEffectCause::RelationalDeferred(RelationalPublicationDeferred::CompanionPreflight(
+            CompanionPreflightStop::TopologyPending,
+        ))
+}
+
+type Settled = (std::sync::Mutex<bool>, std::sync::Condvar);
+
+fn mark_settled((done, changed): &Settled) {
+    *done.lock().unwrap() = true;
+    changed.notify_all();
+}
+
+fn await_settled((done, changed): &Settled) {
+    let (done, wait) = changed
+        .wait_timeout_while(
+            done.lock().unwrap(),
+            std::time::Duration::from_secs(10),
+            |done| !*done,
+        )
+        .unwrap();
+    assert!(
+        *done && !wait.timed_out(),
+        "the winner settles within its bounded wait"
+    );
+}
+
+/// A retry prepared after the winner settled reads the moved product.
+fn retry_saw_moved_head(denial: &WorthQueryApplicationProgramAdoptionPreparationDenial) -> bool {
+    matches!(
+        denial,
+        WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(
+            WorthQueryBranchAdoptionPreparationDenial::RequirementsChanged
+        )
+    )
 }

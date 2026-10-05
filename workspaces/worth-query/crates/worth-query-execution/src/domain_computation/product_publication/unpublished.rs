@@ -1,6 +1,6 @@
 use worth_runtime_world::facade::{
-    ProductUnpublishedOwnerEffects, RuntimeWorldRecoveryDenial, RuntimeWorldRecoveryPort,
-    RuntimeWorldUnpublishedConditionalDefinition,
+    ProductUnpublishedOwnerEffects, ProductUnpublishedRecoveryHandle, RuntimeWorldRecoveryDenial,
+    RuntimeWorldRecoveryPort, RuntimeWorldUnpublishedConditionalDefinition,
 };
 
 enum WorthQueryProductUnpublishedOwnerEffects {
@@ -29,6 +29,18 @@ pub struct WorthQueryProductUnpublishedApplication {
 }
 
 impl WorthQueryProductUnpublishedApplication {
+    pub(in crate::domain_computation) fn retains_conditional_definition(&self) -> bool {
+        matches!(
+            self.effects,
+            WorthQueryProductUnpublishedOwnerEffects::ConditionalDefinition(_)
+        )
+    }
+
+    pub(in crate::domain_computation) fn recovery_handle(
+        &self,
+    ) -> ProductUnpublishedRecoveryHandle {
+        self.effects.effects().recovery_handle()
+    }
     pub(in crate::domain_computation) fn prepare_settled_relational_adoption(
         &self,
         cancellation: &worth_runtime_world::facade::RuntimeWorldCancellationToken,

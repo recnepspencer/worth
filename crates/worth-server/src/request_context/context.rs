@@ -13,6 +13,12 @@ pub struct WorthServerRequestContext {
 }
 
 impl WorthServerRequestContext {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        self.authenticated_principal
+            .owned_allocation_capacity_bytes()
+            .saturating_add(self.workspace_target.owned_allocation_capacity_bytes())
+            .saturating_add(self.branch_target.owned_allocation_capacity_bytes())
+    }
     pub(crate) fn new(
         authenticated_principal: WorthServerAuthenticatedPrincipal,
         workspace_target: WorthServerWorkspaceTarget,

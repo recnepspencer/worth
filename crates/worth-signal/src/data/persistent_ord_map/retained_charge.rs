@@ -26,6 +26,23 @@ impl<K: Clone + Ord, V: Clone> PersistentOrdMap<K, V> {
             .ok_or(super::RetainedMapMutationDenial::PreparationRequired)
     }
 
+    /// O(1) fork envelope from the writer-maintained retained charge fact.
+    /// A cold root fails closed instead of traversing historical entries while
+    /// a checked request is choosing its epoch width.
+    pub(crate) fn prepared_fork_charge(
+        &self,
+    ) -> Result<
+        crate::data::retained_storage::RetainedStorageForkCharge,
+        super::RetainedMapMutationDenial,
+    > {
+        let source = self.prepared_retained_charge()?;
+        let retained = self.charge_after_persistent_fork().ok_or(
+            super::RetainedMapMutationDenial::Accounting(Denial::ChargeOverflow),
+        )?;
+        crate::data::retained_storage::RetainedStorageForkCharge::from_charges(source, retained)
+            .map_err(Into::into)
+    }
+
     pub(super) fn charge_after_persistent_fork(&self) -> Option<Charge> {
         let charge = self.retained_charge?;
         match &self.storage {

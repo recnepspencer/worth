@@ -12,6 +12,7 @@ use crate::transactions::data::{CommitResult, TransactionCommitError};
 pub(crate) fn prepare_authoritative_commit(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     context: AuthoritativeCommitContext,
+    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
 ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
     let runtime_instance_id = runtime.runtime_instance_id();
     let publication_binding = runtime.publication_binding();
@@ -40,12 +41,12 @@ pub(crate) fn prepare_authoritative_commit(
         .publication_cell();
     let diagnostic_capture = runtime.diagnostics.begin_operation_capture();
     let admitted = admit_commit_execution(runtime, context)?;
-    let prepared = prepare_commit_execution(runtime, admitted)?;
-    let boundary_validated = validate_commit_boundary(runtime, prepared)?;
-    let mutated = mutate_commit_execution(runtime, boundary_validated)?;
+    let prepared = prepare_commit_execution(runtime, admitted, lease)?;
+    let boundary_validated = validate_commit_boundary(runtime, prepared, lease)?;
+    let mutated = mutate_commit_execution(runtime, boundary_validated, lease)?;
     let history_bound = bind_commit_history(runtime, mutated)?;
-    let snapshot_validated = validate_snapshot_publication(runtime, history_bound)?;
-    let assembled = assemble_commit_artifacts(runtime, snapshot_validated)?;
+    let snapshot_validated = validate_snapshot_publication(runtime, history_bound, lease)?;
+    let assembled = assemble_commit_artifacts(runtime, snapshot_validated, lease)?;
     let mut prepared = prepare_commit_publication_execution(runtime, assembled)?;
     prepared.append_diagnostics(diagnostic_capture.finish());
     if let Some(interruption) =
@@ -220,6 +221,6 @@ pub(crate) fn execute_authoritative_commit(
     context: AuthoritativeCommitContext,
 ) -> Result<CommitResult, TransactionCommitError> {
     let preparation = runtime.preparation_runtime_snapshot();
-    let candidate = prepare_authoritative_commit(&preparation, context)?;
+    let candidate = prepare_authoritative_commit(&preparation, context, None)?;
     publish_prepared_authoritative_commit(runtime, candidate)
 }

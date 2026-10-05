@@ -1,4 +1,5 @@
 use crate::branch::ProductBranchObservation;
+use crate::publication::PlannedProductReferenceSuccessor;
 use crate::publication::{NoEffectCompositePublication, ReservedCompositePublicationAttempt};
 
 /// Compile-visible stage marker for a publication that never contacts the
@@ -49,6 +50,10 @@ pub struct PreparedCompositePublicationWithoutSignal {
 }
 
 impl PreparedCompositePublicationWithoutSignal {
+    pub fn planned_successor(&self) -> &PlannedProductReferenceSuccessor {
+        self.attempt.planned_successor()
+    }
+
     pub fn expected_head(&self) -> &ProductBranchObservation {
         self.attempt.expected_head()
     }
@@ -78,6 +83,10 @@ pub struct PreparedCompositePublicationWithSignal {
 }
 
 impl PreparedCompositePublicationWithSignal {
+    pub fn planned_successor(&self) -> &PlannedProductReferenceSuccessor {
+        self.attempt.planned_successor()
+    }
+
     pub(crate) fn reserve_conditional_definition_custody(
         &mut self,
     ) -> std::sync::Arc<crate::publication::ConditionalDefinitionAttemptCustody> {

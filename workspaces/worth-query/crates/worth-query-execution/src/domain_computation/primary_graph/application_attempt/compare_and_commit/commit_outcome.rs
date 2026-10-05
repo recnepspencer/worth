@@ -9,6 +9,7 @@ pub enum WorthQueryApplicationNoEffectCause {
     ReferenceGenerationExhausted,
     CapacityExhausted,
     OwnerUnavailable,
+    RelationalDeferred(worth_relational::facade::mvcc::RelationalPublicationDeferred),
     PreEffectFailure,
 }
 
@@ -38,6 +39,9 @@ impl WorthQueryApplicationNoEffect {
             }
             Cause::CapacityExhausted => WorthQueryApplicationNoEffectCause::CapacityExhausted,
             Cause::OwnerUnavailable => WorthQueryApplicationNoEffectCause::OwnerUnavailable,
+            Cause::RelationalDeferred(reason) => {
+                WorthQueryApplicationNoEffectCause::RelationalDeferred(reason)
+            }
             Cause::PreEffectFailure => WorthQueryApplicationNoEffectCause::PreEffectFailure,
             Cause::StaleExpectedProductHead
             | Cause::CancelledBeforeEffect

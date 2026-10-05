@@ -34,6 +34,8 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
         contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         contracts.producer::<InitialPlanarProducer<Schema>>()?;
+        #[cfg(test)]
+        super::checkpoint_recovery::required_chain::contracts(contracts)?;
         contracts.producer::<super::PlanarFinalOutputProducer<Schema>>()?;
         contracts.producer::<super::PlanarFinalPreserveProducer<Schema>>()?;
         contracts.producer::<super::AlternatePlanarOutputProducer<Schema>>()?;
@@ -49,6 +51,8 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         configuration.setup_calls.fetch_add(1, Ordering::SeqCst);
+        #[cfg(test)]
+        super::checkpoint_recovery::required_chain::configure(setup)?;
         setup.invariant(
             PositivePlanarTurn::reference(),
             ApplicationInvariantExecutionPoint::CommitBoundary,

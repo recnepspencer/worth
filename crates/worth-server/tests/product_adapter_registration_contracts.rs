@@ -242,6 +242,15 @@ fn primary_graph_application(
                     custody: worth_query_host::facade::runtime::RuntimeWorldCustodyBudgetInstallation { owner_created_component_custody_records: 256 },
                 },
                 worth_query_host::facade::runtime::WorthQueryProductWorldClock::start(),
+                worth_query_host::facade::runtime::WorthQueryInvalidationResources::install(
+                    worth_query_host::facade::runtime::WorthQueryInvalidationResourceInstallation::bounded(
+                        1_000_000,
+                        64 * 1_024 * 1_024,
+                        128 * 1_024 * 1_024,
+                        128,
+                    ),
+                )
+                .expect("the Query invalidation installation is valid"),
             )
             .expect("the server test Product World resources are valid"),
         )

@@ -15,6 +15,22 @@ pub struct AspectMaskLocator<Mode> {
 }
 
 impl<Mode> AspectMaskLocator<Mode> {
+    pub fn owned_allocation_capacity_bytes(&self) -> usize {
+        self.aspect_key
+            .owned_allocation_capacity_bytes()
+            .saturating_add(
+                self.paths
+                    .capacity()
+                    .saturating_mul(std::mem::size_of::<CanonicalFieldPath>()),
+            )
+            .saturating_add(
+                self.paths
+                    .iter()
+                    .map(CanonicalFieldPath::owned_allocation_capacity_bytes)
+                    .sum::<usize>(),
+            )
+    }
+
     pub fn paths(&self) -> &[CanonicalFieldPath] {
         &self.paths
     }

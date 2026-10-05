@@ -6,7 +6,7 @@ use crate::logic::evaluation::EvaluationWork;
 impl ReplacementSnapshotUpdate {
     pub(crate) fn from_snapshot_with_work(
         snapshot: DependencySnapshot,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<Self, SignalError> {
         let snapshot = snapshot.canonicalize_with_work(work)?;
         Ok(Self {

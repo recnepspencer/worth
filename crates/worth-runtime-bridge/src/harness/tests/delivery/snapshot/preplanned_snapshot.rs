@@ -129,6 +129,7 @@ fn bridge_delivery_keeps_preplanned_snapshot_after_newer_truth_arrives_during_de
     let delivered = sink
         .last_delivery()
         .expect("bridge sink should record the delivered artifact");
+    assert!(!delivered.leased);
     assert_eq!(
         delivered
             .delivery
@@ -138,6 +139,29 @@ fn bridge_delivery_keeps_preplanned_snapshot_after_newer_truth_arrives_during_de
             1, 1
         ))
     );
+}
+
+#[test]
+fn leased_facade_delivery_carries_the_lease_to_the_signal_sink() {
+    let source = InMemoryRelationalBridgeSource::default();
+    source.insert_committed_patch(committed_patch(
+        commit_a(),
+        patch_a(),
+        snapshot_a(),
+        worth_foundational::facade::FieldKey::new("name".to_owned()).unwrap(),
+    ));
+    source.insert_snapshot(snapshot(snapshot_a(), "alice"));
+    let sink = RecordingSignalBridgeSink::default();
+    let runtime = build_runtime(source, sink.clone(), vec![registration()]);
+    let route = runtime
+        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()))
+        .unwrap();
+    let lease = crate::snapshot::test_execution_lease(worth_execution::CancellationToken::new());
+
+    runtime
+        .deliver_invalidation_with_lease(route, &lease)
+        .expect("leased route should reach the Signal sink");
+    assert!(sink.last_delivery().unwrap().leased);
 }
 
 #[test]

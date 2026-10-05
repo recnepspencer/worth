@@ -1,19 +1,28 @@
 use crate::facade::{
     mark_dirty, mark_dirty_with_regions, AspectVersion, ChangedRegion, EvaluationRequestMode,
-    NodeEvaluationResult, NodeId, SignalGraph, StageExecutor,
+    NodeEvaluationResult, NodeId, SignalGraph,
 };
+use crate::tests::leased_execution::support::{authority, request};
 use crate::tests::support::{version_ab, GraphDependencyBatchExt, ASPECT_A};
 
 use super::canonical_artifact_oracle::canonical_runtime_artifacts;
-use super::executor_policy::hostile_executor_matrix;
+use super::executor_policy::{bounded_contract, worker_matrix};
 
 #[test]
 fn full_parallel_policy_matrix_preserves_semantic_artifacts_on_tolerance_heavy_partition_graph() {
     fn build_graph() -> (SignalGraph, NodeId, NodeId, NodeId) {
         let mut graph = SignalGraph::new();
-        let source = graph.node().build();
-        let branch_a = graph.node().tolerance(1).build();
-        let branch_b = graph.node().tolerance(1).build();
+        let source = graph.node().with_contract(bounded_contract(&[])).build();
+        let branch_a = graph
+            .node()
+            .with_contract(bounded_contract(&[source]))
+            .tolerance(1)
+            .build();
+        let branch_b = graph
+            .node()
+            .with_contract(bounded_contract(&[source]))
+            .tolerance(1)
+            .build();
         graph
             .append_partition_dependency(branch_a, source, ASPECT_A, "shell")
             .unwrap();
@@ -48,11 +57,11 @@ fn full_parallel_policy_matrix_preserves_semantic_artifacts_on_tolerance_heavy_p
             .unwrap();
     }
 
-    fn run_with_executor(
+    fn run_with_lease(
         mut graph: SignalGraph,
         source: NodeId,
         target: NodeId,
-        executor: StageExecutor,
+        workers: usize,
     ) -> serde_json::Value {
         mark_dirty_with_regions(
             &mut graph,
@@ -64,8 +73,11 @@ fn full_parallel_policy_matrix_preserves_semantic_artifacts_on_tolerance_heavy_p
         let plan = graph
             .build_evaluation_plan(&[target], EvaluationRequestMode::Default)
             .unwrap();
+        let lease = authority()
+            .request_lease(request(workers, 1_000_000))
+            .unwrap();
         graph
-            .execute_prepared_plan_with_executor(
+            .execute_prepared_plan_checked(
                 &plan,
                 &(),
                 &move |ctx| {
@@ -77,12 +89,12 @@ fn full_parallel_policy_matrix_preserves_semantic_artifacts_on_tolerance_heavy_p
                                 .with_changed_region(ChangedRegion::new("core")),
                         )
                     } else {
-                        let version = ctx.read_aspect_version(source, ASPECT_A)?;
+                        let version = version_ab(ctx.read(source, ASPECT_A)?, 0);
                         ctx.finish(NodeEvaluationResult::from_version(version))
                     };
                     Ok(result)
                 },
-                executor,
+                &lease,
             )
             .unwrap();
         canonical_runtime_artifacts(&graph, target)
@@ -91,13 +103,13 @@ fn full_parallel_policy_matrix_preserves_semantic_artifacts_on_tolerance_heavy_p
     let (base_graph, source, branch_a, branch_b) = build_graph();
     let mut seed_graph = base_graph.clone();
     bootstrap(&mut seed_graph, source, branch_a, branch_b);
-    let baseline = run_with_executor(seed_graph.clone(), source, branch_b, StageExecutor::Serial);
+    let baseline = run_with_lease(seed_graph.clone(), source, branch_b, 1);
 
-    for (label, executor) in hostile_executor_matrix() {
-        let observed = run_with_executor(seed_graph.clone(), source, branch_b, executor);
+    for (label, workers) in worker_matrix() {
+        let observed = run_with_lease(seed_graph.clone(), source, branch_b, workers);
         assert_eq!(
             baseline, observed,
-            "executor {label} drifted semantic artifacts"
+            "lease {label} drifted semantic artifacts"
         );
     }
 }
@@ -105,10 +117,22 @@ fn full_parallel_policy_matrix_preserves_semantic_artifacts_on_tolerance_heavy_p
 fn repeated_executor_policy_churn_keeps_tolerance_boundary_artifacts_stable() {
     fn build_graph() -> (SignalGraph, NodeId, NodeId, NodeId, NodeId) {
         let mut graph = SignalGraph::new();
-        let source = graph.node().build();
-        let shell = graph.node().tolerance(2).build();
-        let core = graph.node().tolerance(2).build();
-        let target = graph.node().output_identity().build();
+        let source = graph.node().with_contract(bounded_contract(&[])).build();
+        let shell = graph
+            .node()
+            .with_contract(bounded_contract(&[source]))
+            .tolerance(2)
+            .build();
+        let core = graph
+            .node()
+            .with_contract(bounded_contract(&[source]))
+            .tolerance(2)
+            .build();
+        let target = graph
+            .node()
+            .with_contract(bounded_contract(&[shell, core]))
+            .output_identity()
+            .build();
         graph.append_dependency(shell, source, ASPECT_A).unwrap();
         graph.append_dependency(core, source, ASPECT_A).unwrap();
         graph.append_dependency(target, shell, ASPECT_A).unwrap();
@@ -160,14 +184,17 @@ fn repeated_executor_policy_churn_keeps_tolerance_boundary_artifacts_stable() {
         core: NodeId,
         target: NodeId,
         next_version: u64,
-        executor: StageExecutor,
+        workers: usize,
     ) -> serde_json::Value {
         mark_dirty(&mut *graph, source, ASPECT_A).unwrap();
         let plan = graph
             .build_evaluation_plan(&[target], EvaluationRequestMode::Default)
             .unwrap();
+        let lease = authority()
+            .request_lease(request(workers, 1_000_000))
+            .unwrap();
         graph
-            .execute_prepared_plan_with_executor(
+            .execute_prepared_plan_checked(
                 &plan,
                 &(),
                 &move |ctx| {
@@ -178,11 +205,11 @@ fn repeated_executor_policy_churn_keeps_tolerance_boundary_artifacts_stable() {
                             0,
                         )))
                     } else if node == shell || node == core {
-                        let version = ctx.read_aspect_version(source, ASPECT_A)?;
+                        let version = version_ab(ctx.read(source, ASPECT_A)?, 0);
                         ctx.finish(NodeEvaluationResult::from_version(version))
                     } else {
-                        let shell_v = ctx.read_aspect_version(shell, ASPECT_A)?;
-                        let core_v = ctx.read_aspect_version(core, ASPECT_A)?;
+                        let shell_v = version_ab(ctx.read(shell, ASPECT_A)?, 0);
+                        let core_v = version_ab(ctx.read(core, ASPECT_A)?, 0);
                         ctx.finish(
                             NodeEvaluationResult::from_version(AspectVersion::from_updates([(
                                 ASPECT_A,
@@ -193,7 +220,7 @@ fn repeated_executor_policy_churn_keeps_tolerance_boundary_artifacts_stable() {
                     };
                     Ok(result)
                 },
-                executor,
+                &lease,
             )
             .unwrap();
         canonical_runtime_artifacts(graph, target)
@@ -211,9 +238,9 @@ fn repeated_executor_policy_churn_keeps_tolerance_boundary_artifacts_stable() {
             core,
             target,
             next_version,
-            StageExecutor::Serial,
+            1,
         );
-        for (label, executor) in hostile_executor_matrix() {
+        for (label, workers) in worker_matrix() {
             let mut candidate_graph = seed_graph.clone();
             let observed = run_once(
                 &mut candidate_graph,
@@ -222,11 +249,11 @@ fn repeated_executor_policy_churn_keeps_tolerance_boundary_artifacts_stable() {
                 core,
                 target,
                 next_version,
-                executor,
+                workers,
             );
             assert_eq!(
                 baseline, observed,
-                "executor {label} drifted at tolerance boundary {next_version}"
+                "lease {label} drifted at tolerance boundary {next_version}"
             );
         }
     }

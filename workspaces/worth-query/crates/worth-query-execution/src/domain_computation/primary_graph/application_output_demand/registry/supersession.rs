@@ -36,12 +36,24 @@ impl WorthQueryOutputDemandRegistry {
             _ => {}
         }
         let denial = superseded_denial(subject);
+        let unpublished = record.unpublished_new_key();
         match &mut record.state {
             DemandState::Output(output) => output.stop(denial.clone()),
             _ => record.state = DemandState::Failed(denial.clone()),
         }
         record.performed_source = None;
+        let released = record.release_obligations();
         record.wake.notify();
+        if unpublished {
+            // The row ends without an output of its own: the newest Ready it
+            // replaced answers for the occurrence again.
+            state.revive_replaced_ready(&interest.key);
+        }
+        let released_prerequisites = state.release_record_prerequisites(&interest.key);
+        state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
+        state.remove_required_member_if_released(&interest.key);
+        drop(state);
+        drop(released_prerequisites);
         denial
     }
 }
@@ -50,13 +62,7 @@ pub(super) fn supersede_predecessors(
     state: &mut DemandRegistryState,
     successor: &WorthQueryOutputDemandKey,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
-    // Ordinary demand supersession is producer-scoped: another producer may
-    // still be computing from this source until currentness rejects its work.
-    if state.records.keys().any(|key| {
-        key != successor && key.replacement_order(successor) == Some(std::cmp::Ordering::Greater)
-    }) {
-        return Err(superseded_denial(&successor.producer));
-    }
+    reject_older_successor(state, successor)?;
     for (key, record) in &mut state.records {
         if key != successor && key.replacement_order(successor) == Some(std::cmp::Ordering::Less) {
             let denial = superseded_denial(&key.producer);
@@ -68,17 +74,56 @@ pub(super) fn supersede_predecessors(
             record.wake.notify();
         }
     }
+    state.release_matching_prerequisites(|key, _| {
+        key != successor && key.replacement_order(successor) == Some(std::cmp::Ordering::Less)
+    });
+    let mut released_bytes = 0;
+    let required_keys = &mut state.required_keys;
+    let required_reserved_bytes = &mut state.required_reserved_bytes;
     state.records.retain(|key, record| {
-        key == successor
+        let keep = key == successor
             || !key.same_occurrence(successor)
             || record.interests != 0
+            || record.framework_required_count != 0
+            || record.prepared_prerequisite_claims != 0
+            || record.pending_cleanup_queued
             || !matches!(record.state, DemandState::Failed(_))
                 && !matches!(&record.state, DemandState::Output(output)
-                    if matches!(output.advancement, super::WorthQueryOutputAdvancement::Stopped { .. }))
+                    if matches!(output.advancement, super::WorthQueryOutputAdvancement::Stopped { .. }));
+        if !keep {
+            released_bytes += record.obligation_reserved_bytes();
+            if let Some(member) = required_keys.take(key) {
+                *required_reserved_bytes = required_reserved_bytes.saturating_sub(
+                    super::required_members::member_bytes(member.as_ref())
+                        .expect("admitted key charge fits"),
+                );
+            }
+        }
+        keep
     });
+    state.obligation_reserved_bytes = state
+        .obligation_reserved_bytes
+        .saturating_sub(released_bytes);
+    Ok(())
+}
+
+pub(super) fn reject_older_successor(
+    state: &DemandRegistryState,
+    successor: &WorthQueryOutputDemandKey,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    // Another producer may still compute from this source until currentness
+    // rejects its work; only a newer revision of this producer blocks it.
+    if state.records.keys().any(|key| {
+        key != successor && key.replacement_order(successor) == Some(std::cmp::Ordering::Greater)
+    }) {
+        return Err(superseded_denial(&successor.producer));
+    }
     Ok(())
 }
 
 fn superseded_denial(subject: &str) -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::Superseded, subject)
+    WorthQueryOutputDemandDenial::new(
+        WorthQueryOutputDemandDenialKind::Superseded,
+        subject.to_owned(),
+    )
 }

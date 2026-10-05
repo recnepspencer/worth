@@ -18,7 +18,7 @@ impl WorthQueryApplicationCommitDenial {
             },
             stage,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -32,7 +32,7 @@ impl WorthQueryApplicationCommitDenial {
             },
             stage,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -43,7 +43,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::RetentionCapacityExhausted,
             stage,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -54,7 +54,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::SnapshotIdentityExhausted,
             stage,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -65,7 +65,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::RetentionIdentityExhausted,
             stage,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -76,7 +76,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::CandidateIdentityExhausted,
             stage,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -92,7 +92,7 @@ impl WorthQueryApplicationCommitDenial {
             },
             stage,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -103,7 +103,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::IndexMaintenanceBudgetExceeded,
             stage,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -114,7 +114,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::IndexGenerationIdentityExhausted,
             stage,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 }

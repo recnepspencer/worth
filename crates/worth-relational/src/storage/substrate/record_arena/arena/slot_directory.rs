@@ -61,10 +61,11 @@ impl RecordSlotDirectory {
     }
 
     pub(crate) fn occupied_slots(&self) -> Vec<usize> {
-        self.physical_by_logical
-            .keys()
-            .map(|slot| *slot as usize)
-            .collect()
+        self.occupied_slots_iter().collect()
+    }
+
+    pub(crate) fn occupied_slots_iter(&self) -> impl Iterator<Item = usize> + '_ {
+        self.physical_by_logical.keys().map(|slot| *slot as usize)
     }
 
     pub(crate) fn slots(&self) -> &SharedColumn<u64> {

@@ -35,6 +35,12 @@ impl<K: Ord + Copy, V: Clone> SharedMap<K, V> {
     pub(crate) fn len(&self) -> usize {
         self.root.as_ref().map_or(0, |root| root.len)
     }
+    /// One fixed-key comparison per node on the selected AVL search path.
+    pub(crate) fn navigation_work_bound(&self) -> usize {
+        self.root
+            .as_ref()
+            .map_or(1, |root| root.height.saturating_add(1))
+    }
     #[cfg(test)]
     pub(crate) fn is_empty(&self) -> bool {
         self.root.is_none()
@@ -102,6 +108,12 @@ impl<K: Ord + Copy, V: Clone> SharedMap<K, V> {
 
     pub(crate) fn iter(&self) -> SharedMapIter<'_, K, V> {
         SharedMapIter::new(self.root.as_deref())
+    }
+    pub(crate) fn try_iter<Stop>(
+        &self,
+        prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<SharedMapIter<'_, K, V>, Stop> {
+        SharedMapIter::try_new(self.root.as_deref(), prepare)
     }
     pub(crate) fn keys(&self) -> impl Iterator<Item = &K> {
         self.iter().map(|(key, _)| key)

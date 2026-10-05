@@ -14,4 +14,4 @@ pub use graph::{
 pub use observer::{GraphMaterializer, GraphObserver};
 pub use scratch::ScratchLeaseKind;
 pub(crate) use scratch::TraversalScratch;
-pub use strategy::{EvaluationStrategy, GcPressure, ObservationLevel, ParallelismHint};
+pub use strategy::{EvaluationStrategy, GcPressure, ObservationLevel};

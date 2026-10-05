@@ -133,9 +133,11 @@ pub fn assemble_trace_summary_with_execution(
 pub(super) fn scopes_to_regions_from_slice(scopes: &[PartitionSubscription]) -> Vec<ChangedRegion> {
     scopes
         .iter()
-        .map(|scope| match &scope.detail {
-            Some(detail) => ChangedRegion::new(scope.partition.clone()).with_detail(detail.clone()),
-            None => ChangedRegion::new(scope.partition.clone()),
+        .map(|scope| match scope.coverage() {
+            crate::data::output::ScopeCoverage::Exact => ChangedRegion::exact(scope.path().clone()),
+            crate::data::output::ScopeCoverage::Subtree => {
+                ChangedRegion::subtree(scope.path().clone())
+            }
         })
         .collect()
 }

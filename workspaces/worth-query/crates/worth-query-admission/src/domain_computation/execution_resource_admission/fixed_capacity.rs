@@ -41,6 +41,17 @@ impl WorthQueryExecutionCapacityPort for WorthQueryFixedExecutionCapacity {
         &self.identity
     }
 
+    fn reservation_preflight_cost(&self) -> Option<(u64, u64)> {
+        // One capacity-reservation operation, one Arc retain, and the Box
+        // payload. This bounds preparation, including a denied atomic claim;
+        // it does not count physical contention retries as separate operations.
+        let backing = u64::try_from(std::mem::size_of::<
+            WorthQueryFixedExecutionCapacityReservation,
+        >())
+        .ok()?;
+        Some((backing.checked_add(2)?, backing))
+    }
+
     fn try_reserve(&self) -> Option<Box<dyn WorthQueryExecutionCapacityReservation>> {
         self.active_attempts
             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |active| {

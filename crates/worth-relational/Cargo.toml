@@ -17,9 +17,9 @@ test-operation-control = ["test-durability-faults"]
 [dependencies]
 worth-foundational = { path = "../worth-foundational" }
 worth-proof = { path = "../worth-proof" }
+worth-execution = { path = "../worth-execution" }
 serde = { version = "1", features = ["derive", "rc"] }
 rmp-serde = "1.3"
-rayon = "1"
 smallvec = "1"
 sha2 = "0.10"
 dashmap = "6"

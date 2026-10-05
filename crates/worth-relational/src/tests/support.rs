@@ -75,6 +75,8 @@ mod durability;
 mod history;
 #[path = "support/inspection.rs"]
 mod inspection;
+#[path = "support/leased_records.rs"]
+mod leased_records;
 #[path = "support/records.rs"]
 mod records;
 #[path = "support/relation_integrity.rs"]
@@ -92,6 +94,7 @@ pub(crate) use aspect_field_patches::*;
 pub(crate) use durability::*;
 pub(crate) use history::*;
 pub(crate) use inspection::*;
+pub(crate) use leased_records::*;
 pub(crate) use records::*;
 pub(crate) use relation_integrity::*;
 pub(crate) use runtime::*;

@@ -168,14 +168,25 @@ fn with_branches(size: usize) -> (QueryWork, Population) {
 fn with_history(size: usize) -> (QueryWork, Population) {
     let world = CourtroomWorld::publish("ready");
     let root = world.application.current_world();
-    for ordinal in 1..size {
-        world
-            .change_input_on_branch_with_ordinal(root, &format!("history-{ordinal}"), ordinal as u8)
-            .require_committed()
-            .expect("the configured history population must be admitted");
-    }
+    // A held observation keeps the publication commit, and each caller receipt
+    // keeps its own commit installed for as long as it lives.
+    let publication = world.application.on_branch(root).select().unwrap();
+    let receipts = (1..size)
+        .map(|ordinal| {
+            world
+                .change_input_on_branch_with_ordinal(
+                    root,
+                    &format!("history-{ordinal}"),
+                    ordinal as u8,
+                )
+                .require_committed()
+                .expect("the configured history population must be admitted")
+        })
+        .collect::<Vec<_>>();
     let population = Population::capture(&world);
-    (read(&world, root).work, population)
+    let work = read(&world, root).work;
+    drop((publication, receipts));
+    (work, population)
 }
 
 fn with_component_pins(size: usize) -> (QueryWork, Population) {

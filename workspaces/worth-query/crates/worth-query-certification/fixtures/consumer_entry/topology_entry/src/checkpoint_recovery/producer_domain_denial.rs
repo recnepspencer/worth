@@ -53,6 +53,11 @@ fn producer_domain_denial_preserves_reason_and_releases_claim_for_retry() {
         Some("A current planar output is required before this decision.")
     );
     assert_eq!(
+        cause.subject(),
+        "worth.query.certification.planar-initial.v1",
+        "diagnostic identity must not retain an arbitrary domain Debug payload"
+    );
+    assert_eq!(
         cause.recovery_posture(),
         worth_query_host::facade::primary_graph::WorthQueryOutputDemandRecoveryPosture::Terminal
     );

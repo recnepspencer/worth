@@ -14,22 +14,3 @@ pub(super) fn unknown_commit_recovery_evidence(
         &failure,
     )
 }
-
-pub(super) fn typed_commit_recovery_evidence(
-    kind: crate::domain_computation::provider_session::WorthQueryProviderSessionDenialKind,
-    detail: &'static str,
-) -> super::super::WorthQueryApplicationUnresolvedCommitEvidence {
-    let failure = crate::domain_computation::provider_session::WorthQueryProviderSessionFailure::new(
-        kind,
-        crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolStage::Commit,
-        detail,
-        crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolCounters::default(),
-    )
-    .with_recovery_posture(
-        crate::domain_computation::provider_session::WorthQueryProviderSessionRecoveryPosture::RecoveryRequired,
-    );
-    super::super::WorthQueryApplicationUnresolvedCommitEvidence::from_provider_session_failure(
-        super::super::WorthQueryApplicationCommitRecoveryKind::CommitRecoveryRequired,
-        &failure,
-    )
-}

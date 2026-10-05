@@ -5,13 +5,16 @@ use super::{
     WorthQueryGraphIndexLifecycleClass, WorthQueryGraphIndexLifecycleOwner,
     WorthQueryGraphIndexPosture, WorthQueryGraphIndexSupportState,
 };
-use crate::admission_digest::hash_parts;
 use crate::graph_read_access::{
     WorthQueryAdmittedGraphReadRelationDirection, WorthQueryGraphReadAccessComplexityContract,
     WorthQueryGraphReadAccessInvalidationBasis, WorthQueryGraphReadAccessRebuildBasis,
     WorthQueryGraphReadAccessRequirementKind, WorthQueryGraphReadLifecycleClass,
     WorthQueryGraphReadOrderingPosture, WorthQueryGraphReadPredicateFamily,
 };
+use std::fmt::{self, Write};
+
+mod admitted;
+mod digest;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryGraphIndexSupportRow {
@@ -161,23 +164,8 @@ impl WorthQueryGraphIndexSupportRow {
             posture != WorthQueryGraphIndexPosture::Verified
                 || support_state.certifies_verified_support()
         );
-        let digest = support_row_digest(
-            &requirement_kind,
-            supported_relation_direction.as_ref(),
-            supported_predicate_family.as_ref(),
-            supported_ordering_posture.as_ref(),
-            supported_requirement_lifecycle.as_ref(),
-            &lifecycle_owner,
-            &lifecycle_class,
-            &rebuild_basis,
-            &invalidation_basis,
-            &complexity_contract,
-            &posture,
-            &support_state,
-            owning_milestone.as_deref(),
-        );
-        Self {
-            digest,
+        let mut row = Self {
+            digest: String::new(),
             requirement_kind,
             supported_relation_direction,
             supported_predicate_family,
@@ -191,11 +179,20 @@ impl WorthQueryGraphIndexSupportRow {
             posture,
             support_state,
             owning_milestone,
-        }
+        };
+        row.digest = row.recompute_digest();
+        row
     }
 
     pub fn digest_part(&self) -> String {
-        format!("row:{}", self.digest)
+        let mut text = String::new();
+        self.write_digest_part(&mut text)
+            .expect("String formatting cannot fail");
+        text
+    }
+
+    pub(crate) fn write_digest_part(&self, output: &mut dyn Write) -> fmt::Result {
+        write!(output, "row:{}", self.digest)
     }
 
     pub fn with_supported_relation_direction(
@@ -262,73 +259,6 @@ impl WorthQueryGraphIndexSupportRow {
     }
 
     fn recompute_digest(&self) -> String {
-        support_row_digest(
-            &self.requirement_kind,
-            self.supported_relation_direction.as_ref(),
-            self.supported_predicate_family.as_ref(),
-            self.supported_ordering_posture.as_ref(),
-            self.supported_requirement_lifecycle.as_ref(),
-            &self.lifecycle_owner,
-            &self.lifecycle_class,
-            &self.rebuild_basis,
-            &self.invalidation_basis,
-            &self.complexity_contract,
-            &self.posture,
-            &self.support_state,
-            self.owning_milestone.as_deref(),
-        )
+        digest::ordinary_digest(self)
     }
-}
-
-fn support_row_digest(
-    requirement_kind: &WorthQueryGraphReadAccessRequirementKind,
-    supported_relation_direction: Option<&WorthQueryAdmittedGraphReadRelationDirection>,
-    supported_predicate_family: Option<&WorthQueryGraphReadPredicateFamily>,
-    supported_ordering_posture: Option<&WorthQueryGraphReadOrderingPosture>,
-    supported_requirement_lifecycle: Option<&WorthQueryGraphReadLifecycleClass>,
-    lifecycle_owner: &WorthQueryGraphIndexLifecycleOwner,
-    lifecycle_class: &WorthQueryGraphIndexLifecycleClass,
-    rebuild_basis: &WorthQueryGraphReadAccessRebuildBasis,
-    invalidation_basis: &WorthQueryGraphReadAccessInvalidationBasis,
-    complexity_contract: &WorthQueryGraphReadAccessComplexityContract,
-    posture: &WorthQueryGraphIndexPosture,
-    support_state: &WorthQueryGraphIndexSupportState,
-    owning_milestone: Option<&str>,
-) -> String {
-    hash_parts(&[
-        "worth_query_graph_index_support_row_v1".to_string(),
-        format!("requirement:{}", requirement_kind.as_str()),
-        format!(
-            "direction:{}",
-            supported_relation_direction
-                .map(|direction| direction.as_str())
-                .unwrap_or("none")
-        ),
-        format!(
-            "predicate:{}",
-            supported_predicate_family
-                .map(|family| family.as_str())
-                .unwrap_or("none")
-        ),
-        format!(
-            "ordering:{}",
-            supported_ordering_posture
-                .map(|posture| posture.as_str())
-                .unwrap_or("none")
-        ),
-        format!(
-            "requirement_lifecycle:{}",
-            supported_requirement_lifecycle
-                .map(|lifecycle| lifecycle.as_str())
-                .unwrap_or("none")
-        ),
-        format!("owner:{}", lifecycle_owner.as_str()),
-        format!("lifecycle:{}", lifecycle_class.as_str()),
-        format!("rebuild:{}", rebuild_basis.as_str()),
-        format!("invalidation:{}", invalidation_basis.as_str()),
-        format!("complexity:{}", complexity_contract.as_str()),
-        format!("posture:{}", posture.as_str()),
-        format!("support_state:{}", support_state.as_str()),
-        format!("owning_milestone:{}", owning_milestone.unwrap_or("none")),
-    ])
 }

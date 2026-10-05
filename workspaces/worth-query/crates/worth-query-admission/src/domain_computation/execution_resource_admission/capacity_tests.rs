@@ -99,6 +99,36 @@ fn racing_reservations_never_exceed_the_physical_limit() {
     assert_eq!(capacity.active(), 0);
 }
 
+#[test]
+fn graph_reservation_admission_precedes_capacity_claim_and_release() {
+    let capacity = Arc::new(ObservedCapacity::new("graph-admitted", 1));
+    let support = support(capacity.clone());
+    let refused = reserve_graph_provider_capacity_admitted(&support, &mut |_, _| Err("denied"));
+    assert!(matches!(
+        refused,
+        Err(WorthQueryCapacityReservationAdmissionStop::Admission(
+            "denied"
+        ))
+    ));
+    assert_eq!(capacity.active(), 0);
+
+    let mut work = 0_u64;
+    let mut bytes = 0_u64;
+    let reserved =
+        reserve_graph_provider_capacity_admitted(&support, &mut |next_work, next_bytes| {
+            work = work.checked_add(next_work).unwrap();
+            bytes = bytes.checked_add(next_bytes).unwrap();
+            Ok::<(), ()>(())
+        })
+        .unwrap()
+        .expect("installed graph capacity admits one reservation");
+    assert!(work > 0);
+    assert!(bytes >= std::mem::size_of::<ObservedReservation>() as u64);
+    assert_eq!(capacity.active(), 1);
+    drop(reserved);
+    assert_eq!(capacity.active(), 0);
+}
+
 struct ObservedCapacity {
     identity: String,
     limit: usize,
@@ -122,6 +152,11 @@ impl ObservedCapacity {
 impl WorthQueryExecutionCapacityPort for ObservedCapacity {
     fn capacity_subject_identity(&self) -> &str {
         &self.identity
+    }
+
+    fn reservation_preflight_cost(&self) -> Option<(u64, u64)> {
+        let backing = u64::try_from(std::mem::size_of::<ObservedReservation>()).ok()?;
+        Some((backing.checked_add(2)?, backing))
     }
 
     fn try_reserve(&self) -> Option<Box<dyn WorthQueryExecutionCapacityReservation>> {

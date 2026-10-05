@@ -19,10 +19,18 @@ use worth_query_host::facade::{
 };
 
 use super::*;
+#[cfg(feature = "test-query-execution-observer")]
+mod clean_reuse;
 mod current_output;
 mod demand_contact;
 mod demand_policy;
+mod generated_restoration;
+mod input_cutoff;
+#[cfg(all(feature = "test-world-operation-control", not(target_arch = "wasm32")))]
+mod late_cancellation;
 mod producer_domain_denial;
+pub(crate) mod required_chain;
+mod stable_refresh;
 mod support;
 use support::{authenticate, install, length};
 
@@ -316,6 +324,19 @@ fn settle_for<'application, 'principal, 'scope>(
     let controls = WorthQueryOutputDemandControls::new(
         NonZeroUsize::new(4_096).unwrap(),
         NonZeroUsize::new(8_192).unwrap(),
+    )
+    // These recovery tests constrain the producer's persisted estimate. Source
+    // verification includes fresh authorization and native witness preparation
+    // and uses this installation's separate finite currentness allowance.
+    .source_currentness_work(
+        NonZeroUsize::new(
+            application
+                .runtime()
+                .output_demand_resource_profile()
+                .limits()
+                .source_currentness_work(),
+        )
+        .unwrap(),
     );
     let mut output = request
         .start_program_outputs::<CheckpointProgram, CheckpointRoot>(

@@ -126,6 +126,9 @@ pub(super) fn map_world_denial(
         RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::IdentityExhausted) => {
             WorthQueryProductBranchAdmissionDenial::ObservationIdentityExhausted
         }
+        RuntimeWorldServiceDenial::Denied(
+            RuntimeWorldBranchAdmissionDenial::CurrentnessAccountingOverflow,
+        ) => WorthQueryProductBranchAdmissionDenial::ObservationAccountingOverflow,
         RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::StaleSourceHead) => {
             WorthQueryProductBranchAdmissionDenial::ObservationStaleSourceHead
         }

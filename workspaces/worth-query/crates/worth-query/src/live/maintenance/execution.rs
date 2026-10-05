@@ -73,15 +73,10 @@ pub(crate) fn bind_performed_invalidation_maintenance<D, O, F, L: BasisOperation
         != first.affinity.operation_identity
         || closure.invalidation_manifest().installation_generation()
             != first.affinity.installation_generation
-        || performed.work().authority_checks() != 1
-        || performed.work().drain_calls() != 1
-        || performed.work().read_calls() != 1
-        || performed.work().projection_calls() != 1
+        || !performed_exactly_once(performed)
     {
         return Err(WorthQueryMaintenanceDenial::ForeignOrStaleOperation);
     }
-    let execution_identity = performed.authority().receipt().receipt_digest().to_owned();
-    let publication_identity = current.publication_receipt().identity().to_owned();
     let parent_identity = crate::identity::hash_parts(
         &std::iter::once("worth_query_coalesced_invalidation_parent_v1".to_owned())
             .chain(
@@ -91,12 +86,72 @@ pub(crate) fn bind_performed_invalidation_maintenance<D, O, F, L: BasisOperation
             )
             .collect::<Vec<_>>(),
     );
+    Ok(performed_maintenance(
+        plan,
+        current,
+        performed,
+        effect,
+        first.affinity.clone(),
+        &parent_identity,
+    ))
+}
+
+/// Bind maintenance that refreshed the full scope because the producer lost
+/// subscription continuity. No admitted impact parents it; the current
+/// closure's own authority basis does.
+pub(crate) fn bind_full_scope_invalidation_maintenance<D, O, F, L: BasisOperationLane>(
+    plan: &WorthQueryCoalescedMaintenancePlan,
+    current: &WorthQuerySettledDomainProjection<D, O, F, L>,
+    performed: &crate::domain_installation::WorthQueryLiveProjectionRefresh,
+    effect: Arc<super::WorthQueryPerformedMaintenanceEffect>,
+) -> Result<WorthQueryPerformedMaintenance, WorthQueryMaintenanceDenial> {
+    if !performed_exactly_once(performed) {
+        return Err(WorthQueryMaintenanceDenial::ForeignOrStaleOperation);
+    }
+    let parent_identity = crate::identity::hash_parts(&[
+        "worth_query_full_scope_invalidation_parent_v1".to_owned(),
+        performed.authority().receipt().receipt_digest().to_owned(),
+    ]);
+    let affinity = current
+        .semantic_aspect_dependency_closure()
+        .affinity
+        .clone();
+    Ok(performed_maintenance(
+        plan,
+        current,
+        performed,
+        effect,
+        affinity,
+        &parent_identity,
+    ))
+}
+
+fn performed_exactly_once(
+    performed: &crate::domain_installation::WorthQueryLiveProjectionRefresh,
+) -> bool {
+    let work = performed.work();
+    work.authority_checks() == 1
+        && work.drain_calls() == 1
+        && work.read_calls() == 1
+        && work.projection_calls() == 1
+}
+
+fn performed_maintenance<D, O, F, L: BasisOperationLane>(
+    plan: &WorthQueryCoalescedMaintenancePlan,
+    current: &WorthQuerySettledDomainProjection<D, O, F, L>,
+    performed: &crate::domain_installation::WorthQueryLiveProjectionRefresh,
+    effect: Arc<super::WorthQueryPerformedMaintenanceEffect>,
+    affinity: crate::domain_installation::WorthQueryOperationAuthorityBasis,
+    parent_identity: &str,
+) -> WorthQueryPerformedMaintenance {
+    let execution_identity = performed.authority().receipt().receipt_digest().to_owned();
+    let publication_identity = current.publication_receipt().identity().to_owned();
     let phase = mint_operation_phase_proof(
         format!("invalidation-maintenance:{execution_identity}"),
-        Some(&parent_identity),
-        first.affinity.clone(),
+        Some(parent_identity),
+        affinity,
     );
-    Ok(WorthQueryPerformedMaintenance {
+    WorthQueryPerformedMaintenance {
         phase,
         strategies: plan.strategies().to_vec(),
         scope: plan.scope().clone(),
@@ -105,5 +160,5 @@ pub(crate) fn bind_performed_invalidation_maintenance<D, O, F, L: BasisOperation
         execution_identity,
         publication_identity,
         effect,
-    })
+    }
 }

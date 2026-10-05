@@ -11,6 +11,13 @@ use crate::domain_computation::primary_graph::application_output_demand::{
     WorthQueryOutputDemandInterest, WorthQueryPendingOutputDelivery as Delivery,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+mod selected;
+
+struct PreparedSelectedDelivery<'a> {
+    lowering: &'a std::sync::Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
+    ordinal: usize,
+    preserved: bool,
+}
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -22,16 +29,35 @@ where
         producer_identity: &str,
         claim: WorthQueryOutputClaimIdentity,
         checkpoint: Checkpoint,
-    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
+    ) -> Result<bool, WorthQueryOutputDemandDenial> {
         match checkpoint {
-            Checkpoint::Published { receipt, delivery } => self.deliver_output_checkpoint(
-                interest,
-                producer_identity,
-                claim,
+            Checkpoint::Published {
                 receipt,
                 delivery,
-            ),
-            Checkpoint::Delivered { receipt, delivery } => {
+                ready_backing,
+            } => {
+                // A delivery that is still waiting leaves the checkpoint
+                // Published: nothing moved, so the caller does not spin on it.
+                let mut delivered = false;
+                self.deliver_output_checkpoint_with_finish(
+                    producer_identity,
+                    receipt,
+                    delivery,
+                    ready_backing,
+                    false,
+                    None,
+                    |checkpoint, denial| {
+                        delivered = matches!(&checkpoint, Checkpoint::Delivered { .. });
+                        self.finish_output_checkpoint(interest, claim, checkpoint, denial)
+                    },
+                )?;
+                Ok(delivered)
+            }
+            Checkpoint::Delivered {
+                receipt,
+                delivery,
+                ready_backing,
+            } => {
                 let readiness = match self.evaluate_current_output_readiness(
                     producer_identity,
                     &receipt,
@@ -39,12 +65,18 @@ where
                 ) {
                     Ok(readiness) => readiness,
                     Err(cause) => {
-                        return self.finish_output_checkpoint(
-                            interest,
-                            claim,
-                            Checkpoint::Delivered { receipt, delivery },
-                            Some(cause),
-                        )
+                        return self
+                            .finish_output_checkpoint(
+                                interest,
+                                claim,
+                                Checkpoint::Delivered {
+                                    receipt,
+                                    delivery,
+                                    ready_backing,
+                                },
+                                Some(cause),
+                            )
+                            .map(|_| false)
                     }
                 };
                 let resources = self
@@ -54,67 +86,77 @@ where
                     .lock()
                     .unwrap_or_else(std::sync::PoisonError::into_inner)
                     .producer_resources_for_receipt(&receipt);
+                let completion = ready_backing.complete(WorthQueryCompletedOutputDemand {
+                    authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
+                    readiness,
+                    resources,
+                });
                 self.finish_output_checkpoint(
                     interest,
                     claim,
-                    Checkpoint::Ready(WorthQueryCompletedOutputDemand {
-                        authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
-                        readiness,
-                        resources,
-                    }),
+                    Checkpoint::Ready(completion),
                     None,
-                )
+                )?;
+                Ok(true)
             }
             Checkpoint::Ready(_) => unreachable!("ready output opens reads without a claim"),
         }
     }
 
-    fn deliver_output_checkpoint(
+    fn deliver_output_checkpoint_with_finish(
         &self,
-        interest: &WorthQueryOutputDemandInterest,
         producer_identity: &str,
-        claim: WorthQueryOutputClaimIdentity,
         receipt: crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         delivery: Delivery,
+        ready_backing: crate::domain_computation::primary_graph::application_output_demand::PreparedReadyBacking,
+        selected: bool,
+        prepared: Option<PreparedSelectedDelivery<'_>>,
+        finish: impl FnOnce(
+            Checkpoint,
+            Option<WorthQueryOutputDemandDenial>,
+        )
+            -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
         if self
             .primary_provider
             .take_delayed_output_readiness_delivery()
         {
-            return self.finish_output_checkpoint(
-                interest,
-                claim,
-                Checkpoint::Published { receipt, delivery },
+            return finish(
+                Checkpoint::Published {
+                    receipt,
+                    delivery,
+                    ready_backing,
+                },
                 None,
             );
         }
         let Delivery::Change(change) = delivery else {
-            return self.finish_output_checkpoint(
-                interest,
-                claim,
+            return finish(
                 Checkpoint::Delivered {
                     receipt,
                     delivery: None,
+                    ready_backing,
                 },
                 None,
             );
         };
-        let route = self
-            .output_readiness_routes
-            .get(producer_identity)
-            .expect("installation requires one readiness route for every output producer");
+        let (lowering, ordinal) = if let Some(prepared) = prepared.as_ref() {
+            (prepared.lowering, prepared.ordinal)
+        } else {
+            let route = self
+                .output_readiness_routes
+                .get(producer_identity)
+                .expect("installation requires one readiness route for every output producer");
+            (&route.lowering, route.delivery_dependency_ordinal)
+        };
         let root = self
             .granular_invalidation_installation()
             .retain_product_shared_root();
-        let outcome = root.deliver_performed_relational_change(
-            &route.lowering,
-            route.delivery_dependency_ordinal,
-            change,
-        );
+        let outcome = root.deliver_performed_relational_change(lowering, ordinal, change);
         let delivered = match outcome {
             Ok(crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChangeDeliveryOutcome::Success(delivered)) => delivered,
             Ok(outcome) => {
-                let detail = format!("{producer_identity}: readiness delivery returned {outcome:?}");
+                let detail = if selected { String::new() } else { format!("{producer_identity}: readiness delivery returned {outcome:?}") };
                 let kind = if outcome.is_retryable() {
                     WorthQueryOutputDemandDenialKind::SchedulingDeferred
                 } else {
@@ -122,10 +164,8 @@ where
                 };
                 let change = outcome.into_undelivered_change()
                     .expect("non-success delivery returns its performed change");
-                return self.finish_output_checkpoint(
-                    interest,
-                    claim,
-                    Checkpoint::Published { receipt, delivery: Delivery::Change(change) },
+                return finish(
+                    Checkpoint::Published { receipt, delivery: Delivery::Change(change), ready_backing },
                     Some(denial(kind, detail)),
                 );
             }
@@ -138,32 +178,32 @@ where
                     | DeliveryDenialKind::ConditionalProductAdmission
                     | DeliveryDenialKind::Bridge => WorthQueryOutputDemandDenialKind::SchedulingRejected,
                 };
-                let failure = denial(
-                    kind,
-                    format!(
-                        "{producer_identity}: readiness delivery denied ({:?}): {}",
-                        cause.kind(), cause.detail(),
-                    ),
-                );
-                return self.finish_output_checkpoint(
-                    interest,
-                    claim,
+                let detail = if selected { String::new() } else { format!(
+                    "{producer_identity}: readiness delivery denied ({:?}): {}",
+                    cause.kind(), cause.detail(),
+                ) };
+                let failure = denial(kind, detail);
+                return finish(
                     Checkpoint::Published {
                         receipt,
                         delivery: Delivery::Change(cause.into_change()),
+                        ready_backing,
                     },
                     Some(failure),
                 );
             }
         };
         if !delivered.has_conditional_successor() {
-            let preserved = self
-                .installed_producers
-                .entries
-                .get(producer_identity)
-                .expect("readiness route retains its installed producer")
-                .executor
-                .preserved_readiness_output(&receipt);
+            let preserved = if let Some(prepared) = prepared.as_ref() {
+                prepared.preserved
+            } else {
+                self.installed_producers
+                    .entries
+                    .get(producer_identity)
+                    .expect("readiness route retains its installed producer")
+                    .executor
+                    .preserved_readiness_output(&receipt)
+            };
             let counters = delivered.counters();
             let exact_noop = delivered.truth_targets_admitted() == 0
                 && delivered.change_set().changes().is_empty()
@@ -172,28 +212,30 @@ where
                 && delivered.slots_touched() == 0
                 && counters.failed_deliveries() == 0;
             if !preserved || !exact_noop {
-                return self.finish_output_checkpoint(
-                    interest,
-                    claim,
+                return finish(
                     Checkpoint::Delivered {
                         receipt,
                         delivery: Some(delivered),
+                        ready_backing,
                     },
                     Some(denial(
                         WorthQueryOutputDemandDenialKind::SchedulingRejected,
-                        format!(
-                            "{producer_identity}: readiness delivery lacked a Signal successor"
-                        ),
+                        if selected {
+                            String::new()
+                        } else {
+                            format!(
+                                "{producer_identity}: readiness delivery lacked a Signal successor"
+                            )
+                        },
                     )),
                 );
             }
         }
-        self.finish_output_checkpoint(
-            interest,
-            claim,
+        finish(
             Checkpoint::Delivered {
                 receipt,
                 delivery: Some(delivered),
+                ready_backing,
             },
             None,
         )

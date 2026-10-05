@@ -120,6 +120,22 @@ pub struct InvariantWitnessKey {
 }
 
 impl InvariantWitnessKey {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        let basis_bytes = match &self.basis {
+            InvariantWitnessBasis::StringOnly | InvariantWitnessBasis::Pass => 0,
+            InvariantWitnessBasis::UniqueEntityAspectField {
+                field_locator,
+                value,
+                field_locator_canonical_bytes,
+                value_canonical_bytes,
+            } => (field_locator.owned_allocation_capacity_bytes() as u64)
+                .saturating_add(value.owned_allocation_capacity_bytes() as u64)
+                .saturating_add(field_locator_canonical_bytes.capacity() as u64)
+                .saturating_add(value_canonical_bytes.capacity() as u64),
+        };
+        (self.value.capacity() as u64).saturating_add(basis_bytes)
+    }
+
     pub fn new(value: impl Into<String>) -> Self {
         Self {
             value: value.into(),

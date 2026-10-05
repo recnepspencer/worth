@@ -3,11 +3,13 @@ use crate::data::error::SignalError;
 use crate::data::graph::SignalGraph;
 use crate::data::handle::NodeId;
 use crate::data::proof::{DedupedNodeBatch, LocallyOrderedShard};
+use crate::data::request_preparation::{self as preparation_budget, SignalPreparationBudget};
 use crate::logic::evaluation::EvaluationRequestMode;
 
 use super::super::types::{EligibleTask, PlanSummary, StageBarrier, StageCursor};
 use super::admission::admit_planned_node;
-use super::topology::{compute_depths, discover_plan_topology, PlanTopology};
+use super::depths::{compute_depths, DepthCache};
+use super::topology::{discover_plan_topology, PlanTopology};
 
 pub(super) fn populate_plan_buffers(
     graph: &mut SignalGraph,
@@ -17,9 +19,55 @@ pub(super) fn populate_plan_buffers(
     out_targets: &mut Vec<NodeId>,
     out_tasks: &mut Vec<EligibleTask>,
     out_stages: &mut Vec<StageCursor>,
+    mut work: Option<&mut worth_execution::MapKernelContext<'_, '_>>,
+    mut preparation: Option<&mut SignalPreparationBudget>,
 ) -> Result<PlanSummary, SignalError> {
-    let topology = discover_plan_topology(graph, targets, request_mode, resolver)?;
-    let depth_cache = compute_depths(graph, &topology.planned_nodes)?;
+    super::super::precompute::work::checkpoint(
+        work.as_deref_mut(),
+        targets.len().saturating_add(graph.arena_capacity()),
+    )?;
+    let topology = discover_plan_topology(
+        graph,
+        targets,
+        request_mode,
+        resolver,
+        work.as_deref_mut(),
+        preparation.as_deref_mut(),
+    )?;
+    let depth_cache = compute_depths(
+        graph,
+        &topology.planned_nodes,
+        work.as_deref_mut(),
+        preparation.as_deref_mut(),
+    )?;
+    super::super::precompute::work::checkpoint(
+        work,
+        topology.planned_nodes.len().saturating_mul(4),
+    )?;
+    // All stage assembly buffers grow geometrically; reserve their maximum
+    // backing extents before constructing or extending any of them.
+    let task_capacity = topology
+        .planned_nodes
+        .len()
+        .checked_mul(2)
+        .ok_or_else(|| SignalError::invalid_input("Signal stage capacity overflow"))?;
+    preparation_budget::claim_vec::<Vec<EligibleTask>>(
+        preparation.as_deref_mut(),
+        depth_cache.max_depth().saturating_add(1),
+    )?;
+    preparation_budget::claim_vec::<EligibleTask>(
+        preparation.as_deref_mut(),
+        task_capacity.saturating_mul(2),
+    )?;
+    preparation_budget::claim_vec::<NodeId>(
+        preparation.as_deref_mut(),
+        topology.planned_nodes.len(),
+    )?;
+    preparation_budget::claim_vec::<NodeId>(
+        preparation.as_deref_mut(),
+        topology.targets.len().saturating_mul(2),
+    )?;
+    preparation_budget::claim_vec::<StageCursor>(preparation, task_capacity)?;
     let staged_tasks = admit_tasks_by_depth(graph, request_mode, &topology, &depth_cache)?;
 
     out_targets.clear();
@@ -34,7 +82,7 @@ fn admit_tasks_by_depth(
     graph: &SignalGraph,
     request_mode: EvaluationRequestMode,
     topology: &PlanTopology,
-    depth_cache: &super::topology::DepthCache,
+    depth_cache: &DepthCache,
 ) -> Result<Vec<Vec<EligibleTask>>, SignalError> {
     let mut stages_by_depth = vec![Vec::<EligibleTask>::new(); depth_cache.max_depth() + 1];
     let planned_nodes =

@@ -1,17 +1,22 @@
 use crate::facade::{
-    mark_dirty, mark_dirty_with_regions, AspectVersion, ChangedRegion, EvaluationRequestMode,
-    NodeEvaluationResult, NodeId, SignalGraph, StageExecutor,
+    mark_dirty_with_regions, AspectVersion, ChangedRegion, EvaluationRequestMode,
+    NodeEvaluationResult, NodeId, SignalGraph,
 };
+use crate::tests::leased_execution::support::{authority, request};
 use crate::tests::support::{version_ab, GraphDependencyBatchExt, ASPECT_A};
 
 use super::canonical_artifact_oracle::canonical_runtime_artifacts;
-use super::executor_policy::{aggressive_parallel_runtime_policy, hostile_executor_matrix};
+use super::executor_policy::{bounded_contract, worker_matrix};
 
 #[test]
 fn logically_equivalent_region_orders_produce_identical_provenance_and_replay() {
     let mut graph_a = SignalGraph::new();
-    let source_a = graph_a.node().build();
-    let target_a = graph_a.node().tolerance(0).build();
+    let source_a = graph_a.node().with_contract(bounded_contract(&[])).build();
+    let target_a = graph_a
+        .node()
+        .with_contract(bounded_contract(&[source_a]))
+        .tolerance(0)
+        .build();
     graph_a
         .append_partition_dependency(target_a, source_a, ASPECT_A, "face")
         .unwrap();
@@ -60,8 +65,9 @@ fn logically_equivalent_region_orders_produce_identical_provenance_and_replay() 
         let plan = graph
             .build_evaluation_plan(&[target_a], EvaluationRequestMode::Default)
             .unwrap();
+        let lease = authority().request_lease(request(4, 1_000_000)).unwrap();
         graph
-            .execute_prepared_plan_with_executor(
+            .execute_prepared_plan_checked(
                 &plan,
                 &(),
                 &move |ctx| {
@@ -73,12 +79,12 @@ fn logically_equivalent_region_orders_produce_identical_provenance_and_replay() 
                                 .with_changed_region(ChangedRegion::new("face")),
                         )
                     } else {
-                        let version = ctx.read_aspect_version(source_a, ASPECT_A)?;
+                        let version = version_ab(ctx.read(source_a, ASPECT_A)?, 0);
                         ctx.finish(NodeEvaluationResult::from_version(version))
                     };
                     Ok(result)
                 },
-                StageExecutor::full_parallel(1),
+                &lease,
             )
             .unwrap();
         canonical_runtime_artifacts(graph, target_a)
@@ -91,10 +97,28 @@ fn logically_equivalent_region_orders_produce_identical_provenance_and_replay() 
 fn reordered_dependency_and_region_orders_stay_canonical_across_executor_matrix() {
     fn build_graph(reverse_dependencies: bool) -> (SignalGraph, NodeId, NodeId, NodeId, NodeId) {
         let mut graph = SignalGraph::new();
-        let source = graph.node().output_identity().build();
-        let shell = graph.node().tolerance(1).partitioned_output().build();
-        let core = graph.node().tolerance(1).partitioned_output().build();
-        let target = graph.node().output_identity().build();
+        let source = graph
+            .node()
+            .with_contract(bounded_contract(&[]))
+            .output_identity()
+            .build();
+        let shell = graph
+            .node()
+            .with_contract(bounded_contract(&[source]))
+            .tolerance(1)
+            .partitioned_output()
+            .build();
+        let core = graph
+            .node()
+            .with_contract(bounded_contract(&[source]))
+            .tolerance(1)
+            .partitioned_output()
+            .build();
+        let target = graph
+            .node()
+            .with_contract(bounded_contract(&[shell, core]))
+            .output_identity()
+            .build();
 
         if reverse_dependencies {
             graph.append_dependency(target, core, ASPECT_A).unwrap();
@@ -168,14 +192,17 @@ fn reordered_dependency_and_region_orders_stay_canonical_across_executor_matrix(
         core: NodeId,
         target: NodeId,
         region_order: &[ChangedRegion],
-        executor: StageExecutor,
+        workers: usize,
     ) -> serde_json::Value {
         mark_dirty_with_regions(&mut graph, source, ASPECT_A, region_order).unwrap();
         let plan = graph
             .build_evaluation_plan(&[target], EvaluationRequestMode::Default)
             .unwrap();
+        let lease = authority()
+            .request_lease(request(workers, 1_000_000))
+            .unwrap();
         graph
-            .execute_prepared_plan_with_executor(
+            .execute_prepared_plan_checked(
                 &plan,
                 &(),
                 &move |ctx| {
@@ -192,11 +219,11 @@ fn reordered_dependency_and_region_orders_stay_canonical_across_executor_matrix(
                                 ),
                         )
                     } else if node == shell || node == core {
-                        let version = ctx.read_aspect_version(source, ASPECT_A)?;
+                        let version = version_ab(ctx.read(source, ASPECT_A)?, 0);
                         ctx.finish(NodeEvaluationResult::from_version(version))
                     } else {
-                        let shell_v = ctx.read_aspect_version(shell, ASPECT_A)?;
-                        let core_v = ctx.read_aspect_version(core, ASPECT_A)?;
+                        let shell_v = version_ab(ctx.read(shell, ASPECT_A)?, 0);
+                        let core_v = version_ab(ctx.read(core, ASPECT_A)?, 0);
                         ctx.finish(
                             NodeEvaluationResult::from_version(AspectVersion::from_updates([(
                                 ASPECT_A,
@@ -207,7 +234,7 @@ fn reordered_dependency_and_region_orders_stay_canonical_across_executor_matrix(
                     };
                     Ok(result)
                 },
-                executor,
+                &lease,
             )
             .unwrap();
         canonical_runtime_artifacts(&graph, target)
@@ -228,7 +255,7 @@ fn reordered_dependency_and_region_orders_stay_canonical_across_executor_matrix(
             ChangedRegion::new("mesh").with_detail("face-b"),
             ChangedRegion::new("shell").with_detail("face-a"),
         ],
-        StageExecutor::Serial,
+        1,
     );
     let reordered = execute(
         graph_b.clone(),
@@ -240,11 +267,11 @@ fn reordered_dependency_and_region_orders_stay_canonical_across_executor_matrix(
             ChangedRegion::new("shell").with_detail("face-a"),
             ChangedRegion::new("mesh").with_detail("face-b"),
         ],
-        StageExecutor::Serial,
+        1,
     );
     assert_eq!(baseline, reordered, "serial canonicalization drifted");
 
-    for (label, executor) in hostile_executor_matrix() {
+    for (label, workers) in worker_matrix() {
         let observed = execute(
             graph_b.clone(),
             source_b,
@@ -255,83 +282,11 @@ fn reordered_dependency_and_region_orders_stay_canonical_across_executor_matrix(
                 ChangedRegion::new("shell").with_detail("face-a"),
                 ChangedRegion::new("mesh").with_detail("face-b"),
             ],
-            executor,
+            workers,
         );
         assert_eq!(
             baseline, observed,
-            "executor {label} drifted reordered topology artifacts"
+            "lease {label} drifted reordered topology artifacts"
         );
     }
-}
-
-#[test]
-fn grouped_parallel_publishes_output_commits_in_global_task_order() {
-    let mut baseline = SignalGraph::new();
-    baseline.set_runtime_policy(aggressive_parallel_runtime_policy());
-    let producers = (0..4)
-        .map(|_| baseline.node().produces_aspects(ASPECT_A).build())
-        .collect::<Vec<_>>();
-    let left_consumer = baseline.node().reads_aspects(ASPECT_A).build();
-    let right_consumer = baseline.node().reads_aspects(ASPECT_A).build();
-    for &producer in &producers[..2] {
-        baseline
-            .append_dependency(left_consumer, producer, ASPECT_A)
-            .unwrap();
-    }
-    for &producer in &producers[2..] {
-        baseline
-            .append_dependency(right_consumer, producer, ASPECT_A)
-            .unwrap();
-    }
-    let requested = producers
-        .iter()
-        .copied()
-        .chain([left_consumer, right_consumer])
-        .collect::<Vec<_>>();
-    let bootstrap = baseline
-        .build_evaluation_plan(&requested, EvaluationRequestMode::ForceOnDemand)
-        .unwrap();
-    baseline
-        .execute_prepared_plan(&bootstrap, &(), &|ctx| {
-            Ok(ctx.finish(version_ab(ctx.node().index() as u64 + 1, 0)))
-        })
-        .unwrap();
-
-    let run = |mut graph: SignalGraph, executor: StageExecutor| {
-        let before_commit_count = graph.published_output_commit_order_for_test().len();
-        let before_dispatch = graph.telemetry().execution.parallel_stage_dispatch_count;
-        let before_reductions = graph.telemetry().execution.reduction_group_count;
-        for &producer in &producers {
-            mark_dirty(&mut graph, producer, ASPECT_A).unwrap();
-        }
-        let plan = graph
-            .build_evaluation_plan(&producers, EvaluationRequestMode::Default)
-            .unwrap();
-        graph
-            .execute_prepared_plan_with_executor(
-                &plan,
-                &(),
-                &|ctx| Ok(ctx.finish(version_ab(ctx.node().index() as u64 + 100, 0))),
-                executor,
-            )
-            .unwrap();
-        let order = graph.published_output_commit_order_for_test();
-        (
-            order[before_commit_count..].to_vec(),
-            graph.telemetry().execution.parallel_stage_dispatch_count - before_dispatch,
-            graph.telemetry().execution.reduction_group_count - before_reductions,
-        )
-    };
-
-    let serial = run(baseline.clone(), StageExecutor::Serial);
-    let parallel = run(baseline, StageExecutor::full_parallel(1));
-    assert_eq!(serial.0, parallel.0);
-    assert!(
-        parallel.1 > 0 && parallel.2 > 0,
-        "the grouped-parallel reduction must execute"
-    );
-    assert_eq!(
-        parallel.0.iter().map(|(_, node)| *node).collect::<Vec<_>>(),
-        producers
-    );
 }

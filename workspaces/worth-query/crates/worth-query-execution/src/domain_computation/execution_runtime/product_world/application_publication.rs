@@ -21,6 +21,12 @@ pub(crate) struct WorthQueryPreparedCombinedProductPublication {
 }
 
 impl WorthQueryPreparedCombinedProductPublication {
+    pub(crate) fn planned_successor(
+        &self,
+    ) -> &worth_runtime_world::facade::PlannedProductReferenceSuccessor {
+        self.prepared.planned_successor()
+    }
+
     pub(crate) fn unpublished_recovery_handle(
         &self,
     ) -> worth_runtime_world::facade::ProductUnpublishedRecoveryHandle {

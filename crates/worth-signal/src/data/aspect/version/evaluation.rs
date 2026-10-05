@@ -1,31 +1,50 @@
-//! Apply scoped versions through the selected partition's ordered range.
-use super::{AspectVersion, BTreeMap, ChangedRegion, PartitionSubscription, PartitionToken};
+//! Advance the distinct projections of a hierarchical scoped write.
+use super::{Aspect, AspectVersion, ChangedRegion, PartitionVersionOverrides, ScopeCoverage};
 
 pub(super) fn apply(
-    partitions: &mut BTreeMap<PartitionToken, AspectVersion>,
-    details: &mut BTreeMap<PartitionSubscription, AspectVersion>,
+    overrides: &mut PartitionVersionOverrides,
     version: AspectVersion,
     changed_regions: &[ChangedRegion],
 ) {
+    if changed_regions.is_empty() {
+        overrides.set_global(version);
+        return;
+    }
     for region in changed_regions {
-        partitions.insert(region.partition.clone(), version);
-        if let Some(detail) = &region.detail {
-            details.insert(
-                PartitionSubscription::partition_and_detail(
-                    region.partition.clone(),
-                    detail.clone(),
-                ),
-                version,
-            );
-        } else {
-            // Partition is the first ordering axis and None is the lowest detail.
-            let lower = PartitionSubscription::whole_partition(region.partition.clone());
-            for (scope, scoped_version) in details.range_mut(lower..) {
-                if scope.partition != region.partition {
-                    break;
+        overrides.write_version(region, version);
+    }
+}
+
+impl PartitionVersionOverrides {
+    pub(super) fn write_version(&mut self, region: &ChangedRegion, version: AspectVersion) {
+        for depth in 1..=region.path().depth() {
+            let prefix = region.path().prefix(depth).expect("validated scope prefix");
+            let record = self.paths.entry(prefix).or_default();
+            record.descendant_aggregate = Some(version);
+            if depth == region.path().depth() {
+                match region.coverage() {
+                    ScopeCoverage::Exact => record.exact_write = Some(version),
+                    ScopeCoverage::Subtree => record.subtree_write = Some(version),
                 }
-                *scoped_version = version;
             }
         }
     }
+
+    pub(super) fn write_aspect(&mut self, region: &ChangedRegion, aspect: Aspect, value: u64) {
+        for depth in 1..=region.path().depth() {
+            let prefix = region.path().prefix(depth).expect("validated scope prefix");
+            let record = self.paths.entry(prefix).or_default();
+            set_aspect(&mut record.descendant_aggregate, aspect, value);
+            if depth == region.path().depth() {
+                match region.coverage() {
+                    ScopeCoverage::Exact => set_aspect(&mut record.exact_write, aspect, value),
+                    ScopeCoverage::Subtree => set_aspect(&mut record.subtree_write, aspect, value),
+                }
+            }
+        }
+    }
+}
+
+fn set_aspect(version: &mut Option<AspectVersion>, aspect: Aspect, value: u64) {
+    *version = Some(version.unwrap_or_default().with(aspect, value));
 }

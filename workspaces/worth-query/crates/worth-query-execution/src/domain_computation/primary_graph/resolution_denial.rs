@@ -24,6 +24,10 @@ pub enum WorthQueryPrincipalResolutionDenialKind {
     BranchMaterializationSuspended,
     /// The principal identity index is unavailable.
     IdentityIndexUnavailable,
+    /// Fresh principal resolution exceeded its carried Work allowance.
+    ProjectionWorkBudgetExceeded,
+    /// Fresh principal resolution could not reserve its preparation backing.
+    ProjectionPreparationMemoryExhausted,
     /// The identity index disagrees with stored records.
     CorruptIdentityIndex,
     /// No principal has this identity.

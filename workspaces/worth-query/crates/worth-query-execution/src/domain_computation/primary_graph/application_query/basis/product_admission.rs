@@ -10,6 +10,36 @@ pub(super) fn admit<Schema>(
     product: WorthQueryProductObservationLease,
     application_basis: super::super::resource_lifecycle::WorthQueryApplicationBasisLease,
 ) -> Result<WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial> {
+    let selected = admit_selected_permission_basis(application, product, application_basis)?;
+    let graph = application
+        .runtime
+        .primary_graph()
+        .ok_or_else(|| {
+            admission_denial(
+                WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable,
+                "primary graph",
+            )
+        })?
+        .integration_handle();
+    graph
+        .with_runtime_mut(|runtime| {
+            graph.ensure_primary_indexes_for_basis(
+                runtime,
+                selected.selected_product().relational_basis(),
+            )
+        })
+        .map_err(map_index_currency_denial)?;
+    Ok(selected)
+}
+
+/// Admit the selected Query/Product basis before deciding whether this read
+/// needs graph execution. Read and disclosure permission can use this custody
+/// without rebuilding unrelated indexes on a Clean demand.
+pub(super) fn admit_selected_permission_basis<Schema>(
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: WorthQueryProductObservationLease,
+    application_basis: super::super::resource_lifecycle::WorthQueryApplicationBasisLease,
+) -> Result<WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial> {
     if product.observation().owner_identity() != application.product_runtime.owner.owner_identity()
     {
         return Err(admission_denial(
@@ -23,21 +53,6 @@ pub(super) fn admit<Schema>(
             "retained product snapshot",
         ));
     }
-    let graph = application
-        .runtime
-        .primary_graph()
-        .ok_or_else(|| {
-            admission_denial(
-                WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable,
-                "primary graph",
-            )
-        })?
-        .integration_handle();
-    graph
-        .with_runtime_mut(|runtime| {
-            graph.ensure_primary_indexes_for_basis(runtime, product.relational_basis())
-        })
-        .map_err(map_index_currency_denial)?;
     Ok(WorthQueryApplicationQueryBasisCustody::new(
         product,
         application_basis,

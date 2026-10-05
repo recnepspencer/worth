@@ -21,6 +21,7 @@ pub use demand::{
     WorthQueryApplicationOutputDemandDenial, WorthQueryApplicationOutputDemandHandle,
     WorthQueryApplicationOutputDemandProgress, WorthQueryApplicationOutputDemandRequest,
     WorthQueryApplicationOutputDemandSettlement, WorthQueryOutputDemandControls,
+    WorthQueryOutputSettlementPosture,
 };
 pub use denial::{
     WorthQueryApplicationRequestMutationDenial, WorthQueryApplicationRequestMutationDenialKind,

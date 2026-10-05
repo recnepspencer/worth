@@ -13,6 +13,7 @@ mod durable_dependencies;
 pub(in crate::domain_computation::authorization) use delegation::WorthQueryDelegationDecisionFact;
 pub(in crate::domain_computation) use delegation::WorthQueryDurableCapabilityLineage;
 pub(in crate::domain_computation) use durable_dependencies::WorthQueryDurableAuthorizationDependencies;
+mod admitted_currentness;
 mod delegation_activation;
 pub(in crate::domain_computation::authorization) use delegation_activation::WorthQueryDelegationActivationDecisionFact;
 

@@ -6,7 +6,9 @@ use crate::diagnostics::data::{
     DeterminismExpectation, DiagnosticsArtifactKind, DiagnosticsScope, RelationalDiagnosticArtifact,
 };
 use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
-use crate::history::data::{CanonicalCommitAuthorityKind, CanonicalCommitEnvelope};
+use crate::history::data::{
+    CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, RelationalDescriptiveTouchGraph,
+};
 use crate::indexes::data::DerivedIndexArtifacts;
 use crate::lineage::data::{
     FinalizedLineageEventBatch, LineageDecisionLog, LineageFinalizationArtifact,
@@ -111,6 +113,7 @@ fn commit_envelope(commit_id: u64, version_id: u64) -> CanonicalCommitEnvelope {
                 detail: PatchDetail::DenseBitset(vec![]),
             }],
         },
+        RelationalDescriptiveTouchGraph::exact(vec![]),
         RelationalDiagnosticArtifact::new(
             DiagnosticsScope::Replay,
             DiagnosticsArtifactKind::MinimalSummary,

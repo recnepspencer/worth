@@ -1,6 +1,10 @@
+use super::admission::admitted_algorithm_clone;
 use super::algorithm::CanonicalDigestAlgorithmMetadata;
 use super::evidence::{CanonicalDigestDerivationInput, CanonicalDigestInputId};
-use super::material::sha256_digest;
+use super::material::{digest_input_id, sha256_digest};
+use super::resource_admission::{
+    CanonicalDigestAdmissionStop, CanonicalDigestPreparationStop, CanonicalResourceAdmission,
+};
 use super::CanonicalDigestDerivationReadyArtifact;
 use super::CanonicalDigestWorkEvidence;
 
@@ -92,17 +96,50 @@ pub enum CanonicalDigestDerivationDenial {
 pub fn derive_canonical_digest(
     ready: CanonicalDigestDerivationReadyArtifact,
 ) -> CanonicalDerivedDigest {
+    derive_canonical_digest_admitted(ready, None)
+        .expect("ordinary digest derivation has no resource-refusal port")
+}
+
+pub fn derive_canonical_digest_with_admission<Stop>(
+    ready: CanonicalDigestDerivationReadyArtifact,
+    admit: &mut impl FnMut(usize, usize) -> Result<(), Stop>,
+) -> Result<CanonicalDerivedDigest, CanonicalDigestAdmissionStop<Stop>> {
+    let mut refusal = None;
+    let mut admission = |work, bytes| {
+        admit(work, bytes).map_err(|stop| {
+            refusal = Some(stop);
+        })
+    };
+    let result = derive_canonical_digest_admitted(ready, Some(&mut admission));
+    result.map_err(|stop| stop.preserve(refusal))
+}
+
+fn derive_canonical_digest_admitted(
+    ready: CanonicalDigestDerivationReadyArtifact,
+    mut admission: Option<&mut CanonicalResourceAdmission<'_>>,
+) -> Result<CanonicalDerivedDigest, CanonicalDigestPreparationStop> {
     let (input, _proofs, _basis) = ready.into_parts().into_parts();
     debug_assert!(input.algorithm().id().is_sha256());
+    let algorithm = admitted_algorithm_clone(input.algorithm(), admission.as_deref_mut())?;
+    let input_id = digest_input_id(input.evidence(), admission.as_deref_mut())?;
+    if let Some(admission) = admission {
+        let work = input
+            .work()
+            .sha256_input_bytes()
+            .checked_add(input.work().sha256_compression_block_count())
+            .and_then(|work| work.checked_add(32 + 1))
+            .ok_or(CanonicalDigestPreparationStop::AccountingOverflow)?;
+        admission(work, 0).map_err(|()| CanonicalDigestPreparationStop::ResourceRefused)?;
+    }
     let value = CanonicalDigestValue::new(sha256_digest(input.material()));
     let metadata = CanonicalDigestMetadata::new(
-        input.algorithm().clone(),
-        input.evidence().input_id(),
-        input.evidence().entry_count(),
+        algorithm,
+        input_id,
+        input.work().canonical_entry_count(),
         input.work(),
     );
 
-    CanonicalDerivedDigest::new(metadata, value)
+    Ok(CanonicalDerivedDigest::new(metadata, value))
 }
 
 #[allow(dead_code)]

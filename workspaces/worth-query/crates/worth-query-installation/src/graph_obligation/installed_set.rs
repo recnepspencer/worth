@@ -97,6 +97,10 @@ impl WorthQueryInstalledGraphObligationInspection<'_> {
         self.installed.identity()
     }
 
+    pub const fn binding_identity(&self) -> &ApplicationSchemaBindingIdentity {
+        self.installed.binding_identity()
+    }
+
     pub const fn subject_kind(&self) -> WorthQueryInstalledGraphObligationSubjectKind {
         self.installed.subject_kind()
     }

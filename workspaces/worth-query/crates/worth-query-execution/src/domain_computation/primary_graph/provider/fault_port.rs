@@ -16,6 +16,8 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryPrimaryGraphFaul
     ReadyReadSnapshotPressure,
     #[cfg(feature = "test-primary-graph-faults")]
     ReadinessSnapshotPressure,
+    #[cfg(feature = "test-primary-graph-faults")]
+    UnsealedProducerSettlement,
     #[cfg(test)]
     UndeclaredApplicationTouch,
     #[cfg(test)]
@@ -104,6 +106,8 @@ const fn fault_mask(fault: WorthQueryPrimaryGraphFault) -> u16 {
         WorthQueryPrimaryGraphFault::ReadyReadSnapshotPressure => 1 << 11,
         #[cfg(feature = "test-primary-graph-faults")]
         WorthQueryPrimaryGraphFault::ReadinessSnapshotPressure => 1 << 12,
+        #[cfg(feature = "test-primary-graph-faults")]
+        WorthQueryPrimaryGraphFault::UnsealedProducerSettlement => 1 << 3,
         #[cfg(test)]
         WorthQueryPrimaryGraphFault::UndeclaredApplicationTouch => 1 << 6,
         #[cfg(test)]
@@ -137,6 +141,20 @@ impl super::WorthQueryPrimaryGraphProvider {
         assert!(self
             .fault_port
             .schedule_for_test(WorthQueryPrimaryGraphFault::FailedPostCommitSnapshot));
+    }
+
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub(super) fn take_unsealed_producer_settlement(&self) -> bool {
+        self.take_fault(WorthQueryPrimaryGraphFault::UnsealedProducerSettlement)
+    }
+
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub(in crate::domain_computation::primary_graph) fn leave_next_producer_settlement_unsealed_for_test(
+        &self,
+    ) {
+        assert!(self
+            .fault_port
+            .schedule_for_test(WorthQueryPrimaryGraphFault::UnsealedProducerSettlement));
     }
 
     pub(super) fn take_skipped_invariant_owner_execution(&self) -> bool {

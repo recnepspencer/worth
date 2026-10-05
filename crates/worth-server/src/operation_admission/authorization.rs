@@ -10,6 +10,16 @@ pub struct WorthServerOperationAuthorizationProof {
 }
 
 impl WorthServerOperationAuthorizationProof {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use crate::product_adapter::execution_pipeline::read_batch_accounting::string;
+        self.admission
+            .owned_allocation_capacity_bytes()
+            .saturating_add(string(&self.operation_reference_digest))
+            .saturating_add(string(&self.footprint_digest))
+            .saturating_add(string(&self.authorization_lane))
+            .saturating_add(string(&self.canonical_digest))
+    }
+
     pub(crate) fn new(
         admission: WorthServerAdmission,
         operation_reference_digest: impl Into<String>,

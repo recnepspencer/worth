@@ -7,6 +7,10 @@ pub struct WorthServerProductOperationSupportSnapshot {
 }
 
 impl WorthServerProductOperationSupportSnapshot {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        super::execution_pipeline::read_batch_accounting::string(&self.support_row)
+    }
+
     pub fn production_admitted(support_row: impl Into<String>) -> Self {
         Self {
             support_row: support_row.into(),

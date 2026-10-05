@@ -39,7 +39,7 @@ where
         let bridge = bridge_root
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let routes_changed = operation
+        operation
             .admit_product_binding(&bridge, runtime, &truth)
             .map_err(|denial| {
                 WorthQueryConditionalClockObservationDenial::new(
@@ -50,14 +50,6 @@ where
                 )
             })?;
         drop(bridge);
-        if routes_changed {
-            let registry = runtime
-                .conditional_operations
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .snapshot();
-            registry.synchronize_commit_routes(runtime);
-        }
         Ok(WorthQueryConditionalClockObservationPort {
             runtime,
             operation,

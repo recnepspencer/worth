@@ -1,8 +1,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-use worth_foundational::facade::AspectFieldLocator;
+use worth_foundational::facade::{AspectFieldLocator, AspectKey, FieldKey};
 
+mod admitted_selection;
+pub(crate) use admitted_selection::ExactLookupInputs;
 mod generation_catalog;
 
 use generation_catalog::GenerationCatalog;
@@ -31,6 +33,7 @@ pub(crate) type UniqueEntityAspectFieldIndex = BTreeMap<
 #[derive(Debug, Clone)]
 pub(crate) struct IndexingState {
     pub(crate) definitions: BTreeMap<DerivedIndexId, Arc<DerivedIndexDefinition>>,
+    field_definitions: BTreeMap<AspectKey, BTreeMap<FieldKey, Vec<Arc<DerivedIndexDefinition>>>>,
     generations: GenerationCatalog,
     pub(crate) entity_unique_aspect_field_index: UniqueEntityAspectFieldIndex,
     pub(crate) next_index_id: u64,
@@ -41,6 +44,7 @@ impl IndexingState {
     fn empty() -> Self {
         Self {
             definitions: BTreeMap::new(),
+            field_definitions: BTreeMap::new(),
             generations: GenerationCatalog::default(),
             entity_unique_aspect_field_index: BTreeMap::new(),
             next_index_id: 1,
@@ -52,8 +56,31 @@ impl IndexingState {
         self.next_index_id = self
             .next_index_id
             .max(definition.index_id.0.saturating_add(1));
-        self.definitions
-            .insert(definition.index_id, Arc::new(definition));
+        if let Some(previous) = self.definitions.remove(&definition.index_id) {
+            if let Some((aspect, field)) = field_index_locator(&previous.kind) {
+                if let Some(fields) = self.field_definitions.get_mut(&aspect) {
+                    if let Some(definitions) = fields.get_mut(&field) {
+                        definitions.retain(|entry| entry.index_id != previous.index_id);
+                        if definitions.is_empty() {
+                            fields.remove(&field);
+                        }
+                    }
+                    if fields.is_empty() {
+                        self.field_definitions.remove(&aspect);
+                    }
+                }
+            }
+        }
+        let definition = Arc::new(definition);
+        if let Some((aspect, field)) = field_index_locator(&definition.kind) {
+            self.field_definitions
+                .entry(aspect)
+                .or_default()
+                .entry(field)
+                .or_default()
+                .push(Arc::clone(&definition));
+        }
+        self.definitions.insert(definition.index_id, definition);
     }
 
     pub(crate) fn restore_generation(&mut self, generation: DerivedIndexGeneration) {
@@ -75,7 +102,59 @@ pub(crate) struct IndexingSubsystem {
     state: RuntimeOwnedState<IndexingState>,
 }
 
+/// Read-only handle to installed definitions used while sealing commit changes.
+#[derive(Debug)]
+pub(crate) struct IndexDefinitionReadBinding {
+    state: RuntimeOwnedState<IndexingState>,
+}
+
+impl Clone for IndexDefinitionReadBinding {
+    fn clone(&self) -> Self {
+        Self {
+            state: self.state.share(),
+        }
+    }
+}
+
+impl IndexDefinitionReadBinding {
+    pub(crate) fn with_field<R>(
+        &self,
+        aspect: &AspectKey,
+        field: &FieldKey,
+        read: impl FnOnce(&[Arc<DerivedIndexDefinition>]) -> R,
+    ) -> R {
+        let state = self.state.read();
+        read(
+            state
+                .field_definitions
+                .get(aspect)
+                .and_then(|fields| fields.get(field))
+                .map_or(&[], Vec::as_slice),
+        )
+    }
+}
+
+fn field_index_locator(
+    kind: &crate::indexes::data::DerivedIndexKind,
+) -> Option<(AspectKey, FieldKey)> {
+    match kind {
+        crate::indexes::data::DerivedIndexKind::EntityField { field_locator }
+        | crate::indexes::data::DerivedIndexKind::RelationField { field_locator } => {
+            match field_locator.field_path().fields() {
+                [field] => Some((field_locator.aspect().aspect_key().clone(), field.clone())),
+                _ => None,
+            }
+        }
+        _ => None,
+    }
+}
+
 impl IndexingSubsystem {
+    pub(crate) fn definition_read_binding(&self) -> IndexDefinitionReadBinding {
+        IndexDefinitionReadBinding {
+            state: self.state.share(),
+        }
+    }
     pub(crate) fn reclaim_except_versions(
         &self,
         retained: &crate::history::retention::RetainedIndexRoots,

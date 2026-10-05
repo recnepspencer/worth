@@ -35,6 +35,7 @@ pub struct BridgeSemanticAspectChange {
     binding: AspectBinding,
     kind: AuthoritativeAspectChangeKind,
     field_path: Option<CanonicalFieldPath>,
+    scope_change: Option<worth_signal::facade::ChangedRegion>,
     precision: BridgeAspectChangePrecision,
     widening_cause: Option<BridgeAspectChangeWideningCause>,
 }
@@ -55,6 +56,7 @@ impl BridgeSemanticAspectChange {
             binding,
             kind,
             field_path,
+            scope_change: None,
             precision: BridgeAspectChangePrecision::Exact,
             widening_cause: None,
         }
@@ -77,6 +79,7 @@ impl BridgeSemanticAspectChange {
             binding,
             kind,
             field_path,
+            scope_change: None,
             precision: BridgeAspectChangePrecision::DeclaredWidening,
             widening_cause: Some(cause),
         }
@@ -99,6 +102,14 @@ impl BridgeSemanticAspectChange {
     }
     pub fn field_path(&self) -> Option<&CanonicalFieldPath> {
         self.field_path.as_ref()
+    }
+    /// Carries an owner-sealed Signal scope without lowering its depth.
+    pub fn with_scope_change(mut self, scope_change: worth_signal::facade::ChangedRegion) -> Self {
+        self.scope_change = Some(scope_change);
+        self
+    }
+    pub fn scope_change(&self) -> Option<&worth_signal::facade::ChangedRegion> {
+        self.scope_change.as_ref()
     }
     pub const fn precision(&self) -> BridgeAspectChangePrecision {
         self.precision
@@ -195,6 +206,23 @@ impl BridgeSemanticAspectChange {
                 }
             },
             path,
+            self.scope_change.as_ref().map_or_else(
+                || "unscoped".to_string(),
+                |scope| {
+                    let mut parts = vec![match scope.coverage() {
+                        worth_signal::facade::ScopeCoverage::Exact => "exact".to_string(),
+                        worth_signal::facade::ScopeCoverage::Subtree => "subtree".to_string(),
+                    }];
+                    parts.extend(
+                        scope
+                            .path()
+                            .segments()
+                            .iter()
+                            .map(|segment| format!("{}:{segment}", segment.len())),
+                    );
+                    length_delimited(parts)
+                },
+            ),
         ])
     }
 }

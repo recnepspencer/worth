@@ -51,7 +51,7 @@ pub(crate) fn admit_direct_task_with_policy_resolver(
 ) -> Result<EligibleTask, SignalError> {
     let state = graph.get_state(node)?;
     let maybe_stale_admission = if matches!(state, NodeState::MaybeStale) {
-        let preview = preview_maybe_stale(graph, node, resolver)?;
+        let preview = preview_maybe_stale(graph, node, resolver, None, None)?;
         Some(MaybeStaleAdmission {
             unchanged_at_admission: preview.unchanged,
         })

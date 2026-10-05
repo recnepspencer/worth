@@ -1,3 +1,10 @@
+mod cached_reclaim;
+mod closed_retirement;
+mod joined_ready;
+mod occurrence_retirement;
+mod performed_release;
+mod selected_execution_finish;
+
 use super::*;
 
 impl WorthQueryOutputDemandRegistry {
@@ -105,47 +112,6 @@ impl WorthQueryOutputDemandRegistry {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn release_product_occurrence(
-        &self,
-        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-    ) {
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        for custody in state.source_custody.values_mut() {
-            if custody.occurrence == occurrence {
-                custody.retire(WorthQueryOutputDemandDenial::new(
-                    crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Closed,
-                    "product occurrence retired before required-output custody was consumed",
-                ));
-            }
-        }
-        if let Some(preparation) = state.source_preparations.get_mut(&occurrence) {
-            preparation.retired = true;
-        }
-        state.records.retain(|_, record| {
-            if record.product_occurrence != occurrence {
-                return true;
-            }
-            if record.interests == 0 {
-                return false;
-            }
-            let denial = WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Closed,
-                "product occurrence retired",
-            );
-            match &mut record.state {
-                DemandState::Output(output) => output.stop(denial),
-                _ => record.state = DemandState::Failed(denial),
-            }
-            record.performed_source = None;
-            record.wake.notify();
-            true
-        });
-        state.prune_completed_custody();
-    }
-
     #[cfg(feature = "test-primary-graph-faults")]
     pub(in crate::domain_computation::primary_graph) fn prepared_source_count(&self) -> usize {
         self.state
@@ -184,11 +150,17 @@ impl WorthQueryOutputDemandRegistry {
                     (
                         outputs + 1,
                         pinned
-                            + usize::from(output.receipt.as_ref().is_some_and(|receipt| {
-                                receipt
-                                    .committed_product_publication()
-                                    .has_output_demand_observation_for_test()
-                            })),
+                            + usize::from(
+                                output
+                                    .checkpoint
+                                    .as_ref()
+                                    .and_then(WorthQueryOutputCheckpoint::receipt)
+                                    .is_some_and(|receipt| {
+                                        receipt
+                                            .committed_product_publication()
+                                            .has_output_demand_observation_for_test()
+                                    }),
+                            ),
                     )
                 } else {
                     (outputs, pinned)
@@ -208,14 +180,7 @@ impl WorthQueryOutputDemandRegistry {
             .records
             .get_mut(&interest.key)
             .expect("executing demand retains its owner record");
-        if matches!(record.state, DemandState::Scheduling | DemandState::Running) {
-            record.state = match std::mem::replace(&mut record.state, DemandState::Admitted) {
-                DemandState::Scheduling => DemandState::Admitted,
-                DemandState::Running => DemandState::Scheduled,
-                _ => unreachable!("relinquished state was checked above"),
-            };
-            record.wake.notify();
-        }
+        selected_execution_finish::relinquish_record(record);
     }
 
     pub(in crate::domain_computation::primary_graph) fn release(
@@ -226,18 +191,30 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut released_bytes = 0;
+        let replaced = refreshed_rejoin::replaced_under_refresh(&state.records, &interest.key);
         let remove = state.records.get_mut(&interest.key).is_some_and(|record| {
             record.interests = record.interests.saturating_sub(1);
+            if interest.requires_output {
+                record.required_interests = record.required_interests.saturating_sub(1);
+            }
             // Keep a ready ordinary output for an equivalent later demand.
             // Source supersession and occurrence retirement remove it; closing
             // the handle releases only the caller's interest.
-            let ready = matches!(&record.state, DemandState::Output(output)
-                if matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Ready(_))));
+            let ready = record.has_cached_ready();
             let stopped = matches!(record.state, DemandState::Failed(_))
                 || matches!(&record.state, DemandState::Output(output)
                     if matches!(output.advancement, WorthQueryOutputAdvancement::Stopped { .. }));
+            if stopped && record.interests == 0 && !record.pending_cleanup_queued {
+                released_bytes += record.release_obligations();
+            }
             record.interests == 0
-                && ((!record.required && !ready) || stopped)
+                && record.framework_required_count == 0
+                && record.prepared_prerequisite_claims == 0
+                && !record.pending_cleanup_queued
+                && ((!record.is_required() && !ready) || stopped)
+                && !(ready && replaced)
+                && record.performed_obligations.is_empty()
                 && record.performed_source.is_none()
                 && match &record.state {
                     DemandState::Scheduling | DemandState::Running => false,
@@ -253,10 +230,70 @@ impl WorthQueryOutputDemandRegistry {
                     _ => true,
                 }
         });
+        let terminal = state.records.get(&interest.key).is_some_and(|record| {
+            matches!(record.state, DemandState::Failed(_))
+                || matches!(&record.state, DemandState::Output(output)
+                    if matches!(output.advancement, WorthQueryOutputAdvancement::Stopped { .. }))
+        });
+        let released_prerequisites =
+            terminal.then(|| state.release_record_prerequisites(&interest.key));
         if remove {
-            state.records.remove(&interest.key);
+            if let Some(record) = state.records.remove(&interest.key) {
+                released_bytes += record.obligation_reserved_bytes();
+                if record.unpublished_new_key() {
+                    state.revive_replaced_ready(&interest.key);
+                }
+            }
         }
+        if !state
+            .records
+            .get(&interest.key)
+            .is_some_and(|record| record.pending_cleanup_queued)
+        {
+            state.remove_required_member_if_released(&interest.key);
+        }
+        // A held successor ends with its row's work or with the last owner
+        // awaiting that row; it drops after the lock.
+        let mut finished = state.take_finished_successor(&interest.key);
+        let unawaited = state
+            .records
+            .get_mut(&interest.key)
+            .and_then(DemandRecord::take_unawaited_reopened);
+        // A closing stale owner may have been the last one awaiting the
+        // newest row of its occurrence.
+        if terminal {
+            if let Some(newest) =
+                refreshed_rejoin::newest_of_occurrence(&state.records, &interest.key)
+            {
+                state.remove_required_member_if_released(&newest);
+                finished = finished.or_else(|| state.take_finished_successor(&newest));
+            }
+        }
+        state.obligation_reserved_bytes = state
+            .obligation_reserved_bytes
+            .saturating_sub(released_bytes);
+        // The closing row, each upstream its released claims leave unheld,
+        // and each row it replaced, keeps only what it can still answer for.
+        let candidates = std::iter::once(interest.key.clone())
+            .chain(
+                released_prerequisites
+                    .iter()
+                    .flatten()
+                    .map(|upstream| upstream.as_ref().clone()),
+            )
+            .chain(refreshed_rejoin::replaced_by_published(
+                &state.records,
+                &interest.key,
+            ))
+            .collect();
+        let (retired, released_claims) = state.retire_closed_rows(candidates);
         state.prune_completed_custody();
+        drop(state);
+        drop(retired);
+        drop(released_claims);
+        drop(released_prerequisites);
+        drop(finished);
+        drop(unawaited);
     }
 }
 
@@ -286,9 +323,11 @@ impl DemandRegistryState {
             }) {
                 return true;
             }
-            self.records.values().any(|record| {
+            self.records.iter().any(|(key, record)| {
                 record.source_commits.contains(commit)
                     && (record.interests != 0
+                        || refreshed_rejoin::awaited_by_stale_owner(&self.records, key)
+                        || !record.performed_obligations.is_empty()
                         || !matches!(
                             record.state,
                             DemandState::Output(WorthQueryOutputProgress {
@@ -339,5 +378,19 @@ impl WorthQueryOutputDemandInterest {
         &self,
     ) -> WorthQueryOutputDemandNotifications {
         self.notifications.clone()
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn key(
+        &self,
+    ) -> &WorthQueryOutputDemandKey {
+        &self.key
+    }
+
+    /// Whether this interest supersedes `older` as a continuation: a newer
+    /// source of the same occurrence, or the same row refreshed again.
+    pub(in crate::domain_computation::primary_graph) fn supersedes(&self, older: &Self) -> bool {
+        self.key
+            .replacement_order(&older.key)
+            .is_some_and(|order| order != std::cmp::Ordering::Less)
     }
 }

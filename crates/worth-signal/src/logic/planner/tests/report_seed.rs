@@ -6,6 +6,7 @@ use super::super::types::{EvaluationPlan, ExecutionReport, TaskReason};
 
 pub(super) fn empty_execution_report(plan: &EvaluationPlan) -> ExecutionReport {
     ExecutionReport {
+        execution: Vec::new(),
         plan_summary: plan.summary,
         stage_count: plan.summary.stage_count,
         task_count: plan.summary.task_count,

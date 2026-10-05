@@ -172,6 +172,10 @@ impl RelationalBranchRetentionOwner {
         ))
     }
 
+    pub(crate) fn retired_root_count(&self) -> usize {
+        self.inner.retired_root_count.load(Ordering::Acquire)
+    }
+
     pub(crate) fn counters(&self) -> RelationalRetentionCostCounters {
         let mut counters = lock_maintenance_counters(&self.inner)
             .to_owned()

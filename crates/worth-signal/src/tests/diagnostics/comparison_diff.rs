@@ -1,4 +1,5 @@
 use crate::facade::*;
+use crate::tests::leased_execution::support::{authority, request};
 use crate::tests::support::*;
 
 #[test]
@@ -73,7 +74,7 @@ fn flow_and_failure_summaries_are_structured_and_diffable() {
         ExecutionFailurePhase::Precompute,
         Some(0),
         Some(node),
-        Some(StageExecutor::Serial),
+        Some(worth_foundational::ExecutionPosture::Serial),
         Some(ExecutionRecordId(7)),
         Some(plan.summary),
         "precompute failed",
@@ -91,13 +92,26 @@ fn flow_and_failure_summaries_are_structured_and_diffable() {
     assert!(render_failure_summary(&failure_summary).contains("FailureSummary"));
 }
 
-#[cfg(feature = "parallel")]
 #[test]
 fn serial_and_parallel_reports_are_semantically_equivalent() {
     let mut graph_serial = SignalGraph::new();
-    let a = graph_serial.node().build();
-    let b = graph_serial.node().build();
-    let c = graph_serial.node().build();
+    let a = graph_serial
+        .node()
+        .with_contract(NodeContract::wildcard().with_bounded_inputs(BoundedSignalInputs::default()))
+        .build();
+    let b = graph_serial
+        .node()
+        .with_contract(NodeContract::wildcard().with_bounded_inputs(BoundedSignalInputs::default()))
+        .build();
+    let c = graph_serial
+        .node()
+        .with_contract(
+            NodeContract::wildcard().with_bounded_inputs(BoundedSignalInputs::new([
+                DeclaredSignalInput::new(a, ASPECT_A),
+                DeclaredSignalInput::new(b, ASPECT_A),
+            ])),
+        )
+        .build();
     let mut dependencies = DependencyBatchBuilder::new(&mut graph_serial);
     dependencies
         .append_dependency(c, a, ASPECT_A)
@@ -132,6 +146,16 @@ fn serial_and_parallel_reports_are_semantically_equivalent() {
         .execute_prepared_plan(&bootstrap, &(), &evaluator)
         .unwrap();
 
+    let checked_evaluator = |ctx: &mut CheckedEvaluationContext<'_, '_, '_, '_, ()>| {
+        let value = if ctx.node() == c {
+            ctx.read(a, ASPECT_A)? + ctx.read(b, ASPECT_A)?
+        } else {
+            1
+        };
+        Ok(version_ab(value, 0))
+    };
+    let serial_lease = authority().request_lease(request(1, 1_000_000)).unwrap();
+    let parallel_lease = authority().request_lease(request(4, 1_000_000)).unwrap();
     mark_dirty(&mut graph_serial, a, ASPECT_A).unwrap();
     mark_dirty(&mut graph_parallel, a, ASPECT_A).unwrap();
 
@@ -143,15 +167,10 @@ fn serial_and_parallel_reports_are_semantically_equivalent() {
         .unwrap();
 
     let report_serial = graph_serial
-        .execute_prepared_plan_with_executor(&plan_serial, &(), &evaluator, StageExecutor::Serial)
+        .execute_prepared_plan_checked(&plan_serial, &(), &checked_evaluator, &serial_lease)
         .unwrap();
     let report_parallel = graph_parallel
-        .execute_prepared_plan_with_executor(
-            &plan_parallel,
-            &(),
-            &evaluator,
-            StageExecutor::parallel(1),
-        )
+        .execute_prepared_plan_checked(&plan_parallel, &(), &checked_evaluator, &parallel_lease)
         .unwrap();
 
     let summary_serial = report_serial.diagnostics_summary(DiagnosticsTier::Development);
@@ -162,13 +181,29 @@ fn serial_and_parallel_reports_are_semantically_equivalent() {
     ));
 }
 
-#[cfg(feature = "parallel")]
 #[test]
 fn repeated_serial_parallel_lifecycle_parity_stays_stable() {
     let mut graph_serial = SignalGraph::new();
-    let source = graph_serial.node().build();
-    let wing = graph_serial.node().build();
-    let tail = graph_serial.node().build();
+    let source = graph_serial
+        .node()
+        .with_contract(NodeContract::wildcard().with_bounded_inputs(BoundedSignalInputs::default()))
+        .build();
+    let wing = graph_serial
+        .node()
+        .with_contract(
+            NodeContract::wildcard().with_bounded_inputs(BoundedSignalInputs::new([
+                DeclaredSignalInput::new(source, ASPECT_A),
+            ])),
+        )
+        .build();
+    let tail = graph_serial
+        .node()
+        .with_contract(
+            NodeContract::wildcard().with_bounded_inputs(BoundedSignalInputs::new([
+                DeclaredSignalInput::new(source, ASPECT_A),
+            ])),
+        )
+        .build();
     let mut dependencies = DependencyBatchBuilder::new(&mut graph_serial);
     dependencies
         .append_partition_dependency(wing, source, ASPECT_A, "wing")
@@ -199,6 +234,17 @@ fn repeated_serial_parallel_lifecycle_parity_stays_stable() {
         .execute_prepared_plan(&bootstrap, &(), &evaluator)
         .unwrap();
 
+    let checked_evaluator = |ctx: &mut CheckedEvaluationContext<'_, '_, '_, '_, ()>| {
+        let result = if ctx.node() == source {
+            NodeEvaluationResult::from_version(version_ab(1, 0))
+                .with_changed_region(ChangedRegion::new("wing"))
+        } else {
+            NodeEvaluationResult::from_version(version_ab(ctx.read(source, ASPECT_A)?, 0))
+        };
+        Ok(result)
+    };
+    let serial_lease = authority().request_lease(request(1, 1_000_000)).unwrap();
+    let parallel_lease = authority().request_lease(request(4, 1_000_000)).unwrap();
     for _ in 0..25 {
         mark_dirty_with_regions(
             &mut graph_serial,
@@ -223,20 +269,10 @@ fn repeated_serial_parallel_lifecycle_parity_stays_stable() {
             .unwrap();
 
         let report_serial = graph_serial
-            .execute_prepared_plan_with_executor(
-                &plan_serial,
-                &(),
-                &evaluator,
-                StageExecutor::Serial,
-            )
+            .execute_prepared_plan_checked(&plan_serial, &(), &checked_evaluator, &serial_lease)
             .unwrap();
         let report_parallel = graph_parallel
-            .execute_prepared_plan_with_executor(
-                &plan_parallel,
-                &(),
-                &evaluator,
-                StageExecutor::parallel(1),
-            )
+            .execute_prepared_plan_checked(&plan_parallel, &(), &checked_evaluator, &parallel_lease)
             .unwrap();
 
         assert!(serial_parallel_reports_equivalent(

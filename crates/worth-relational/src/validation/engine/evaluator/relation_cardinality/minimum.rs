@@ -9,11 +9,14 @@ use super::super::common::{canonicalize_violations, relation_violation};
 use super::minimum_visible_counts::visible_relation_counts;
 
 pub(in crate::validation::engine::evaluator) fn evaluate_cardinality_minimum_contract(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     contract: &LoweredCardinalityMinimumContract,
 ) -> Vec<InvariantViolation> {
     let snapshot = visible_relation_counts(context, contract);
+    if !context.checkpoint(0) {
+        return Vec::new();
+    }
     context.metrics().count_relation_contracts_evaluated(1);
     context
         .metrics()
@@ -25,13 +28,19 @@ pub(in crate::validation::engine::evaluator) fn evaluate_cardinality_minimum_con
 
     let mut violations = Vec::new();
     collect_source_minimum_violations(context, class, contract, &snapshot, &mut violations);
+    if !context.checkpoint(0) {
+        return Vec::new();
+    }
     collect_target_minimum_violations(context, class, contract, &snapshot, &mut violations);
+    if !context.checkpoint(0) {
+        return Vec::new();
+    }
     collect_pair_minimum_violations(context, class, contract, &snapshot, &mut violations);
     canonicalize_violations(violations)
 }
 
 fn collect_source_minimum_violations(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     contract: &LoweredCardinalityMinimumContract,
     snapshot: &super::minimum_visible_counts::VisibleRelationCountSnapshot,
@@ -41,6 +50,9 @@ fn collect_source_minimum_violations(
         return;
     };
     for entity_id in snapshot.candidate_source_entities.iter().cloned() {
+        if !context.checkpoint(1) {
+            return;
+        }
         let count = snapshot
             .source_counts
             .get(&entity_id)
@@ -49,6 +61,9 @@ fn collect_source_minimum_violations(
         context.metrics().count_relation_cardinality_checks(1);
         if (count as u64) >= minimum {
             continue;
+        }
+        if !context.claim_result(4096) {
+            return;
         }
         violations.push(relation_violation(
             class,
@@ -70,7 +85,7 @@ fn collect_source_minimum_violations(
 }
 
 fn collect_target_minimum_violations(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     contract: &LoweredCardinalityMinimumContract,
     snapshot: &super::minimum_visible_counts::VisibleRelationCountSnapshot,
@@ -80,6 +95,9 @@ fn collect_target_minimum_violations(
         return;
     };
     for entity_id in snapshot.candidate_target_entities.iter().cloned() {
+        if !context.checkpoint(1) {
+            return;
+        }
         let count = snapshot
             .target_counts
             .get(&entity_id)
@@ -88,6 +106,9 @@ fn collect_target_minimum_violations(
         context.metrics().count_relation_cardinality_checks(1);
         if (count as u64) >= minimum {
             continue;
+        }
+        if !context.claim_result(4096) {
+            return;
         }
         violations.push(relation_violation(
             class,
@@ -109,7 +130,7 @@ fn collect_target_minimum_violations(
 }
 
 fn collect_pair_minimum_violations(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     contract: &LoweredCardinalityMinimumContract,
     snapshot: &super::minimum_visible_counts::VisibleRelationCountSnapshot,
@@ -119,9 +140,15 @@ fn collect_pair_minimum_violations(
         return;
     };
     for ((source, target), count) in &snapshot.directed_pair_counts {
+        if !context.checkpoint(1) {
+            return;
+        }
         context.metrics().count_relation_cardinality_checks(1);
         if (*count as u64) >= minimum {
             continue;
+        }
+        if !context.claim_result(4096) {
+            return;
         }
         violations.push(relation_violation(
             class,

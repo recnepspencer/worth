@@ -15,19 +15,22 @@ use super::NodeEntry;
 impl NodeEntry {
     /// The last operational artifact state.
     pub fn get_runtime_artifact_state(&self) -> Option<&RuntimeArtifactState> {
-        self.warm.runtime_artifact_state.as_ref()
+        self.warm.runtime_artifact_state.as_deref()
     }
 
     /// Set or clear the runtime artifact state.
     pub fn set_runtime_artifact_state(&mut self, state: Option<RuntimeArtifactState>) {
-        self.warm.runtime_artifact_state = state;
+        self.warm.runtime_artifact_state = state.map(std::sync::Arc::new);
     }
 
     /// Mutably access the runtime artifact state when an operation needs to
     /// update warm metadata in place without rebuilding the whole carrier.
     #[allow(dead_code)]
     pub fn runtime_artifact_state_mut(&mut self) -> Option<&mut RuntimeArtifactState> {
-        self.warm.runtime_artifact_state.as_mut()
+        self.warm
+            .runtime_artifact_state
+            .as_mut()
+            .map(std::sync::Arc::make_mut)
     }
 
     /// Retained diagnostic artifact payload, if any.
@@ -100,41 +103,42 @@ impl NodeEntry {
             Some(summary) => {
                 let retained_changed_regions =
                     CanonicalChangedRegions::from(summary.changed_regions.clone());
-                self.warm.runtime_artifact_state = Some(RuntimeArtifactState::new(
-                    RuntimeArtifactHot {
-                        output_hash: summary.output_hash,
-                        output_change: summary.output_change,
-                        recomputed: summary.recomputed,
-                        dependency_count: summary.dependency_count,
-                        meaningful_input_changes: summary.meaningful_input_changes,
-                        changed_partition_count: summary.changed_partition_count,
-                        propagation_suppressed: summary.propagation_suppressed,
-                        changed_scopes: crate::data::trace::CompactChangedScopeProof::new(
-                            crate::data::proof::PartitionScopeSet::from_changed_regions(
-                                &retained_changed_regions,
+                self.warm.runtime_artifact_state =
+                    Some(std::sync::Arc::new(RuntimeArtifactState::new(
+                        RuntimeArtifactHot {
+                            output_hash: summary.output_hash,
+                            output_change: summary.output_change,
+                            recomputed: summary.recomputed,
+                            dependency_count: summary.dependency_count,
+                            meaningful_input_changes: summary.meaningful_input_changes,
+                            changed_partition_count: summary.changed_partition_count,
+                            propagation_suppressed: summary.propagation_suppressed,
+                            changed_scopes: crate::data::trace::CompactChangedScopeProof::new(
+                                crate::data::proof::PartitionScopeSet::from_changed_regions(
+                                    &retained_changed_regions,
+                                ),
                             ),
-                        ),
-                    },
-                    RuntimeArtifactWarm {
-                        output_identity: summary.output_identity,
-                        continuity_token: crate::data::trace::ContinuityAuthorityToken::new(
-                            summary.continuity_token,
-                        ),
-                        memoized_origin: summary.memoized_origin,
-                        reuse_basis: crate::data::trace::ReuseOperationalBasis::new(
-                            summary.reuse_basis,
-                        ),
-                        reuse_origin: summary.reuse_origin,
-                        reuse_boundary_authority: summary
-                            .reuse_boundary_context
-                            .as_ref()
-                            .map(|context| context.authority()),
-                        lineage_artifact_id: crate::data::trace::ArtifactTransitionKey::new(
-                            summary.lineage_artifact_id,
-                        ),
-                        merge_authority: crate::data::trace::ArtifactMergeAuthority::default(),
-                    },
-                ));
+                        },
+                        RuntimeArtifactWarm {
+                            output_identity: summary.output_identity,
+                            continuity_token: crate::data::trace::ContinuityAuthorityToken::new(
+                                summary.continuity_token,
+                            ),
+                            memoized_origin: summary.memoized_origin,
+                            reuse_basis: crate::data::trace::ReuseOperationalBasis::new(
+                                summary.reuse_basis,
+                            ),
+                            reuse_origin: summary.reuse_origin,
+                            reuse_boundary_authority: summary
+                                .reuse_boundary_context
+                                .as_ref()
+                                .map(|context| context.authority()),
+                            lineage_artifact_id: crate::data::trace::ArtifactTransitionKey::new(
+                                summary.lineage_artifact_id,
+                            ),
+                            merge_authority: crate::data::trace::ArtifactMergeAuthority::default(),
+                        },
+                    )));
                 self.set_execution_trace_stamp(Some(ExecutionTraceStamp {
                     execution_record_id: summary.execution_record_id,
                     semantic_segment_id: summary.semantic_segment_id,

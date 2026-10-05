@@ -221,7 +221,7 @@ fn resource_completion_transaction_commit_delivers_lifecycle_observation_once() 
             observer_id: observation_handle.observer_id().get(),
             handle_id: observation_handle.handle_id().get(),
             matched_node_count: 1,
-            touched: true,
+            visited: true,
             recomputed: false,
             meaningful_change: true,
             trigger_matched: true,

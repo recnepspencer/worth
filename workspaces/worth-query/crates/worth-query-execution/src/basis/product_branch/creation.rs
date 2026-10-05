@@ -22,9 +22,7 @@ pub struct WorthQueryProductBranchFork<'runtime> {
     output_lineage: Option<std::sync::Arc<std::sync::Mutex<
         crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage,
     >>>,
-    application_commit_lane: Option<std::sync::Arc<
-        crate::domain_computation::primary_graph::WorthQueryApplicationBranchCommitLane,
-    >>,
+    application_provider: Option<&'runtime crate::domain_computation::primary_graph::WorthQueryPrimaryGraphProvider>,
     source_program_resolver: Option<&'runtime dyn WorthQuerySourceProgramResolver>,
 }
 
@@ -41,6 +39,7 @@ pub enum WorthQueryProductBranchCreateError {
     IdentityExhausted,
     SourceAdmission(super::WorthQueryProductBranchAdmissionDenial),
     Creation(WorthQueryProductBranchCreationDenial),
+    BranchCoordinationCapacityExhausted,
     ProductUnpublished(super::WorthQueryProductBranchCreationRecovery),
 }
 
@@ -51,7 +50,7 @@ impl<'runtime> WorthQueryProductBranches<'runtime> {
             source,
             intent: None,
             output_lineage: None,
-            application_commit_lane: None,
+            application_provider: None,
             source_program_resolver: None,
         }
     }
@@ -63,13 +62,11 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
         output_lineage: std::sync::Arc<std::sync::Mutex<
             crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage,
         >>,
-        application_commit_lane: std::sync::Arc<
-            crate::domain_computation::primary_graph::WorthQueryApplicationBranchCommitLane,
-        >,
+        application_provider: &'runtime crate::domain_computation::primary_graph::WorthQueryPrimaryGraphProvider,
         source_program_resolver: &'runtime dyn WorthQuerySourceProgramResolver,
     ) -> Self {
         self.output_lineage = Some(output_lineage);
-        self.application_commit_lane = Some(application_commit_lane);
+        self.application_provider = Some(application_provider);
         self.source_program_resolver = Some(source_program_resolver);
         self
     }
@@ -90,9 +87,15 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
             source,
             intent,
             output_lineage,
-            application_commit_lane,
+            application_provider,
             source_program_resolver,
         } = self;
+        let application_commit_lane = application_provider
+            .map(|provider| {
+                provider.application_branch_commit_lane_for_occurrence(source.occurrence())
+            })
+            .transpose()
+            .map_err(|_| WorthQueryProductBranchCreateError::BranchCoordinationCapacityExhausted)?;
         let _coordination = application_commit_lane.as_ref().map(|lane| lane.enter());
         let components = intent
             .ok_or(WorthQueryProductBranchCreateError::ComponentsIncomplete)?

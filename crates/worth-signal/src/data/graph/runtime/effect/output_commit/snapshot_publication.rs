@@ -41,7 +41,7 @@ impl SignalGraph {
     pub(super) fn prepare_effect_snapshot_storage(
         &mut self,
         insertion: PreparedSnapshotInsertion,
-        allowance: &mut EvaluationWork<'_>,
+        allowance: &mut EvaluationWork<'_, '_>,
     ) -> Result<PreparedEffectSnapshotStorage, SignalError> {
         if self.arena.retained_node_ledger.is_none() || !insertion.changes_storage() {
             return Ok(PreparedEffectSnapshotStorage::Ordinary(insertion));
@@ -50,6 +50,9 @@ impl SignalGraph {
             EvaluationWork::Conditional(work) => self
                 .prepare_retained_snapshot_storage(insertion, work)
                 .map(PreparedEffectSnapshotStorage::Retained),
+            EvaluationWork::RequestCheckpoint(_) => Err(SignalError::internal(
+                "request discovery checkpoint cannot prepare snapshot publication",
+            )),
             EvaluationWork::Ordinary => {
                 let maximum = self
                     .installed_runtime_policy()

@@ -1,17 +1,24 @@
 mod aftermath_causality;
 pub(in crate::domain_computation) use aftermath_causality::WorthQueryAftermathCausalityReadDenial;
 mod application_attempt_state;
+pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::publish_recovered;
+pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::ManagedUnpublishedAttempt;
+pub(in crate::domain_computation::primary_graph) use application_attempt_state::RebaseVerificationReason;
+pub(in crate::domain_computation::primary_graph) use application_attempt_state::RetainedTouchedRecords;
 mod application_attempt_work;
 mod application_decision_fact;
 mod application_touch_admission;
 mod branch_commit_coordination;
 mod commit_causality;
 pub(super) mod committed_dispatch_outbox;
-mod conditional_commit_journal;
+mod completed_evidence_capacity;
+mod completed_observation;
 mod decision_facts;
 pub(in crate::domain_computation::primary_graph) mod dispatch_outbox;
+mod evidence_window;
 pub(in crate::domain_computation::primary_graph) mod fault_port;
 mod graph_participation;
+mod history_retirement;
 mod idempotency;
 mod inbound_completion;
 mod inbound_cost;
@@ -27,7 +34,12 @@ pub(in crate::domain_computation) use inbound_terminal_index::{
 mod installation;
 mod invariant_execution;
 mod invariant_execution_failure;
+mod managed_application_recovery;
 mod mutation_work;
+pub use managed_application_recovery::{
+    WorthQueryManagedApplicationRecoveryDenial, WorthQueryManagedApplicationRecoveryOutcome,
+    WorthQueryManagedApplicationRecoveryPerformed,
+};
 mod output_readiness_fault;
 mod outstanding_dispatch;
 pub(in crate::domain_computation) use outstanding_dispatch::WorthQueryTerminalDispatchReleaseDenial;
@@ -41,6 +53,7 @@ mod product_retirement;
 mod provisional_state;
 mod publication_recovery;
 mod resource_support;
+pub(in crate::domain_computation::primary_graph) use resource_support::WorthQueryPrimaryGraphResourceSupport;
 mod session_commit;
 mod session_lifecycle;
 mod terminal_dispatch_release;
@@ -48,6 +61,7 @@ mod unpublished_idempotency;
 #[cfg(all(test, feature = "test-world-operation-control"))]
 pub(in crate::domain_computation::primary_graph) use unpublished_idempotency::unwind_recovery_inspection_count;
 pub(in crate::domain_computation) use unpublished_idempotency::WorthQueryUnpublishedIdempotencyDisposition;
+pub(in crate::domain_computation::primary_graph) use unpublished_idempotency::WorthQueryUnpublishedIdempotencyReservation;
 
 pub(super) use super::application_attempt::WorthQueryPrimaryGraphApplicationAttempt;
 use super::WorthQueryPrimaryGraphIntegrationHandle;
@@ -80,6 +94,7 @@ use std::sync::{Arc, Mutex};
 pub(crate) struct WorthQueryPrimaryGraphProvider {
     pub(crate) graph: WorthQueryPrimaryGraphIntegrationHandle,
     resource_support: resource_support::WorthQueryPrimaryGraphResourceSupport,
+    completed_evidence_capacity: completed_evidence_capacity::CompletedEvidenceCapacity,
     branch_commit_coordination:
         branch_commit_coordination::WorthQueryApplicationBranchCommitCoordinator,
     pub(super) live_delivery: super::live_delivery::WorthQueryLiveDeliverySource,
@@ -96,16 +111,22 @@ pub(crate) struct WorthQueryPrimaryGraphProvider {
     inbound_terminal_index: inbound_terminal_index::WorthQueryInboundTerminalIndex,
     pending_application_publications:
         pending_application_publication::registry::WorthQueryPendingApplicationPublicationRegistryOwner,
-    conditional_commit_journal:
-        Mutex<conditional_commit_journal::WorthQueryConditionalCommitJournal>,
     fault_port: Arc<dyn fault_port::WorthQueryPrimaryGraphFaultPort>,
+    world_history: std::sync::OnceLock<worth_runtime_world::facade::RuntimeWorldLifecyclePort>,
 }
 
 pub(crate) use branch_commit_coordination::{
     WorthQueryApplicationBranchCommitCoordination, WorthQueryApplicationBranchCommitLane,
+    WorthQueryBranchCommitLaneDenial,
 };
 
 impl WorthQueryPrimaryGraphProvider {
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) fn completed_evidence_capacity_for_test(
+        &self,
+    ) -> completed_evidence_capacity::CompletedEvidenceCapacity {
+        self.completed_evidence_capacity.clone()
+    }
     pub(in crate::domain_computation::primary_graph) fn reserve_outstanding_dispatch(
         &self,
         record: Option<
@@ -135,78 +156,18 @@ impl WorthQueryPrimaryGraphProvider {
             .after_candidate_preparation();
     }
 
-    pub(in crate::domain_computation::primary_graph) fn conditional_commit_sequence(&self) -> u64 {
-        self.conditional_commit_journal
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .latest_sequence()
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn replace_conditional_commit_routes(
-        &self,
-        records: impl IntoIterator<Item = worth_relational::facade::transactions::RecordRef>,
-        include_whole_graph: bool,
-        bootstrap_identities: impl IntoIterator<Item = String>,
-    ) {
-        let mut journal = self
-            .conditional_commit_journal
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        journal.replace_routes(records, include_whole_graph);
-        journal.replace_bootstrap_routes(bootstrap_identities);
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn record_conditional_commit(
-        &self,
-        commit: &worth_relational::facade::history::RelationalCommitReceipt,
-        records: impl IntoIterator<Item = worth_relational::facade::transactions::RecordRef>,
-    ) {
-        self.conditional_commit_journal
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .record(commit, records);
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn conditional_commits_after_records(
-        &self,
-        branch: &worth_relational::facade::history::BranchId,
-        commit_ceiling: Option<worth_relational::facade::history::CommitId>,
-        sequence: u64,
-        maximum: usize,
-        records: impl IntoIterator<Item = worth_relational::facade::transactions::RecordRef>,
-        include_whole_graph: bool,
-        bootstrap_identity: Option<&str>,
-    ) -> Result<conditional_commit_journal::WorthQueryConditionalCommitBatch, &'static str> {
-        self.conditional_commit_journal
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .after_records_with_bootstrap(
-                branch,
-                commit_ceiling,
-                sequence,
-                maximum,
-                records,
-                include_whole_graph,
-                bootstrap_identity,
-            )
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn narrow_conditional_bootstrap_route_if_current(
-        &self,
-        identity: &str,
-        expected_frontier: u64,
-    ) -> bool {
-        self.conditional_commit_journal
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .narrow_bootstrap_route_if_current(identity, expected_frontier)
-    }
-
     pub(super) fn application_resource_support(
         &self,
     ) -> worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot
     {
         self.resource_support.snapshot()
+    }
+
+    pub(super) fn application_resource_support_ref(
+        &self,
+    ) -> &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot
+    {
+        self.resource_support.snapshot_ref()
     }
 
     pub(in crate::domain_computation::primary_graph) fn bind_application_idempotency_intent(
@@ -272,14 +233,23 @@ impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation) fn application_branch_commit_lane(
         &self,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
-    ) -> Arc<WorthQueryApplicationBranchCommitLane> {
+    ) -> Result<Arc<WorthQueryApplicationBranchCommitLane>, WorthQueryBranchCommitLaneDenial> {
         self.branch_commit_coordination.lane_for(observation)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn application_branch_commit_lane_for_occurrence(
+    pub(in crate::domain_computation::primary_graph) fn admitted_application_branch_commit_lane(
+        &self,
+        observation: &worth_runtime_world::facade::ProductBranchObservation,
+        admission: &mut super::output_lineage::invalidation::InvalidationEditAdmission,
+    ) -> Result<Arc<WorthQueryApplicationBranchCommitLane>, WorthQueryBranchCommitLaneDenial> {
+        self.branch_commit_coordination
+            .lane_for_admitted(observation, admission)
+    }
+
+    pub(crate) fn application_branch_commit_lane_for_occurrence(
         &self,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-    ) -> Arc<WorthQueryApplicationBranchCommitLane> {
+    ) -> Result<Arc<WorthQueryApplicationBranchCommitLane>, WorthQueryBranchCommitLaneDenial> {
         self.branch_commit_coordination
             .lane_for_occurrence(occurrence)
     }
@@ -329,68 +299,6 @@ impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn observe_external_dispatch_admission(&self) {
         self.application_attempt_work
             .observe_external_dispatch_admission();
-    }
-
-    pub(super) fn observe_completed_application(
-        &self,
-        commit: &worth_relational::facade::history::RelationalCommitReceipt,
-    ) -> Option<WorthQueryPrimaryGraphCommittedApplication> {
-        self.completed_commit_evidence
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .observe(commit)
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn observe_completed_application_for_session(
-        &self,
-        session: &crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
-    ) -> Option<WorthQueryPrimaryGraphCommittedApplication> {
-        self.completed_commit_evidence
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .observe_session(session)
-    }
-
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn retained_application_commit_basis(
-        &self,
-        commit: &worth_relational::facade::history::RelationalCommitReceipt,
-    ) -> Option<WorthQueryRetainedApplicationCommitBasis> {
-        self.completed_commit_evidence
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .observe(commit)?;
-        self.receipt_basis_retention
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .acquire(commit.commit_id)
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn resolve_completed_application_idempotency(
-        &self,
-        product: &WorthQueryProductIdempotencyAffinity,
-        binding: super::application_attempt::WorthQueryApplicationIdempotencyBinding,
-    ) -> Option<WorthQueryProviderIdempotencyResolution> {
-        let (committed_binding, committed) = self
-            .completed_commit_evidence
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .observe_idempotency(product, binding)?;
-        Some(if committed_binding == binding {
-            WorthQueryProviderIdempotencyResolution::Equivalent(committed)
-        } else {
-            WorthQueryProviderIdempotencyResolution::Drift
-        })
-    }
-
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn retained_receipt_basis_count(
-        &self,
-    ) -> usize {
-        self.receipt_basis_retention
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .retained_count()
     }
 }
 

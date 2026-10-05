@@ -9,6 +9,8 @@ use super::{
     WorthQueryGraphReadResultPressure, WorthQueryGraphReadTraversalOperator,
 };
 
+mod digest;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryGraphReadAccessRequirementRow {
     kind: WorthQueryGraphReadAccessRequirementKind,
@@ -142,58 +144,17 @@ impl WorthQueryGraphReadAccessRequirementRow {
     }
 
     pub fn semantic_slot_key(&self) -> String {
-        format!(
-            "slot:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}",
-            self.kind.as_str(),
-            option_name(self.relation_direction.as_ref()),
-            option_usize(self.relation_depth),
-            option_name(self.fanout_posture.as_ref()),
-            option_name(self.predicate_family.as_ref()),
-            option_name(self.ordering_posture.as_ref()),
-            option_name(self.traversal_operator.as_ref()),
-            option_name(self.lifecycle_class.as_ref()),
-            option_name(self.result_pressure.as_ref()),
-            self.operation_capability_requirement
-                .as_ref()
-                .map_or_else(|| "none".to_string(), |value| value.digest_part())
-        )
+        let mut text = String::new();
+        self.write_semantic_slot_key(&mut text)
+            .expect("String formatting cannot fail");
+        text
     }
 
     pub fn digest_part(&self) -> String {
-        format!(
-            "requirement:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}",
-            self.kind.as_str(),
-            self.rebuild_basis.as_str(),
-            self.relation_name.as_deref().unwrap_or("none"),
-            self.relation_authority
-                .as_ref()
-                .map_or_else(|| "none".to_string(), |value| value.digest_part()),
-            option_name(self.relation_direction.as_ref()),
-            option_usize(self.relation_depth),
-            option_name(self.fanout_posture.as_ref()),
-            option_name(self.predicate_family.as_ref()),
-            self.predicate_field_authorities
-                .iter()
-                .map(|value| value.digest_part())
-                .collect::<Vec<_>>()
-                .join(","),
-            option_name(self.ordering_posture.as_ref()),
-            self.ordering_field_authorities
-                .iter()
-                .map(|value| value.digest_part())
-                .collect::<Vec<_>>()
-                .join(","),
-            option_name(self.traversal_operator.as_ref()),
-            option_name(self.lifecycle_class.as_ref()),
-            option_name(self.result_pressure.as_ref()),
-            self.operation_capability_requirement
-                .as_ref()
-                .map_or_else(|| "none".to_string(), |value| value.digest_part()),
-            self.invalidation_basis.as_str(),
-            self.complexity_contract.as_str(),
-            self.memory_estimate_basis.as_str(),
-            option_usize(self.maximum_cardinality)
-        )
+        let mut text = String::new();
+        self.write_digest_part(&mut text)
+            .expect("String formatting cannot fail");
+        text
     }
 
     pub fn with_relation(
@@ -230,6 +191,14 @@ impl WorthQueryGraphReadAccessRequirementRow {
         self
     }
 
+    pub(crate) fn with_predicate_field_authorities_sorted(
+        mut self,
+        values: Vec<WorthQueryGraphReadPredicateFieldAuthority>,
+    ) -> Self {
+        self.predicate_field_authorities = values;
+        self
+    }
+
     pub fn with_ordering_posture(mut self, value: WorthQueryGraphReadOrderingPosture) -> Self {
         self.ordering_posture = Some(value);
         self
@@ -241,6 +210,14 @@ impl WorthQueryGraphReadAccessRequirementRow {
     ) -> Self {
         values.sort_by_key(|value| value.digest_part());
         values.dedup();
+        self.ordering_field_authorities = values;
+        self
+    }
+
+    pub(crate) fn with_ordering_field_authorities_sorted(
+        mut self,
+        values: Vec<WorthQueryGraphReadOrderingFieldAuthority>,
+    ) -> Self {
         self.ordering_field_authorities = values;
         self
     }
@@ -300,8 +277,4 @@ named_impl!(
 
 fn option_name<T: Named>(value: Option<&T>) -> &'static str {
     value.map_or("none", Named::as_str)
-}
-
-fn option_usize(value: Option<usize>) -> String {
-    value.map_or_else(|| "none".to_string(), |value| value.to_string())
 }

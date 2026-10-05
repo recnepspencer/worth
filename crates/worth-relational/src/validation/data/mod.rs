@@ -12,7 +12,7 @@ pub(crate) use catalog::relation_integrity_registrations_for_plan;
 pub use catalog::{InvariantCatalog, InvariantRegistration};
 pub use contracts::InvariantPlanContract;
 pub use custom_rule::{
-    CustomInvariantExecutionContext, CustomInvariantExecutionError,
+    CustomInvariantExecutionContext, CustomInvariantExecutionError, CustomInvariantLeaseBudget,
     CustomInvariantPreparationError, CustomInvariantProvenance, CustomInvariantRegistration,
     CustomInvariantRegistrationError, CustomInvariantRule, CustomInvariantScopePlanner,
     CustomInvariantTouchedSummary, CustomInvariantTraversalSummary, CustomInvariantVerdict,

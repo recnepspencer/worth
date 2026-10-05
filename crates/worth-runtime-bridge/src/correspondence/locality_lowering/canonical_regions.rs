@@ -17,13 +17,25 @@ pub(crate) fn lower_installed_target_regions(
     match dependency.locality() {
         BridgeSemanticLocality::WholeLogicalGraph => CanonicalChangedRegions::default(),
         BridgeSemanticLocality::SourcePartition(_) => {
-            CanonicalChangedRegions::new([ChangedRegion::new(target.partition.clone())])
+            if changes.is_empty() {
+                return CanonicalChangedRegions::new([ChangedRegion::new(
+                    target.partition.clone(),
+                )]);
+            }
+            CanonicalChangedRegions::new(changes.iter().map(|change| {
+                change
+                    .scope_change()
+                    .cloned()
+                    .unwrap_or_else(|| ChangedRegion::new(target.partition.clone()))
+            }))
         }
         BridgeSemanticLocality::SourceRecord | BridgeSemanticLocality::ManagedSourceRecord => {
             CanonicalChangedRegions::new(changes.iter().filter_map(|change| {
-                change.relational_record_identity().map(|record| {
-                    ChangedRegion::new(target.partition.clone())
-                        .with_detail(record.terminal_projection_for_reporting())
+                change.scope_change().cloned().or_else(|| {
+                    change.relational_record_identity().map(|record| {
+                        ChangedRegion::new(target.partition.clone())
+                            .with_detail(record.terminal_projection_for_reporting())
+                    })
                 })
             }))
         }

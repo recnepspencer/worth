@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotRelease;
 use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkPlanIdentity;
 use worth_query_installation::facade::{
     ApplicationSchemaBindingIdentity, WorthQueryInstalledGraphObligationSetIdentity,
@@ -49,7 +50,7 @@ pub struct WorthQueryMutationGraphWorkCompletion {
     obligation: WorthQueryInstalledGraphObligationSetIdentity,
     relational_branch: BranchId,
     truth_branch: TruthBranchIdentity,
-    snapshot_released: bool,
+    snapshot_release: WorthQueryApplicationSnapshotRelease,
     attempt_resources_released: bool,
 }
 
@@ -102,7 +103,7 @@ impl WorthQueryMutationRunBinding {
         self,
         running: crate::domain_computation::WorthQueryRunningDirectRun,
         terminal: crate::domain_computation::WorthQueryManagedRunTerminalKind,
-        snapshot_released: bool,
+        snapshot_release: WorthQueryApplicationSnapshotRelease,
     ) -> Result<WorthQueryMutationGraphWorkCompletion, ()> {
         let affinity = running.graph_work_affinity().ok_or(())?;
         if running.identity() != self.worker.as_ref()
@@ -117,7 +118,7 @@ impl WorthQueryMutationRunBinding {
             .map_err(|_| ())?;
         let inspection = cleanup.inspection();
         let attempt_resources_released = inspection.resources_released();
-        if !(snapshot_released
+        if !(snapshot_release.custody_released()
             && inspection.run_identity() == self.worker.as_ref()
             && inspection.terminal() == terminal
             && inspection.provider_session_identity() == self.provider_session.as_ref()
@@ -137,7 +138,7 @@ impl WorthQueryMutationRunBinding {
             obligation: self.obligation,
             relational_branch: self.relational_branch,
             truth_branch: self.truth_branch,
-            snapshot_released,
+            snapshot_release,
             attempt_resources_released,
         })
     }
@@ -148,9 +149,9 @@ impl WorthQueryProviderSessionBoundMutationRun {
         self,
         running: crate::domain_computation::WorthQueryRunningDirectRun,
         terminal: crate::domain_computation::WorthQueryManagedRunTerminalKind,
-        snapshot_released: bool,
+        snapshot_release: WorthQueryApplicationSnapshotRelease,
     ) -> Result<WorthQueryMutationGraphWorkCompletion, ()> {
-        let mut completion = self.run.finish(running, terminal, snapshot_released)?;
+        let mut completion = self.run.finish(running, terminal, snapshot_release)?;
         completion.provider_session = Some(self.provider_session);
         Ok(completion)
     }
@@ -192,7 +193,11 @@ impl WorthQueryMutationGraphWorkCompletion {
     }
 
     pub const fn snapshot_released(&self) -> bool {
-        self.snapshot_released
+        self.snapshot_release.snapshot_released()
+    }
+
+    pub const fn snapshot_custody_released(&self) -> bool {
+        self.snapshot_release.custody_released()
     }
 
     pub const fn attempt_resources_released(&self) -> bool {

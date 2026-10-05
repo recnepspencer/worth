@@ -35,6 +35,9 @@ pub(super) fn apply_provider_commit_deferred(
             backpressured(wake, evidence, kind);
         }
         Kind::PatchPositionReservationContended
+        | Kind::SourceCurrentnessRaced(_)
+        | Kind::RequiredPrerequisitePending(_)
+        | Kind::RelationalDeferred(_)
         | Kind::CandidateCapacityExhausted { .. }
         | Kind::PublishedSnapshotCapacityExhausted { .. } => {
             backpressured(wake, evidence, kind);

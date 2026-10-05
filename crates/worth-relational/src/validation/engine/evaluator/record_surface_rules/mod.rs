@@ -10,7 +10,7 @@ fn single_violation(violation: Option<InvariantViolation>) -> Vec<InvariantViola
 }
 
 pub(super) fn evaluate_record_surface_rule(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     kind: &RecordKindTag,
 ) -> Vec<InvariantViolation> {
@@ -20,7 +20,7 @@ pub(super) fn evaluate_record_surface_rule(
 }
 
 pub(super) fn evaluate_snapshot_entity_limit_rule(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     limit: usize,
 ) -> Option<InvariantViolation> {

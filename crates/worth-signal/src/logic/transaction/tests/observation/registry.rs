@@ -17,7 +17,7 @@ fn observation_registry_assigns_deterministic_ids_and_indexes_nodes() {
         Box::new(NoopObservationListener),
     );
     let second = runtime.observe_nodes(
-        ObservationPolicy::touched(),
+        ObservationPolicy::visited(),
         [c, b],
         Box::new(NoopObservationListener),
     );

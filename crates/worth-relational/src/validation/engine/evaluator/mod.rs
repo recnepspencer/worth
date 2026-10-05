@@ -25,7 +25,7 @@ use relation_traversal::{evaluate_acyclicity_contract, evaluate_connectivity_min
 use unique_entity_fields::evaluate_unique_entity_aspect_field;
 
 pub(crate) fn evaluate_rule(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     rule: &InvariantRule,
 ) -> Vec<InvariantViolation> {

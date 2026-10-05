@@ -12,9 +12,42 @@ pub(crate) fn encode_length_prefixed_aspect_value(bytes: &mut Vec<u8>, value: &A
 }
 
 pub(crate) fn encode_aspect_value(value: &AspectValue) -> Vec<u8> {
-    let mut bytes = Vec::new();
+    let mut bytes = Vec::with_capacity(encoded_aspect_value_len(value).unwrap_or(0));
     encode_aspect_value_body(&mut bytes, value);
     bytes
+}
+
+/// Exact canonical key backing length before encoding allocates its Vec.
+pub(crate) fn encoded_aspect_value_len(value: &AspectValue) -> Option<usize> {
+    let text = |text: &str| {
+        u32::try_from(text.len()).ok()?;
+        4usize.checked_add(text.len())
+    };
+    match value {
+        AspectValue::Null => Some(1),
+        AspectValue::Bool(_) | AspectValue::Int8(_) | AspectValue::UInt8(_) => Some(2),
+        AspectValue::Int16(_) | AspectValue::UInt16(_) => Some(3),
+        AspectValue::Int32(_)
+        | AspectValue::UInt32(_)
+        | AspectValue::Float32(_)
+        | AspectValue::Date(_) => Some(5),
+        AspectValue::Int64(_)
+        | AspectValue::UInt64(_)
+        | AspectValue::Float64(_)
+        | AspectValue::Time(_)
+        | AspectValue::Timestamp(_)
+        | AspectValue::Bytes(_)
+        | AspectValue::ContentRef(_) => Some(9),
+        AspectValue::String(InternedString::Raw(value)) => 2usize.checked_add(text(value)?),
+        AspectValue::String(InternedString::Symbol(_)) => Some(6),
+        AspectValue::Decimal(value) => 1usize.checked_add(text(value.as_str())?),
+        AspectValue::BigInt(value) => 1usize.checked_add(text(value.as_str())?),
+        AspectValue::Rational(value) => 1usize
+            .checked_add(text(value.numerator.as_str())?)?
+            .checked_add(text(value.denominator.as_str())?),
+        AspectValue::Uuid(_) | AspectValue::EntityRef(_) => Some(17),
+        AspectValue::TimestampTz(_) => Some(13),
+    }
 }
 
 fn encode_aspect_value_body(bytes: &mut Vec<u8>, value: &AspectValue) {

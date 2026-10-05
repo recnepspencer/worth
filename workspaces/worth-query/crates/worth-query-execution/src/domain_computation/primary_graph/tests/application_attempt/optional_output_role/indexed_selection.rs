@@ -78,7 +78,8 @@ fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world()
         .output_lineage
         .lock()
         .unwrap()
-        .producer_facts_for_receipt(&receipt)
+        .checkpoint_facts_for_receipt(&receipt)
+        .map(|(facts, _)| facts)
         .unwrap();
     let subject = receipt
         .output_correspondence()

@@ -1,5 +1,4 @@
 use serde_json::json;
-#[cfg(feature = "parallel")]
 use worth_harness::facade::{ComparisonMode, ComparisonProfile};
 use worth_harness::facade::{
     ExecutionProfile, ExecutionRequest, HarnessAdapter, ObservationStatus,
@@ -217,13 +216,35 @@ fn signal_harness_platform_captures_diagnostics_explanations_and_provenance() {
     assert_eq!(bundle.provenance.len(), 1);
 }
 
-#[cfg(feature = "parallel")]
 #[test]
 fn signal_harness_platform_runs_serial_parallel_parity() {
     let mut scenario = SignalScenario::new("signal-parity");
-    let a = scenario.node("a");
-    let _b = scenario.node("b");
+    let a = scenario.build_node("a", |graph| {
+        graph
+            .node()
+            .with_contract(
+                NodeContract::wildcard().with_bounded_inputs(BoundedSignalInputs::default()),
+            )
+            .build()
+    });
+    let _b = scenario.build_node("b", |graph| {
+        graph
+            .node()
+            .with_contract(
+                NodeContract::wildcard().with_bounded_inputs(BoundedSignalInputs::default()),
+            )
+            .build()
+    });
+    scenario.set_checked_evaluator(
+        move |ctx: &mut CheckedEvaluationContext<'_, '_, '_, '_, ()>| {
+            Ok::<_, SignalError>(version_ab(if ctx.node() == a { 7 } else { 9 }, 0))
+        },
+    );
     let fixture = scenario
+        .with_execution_authority(
+            crate::tests::leased_execution::support::shared_authority().clone(),
+            crate::tests::leased_execution::support::request(4, 1_000_000),
+        )
         .observe("a")
         .observe("b")
         .with_evaluator(move |ctx: &mut EvaluationContext<'_, ()>| {

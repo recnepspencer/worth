@@ -4,11 +4,8 @@ use super::test_support::{
     relation_integrity_runtime_with_scope_budget, relation_symmetry_runtime,
     runtime_with_invariants,
 };
-use crate::authority::commit::preparation::planning::strategy::PreparationStrategySelection;
 use crate::facade::identity::PartitionId;
-use crate::facade::runtime::{
-    InvariantCatalog, InvariantRegistration, InvariantRule, RelationalExecutionModel,
-};
+use crate::facade::runtime::{InvariantCatalog, InvariantRegistration, InvariantRule};
 use crate::identity::data::KindId;
 use crate::schema::data::SymmetryMode;
 use crate::symbols::data::ClientKey;
@@ -26,14 +23,11 @@ mod graph_composition_selection;
 
 #[test]
 fn commit_boundary_short_circuits_when_plan_contract_cannot_touch_profile_groups() {
-    let runtime = runtime_with_invariants(
-        InvariantCatalog {
-            registrations: vec![InvariantRegistration::commit_boundary_blocking(
-                InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
-            )],
-        },
-        RelationalExecutionModel::SingleLaneExecution,
-    );
+    let runtime = runtime_with_invariants(InvariantCatalog {
+        registrations: vec![InvariantRegistration::commit_boundary_blocking(
+            InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
+        )],
+    });
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(1),
         merged_intents: vec![MutationIntent::Relation(RelationMutationIntent::Delete(
@@ -50,10 +44,7 @@ fn commit_boundary_short_circuits_when_plan_contract_cannot_touch_profile_groups
 
 #[test]
 fn graph_composition_plan_uses_graph_composition_execution_profile() {
-    let runtime = runtime_with_invariants(
-        InvariantCatalog::default(),
-        RelationalExecutionModel::SingleLaneExecution,
-    );
+    let runtime = runtime_with_invariants(InvariantCatalog::default());
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(11),
         merged_intents: vec![MutationIntent::Create(CreateIntent::Entity(EntitySpec {
@@ -75,7 +66,7 @@ fn graph_composition_plan_uses_graph_composition_execution_profile() {
 }
 
 #[test]
-fn staged_parallel_commit_boundary_matches_serial_reference_results() {
+fn independent_commit_boundary_evaluations_match_canonical_results() {
     let invariant_catalog = InvariantCatalog {
         registrations: vec![
             InvariantRegistration::commit_boundary_blocking(
@@ -84,14 +75,8 @@ fn staged_parallel_commit_boundary_matches_serial_reference_results() {
             InvariantRegistration::commit_boundary_blocking(InvariantRule::MaxMergedIntents(0)),
         ],
     };
-    let serial_runtime = runtime_with_invariants(
-        invariant_catalog.clone(),
-        RelationalExecutionModel::SingleLaneExecution,
-    );
-    let staged_runtime = runtime_with_invariants(
-        invariant_catalog,
-        RelationalExecutionModel::ParallelPreparation,
-    );
+    let serial_runtime = runtime_with_invariants(invariant_catalog.clone());
+    let staged_runtime = runtime_with_invariants(invariant_catalog);
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(2),
         merged_intents: vec![MutationIntent::Create(CreateIntent::Entity(EntitySpec {
@@ -113,13 +98,6 @@ fn staged_parallel_commit_boundary_matches_serial_reference_results() {
     assert_eq!(
         serial.summary().result_count(),
         staged.summary().result_count()
-    );
-    assert_eq!(
-        staged
-            .metadata()
-            .preparation_strategy()
-            .map(|strategy| strategy.selected_mode),
-        Some(PreparationStrategySelection::StagedParallel)
     );
     assert!(staged.results().iter().any(|result| {
         result.failure_effect == InvariantFailureEffect::BlockCommit

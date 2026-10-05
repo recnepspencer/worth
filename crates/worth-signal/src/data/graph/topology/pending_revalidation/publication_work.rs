@@ -8,7 +8,7 @@ impl SignalGraph {
         &self,
         prepared: &PreparedPendingRevalidationResolution,
         producer: NodeId,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         work.reserve(prepared.nodes.len().checked_add(prepared.buckets.len()))?;
         for &node in prepared.nodes.keys() {

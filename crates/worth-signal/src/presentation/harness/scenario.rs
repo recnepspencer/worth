@@ -1,18 +1,23 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
+use worth_execution::{ExecutionAuthority, LeaseRequest};
 
 use worth_harness::facade::{ExecutionRequest, MutationBatch, ScenarioFixture, ScenarioPlan};
 
 use crate::facade::*;
 
 use super::runtime::{
-    SignalEvaluationDriver, SignalFixtureFactory, SignalHarnessRuntime, SignalMutationAction,
+    SignalCheckedEvaluationDriver, SignalEvaluationDriver, SignalFixtureFactory,
+    SignalHarnessRuntime, SignalMutationAction,
 };
 
 pub struct SignalScenario {
     name: String,
     graph: SignalGraph,
     evaluator: Option<Arc<dyn SignalEvaluationDriver>>,
+    checked_evaluator: Option<Arc<dyn SignalCheckedEvaluationDriver>>,
+    execution_authority: Option<Arc<ExecutionAuthority>>,
+    lease_request: Option<LeaseRequest>,
     labels: BTreeMap<String, NodeId>,
     pending_dependencies: BTreeMap<NodeId, Vec<DependencyEdge>>,
     declared_inputs: Vec<String>,
@@ -26,6 +31,9 @@ impl SignalScenario {
             name: name.into(),
             graph: SignalGraph::new(),
             evaluator: None,
+            checked_evaluator: None,
+            execution_authority: None,
+            lease_request: None,
             labels: BTreeMap::new(),
             pending_dependencies: BTreeMap::new(),
             declared_inputs: Vec::new(),
@@ -148,12 +156,32 @@ impl SignalScenario {
         self.evaluator = Some(Arc::new(evaluator));
     }
 
+    pub fn set_checked_evaluator<F>(&mut self, evaluator: F)
+    where
+        F: SignalCheckedEvaluationDriver + 'static,
+    {
+        self.checked_evaluator = Some(Arc::new(evaluator));
+    }
+
+    pub fn with_execution_authority(
+        mut self,
+        authority: Arc<ExecutionAuthority>,
+        request: LeaseRequest,
+    ) -> Self {
+        self.execution_authority = Some(authority);
+        self.lease_request = Some(request);
+        self
+    }
+
     pub fn fixture(self) -> Result<ScenarioFixture<SignalFixtureFactory>, SignalError> {
         let mut this = self;
         this.flush_pending_dependencies()?;
         let evaluator = this.evaluator.ok_or_else(|| {
             SignalError::invalid_input("signal scenario requires an evaluator before compile")
         })?;
+        let checked_evaluator = this.checked_evaluator;
+        let execution_authority = this.execution_authority;
+        let lease_request = this.lease_request;
         let name = this.name;
         let graph = this.graph;
         let labels = this.labels;
@@ -165,6 +193,9 @@ impl SignalScenario {
             Ok(SignalHarnessRuntime {
                 graph: graph.clone(),
                 evaluator: Arc::clone(&evaluator),
+                checked_evaluator: checked_evaluator.clone(),
+                execution_authority: execution_authority.clone(),
+                lease_request: lease_request.clone(),
                 labels: labels.clone(),
             })
         });

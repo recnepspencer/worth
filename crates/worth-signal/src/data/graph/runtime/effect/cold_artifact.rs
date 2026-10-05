@@ -10,7 +10,7 @@ pub(super) fn build_cold_artifact_intent(
     effect: &EvaluationEffect,
     retention: &crate::diagnostics::policy::RetentionBudget,
     scopes: &crate::data::proof::PartitionScopeSet,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<Option<ColdArtifactIntent>, SignalError> {
     if matches!(
         retention.explanation_retention,
@@ -65,7 +65,7 @@ pub(super) fn build_cold_artifact_intent(
 
 fn copy_canonical_regions(
     scopes: &crate::data::proof::PartitionScopeSet,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<CanonicalChangedRegions, SignalError> {
     work.reserve(
         scopes
@@ -76,18 +76,22 @@ fn copy_canonical_regions(
     let mut regions = Vec::with_capacity(scopes.len());
     for scope in scopes.as_slice() {
         // One owned copy and the checked canonical-order comparison below.
-        work.reserve(
-            scope
-                .partition
-                .0
-                .len()
-                .checked_add(scope.detail.as_ref().map_or(0, String::len))
-                .and_then(|bytes| bytes.checked_mul(3))
-                .and_then(|n| n.checked_add(8)),
-        )?;
-        regions.push(ChangedRegion {
-            partition: scope.partition.clone(),
-            detail: scope.detail.clone(),
+        work.reserve(scope.path().checked_segment_bytes().and_then(|bytes| {
+            bytes
+                .checked_mul(3)?
+                .checked_add(
+                    scope
+                        .path()
+                        .depth()
+                        .checked_mul(std::mem::size_of::<String>())?,
+                )?
+                .checked_add(8)
+        }))?;
+        regions.push(match scope.coverage() {
+            crate::data::output::ScopeCoverage::Exact => ChangedRegion::exact(scope.path().clone()),
+            crate::data::output::ScopeCoverage::Subtree => {
+                ChangedRegion::subtree(scope.path().clone())
+            }
         });
     }
     CanonicalChangedRegions::from_canonical_regions(regions)

@@ -1,34 +1,51 @@
-#[cfg(feature = "parallel")]
 use crate::facade::{
-    lineage_records_equivalent, replay_slices_equivalent, EvaluationCondition, LineageRecord,
-    NodeEvaluationResult, NodeExplanation, ReplaySlice, SignalGraph, SignalRuntime,
-    SignalRuntimePolicy, StageExecutor,
+    lineage_records_equivalent, replay_slices_equivalent, BoundedSignalInputs, DeclaredSignalInput,
+    EvaluationCondition, EvaluationRequestMode, LineageRecord, NodeContract, NodeEvaluationResult,
+    NodeExplanation, ReplaySlice, SignalError, SignalGraph, SignalRuntime, SignalRuntimePolicy,
 };
-#[cfg(feature = "parallel")]
+use crate::tests::leased_execution::support::{authority, request};
 use crate::tests::support::{mask_b, version_ab, DependencyBatchBuilder, ASPECT_A, ASPECT_B};
 
-#[cfg(feature = "parallel")]
+fn contract(inputs: impl IntoIterator<Item = DeclaredSignalInput>) -> NodeContract {
+    NodeContract::wildcard().with_bounded_inputs(BoundedSignalInputs::new(inputs))
+}
+
 #[test]
-fn long_session_replay_and_lineage_stay_equivalent_between_serial_and_parallel_executors() {
-    fn run(executor: StageExecutor) -> (ReplaySlice, Vec<LineageRecord>, NodeExplanation) {
+fn long_session_replay_and_lineage_stay_equivalent_for_worker_limits() {
+    fn run(workers: usize) -> (ReplaySlice, Vec<LineageRecord>, NodeExplanation) {
         let mut runtime = SignalRuntime::builder(SignalGraph::new())
             .with_kernel_defaults()
             .build();
         runtime.set_runtime_policy(SignalRuntimePolicy::kernel().with_history_limit(8));
-        let source = runtime.graph_mut().node().output_identity().build();
+        let source = runtime
+            .graph_mut()
+            .node()
+            .with_contract(contract([]))
+            .output_identity()
+            .build();
         let a_gate = runtime
             .graph_mut()
             .node()
+            .with_contract(contract([DeclaredSignalInput::new(source, ASPECT_A)]))
             .condition(EvaluationCondition::DeltaThreshold(2.0))
             .output_identity()
             .build();
         let b_gate = runtime
             .graph_mut()
             .node()
+            .with_contract(contract([DeclaredSignalInput::new(source, ASPECT_B)]))
             .aspect_filter(mask_b())
             .output_identity()
             .build();
-        let sink = runtime.graph_mut().node().output_identity().build();
+        let sink = runtime
+            .graph_mut()
+            .node()
+            .with_contract(contract([
+                DeclaredSignalInput::new(a_gate, ASPECT_A),
+                DeclaredSignalInput::new(b_gate, ASPECT_B),
+            ]))
+            .output_identity()
+            .build();
         let mut dependencies = DependencyBatchBuilder::new(runtime.graph_mut());
         dependencies
             .append_dependency(a_gate, source, ASPECT_A)
@@ -40,131 +57,72 @@ fn long_session_replay_and_lineage_stay_equivalent_between_serial_and_parallel_e
             .append_dependency(sink, b_gate, ASPECT_B)
             .unwrap();
         dependencies.commit().unwrap();
-        let mut runtime_ctx = ();
 
-        runtime
-            .transaction(&mut runtime_ctx, |tx| {
-                tx.read_with_executor(
-                    source,
-                    &|view| {
-                        Ok(view.finish(
-                            NodeEvaluationResult::from_version(version_ab(1, 10))
-                                .with_output_identity("seed-source"),
-                        ))
-                    },
-                    executor,
-                )?;
-                tx.read_with_executor(
-                    a_gate,
-                    &|view| {
-                        let version = view.read_aspect_version(source, ASPECT_A)?;
-                        Ok(view.finish(
-                            NodeEvaluationResult::from_version(version)
-                                .with_output_identity("seed-a"),
-                        ))
-                    },
-                    executor,
-                )?;
-                tx.read_with_executor(
-                    b_gate,
-                    &|view| {
-                        let version = view.read_aspect_version(source, ASPECT_B)?;
-                        Ok(view.finish(
-                            NodeEvaluationResult::from_version(version)
-                                .with_output_identity("seed-b"),
-                        ))
-                    },
-                    executor,
-                )?;
-                tx.read_with_executor(
-                    sink,
-                    &|view| {
-                        let a = view.read_aspect_version(a_gate, ASPECT_A)?;
-                        let b = view.read_aspect_version(b_gate, ASPECT_B)?;
-                        Ok(view.finish(
-                            NodeEvaluationResult::from_version(version_ab(
-                                a.get(ASPECT_A),
-                                b.get(ASPECT_B),
-                            ))
-                            .with_output_identity("seed-sink")
-                            .with_continuity_token("surface"),
-                        ))
-                    },
-                    executor,
-                )?;
-                Ok(())
-            })
-            .unwrap();
-
+        let evaluate = |runtime: &mut SignalRuntime<(), (), (), (), ()>,
+                        step: Option<u64>|
+         -> Result<(), SignalError> {
+            let lease = authority()
+                .request_lease(request(workers, 10_000_000))
+                .map_err(|_| SignalError::invalid_input("phase5 workflow lease denied"))?;
+            runtime.evaluate_checked(
+                &[source, a_gate, b_gate, sink],
+                EvaluationRequestMode::Default,
+                &(),
+                &|ctx| {
+                    ctx.work()
+                        .checkpoint(128)
+                        .map_err(|_| SignalError::invalid_input("phase5 kernel work exhausted"))?;
+                    let node = ctx.node();
+                    let result = if node == source {
+                        let (a, b, identity) = match step {
+                            Some(step) => (2 + step, 10 + step % 3, format!("source-{step}")),
+                            None => (1, 10, "seed-source".to_string()),
+                        };
+                        NodeEvaluationResult::from_version(version_ab(a, b))
+                            .with_output_identity(identity)
+                    } else if node == a_gate {
+                        let a = ctx.read(source, ASPECT_A)?;
+                        NodeEvaluationResult::from_version(version_ab(a, 0)).with_output_identity(
+                            step.map_or("seed-a".to_string(), |step| format!("a-{step}")),
+                        )
+                    } else if node == b_gate {
+                        let b = ctx.read(source, ASPECT_B)?;
+                        NodeEvaluationResult::from_version(version_ab(0, b)).with_output_identity(
+                            step.map_or("seed-b".to_string(), |step| format!("b-{step}")),
+                        )
+                    } else if node == sink {
+                        let a = ctx.read(a_gate, ASPECT_A)?;
+                        let b = ctx.read(b_gate, ASPECT_B)?;
+                        NodeEvaluationResult::from_version(version_ab(a, b))
+                            .with_output_identity(
+                                step.map_or("seed-sink".to_string(), |step| format!("sink-{step}")),
+                            )
+                            .with_continuity_token("surface")
+                    } else {
+                        return Err(SignalError::invalid_input("unknown phase5 node"));
+                    };
+                    Ok(ctx.finish(result))
+                },
+                &lease,
+            )?;
+            Ok(())
+        };
+        evaluate(&mut runtime, None).unwrap();
         let main = runtime.observe().current_branch();
-        let snapshot = runtime
-            .capture_snapshot()
-            .expect("snapshot capture should succeed without managed queue bindings");
+        let snapshot = runtime.capture_snapshot().unwrap();
         let feature = runtime.create_branch("executor-feature").unwrap();
         runtime.switch_branch(feature.clone()).unwrap();
-
         for step in 0..20_u64 {
             runtime
-                .transaction(&mut runtime_ctx, |tx| {
+                .transaction(&mut (), |tx| {
                     tx.mark_dirty(source, ASPECT_A)?;
                     if step % 4 == 0 {
                         tx.mark_dirty(source, ASPECT_B)?;
                     }
-                    tx.read_with_executor(
-                        source,
-                        &|view| {
-                            Ok(view.finish(
-                                NodeEvaluationResult::from_version(version_ab(
-                                    2 + step,
-                                    10 + (step % 3),
-                                ))
-                                .with_output_identity(format!("source-{step}")),
-                            ))
-                        },
-                        executor,
-                    )?;
-                    tx.read_with_executor(
-                        a_gate,
-                        &|view| {
-                            let version = view.read_aspect_version(source, ASPECT_A)?;
-                            Ok(view.finish(
-                                NodeEvaluationResult::from_version(version)
-                                    .with_output_identity(format!("a-{step}")),
-                            ))
-                        },
-                        executor,
-                    )?;
-                    tx.read_with_executor(
-                        b_gate,
-                        &|view| {
-                            let version = view.read_aspect_version(source, ASPECT_B)?;
-                            Ok(view.finish(
-                                NodeEvaluationResult::from_version(version)
-                                    .with_output_identity(format!("b-{step}")),
-                            ))
-                        },
-                        executor,
-                    )?;
-                    tx.read_with_executor(
-                        sink,
-                        &|view| {
-                            let a = view.read_aspect_version(a_gate, ASPECT_A)?;
-                            let b = view.read_aspect_version(b_gate, ASPECT_B)?;
-                            Ok(view.finish(
-                                NodeEvaluationResult::from_version(version_ab(
-                                    a.get(ASPECT_A),
-                                    b.get(ASPECT_B),
-                                ))
-                                .with_output_identity(format!("sink-{step}"))
-                                .with_continuity_token("surface"),
-                            ))
-                        },
-                        executor,
-                    )?;
                     Ok(())
                 })
                 .unwrap();
-
+            evaluate(&mut runtime, Some(step)).unwrap();
             if step % 5 == 4 {
                 runtime.switch_branch(main.clone()).unwrap();
                 runtime
@@ -173,7 +131,6 @@ fn long_session_replay_and_lineage_stay_equivalent_between_serial_and_parallel_e
                 runtime.switch_branch(feature.clone()).unwrap();
             }
         }
-
         (
             runtime.observe().replay_for_branch(feature.id),
             runtime
@@ -184,18 +141,13 @@ fn long_session_replay_and_lineage_stay_equivalent_between_serial_and_parallel_e
         )
     }
 
-    let serial = run(StageExecutor::Serial);
-    let parallel = run(StageExecutor::aggressive_parallel());
-
-    assert!(
-        replay_slices_equivalent(&serial.0, &parallel.0),
-        "serial and parallel long sessions should preserve the same replay truth surface"
-    );
-    assert!(
-        lineage_records_equivalent(&serial.1, &parallel.1),
-        "serial and parallel long sessions should preserve the same lineage history"
-    );
-    assert_eq!(serial.2.state, parallel.2.state);
-    assert_eq!(serial.2.output_change, parallel.2.output_change);
-    assert_eq!(serial.2.upstream.len(), parallel.2.upstream.len());
+    let baseline = run(1);
+    for workers in [2, 4] {
+        let actual = run(workers);
+        assert!(replay_slices_equivalent(&baseline.0, &actual.0));
+        assert!(lineage_records_equivalent(&baseline.1, &actual.1));
+        assert_eq!(baseline.2.state, actual.2.state);
+        assert_eq!(baseline.2.output_change, actual.2.output_change);
+        assert_eq!(baseline.2.upstream.len(), actual.2.upstream.len());
+    }
 }

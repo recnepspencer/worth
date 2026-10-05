@@ -1,0 +1,7 @@
+error: cannot construct `ExecutionResourceLease<'_>` with struct literal syntax due to private fields
+ --> tests/ui/forge_lease.rs:4:19
+  |
+4 |     let _forged = ExecutionResourceLease {};
+  |                   ^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: private fields `authority`, `node` and `policy` that were not provided

@@ -10,7 +10,8 @@ use worth_query_consumer_values::{
 use worth_query_decl::facade::application_schema::ApplicationInvariantExecutionPoint;
 use worth_query_host::facade::application_contribution::{
     WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
-    WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
+    WorthQueryDecisionContextDependencies, WorthQueryProducerApplicability,
+    WorthQueryProducerDemandResources, WorthQueryProducerInputReuseContract,
     WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
     WorthQueryProducerOutputFamily,
 };
@@ -50,8 +51,14 @@ impl<Schema: TopologySchemaBinding> WorthQueryProducerOutputFamily<Schema> for P
     const IDENTITY: &'static str = "worth.query.certification.planar-output.v1";
     const SUPPORTED: &'static [WorthQueryProducerApplicability] = SUPPORTED;
 
-    fn profile_kind(_: &super::PlanarReadResult) -> &'static str {
-        "planar"
+    /// A body keyed `manual-` is certified by hand: its kind is served by
+    /// the alternate producer alone, which declares no Preserve posture.
+    fn profile_kind(source: &super::PlanarReadResult) -> &'static str {
+        if source.body_key.starts_with("manual-") {
+            "manual-certification"
+        } else {
+            "planar"
+        }
     }
 }
 
@@ -141,6 +148,10 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
         )];
     const RESOURCE_POLICY: &'static str = "bounded-synchronous";
     const REUSE_POLICY: &'static str = "exact-source";
+    const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
+        Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
+            WorthQueryDecisionContextDependencies::NONE,
+        ));
 }
 
 pub fn planar_producer_input(source: &super::PlanarReadResult) -> super::PlanarMutation {

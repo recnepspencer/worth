@@ -73,6 +73,30 @@ impl HistoryFixture {
             .fork_history(commit.basis())
             .unwrap()
     }
+
+    /// A new ordinary commit whose parent is `parent`, on the same basis.
+    pub(super) fn child_of(
+        &mut self,
+        parent: &CompositeRuntimeWorldCommit,
+    ) -> Arc<CompositeRuntimeWorldCommit> {
+        Arc::new(
+            CompositeRuntimeWorldCommit::from_ordinary_publication(
+                self.authority
+                    .issuer_mut()
+                    .composite_commit()
+                    .expect("ordinary identity"),
+                parent,
+                parent.basis().clone(),
+                self.authority
+                    .issuer_mut()
+                    .publication_attempt()
+                    .expect("ordinary attempt"),
+                &CompositeOwnerExecutionResults::retained(),
+                None,
+            )
+            .expect("ordinary commit"),
+        )
+    }
 }
 
 pub(super) fn linear_history(
@@ -128,27 +152,8 @@ pub(super) fn linear_history(
     );
     let mut commits = vec![root];
     for _ in 1..length {
-        let predecessor = commits.last().expect("linear predecessor");
-        let commit = Arc::new(
-            CompositeRuntimeWorldCommit::from_ordinary_publication(
-                owner
-                    .authority
-                    .issuer_mut()
-                    .composite_commit()
-                    .expect("ordinary identity"),
-                predecessor.as_ref(),
-                basis.clone(),
-                owner
-                    .authority
-                    .issuer_mut()
-                    .publication_attempt()
-                    .expect("ordinary attempt"),
-                &CompositeOwnerExecutionResults::retained(),
-                None,
-            )
-            .expect("ordinary commit"),
-        );
-        commits.push(commit);
+        let predecessor = Arc::clone(commits.last().expect("linear predecessor"));
+        commits.push(owner.child_of(&predecessor));
     }
     (owner, commits)
 }

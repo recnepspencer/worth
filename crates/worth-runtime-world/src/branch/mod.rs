@@ -1,5 +1,6 @@
 mod bootstrap;
 mod creation;
+mod currentness_scope;
 mod custody;
 mod history;
 mod name;
@@ -23,6 +24,8 @@ pub use creation::{
     ProductBranchCreationIntent, ProductBranchCreationPlans, RelationalBranchCreationPlan,
     SignalBranchCreationPlan,
 };
+pub(crate) use currentness_scope::ProductBranchCurrentnessScope;
+pub use currentness_scope::{CurrentProductHead, ProductBranchCurrentnessFailure};
 pub use custody::{
     ComponentBranchTarget, CustodyComponent, OwnerCreatedComponentCustodyRecord,
     OwnerRetirementWork, ProductBranchRetirementReport,

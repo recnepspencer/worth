@@ -32,6 +32,7 @@ pub enum BankProductSelectionDenialKind {
     ObservationCapacityExhausted,
     CustodyCapacityExhausted,
     ObservationIdentityExhausted,
+    ObservationAccountingOverflow,
     ProductActivationUnavailable,
     RelationalBasisUnavailable,
     RelationalSnapshotUnavailable,
@@ -144,6 +145,7 @@ pub(super) const fn product_selection(
         QueryProductSelection::ObservationCapacityExhausted => Bank::ObservationCapacityExhausted,
         QueryProductSelection::CustodyCapacityExhausted => Bank::CustodyCapacityExhausted,
         QueryProductSelection::ObservationIdentityExhausted => Bank::ObservationIdentityExhausted,
+        QueryProductSelection::ObservationAccountingOverflow => Bank::ObservationAccountingOverflow,
         QueryProductSelection::ProductActivationUnavailable => Bank::ProductActivationUnavailable,
         QueryProductSelection::RelationalBasisUnavailable => Bank::RelationalBasisUnavailable,
         QueryProductSelection::RelationalSnapshotUnavailable => Bank::RelationalSnapshotUnavailable,
@@ -256,7 +258,7 @@ const fn projection(kind: QueryProjection) -> BankApplicationProjectionDenialKin
     }
 }
 
-const fn authorization(
+pub(super) const fn authorization(
     kind: worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind,
 ) -> BankAuthorizationDenialKind {
     BankAuthorizationDenial::from_kind(kind, 0).kind()

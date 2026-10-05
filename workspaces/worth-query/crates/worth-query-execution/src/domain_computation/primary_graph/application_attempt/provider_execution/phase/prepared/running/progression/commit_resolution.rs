@@ -14,7 +14,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationUnresolvedCommitEvidence,
 };
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::aftermath_resolution::resolve_exact_committed_aftermath;
-use crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::{progression_denied, WorthQueryProviderProgressionOutcome};
+use crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome;
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::recovery_evidence;
 
 /// Everything needed to turn a provider compare-and-commit answer into a
@@ -192,6 +192,14 @@ pub(super) fn finish_authorized_compare(
 fn provider_compare_denied(
     denial: crate::domain_computation::WorthQueryProviderCompareAndCommitDenial,
 ) -> WorthQueryProviderProgressionOutcome {
+    let provider_detail = match &denial {
+        crate::domain_computation::WorthQueryProviderCompareAndCommitDenial::ProviderSession(
+            failure,
+        ) => failure.detail().to_owned(),
+        crate::domain_computation::WorthQueryProviderCompareAndCommitDenial::DecisionReadSet(
+            failure,
+        ) => failure.detail().to_owned(),
+    };
     if let crate::domain_computation::WorthQueryProviderCompareAndCommitDenial::ProviderSession(
         failure,
     ) = &denial
@@ -278,7 +286,12 @@ fn provider_compare_denied(
                 required_bytes,
             ),
         ),
-        (None, false, None, None) => progression_denied(DenialStage::ProviderCommit),
+        (None, false, None, None) => WorthQueryProviderProgressionOutcome::Denied(
+            crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
+                DenialStage::ProviderCommit,
+                provider_detail,
+            ),
+        ),
     }
 }
 

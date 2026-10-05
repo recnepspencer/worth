@@ -1,7 +1,11 @@
 use serde::{Deserialize, Serialize};
 
 use crate::expression::model::{ConditionSpec, Expr, IdentitySpec, SignalValue};
-use worth_signal::facade::{ChangedRegion, PartitionMatchMode, PartitionSubscription};
+use worth_signal::facade::{ChangedRegion, PartitionSubscription};
+
+mod family_scope;
+pub use family_scope::RecipeFamilyReadScopeSpec;
+pub(crate) use family_scope::RecipeFamilyScopeKeyRequirement;
 
 pub type WasmAspectId = u8;
 
@@ -87,47 +91,6 @@ impl RecipeReadSpec {
             Self::LegacyId(_) => None,
             Self::Signal(spec) => Some(&spec.aspects),
         }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RecipeFamilyReadScopeSpec {
-    #[serde(default)]
-    pub partition: Option<String>,
-    #[serde(default)]
-    pub partition_from: Option<String>,
-    #[serde(default)]
-    pub detail: Option<String>,
-    #[serde(default)]
-    pub match_mode: Option<PartitionMatchMode>,
-}
-
-impl RecipeFamilyReadScopeSpec {
-    pub fn resolve(&self, key: &str) -> Option<PartitionSubscription> {
-        let partition =
-            self.partition
-                .as_ref()
-                .cloned()
-                .or_else(|| match self.partition_from.as_deref() {
-                    Some("key") => Some(key.to_owned()),
-                    _ => None,
-                })?;
-
-        let detail = self.detail.clone();
-        let match_mode = self.match_mode.unwrap_or({
-            if detail.is_some() {
-                PartitionMatchMode::PartitionAndDetail
-            } else {
-                PartitionMatchMode::WholePartition
-            }
-        });
-
-        Some(PartitionSubscription {
-            partition: partition.into(),
-            detail,
-            match_mode,
-        })
     }
 }
 

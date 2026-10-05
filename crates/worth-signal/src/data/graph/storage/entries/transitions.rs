@@ -49,7 +49,7 @@ impl SignalGraph {
         ),
         SignalError,
     > {
-        let runtime = self.warm_ref(node)?.runtime_artifact_state.as_ref();
+        let runtime = self.warm_ref(node)?.runtime_artifact_state.as_deref();
         Ok((
             runtime.and_then(|state| state.lineage_artifact_id().get()),
             runtime.map(crate::data::trace::RuntimeArtifactState::output_hash),
@@ -61,11 +61,14 @@ impl SignalGraph {
         &self,
         node: NodeId,
         changed_regions: &[ChangedRegion],
-        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
-        self.warm_ref(node)?
-            .aspect_version_overrides
-            .admit_evaluation_work(changed_regions, work)
+        let overrides = &self.warm_ref(node)?.aspect_version_overrides;
+        // A producer draft shares this companion with the installed root.
+        // Its first version write detaches the existing map before applying
+        // the new scoped regions.
+        overrides.admit_clone_work(work)?;
+        overrides.admit_evaluation_work(changed_regions, work)
     }
 
     #[cfg(test)]
@@ -94,7 +97,7 @@ impl SignalGraph {
         Ok(
             crate::data::aspect::PartitionVersionMap::from_storage_parts(
                 hot.aspect_version_header,
-                warm.aspect_version_overrides.clone(),
+                warm.aspect_version_overrides.as_ref().clone(),
             ),
         )
     }
@@ -106,7 +109,7 @@ impl SignalGraph {
     ) -> Result<(), SignalError> {
         let (header, overrides) = versions.into_storage_parts();
         self.hot_mut(node)?.aspect_version_header = header;
-        self.warm_mut(node)?.aspect_version_overrides = overrides;
+        self.warm_mut(node)?.aspect_version_overrides = std::sync::Arc::new(overrides);
         Ok(())
     }
 

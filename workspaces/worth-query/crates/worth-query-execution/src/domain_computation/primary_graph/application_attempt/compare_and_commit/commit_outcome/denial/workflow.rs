@@ -12,7 +12,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::WorkflowAuthorityRequired,
             stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -39,7 +39,7 @@ impl WorthQueryApplicationCommitDenial {
             },
             stage,
             detail: Some(denial.to_string().into()),
-            custom_invariant: None,
+            cause: None,
         }
     }
 }

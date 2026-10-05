@@ -130,6 +130,24 @@ impl SnapshotHandles {
         self.active.binding(snapshot_id)
     }
 
+    /// Read one immutable issued binding's branch width without copying its
+    /// owned visibility basis. The independent locks are visited in canonical
+    /// active-before-published order and never held together.
+    pub(crate) fn selected_branch_bytes(&self, snapshot_id: SnapshotId) -> Option<usize> {
+        self.active
+            .selected_branch_bytes(snapshot_id)
+            .or_else(|| self.published.selected_branch_bytes(snapshot_id))
+    }
+
+    pub(crate) fn selected_root(
+        &self,
+        snapshot_id: SnapshotId,
+    ) -> Option<Arc<crate::branch::RelationalBranchRoot>> {
+        self.active
+            .selected_root(snapshot_id)
+            .or_else(|| self.published.selected_root(snapshot_id))
+    }
+
     /// Whether either registry still knows this identity, answered by one
     /// registry observation at a time. The published registry is consulted only
     /// when the active registry has already released its lock and answered no.

@@ -4,6 +4,7 @@ use std::{
 };
 
 mod durable_recovery;
+mod read_batch;
 
 use crate::{
     product_operation_contract::{
@@ -18,17 +19,17 @@ use crate::{
 
 use super::execution_pipeline::{
     build_early_envelope, build_envelope, build_request_input, close_product_operation_readiness,
-    declaration_metadata, execute_shared_read_batch_from_worth_native, validate_payload_schema,
-    validate_product_mutation_preconditions, validate_success_result,
+    declaration_metadata, validate_payload_schema, validate_product_mutation_preconditions,
+    validate_success_result,
 };
 use super::{
-    WorthServerCompletedProductOperation, WorthServerExecutedProductReadBatch,
-    WorthServerLoweredProductOperationPlan, WorthServerProductAdapterRegistry,
-    WorthServerProductOperationAuthorization, WorthServerProductOperationAuthorizationRequest,
-    WorthServerProductOperationDeclaration, WorthServerProductOperationExecutionBoundary,
-    WorthServerProductOperationInput, WorthServerProductOperationOutcome,
-    WorthServerProductOperationSurfaceDenial, WorthServerProductOperationSurfaceDenialCode,
-    WorthServerProductOperationSurfaceDenialFacts, WorthServerScheduledProductOperation,
+    WorthServerCompletedProductOperation, WorthServerLoweredProductOperationPlan,
+    WorthServerProductAdapterRegistry, WorthServerProductOperationAuthorization,
+    WorthServerProductOperationAuthorizationRequest, WorthServerProductOperationDeclaration,
+    WorthServerProductOperationExecutionBoundary, WorthServerProductOperationInput,
+    WorthServerProductOperationOutcome, WorthServerProductOperationSurfaceDenial,
+    WorthServerProductOperationSurfaceDenialCode, WorthServerProductOperationSurfaceDenialFacts,
+    WorthServerScheduledProductOperation,
 };
 
 #[derive(Clone, Debug)]
@@ -112,27 +113,6 @@ impl WorthServerProductOperationRuntime {
             Ok(operation) => Ok(operation),
             Err(denial) => self.project_session_denial(prepared_request, &protocol_input, denial),
         }
-    }
-
-    pub fn execute_shared_read_batch_from_worth_native(
-        &self,
-        admission: &WorthServerAdmission,
-        inputs: Vec<WorthServerProductOperationInput>,
-    ) -> Result<WorthServerExecutedProductReadBatch, WorthServerProductOperationSurfaceDenial> {
-        let executed = execute_shared_read_batch_from_worth_native(
-            &self.operation_registry,
-            &self.adapter_registry,
-            &self.query_handoff_config,
-            admission,
-            inputs,
-        )?;
-        for operation in executed.operations() {
-            if let Some(artifact) = operation.result_artifact() {
-                self.counters
-                    .record_product_result_artifact(artifact.body().byte_len());
-            }
-        }
-        Ok(executed)
     }
 
     fn resolve_declaration(

@@ -1,8 +1,11 @@
-use worth_query_execution::facade::primary_graph::WorthQueryApplicationQueryAccessReceipt;
+use worth_query_execution::facade::primary_graph::{
+    WorthQueryApplicationBasisReleaseOutcome, WorthQueryApplicationQueryAccessReceipt,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPublishedApplicationQueryReleasePosture {
     Released,
+    SharedCustodyRetained,
     ReleaseFailed,
 }
 
@@ -32,7 +35,12 @@ impl WorthQueryPublishedApplicationQueryTerminalRelease {
         let completion = terminal.read_completion();
         Self {
             application_basis: release_posture(terminal.basis_released()),
-            graph_read_basis: release_posture(completion.basis_release().released()),
+            graph_read_basis: match completion.basis_release().outcome() {
+                WorthQueryApplicationBasisReleaseOutcome::SharedCustodyRetained => {
+                    WorthQueryPublishedApplicationQueryReleasePosture::SharedCustodyRetained
+                }
+                outcome => release_posture(outcome.released()),
+            },
             result_buffer: match terminal.result_buffer() {
                 None => WorthQueryPublishedApplicationQueryResultBufferRelease::Missing,
                 Some(buffer) if buffer.released() => {

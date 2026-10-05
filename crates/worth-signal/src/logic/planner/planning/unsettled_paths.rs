@@ -3,6 +3,7 @@ use crate::data::error::SignalError;
 use crate::data::graph::SignalGraph;
 use crate::data::handle::NodeId;
 use crate::data::node::NodeState;
+use crate::data::request_preparation::{self as preparation_budget, SignalPreparationBudget};
 
 pub(super) struct UnsettledDependencyPaths {
     required: Vec<bool>,
@@ -20,6 +21,8 @@ impl UnsettledDependencyPaths {
 pub(super) fn discover_unsettled_dependency_paths(
     graph: &mut SignalGraph,
     targets: &[NodeId],
+    mut work: Option<&mut worth_execution::MapKernelContext<'_, '_>>,
+    mut preparation: Option<&mut SignalPreparationBudget>,
 ) -> Result<UnsettledDependencyPaths, SignalError> {
     #[derive(Clone, Copy)]
     enum Frame {
@@ -28,11 +31,18 @@ pub(super) fn discover_unsettled_dependency_paths(
     }
 
     let capacity = graph.arena_capacity();
+    super::super::precompute::work::checkpoint(
+        work.as_deref_mut(),
+        capacity.saturating_mul(2).saturating_add(targets.len()),
+    )?;
+    preparation_budget::claim_vec::<u8>(preparation.as_deref_mut(), capacity.saturating_mul(2))?;
     let mut visit_state = vec![0_u8; capacity];
     let mut required = vec![false; capacity];
     for &target in targets {
+        preparation_budget::claim_vec::<Frame>(preparation.as_deref_mut(), 1)?;
         let mut stack = vec![Frame::Enter(target)];
         while let Some(frame) = stack.pop() {
+            super::super::precompute::work::checkpoint(work.as_deref_mut(), 1)?;
             let node = match frame {
                 Frame::Enter(node) | Frame::Exit(node) => node,
             };
@@ -54,9 +64,19 @@ pub(super) fn discover_unsettled_dependency_paths(
                 },
                 Frame::Exit(_) => {
                     let state = graph.get_state(node)?;
-                    let contract = graph.get_contract(node)?.clone();
-                    let dependency_requires_work =
-                        graph.runtime_dependencies_of(node)?.iter().any(|edge| {
+                    let dependency_count = graph.current_runtime_dependencies_of(node)?.len();
+                    super::super::precompute::work::checkpoint(
+                        work.as_deref_mut(),
+                        dependency_count.saturating_add(1),
+                    )?;
+                    if work.is_none() {
+                        graph.refresh_runtime_dependencies_of(node)?;
+                    }
+                    let contract = graph.get_contract(node)?;
+                    let dependency_requires_work = graph
+                        .current_runtime_dependencies_of(node)?
+                        .iter()
+                        .any(|edge| {
                             let scopes = edge.scope_ref().map(std::slice::from_ref).unwrap_or(&[]);
                             required[edge.source().index() as usize]
                                 && contract.cares_about_change(
@@ -72,9 +92,39 @@ pub(super) fn discover_unsettled_dependency_paths(
             }
             graph.get_state(node)?;
             visit_state[index] = 1;
-            stack.push(Frame::Exit(node));
-            for edge in graph.runtime_dependencies_of(node)?.iter().rev() {
-                stack.push(Frame::Enter(edge.source()));
+            preparation_budget::push(&mut stack, Frame::Exit(node), preparation.as_deref_mut())?;
+            let sources = if !matches!(graph.get_state(node)?, NodeState::Clean) {
+                super::required_inputs::required_input_sources(
+                    graph,
+                    node,
+                    work.as_deref_mut(),
+                    preparation.as_deref_mut(),
+                )?
+            } else {
+                let dependency_count = graph.current_runtime_dependencies_of(node)?.len();
+                super::super::precompute::work::checkpoint(
+                    work.as_deref_mut(),
+                    dependency_count.saturating_add(1),
+                )?;
+                if work.is_none() {
+                    graph.refresh_runtime_dependencies_of(node)?;
+                }
+                preparation_budget::claim_vec::<NodeId>(
+                    preparation.as_deref_mut(),
+                    dependency_count,
+                )?;
+                graph
+                    .current_runtime_dependencies_of(node)?
+                    .iter()
+                    .map(|edge| edge.source())
+                    .collect()
+            };
+            for source in sources.into_iter().rev() {
+                preparation_budget::push(
+                    &mut stack,
+                    Frame::Enter(source),
+                    preparation.as_deref_mut(),
+                )?;
             }
         }
     }

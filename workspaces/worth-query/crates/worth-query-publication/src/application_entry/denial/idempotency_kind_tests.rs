@@ -48,6 +48,10 @@ fn every_idempotency_cause_keeps_its_own_request_kind() {
             Resolution::RecordedIntentUnverifiable,
             Request::IdempotencyIntentUnverifiable,
         ),
+        (
+            Resolution::IdempotencyWindowExpired,
+            Request::IdempotencyWindowExpired,
+        ),
     ];
     for (resolution, expected) in cases {
         assert_eq!(idempotency_kind(resolution), expected, "{resolution:?}");

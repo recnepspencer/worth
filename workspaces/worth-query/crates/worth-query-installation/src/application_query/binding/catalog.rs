@@ -27,6 +27,11 @@ pub(crate) struct WorthQueryInstalledApplicationQueryCatalog {
     bindings: BTreeMap<String, Arc<WorthQueryCompiledApplicationQueryBinding>>,
 }
 
+pub(crate) enum AdmittedQueryCatalogStop<E> {
+    Admission(E),
+    AccountingOverflow,
+}
+
 impl WorthQueryInstalledApplicationQueryCatalog {
     pub(crate) fn descriptors(
         &self,
@@ -65,6 +70,34 @@ impl WorthQueryInstalledApplicationQueryCatalog {
         identity: &str,
     ) -> Option<Arc<WorthQueryCompiledApplicationQueryBinding>> {
         self.bindings.get(identity).map(Arc::clone)
+    }
+
+    pub(crate) fn get_binding_admitted<E>(
+        &self,
+        identity: &str,
+        prepare: &mut impl FnMut(u64, u64) -> Result<(), E>,
+    ) -> Result<Option<Arc<WorthQueryCompiledApplicationQueryBinding>>, AdmittedQueryCatalogStop<E>>
+    {
+        // A selected std BTree descent visits at most eleven keys per node.
+        // Each comparison reads at most the selected key and its terminator.
+        let per_key = identity
+            .len()
+            .checked_add(1)
+            .ok_or(AdmittedQueryCatalogStop::AccountingOverflow)?;
+        let count = self.bindings.len();
+        let levels = usize::BITS.saturating_sub(count.max(1).leading_zeros()) as usize;
+        let comparisons = count
+            .min(11)
+            .checked_mul(levels)
+            .ok_or(AdmittedQueryCatalogStop::AccountingOverflow)?;
+        let work = comparisons
+            .checked_mul(per_key)
+            .and_then(|n| n.checked_add(1))
+            .and_then(|n| n.checked_add(1))
+            .and_then(|n| u64::try_from(n).ok())
+            .ok_or(AdmittedQueryCatalogStop::AccountingOverflow)?;
+        prepare(work, 0).map_err(AdmittedQueryCatalogStop::Admission)?;
+        Ok(self.get_binding(identity))
     }
 }
 

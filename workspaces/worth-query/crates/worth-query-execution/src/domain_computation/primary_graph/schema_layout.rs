@@ -1,8 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use worth_foundational::facade::{
-    AspectContract, AspectFieldLocator, AspectKey, AspectShape, FieldKey, FieldRequirement,
-};
+use worth_foundational::facade::{AspectContract, AspectFieldLocator, AspectKey, FieldKey};
 use worth_query_installation::facade::{
     ErasedApplicationSchemaDeclaration, WorthQueryInstalledApplicationSchemaContractCatalog,
 };
@@ -15,6 +13,8 @@ use super::WorthQueryPrimaryGraphInstallationDenial;
 mod application_layout_lowering;
 mod capability_grant_join;
 mod continuation_ordering;
+mod equality_fields;
+mod field_optionality;
 mod installation_primitives;
 mod platform_entity_lowering;
 mod platform_identity_allocator;
@@ -25,6 +25,8 @@ mod provider_dispatch_outbox;
 mod provider_idempotency;
 mod provider_inbound_completion;
 mod registry_lowering;
+mod support_admission;
+pub(in crate::domain_computation::primary_graph) use support_admission::WorthQuerySupportLookupStop;
 
 use super::workflow::schema::WorthQueryWorkflowLayout;
 use crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxLayout;
@@ -89,6 +91,22 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryFieldLayout {
 }
 
 impl WorthQueryPrimaryGraphLayout {
+    /// The installed native contract inventory is the complete output-aspect
+    /// vocabulary for this application entity, including fields that were not
+    /// written by the performed operation.
+    pub(in crate::domain_computation::primary_graph) fn native_output_aspects<'a>(
+        &'a self,
+        entity: &'a str,
+    ) -> impl Iterator<Item = &'a AspectKey> + Clone {
+        self.aspect_contracts
+            .keys()
+            .filter_map(move |(name, aspect)| (name == entity).then_some(aspect))
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn native_contract_count(&self) -> usize {
+        self.aspect_contracts.len()
+    }
+
     pub(super) fn lower(
         schema: &ErasedApplicationSchemaDeclaration,
         native_contracts: &WorthQueryInstalledApplicationSchemaContractCatalog,
@@ -221,6 +239,17 @@ impl WorthQueryPrimaryGraphLayout {
         self.entity_kinds.get(entity).copied()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn entity_kind_lookup_work(
+        &self,
+        entity: &str,
+    ) -> Option<u64> {
+        let entries = self.entity_kinds.len();
+        let levels = usize::BITS as usize - entries.max(1).leading_zeros() as usize;
+        let comparisons = entries.min(11).checked_mul(levels)?.checked_add(1)?;
+        let bytes_per_comparison = entity.len().checked_add(1)?;
+        u64::try_from(comparisons.checked_mul(bytes_per_comparison)?).ok()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn entity_name(
         &self,
         kind: KindId,
@@ -292,60 +321,8 @@ impl WorthQueryPrimaryGraphLayout {
             .get(&(entity.to_string(), aspect.clone()))
     }
 
-    pub(in crate::domain_computation) fn field_is_optional(
-        &self,
-        entity: &str,
-        locator: &AspectFieldLocator,
-    ) -> bool {
-        let Some(field) = locator.field_path().fields().first() else {
-            return false;
-        };
-        let Some(contract) = self.aspect_contract(entity, locator.aspect().aspect_key()) else {
-            return false;
-        };
-        let AspectShape::Struct(shape) = contract.shape() else {
-            return false;
-        };
-        shape
-            .field(field)
-            .is_some_and(|field| field.requirement() == FieldRequirement::Optional)
-    }
-
-    pub(in crate::domain_computation) fn equality_field(
-        &self,
-        entity: &str,
-        aspect: &str,
-        field: &str,
-    ) -> Option<&WorthQueryPrimaryFieldLayout> {
-        self.fields
-            .get(&(entity.to_string(), aspect.to_string(), field.to_string()))
-            .filter(|layout| layout.equality_index_id.is_some())
-    }
-
-    pub(super) fn equality_fields_mut(
-        &mut self,
-    ) -> impl Iterator<Item = (&(String, String, String), &mut WorthQueryPrimaryFieldLayout)> {
-        self.fields
-            .iter_mut()
-            .filter(|(_, layout)| layout.equality_index_id.is_some())
-    }
-
-    pub(super) fn equality_index_ids(&self) -> impl Iterator<Item = DerivedIndexId> + '_ {
-        self.fields
-            .values()
-            .filter_map(|field| field.equality_index_id)
-    }
-
-    pub(super) fn supports_equality_field(&self, aspect: &AspectKey, field: &FieldKey) -> bool {
-        self.equality_field_keys
-            .get(aspect)
-            .is_some_and(|fields| fields.contains(field))
-    }
-
-    pub(super) fn supports_projection_field(&self, aspect: &AspectKey, field: &FieldKey) -> bool {
-        self.projection_field_keys
-            .get(aspect)
-            .is_some_and(|fields| fields.contains(field))
+    pub(in crate::domain_computation::primary_graph) fn aspect_contract_count(&self) -> usize {
+        self.aspect_contracts.len()
     }
 
     pub(super) const fn provider_idempotency(&self) -> &WorthQueryProviderIdempotencyLayout {

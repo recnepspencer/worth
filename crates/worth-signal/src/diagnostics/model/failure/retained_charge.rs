@@ -11,7 +11,7 @@ impl RetainedStorageMeasurement for FailureSummary {
             phase: _,
             stage_index: _,
             node: _,
-            executor: _,
+            posture: _,
             execution_record_id: _,
             has_plan_summary: _,
             rolled_back: _,

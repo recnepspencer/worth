@@ -156,6 +156,10 @@ impl RelationalBranchRootSchemaAuthority {
         self.aspect_plans.entity_plans.get(&kind_id)
     }
 
+    pub(crate) fn entity_aspect_plan_count(&self) -> usize {
+        self.aspect_plans.entity_plans.len()
+    }
+
     pub(crate) fn relation_aspect_plan(
         &self,
         kind_id: crate::identity::data::KindId,

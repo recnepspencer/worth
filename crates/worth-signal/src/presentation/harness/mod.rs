@@ -9,7 +9,7 @@ pub use assertions::SignalHarnessAssert;
 pub use bridge::{signal_bench, signal_parity_suite, SignalHarnessBridge};
 pub use profiles::SignalProfileCatalog;
 pub use runtime::{
-    SignalEvaluationDriver, SignalFixtureFactory, SignalHarnessRuntime,
-    SignalHarnessRuntimeBuilder, SignalHarnessSession, SignalMutationAction,
+    SignalCheckedEvaluationDriver, SignalEvaluationDriver, SignalFixtureFactory,
+    SignalHarnessRuntime, SignalHarnessRuntimeBuilder, SignalHarnessSession, SignalMutationAction,
 };
 pub use scenario::{SignalMutationBatch, SignalScenario};

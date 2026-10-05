@@ -6,7 +6,7 @@ use crate::logic::evaluation::EvaluationWork;
 impl DependencySnapshot {
     pub(crate) fn shape_with_work(
         &self,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<DependencySnapshotShape, SignalError> {
         work.reserve(
             self.entries()
@@ -17,12 +17,10 @@ impl DependencySnapshot {
         )?;
         for entry in self.entries() {
             // Copy into shape keys and compare adjacent keys in its constructor.
-            let bytes = entry.scope.as_ref().map_or(Some(0), |s| {
-                s.partition
-                    .0
-                    .len()
-                    .checked_add(s.detail.as_ref().map_or(0, String::len))
-            });
+            let bytes = entry
+                .scope
+                .as_ref()
+                .map_or(Some(0), |s| s.path().checked_segment_bytes());
             work.reserve(
                 bytes
                     .and_then(|n| n.checked_mul(3))

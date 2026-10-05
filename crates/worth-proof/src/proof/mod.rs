@@ -1,3 +1,4 @@
+mod execution_authority;
 mod marker_authoring;
 mod markers;
 mod minting;
@@ -5,6 +6,7 @@ mod sets;
 mod structural_facts;
 mod witnesses;
 
+pub use execution_authority::ExecutionAuthorityMarker;
 pub use markers::ProofMarker;
 #[cfg(test)]
 pub(crate) use minting::mint_proof;

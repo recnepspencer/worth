@@ -34,6 +34,8 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     InvalidSchemaMember,
     /// Relational rejected the installation commit.
     RelationalCommitRejected,
+    /// Relational deferred publication until its required derived companion can proceed.
+    RelationalDeferred(worth_relational::facade::mvcc::RelationalPublicationDeferred),
     /// No capacity remains to retain a basis.
     RetentionCapacityExhausted,
     /// The runtime ran out of basis-retention identities.
@@ -131,6 +133,9 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     ForeignProducerBinding,
     /// A producer binding does not match its declared meaning.
     ProducerBindingMeaningMismatch,
+    /// A declared producer's immutable operation resource plan is unsupported
+    /// by this runtime's final graph provider support.
+    ProducerGraphWorkRejected,
     /// A declared conditional operation has no binding.
     MissingConditionalBinding,
     /// A conditional operation is bound more than once.

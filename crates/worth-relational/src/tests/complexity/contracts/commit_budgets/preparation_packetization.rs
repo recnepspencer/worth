@@ -2,9 +2,7 @@ use super::*;
 
 #[test]
 fn complexity_budget_preparation_packetization_is_chunked_for_broad_deltas() {
-    let runtime = runtime_with_test_schema_execution_model(
-        crate::facade::runtime::RelationalExecutionModel::ParallelPreparation,
-    );
+    let runtime = runtime_with_test_schema();
     runtime.performance_access().reset_counters();
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
@@ -29,7 +27,9 @@ fn complexity_budget_preparation_packetization_is_chunked_for_broad_deltas() {
         )),
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(&runtime).unwrap();
+    let outcome = runtime
+        .commit_branch_transaction_with_lease(txn, &test_execution_lease())
+        .unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(outcome.changed_records.len(), 65);
@@ -43,9 +43,7 @@ fn complexity_budget_preparation_packetization_is_chunked_for_broad_deltas() {
 
 #[test]
 fn complexity_budget_preparation_narrow_delta_falls_back_to_serial() {
-    let runtime = runtime_with_test_schema_execution_model(
-        crate::facade::runtime::RelationalExecutionModel::ParallelPreparation,
-    );
+    let runtime = runtime_with_test_schema();
     runtime.performance_access().reset_counters();
 
     let _ = create_entity_outcome(&runtime, "narrow");

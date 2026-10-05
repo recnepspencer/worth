@@ -27,7 +27,19 @@ fn downstream_warm_copy_and_waiter_retirement_are_admitted_before_publication() 
             },
         )
         .unwrap();
+    let runtime_before = source.arena.warm[consumer.index() as usize]
+        .runtime_artifact_state
+        .as_ref()
+        .unwrap()
+        .clone();
     let (mut graph, _) = source.fork_persistent();
+    assert!(std::sync::Arc::ptr_eq(
+        &runtime_before,
+        graph.arena.warm[consumer.index() as usize]
+            .runtime_artifact_state
+            .as_ref()
+            .unwrap(),
+    ));
     let mut preparation = Work::new(usize::MAX);
     let projection =
         PendingRevalidationNodeProjection::capture(&graph, producer, &mut preparation).unwrap();
@@ -54,7 +66,7 @@ fn downstream_warm_copy_and_waiter_retirement_are_admitted_before_publication() 
         .admit_downstream_node_mutation_work(&mut EvaluationWork::Conditional(&mut node_writes))
         .unwrap();
     assert!(node_writes.visits() > 6);
-    assert!(cost >= payload.len() + node_writes.visits());
+    assert!(cost >= node_writes.visits());
     for available in [cost - 1, cost] {
         let mut work = Work::new(cost + 7);
         work.reserve_visits(cost + 7 - available).unwrap();
@@ -88,6 +100,13 @@ fn downstream_warm_copy_and_waiter_retirement_are_admitted_before_publication() 
     graph
         .publish_pending_revalidation_resolution(prepared)
         .unwrap();
+    assert!(std::sync::Arc::ptr_eq(
+        &runtime_before,
+        graph.arena.warm[consumer.index() as usize]
+            .runtime_artifact_state
+            .as_ref()
+            .unwrap(),
+    ));
     assert!(graph.node_pending_revalidation(consumer).unwrap().is_none());
     assert!(graph
         .topology

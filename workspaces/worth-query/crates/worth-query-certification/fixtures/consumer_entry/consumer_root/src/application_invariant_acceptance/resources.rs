@@ -3,6 +3,7 @@ use worth_query_host::facade::runtime::{
     RuntimeWorldCustodyBudgetInstallation, RuntimeWorldHistoryBudgetInstallation,
     RuntimeWorldObservationBudgetInstallation, RuntimeWorldPublicationBudgetInstallation,
     RuntimeWorldRecoveryBudgetInstallation, RuntimeWorldRetentionBudgetInstallation,
+    WorthQueryInvalidationResourceInstallation, WorthQueryInvalidationResources,
     WorthQueryProductWorldClock, WorthQueryProductWorldResources,
 };
 
@@ -35,6 +36,15 @@ pub(super) fn world_resources() -> WorthQueryProductWorldResources {
             },
         },
         WorthQueryProductWorldClock::start(),
+        WorthQueryInvalidationResources::install(
+            WorthQueryInvalidationResourceInstallation::bounded(
+                1_000_000,
+                64 * 1_024 * 1_024,
+                128 * 1_024 * 1_024,
+                128,
+            ),
+        )
+        .expect("the Query invalidation installation is valid"),
     )
     .expect("the consumer's finite World resources are valid")
 }

@@ -25,6 +25,10 @@ pub(super) fn visit_dependency_facts<Error>(
             super::super::super::application_attempt::WorthQueryApplicationObservedFact::SourceEntity {
                 entity_id,
             } => (*entity_id, WorkflowEvidenceDependencyKind::Entity),
+            super::super::super::application_attempt::WorthQueryApplicationObservedFact::Entity {
+                entity_id,
+                ..
+            } => (*entity_id, WorkflowEvidenceDependencyKind::EntityKind),
             super::super::super::application_attempt::WorthQueryApplicationObservedFact::SourceAspectRevision {
                 entity_id,
                 ..
@@ -58,6 +62,15 @@ pub(super) fn visit_dependency_facts<Error>(
             ),
         ]);
         match fact {
+            super::super::super::application_attempt::WorthQueryApplicationObservedFact::Entity {
+                kind,
+                ..
+            } => {
+                fields.insert(
+                    layout.evidence_dependency.native_entity_kind.clone(),
+                    AspectValue::UInt64(u64::from(kind.as_u32())),
+                );
+            }
             super::super::super::application_attempt::WorthQueryApplicationObservedFact::SourceAspectRevision {
                 aspect,
                 native_revision,

@@ -10,8 +10,8 @@ use worth_query_host::facade::application_entry::{
     WorthQueryWorkflowInstancePreparationDenial,
 };
 use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitDenialKind,
-    WorthQueryApplicationUncommitted, WorthQueryWorkflowInstanceCustody,
+    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationUncommitted,
+    WorthQueryWorkflowInstanceCustody,
 };
 
 use super::assertions::key;
@@ -112,11 +112,10 @@ fn a_cancellation_prepared_before_the_rail_takes_the_payment_goes_stale() {
         .expect("the payment commits into rail custody");
     match early.execute() {
         WorkflowInstanceCancellationOutcome::Application(
-            WorthQueryApplicationUncommitted::Denied(denial),
-        ) => assert_eq!(
-            denial.kind(),
-            WorthQueryApplicationCommitDenialKind::ProductBasisStale,
-            "the custody the rail took moved the basis the cancellation read",
+            WorthQueryApplicationUncommitted::Stale(stale),
+        ) => assert!(
+            stale.stale_fact_count() > 0,
+            "the custody the rail took changed facts the cancellation read",
         ),
         other => panic!("a cancellation read before the rail took custody is stale: {other:?}"),
     }

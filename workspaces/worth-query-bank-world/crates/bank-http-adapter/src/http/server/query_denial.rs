@@ -59,6 +59,7 @@ fn product_selection(kind: BankProductSelectionDenialKind) -> BankHttpDenial {
             BankHttpDenial::new(Kind::ResourceExhausted, Next::Retry)
         }
         Selection::ObservationIdentityExhausted
+        | Selection::ObservationAccountingOverflow
         | Selection::RetentionIdentityExhausted
         | Selection::SnapshotIdentityExhausted => {
             BankHttpDenial::new(Kind::ResourceExhausted, Next::ContactOperator)
@@ -177,6 +178,7 @@ fn entity(kind: BankEntityResolutionDenialKind) -> BankHttpDenial {
         Entity::UnknownEntity => BankHttpDenial::new(Kind::NotFound, Next::CorrectRequest),
         Entity::ValueEncodingRejected => malformed(),
         Entity::ProjectionWorkBudgetExceeded
+        | Entity::ProjectionPreparationMemoryExhausted
         | Entity::ActiveSnapshotCapacityExhausted { .. }
         | Entity::SnapshotIdentityExhausted
         | Entity::RetentionCapacityExhausted
@@ -185,13 +187,24 @@ fn entity(kind: BankEntityResolutionDenialKind) -> BankHttpDenial {
         Entity::PrimaryGraphNotInstalled
         | Entity::FieldNotInstalled
         | Entity::EqualityIndexUnavailable => unavailable(),
-        Entity::AmbiguousEntity | Entity::CorruptIdentityIndex => internal_denied(),
+        // The server's own handler sets a selection's candidate limit, so no
+        // retry and no client correction can pass either refusal.
+        Entity::AmbiguousEntity
+        | Entity::CorruptIdentityIndex
+        | Entity::InvalidCandidateLimit
+        | Entity::CandidateLimitExceeded { .. } => internal_denied(),
     }
 }
 
 fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHttpDenial {
     use BankApplicationOutputSettlementDenialKind as Settlement;
     match kind {
+        Settlement::SourceQueryInstallation(_) => unavailable(),
+        Settlement::SourcePrincipal(_) => stale(),
+        Settlement::SourceScope(kind) => entity(kind),
+        Settlement::SourceQueryAdmission(kind) => admission(kind),
+        Settlement::SourceQueryExecution(kind) => execution(kind),
+        Settlement::RequestAuthorization(kind) => authorization_denial(kind),
         Settlement::Cancelled => cancelled(),
         Settlement::TimedOut => deadline(),
         Settlement::Superseded

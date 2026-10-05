@@ -14,7 +14,7 @@ use worth_relational::facade::{
 };
 
 use super::{
-    read_execution_denial, WorthQueryApplicationReadExecutionDenial,
+    read_execution_denial, OneShotReadWorkObservation, WorthQueryApplicationReadExecutionDenial,
     WorthQueryApplicationReadExecutionDenialKind,
 };
 use crate::domain_computation::primary_graph::application_query::projection::{
@@ -90,12 +90,13 @@ pub(super) fn materialize_result_tree(
     collection_selection: ResultTreeCollectionSelection,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     result_buffer: &mut WorthQueryApplicationResultBufferReservation,
+    spent: Option<&OneShotReadWorkObservation>,
 ) -> Result<MaterializedApplicationResultTree, WorthQueryApplicationReadExecutionDenial> {
     let projection = runtime
         .read_truth()
         .project_snapshot(snapshot)
         .ok_or_else(|| projection_denial(contract.root_entity()))?;
-    let mut work = ResultTreeWork::new(maximum_work, request);
+    let mut work = ResultTreeWork::new(maximum_work, request, spent);
     work.checkpoint("root")?;
     let mut collection_selection = ActiveResultTreeCollectionSelection::new(collection_selection);
     let mut rows = project_nodes(

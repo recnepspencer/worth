@@ -180,8 +180,9 @@ pub use product_adapter::{
     WorthServerProductOperationRuntime, WorthServerProductOperationSuccess,
     WorthServerProductOperationSupportSnapshot, WorthServerProductOperationSurfaceDenial,
     WorthServerProductOperationSurfaceDenialCode, WorthServerProductOperationSurfaceDenialFacts,
-    WorthServerProductPayloadSchemaValidator, WorthServerProductReadTransport,
-    WorthServerProductSchedulerAdmission, WorthServerScheduledProductOperation,
+    WorthServerProductPayloadSchemaValidator, WorthServerProductReadBatchStop,
+    WorthServerProductReadTransport, WorthServerProductSchedulerAdmission,
+    WorthServerScheduledProductOperation,
 };
 pub use product_operation_contract::{
     WorthServerProductIdempotencyConflict, WorthServerProductIdempotencyKey,

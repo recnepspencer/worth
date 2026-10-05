@@ -14,6 +14,7 @@ mod field_revision;
 
 pub use authoritative_field_comparison_key::{
     authoritative_aspect_value_field_comparison_key, AuthoritativeFieldComparisonKey,
+    AuthoritativeFieldComparisonKeyDecodeDenial, AuthoritativeFieldComparisonKeyDecodeDenialKind,
 };
 pub use field_revision::{RelationalFieldPresence, RelationalFieldRevision};
 

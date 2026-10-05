@@ -8,44 +8,12 @@ use worth_signal::facade::history::{
 
 use crate::expression::model::SignalValue;
 use crate::runtime::compute_callbacks::CapturedHostCapabilityRead;
-
-const FRAMEWORK_HOST_BACKING_READ_PREFIX: &str = "__WorthSignal.host.";
-
-pub(crate) fn public_callback_read_ids(reads: &[String]) -> Vec<String> {
-    reads
-        .iter()
-        .filter(|read| !read.starts_with(FRAMEWORK_HOST_BACKING_READ_PREFIX))
-        .cloned()
-        .collect()
-}
-
-pub(crate) fn public_callback_dependency_patch_summary(
-    previous_reads: &[String],
-    current_reads: &[String],
-    runtime_read_breadth: u64,
-) -> CallbackDependencyPatchSummary {
-    let previous_reads = public_callback_read_ids(previous_reads);
-    let current_reads = public_callback_read_ids(current_reads);
-    let previous_set = previous_reads
-        .iter()
-        .cloned()
-        .collect::<std::collections::BTreeSet<_>>();
-    let current_set = current_reads
-        .iter()
-        .cloned()
-        .collect::<std::collections::BTreeSet<_>>();
-    let retained_count = previous_set.intersection(&current_set).count() as u64;
-    let added_count = current_set.difference(&previous_set).count() as u64;
-    let removed_count = previous_set.difference(&current_set).count() as u64;
-    CallbackDependencyPatchSummary {
-        previous_reads,
-        current_reads,
-        added_count,
-        removed_count,
-        retained_count,
-        runtime_read_breadth,
-    }
-}
+mod callback_dependencies;
+pub(crate) use callback_dependencies::{
+    public_callback_dependency_patch_summary, public_callback_read_ids,
+};
+mod execution_report;
+pub use execution_report::WebExecutionReportSummary;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -225,7 +193,8 @@ pub struct WebPerformanceSummary {
     pub delivered_observation_count: u64,
     pub rollback_suppressed_delivery_count: u64,
     pub serial_executor_usage_count: u64,
-    pub parallel_executor_usage_count: u64,
+    /// The latest report returned by the execution authority, when one ran.
+    pub execution_report: Option<WebExecutionReportSummary>,
     pub output_serialization_count: u64,
     pub output_serialization_breadth: u64,
     pub js_callback_invocation_count: u64,

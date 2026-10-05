@@ -21,11 +21,22 @@ pub struct WorthQueryProviderSessionCommitDeferred {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProviderSessionCommitDeferredKind {
+    RelationalDeferred(worth_relational::facade::mvcc::RelationalPublicationDeferred),
     RetentionCapacityExhausted,
     PatchPositionReservationContended,
-    CandidateLifetimeExpired { maximum_lifetime_millis: u64 },
-    CandidateCapacityExhausted { maximum_candidates: usize },
-    PublishedSnapshotCapacityExhausted { maximum_handles: usize },
+    CandidateLifetimeExpired {
+        maximum_lifetime_millis: u64,
+    },
+    CandidateCapacityExhausted {
+        maximum_candidates: usize,
+    },
+    PublishedSnapshotCapacityExhausted {
+        maximum_handles: usize,
+    },
+    SourceCurrentnessRaced(worth_relational::facade::mvcc::CompanionCellEditStop),
+    RequiredPrerequisitePending(
+        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind,
+    ),
 }
 
 impl WorthQueryProviderSessionSettlementDeferred {

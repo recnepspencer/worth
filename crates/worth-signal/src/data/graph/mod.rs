@@ -15,13 +15,11 @@ pub(crate) use runtime::graph as signal_graph;
 pub(crate) use runtime::scratch;
 pub use runtime::ScratchLeaseKind;
 pub(crate) use runtime::TraversalScratch;
-#[cfg_attr(not(feature = "parallel"), allow(unused_imports))]
 pub(crate) use runtime::{ApplyCommitPacket, PreparedParallelApplyCommitPacket};
 #[allow(unused_imports)]
 pub(crate) use runtime::{BranchMutationRecord, BranchStructuralDelta};
 pub use runtime::{
     EvaluationStrategy, GcPressure, GraphMaterializer, GraphObserver, ObservationLevel,
-    ParallelismHint,
 };
 pub use runtime::{
     SignalGraph, SignalGraphLifecycleProbe, SignalGraphReconstitution,
@@ -33,8 +31,14 @@ pub(crate) use storage::{
     DependencyEdgeStore, DependencySetId, SubscriberEdgeStore, SubscriberSetId,
 };
 pub(crate) use topology::ReverseSubscriptionIndex;
+pub(crate) use topology::ReverseSubscriptionQuery;
+pub(crate) use topology::{
+    candidate_map_memory_requirement, CandidateEpochBasis, PreparedCandidateEpoch,
+    PreparedCandidateQueries,
+};
 pub(crate) use topology::{
     PendingRevalidationNodeProjection, PendingRevalidationPreparationDenial,
+    PreparedDependencyTopologyEpoch, PreparedDependencyTopologyStorage,
     PreparedPendingRevalidationIndex, PreparedPendingRevalidationResolution,
     PreparedRetainedPendingRevalidationIndex,
 };
@@ -42,3 +46,5 @@ pub(crate) use topology::{
 pub(crate) use topology::subscription_candidates;
 
 pub(crate) use topology::waiter_preparation_work;
+
+pub(crate) use diagnostics_access::{EpochSemanticSeed, PreparedSemanticArtifactImage};

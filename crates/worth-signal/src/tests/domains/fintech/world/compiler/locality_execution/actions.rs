@@ -6,12 +6,14 @@ use crate::data::output::ChangedRegion;
 use crate::logic::context::EvaluationContext;
 use crate::logic::evaluation::EvaluationRequestMode;
 use crate::logic::invalidation::scheduling::merge_repeated_current_admission;
-use crate::logic::planner::{StageExecutionOutcome, StageExecutionRecord, StageExecutor};
+use crate::logic::planner::{StageExecutionOutcome, StageExecutionRecord};
+use crate::tests::leased_execution::support::{authority, request};
 
 use super::super::locality_evaluation::runtime_shocked_values_for_batch;
+use super::physical_ready::captured_bindings;
 use super::{
     signal_aspect, CompiledFinancialLocalityWorld, FinancialLocalityRedObservation,
-    LocalityEvaluationProgram, LocalitySemanticOutputId, RedObservationInput,
+    LocalityEvaluationProgram, LocalitySemanticOutputId, PhysicalReadyWitness, RedObservationInput,
 };
 use crate::tests::domains::fintech::world::FinancialLocalityAction;
 use crate::tests::domains::fintech::world::FinancialLocalityMutation;
@@ -27,6 +29,7 @@ pub(super) struct LocalityExecutionSettlement {
     pub(super) evaluated_outputs: BTreeSet<LocalitySemanticOutputId>,
     pub(super) stage_outcomes: Vec<StageExecutionOutcome>,
     pub(super) stage_records: Vec<StageExecutionRecord>,
+    pub(super) physical_ready: Option<PhysicalReadyWitness>,
 }
 
 impl CompiledFinancialLocalityWorld {
@@ -40,18 +43,13 @@ impl CompiledFinancialLocalityWorld {
         &mut self,
         trace_index: usize,
     ) -> Result<FinancialLocalityRedObservation, SignalError> {
-        let executor = self
-            .runtime
-            .derive_evaluation_strategy()
-            .parallelism
-            .stage_executor();
-        self.run_action_trace_with_executor(trace_index, executor)
+        self.run_action_trace_with_workers(trace_index, 1)
     }
 
-    pub(in crate::tests::domains::fintech) fn run_action_trace_with_executor(
+    pub(in crate::tests::domains::fintech) fn run_action_trace_with_workers(
         &mut self,
         trace_index: usize,
-        executor: StageExecutor,
+        workers: usize,
     ) -> Result<FinancialLocalityRedObservation, SignalError> {
         self.runtime
             .graph_mut()
@@ -71,10 +69,10 @@ impl CompiledFinancialLocalityWorld {
         let settlement = if self.locality_definition().scenario()
             == FinancialLocalityScenario::PortfolioDependencyChurn
         {
-            churn::run_churn_trace(self, trace_index, executor)?
+            churn::run_churn_trace(self, trace_index, workers)?
         } else {
             self.apply_mutations(&mutations)?;
-            self.settle_mutations_with_retries(&mutations, &retry_targets, executor)?
+            self.settle_mutations_with_retries(&mutations, &retry_targets, workers)?
         };
         let after = self.runtime.graph().telemetry().invalidation;
         let evaluation_after = self.runtime.graph().telemetry().evaluation;
@@ -100,6 +98,9 @@ impl CompiledFinancialLocalityWorld {
             baseline_retained_outputs,
             performed: self.runtime.graph().invalidation_performed_counters(),
             execution_stage_outcomes: settlement.stage_outcomes,
+            physical_ready: settlement.physical_ready.ok_or_else(|| {
+                SignalError::internal("certification omitted its physical ready witness")
+            })?,
             lineage_records: self.runtime.graph().observe().lineage_records().len(),
             explanation_fact_count,
             provenance_fact_count,
@@ -112,34 +113,22 @@ impl CompiledFinancialLocalityWorld {
         }))
     }
 
-    pub(super) fn settle_mutations(
-        &mut self,
-        mutations: &[FinancialLocalityMutation],
-    ) -> Result<BTreeSet<LocalitySemanticOutputId>, SignalError> {
-        let executor = self
-            .runtime
-            .derive_evaluation_strategy()
-            .parallelism
-            .stage_executor();
-        self.settle_mutations_with_retries(mutations, &[], executor)
-            .map(|settlement| settlement.evaluated_outputs)
-    }
-
     pub(super) fn settle_mutations_with_retries(
         &mut self,
         mutations: &[FinancialLocalityMutation],
         retry_targets: &[LocalitySemanticOutputId],
-        executor: StageExecutor,
+        workers: usize,
     ) -> Result<LocalityExecutionSettlement, SignalError> {
-        self.settle_mutations_with_retries_at_batch(mutations, retry_targets, executor, 0)
+        self.settle_mutations_with_retries_at_batch(mutations, retry_targets, workers, 0, true)
     }
 
     pub(super) fn settle_mutations_with_retries_at_batch(
         &mut self,
         mutations: &[FinancialLocalityMutation],
         retry_targets: &[LocalitySemanticOutputId],
-        executor: StageExecutor,
+        workers: usize,
         batch_index: usize,
+        capture_physical_witness: bool,
     ) -> Result<LocalityExecutionSettlement, SignalError> {
         let shocked_values = runtime_shocked_values_for_batch(
             self.locality_definition(),
@@ -156,12 +145,22 @@ impl CompiledFinancialLocalityWorld {
             batch_index,
         );
         let evaluator = |view: &mut EvaluationContext<'_, ()>| program.evaluate(view);
+        let mut physical_ready = capture_physical_witness.then(PhysicalReadyWitness::default);
         for mutation in mutations {
             let source = self.handles[&mutation.producer];
-            self.runtime.transaction(&mut (), |tx| {
-                tx.read_with_executor(source, &evaluator, executor)
-                    .map(|_| ())
-            })?;
+            let before = physical_ready
+                .as_ref()
+                .map(|_| captured_bindings(self.runtime.graph()));
+            self.runtime
+                .transaction(&mut (), |tx| tx.read(source, &evaluator).map(|_| ()))?;
+            if let (Some(before), Some(witness)) = (before, physical_ready.as_mut()) {
+                witness.record_transaction(
+                    source,
+                    self.runtime.graph(),
+                    &before,
+                    &captured_bindings(self.runtime.graph()),
+                )?;
+            }
         }
         for target in retry_targets {
             merge_repeated_current_admission(&mut self.runtime.graph_mut(), self.handles[target])?;
@@ -187,16 +186,39 @@ impl CompiledFinancialLocalityWorld {
             if nodes.is_empty() {
                 continue;
             }
-            let plan = self
-                .runtime
-                .graph_mut()
-                .build_evaluation_plan(&nodes, EvaluationRequestMode::Default)?;
-            let report = self.runtime.execute_prepared_plan_with_executor(
-                &plan,
+            // Dense worlds include planning and retained evidence in the same
+            // finite request; worker posture does not change that allowance.
+            let mut admission = request(workers, 100_000_000);
+            admission.policy = worth_foundational::ExecutionRequestPolicy::new(
+                admission.policy.posture(),
+                admission.policy.determinism(),
+                worth_foundational::ExecutionBudget::new(
+                    admission.policy.budget().max_workers(),
+                    128 * 1024 * 1024,
+                    100_000_000,
+                ),
+            );
+            let lease = authority()
+                .request_lease(admission)
+                .map_err(|_| SignalError::invalid_input("locality host lease denied"))?;
+            let before = physical_ready
+                .as_ref()
+                .map(|_| captured_bindings(self.runtime.graph()));
+            let report = self.runtime.evaluate_checked(
+                &nodes,
+                EvaluationRequestMode::Default,
                 &(),
-                &evaluator,
-                executor,
+                &|view| program.evaluate_checked(view),
+                &lease,
             )?;
+            if let (Some(before), Some(witness)) = (before, physical_ready.as_mut()) {
+                witness.record_checked(
+                    &before,
+                    &captured_bindings(self.runtime.graph()),
+                    &report.stages,
+                )?;
+            }
+            program.record_completed(&report);
             for stage in report.stages {
                 stage_outcomes.push(stage.outcome);
                 stage_records.push(stage);
@@ -206,6 +228,7 @@ impl CompiledFinancialLocalityWorld {
             evaluated_outputs: program.evaluated_outputs(),
             stage_outcomes,
             stage_records,
+            physical_ready,
         })
     }
 

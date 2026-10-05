@@ -35,6 +35,15 @@ pub fn in_memory_test_product_world_resources() -> WorthQueryProductWorldResourc
             },
         },
         WorthQueryProductWorldClock::start(),
+        worth_query_execution::facade::runtime::WorthQueryInvalidationResources::install(
+            worth_query_execution::facade::runtime::WorthQueryInvalidationResourceInstallation::bounded(
+                1_000_000,
+                64 * 1_024 * 1_024,
+                128 * 1_024 * 1_024,
+                128,
+            ),
+        )
+        .expect("the Query invalidation installation is valid"),
     )
     .expect("the in-memory test Product World resources are valid")
 }

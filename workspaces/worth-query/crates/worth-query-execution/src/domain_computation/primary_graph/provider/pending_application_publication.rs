@@ -1,13 +1,19 @@
 //! Move-only recovery state for Query publication after Relational movement.
 
+use std::sync::Arc;
+
+use worth_runtime_world::facade::CompositeCommitIdentity;
+
+mod aftermath;
 pub(super) mod registry;
+mod stops;
 pub(in crate::domain_computation::primary_graph) use registry::WorthQueryApplicationPublicationRecoveryReservation;
 use registry::WorthQueryPendingApplicationIdempotency;
+use stops::{basis_retention_failure, bridge_head_failure, failure, snapshot_capacity_failure};
 
 use super::{
-    session_commit::{provider_failure, snapshot_admission_failure},
-    WorthQueryPrimaryGraphApplicationAttempt, WorthQueryPrimaryGraphCommittedApplication,
-    WorthQueryPrimaryGraphProvider,
+    session_commit::snapshot_admission_failure, WorthQueryPrimaryGraphApplicationAttempt,
+    WorthQueryPrimaryGraphCommittedApplication, WorthQueryPrimaryGraphProvider,
 };
 use crate::domain_computation::{
     WorthQueryProviderSessionFailure, WorthQueryProviderSessionProtocolStage,
@@ -20,13 +26,18 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPendingApplica
     attempt: Option<WorthQueryPrimaryGraphApplicationAttempt>,
     before: Option<worth_relational::facade::snapshots::SnapshotHandle>,
     next_basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
-    committed: worth_relational::facade::transactions::CommitResult,
+    committed: Arc<worth_relational::facade::transactions::CommitResult>,
     application: Option<WorthQueryPrimaryGraphCommittedApplication>,
     emitted_effect_count: usize,
     outcome_identity: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
     aggregate_published: bool,
     receipt_basis_lease:
         Option<worth_relational::facade::branch::RelationalBranchRetentionLease>,
+    required_prerequisites:
+        Option<crate::domain_computation::primary_graph::PreparedPrerequisiteClaims>,
+    prepared_lineage_slot:
+        Option<crate::domain_computation::primary_graph::output_lineage::PreparedOutputLineageSlot>,
+    publication_admission: Option<crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
 }
 
 impl WorthQueryPendingApplicationPublication {
@@ -34,15 +45,22 @@ impl WorthQueryPendingApplicationPublication {
         attempt: WorthQueryPrimaryGraphApplicationAttempt,
         before: worth_relational::facade::snapshots::SnapshotHandle,
         next_basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
-        committed: worth_relational::facade::transactions::CommitResult,
+        committed: Arc<worth_relational::facade::transactions::CommitResult>,
         application: WorthQueryPrimaryGraphCommittedApplication,
-        emitted_effect_count: usize,
-        outcome_identity: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
+        required_prerequisites: Option<
+            crate::domain_computation::primary_graph::PreparedPrerequisiteClaims,
+        >,
+        prepared_lineage_slot: Option<
+            crate::domain_computation::primary_graph::output_lineage::PreparedOutputLineageSlot,
+        >,
+        publication_admission: Option<crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
     ) -> Self {
         let product_incarnation = application
             .committed_product_publication()
             .product_incarnation();
         let idempotency = application.commit_evidence().idempotency();
+        let emitted_effect_count = attempt.emitted_effect_count();
+        let outcome_identity = attempt.outcome_identity();
         Self {
             product_incarnation,
             idempotency,
@@ -55,6 +73,9 @@ impl WorthQueryPendingApplicationPublication {
             outcome_identity,
             aggregate_published: false,
             receipt_basis_lease: None,
+            required_prerequisites,
+            prepared_lineage_slot,
+            publication_admission,
         }
     }
 
@@ -155,14 +176,14 @@ impl WorthQueryPrimaryGraphProvider {
                 result
             })
             .map_err(failure)?;
-        if result.is_ok() {
-            slot.complete();
-            self.pending_application_publications
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner())
-                .remove_exact(occurrence, &slot);
-        }
-        result
+        let settled = result?;
+        slot.complete();
+        self.pending_application_publications
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .remove_exact(occurrence, &slot);
+        self.retire_history_behind(runtime, &settled);
+        Ok(())
     }
 }
 
@@ -170,7 +191,7 @@ fn resume(
     provider: &WorthQueryPrimaryGraphProvider,
     runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
     pending: &mut WorthQueryPendingApplicationPublication,
-) -> Result<(), WorthQueryProviderSessionFailure> {
+) -> Result<CompositeCommitIdentity, WorthQueryProviderSessionFailure> {
     let commit_id = pending.committed.envelope().commit.commit_id;
     if provider.take_failed_post_commit_snapshot() {
         return Err(snapshot_capacity_failure(
@@ -199,7 +220,7 @@ fn publish_with_snapshot(
     pending: &mut WorthQueryPendingApplicationPublication,
     after: &worth_relational::facade::snapshots::SnapshotHandle,
     commit_id: worth_relational::facade::history::CommitId,
-) -> Result<(), WorthQueryProviderSessionFailure> {
+) -> Result<CompositeCommitIdentity, WorthQueryProviderSessionFailure> {
     if pending.next_basis.observation().commit_id() != Some(commit_id) {
         return Err(failure(
             "application commit basis does not select the published commit",
@@ -223,6 +244,7 @@ fn publish_with_snapshot(
         .graph
         .bind_truth_head_basis_in_runtime(runtime, &pending.next_basis)
         .map_err(bridge_head_failure)?;
+    aftermath::seal(provider, runtime, pending, after)?;
     #[cfg(test)]
     if provider.take_panicked_pending_application_publication() {
         panic!("injected unwind after performed World publication reached terminal cutover");
@@ -231,6 +253,9 @@ fn publish_with_snapshot(
         .attempt
         .take()
         .expect("pending application publication retains causality until final cutover");
+    // The output's lineage record and its settlement row hold the consumed
+    // outputs; the completed receipt evidence never does.
+    let consumed_outputs = attempt.retain_consumed_outputs();
     let outstanding = attempt.take_outstanding_dispatch_reservation();
     let causality = attempt.publish_causality(provider, committed_product_publication);
     assert_eq!(
@@ -261,22 +286,95 @@ fn publish_with_snapshot(
         );
     }
     pending.release_before(runtime);
-    let completed = pending
+    let mut completed = pending
         .application
         .take()
         .expect("completed publication retains exact commit evidence until cutover");
-    provider
-        .graph
-        .output_lineage
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
-        .record(&completed);
+    assert!(
+        pending.required_prerequisites.is_none() || pending.prepared_lineage_slot.is_some(),
+        "managed publication must carry a prepared output lineage slot"
+    );
+    let recorded = pending
+        .prepared_lineage_slot
+        .take()
+        .map(|slot| slot.record(&completed, Arc::clone(&consumed_outputs)));
+    let settlement_identity = recorded
+        .as_ref()
+        .map(|recorded| Arc::clone(&recorded.identity));
+    if let Some(identity) = settlement_identity.as_ref() {
+        completed.retain_exact_output_settlement(Arc::clone(identity));
+    }
+    let work_membership = pending
+        .required_prerequisites
+        .as_ref()
+        .and_then(|prerequisites| prerequisites.work_membership());
+    let superseded = pending.required_prerequisites.take().map(|prerequisites| {
+        prerequisites.publish(Arc::clone(
+            settlement_identity
+                .as_ref()
+                .expect("managed producer publication records its exact output settlement"),
+        ))
+    });
+    if let Some(identity) = settlement_identity {
+        let failure_membership = work_membership.clone();
+        let owner = &provider.graph.source_owner.invalidation_owner;
+        let mut ordinary_admission = pending
+            .publication_admission
+            .is_none()
+            .then(|| owner.edit_admission());
+        let admission = pending
+            .publication_admission
+            .as_mut()
+            .or(ordinary_admission.as_mut())
+            .expect("completed publication has a carried or installed admission");
+        let registration_result = crate::domain_computation::primary_graph::output_lineage::invalidation::register_completed(
+            owner,
+            &completed,
+            &consumed_outputs,
+            runtime,
+            after,
+            Arc::clone(&identity),
+            work_membership,
+            recorded
+                .as_ref()
+                .and_then(|recorded| recorded.output_witness.as_ref())
+                .and_then(|witness| witness.get()),
+            admission,
+        );
+        if let Err(reason) = registration_result {
+            provider
+                .graph
+                .output_lineage
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner())
+                .require_settlement_verification(&identity, reason);
+            if let Some(membership) = failure_membership {
+                let prior = membership.mark_local_required(Arc::clone(&identity));
+                drop(prior);
+            }
+        }
+    }
+    // The newest row is registered: the generation it displaced retires,
+    // with whatever its demand supersedes when a demand manages it.
+    let owner = &provider.graph.source_owner.invalidation_owner;
+    let displaced = recorded.and_then(|recorded| recorded.displaced);
+    match (superseded, displaced) {
+        (Some(superseded), displaced) => superseded.retire(displaced, owner),
+        (None, Some(displaced)) => {
+            drop(owner.retire_released([displaced], &mut owner.edit_admission()));
+        }
+        (None, None) => {}
+    }
+    let settled = completed
+        .committed_product_publication()
+        .composite_commit()
+        .clone();
     provider
         .completed_commit_evidence
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
         .record(completed);
-    Ok(())
+    Ok(settled)
 }
 
 fn publish_aggregate_projection(
@@ -299,69 +397,4 @@ fn publish_aggregate_projection(
         aggregates.recover_after_commit(after.version_id());
     }
     pending.aggregate_published = true;
-}
-
-fn failure(detail: &'static str) -> WorthQueryProviderSessionFailure {
-    provider_failure(WorthQueryProviderSessionProtocolStage::Commit, detail)
-        .with_recovery_posture(WorthQueryProviderSessionRecoveryPosture::RecoveryRequired)
-}
-
-fn snapshot_capacity_failure(detail: &'static str) -> WorthQueryProviderSessionFailure {
-    WorthQueryProviderSessionFailure::new(
-        crate::domain_computation::WorthQueryProviderSessionDenialKind::ActiveSnapshotCapacityExhausted {
-            maximum_active_snapshots: 0,
-        },
-        WorthQueryProviderSessionProtocolStage::Commit,
-        detail,
-        crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
-    )
-    .with_recovery_posture(WorthQueryProviderSessionRecoveryPosture::RecoveryRequired)
-}
-
-fn basis_retention_failure(
-    denial: worth_relational::facade::branch::RelationalBranchBasisDenial,
-) -> WorthQueryProviderSessionFailure {
-    let kind = match denial {
-        worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionCapacityExhausted => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionCapacityExhausted
-        }
-        worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionIdentityExhausted => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionIdentityExhausted
-        }
-        worth_relational::facade::branch::RelationalBranchBasisDenial::SnapshotIdentityExhausted => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::SnapshotIdentityExhausted
-        }
-        _ => crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
-    };
-    WorthQueryProviderSessionFailure::new(
-        kind,
-        WorthQueryProviderSessionProtocolStage::Commit,
-        format!("application commit basis could not be retained: {denial:?}"),
-        crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
-    )
-    .with_recovery_posture(WorthQueryProviderSessionRecoveryPosture::RecoveryRequired)
-}
-
-fn bridge_head_failure(
-    denial: worth_relational::facade::branch::RelationalBranchBasisDenial,
-) -> WorthQueryProviderSessionFailure {
-    let kind = match denial {
-        worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionCapacityExhausted => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionCapacityExhausted
-        }
-        worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionIdentityExhausted => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionIdentityExhausted
-        }
-        worth_relational::facade::branch::RelationalBranchBasisDenial::SnapshotIdentityExhausted => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::SnapshotIdentityExhausted
-        }
-        _ => crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
-    };
-    WorthQueryProviderSessionFailure::new(
-        kind,
-        WorthQueryProviderSessionProtocolStage::Commit,
-        format!("application commit succeeded but Bridge head binding failed: {denial:?}"),
-        crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
-    )
-    .with_recovery_posture(WorthQueryProviderSessionRecoveryPosture::RecoveryRequired)
 }

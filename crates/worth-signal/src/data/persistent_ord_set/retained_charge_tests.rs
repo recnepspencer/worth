@@ -6,7 +6,7 @@ use crate::data::retained_storage::{
     RetainedStorageMeasurement, RetainedStoragePreparation as Preparation,
 };
 
-fn work() -> Preparation {
+fn work() -> Preparation<'static> {
     Preparation::new(100_000)
 }
 fn changed(outcome: Result<Outcome<bool>, MutationDenial>) -> bool {

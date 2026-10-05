@@ -1,4 +1,3 @@
-use crate::config::data::RelationalExecutionModel;
 use crate::diagnostics::data::DiagnosticCode;
 use crate::history::data::CommitId;
 use crate::publication::bundle::PublicationStage;
@@ -80,7 +79,6 @@ pub enum CommitTraceEvent {
         execution_point: InvariantExecutionPoint,
         observation_kind: InvariantObservationKind,
         disposition: InvariantExecutionDisposition,
-        execution_model: RelationalExecutionModel,
         preparation_selected_mode: Option<PreparationStrategySelection>,
         preparation_parallel_legality: Option<ParallelLegality>,
         preparation_parallel_profitability: Option<ParallelProfitability>,
@@ -281,7 +279,6 @@ impl CommitLog {
             execution_point: metadata.execution_point(),
             observation_kind: metadata.observation_kind(),
             disposition: metadata.disposition(),
-            execution_model: metadata.execution_model(),
             preparation_selected_mode: metadata
                 .preparation_strategy()
                 .map(|strategy| strategy.selected_mode),

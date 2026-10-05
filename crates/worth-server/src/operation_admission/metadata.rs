@@ -72,6 +72,22 @@ pub enum WorthServerOperationAuthorityMetadata {
 }
 
 impl WorthServerOperationAuthorityMetadata {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use crate::product_adapter::execution_pipeline::read_batch_accounting::string;
+        match self {
+            Self::SharedReadOnly {
+                basis_kind,
+                basis_digest,
+                authority_label,
+                product_support_posture,
+            } => string(basis_kind)
+                .saturating_add(string(basis_digest))
+                .saturating_add(string(authority_label))
+                .saturating_add(string(product_support_posture)),
+            _ => u64::MAX,
+        }
+    }
+
     pub fn shared_read(
         basis_kind: impl Into<String>,
         basis_digest: impl Into<String>,

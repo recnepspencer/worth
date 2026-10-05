@@ -175,6 +175,8 @@ pub enum RuntimeWorldBranchAdmissionDenial {
     CancelledBeforeEffect,
     DeadlineBeforeEffect,
     OwnerUnavailable,
+    /// The currentness registry's physical lookup bound did not fit its Work counter.
+    CurrentnessAccountingOverflow,
     ForeignOwner,
     RetiredBranch,
     DuplicateName,

@@ -187,14 +187,29 @@ impl ProductBranchReferenceCell {
         f: impl FnOnce(A) -> R,
     ) -> Result<R, (ProductBranchReferenceSnapshot, A)> {
         let current = self.state.read();
-        if current.protection.is_none()
-            || expected
-                .mismatch_against_snapshot(&current.snapshot)
-                .is_some()
-        {
+        if current.protection.is_none() || expected.snapshot() != &current.snapshot {
             return Err((current.snapshot.clone(), argument));
         }
         Ok(f(argument))
+    }
+
+    #[cfg(feature = "test-operation-control")]
+    pub(crate) fn while_current_controlled<A, R>(
+        &self,
+        expected: &ProductBranchObservation,
+        argument: A,
+        f: impl FnOnce(A) -> R,
+        control: Option<&crate::lifecycle::operation_control::ProductCurrentnessLatch>,
+    ) -> Result<R, (ProductBranchReferenceSnapshot, A)> {
+        if let Some(control) = control {
+            if matches!(
+                self.state.current.try_read(),
+                Err(std::sync::TryLockError::WouldBlock)
+            ) {
+                control.reader_contended();
+            }
+        }
+        self.while_current(expected, argument, f)
     }
 
     /// Give back the protection of a cell nobody else shares. A cell the
@@ -305,8 +320,8 @@ impl ProductBranchReferenceCell {
             })
     }
 
-    #[cfg(test)]
-    fn hold_for_test(&self) -> impl Drop + '_ {
+    #[cfg(any(test, feature = "test-operation-control"))]
+    pub(crate) fn hold_for_test(&self) -> impl Drop + '_ {
         self.state.write()
     }
 

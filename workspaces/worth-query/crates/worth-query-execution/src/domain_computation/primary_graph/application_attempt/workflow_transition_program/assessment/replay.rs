@@ -134,14 +134,18 @@ where
     Schema: ApplicationSchema,
     Input: Clone + Send + Sync + 'static,
 {
-    let meaning = evidence_meaning(
+    let Some(meaning) = evidence_meaning(
         required,
         source.source_root(),
         settlement,
         source,
         posture,
         std::sync::Arc::from([]),
-    );
+    ) else {
+        // Incomplete Stable authority cannot seed a retained intent replay.
+        // The ordinary assessment path will validate the selected source.
+        return Ok(None);
+    };
     let assessment = projection_with_locator(evidence_locator, meaning);
     let transition_identity = decode_hex_identity(required.transition_identity())
         .expect("workflow transition identity is an encoded SHA-256 digest");

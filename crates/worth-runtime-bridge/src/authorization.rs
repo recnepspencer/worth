@@ -15,7 +15,7 @@ pub use contract::{
 pub use denial::{BridgeAuthorizationDenial, BridgeAuthorizationDenialKind};
 pub use evidence::{BridgeAuthorizationDecisionEvidence, BridgeAuthorizationRuleDecisionEvidence};
 pub use installation::BridgeAuthorizationInstallationBatch;
-pub use runtime::BridgeAuthorizationRuntime;
+pub use runtime::{BridgeAuthorizationRetentionStop, BridgeAuthorizationRuntime};
 
 #[cfg(test)]
 mod tests;

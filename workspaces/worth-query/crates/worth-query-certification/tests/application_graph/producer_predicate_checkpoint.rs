@@ -155,9 +155,9 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
 
 fn assert_captured_document_predicate(bytes: &[u8], accepted_bytes: usize, subject: EntityId) {
     // Inspect only Query's accepted-output section. The native payload remains opaque.
-    // This independent v7 wire expectation fails if capture or readmission drops
+    // This independent v8 wire expectation fails if capture or readmission drops
     // the predicate while retaining the document's ordinary field observations.
-    assert_eq!(&bytes[40..42], &7_u16.to_be_bytes());
+    assert_eq!(&bytes[40..42], &8_u16.to_be_bytes());
     assert_eq!(DOCUMENT_IDENTITY, "document-1");
     let value = br#"{"String":{"Raw":"document-1"}}"#;
     let mut expected = Vec::new();

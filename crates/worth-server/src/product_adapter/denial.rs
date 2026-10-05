@@ -34,6 +34,16 @@ pub struct WorthServerProductOperationDenial {
 }
 
 impl WorthServerProductOperationDenial {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use super::execution_pipeline::read_batch_accounting::{option_string, string};
+        string(&self.reason_key)
+            .saturating_add(string(&self.detail))
+            .saturating_add(self.facts.as_ref().map_or(0, |facts| {
+                option_string(&facts.expected_basis_digest)
+                    .saturating_add(option_string(&facts.observed_basis_digest))
+            }))
+    }
+
     pub fn new(reason_key: impl Into<String>, detail: impl Into<String>) -> Self {
         Self {
             reason_key: reason_key.into(),

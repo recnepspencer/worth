@@ -14,7 +14,6 @@ use worth_harness::facade::{
 
 use crate::facade::SignalError;
 
-#[cfg(feature = "parallel")]
 use self::workflow_scenario::development_parallel_profile;
 use self::workflow_scenario::{development_serial_profile, hostile_branch_replay_and_audit_plan};
 use self::workflow_session::{
@@ -116,15 +115,13 @@ fn financial_aspect_causality_certification_seals_all_required_scenarios() {
     assert!(run.minimum_dependency_revision() > 0);
 }
 
-#[cfg(feature = "parallel")]
 #[test]
-fn financial_aspect_causality_certification_survives_parallel_feature_composition() {
+fn financial_aspect_causality_certification_survives_leased_execution_composition() {
     let run = invalidation::run_financial_causality_courtroom()
-        .expect("parallel feature must preserve financial causality semantics");
+        .expect("leased execution must preserve financial causality semantics");
     assert_eq!(run.scenario_count(), 8);
 }
 
-#[cfg(feature = "parallel")]
 #[test]
 fn workflow_certification_runner_keeps_serial_parallel_fintech_overlap_honest() {
     let runner = WorkflowCertificationRunner::new(SignalFintechWorkflowCertificationAdapter);
@@ -132,17 +129,41 @@ fn workflow_certification_runner_keeps_serial_parallel_fintech_overlap_honest() 
     let serial = runner
         .certify(&plan, &development_serial_profile())
         .unwrap();
-    let parallel = runner
-        .certify(&plan, &development_parallel_profile())
-        .unwrap();
-
     assert_eq!(serial.session.state, WorkflowState::Completed);
-    assert_eq!(parallel.session.state, WorkflowState::Completed);
-
-    let outcome = independent_oracle::compare_signal_fintech_overlap(&serial, &parallel);
+    let checked_serial = runner
+        .certify(&plan, &development_parallel_profile(1))
+        .unwrap();
+    assert_eq!(checked_serial.session.state, WorkflowState::Completed);
+    let serial_truth =
+        independent_oracle::compare_signal_fintech_visible_overlap(&serial, &checked_serial);
     assert!(
-        outcome.matched,
-        "serial-vs-parallel fintech overlap drift: {:?}",
-        outcome.mismatches
+        serial_truth.matched,
+        "serial-vs-lease-1 fintech visible truth drift: {:?}",
+        serial_truth.mismatches
     );
+    for workers in [2, 4] {
+        let leased = runner
+            .certify(&plan, &development_parallel_profile(workers))
+            .unwrap();
+        assert_eq!(
+            leased.session.state,
+            WorkflowState::Completed,
+            "lease workers {workers} stopped after {:?}",
+            leased.session.step_trace
+        );
+        let visible = independent_oracle::compare_signal_fintech_visible_overlap(&serial, &leased);
+        assert!(
+            visible.matched,
+            "serial-vs-lease-{workers} fintech visible truth drift: {:?}",
+            visible.mismatches
+        );
+        // The checked runs share evaluation request boundaries, so their
+        // complete replay and lineage identities must agree exactly.
+        let outcome = independent_oracle::compare_signal_fintech_overlap(&checked_serial, &leased);
+        assert!(
+            outcome.matched,
+            "lease-1-vs-lease-{workers} fintech overlap drift: {:?}",
+            outcome.mismatches
+        );
+    }
 }

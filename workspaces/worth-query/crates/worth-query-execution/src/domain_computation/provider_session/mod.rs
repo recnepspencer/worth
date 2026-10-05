@@ -20,16 +20,17 @@ pub(in crate::domain_computation) use direct_attempt::{
 };
 pub(in crate::domain_computation) use execution_attempt_identity::WorthQueryClosedExecutionAttemptIdentity;
 pub use execution_attempt_identity::WorthQueryExecutionAttemptIdentity;
+pub(in crate::domain_computation) use graph_obligation::{
+    WorthQueryAdmittedMutationSessionStartStop, WorthQueryAdmittedQuerySessionStartStop,
+    WorthQueryGraphReadOwnerPort, WorthQueryGraphWorkAccessContextAffinity,
+    WorthQueryManagedGraphWorkSession, WorthQueryMutationRunBinding,
+    WorthQueryObservedGraphReadWork, WorthQueryPreparedQuerySessionIdentity,
+    WorthQueryProviderSessionBoundMutationRun, WorthQuerySessionGraphReadProof,
+};
 pub use graph_obligation::{
     WorthQueryGraphReadCompletion, WorthQueryGraphReadDependencyEvidence,
     WorthQueryGraphWorkManagedRunIdentity, WorthQueryGraphWorkSessionIdentity,
     WorthQueryMutationGraphWorkCompletion,
-};
-pub(in crate::domain_computation) use graph_obligation::{
-    WorthQueryGraphReadOwnerPort, WorthQueryGraphWorkAccessContextAffinity,
-    WorthQueryManagedGraphWorkSession, WorthQueryMutationRunBinding,
-    WorthQueryObservedGraphReadWork, WorthQueryProviderSessionBoundMutationRun,
-    WorthQuerySessionGraphReadProof,
 };
 pub use graph_provider::*;
 pub use protocol::*;

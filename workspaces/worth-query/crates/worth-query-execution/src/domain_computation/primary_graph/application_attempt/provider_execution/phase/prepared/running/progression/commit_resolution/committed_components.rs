@@ -10,61 +10,30 @@ pub(super) struct WorthQueryResolvedCommitComponents {
 pub(super) fn committed_component_recovery_evidence(
     denial: WorthQueryCommittedComponentResolutionDenial,
 ) -> WorthQueryApplicationUnresolvedCommitEvidence {
-    match denial {
-        WorthQueryCommittedComponentResolutionDenial::Aftermath(
-            crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::ActiveSnapshotCapacityExhausted {
-                maximum_active_snapshots,
-            },
-        ) => recovery_evidence::typed_commit_recovery_evidence(
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::ActiveSnapshotCapacityExhausted {
-                maximum_active_snapshots,
-            },
-            "committed aftermath recovery requires snapshot-capacity readmission",
-        ),
-        WorthQueryCommittedComponentResolutionDenial::Aftermath(
-            crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::Unavailable,
-        ) => recovery_evidence::unknown_commit_recovery_evidence(
-            "committed aftermath causality could not be recovered",
-        ),
-        WorthQueryCommittedComponentResolutionDenial::Aftermath(
-            crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::RetentionCapacityExhausted,
-        ) => recovery_evidence::typed_commit_recovery_evidence(
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionCapacityExhausted,
-            "committed aftermath recovery requires retention-capacity readmission",
-        ),
-        WorthQueryCommittedComponentResolutionDenial::Aftermath(
-            crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::RetentionIdentityExhausted,
-        ) => recovery_evidence::typed_commit_recovery_evidence(
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionIdentityExhausted,
-            "committed aftermath recovery exhausted retention identity space",
-        ),
-        WorthQueryCommittedComponentResolutionDenial::Aftermath(
-            crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::SnapshotIdentityExhausted,
-        ) => recovery_evidence::typed_commit_recovery_evidence(
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::SnapshotIdentityExhausted,
-            "committed aftermath recovery exhausted snapshot identity space",
-        ),
-        WorthQueryCommittedComponentResolutionDenial::Unavailable(detail) => {
-            recovery_evidence::unknown_commit_recovery_evidence(detail)
-        }
-    }
+    let WorthQueryCommittedComponentResolutionDenial::Unavailable(detail) = denial;
+    recovery_evidence::unknown_commit_recovery_evidence(detail)
 }
 
 pub(super) enum WorthQueryCommittedComponentResolutionDenial {
-    Aftermath(crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial),
     Unavailable(&'static str),
 }
 
+/// The caller resolving its own commit takes the World history hold its
+/// publication handed over, so its receipt keeps `at_commit` readable for as
+/// long as it lives; every other copy of the evidence stays detached.
 pub(super) fn resolve_committed_components(
     context: &WorthQueryAuthorizedCompareContext<'_>,
-    receipt: crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCommittedApplication,
+    mut receipt: crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCommittedApplication,
 ) -> Result<WorthQueryResolvedCommitComponents, WorthQueryCommittedComponentResolutionDenial> {
-    let causality = resolve_exact_committed_aftermath(
-        context.provider,
-        context.aftermath_causality.as_ref(),
-        &receipt,
-    )
-    .map_err(WorthQueryCommittedComponentResolutionDenial::Aftermath)?;
+    let causality =
+        resolve_exact_committed_aftermath(context.aftermath_causality.as_ref(), &receipt).map_err(
+            |_| {
+                WorthQueryCommittedComponentResolutionDenial::Unavailable(
+                    "committed aftermath causality could not be recovered",
+                )
+            },
+        )?;
+    context.provider.claim_fresh_history(&mut receipt);
     let projection = WorthQueryCommittedReceiptProjection::resolve(receipt).map_err(|_| {
         WorthQueryCommittedComponentResolutionDenial::Unavailable(
             "committed dispatch outbox binding was denied",

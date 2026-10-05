@@ -66,7 +66,7 @@ where
                 event.handle_id,
                 event.policy,
                 event.outcome,
-                event.touched,
+                event.visited,
                 event.recomputed,
                 event.meaningful_change,
                 event.trigger_matched,

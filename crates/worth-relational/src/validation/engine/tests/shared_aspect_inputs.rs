@@ -5,7 +5,7 @@ use super::aspect_field_uniqueness::{assert_entity_summary, whole_summary_patch}
 use super::validation_engine_fixtures::*;
 use crate::capabilities::AspectPlanSource;
 use crate::identity::data::EntityId;
-use crate::tests::support::test_owner_begin_transaction_for_main;
+use crate::tests::support::{test_execution_lease, test_owner_begin_transaction_for_main};
 use crate::transactions::data::{ApplyEntityAspectPatchIntent, EntityMutationIntent};
 
 struct ReadsSummary {
@@ -125,19 +125,15 @@ impl CustomInvariantRule for ReadsSummary {
 
 #[test]
 fn overlapping_field_reads_are_shared_without_sharing_verdicts_or_changed_basis() {
-    assert_overlapping_field_reads(
-        crate::facade::runtime::RelationalExecutionModel::SingleLaneExecution,
-    );
+    assert_overlapping_field_reads(false);
 }
 
 #[test]
-fn parallel_overlapping_field_reads_are_materialized_once_per_basis() {
-    assert_overlapping_field_reads(
-        crate::facade::runtime::RelationalExecutionModel::ParallelPreparation,
-    );
+fn leased_opaque_field_read_rules_are_denied_before_execution() {
+    assert_overlapping_field_reads(true);
 }
 
-fn assert_overlapping_field_reads(model: crate::facade::runtime::RelationalExecutionModel) {
+fn assert_overlapping_field_reads(leased: bool) {
     let target = Arc::new(OnceLock::new());
     let schema = AspectSchemaFixture {
         entity_aspects: vec![
@@ -149,7 +145,6 @@ fn assert_overlapping_field_reads(model: crate::facade::runtime::RelationalExecu
     .build_registry();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
-        .execution_model(model)
         .custom_invariant(
             CustomInvariantRegistration::new(ReadsSummary {
                 id: "test.summary.accept",
@@ -180,7 +175,7 @@ fn assert_overlapping_field_reads(model: crate::facade::runtime::RelationalExecu
         })
         .expect("created subject");
     target.set(entity).expect("bind subject after creation");
-    assert_shared_field_reads(&runtime, true, model);
+    assert_shared_field_reads(&runtime, true, leased);
 
     let contract = runtime
         .entity_aspect_plan(KindId(1))
@@ -203,7 +198,7 @@ fn assert_overlapping_field_reads(model: crate::facade::runtime::RelationalExecu
         .commit(&runtime)
         .expect("summary change publication");
     assert_entity_summary(&runtime, entity, "after", "open");
-    assert_shared_field_reads(&runtime, false, model);
+    assert_shared_field_reads(&runtime, false, leased);
 }
 
 #[test]
@@ -278,22 +273,37 @@ fn cached_candidate_metadata_does_not_bypass_sibling_access_denial() {
     );
 }
 
-fn assert_shared_field_reads(
-    runtime: &RelationalRuntime,
-    expect_violation: bool,
-    model: crate::facade::runtime::RelationalExecutionModel,
-) {
+fn assert_shared_field_reads(runtime: &RelationalRuntime, expect_violation: bool, leased: bool) {
     runtime.performance_access().reset_counters();
-    let results = InvariantEngine::new(runtime).execute(
-        InvariantExecutionRequest::from_profile_with_contract(
-            InvariantRequestProfile::CommitBoundary,
-            runtime,
-            InvariantObservation::committed(runtime.storage_access().current_edition()),
-            runtime.current_version_id(),
-            None,
-            None,
-        ),
+    let request = InvariantExecutionRequest::from_profile_with_contract(
+        InvariantRequestProfile::CommitBoundary,
+        runtime,
+        InvariantObservation::committed(runtime.storage_access().current_edition()),
+        runtime.current_version_id(),
+        None,
+        None,
     );
+    let engine = InvariantEngine::new(runtime);
+    let results = if leased {
+        let denial = engine
+            .execute_with_lease(request, &test_execution_lease())
+            .expect_err("opaque custom rules cannot execute under a lease");
+        assert!(matches!(
+            denial,
+            crate::transactions::data::TransactionCommitError::Execution {
+                denial: crate::transactions::data::CommitExecutionDenial {
+                    kind: crate::transactions::data::CommitExecutionDenialKind::Admission,
+                    ..
+                },
+                ..
+            }
+        ));
+        let counters = runtime.performance_access().counters();
+        assert_eq!(counters.custom_invariant_execution_count, 0);
+        return;
+    } else {
+        engine.execute(request)
+    };
     assert_eq!(results.results().len(), 2);
     assert!(matches!(
         results.results()[0].verdict,
@@ -319,9 +329,6 @@ fn assert_shared_field_reads(
     assert_eq!(counters.custom_invariant_candidate_reuse_hits, 17);
     assert_eq!(
         counters.preparation_staged_parallel_strategy_count,
-        usize::from(matches!(
-            model,
-            crate::facade::runtime::RelationalExecutionModel::ParallelPreparation
-        ))
+        usize::from(leased)
     );
 }

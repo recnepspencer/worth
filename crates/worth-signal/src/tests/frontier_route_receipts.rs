@@ -62,19 +62,12 @@ fn sample_stage_execution_record(reason: Option<ParallelAdmissionReason>) -> Sta
         outcome: StageExecutionOutcome::CompletedSerial,
         authority_policy: None,
         parallel_admission_reason: reason,
-        #[cfg(feature = "parallel")]
         parallel_kind: None,
-        #[cfg(feature = "parallel")]
         apply_mode: None,
-        #[cfg(feature = "parallel")]
         apply_group_count: 0,
-        #[cfg(feature = "parallel")]
         serial_apply_rejection_reason: None,
-        #[cfg(feature = "parallel")]
         serial_fallback_group_count: 0,
-        #[cfg(feature = "parallel")]
         concurrent_apply_task_count: 0,
-        #[cfg(feature = "parallel")]
         serial_apply_task_count: 0,
         snapshot_duration_nanos: 0,
         precompute_duration_nanos: 0,

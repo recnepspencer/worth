@@ -1,3 +1,5 @@
+mod admitted_entity_field_lookup;
+mod admitted_generation;
 mod bounded_entity_field_lookup;
 mod bounded_related_entity_ordered_lookup;
 mod bounded_relation_join_lookup;

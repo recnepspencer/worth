@@ -29,11 +29,13 @@ const CHECKPOINT_OWNER: &str =
     include_str!("../../../../../data/graph/runtime/graph/checkpoint.rs");
 const PLANNING_OWNER: &str = include_str!("../../../../../logic/planner/planning/mod.rs");
 const EXECUTION_OWNER: &str = include_str!("../../../../../logic/planner/execution/mod.rs");
+const PREPARED_PLAN_OWNER: &str =
+    include_str!("../../../../../logic/planner/execution/prepared_plan.rs");
 const EXECUTION_STAGE_OWNER: &str = include_str!("../../../../../logic/planner/execution/stage.rs");
 const PRECOMPUTE_STAGE_OWNER: &str =
     include_str!("../../../../../logic/planner/precompute/stage.rs");
-const PRECOMPUTE_DISPATCH_OWNER: &str =
-    include_str!("../../../../../logic/planner/precompute/dispatch.rs");
+const GRAPH_BATCH_OWNER: &str =
+    include_str!("../../../../../logic/planner/precompute/graph_batch.rs");
 const READ_PREPARATION_OWNER: &str =
     include_str!("../../../../../logic/planner/precompute/read_preparation.rs");
 const CONCURRENT_APPLY_OWNER: &str =
@@ -66,7 +68,13 @@ fn phase_1_inventory_rejects_unlisted_authority_and_execution_functions() {
         ],
     );
 
-    assert_owner_functions(PRODUCED_DELTA_OWNER, &["prepare_produced_delta"]);
+    assert_owner_functions(
+        PRODUCED_DELTA_OWNER,
+        &[
+            "prepare_produced_delta",
+            "prepare_produced_delta_at_ordinal",
+        ],
+    );
 
     assert_owner_functions(
         WAITER_PREPARATION_OWNER,
@@ -75,6 +83,8 @@ fn phase_1_inventory_rejects_unlisted_authority_and_execution_functions() {
             "capture",
             "into_signal_error",
             "prepare_pending_revalidation_resolution",
+            "prepare_pending_revalidation_resolution_for_producers",
+            "prepare_pending_revalidation_resolution_with_buckets",
             "load_node",
             "current_waiters",
             "resolve",
@@ -92,14 +102,17 @@ fn phase_1_inventory_rejects_unlisted_authority_and_execution_functions() {
         &[
             "merge",
             "prepare_direct_output_causes",
+            "prepare_direct_output_causes_with_execution",
+            "prepare_direct_output_causes_with_overlay",
             "prepare_stable_output_resolution",
-            "prepare_consumer_cause_set",
+            "prepare_consumer_cause_set_from",
         ],
     );
     assert_owner_functions(
         REVALIDATION_OWNER,
         &[
             "node_invalidation_input",
+            "node_invalidation_input_with_execution_work",
             "resolved_dependency_causes",
             "pending_dependency_revalidation",
             "ensure_cause_readmission_complete",
@@ -112,6 +125,7 @@ fn phase_1_inventory_rejects_unlisted_authority_and_execution_functions() {
         CAUSE_VALIDATION_OWNER,
         &[
             "validate_prepared_causes_before_evaluation",
+            "validate_epoch_pending_causes",
             "validate_pending_causes",
             "validate_prepared_pending_causes",
             "validate_pending_cause",
@@ -148,9 +162,10 @@ fn phase_1_inventory_rejects_unlisted_authority_and_execution_functions() {
             "report",
             "apply_effect",
             "prepare_output_commit_packet",
+            "prepare_output_commit_packet_with_execution",
             "prepare_output_commit_packet_with_probe",
+            "prepare_output_commit_packet_with_probe_and_execution",
             "publish_output_commit_packet",
-            "publish_prepared_parallel_apply_commit_packet",
         ],
     );
     assert_owner_functions(
@@ -167,21 +182,27 @@ fn phase_1_inventory_rejects_unlisted_planner_entry_functions() {
         &[
             "build_evaluation_plan",
             "build_evaluation_plan_with_policy_resolver",
-            "build_evaluation_cursor_with_policy_resolver",
+            "build_evaluation_plan_with_policy_resolver_and_work",
+            "build_evaluation_cursor_with_work",
             "build_evaluation_session_with_policy_resolver",
+            "build_evaluation_session_with_policy_resolver_and_work",
         ],
     );
     assert_owner_functions(
         EXECUTION_OWNER,
         &[
-            "prepare_with_context",
-            "execute_prepared_plan",
             "execute_prepared_plan_with_precompute",
+            "execute_prepared_plan_in_scope",
             "execute_prepared_plan_with_policy",
             "execute_prepared_plan_with_policy_and_temporal_lowering",
             "execute_evaluation_session_with_policy",
+            "execute_evaluation_session_in_scope",
             "execute_plan_stage_slices_with_policy",
         ],
+    );
+    assert_owner_functions(
+        PREPARED_PLAN_OWNER,
+        &["prepare_with_context", "execute_prepared_plan"],
     );
     assert_owner_functions(
         EXECUTION_STAGE_OWNER,
@@ -190,6 +211,7 @@ fn phase_1_inventory_rejects_unlisted_planner_entry_functions() {
             "run_stage_precompute_pass",
             "run_stage_apply_pass",
             "complete_stage_reporting_pass",
+            "reserve_retained",
         ],
     );
 }
@@ -198,47 +220,50 @@ fn phase_1_inventory_rejects_unlisted_planner_entry_functions() {
 fn phase_1_inventory_rejects_unlisted_precompute_and_parallel_functions() {
     assert_owner_functions(
         PRECOMPUTE_STAGE_OWNER,
-        &[
-            "perform_stage_precompute",
-            "run_snapshot_pass",
-            "run_precompute_dispatch_pass",
-        ],
+        &["len", "metadata", "perform_stage_precompute", "reports"],
     );
     assert_owner_functions(
-        PRECOMPUTE_DISPATCH_OWNER,
+        GRAPH_BATCH_OWNER,
         &[
-            "dispatch_stage_precompute",
-            "dispatch_stage_precompute_serial",
-            "dispatch_stage_precompute_parallel",
+            "tasks",
+            "task_offset",
+            "result_grant_bytes",
+            "apply_capacity",
+            "into_parts",
+            "epoch_width",
+            "bounded_eligible",
+            "current_binding",
+            "admit",
         ],
     );
     assert_owner_functions(
         READ_PREPARATION_OWNER,
         &[
-            "precompute_stage_serial",
-            "precompute_stage_parallel",
-            "build_parallel_stage_patches",
-            "parallel_duplicate_task_index",
-            "into_chunks",
-            "split_prevalidated_work",
-            "compute_work_item",
+            "prepare_epoch",
+            "prepare_legacy_epoch",
+            "lower_checked_map",
+            "reconcile_prepared_values",
+            "additional_charged_bytes",
         ],
     );
     assert_owner_functions(
         CONCURRENT_APPLY_OWNER,
-        &["run_grouped_concurrent_apply_pass"],
+        &[
+            "prepare_checked_apply_map",
+            "run_grouped_concurrent_apply_pass",
+            "admitted_packet_map",
+            "admitted_effect_keys",
+        ],
     );
     assert_owner_functions(
         CONCURRENT_PACKET_OWNER,
         &[
             "build_group_packet",
             "reduce_grouped_concurrent_packets",
-            "publish_group_local_task_commit",
             "grouped_apply_failure_from_build_error",
             "record_grouped_apply_failure",
             "build_concurrent_apply_group_inputs",
             "take_slot",
-            "can_lower_true_grouped_concurrent",
             "into_concurrent_worker_input",
         ],
     );

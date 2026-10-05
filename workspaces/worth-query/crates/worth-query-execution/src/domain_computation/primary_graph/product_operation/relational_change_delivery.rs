@@ -88,17 +88,6 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         {
             installed.retain_direct_delivery(receipt);
         }
-        let routes_changed = operation.publish_routes(installed.as_ref());
-        drop(installed);
-        if routes_changed {
-            let registry = self
-                .application()
-                .conditional_operations
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .snapshot();
-            registry.synchronize_commit_routes(self.application());
-        }
         Ok(outcome)
     }
 }

@@ -1,6 +1,4 @@
 use std::any::TypeId;
-use std::collections::HashSet;
-use std::hash::Hash;
 use std::marker::PhantomData;
 
 use worth_query_declaration::facade::application_query::{
@@ -13,8 +11,18 @@ use worth_query_installation::facade::{
 use worth_relational::facade::runtime::ProjectionAspectScope;
 use worth_relational::facade::storage::RecordLifecycleState;
 
+#[path = "resolution/candidate_verification.rs"]
+mod candidate_verification;
+#[path = "resolution/cardinality.rs"]
+mod cardinality;
+#[path = "resolution/decision_plan_denial.rs"]
+mod decision_plan_denial;
+#[path = "resolution/source_liveness.rs"]
+mod source_liveness;
 #[cfg(test)]
 mod tests;
+use cardinality::{classify_current_entities, CurrentOutputCardinality};
+use decision_plan_denial::decision_plan_denial;
 
 use super::{
     WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind,
@@ -23,9 +31,11 @@ use super::{
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryApplicationObservedFact,
     application_contribution::WorthQueryProducerOutputFamily,
+    invariant_projection::consumed_output::{
+        ConsumedOutputEvidence, ConsumedOutputVerification, ConsumedOutputVerificationStop,
+    },
     WorthQueryApplicationOperationInvariantProjectionReader,
-    WorthQueryApplicationOutputCorrespondence, WorthQueryInvariantDecisionPlanDenialKind,
-    WorthQueryInvariantEntityIdentity,
+    WorthQueryApplicationOutputCorrespondence, WorthQueryInvariantEntityIdentity,
 };
 
 impl<'reader, 'runtime, Schema, Operation>
@@ -175,51 +185,96 @@ where
             ));
         }
 
+        self.require_current_output_budget(1, Family::IDENTITY)?;
+        self.reader.work_budget.consume(1);
+        let selected_native_root = self
+            .reader
+            .runtime
+            .read_truth()
+            .positioned_snapshot(self.reader.snapshot)
+            .map_err(|_| {
+                WorthQueryCurrentOutputDenial::new(
+                    WorthQueryCurrentOutputDenialKind::OutputUnavailable,
+                    Family::IDENTITY,
+                )
+            })?;
         let mut current = Vec::new();
+        let mut retained_selected_native_root = None;
         let mut stale = false;
         let mut obsolete = false;
         for candidate in resolution.candidates {
-            let mut candidate_current = true;
-            for fact in candidate.observed_source_facts.iter() {
-                let remaining = self.reader.work_budget.remaining();
-                self.require_current_output_budget(1, Family::IDENTITY)?;
-                let (is_current, work) = fact
-                    .source_currentness_in(self.reader.runtime, self.reader.snapshot, remaining)
-                    .map_err(|failure| match failure {
-                        crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => {
+            self.require_current_output_budget(1, Family::IDENTITY)?;
+            self.reader.work_budget.consume(1);
+            let Some((witness, verification)) =
+                self.verify_current_candidate(&candidate, &selected_native_root, Family::IDENTITY)?
+            else {
+                stale = true;
+                continue;
+            };
+            match verification {
+                ConsumedOutputVerification::Current => {
+                    let before = self.reader.work_budget.remaining();
+                    let mut admission = self.reader.invalidation_owner.read_admission(before);
+                    let capacity = self.reader.invalidation_owner.retain_consumed_output(
+                        &candidate.observed_source_facts,
+                        &selected_native_root,
+                        ConsumedOutputEvidence::metadata_bytes(),
+                        &mut admission,
+                    );
+                    let charged = usize::try_from(admission.charged_work()).unwrap_or(usize::MAX);
+                    if charged > before {
+                        self.reader.work_budget.mark_exceeded();
+                        return Err(WorthQueryCurrentOutputDenial::new(
+                            WorthQueryCurrentOutputDenialKind::WorkBudgetExceeded,
+                            Family::IDENTITY,
+                        ));
+                    }
+                    self.reader.work_budget.consume(charged);
+                    self.reader.work.record_output_lineage_selection(charged);
+                    let capacity = capacity.map_err(|stop| {
+                        let work = matches!(
+                            stop,
+                            worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. }
+                                | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow
+                        );
+                        if work {
                             self.reader.work_budget.mark_exceeded();
-                            WorthQueryCurrentOutputDenial::new(
-                                WorthQueryCurrentOutputDenialKind::WorkBudgetExceeded,
-                                Family::IDENTITY,
-                            )
                         }
-                        crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::Unavailable => {
-                            WorthQueryCurrentOutputDenial::new(
-                                WorthQueryCurrentOutputDenialKind::OutputUnavailable,
-                                Family::IDENTITY,
-                            )
-                        }
+                        WorthQueryCurrentOutputDenial::new(
+                            if work {
+                                WorthQueryCurrentOutputDenialKind::WorkBudgetExceeded
+                            } else {
+                                WorthQueryCurrentOutputDenialKind::OutputUnavailable
+                            },
+                            Family::IDENTITY,
+                        )
                     })?;
-                self.require_current_output_budget(work, Family::IDENTITY)?;
-                self.reader.work_budget.consume(work);
-                self.reader.work.record_output_lineage_selection(work);
-                if !is_current {
-                    candidate_current = false;
-                    if matches!(fact, WorthQueryApplicationObservedFact::SourceEntity { entity_id } if *entity_id == producer.entity_id())
+                    let evidence = ConsumedOutputEvidence::new(
+                        std::sync::Arc::clone(&candidate.settlement_identity),
+                        std::sync::Arc::clone(&candidate.observed_source_facts),
+                        std::sync::Arc::clone(&candidate.consumed_outputs),
+                        candidate.verification_requirement,
+                        witness,
+                        std::sync::Arc::clone(retained_selected_native_root.get_or_insert_with(
+                            || std::sync::Arc::new(selected_native_root.clone()),
+                        )),
+                        capacity,
+                    );
+                    self.reader
+                        .consumed_outputs
+                        .entry(std::sync::Arc::clone(&candidate.settlement_identity))
+                        .or_insert(evidence);
+                    current.push((candidate.correspondence, candidate.output_role));
+                }
+                ConsumedOutputVerification::ChangedDirectFact(ordinal) => {
+                    if matches!(candidate.observed_source_facts.get(ordinal), Some(WorthQueryApplicationObservedFact::SourceEntity { entity_id }) if *entity_id == producer.entity_id())
                     {
                         obsolete = true;
                     } else {
                         stale = true;
                     }
                 }
-            }
-            if candidate_current {
-                for fact in candidate.observed_source_facts.iter().cloned() {
-                    self.reader
-                        .dependent_source_facts
-                        .insert(fact.dependency_key(), fact);
-                }
-                current.push((candidate.correspondence, candidate.output_role));
+                ConsumedOutputVerification::ChangedUpstream => stale = true,
             }
         }
         if current.is_empty() && obsolete {
@@ -311,70 +366,4 @@ where
         .map_err(|denial| decision_plan_denial(denial.kind(), role))?;
         Ok(identity)
     }
-
-    fn current_source_is_live<Producer>(
-        &mut self,
-        producer: &WorthQueryInvariantEntityIdentity<Schema, Producer>,
-    ) -> Result<bool, WorthQueryCurrentOutputDenial>
-    where
-        Producer: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation>,
-    {
-        self.require_current_output_budget(1, Producer::IDENTIFIER)?;
-        self.reader.work_budget.consume(1);
-        let live = self
-            .reader
-            .runtime
-            .read_truth()
-            .project_snapshot(self.reader.snapshot)
-            .and_then(|view| {
-                view.entity_record_with_projection_scope(
-                    producer.entity_id(),
-                    ProjectionAspectScope::empty(),
-                    |record| Some((record.kind_id(), record.lifecycle())),
-                )
-            })
-            .is_some_and(|(kind, lifecycle)| {
-                lifecycle == RecordLifecycleState::Live
-                    && self.reader.layout.entity_name(kind) == Some(Producer::IDENTIFIER)
-            });
-        Ok(live)
-    }
-}
-
-#[derive(Debug, Eq, PartialEq)]
-enum CurrentOutputCardinality<T> {
-    Missing,
-    Unique(T),
-    Ambiguous(Vec<T>),
-}
-
-fn classify_current_entities<T: Copy + Eq + Hash>(
-    entities: impl IntoIterator<Item = T>,
-) -> CurrentOutputCardinality<T> {
-    let mut seen = HashSet::new();
-    let mut unique = entities
-        .into_iter()
-        .filter(|entity| seen.insert(*entity))
-        .collect::<Vec<_>>();
-    match unique.len() {
-        0 => CurrentOutputCardinality::Missing,
-        1 => CurrentOutputCardinality::Unique(unique.pop().expect("one unique entity")),
-        _ => CurrentOutputCardinality::Ambiguous(unique),
-    }
-}
-
-fn decision_plan_denial(
-    kind: WorthQueryInvariantDecisionPlanDenialKind,
-    subject: &str,
-) -> WorthQueryCurrentOutputDenial {
-    let kind = match kind {
-        WorthQueryInvariantDecisionPlanDenialKind::ForeignIdentity => {
-            WorthQueryCurrentOutputDenialKind::ForeignIdentity
-        }
-        WorthQueryInvariantDecisionPlanDenialKind::UndeclaredDecisionTarget
-        | WorthQueryInvariantDecisionPlanDenialKind::FieldNotInstalled => {
-            WorthQueryCurrentOutputDenialKind::UndeclaredDecisionTarget
-        }
-    };
-    WorthQueryCurrentOutputDenial::new(kind, subject)
 }

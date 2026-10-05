@@ -36,7 +36,7 @@ pub(super) fn identity_entries(
         text("mutation.rule", "signal.locality-action-trace.v1"),
         text("policy.rule", "signal.locality-policy.v1"),
         text("work.rule", "signal.locality-expected-work.v1"),
-        text("counter.rule", "signal.invalidation.performed.v1"),
+        text("counter.rule", "signal.invalidation.semantic.v2"),
     ];
     entries.push(digest_tokens(
         "mutation.actions",
@@ -71,8 +71,9 @@ pub(super) fn identity_entries(
     )?);
     entries.push(digest_tokens(
         "expected.counters",
-        super::ExpectedLocalityCounterRow::ALL
+        super::super::ExpectedLocalityCounterRow::ALL
             .into_iter()
+            .filter(|row| !row.is_physical_batch_shape())
             .map(|row| format!("{}={}", row as u8, manifest.counter_manifest().value(row))),
     )?);
     Ok(entries)

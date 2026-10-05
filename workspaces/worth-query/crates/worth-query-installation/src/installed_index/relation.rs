@@ -18,7 +18,7 @@ impl WorthQueryInstalledPackageIndex {
         use WorthQueryInstalledPackageIndexRelation as Relation;
 
         if self.runtime != candidate.runtime
-            || self.authority_root.lineage() != candidate.authority_root.lineage()
+            || self.authority_lineage != candidate.authority_lineage
         {
             return Relation::ForeignRuntime;
         }

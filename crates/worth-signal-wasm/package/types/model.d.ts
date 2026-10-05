@@ -17,11 +17,17 @@ export interface InputOptions {
   producesAspects?: ReadonlyArray<AspectId>;
 }
 
+export interface SignalScopeSubscription {
+  /** One to eight opaque path segments. */
+  path: ReadonlyArray<string>;
+  coverage: "Exact" | "Subtree";
+}
+
 export type RecipeReadSpec =
   | string
   | {
       id: string;
-      scope?: unknown;
+      scope?: SignalScopeSubscription;
       aspect?: AspectId;
       aspects?: ReadonlyArray<AspectId>;
     };
@@ -30,7 +36,7 @@ export interface RecipeFamilyReadScopeSpec {
   partition?: string;
   partitionFrom?: string;
   detail?: string;
-  matchMode?: unknown;
+  matchMode?: "WholePartition" | "PartitionAndDetail";
 }
 
 export type RecipeFamilyReadSpec =
@@ -236,8 +242,8 @@ export interface WebObservationNotice {
   handleId: number;
   signalId: string;
   branchId: number;
-  policy: unknown;
-  touched: boolean;
+  policy: import("./diagnostics/observation.js").ObservationPolicySummary | null;
+  visited: boolean;
   recomputed: boolean;
   meaningfulChange: boolean;
   triggerMatched: boolean;

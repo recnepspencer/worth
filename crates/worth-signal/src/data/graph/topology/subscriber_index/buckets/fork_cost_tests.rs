@@ -8,7 +8,7 @@ use super::{IndexedSubscriptionMembership, ReverseSubscriptionIndex};
 use crate::data::aspect::Aspect;
 use crate::data::handle::NodeId;
 use crate::data::output::{
-    DetailTokenId, InternedPartitionSubscription, PartitionMatchMode, PartitionTokenId,
+    InternedPartitionSubscription, InternedScopePath, PartitionTokenId, ScopeCoverage,
 };
 
 const TEST_NAME: &str = "data::graph::topology::subscriber_index::buckets::fork_cost_tests::single_membership_first_write_is_bounded_by_nested_persistent_granule";
@@ -48,17 +48,16 @@ fn single_membership_first_write_is_bounded_by_nested_persistent_granule() {
         let mut source = ReverseSubscriptionIndex::default();
         for index in 0..consumer_count {
             let scope = if index % 2 == 0 {
-                InternedPartitionSubscription {
-                    partition: PartitionTokenId(index),
-                    detail: None,
-                    match_mode: PartitionMatchMode::WholePartition,
-                }
+                InternedPartitionSubscription::new(
+                    InternedScopePath::new(&[PartitionTokenId(index)]).unwrap(),
+                    ScopeCoverage::Subtree,
+                )
             } else {
-                InternedPartitionSubscription {
-                    partition: PartitionTokenId(index),
-                    detail: Some(DetailTokenId(index)),
-                    match_mode: PartitionMatchMode::PartitionAndDetail,
-                }
+                InternedPartitionSubscription::new(
+                    InternedScopePath::new(&[PartitionTokenId(index), PartitionTokenId(index)])
+                        .unwrap(),
+                    ScopeCoverage::Exact,
+                )
             };
             let membership =
                 IndexedSubscriptionMembership::from_edge(producer, aspect, Some(scope))
@@ -66,11 +65,14 @@ fn single_membership_first_write_is_bounded_by_nested_persistent_granule() {
             source.replace_consumer(NodeId::new(index + 1, 0), vec![membership]);
         }
         let removed = NodeId::new(consumer_count, 0);
-        let removed_scope = InternedPartitionSubscription {
-            partition: PartitionTokenId(consumer_count - 1),
-            detail: Some(DetailTokenId(consumer_count - 1)),
-            match_mode: PartitionMatchMode::PartitionAndDetail,
-        };
+        let removed_scope = InternedPartitionSubscription::new(
+            InternedScopePath::new(&[
+                PartitionTokenId(consumer_count - 1),
+                PartitionTokenId(consumer_count - 1),
+            ])
+            .unwrap(),
+            ScopeCoverage::Exact,
+        );
         let removed_membership =
             IndexedSubscriptionMembership::from_edge(producer, aspect, Some(removed_scope))
                 .expect("removed scoped membership is indexable");

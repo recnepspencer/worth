@@ -11,7 +11,7 @@ use super::super::execution::diagnostics::{record_successful_execution, summariz
 use super::super::reporting::{accumulate_report_counters, classify_task_record};
 use super::super::types::{
     EvaluationPlan, ExecutionRecordId, ExecutionReport, ParallelAdmissionReason, SemanticSegmentId,
-    StageExecutionOutcome, StageExecutionRecord, StageExecutor, TaskReason,
+    StageExecutionOutcome, StageExecutionRecord, TaskReason,
 };
 use super::execution_preparation::{
     apply_test_precompute_telemetry, prepare_test_precomputed_task, TestPrecomputeTelemetry,
@@ -25,29 +25,20 @@ pub(crate) fn execute_plan_with_policy_and_condition<F, O>(
     compute: &mut F,
     comparator_resolver: &mut impl ComparatorPolicyResolver,
     condition_resolver: &mut impl crate::logic::evaluation::ConditionResolver,
-    executor: StageExecutor,
     execution_metadata: Option<&EvaluationExecutionMetadata>,
 ) -> Result<ExecutionReport, SignalError>
 where
     F: FnMut(NodeId, &SignalGraph) -> Result<O, SignalError>,
     O: crate::data::output::IntoNodeEvaluationResult,
 {
-    match executor {
-        StageExecutor::Serial => execute_plan_serial(
-            graph,
-            plan,
-            compute,
-            comparator_resolver,
-            condition_resolver,
-            execution_metadata,
-        ),
-        #[cfg(feature = "parallel")]
-        StageExecutor::StagedParallelPrecompute { .. } | StageExecutor::FullParallel { .. } => {
-            Err(SignalError::invalid_input(
-                "parallel stage execution is not yet supported by the current mutable graph engine",
-            ))
-        }
-    }
+    execute_plan_serial(
+        graph,
+        plan,
+        compute,
+        comparator_resolver,
+        condition_resolver,
+        execution_metadata,
+    )
 }
 
 pub(crate) fn execute_test_prepared_plan_with_resolvers<Ctx, F, O>(
@@ -170,19 +161,12 @@ where
             outcome: StageExecutionOutcome::CompletedSerial,
             authority_policy: None,
             parallel_admission_reason: Some(ParallelAdmissionReason::SerialExecutor),
-            #[cfg(feature = "parallel")]
             parallel_kind: None,
-            #[cfg(feature = "parallel")]
             apply_mode: None,
-            #[cfg(feature = "parallel")]
             apply_group_count: 0,
-            #[cfg(feature = "parallel")]
             serial_apply_rejection_reason: None,
-            #[cfg(feature = "parallel")]
             serial_fallback_group_count: 0,
-            #[cfg(feature = "parallel")]
             concurrent_apply_task_count: 0,
-            #[cfg(feature = "parallel")]
             serial_apply_task_count: 0,
             snapshot_duration_nanos: snapshot_nanos,
             precompute_duration_nanos: precompute_nanos,

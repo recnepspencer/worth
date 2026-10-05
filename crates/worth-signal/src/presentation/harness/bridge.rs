@@ -1,5 +1,4 @@
 mod adapter;
-mod error_mapping;
 mod projection;
 mod request;
 mod translation;

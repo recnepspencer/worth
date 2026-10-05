@@ -18,6 +18,7 @@ pub enum WorthQueryApplicationProductBranchCloseDenial {
     /// The application's pending publication on the branch could not be
     /// settled first. The close did not begin.
     ApplicationSettlementPending,
+    BranchCoordinationCapacityExhausted,
     /// An inbound-capable dispatch still owns completion/recovery custody.
     OutstandingExternalEffect,
     /// The product runtime refused to begin the close. Nothing was closed.
@@ -37,7 +38,10 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
         let commit_lane = self
             .application
             .primary_provider
-            .application_branch_commit_lane_for_occurrence(occurrence);
+            .application_branch_commit_lane_for_occurrence(occurrence)
+            .map_err(|_| {
+                WorthQueryApplicationProductBranchCloseDenial::BranchCoordinationCapacityExhausted
+            })?;
         let _coordination = commit_lane.enter();
         self.application
             .primary_provider

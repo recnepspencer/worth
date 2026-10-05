@@ -25,6 +25,61 @@ impl CommitTopology {
 }
 
 impl MutationIntent {
+    pub(crate) fn try_visit_touched_partitions<E>(
+        &self,
+        visit: &mut impl FnMut(PartitionId) -> Result<(), E>,
+    ) -> Result<(), E> {
+        match self {
+            Self::Create(CreateIntent::Entity(spec)) => visit(spec.partition_id)?,
+            Self::Create(CreateIntent::EntityAspects(spec)) => visit(spec.partition_id)?,
+            Self::Create(CreateIntent::BulkEntities(spec)) => visit(spec.partition_id)?,
+            Self::Entity(EntityMutationIntent::UpdateFields(spec)) => {
+                visit(spec.entity_id.partition_id)?;
+            }
+            Self::Entity(EntityMutationIntent::ApplyAspectPatch(spec)) => {
+                visit(spec.entity_id.partition_id)?;
+            }
+            Self::Entity(EntityMutationIntent::Replace(spec)) => {
+                visit(spec.entity_id.partition_id)?;
+                visit(spec.replacement.partition_id)?;
+            }
+            Self::Entity(EntityMutationIntent::Delete(spec)) => visit(spec.entity_id.partition_id)?,
+            Self::Entity(EntityMutationIntent::Revalidate(spec)) => {
+                visit(spec.entity_id.partition_id)?;
+            }
+            Self::Create(CreateIntent::Relation(spec)) => {
+                visit(spec.partition_id)?;
+                visit(spec.source.partition_id())?;
+                visit(spec.target.partition_id())?;
+            }
+            Self::Create(CreateIntent::RelationAspects(spec)) => {
+                visit(spec.partition_id)?;
+                visit(spec.source.partition_id())?;
+                visit(spec.target.partition_id())?;
+            }
+            Self::Create(CreateIntent::BulkRelations(spec)) => {
+                visit(spec.partition_id)?;
+                for (source, target) in &spec.endpoints {
+                    visit(source.partition_id())?;
+                    visit(target.partition_id())?;
+                }
+            }
+            Self::Relation(RelationMutationIntent::UpdateEndpoints(spec)) => {
+                visit(spec.relation_id.partition_id)?;
+                visit(spec.source.partition_id())?;
+                visit(spec.target.partition_id())?;
+            }
+            Self::Relation(RelationMutationIntent::ApplyAspectPatch(spec)) => {
+                visit(spec.relation_id.partition_id)?;
+            }
+            Self::Relation(RelationMutationIntent::Delete(spec)) => {
+                visit(spec.relation_id.partition_id)?;
+            }
+            Self::Materialization(intent) => visit(intent.partition_id())?,
+        }
+        Ok(())
+    }
+
     pub(crate) fn seed_touched_partitions(
         &self,
         touched: &mut std::collections::BTreeSet<PartitionId>,

@@ -29,7 +29,7 @@ fn async_capable_node_public_rediscovery_after_restore_preserves_parity_and_expl
         .expect("async capability should attach");
 
     runtime.observe_nodes(
-        ObservationPolicy::touched(),
+        ObservationPolicy::visited(),
         [node],
         Box::new(NoopAsyncNodeObservationListener),
     );
@@ -138,7 +138,7 @@ fn keyed_public_handles_fail_closed_after_restore_rebind_and_require_rediscovere
         .attach_async_capability(&mut runtime, payload_a)
         .expect("first keyed public attachment should succeed");
     runtime.observe_nodes(
-        ObservationPolicy::touched(),
+        ObservationPolicy::visited(),
         [attached_a.node()],
         Box::new(NoopAsyncNodeObservationListener),
     );

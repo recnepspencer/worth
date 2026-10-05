@@ -72,8 +72,8 @@ where
     work: ProgramOutputTraversalWork,
 }
 
-/// Drives a mutation's discovered program outputs to settlement. `advance` advances at most
-/// one discovered root per call.
+/// Drives a mutation's discovered program outputs to settlement. `advance` takes every
+/// discovered root as far as one call can.
 pub struct WorthQueryDiscoveredProgramOutputHandle<'application, Schema, Program, Root>
 where
     Schema: ApplicationSchema,
@@ -201,11 +201,11 @@ where
         Ok(WorthQueryDiscoveredProgramOutputProgress::Pending)
     }
 
-    /// Advances at most one discovered root.
+    /// Advances the discovered roots in order, each with its dependents.
     ///
-    /// Callers loop until settlement and may supply a freshly authorized
-    /// request between calls. Outputs from retired roots remain retained by
-    /// this handle while later roots advance.
+    /// `Pending` means a root waits on work outside this call. Callers may
+    /// supply a freshly authorized request for the next call. Outputs from
+    /// retired roots remain retained by this handle while later roots advance.
     pub fn advance(
         &mut self,
         request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
@@ -216,9 +216,34 @@ where
         if self.complete {
             return Err(WorthQueryRequiredOutputPreparationDenial::Closed);
         }
-        let mut root_superseded = false;
-        if let Some(root) = self.roots.get_mut(self.next_root) {
-            if let Some(authority) = root.pending_authority.take() {
+        while let Some(root) = self.roots.get_mut(self.next_root) {
+            if let Some(handle) = &mut root.handle {
+                match handle.advance(request) {
+                    Err(crate::application_entry::WorthQueryApplicationOutputDemandDenial::Superseded) => {
+                        self.superseded.push(root.demand.clone());
+                        root.handle = None;
+                        self.next_root += 1;
+                        continue;
+                    }
+                    Err(denial) => {
+                        return Err(WorthQueryRequiredOutputPreparationDenial::Demand(denial));
+                    }
+                    Ok(WorthQueryApplicationProgramDemandProgress::Pending) => {
+                        return Ok(WorthQueryDiscoveredProgramOutputProgress::Pending);
+                    }
+                    Ok(WorthQueryApplicationProgramDemandProgress::Settled {
+                        settlement,
+                        authority,
+                    }) => {
+                        root.settlement = Some(settlement);
+                        root.pending_authority = Some(authority);
+                        root.handle = None;
+                    }
+                }
+            }
+            // A settled root starts its dependents in the same call. A start
+            // that is refused keeps the authority for the next call.
+            if let Some(authority) = root.pending_authority.as_ref() {
                 let settlement = root
                     .settlement
                     .as_ref()
@@ -227,57 +252,28 @@ where
                     self.application,
                     &root.demand,
                     settlement,
-                    &authority,
+                    authority,
                     &self.source,
                     request,
                     self.controls,
                 )?);
+                root.pending_authority = None;
             }
-            if let Some(handle) = &mut root.handle {
-                match handle.advance(request) {
-                    Err(crate::application_entry::WorthQueryApplicationOutputDemandDenial::Superseded) => {
-                        self.superseded.push(root.demand.clone());
-                        root.handle = None;
-                        self.next_root += 1;
-                        root_superseded = true;
-                    }
-                    Err(denial) => {
-                        return Err(WorthQueryRequiredOutputPreparationDenial::Demand(denial));
-                    }
-                    Ok(progress) => match progress {
-                    WorthQueryApplicationProgramDemandProgress::Pending => {
-                        return Ok(WorthQueryDiscoveredProgramOutputProgress::Pending);
-                    }
-                    WorthQueryApplicationProgramDemandProgress::Settled {
-                        settlement,
-                        authority,
-                    } => {
-                        root.settlement = Some(settlement);
-                        root.pending_authority = Some(authority);
-                        root.handle = None;
-                        return Ok(WorthQueryDiscoveredProgramOutputProgress::Pending);
-                    }
-                    },
+            let continuation = root
+                .continuation
+                .as_mut()
+                .expect("a settled root installs its typed continuation");
+            match continuation.advance(request)? {
+                ProgramOutputContinuationProgress::Pending => {
+                    return Ok(WorthQueryDiscoveredProgramOutputProgress::Pending);
+                }
+                ProgramOutputContinuationProgress::Settled { outputs, work } => {
+                    root.outputs = outputs;
+                    root.work = work;
+                    root.continuation = None;
+                    self.next_root += 1;
                 }
             }
-            if !root_superseded {
-                let continuation = root
-                    .continuation
-                    .as_mut()
-                    .expect("a settled root installs its typed continuation");
-                match continuation.advance(request)? {
-                    ProgramOutputContinuationProgress::Pending => {}
-                    ProgramOutputContinuationProgress::Settled { outputs, work } => {
-                        root.outputs = outputs;
-                        root.work = work;
-                        root.continuation = None;
-                        self.next_root += 1;
-                    }
-                }
-            }
-        }
-        if self.next_root < self.roots.len() {
-            return Ok(WorthQueryDiscoveredProgramOutputProgress::Pending);
         }
         self.application.complete_program_output_source(
             &worth_query_execution::publication_boundary::program_publication_access(),

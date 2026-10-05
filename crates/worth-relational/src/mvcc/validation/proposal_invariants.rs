@@ -16,6 +16,7 @@ pub(super) fn validate_proposed_state(
     proposed: &crate::runtime::WorkingState,
     proposed_version: VersionId,
     proposal_identity: Option<&super::proposal_identity::RelationalMutationProposalIdentity>,
+    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
 ) -> Result<(InvariantExecutionResult, InvariantExecutionResult), TransactionCommitError> {
     let mutation_sensitive = runtime
         .invariant_authority()
@@ -25,8 +26,8 @@ pub(super) fn validate_proposed_state(
             proposed_version,
             &prepared.merged_plan,
             proposal_identity,
-        )
-        .map_err(TransactionCommitError::conflict)?;
+            lease,
+        )?;
     let publication = runtime
         .invariant_authority()
         .enforce_snapshot_publication_for_working_state(
@@ -35,7 +36,7 @@ pub(super) fn validate_proposed_state(
             proposed_version,
             &prepared.merged_plan,
             proposal_identity,
-        )
-        .map_err(TransactionCommitError::publication)?;
+            lease,
+        )?;
     Ok((mutation_sensitive, publication))
 }

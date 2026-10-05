@@ -35,7 +35,8 @@ fn commit_authorization_rechecks_cancellation_when_governed() {
                 .mutation_product()
                 .unwrap()
                 .observation(),
-        );
+        )
+        .unwrap();
     let coordination = commit_lane.enter();
     let proof = commit_authorization
         .authorize_application_commit(&world.application, &admission, &coordination)
@@ -72,7 +73,8 @@ fn commit_basis_cannot_be_paired_with_a_different_admitted_operation() {
                 .mutation_product()
                 .unwrap()
                 .observation(),
-        );
+        )
+        .unwrap();
     let coordination = commit_lane.enter();
 
     let Err(denial) = source_authorization.authorize_application_commit(
@@ -110,7 +112,8 @@ fn commit_basis_cannot_be_revalidated_by_a_foreign_runtime() {
                 .mutation_product()
                 .unwrap()
                 .observation(),
-        );
+        )
+        .unwrap();
     let coordination = commit_lane.enter();
 
     let Err(denial) = commit_authorization.authorize_application_commit(

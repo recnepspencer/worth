@@ -5,6 +5,10 @@ pub struct WorthServerWorkspaceTarget {
 }
 
 impl WorthServerWorkspaceTarget {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use crate::product_adapter::execution_pipeline::read_batch_accounting::string;
+        string(&self.tenant_id).saturating_add(string(&self.workspace_id))
+    }
     pub(crate) fn new(tenant_id: String, workspace_id: String) -> Self {
         Self {
             tenant_id,

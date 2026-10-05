@@ -77,6 +77,23 @@ fn canonical_labels(labels: Vec<String>) -> SmallVec<[String; 2]> {
     canonical
 }
 
+impl crate::data::retained_storage::RetainedStorageMeasurement for DiagnosticEnvelope {
+    fn retained_heap_charge(
+        &self,
+        work: &mut crate::data::retained_storage::RetainedStoragePreparation,
+    ) -> Result<
+        crate::data::retained_storage::RetainedStorageCharge,
+        crate::data::retained_storage::RetainedStoragePreparationDenial,
+    > {
+        work.visit()?;
+        self.changed_regions
+            .retained_heap_charge(work)?
+            .checked_add(self.labels.retained_heap_charge(work)?)?
+            .checked_add(self.output_identity.retained_heap_charge(work)?)?
+            .checked_add(self.continuity_token.retained_heap_charge(work)?)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::logic::evaluation::DiagnosticEnvelope;

@@ -4,6 +4,8 @@
 
 Execution breadth must be bounded by semantic delta plus the smallest honest physical or algorithmic granule. Every resulting read, write, invalidation, recomputation, retention, or flush amplification must be named, measured, and policy-bounded.
 
+The touched graph is the commit's sealed semantic delta. Consumed dependency contracts intersect that delta to bound recomputation; scope paths refine the precision of touched records, and declared widening remains counted and reported.
+
 Authoritative commit cost may scale only with declared synchronous invariants, never with arbitrary projections, diagnostics, explanations, or consumer count. Every derived structure must declare whether it participates synchronously in correctness or updates asynchronously, together with its write amplification and staleness contract.
 
 Semantic intent, policy, topology, normalization, and dispatch narrowing must resolve before the hot path into the narrowest honest execution strategy. Runtime resolution is permitted only for facts unavailable upstream or themselves constituting the operation.

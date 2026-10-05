@@ -3,8 +3,21 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationObservedFact as Fact, WorthQueryPrimaryGraphLayout,
 };
 
+mod preparation_capacity;
+mod source_fact_locator;
+use source_fact_locator::SourceFactLocator;
+
+pub(super) struct PreparedSourceFactMaterialization<'source, Query> {
+    source: &'source WorthQueryObservedSource<Query>,
+    fields: Vec<ValidatedSourceField<'source>>,
+    fact_count: usize,
+}
+
+struct ValidatedSourceField<'source>(&'source WorthQueryObservedFieldRevision);
+
 impl<Query> WorthQueryObservedSource<Query> {
-    pub(in crate::domain_computation) fn validate_and_into_facts(
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::domain_computation::primary_graph) fn validate_and_into_facts(
         self,
         runtime_authority: u64,
         binding: &ApplicationSchemaBindingIdentity,
@@ -34,38 +47,91 @@ impl<Query> WorthQueryObservedSource<Query> {
         Ok(self.validated_facts(layout, &self.query_identifier)?.into())
     }
 
-    fn validated_facts(
+    pub(super) fn validated_facts(
         &self,
         layout: &WorthQueryPrimaryGraphLayout,
         expected_query_identifier: &str,
     ) -> Result<Vec<Fact>, WorthQuerySourceExpectationDenial> {
         self.validate_completeness(expected_query_identifier)?;
+        let footprint = self.source_meaning.footprint();
+        let fields = footprint
+            .aspects
+            .iter()
+            .chain(
+                footprint
+                    .root_selection
+                    .iter()
+                    .flat_map(|selection| &selection.aspects),
+            )
+            .map(|aspect| {
+                let contract = layout
+                    .aspect_contract(&aspect.entity_name, &aspect.aspect)
+                    .ok_or_else(|| source_contract_denial(aspect))?;
+                ValidatedSourceField::resolve(aspect, contract)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let fact_count = source_fact_count(self, expected_query_identifier)?;
+        PreparedSourceFactMaterialization {
+            source: self,
+            fields,
+            fact_count,
+        }
+        .into_facts()
+    }
+}
+
+fn source_fact_count<Query>(
+    source: &WorthQueryObservedSource<Query>,
+    subject: &str,
+) -> Result<usize, WorthQuerySourceExpectationDenial> {
+    let footprint = source.source_meaning.footprint();
+    let selected_count = footprint
+        .root_selection
+        .as_ref()
+        .map(|selection| {
+            selection
+                .entities
+                .len()
+                .checked_add(selection.aspects.len())
+                .and_then(|n| n.checked_add(selection.adjacencies.len()))
+        })
+        .unwrap_or(Some(0));
+    footprint
+        .entities
+        .len()
+        .checked_add(footprint.aspects.len())
+        .and_then(|n| n.checked_add(footprint.adjacencies.len()))
+        .and_then(|n| n.checked_add(selected_count?))
+        .ok_or_else(|| {
+            WorthQuerySourceExpectationDenial::new(
+                WorthQuerySourceExpectationDenialKind::PreparationMemoryExceeded,
+                subject,
+            )
+        })
+}
+
+impl<Query> PreparedSourceFactMaterialization<'_, Query> {
+    pub(super) fn into_facts(self) -> Result<Vec<Fact>, WorthQuerySourceExpectationDenial> {
+        let source = self.source;
         let WorthQueryObservedSourceFootprint {
             entities,
             aspects,
             adjacencies,
             root_selection,
             ..
-        } = self.source_meaning.footprint().clone();
+        } = source.source_meaning.footprint();
         let selection = root_selection.as_deref();
-        let mut facts = Vec::with_capacity(
-            entities
-                .len()
-                .saturating_add(aspects.len())
-                .saturating_add(adjacencies.len())
-                .saturating_add(selection.map_or(0, |source| {
-                    source.entities.len() + source.aspects.len() + source.adjacencies.len()
-                })),
-        );
+        let mut facts = Vec::with_capacity(self.fact_count);
         facts.extend(
             entities
-                .into_iter()
+                .iter()
+                .copied()
                 .map(|entity_id| Fact::SourceEntity { entity_id }),
         );
-        for aspect in aspects {
-            append_aspect(layout, aspect, &mut facts)?;
+        for field in &self.fields[..aspects.len()] {
+            field.append(&mut facts);
         }
-        facts.extend(adjacencies.into_iter().map(adjacency_fact));
+        facts.extend(adjacencies.iter().cloned().map(adjacency_fact));
         if let Some(selection) = selection {
             facts.extend(
                 selection
@@ -74,15 +140,15 @@ impl<Query> WorthQueryObservedSource<Query> {
                     .copied()
                     .map(|entity_id| Fact::SourceEntity { entity_id }),
             );
-            for aspect in &selection.aspects {
-                append_aspect(layout, aspect.clone(), &mut facts)?;
+            for field in &self.fields[aspects.len()..] {
+                field.append(&mut facts);
             }
             facts.extend(selection.adjacencies.iter().cloned().map(adjacency_fact));
         }
         let mut seen = std::collections::BTreeMap::new();
         let mut unique = Vec::with_capacity(facts.len());
         for fact in facts {
-            let identity = fact.dependency_key();
+            let identity = SourceFactLocator::from_fact(&fact);
             match seen.entry(identity) {
                 std::collections::btree_map::Entry::Vacant(entry) => {
                     entry.insert(unique.len());
@@ -93,7 +159,7 @@ impl<Query> WorthQueryObservedSource<Query> {
                     if !existing.merge_same_source_fact(fact) {
                         return Err(WorthQuerySourceExpectationDenial::new(
                             WorthQuerySourceExpectationDenialKind::SourceChanged,
-                            expected_query_identifier,
+                            source.query_identifier.as_str(),
                         ));
                     }
                 }
@@ -101,9 +167,11 @@ impl<Query> WorthQueryObservedSource<Query> {
         }
         Ok(unique)
     }
+}
 
+impl<Query> WorthQueryObservedSource<Query> {
     #[allow(clippy::too_many_arguments)]
-    fn validate_affinity(
+    pub(super) fn validate_affinity(
         &self,
         runtime_authority: u64,
         binding: &ApplicationSchemaBindingIdentity,
@@ -128,7 +196,7 @@ impl<Query> WorthQueryObservedSource<Query> {
         {
             return Err(deny(Kind::ForeignSchema));
         }
-        if self.query_identifier != expected_query_identifier
+        if self.query_identifier.as_str() != expected_query_identifier
             || &self.query_identity != expected_query_identity
         {
             return Err(deny(Kind::SourceContractMismatch));
@@ -138,7 +206,9 @@ impl<Query> WorthQueryObservedSource<Query> {
         else {
             return Err(deny(Kind::ForeignBranch));
         };
-        if &self.branch != branch || !selected_product.same_branch_occurrence(observed_product) {
+        if self.branch.as_ref() != branch
+            || !selected_product.same_branch_occurrence(observed_product)
+        {
             return Err(deny(Kind::ForeignBranch));
         }
         if self.model_root != model_root {
@@ -148,43 +218,48 @@ impl<Query> WorthQueryObservedSource<Query> {
     }
 }
 
-fn append_aspect(
-    layout: &WorthQueryPrimaryGraphLayout,
-    aspect: WorthQueryObservedFieldRevision,
-    facts: &mut Vec<Fact>,
-) -> Result<(), WorthQuerySourceExpectationDenial> {
-    let contract = layout
-        .aspect_contract(&aspect.entity_name, &aspect.aspect)
-        .filter(|contract| contract.revision() == aspect.contract_revision)
-        .ok_or_else(|| {
-            WorthQuerySourceExpectationDenial::new(
-                WorthQuerySourceExpectationDenialKind::SourceContractMismatch,
-                aspect.aspect.as_str(),
-            )
-        })?;
-    let declared = match contract.shape() {
-        worth_foundational::facade::AspectShape::Struct(shape) => {
-            shape.field(&aspect.field).is_some()
+fn source_contract_denial(
+    aspect: &WorthQueryObservedFieldRevision,
+) -> WorthQuerySourceExpectationDenial {
+    WorthQuerySourceExpectationDenial::new(
+        WorthQuerySourceExpectationDenialKind::SourceContractMismatch,
+        aspect.aspect.as_str(),
+    )
+}
+
+impl<'source> ValidatedSourceField<'source> {
+    fn resolve(
+        aspect: &'source WorthQueryObservedFieldRevision,
+        contract: &worth_foundational::facade::AspectContract,
+    ) -> Result<Self, WorthQuerySourceExpectationDenial> {
+        if contract.revision() != aspect.contract_revision {
+            return Err(source_contract_denial(aspect));
         }
-        worth_foundational::facade::AspectShape::Scalar(_) => true,
-        _ => false,
-    };
-    if !declared {
-        return Err(WorthQuerySourceExpectationDenial::new(
-            WorthQuerySourceExpectationDenialKind::SourceContractMismatch,
-            aspect.aspect.as_str(),
-        ));
+        let declared = match contract.shape() {
+            worth_foundational::facade::AspectShape::Struct(shape) => {
+                shape.field(&aspect.field).is_some()
+            }
+            worth_foundational::facade::AspectShape::Scalar(_) => true,
+            _ => false,
+        };
+        if !declared {
+            return Err(source_contract_denial(aspect));
+        }
+        Ok(Self(aspect))
     }
-    facts.push(Fact::SourceFieldRevision {
-        entity_id: aspect.entity,
-        locator: worth_foundational::facade::AspectFieldLocator::new(
-            worth_foundational::facade::LocatorAuthority::Authoritative,
-            aspect.aspect,
-            worth_foundational::facade::CanonicalFieldPath::single(aspect.field),
-        ),
-        native_revision: aspect.native_revision,
-    });
-    Ok(())
+
+    fn append(&self, facts: &mut Vec<Fact>) {
+        let aspect = self.0;
+        facts.push(Fact::SourceFieldRevision {
+            entity_id: aspect.entity,
+            locator: worth_foundational::facade::AspectFieldLocator::new(
+                worth_foundational::facade::LocatorAuthority::Authoritative,
+                aspect.aspect.clone(),
+                worth_foundational::facade::CanonicalFieldPath::single(aspect.field.clone()),
+            ),
+            native_revision: aspect.native_revision,
+        });
+    }
 }
 
 fn adjacency_fact(adjacency: WorthQueryObservedAdjacencyRevision) -> Fact {

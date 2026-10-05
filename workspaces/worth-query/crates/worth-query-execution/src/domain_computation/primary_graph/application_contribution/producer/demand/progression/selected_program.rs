@@ -21,7 +21,7 @@ where
 {
     pub fn advance_selected_program_output_demand<Family>(
         &self,
-        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -29,6 +29,92 @@ where
         disclosure: WorthQueryApplicationOutputDemandSource<
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
+        >,
+        identity: ApplicationProgramIdentity,
+        revision: ApplicationProgramRevision,
+    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+        FamilySourceValue<Schema, Family>: 'static,
+        FamilySourceQuery<Schema, Family>: 'static,
+    {
+        let mut disclosure = Some(disclosure);
+        self.advance_selected_program_output_demand_with_source(
+            access,
+            demand,
+            principal,
+            request_scope,
+            delivery_branch,
+            |_, _| Ok(disclosure.take()),
+            identity,
+            revision,
+        )
+    }
+
+    /// Reuse the source meaning retained when the public demand was admitted.
+    pub fn advance_selected_program_output_demand_from_retained<Family>(
+        &self,
+        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request_scope: &WorthQueryRequestScope,
+        delivery_branch: crate::basis::WorthQueryProductBranch,
+        identity: ApplicationProgramIdentity,
+        revision: ApplicationProgramRevision,
+    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+        FamilySourceValue<Schema, Family>:
+            crate::domain_computation::primary_graph::WorthQueryApplicationProjection<
+                    Schema,
+                    FamilySourceQuery<Schema, Family>,
+                > + 'static,
+        FamilySourceQuery<Schema, Family>: 'static,
+    {
+        let limits = demand.limits;
+        self.advance_selected_program_output_demand_with_source(
+            access,
+            demand,
+            principal,
+            request_scope,
+            delivery_branch,
+            |retained, admission| {
+                super::retained_read::read_retained_source::<Schema, Family>(
+                    self,
+                    retained,
+                    principal,
+                    request_scope,
+                    delivery_branch,
+                    limits,
+                    admission,
+                )
+                .map(Some)
+            },
+            identity,
+            revision,
+        )
+    }
+
+    fn advance_selected_program_output_demand_with_source<Family>(
+        &self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request_scope: &WorthQueryRequestScope,
+        delivery_branch: crate::basis::WorthQueryProductBranch,
+        disclosure: impl FnMut(
+            &crate::domain_computation::primary_graph::WorthQueryObservedSource<
+                FamilySourceQuery<Schema, Family>,
+            >,
+            &mut super::InvalidationEditAdmission,
+        ) -> Result<
+            Option<
+                WorthQueryApplicationOutputDemandSource<
+                    FamilySourceQuery<Schema, Family>,
+                    FamilySourceValue<Schema, Family>,
+                >,
+            >,
+            WorthQueryOutputDemandDenial,
         >,
         identity: ApplicationProgramIdentity,
         revision: ApplicationProgramRevision,
@@ -55,19 +141,22 @@ where
                 ),
             )
         })?;
-        if active.revision() != &revision {
+        if active.identity() != &identity || active.revision() != &revision {
             return Err(denial(
                 WorthQueryOutputDemandDenialKind::PublicationStale,
-                format!("selected-program output revision {revision} is not active"),
+                format!("selected-program output {identity:?} revision {revision} is not active"),
             ));
         }
-        self.advance_output_demand_with_commit_authority(
-            demand,
-            principal,
-            request_scope,
-            delivery_branch,
-            disclosure,
-            WorthQueryProducerCommitAuthority::SelectedProgram { identity, revision },
-        )
+        self.advance_as_caller(demand, |demand, admission| {
+            self.advance_output_demand_with_prepared_source(
+                demand,
+                principal,
+                request_scope,
+                delivery_branch,
+                disclosure,
+                WorthQueryProducerCommitAuthority::SelectedProgram { identity, revision },
+                admission,
+            )
+        })
     }
 }

@@ -26,6 +26,7 @@ pub(crate) enum DiagnosticCode {
     Bc7004RawGeometryRepresentation,
     Bc7005SealedTruthConstruction,
     Bc7006LifecycleStateDefault,
+    Bc7007ThreadingBoundary,
     Bc8001SnapshotBaseline,
     Bc8002FacadeSnapshotDrift,
     Bc8003CrateDagSnapshotDrift,
@@ -35,7 +36,7 @@ pub(crate) enum DiagnosticCode {
 
 impl DiagnosticCode {
     #[cfg(test)]
-    pub(crate) const ALL: [Self; 28] = [
+    pub(crate) const ALL: [Self; 29] = [
         Self::Bc1001IllegalCrateName,
         Self::Bc1002UnreservedDomain,
         Self::Bc2001BandDependencyViolation,
@@ -59,6 +60,7 @@ impl DiagnosticCode {
         Self::Bc7004RawGeometryRepresentation,
         Self::Bc7005SealedTruthConstruction,
         Self::Bc7006LifecycleStateDefault,
+        Self::Bc7007ThreadingBoundary,
         Self::Bc8001SnapshotBaseline,
         Self::Bc8002FacadeSnapshotDrift,
         Self::Bc8003CrateDagSnapshotDrift,
@@ -91,6 +93,7 @@ impl DiagnosticCode {
             Self::Bc7004RawGeometryRepresentation => "BC7004_RAW_GEOMETRY_REPRESENTATION",
             Self::Bc7005SealedTruthConstruction => "BC7005_SEALED_TRUTH_CONSTRUCTION",
             Self::Bc7006LifecycleStateDefault => "BC7006_LIFECYCLE_STATE_DEFAULT",
+            Self::Bc7007ThreadingBoundary => "BC7007_THREADING_BOUNDARY",
             Self::Bc8001SnapshotBaseline => "BC8001_SNAPSHOT_BASELINE",
             Self::Bc8002FacadeSnapshotDrift => "BC8002_FACADE_SNAPSHOT_DRIFT",
             Self::Bc8003CrateDagSnapshotDrift => "BC8003_CRATE_DAG_SNAPSHOT_DRIFT",
@@ -116,6 +119,7 @@ impl DiagnosticCode {
             Self::Bc7004RawGeometryRepresentation => "tools/boundary-check/config/road1.toml [[raw_geometry_denials]]; carry presented geometry in its sealed truth-status type, or declare the edge that owns the raw form",
             Self::Bc7005SealedTruthConstruction => "tools/boundary-check/config/road1.toml [[truth_type_denials]]; construct sealed truth through its owner, or declare the caller the constructor admits",
             Self::Bc7006LifecycleStateDefault => "tools/boundary-check/config/road1.toml [[truth_type_denials]]; name the variant at each construction site instead of a Default",
+            Self::Bc7007ThreadingBoundary => "tools/boundary-check/config/road1.toml [[threading_sites]]; parallel work belongs in worth-execution, while every non-compute thread needs an exact category and reason",
             Self::Bc8001SnapshotBaseline | Self::Bc8002FacadeSnapshotDrift | Self::Bc8003CrateDagSnapshotDrift => "tools/boundary-check/snapshots/; regenerate the governed snapshot explicitly with boundary-check --update-snapshots",
             Self::Bc8004FacadeDocMissing | Self::Bc8005FacadeDocDebtStale => "tools/boundary-check/snapshots/facade-doc-debt.toml; document the named definition with a `///` comment, or delete the paid debt entry",
         };

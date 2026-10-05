@@ -111,6 +111,10 @@ impl ExplicitCommitHistoryProtectionObligation {
         Self { protection }
     }
 
+    pub(in crate::history) fn into_protection(self) -> CompositeHistoryProtectionObligation {
+        self.protection
+    }
+
     pub(crate) fn commit_identity(&self) -> &CompositeCommitIdentity {
         &self.protection.identity
     }

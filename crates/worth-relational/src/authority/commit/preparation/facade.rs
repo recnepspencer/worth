@@ -10,8 +10,3 @@ pub(crate) struct PreparedInvariantExecution<'runtime> {
     pub(crate) strategy: PreparationStrategy,
     pub(crate) packets: Vec<InvariantWorkPacket<'runtime>>,
 }
-
-#[derive(Clone, Default)]
-pub(crate) struct PreparationWorkPlan<'runtime> {
-    pub(crate) invariant_execution: Option<PreparedInvariantExecution<'runtime>>,
-}

@@ -6,6 +6,18 @@ pub struct WorthServerAuthenticatedPrincipal {
 }
 
 impl WorthServerAuthenticatedPrincipal {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use crate::product_adapter::execution_pipeline::read_batch_accounting::{
+            option_string, string,
+        };
+        string(&self.principal_id)
+            .saturating_add(option_string(&self.application_authority_proof_identity))
+            .saturating_add(if self.admitted_transport_caller.is_some() {
+                u64::MAX
+            } else {
+                0
+            })
+    }
     pub(crate) fn new(
         principal_id: String,
         admitted_transport_caller: Option<crate::WorthServerAdmittedTransportCaller>,

@@ -1,6 +1,9 @@
 //! Rebuildable selection indexes over retained derived generations.
+mod admitted_publication;
+mod admitted_selection;
 mod scope;
 mod selection_work;
+pub(in crate::runtime::state::subsystems::indexing) use admitted_selection::navigation_work;
 #[cfg(test)]
 mod tests;
 

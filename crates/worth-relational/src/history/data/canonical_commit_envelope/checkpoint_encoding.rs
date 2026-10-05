@@ -6,11 +6,25 @@ use super::CanonicalCommitEnvelope;
 /// Checkpoint wire projection of canonical authority. New envelope fields must
 /// be classified here because the destructure is exhaustive; only rebuildable
 /// index caches are replaced with an empty payload.
-pub(crate) struct CheckpointCanonicalEnvelopeRef<'a>(&'a CanonicalCommitEnvelope);
+pub(crate) struct CheckpointCanonicalEnvelopeRef<'a> {
+    envelope: &'a CanonicalCommitEnvelope,
+    include_descriptive_touches: bool,
+}
 
 impl<'a> CheckpointCanonicalEnvelopeRef<'a> {
     pub(crate) fn new(envelope: &'a CanonicalCommitEnvelope) -> Self {
-        Self(envelope)
+        Self {
+            envelope,
+            include_descriptive_touches: true,
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn legacy_without_touches_for_test(envelope: &'a CanonicalCommitEnvelope) -> Self {
+        Self {
+            envelope,
+            include_descriptive_touches: false,
+        }
     }
 }
 
@@ -33,6 +47,7 @@ impl Serialize for CheckpointCanonicalEnvelopeRef<'_> {
             merged_plan,
             record_allocations,
             patch,
+            descriptive_touches,
             diagnostics_summary,
             lineage,
             derived_index_artifacts: _,
@@ -40,8 +55,13 @@ impl Serialize for CheckpointCanonicalEnvelopeRef<'_> {
             schema_continuation_descriptor,
             schema_reconciliation_descriptor,
             descriptor_semantics_version,
-        } = self.0;
-        let mut fields = serializer.serialize_struct("CanonicalCommitEnvelope", 20)?;
+        } = self.envelope;
+        let field_count = if self.include_descriptive_touches {
+            21
+        } else {
+            20
+        };
+        let mut fields = serializer.serialize_struct("CanonicalCommitEnvelope", field_count)?;
         fields.serialize_field("commit", commit)?;
         fields.serialize_field("branch_context", branch_context)?;
         fields.serialize_field("branch_cell_checkpoint", branch_cell_checkpoint)?;
@@ -55,6 +75,9 @@ impl Serialize for CheckpointCanonicalEnvelopeRef<'_> {
         fields.serialize_field("merged_plan", merged_plan)?;
         fields.serialize_field("record_allocations", record_allocations)?;
         fields.serialize_field("patch", patch)?;
+        if self.include_descriptive_touches {
+            fields.serialize_field("descriptive_touches", descriptive_touches)?;
+        }
         fields.serialize_field("diagnostics_summary", diagnostics_summary)?;
         fields.serialize_field("lineage", lineage)?;
         fields.serialize_field(

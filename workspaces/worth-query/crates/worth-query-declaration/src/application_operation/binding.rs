@@ -16,8 +16,9 @@ pub use descriptor::{
 };
 pub use identity::{
     application_value_identity, ApplicationCanonicalIdentity, ApplicationCanonicalWork,
-    ApplicationEncodedInput, ApplicationMutationIdentities, ApplicationMutationIdentityDenial,
-    ApplicationValueIdentityDomain,
+    ApplicationEncodedInput, ApplicationMutationIdentities,
+    ApplicationMutationIdentityAdmittedDenial, ApplicationMutationIdentityDenial,
+    ApplicationValueIdentityDomain, CanonicalEncodingCharge,
 };
 pub use intent::{
     ApplicationCapabilityMutationBinding, ApplicationMutationBinding, ApplicationMutationIntent,

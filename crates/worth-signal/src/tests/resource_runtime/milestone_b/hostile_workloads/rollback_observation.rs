@@ -71,9 +71,9 @@ fn resource_async_lifecycle_and_rollback_workload_preserves_committed_truth_and_
         "rollback suppression must preserve observation policy exactly"
     );
     assert_eq!(
-        outcome.rollback_observation.events()[0].touched(),
-        outcome.control_commit_observation.events()[0].touched(),
-        "rollback suppression must preserve touched classification exactly"
+        outcome.rollback_observation.events()[0].visited(),
+        outcome.control_commit_observation.events()[0].visited(),
+        "rollback suppression must preserve visited classification exactly"
     );
     assert_eq!(
         outcome.rollback_observation.events()[0].recomputed(),
@@ -133,8 +133,8 @@ fn resource_async_lifecycle_and_rollback_workload_preserves_committed_truth_and_
             .len()
     );
     assert_eq!(
-        outcome.delivered_observations_after_control_commit[0].touched,
-        outcome.control_commit_observation.events()[0].touched()
+        outcome.delivered_observations_after_control_commit[0].visited,
+        outcome.control_commit_observation.events()[0].visited()
     );
     assert_eq!(
         outcome.delivered_observations_after_control_commit[0].recomputed,

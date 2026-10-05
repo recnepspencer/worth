@@ -65,7 +65,7 @@ impl WorthQueryManagedGraphWorkSession {
         {
             return Err(WorthQueryManagedGraphReadDenial::ForeignReadProof);
         }
-        if !basis_release.released() || basis_release.identity() != basis {
+        if !basis_release.custody_released() || basis_release.identity() != basis {
             return Err(WorthQueryManagedGraphReadDenial::ForeignBasis);
         }
         let dependencies =

@@ -89,7 +89,7 @@ fn verified_case_identity_for(
         .runtime
         .begin_invalidation_execution_observation()
         .unwrap();
-    compiled.run_locality_action_trace(trace_index).unwrap();
+    let observed = compiled.run_locality_action_trace(trace_index).unwrap();
     let performed = compiled
         .locality()
         .runtime
@@ -100,6 +100,8 @@ fn verified_case_identity_for(
         &manifest,
         compiled.locality().runtime.graph().runtime_policy().tier,
         performed,
+        observed.physical_ready_batches,
+        observed.physical_ready_peak,
     )
     .unwrap()
 }

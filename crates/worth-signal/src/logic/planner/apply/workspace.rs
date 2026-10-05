@@ -3,22 +3,20 @@ use crate::data::graph::PreparedParallelApplyCommitPacket;
 use crate::data::handle::NodeId;
 use crate::data::node::NodeState;
 use crate::data::proof::ClassifiedSnapshotBatchCommit;
-#[cfg(feature = "parallel")]
 use crate::data::proof::SingleConsumer;
 use crate::data::trace::RuntimeArtifactFinalizeImage;
 use crate::logic::evaluation::EffectDependencyInputs;
 use crate::logic::explain::RewiringSummary;
-#[cfg(not(feature = "parallel"))]
-use crate::logic::planner::semantic::StageSemanticIdentity;
-#[cfg(feature = "parallel")]
 use crate::logic::planner::semantic::{StageSemanticBatch, StageSemanticIdentity};
 use crate::logic::planner::ExecutionRecordId;
 use crate::logic::prepared::PreparedEvaluation;
 
 use super::serial_batch::AppliedSerialStageBatch;
 
-#[cfg_attr(not(feature = "parallel"), allow(dead_code))]
-#[derive(Debug)]
+mod capacity;
+pub(in crate::logic::planner) use capacity::ApplyMemberBasis;
+
+#[derive(Debug, Clone)]
 pub(crate) struct ConcurrentWorkerInput {
     task_index: usize,
     node: NodeId,
@@ -34,14 +32,12 @@ pub(crate) struct ConcurrentWorkerInput {
     dependency_inputs: EffectDependencyInputs,
 }
 
-#[cfg_attr(not(feature = "parallel"), allow(dead_code))]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct ConcurrentApplyGroupInput {
     group_index: usize,
     worker_inputs: Vec<ConcurrentWorkerInput>,
 }
 
-#[cfg_attr(not(feature = "parallel"), allow(dead_code))]
 #[derive(Debug)]
 pub(crate) struct GroupLocalTaskCommit {
     task_index: usize,
@@ -56,7 +52,6 @@ pub(crate) struct GroupLocalTaskCommit {
     commit_packet: PreparedParallelApplyCommitPacket,
 }
 
-#[cfg_attr(not(feature = "parallel"), allow(dead_code))]
 #[derive(Debug)]
 pub(crate) struct GroupedApplyFailure {
     pub(in crate::logic::planner) node: NodeId,
@@ -65,7 +60,6 @@ pub(crate) struct GroupedApplyFailure {
     pub(in crate::logic::planner) reuse_failure: Option<crate::data::reuse::ReuseBoundaryFailure>,
 }
 
-#[cfg_attr(not(feature = "parallel"), allow(dead_code))]
 #[derive(Debug)]
 pub(crate) struct GroupLocalApplyPacket {
     group_index: usize,
@@ -73,7 +67,6 @@ pub(crate) struct GroupLocalApplyPacket {
     task_commits: Vec<GroupLocalTaskCommit>,
 }
 
-#[cfg(feature = "parallel")]
 impl GroupLocalApplyPacket {
     pub(in crate::logic::planner) fn new(
         group_index: usize,
@@ -110,11 +103,9 @@ pub(in crate::logic::planner) struct StageScratch {
 #[derive(Debug)]
 pub(in crate::logic::planner) enum StageFinalizeWork {
     Serial(AppliedSerialStageBatch),
-    #[cfg(feature = "parallel")]
     Parallel(SingleConsumer<StageSemanticBatch>),
 }
 
-#[cfg(feature = "parallel")]
 impl ConcurrentWorkerInput {
     pub(in crate::logic::planner) fn new(
         task_index: usize,
@@ -179,8 +170,11 @@ impl ConcurrentWorkerInput {
     }
 }
 
-#[cfg(feature = "parallel")]
 impl ConcurrentApplyGroupInput {
+    pub(in crate::logic::planner) fn task_indices(&self) -> impl Iterator<Item = usize> + '_ {
+        self.worker_inputs.iter().map(|input| input.task_index)
+    }
+
     pub(in crate::logic::planner) fn new(
         group_index: usize,
         worker_inputs: Vec<ConcurrentWorkerInput>,
@@ -196,7 +190,6 @@ impl ConcurrentApplyGroupInput {
     }
 }
 
-#[cfg(feature = "parallel")]
 impl GroupLocalTaskCommit {
     pub(in crate::logic::planner) fn task_index(&self) -> usize {
         self.task_index
@@ -272,5 +265,59 @@ impl StageScratch {
         self,
     ) -> (StageFinalizeWork, ClassifiedSnapshotBatchCommit) {
         (self.finalize_work, self.pending_snapshots)
+    }
+}
+
+impl worth_execution::ChargedBytes for GroupLocalApplyPacket {
+    fn additional_charged_bytes(&self) -> u64 {
+        worth_execution::ChargedBytes::additional_charged_bytes(&self.task_commits)
+    }
+}
+
+impl worth_execution::ChargedBytes for GroupLocalTaskCommit {
+    fn additional_charged_bytes(&self) -> u64 {
+        use crate::data::retained_storage::{
+            RetainedStorageMeasurement, RetainedStoragePreparation,
+        };
+        let mut work = RetainedStoragePreparation::new(usize::MAX);
+        let metadata = self
+            .before_artifact_state
+            .retained_heap_charge(&mut work)
+            .and_then(|charge| charge.checked_add(self.rewiring.retained_heap_charge(&mut work)?))
+            .map_or(u64::MAX, |charge| charge.bytes());
+        metadata.saturating_add(worth_execution::ChargedBytes::additional_charged_bytes(
+            &self.commit_packet,
+        ))
+    }
+}
+
+impl worth_execution::ChargedBytes for ConcurrentApplyGroupInput {
+    fn additional_charged_bytes(&self) -> u64 {
+        worth_execution::ChargedBytes::additional_charged_bytes(&self.worker_inputs)
+    }
+}
+
+impl worth_execution::ChargedBytes for ConcurrentWorkerInput {
+    fn additional_charged_bytes(&self) -> u64 {
+        use crate::data::retained_storage::{
+            RetainedStorageCharge as Charge, RetainedStorageMeasurement,
+            RetainedStoragePreparation as Work,
+        };
+        let mut work = Work::new(usize::MAX);
+        self.before_artifact_state
+            .retained_heap_charge(&mut work)
+            .and_then(|charge| charge.checked_add(self.rewiring.retained_heap_charge(&mut work)?))
+            .and_then(|charge| {
+                charge.checked_add(self.comparator_policy.retained_heap_charge(&mut work)?)
+            })
+            .and_then(|charge| charge.checked_add(self.prepared.retained_heap_charge(&mut work)?))
+            .and_then(|charge| {
+                charge.checked_add(
+                    self.dependency_inputs
+                        .dependency_snapshot_update
+                        .retained_heap_charge(&mut work)?,
+                )
+            })
+            .map_or(u64::MAX, Charge::bytes)
     }
 }

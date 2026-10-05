@@ -1,6 +1,9 @@
 //! Accounted cause-store publication for a retained evaluation partition.
 
+mod epoch_virtual;
 mod root_mutation;
+#[cfg(test)]
+mod tests;
 
 use std::sync::Arc;
 
@@ -33,6 +36,7 @@ pub(crate) struct RetainedCauseStorePublicationDraft {
     store: CanonicalCauseSetStore,
     custody: SignalConditionalRetentionReservation,
     admitted_payload: Charge,
+    embedded_growth: Charge,
     maximum_root: Charge,
 }
 
@@ -58,19 +62,21 @@ impl CauseStoreRootCharges {
 
 impl CanonicalCauseSetStore {
     pub(crate) fn begin_retained_publication(
-        &self,
+        &mut self,
         ledger: &Arc<SignalConditionalRetentionLedger>,
         maximum_root: Charge,
     ) -> Result<RetainedCauseStorePublicationDraft, SignalError> {
         let root = root_charges(self)?.total()?;
-        if root > maximum_root {
+        let embedded_growth = self.epoch_fork_growth_bound()?;
+        let projected_root = root.checked_add(embedded_growth).map_err(map_accounting)?;
+        if projected_root > maximum_root {
             return Err(SignalError::EvaluationStorageCapacityExhausted);
         }
-        let admitted_payload = root
+        let admitted_payload = projected_root
             .checked_add(Charge::capacity::<usize>(2).map_err(map_accounting)?)
             .map_err(map_accounting)?;
-        let custody = ledger.reserve(0, admitted_payload).map_err(map_retention)?;
-        let mut store = self.clone();
+        let mut custody = ledger.reserve(0, admitted_payload).map_err(map_retention)?;
+        let mut store = self.fork_reserved(&mut custody);
         // The source keeps its custody while this independently admitted draft
         // is prepared. Only the completed draft owns the new handle.
         store.retained_custody = None;
@@ -78,12 +84,24 @@ impl CanonicalCauseSetStore {
             store,
             custody,
             admitted_payload,
+            embedded_growth,
             maximum_root,
         })
     }
 }
 
 impl RetainedCauseStorePublicationDraft {
+    pub(crate) fn release_prepared_producer(
+        &mut self,
+        current: PendingCauseSetId,
+        work: &mut Work,
+    ) -> Result<(), SignalError> {
+        if current != PendingCauseSetId::EMPTY {
+            self.release(current, work)?;
+        }
+        Ok(())
+    }
+
     pub(crate) fn publish_slot(
         &mut self,
         slot: PreparedCauseSlot,
@@ -180,7 +198,11 @@ impl RetainedCauseStorePublicationDraft {
             .checked_add(Charge::capacity::<usize>(2).map_err(map_accounting)?)
             .map_err(map_accounting)?;
         self.custody
-            .shrink_payload_to(exact_payload)
+            .shrink_payload_to(
+                exact_payload
+                    .checked_sub(self.embedded_growth)
+                    .map_err(map_accounting)?,
+            )
             .map_err(map_retention)?;
         self.store.retained_custody = Some(Arc::new(self.custody));
         Ok(PreparedRetainedCauseStorePublication { store: self.store })
@@ -298,21 +320,23 @@ fn admit_root_peak(
     Ok(())
 }
 
-fn accounted_vector<R>(outcome: RetainedVectorMutationOutcome<R>) -> Result<R, SignalError> {
+pub(super) fn accounted_vector<R>(
+    outcome: RetainedVectorMutationOutcome<R>,
+) -> Result<R, SignalError> {
     match outcome {
         RetainedVectorMutationOutcome::Accounted { output, .. } => Ok(output),
         RetainedVectorMutationOutcome::Unaccounted { denial, .. } => Err(map_accounting(denial)),
     }
 }
 
-fn accounted_map<R>(outcome: RetainedMapMutationOutcome<R>) -> Result<R, SignalError> {
+pub(super) fn accounted_map<R>(outcome: RetainedMapMutationOutcome<R>) -> Result<R, SignalError> {
     match outcome {
         RetainedMapMutationOutcome::Accounted { output, .. } => Ok(output),
         RetainedMapMutationOutcome::Unaccounted { denial, .. } => Err(map_accounting(denial)),
     }
 }
 
-fn map_vector_mutation(denial: RetainedVectorMutationDenial) -> SignalError {
+pub(super) fn map_vector_mutation(denial: RetainedVectorMutationDenial) -> SignalError {
     match denial {
         RetainedVectorMutationDenial::Accounting(denial) => map_accounting(denial),
         RetainedVectorMutationDenial::PreparationRequired
@@ -341,7 +365,7 @@ fn map_vector_capacity(denial: RetainedVectorCapacityDenial) -> SignalError {
     }
 }
 
-fn map_map_mutation(denial: RetainedMapMutationDenial) -> SignalError {
+pub(super) fn map_map_mutation(denial: RetainedMapMutationDenial) -> SignalError {
     match denial {
         RetainedMapMutationDenial::Accounting(denial) => map_accounting(denial),
         RetainedMapMutationDenial::PreparationRequired => SignalError::EvaluationStorageUnavailable,

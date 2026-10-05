@@ -17,6 +17,17 @@ impl<'a> AdjacencyIds<'a> {
             entries: self.relations.map(RelationSet::iter),
         }
     }
+    pub(crate) fn try_iter<Stop>(
+        self,
+        mut prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<AdjacencyIdsIter<'a>, Stop> {
+        Ok(AdjacencyIdsIter {
+            entries: match self.relations {
+                Some(relations) => Some(relations.try_iter(&mut prepare)?),
+                None => None,
+            },
+        })
+    }
     #[cfg(test)]
     pub(crate) fn is_empty(self) -> bool {
         self.relations.is_none_or(RelationSet::is_empty)
@@ -31,6 +42,17 @@ impl<'a> AdjacencyIds<'a> {
 
 pub(crate) struct AdjacencyIdsIter<'a> {
     entries: Option<SharedMapIter<'a, RelationId, ()>>,
+}
+impl<'a> AdjacencyIdsIter<'a> {
+    pub(crate) fn try_next<Stop>(
+        &mut self,
+        prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<Option<&'a RelationId>, Stop> {
+        match &mut self.entries {
+            Some(entries) => entries.try_next(prepare).map(|next| next.map(|(id, _)| id)),
+            None => Ok(None),
+        }
+    }
 }
 impl<'a> Iterator for AdjacencyIdsIter<'a> {
     type Item = &'a RelationId;

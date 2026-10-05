@@ -14,17 +14,13 @@ impl std::ops::Deref for NormalizedCauseSet {
 impl NormalizedCauseSet {
     pub(crate) fn prepare(
         causes: Vec<Cause>,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<Self, SignalError> {
         work.reserve(Some(causes.len()))?;
         let mut largest = 0usize;
         for cause in &causes {
             if let Some(scope) = &cause.key.edge_scope {
-                let bytes = scope
-                    .partition
-                    .0
-                    .len()
-                    .checked_add(scope.detail.as_ref().map_or(0, String::len));
+                let bytes = scope.path().checked_segment_bytes();
                 work.reserve(Some(1))?;
                 largest = largest
                     .max(bytes.ok_or_else(|| SignalError::internal("cause key size overflow"))?);

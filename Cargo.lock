@@ -1482,6 +1482,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-execution"
+version = "0.1.0"
+dependencies = [
+ "rayon",
+ "trybuild",
+ "worth-foundational",
+ "worth-proof",
+]
+
+[[package]]
 name = "worth-foundational"
 version = "0.1.0"
 dependencies = [
@@ -1632,7 +1642,6 @@ dependencies = [
  "dashmap",
  "im",
  "proptest",
- "rayon",
  "rmp-serde",
  "serde",
  "serde_json",
@@ -1640,6 +1649,7 @@ dependencies = [
  "smallvec",
  "stats_alloc",
  "trybuild",
+ "worth-execution",
  "worth-foundational",
  "worth-harness",
  "worth-proof",
@@ -1653,6 +1663,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "trybuild",
+ "worth-execution",
  "worth-foundational",
  "worth-harness",
  "worth-proof",
@@ -1665,6 +1676,7 @@ name = "worth-runtime-world"
 version = "0.1.0"
 dependencies = [
  "trybuild",
+ "worth-execution",
  "worth-foundational",
  "worth-proof",
  "worth-relational",
@@ -1689,10 +1701,12 @@ dependencies = [
  "tower",
  "tracing",
  "trybuild",
+ "worth-execution",
  "worth-foundational",
  "worth-proof",
  "worth-query",
  "worth-query-host",
+ "worth-relational",
  "worth-runtime-bridge",
 ]
 
@@ -1711,7 +1725,6 @@ dependencies = [
  "im",
  "js-sys",
  "quote",
- "rayon",
  "serde",
  "serde_json",
  "sha2",
@@ -1722,6 +1735,7 @@ dependencies = [
  "tracking-allocator",
  "trybuild",
  "wasm-bindgen",
+ "worth-execution",
  "worth-foundational",
  "worth-harness",
  "worth-proof",

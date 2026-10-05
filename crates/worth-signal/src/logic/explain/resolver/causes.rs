@@ -181,13 +181,7 @@ fn canonicalize_upstream_causes(upstream: &mut [UpstreamCause]) {
                 | UpstreamCause::MissingSnapshot { subscription, .. }
                 | UpstreamCause::DependencyRemoved { subscription, .. } => subscription
                     .as_ref()
-                    .map(|scope| {
-                        (
-                            scope.partition.0.clone(),
-                            scope.detail.clone().unwrap_or_default(),
-                            scope.match_mode as u8,
-                        )
-                    })
+                    .map(|scope| (scope.path().segments().to_vec(), scope.coverage() as u8))
                     .unwrap_or_default(),
             };
             (

@@ -1,7 +1,7 @@
 use crate::facade::{
-    EvaluationRequestMode, KeyedComputation, NodeEvaluationResult, NodeId, OutputChange,
-    SignalBranchHandle, SignalError, SignalGraph, SignalRuntime, SignalRuntimePolicy,
-    SignalSnapshotV1, SignalTransaction, StageExecutor,
+    BoundedSignalInputs, DeclaredSignalInput, EvaluationRequestMode, KeyedComputation,
+    NodeContract, NodeEvaluationResult, NodeId, OutputChange, SignalBranchHandle, SignalError,
+    SignalGraph, SignalRuntime, SignalRuntimePolicy, SignalSnapshotV1, SignalTransaction,
 };
 use crate::tests::support::{
     define_keyed_computation, mask_a, mask_b, version_ab, DependencyBatchBuilder, ASPECT_A,
@@ -83,6 +83,62 @@ pub(super) fn geometry_evaluator(
     }
 }
 
+pub(super) fn geometry_checked_evaluator(
+    fixture: &GeometryFixture,
+) -> impl for<'graph, 'work, 'run, 'lease> Fn(
+    &mut crate::logic::checked_context::CheckedEvaluationContext<'graph, 'work, 'run, 'lease, ()>,
+) -> Result<
+    crate::logic::evaluation::EvaluationOutput,
+    SignalError,
+> + Sync {
+    let (source_a, source_b, delta_gate, filtered_gate, demand_gate, fused) = (
+        fixture.source_a,
+        fixture.source_b,
+        fixture.delta_gate,
+        fixture.filtered_gate,
+        fixture.demand_gate,
+        fixture.fused,
+    );
+    move |ctx| {
+        ctx.work()
+            .checkpoint(128)
+            .map_err(|_| SignalError::invalid_input("geometry kernel work exhausted"))?;
+        let node = ctx.node();
+        let (version, identity, continuity) = if node == delta_gate {
+            let a = ctx.read(source_a, ASPECT_A)?;
+            (version_ab(a, 0), format!("geom-delta-{a}"), "geom-delta")
+        } else if node == filtered_gate {
+            let b = ctx.read(source_b, ASPECT_B)?;
+            (version_ab(0, b), format!("geom-filter-{b}"), "geom-filter")
+        } else if node == demand_gate {
+            let a = ctx.read(source_a, ASPECT_A)?;
+            (version_ab(a, 0), format!("geom-demand-{a}"), "geom-demand")
+        } else if node == fused {
+            let a = ctx.read(delta_gate, ASPECT_A)?;
+            let b = ctx.read(filtered_gate, ASPECT_B)?;
+            let demand = ctx.read(demand_gate, ASPECT_A)?;
+            (
+                version_ab(a.max(demand), b),
+                format!("geom-fused-{a}-{b}-{demand}"),
+                "geom-fused",
+            )
+        } else {
+            return Err(SignalError::invalid_input(format!(
+                "unexpected geometry node {node}"
+            )));
+        };
+        Ok(ctx.finish(
+            NodeEvaluationResult::from_version(version)
+                .with_output_identity(identity)
+                .with_continuity_token(continuity),
+        ))
+    }
+}
+
+fn bounded(inputs: impl IntoIterator<Item = DeclaredSignalInput>) -> NodeContract {
+    NodeContract::wildcard().with_bounded_inputs(BoundedSignalInputs::new(inputs))
+}
+
 pub(super) fn build_geometry_fixture(policy: SignalRuntimePolicy) -> GeometryFixture {
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
         .with_kernel_defaults()
@@ -92,29 +148,47 @@ pub(super) fn build_geometry_fixture(policy: SignalRuntimePolicy) -> GeometryFix
     let source_a = runtime
         .graph_mut()
         .node()
+        .with_contract(bounded([]))
         .output_identity()
         .partitioned_output()
         .build();
     let source_b = runtime
         .graph_mut()
         .node()
+        .with_contract(bounded([]))
         .output_identity()
         .partitioned_output()
         .build();
     let delta_gate = runtime
         .graph_mut()
         .node()
+        .with_contract(bounded([DeclaredSignalInput::new(source_a, ASPECT_A)]))
         .reads_aspects(mask_a())
         .delta_threshold(2.0)
         .build();
     let filtered_gate = runtime
         .graph_mut()
         .node()
+        .with_contract(bounded([DeclaredSignalInput::new(source_b, ASPECT_B)]))
         .reads_aspects(mask_b())
         .aspect_filter(mask_b())
         .build();
-    let demand_gate = runtime.graph_mut().node().on_demand().build();
-    let fused = runtime.graph_mut().node().output_identity().build();
+    let demand_gate = runtime
+        .graph_mut()
+        .node()
+        .with_contract(bounded([DeclaredSignalInput::new(source_a, ASPECT_A)]))
+        .on_demand()
+        .build();
+    let fused = runtime
+        .graph_mut()
+        .node()
+        .with_contract(bounded([
+            DeclaredSignalInput::new(delta_gate, ASPECT_A),
+            DeclaredSignalInput::new(filtered_gate, ASPECT_B),
+            DeclaredSignalInput::new(demand_gate, ASPECT_A),
+        ]))
+        .output_identity()
+        .build();
 
     let mut dependencies = DependencyBatchBuilder::new(runtime.graph_mut());
     dependencies
@@ -183,16 +257,15 @@ pub(super) fn seed_geometry_baseline(
 
     fixture
         .runtime
-        .evaluate_dirty_with_executor(&(), &geometry_evaluator(fixture), StageExecutor::Serial)
+        .evaluate_dirty(&(), &geometry_evaluator(fixture))
         .unwrap();
     fixture
         .runtime
-        .evaluate_with_plan_and_executor(
+        .evaluate_with_plan(
             fixture.demand_gate,
             &(),
             &geometry_evaluator(fixture),
             EvaluationRequestMode::ForceOnDemand,
-            StageExecutor::Serial,
         )
         .unwrap();
 

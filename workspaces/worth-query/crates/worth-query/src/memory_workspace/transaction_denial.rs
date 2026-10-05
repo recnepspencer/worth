@@ -107,6 +107,17 @@ pub(super) fn commit(
                 }
             }
             Deferred::CandidateLifetimeExpired { .. } => WorthQueryWorkspaceErrorKind::Unclassified,
+            Deferred::CompanionRegistrationPending | Deferred::CompanionRebindRequired => {
+                WorthQueryWorkspaceErrorKind::InvalidationCompanionPending
+            }
+            Deferred::CompanionPreflight(stop)
+                if crate::effect_lifecycle::companion_stop_is_transient(stop) =>
+            {
+                WorthQueryWorkspaceErrorKind::InvalidationCompanionPending
+            }
+            Deferred::CompanionPreflight(_) => {
+                WorthQueryWorkspaceErrorKind::InvalidationCompanionCapacityExhausted
+            }
         },
         Error::PublicationFailed { failure, .. } => match failure.kind() {
             Failure::SnapshotIdentityExhausted => {

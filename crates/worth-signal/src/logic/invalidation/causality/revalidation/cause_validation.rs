@@ -11,6 +11,115 @@ enum CauseCommitAuthority<'a> {
 }
 
 impl SignalGraph {
+    pub(crate) fn validate_epoch_pending_causes(
+        &self,
+        consumer: NodeId,
+        causes: &[ResolvedDependencyCause],
+        topology: &crate::data::graph::PreparedDependencyTopologyEpoch,
+        deltas: &[ProducedAspectDelta],
+        work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
+    ) -> Result<(), SignalError> {
+        let edges = match topology.proposed_edges(consumer) {
+            Some(edges) => edges,
+            None => self.current_runtime_dependencies_of(consumer)?,
+        };
+        let revision = topology
+            .node_updates()
+            .iter()
+            .find(|update| update.node == consumer)
+            .and_then(|update| {
+                update
+                    .pending()
+                    .map(|pending| pending.dependency_revision())
+            })
+            .unwrap_or(self.dependency_revision(consumer)?);
+        let snapshot = self.get_dep_snapshot(consumer)?;
+        for cause in causes {
+            self.admit_cause_validation_reads(
+                cause.key.producer,
+                cause.key.edge_scope.as_ref(),
+                0,
+                work,
+            )?;
+            let axes = &cause.binding_axes;
+            let key = &cause.key;
+            if key.graph_instance != self.runtime_instance_id()
+                || key.consumer != consumer
+                || key.dependency_revision != revision
+                || key.graph_instance != axes.graph_instance
+                || key.consumer != axes.consumer
+                || key.dependency_revision != axes.dependency_revision
+                || key.producer != axes.producer
+                || key.aspect != axes.aspect
+                || key.edge_scope != axes.edge_scope
+                || !self.is_alive(key.producer)
+            {
+                return Err(SignalError::invalid_input(
+                    "epoch cause binding axes drifted",
+                ));
+            }
+            let edge = edges
+                .iter()
+                .find(|edge| {
+                    edge.source() == key.producer
+                        && edge.aspect() == key.aspect
+                        && edge.scope_ref() == key.edge_scope.as_ref()
+                })
+                .ok_or_else(|| SignalError::invalid_input("epoch cause has no proposed edge"))?;
+            let cached = snapshot
+                .entries()
+                .iter()
+                .find(|entry| {
+                    entry.source == key.producer
+                        && entry.aspect == key.aspect
+                        && entry.scope.as_ref() == edge.scope_ref()
+                })
+                .ok_or_else(|| SignalError::invalid_input("epoch cause has no snapshot edge"))?;
+            if cached.cached_version != axes.cached_version {
+                return Err(SignalError::invalid_input(
+                    "epoch cause cached version drifted",
+                ));
+            }
+            let prepared = deltas
+                .iter()
+                .find(|delta| delta.output_commit_ordinal == axes.output_commit_ordinal);
+            let version = match prepared {
+                Some(delta) => delta
+                    .changes
+                    .as_slice()
+                    .iter()
+                    .find(|change| change.aspect == key.aspect)
+                    .map(|change| change.committed_version)
+                    .ok_or_else(|| {
+                        SignalError::invalid_input("epoch cause aspect has no commit")
+                    })?,
+                None => {
+                    self.node_version_for_scope(key.producer, key.aspect, key.edge_scope.as_ref())?
+                }
+            };
+            if version != axes.committed_version
+                || !self.commit_authority_matches(
+                    cause,
+                    prepared.map_or(
+                        CauseCommitAuthority::Published,
+                        CauseCommitAuthority::Prepared,
+                    ),
+                )
+            {
+                return Err(SignalError::invalid_input(
+                    "epoch cause commit authority drifted",
+                ));
+            }
+            let expected_scopes = edge.scope_ref().map(std::slice::from_ref).unwrap_or(&[]);
+            if cause.changed_scopes.as_slice() != expected_scopes {
+                return Err(SignalError::invalid_input(
+                    "epoch cause scopes are not normalized",
+                ));
+            }
+        }
+        Ok(())
+    }
+
     pub(crate) fn validate_prepared_causes_before_evaluation(
         &self,
         consumer: NodeId,
@@ -18,7 +127,7 @@ impl SignalGraph {
         delta: &ProducedAspectDelta,
         version: crate::data::aspect::AspectVersion,
         regions: &[crate::data::output::ChangedRegion],
-        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         work.reserve(Some(causes.len()))?;
         for cause in causes {

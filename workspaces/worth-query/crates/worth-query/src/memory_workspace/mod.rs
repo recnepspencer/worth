@@ -382,6 +382,8 @@ pub enum WorthQueryWorkspaceErrorKind {
     PatchPositionReservationContended,
     ProposalIdentityExhausted,
     RelationalBasisUnavailable,
+    InvalidationCompanionPending,
+    InvalidationCompanionCapacityExhausted,
 }
 
 pub struct WorthQueryMemoryWorkspace {

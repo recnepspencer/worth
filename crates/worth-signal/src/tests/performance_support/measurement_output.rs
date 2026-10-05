@@ -31,9 +31,8 @@ pub(super) fn validate_capture_posture() {
         cfg!(feature = "profile-extended")
             && !cfg!(feature = "profile-compact")
             && !cfg!(feature = "profile-standard")
-            && !cfg!(feature = "parallel")
             && !cfg!(feature = "test-operation-control"),
-        "capture requires serial profile-extended only (plus optional test-peak-allocation)"
+        "capture requires profile-extended only (plus optional test-peak-allocation)"
     );
     assert!(
         std::env::var_os("WORTH_SIGNAL_UPDATE_PERF_BASELINE").is_none(),

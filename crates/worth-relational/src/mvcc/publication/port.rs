@@ -29,6 +29,8 @@ pub(crate) struct PreparedCanonicalBranchMovement {
 }
 
 struct PreparedBranchPublicationPreflight {
+    companion: Option<super::PreparedPublicationCompanionEffect>,
+    companion_binding: Option<super::CandidateCompanionBinding>,
     movement: PreparedCanonicalBranchMovement,
     expected: RelationalBranchBasisDescriptor,
     publication_cell: RelationalBranchPublicationCell,
@@ -100,6 +102,29 @@ impl RelationalPublicationPort {
                 },
             );
         }
+        // The read epoch spans the entire publication attempt. Registration and
+        // removal cannot pass a direct writer while its companion is prepared.
+        let companion_epoch = match self.publication_binding.companion_epoch() {
+            Ok(epoch) => epoch,
+            Err(_) => {
+                return RelationalPublicationOutcome::deferred(
+                    RelationalPublicationDeferred::CompanionRegistrationPending,
+                )
+            }
+        };
+        match companion_epoch.active() {
+            Ok(_) => {}
+            Err(super::PublicationCompanionRegistrationStop::RebindRequired) => {
+                return RelationalPublicationOutcome::deferred(
+                    RelationalPublicationDeferred::CompanionRebindRequired,
+                );
+            }
+            Err(_) => {
+                return RelationalPublicationOutcome::deferred(
+                    RelationalPublicationDeferred::CompanionRegistrationPending,
+                );
+            }
+        }
         let parts = match candidate.into_publication_parts() {
             Ok(parts) => parts,
             Err(deferred) => return RelationalPublicationOutcome::deferred(deferred),
@@ -114,11 +139,14 @@ impl RelationalPublicationPort {
                 );
             }
         };
-        PreparedCanonicalBranchMovement::linearize(
+        let outcome = PreparedCanonicalBranchMovement::linearize(
             parts,
             retention_binding,
             self.branch_head_versions.clone(),
-        )
+            &companion_epoch,
+        );
+        drop(companion_epoch);
+        outcome
     }
 }
 
@@ -142,8 +170,14 @@ impl PreparedCanonicalBranchMovement {
         parts: PreparedRelationalPublicationParts,
         retention_binding: crate::history::retention::RelationalBranchRetentionBinding,
         branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
+        companion_epoch: &super::CompanionRegistrationEpoch<'_>,
     ) -> RelationalPublicationOutcome {
-        match Self::preflight(parts, retention_binding, branch_head_versions) {
+        match Self::preflight(
+            parts,
+            retention_binding,
+            branch_head_versions,
+            companion_epoch,
+        ) {
             Ok(preflight) => preflight.perform_cutover(),
             Err(outcome) => outcome,
         }

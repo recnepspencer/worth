@@ -24,6 +24,7 @@ pub(super) fn install(
     foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
 ) -> ConsumerWorld {
     install_with_candidate_bytes(foreign, 8192)
+        .expect("the contributed configuration and initial state publish one application")
 }
 
 pub(super) fn assert_program_cannot_omit_an_installed_rule() {
@@ -242,7 +243,7 @@ pub(super) fn assert_repeated_optional_member_correspondence(world: &ConsumerWor
 pub(super) fn install_with_candidate_bytes(
     foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
     candidate_bytes: u64,
-) -> ConsumerWorld {
+) -> Result<ConsumerWorld, installation::WorthQueryInMemoryApplicationDenial> {
     install_with_resource_bytes(foreign, candidate_bytes, 4096)
 }
 
@@ -251,13 +252,14 @@ pub(super) fn install_with_query_bytes(
     query_bytes: usize,
 ) -> ConsumerWorld {
     install_with_resource_bytes(foreign, 8192, query_bytes)
+        .expect("the contributed configuration and initial state publish one application")
 }
 
 fn install_with_resource_bytes(
     foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
     candidate_bytes: u64,
     query_bytes: usize,
-) -> ConsumerWorld {
+) -> Result<ConsumerWorld, installation::WorthQueryInMemoryApplicationDenial> {
     let topology_calls = Arc::new(AtomicUsize::new(0));
     let parameter_calls = Arc::new(AtomicUsize::new(0));
     let invariant_calls = Arc::new(AtomicUsize::new(0));
@@ -317,16 +319,15 @@ fn install_with_resource_bytes(
             )?;
             Ok(())
         },
-    )
-    .expect("the contributed configuration and initial state publish one application");
+    )?;
     assert_eq!(topology_calls.load(Ordering::SeqCst), 1);
     assert_eq!(parameter_calls.load(Ordering::SeqCst), 1);
-    ConsumerWorld {
+    Ok(ConsumerWorld {
         application,
         invariant_calls,
         invariant_probe,
         producer_authorization_denials,
-    }
+    })
 }
 fn reject_foreign_invariant_factory(
     installed: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,

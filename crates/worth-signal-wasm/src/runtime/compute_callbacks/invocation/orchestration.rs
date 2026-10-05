@@ -121,11 +121,10 @@ fn dispatch_native_callback(
         record_invocation_failure(&failure);
         failure
     })?;
-    let invocation = result.map_err(|failure| {
+    let invocation = result.inspect_err(|failure| {
         clear_installed_runtime_reads(installed_runtime_reads);
         record_collector_failure();
-        record_invocation_failure(&failure);
-        failure
+        record_invocation_failure(failure);
     })?;
     clear_installed_runtime_reads(installed_runtime_reads);
     record_collector_success(invocation.captured_read_ids.len());

@@ -1,6 +1,7 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RecordedSignalDelivery {
     pub delivery: crate::routing::BridgeSignalInvalidationDelivery,
+    pub leased: bool,
 }
 #[derive(Debug, Clone, Default)]
 pub struct RecordingSignalBridgeSink {
@@ -24,12 +25,14 @@ impl InvalidationSink for RecordingSignalBridgeSink {
     fn deliver_invalidation(
         &self,
         delivery: crate::routing::BridgeSignalInvalidationDelivery,
+        lease: Option<&crate::facade::ExecutionResourceLease<'_>>,
     ) -> Result<BridgeDeliveryReceipt, SignalBridgeSinkError> {
         self.deliveries
             .write()
             .expect("bridge sink lock poisoned")
             .push(RecordedSignalDelivery {
                 delivery: delivery.clone(),
+                leased: lease.is_some(),
             });
 
         Ok(BridgeDeliveryReceipt::new(

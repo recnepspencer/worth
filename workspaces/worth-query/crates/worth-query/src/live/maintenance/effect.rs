@@ -38,10 +38,12 @@ where
 }
 
 pub(crate) struct WorthQueryPreparedProjectionMaintenance {
-    preview: crate::live::WorthQueryProjectionMaintenancePreview,
-    broad_collection_change: bool,
-    changed_native_targets:
+    pub(super) preview: crate::live::WorthQueryProjectionMaintenancePreview,
+    pub(super) broad_collection_change: bool,
+    pub(super) changed_native_targets:
         Vec<crate::domain_installation::WorthQueryCollectionChangedNativeTarget>,
+    /// Every source entity of a full-scope refresh; empty for exact impacts.
+    pub(super) full_scope_sources: Vec<WorthQueryEntityIdentity>,
 }
 
 impl WorthQueryPerformedMaintenanceEffect {
@@ -113,8 +115,12 @@ pub(crate) fn derive_performed_maintenance_effect<
     let facts = refresh.authority().facts();
     let indexed_maintenance =
         plan.strategies() != [WorthQueryMaintenanceStrategy::LocalProjectionPatch];
-    let (affected_entities, source_affected_entities) =
-        affected_entity_sets(facts, impacts, indexed_maintenance);
+    let (affected_entities, source_affected_entities) = affected_entity_sets(
+        facts,
+        impacts,
+        &projection.full_scope_sources,
+        indexed_maintenance,
+    );
     if affected_entities.is_empty() {
         return Ok(None);
     }
@@ -222,12 +228,14 @@ where
         preview,
         broad_collection_change: changed.broad_collection_change,
         changed_native_targets: changed.native_targets,
+        full_scope_sources: Vec::new(),
     }
 }
 
 fn affected_entity_sets(
     facts: &crate::projection_consumption::ConsumedProjectionFactSet,
     impacts: &[WorthQueryAdmittedInvalidationImpact],
+    full_scope_sources: &[WorthQueryEntityIdentity],
     indexed_maintenance: bool,
 ) -> (Vec<WorthQueryEntityIdentity>, Vec<WorthQueryEntityIdentity>) {
     let mut affected = facts
@@ -240,6 +248,7 @@ fn affected_entity_sets(
         .flat_map(|impact| impact.truth().change_set().changes())
         .filter_map(|change| change.relational_record_identity())
         .map(WorthQueryEntityIdentity::from_relational_record)
+        .chain(full_scope_sources.iter().cloned())
         .collect::<Vec<_>>();
     source_affected.sort();
     source_affected.dedup();

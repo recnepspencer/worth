@@ -11,7 +11,7 @@ use super::{
     RetainedMapMutationOutcome as Outcome,
 };
 
-fn work() -> Preparation {
+fn work() -> Preparation<'static> {
     Preparation::new(100_000)
 }
 

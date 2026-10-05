@@ -1,5 +1,6 @@
 //! Atomic installation of cumulative retained node evaluation changes.
 mod reservation_admission;
+mod selected_epoch;
 use super::NodeArena;
 use crate::data::node::{NodeColdData, NodeHotData, NodeWarmData};
 use crate::data::persistent_paged_vector::PersistentPagedVector;
@@ -141,24 +142,48 @@ pub(crate) struct RetainedNodePayload {
     pub(crate) cold: Option<Box<NodeColdData>>,
 }
 
+/// The selected role is fixed before callbacks and cannot be upgraded after
+/// the graph begins preparing an epoch.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum SelectedNodeRole {
+    ProducerFull,
+    ConsumerOperational,
+}
+
+#[derive(Debug)]
+pub(crate) struct OperationalNodePayload {
+    pub(crate) hot: NodeHotData,
+    pub(crate) warm: NodeWarmData,
+}
+
+#[derive(Debug)]
+pub(crate) enum SelectedNodeDraft {
+    ProducerFull(RetainedNodePayload),
+    ConsumerOperational(OperationalNodePayload),
+}
+
 impl NodeArena {
     /// The ceiling covers the three installed evaluation representations,
     /// including untouched backing. The ledger reserves selected payload clones
     /// and staged roots before their allocations. New payload allocations made
     /// by the callback and its returned output require caller reservations.
-    pub(crate) fn prepare_retained_node_edits<R>(
+    pub(crate) fn prepare_retained_node_edits_with_work<R>(
         &self,
         ledger: &Arc<SignalConditionalRetentionLedger>,
         indices: &[usize],
         maximum: Charge,
         work: &mut Preparation,
-        edit: impl FnOnce(&mut [RetainedNodePayload]) -> R,
+        edit: impl FnOnce(&mut [RetainedNodePayload], &mut Preparation) -> R,
     ) -> Result<RetainedNodeEditPreparation<R>, RetainedNodeEditDenial> {
         self.validate_retained_node_selection(indices, work)?;
         work.reserve_visits(indices.len())
             .map_err(RetainedNodeEditDenial::Accounting)?;
-        let draft_custody =
-            reservation_admission::reserve_payload_draft(self, indices.len(), ledger, work)?;
+        let draft_custody = reservation_admission::reserve_payload_draft::<RetainedNodePayload>(
+            self,
+            indices.len(),
+            ledger,
+            work,
+        )?;
         let mut payloads = indices
             .iter()
             .map(|&index| RetainedNodePayload {
@@ -170,7 +195,7 @@ impl NodeArena {
                 cold: self.cold[index].clone(),
             })
             .collect::<Vec<_>>();
-        let output = edit(&mut payloads);
+        let output = edit(&mut payloads, work);
         let mut staged = NodeEvaluationRoots {
             hot: self.hot.clone(),
             warm: self.warm.clone(),

@@ -14,6 +14,10 @@ struct CanonicalCauseSetStoreWire {
     sets: Vec<Vec<ResolvedDependencyCause>>,
     #[serde(default)]
     slot_generations: Vec<u32>,
+    // Consume the serialized allocator field in its canonical sequence position.
+    // Restore derives this metadata from sets instead of trusting the wire value.
+    #[serde(default, rename = "free_indices")]
+    _free_indices: serde::de::IgnoredAny,
     #[serde(default)]
     next_output_commit_ordinal: u64,
     #[serde(default)]

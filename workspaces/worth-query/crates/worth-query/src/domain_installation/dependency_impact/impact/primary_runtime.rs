@@ -18,9 +18,18 @@ pub struct WorthQueryAdmittedInvalidationBatch {
     already_settled_delivery_count: usize,
     irrelevant_delivery_count: usize,
     source_read_basis: Option<crate::runtime::WorthQueryGranularSourceReadBasis>,
+    coverage: worth_query_execution::facade::primary_graph::WorthQueryGranularInvalidationCoverage,
 }
 
 impl WorthQueryAdmittedInvalidationBatch {
+    /// `RefreshAll` means the admitted impacts are incomplete: maintenance
+    /// refreshes each consumer's full scope at the batch's read basis.
+    pub const fn coverage(
+        &self,
+    ) -> worth_query_execution::facade::primary_graph::WorthQueryGranularInvalidationCoverage {
+        self.coverage
+    }
+
     pub const fn len(&self) -> usize {
         self.impacts.len()
     }
@@ -111,17 +120,20 @@ pub fn admit_primary_runtime_granular_batch<D, O, F, L: BasisOperationLane>(
         ));
     }
     let observation = batch.observation();
+    let coverage = batch.coverage();
     let source_read_basis = batch
         .source_read_basis()
         .map(crate::runtime::WorthQueryGranularSourceReadBasis::from_execution_basis);
-    admit_granular_invalidation_deliveries_with_observation(
+    let mut admitted = admit_granular_invalidation_deliveries_with_observation(
         current,
         batch.into_bridge_deliveries(),
         observation.direct_truth_delivery_count(),
         observation.signal_performed_delivery_count(),
         Some(binding),
         source_read_basis,
-    )
+    )?;
+    admitted.coverage = coverage;
+    Ok(admitted)
 }
 
 fn admit_granular_invalidation_deliveries_with_observation<D, O, F, L: BasisOperationLane>(
@@ -178,6 +190,8 @@ fn admit_granular_invalidation_deliveries_with_observation<D, O, F, L: BasisOper
         already_settled_delivery_count,
         irrelevant_delivery_count,
         source_read_basis,
+        coverage:
+            worth_query_execution::facade::primary_graph::WorthQueryGranularInvalidationCoverage::Exact,
     })
 }
 

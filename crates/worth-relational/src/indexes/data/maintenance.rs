@@ -62,3 +62,17 @@ pub struct DerivedIndexMaintenanceOutcome {
     pub generations: Vec<DerivedIndexGeneration>,
     pub work: DerivedIndexMaintenanceWork,
 }
+
+/// Refusal before an exact selected-generation lookup performs its next read.
+/// The caller's admission owns the resource category and cumulative budget.
+#[derive(Debug)]
+pub enum SelectedIndexGenerationAdmissionStop<Stop> {
+    Admission(Stop),
+    AccountingOverflow,
+}
+
+#[derive(Debug)]
+pub enum DerivedIndexMaintenanceAdmissionStop<Stop> {
+    Native(DerivedIndexMaintenanceDenial),
+    Admission(Stop),
+}

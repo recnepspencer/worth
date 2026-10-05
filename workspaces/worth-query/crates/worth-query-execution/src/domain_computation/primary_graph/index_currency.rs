@@ -1,13 +1,49 @@
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
 use worth_relational::facade::indexes::DerivedIndexBuildRequest;
+use worth_relational::facade::indexes::{DerivedIndexId, SelectedIndexGenerationAdmissionStop};
+use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::runtime::RelationalRuntime;
 
+use super::output_lineage::invalidation::InvalidationEditAdmission;
 use super::WorthQueryPrimaryGraphIntegrationHandle;
+
+#[path = "index_currency/selected_field.rs"]
+mod selected_field;
+pub(crate) use selected_field::{
+    ensure_selected_field_indexes_admitted, SelectedFieldIndexAdmissionStop,
+};
 
 #[derive(Debug)]
 pub(crate) enum WorthQueryPrimaryIndexCurrencyDenial {
     Basis(super::exact_basis_access::WorthQueryExactBasisSnapshotDenial),
     IndexUnavailable(&'static str),
+}
+
+/// Probe the one selected published generation through the native index
+/// authority. The primary integration handle's installed index inventory is
+/// irrelevant to this exact read.
+pub(crate) fn selected_index_is_current_admitted(
+    runtime: &RelationalRuntime,
+    basis: &AdmittedRelationalBranchBasis,
+    index: DerivedIndexId,
+    admission: &mut InvalidationEditAdmission,
+) -> Result<bool, CompanionPreflightStop> {
+    runtime
+        .index_access()
+        .has_published_generation_for_observation_admitted(
+            index,
+            &basis.observation(),
+            |work, bytes| {
+                admission.admit_read_scratch(bytes)?;
+                admission.charge_external_work(work)
+            },
+        )
+        .map_err(|stop| match stop {
+            SelectedIndexGenerationAdmissionStop::Admission(stop) => stop,
+            SelectedIndexGenerationAdmissionStop::AccountingOverflow => {
+                CompanionPreflightStop::WorkCounterOverflow
+            }
+        })
 }
 
 impl WorthQueryPrimaryGraphIntegrationHandle {

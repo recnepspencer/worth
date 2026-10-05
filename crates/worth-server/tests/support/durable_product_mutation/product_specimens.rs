@@ -15,6 +15,18 @@ use super::TestDurableProductExecutor;
 struct NeverCalledAdapter;
 
 impl WorthServerProductApplicationAdapter for NeverCalledAdapter {
+    fn execute_with_lease(
+        &self,
+        _operation: &WorthServerScheduledProductOperation,
+        _lease: &worth_execution::ExecutionResourceLease<'_>,
+        _context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<
+        Result<WorthServerProductOperationSuccess, WorthServerProductAdapterExecutionError>,
+        worth_execution::MapKernelStop,
+    > {
+        panic!("durable product mutations cannot enter a shared-read lease")
+    }
+
     fn execute(
         &self,
         _operation: &WorthServerScheduledProductOperation,

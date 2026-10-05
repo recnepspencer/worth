@@ -11,6 +11,7 @@ use worth_harness::facade::{
 
 use crate::data::error::SignalError;
 use crate::logic::evaluation::EvaluationRequestMode;
+use worth_foundational::{ExecutionPosture, ExecutionRequestPolicy};
 
 use super::super::runtime::{SignalFixtureFactory, SignalHarnessSession, SignalMutationAction};
 use super::projection::RunProjection;
@@ -32,9 +33,7 @@ impl HarnessAdapter for SignalHarnessBridge {
         let mut execution_modes = BTreeSet::new();
         execution_modes.insert(ExecutionMode::RuntimeDefault);
         execution_modes.insert(ExecutionMode::Serial);
-        #[cfg(feature = "parallel")]
         execution_modes.insert(ExecutionMode::StagedParallel);
-        #[cfg(feature = "parallel")]
         execution_modes.insert(ExecutionMode::FullParallel);
 
         let mut diagnostics_levels = BTreeSet::new();
@@ -116,41 +115,70 @@ impl HarnessAdapter for SignalHarnessBridge {
         let targets = resolve_targets(runtime, &request.targets)?;
         runtime.graph.set_runtime_policy(runtime_policy);
 
-        let plan = runtime
-            .graph
-            .build_evaluation_plan(&targets, EvaluationRequestMode::Default)?;
         let evaluator = Arc::clone(&runtime.evaluator);
-        let executor = Self::executor(profile.execution_mode)?;
-        #[cfg(test)]
-        let report = if Self::requires_condition_aware_execution(&runtime.graph, &plan)? {
-            let mut comparator = crate::data::comparator::DefaultComparatorPolicyResolver {
-                fallback: crate::data::comparator::VersionComparatorPolicy::Exact,
-                custom: crate::data::comparator::DefaultComparatorResolver,
-            };
-            let mut condition = crate::logic::evaluation::DefaultConditionResolver;
-            crate::logic::planner::execute_test_prepared_plan_with_resolvers(
-                &mut runtime.graph,
-                &plan,
-                &(),
-                &move |ctx| evaluator.evaluate(ctx),
-                &mut comparator,
-                &mut condition,
-            )?
-        } else {
-            runtime.graph.execute_prepared_plan_with_executor(
-                &plan,
-                &(),
-                &move |ctx| evaluator.evaluate(ctx),
-                executor,
-            )?
+        let report = match Self::posture(profile.execution_mode) {
+            ExecutionPosture::Serial => {
+                let plan = runtime
+                    .graph
+                    .build_evaluation_plan(&targets, EvaluationRequestMode::Default)?;
+                #[cfg(test)]
+                if Self::requires_condition_aware_execution(&runtime.graph, &plan)? {
+                    let mut comparator = crate::data::comparator::DefaultComparatorPolicyResolver {
+                        fallback: crate::data::comparator::VersionComparatorPolicy::Exact,
+                        custom: crate::data::comparator::DefaultComparatorResolver,
+                    };
+                    let mut condition = crate::logic::evaluation::DefaultConditionResolver;
+                    crate::logic::planner::execute_test_prepared_plan_with_resolvers(
+                        &mut runtime.graph,
+                        &plan,
+                        &(),
+                        &move |ctx| evaluator.evaluate(ctx),
+                        &mut comparator,
+                        &mut condition,
+                    )?
+                } else {
+                    runtime
+                        .graph
+                        .execute_prepared_plan(&plan, &(), &move |ctx| evaluator.evaluate(ctx))?
+                }
+                #[cfg(not(test))]
+                runtime
+                    .graph
+                    .execute_prepared_plan(&plan, &(), &move |ctx| evaluator.evaluate(ctx))?
+            }
+            ExecutionPosture::Automatic => {
+                let checked = runtime.checked_evaluator.as_ref().ok_or_else(|| {
+                    SignalError::invalid_input(
+                        "parallel Signal harness fixture requires a checked evaluator",
+                    )
+                })?;
+                let authority = runtime.execution_authority.as_ref().ok_or_else(|| {
+                    SignalError::invalid_input(
+                        "parallel Signal harness fixture requires an injected execution authority",
+                    )
+                })?;
+                let mut lease_request = runtime.lease_request.clone().ok_or_else(|| {
+                    SignalError::invalid_input(
+                        "parallel Signal harness fixture requires a lease request",
+                    )
+                })?;
+                lease_request.policy = ExecutionRequestPolicy::new(
+                    ExecutionPosture::Automatic,
+                    lease_request.policy.determinism(),
+                    lease_request.policy.budget(),
+                );
+                let lease = authority.request_lease(lease_request).map_err(|denial| {
+                    SignalError::invalid_input(format!("Signal harness lease denied: {denial:?}"))
+                })?;
+                runtime.graph.evaluate_checked(
+                    &targets,
+                    EvaluationRequestMode::Default,
+                    &(),
+                    &|ctx| checked.evaluate_checked(ctx),
+                    &lease,
+                )?
+            }
         };
-        #[cfg(not(test))]
-        let report = runtime.graph.execute_prepared_plan_with_executor(
-            &plan,
-            &(),
-            &move |ctx| evaluator.evaluate(ctx),
-            executor,
-        )?;
 
         let target_statuses = SignalHarnessBridge::target_statuses(runtime, &request.targets)?;
         Ok(SignalHarnessBridge::run_record(RunProjection {
@@ -158,7 +186,7 @@ impl HarnessAdapter for SignalHarnessBridge {
             fixture,
             request,
             profile,
-            plan_summary: plan.summary,
+            plan_summary: report.plan_summary,
             report: &report,
             runtime_policy,
             target_statuses,

@@ -2,6 +2,7 @@ mod admission;
 mod counters;
 mod denial;
 mod entry;
+mod history_retirement;
 mod metadata;
 mod publication;
 mod publication_page;
@@ -13,7 +14,6 @@ mod support;
 mod traversal;
 
 use std::collections::{BTreeSet, HashMap};
-use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex, OnceLock};
 
 use crate::budget::RuntimeWorldBudgetLimit;
@@ -96,6 +96,7 @@ pub(super) struct CompositeHistoryCatalogState {
     reachability: HistoryReachabilityHandle,
     counters: counters::HistoryCatalogCountersHandle,
     root: Option<CompositeCommitIdentity>,
+    spliced: HashMap<CompositeCommitIdentity, history_retirement::SplicedParent>,
     root_reserved: bool,
     root_ever_installed: bool,
 }
@@ -121,6 +122,7 @@ impl CompositeHistoryCatalog {
                 reachability,
                 counters,
                 root: None,
+                spliced: HashMap::new(),
                 root_reserved: false,
                 root_ever_installed: false,
             })),
@@ -220,10 +222,7 @@ impl CompositeHistoryCatalog {
                 identity,
             ));
         }
-        {
-            let mut reachability = lock_index(&state.reachability);
-            reachability.increment_direct_protection(&identity)?;
-        }
+        lock_index(&state.reachability).increment_direct_protection(&identity)?;
         Ok(CompositeHistoryProtectionObligation::new(
             Arc::clone(&state.reachability),
             identity,
@@ -255,57 +254,6 @@ impl CompositeHistoryCatalog {
             HistoryProtectionClass::ExplicitObligation,
         )
         .map(ExplicitCommitHistoryProtectionObligation::issued)
-    }
-
-    /// Walk one parent chain up to an explicit caller bound. Reclamation does
-    /// not call this method; its reachability decision is index-local.
-    pub(crate) fn trace_ancestry(
-        &self,
-        start: CompositeCommitIdentity,
-        maximum_commits: NonZeroUsize,
-    ) -> Result<CompositeHistoryTraversal, CompositeHistoryCatalogDenial> {
-        let state = lock_state(&self.state);
-        validate_owner(&state, start.owner_identity())?;
-        if state
-            .entries
-            .get(&start)
-            .is_none_or(|slot| slot.get().is_none())
-        {
-            return Err(CompositeHistoryCatalogDenial::UnknownProtectionTarget(
-                start,
-            ));
-        }
-        lock_index(&state.reachability).increment_direct_protection(&start)?;
-        let protection = CompositeHistoryProtectionObligation::new(
-            Arc::clone(&state.reachability),
-            start.clone(),
-            HistoryProtectionClass::ExplicitObligation,
-        );
-        let mut current = start;
-        let mut commits = Vec::with_capacity(maximum_commits.get().min(state.entries.len()));
-        for _ in 0..maximum_commits.get() {
-            let entry = state
-                .entries
-                .get(&current)
-                .and_then(|slot| slot.get())
-                .ok_or_else(|| CompositeHistoryCatalogDenial::MissingParent(current.clone()))?;
-            commits.push(Arc::clone(&entry.commit));
-            let Some(parent) = support::ordinary_parent_identity(entry.commit().parent()) else {
-                return Ok(CompositeHistoryTraversal {
-                    commits,
-                    _protection: protection,
-                    _catalog: self.clone(),
-                    next_parent: None,
-                });
-            };
-            current = parent;
-        }
-        Ok(CompositeHistoryTraversal {
-            commits,
-            _protection: protection,
-            _catalog: self.clone(),
-            next_parent: Some(current),
-        })
     }
 
     pub(crate) fn reclaim_batch(

@@ -19,7 +19,7 @@ impl WorthQueryProductRuntime {
             worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority,
         >,
     ) -> Result<Self, WorthQueryProductRuntimeInstallationDenial> {
-        let (budgets, clock) = resources.into_parts();
+        let (budgets, clock, _invalidation_resources) = resources.into_parts();
         let super::WorthQueryProductRelationalInstallation {
             services: relational_services,
             basis: relational_basis,

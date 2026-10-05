@@ -38,6 +38,21 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Wor
 }
 
 impl WorthQueryApplicationOutputCorrespondenceCandidate {
+    pub(in crate::domain_computation::primary_graph) fn native_witness_roles(
+        &self,
+    ) -> impl ExactSizeIterator<Item = (&str, WorthQueryApplicationOutputPosture, &str)> + Clone
+    {
+        self.roles
+            .iter()
+            .map(|(role, binding)| (role.as_str(), binding.posture, binding.entity_name.as_str()))
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_attempt) const fn binding_type(
+        &self,
+    ) -> Option<TypeId> {
+        self.binding_type
+    }
+
     pub(in crate::domain_computation::primary_graph::application_attempt) fn is_empty(
         &self,
     ) -> bool {
@@ -57,7 +72,8 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
     }
 
     /// Expect the roles and families `Contract` declares, as a binding with
-    /// that output contract would.
+    /// that output contract would. The contract stands in for the binding's
+    /// own type, so the program's publication is recorded like any output.
     #[cfg(test)]
     pub(super) fn prepare_test_contract<Schema, Contract>(&mut self)
     where
@@ -67,6 +83,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
         let (roles, families, _) = self
             .prepare_contract::<Schema, Contract>()
             .expect("the test contract is well formed");
+        self.binding_type = Some(TypeId::of::<Contract>());
         self.contract_type = Some(TypeId::of::<Contract>());
         self.expected_roles.extend(roles);
         self.expected_families.extend(families);

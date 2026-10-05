@@ -12,7 +12,7 @@ export function emptyWebPerformanceSummary() {
     deliveredObservationCount: 0,
     rollbackSuppressedDeliveryCount: 0,
     serialExecutorUsageCount: 0,
-    parallelExecutorUsageCount: 0,
+    executionReport: null,
     outputSerializationCount: 0,
     outputSerializationBreadth: 0,
     jsCallbackInvocationCount: 0,

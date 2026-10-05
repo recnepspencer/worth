@@ -109,6 +109,7 @@ where
         .application_candidate_resources(limits.candidates)
         .application_query_resources(limits.queries)
         .output_demand_resources(limits.output_demands)
+        .completed_evidence_resources(limits.completed_evidence)
         .install(WorthQueryInstallationGeneration::initial(), [admitted])
         .map_err(Denial::Runtime)?
         .into_parts();
@@ -204,6 +205,11 @@ where
         }
         initial_state(&mut graph, &installed).map_err(Denial::InitialState)?;
     }
+    // This is the exact support object moved into the final graph provider.
+    // Cold producer executors become installable only after it exists.
+    let producers = producers
+        .seal_with_support(graph.resource_support_ref(), runtime.installed_packages())
+        .map_err(Denial::Contributions)?;
     let (mut application, installed_conditionals) =
         if conditionals.is_empty() && producers.is_empty() {
             let application = match authorization_time_source {

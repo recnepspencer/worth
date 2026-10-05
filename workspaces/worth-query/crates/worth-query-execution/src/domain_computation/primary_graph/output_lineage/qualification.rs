@@ -40,13 +40,10 @@ impl WorthQueryApplicationOutputLineage {
             runtime_authority: source.runtime_authority,
             schema: source.schema.clone(),
             scope: source.scope,
-            observed_source_facts: Arc::clone(
-                recorded
-                    .observed_source_facts
-                    .as_ref()
-                    .filter(|facts| !facts.is_empty())?,
-            ),
-            resources: recorded.resources,
+            observed_source_facts: recorded
+                .observed_source_facts()
+                .filter(|facts| !facts.is_empty())?,
+            resources: recorded.resources(),
         })
     }
 
@@ -59,9 +56,11 @@ impl WorthQueryApplicationOutputLineage {
     ) -> bool {
         self.by_source.iter().any(|(source, versions)| {
             source.output_binding == TypeId::of::<Binding>()
-                && versions
-                    .get(&occurrence)
-                    .is_some_and(|history| history.range(..=generation).next_back().is_some())
+                && versions.get(&occurrence).is_some_and(|history| {
+                    history
+                        .range(..=generation)
+                        .any(|(_, records)| records.iter().any(|cell| cell.get().is_some()))
+                })
         })
     }
 }

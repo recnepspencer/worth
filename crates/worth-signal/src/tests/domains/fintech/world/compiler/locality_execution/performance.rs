@@ -7,8 +7,7 @@ use crate::data::error::SignalError;
 use crate::data::output::MemoizedResultOrigin;
 use crate::data::reuse::ReuseOrigin;
 use crate::data::telemetry::InvalidationPerformedCounter;
-use crate::facade::{SignalObservationRequest, StageExecutor};
-#[cfg(feature = "parallel")]
+use crate::facade::SignalObservationRequest;
 use crate::logic::planner::StageExecutionOutcome;
 use crate::logic::planner::{TaskExecutionOutcome, TaskReason};
 
@@ -56,7 +55,7 @@ impl CompiledFinancialLocalityWorld {
     pub(crate) fn run_performance_sequence(
         &mut self,
         batch_count: usize,
-        executor: StageExecutor,
+        workers: usize,
         observe: bool,
     ) -> Result<FinancialPerformanceBatchReport, SignalError> {
         let trace_count = self.locality_definition().action_traces().len();
@@ -78,10 +77,7 @@ impl CompiledFinancialLocalityWorld {
         let mut samples = Vec::with_capacity(batch_count);
         let mut peak_touched_nodes = 0;
         let mut mutation_widths = Vec::with_capacity(batch_count);
-        #[cfg(feature = "parallel")]
         let mut parallel_stage_dispatches = 0;
-        #[cfg(not(feature = "parallel"))]
-        let parallel_stage_dispatches = 0;
         let mut semantic_work_rows = Vec::with_capacity(batch_count);
         let output_by_node = self
             .handles
@@ -94,17 +90,19 @@ impl CompiledFinancialLocalityWorld {
             mutation_widths.push(mutations.len());
             let started = Instant::now();
             self.apply_mutations(&mutations)?;
-            let settlement =
-                self.settle_mutations_with_retries_at_batch(&mutations, &[], executor, batch)?;
+            let settlement = self.settle_mutations_with_retries_at_batch(
+                &mutations,
+                &[],
+                workers,
+                batch,
+                false,
+            )?;
             peak_touched_nodes = peak_touched_nodes.max(settlement.evaluated_outputs.len());
-            #[cfg(feature = "parallel")]
-            {
-                parallel_stage_dispatches += settlement
-                    .stage_outcomes
-                    .iter()
-                    .filter(|outcome| matches!(outcome, StageExecutionOutcome::CompletedParallel))
-                    .count() as u64;
-            }
+            parallel_stage_dispatches += settlement
+                .stage_outcomes
+                .iter()
+                .filter(|outcome| matches!(outcome, StageExecutionOutcome::CompletedParallel))
+                .count() as u64;
             // Stop the production timing interval before constructing the
             // test-owned semantic evidence.  Evidence assembly must not
             // contaminate the performance result with an O(tasks × outputs)

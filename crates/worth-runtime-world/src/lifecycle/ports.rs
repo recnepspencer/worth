@@ -90,9 +90,23 @@ pub enum RuntimeWorldBranchCreationOutcome {
 }
 
 /// Shared internal seam for exact product-head observation.
+pub(crate) enum RuntimeWorldCurrentnessAdmissionStop {
+    Native(RuntimeWorldBranchAdmissionDenial),
+    Preparation,
+}
+
 pub(crate) trait RuntimeWorldObservationService:
     super::availability::RuntimeWorldAvailability
 {
+    fn admit_product_branch_currentness_with_work<'selected>(
+        &self,
+        expected: &'selected ProductBranchObservation,
+        prepare: &mut dyn FnMut(u64) -> bool,
+    ) -> Result<
+        crate::branch::ProductBranchCurrentnessScope<'selected>,
+        RuntimeWorldCurrentnessAdmissionStop,
+    >;
+
     fn observe_product_branch(
         &self,
         branch: &ProductBranchIdentity,
@@ -291,6 +305,12 @@ pub(crate) trait RuntimeWorldLifecycleService:
         &self,
         request: CompositeHistoryReclamationRequest,
     ) -> Result<HistoryReclamationOutcome, HistoryReclamationDenial>;
+    /// Retire the unprotected history behind `keep` and reclaim the pins only
+    /// that history held. Returns the retired commits, oldest first.
+    fn retire_unprotected_history(
+        &self,
+        keep: &crate::identity::CompositeCommitIdentity,
+    ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial>;
     fn reclaim_retention(
         &self,
         keys: &[crate::inspection::RuntimeWorldRetentionKey],

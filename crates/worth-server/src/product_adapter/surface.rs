@@ -8,6 +8,27 @@ pub struct WorthServerProductOperationInput {
 }
 
 impl WorthServerProductOperationInput {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        (self.operation_name.capacity() as u64)
+            .saturating_add(self.payload.owned_allocation_capacity_bytes())
+            .saturating_add(
+                self.snapshot_precondition
+                    .as_ref()
+                    .map_or(0, |precondition| {
+                        (precondition.base_digest().value().len()
+                            + precondition.canonical_digest().len()) as u64
+                    }),
+            )
+            .saturating_add(self.idempotency_key.as_ref().map_or(0, |key| {
+                (key.value().len() + key.canonical_digest().len()) as u64
+            }))
+            .saturating_add(
+                self.product_session_identity
+                    .as_ref()
+                    .map_or(0, |id| id.capacity() as u64),
+            )
+    }
+
     pub fn new(
         operation_name: impl Into<String>,
         payload: super::WorthServerProductOperationPayload,

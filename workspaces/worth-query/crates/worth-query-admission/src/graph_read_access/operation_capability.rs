@@ -120,15 +120,29 @@ impl WorthQueryGraphReadOperationCapabilityRequirement {
     }
 
     pub fn digest_part(&self) -> String {
-        format!(
-            "operation_capability_requirement:{}:{}:{}:{}:{}:{}",
+        let mut text = String::new();
+        self.write_digest_part(&mut text)
+            .expect("String formatting cannot fail");
+        text
+    }
+
+    pub(crate) fn write_digest_part(&self, output: &mut dyn Write) -> fmt::Result {
+        write!(
+            output,
+            "operation_capability_requirement:{}:{}:{}:{}:{}:",
             self.kind.as_str(),
             self.domain_owner,
             self.operation_name,
             self.support_family,
             self.read_graph_digest,
-            self.matched_relations.join(",")
-        )
+        )?;
+        for (index, relation) in self.matched_relations.iter().enumerate() {
+            if index > 0 {
+                output.write_str(",")?;
+            }
+            output.write_str(relation)?;
+        }
+        Ok(())
     }
 }
 
@@ -223,4 +237,5 @@ impl WorthQueryGraphReadOperationUnsupportedDenial {
         &self.matched_relations
     }
 }
+use std::fmt::{self, Write};
 use worth_foundational::facade::CanonicalDigestId;

@@ -32,6 +32,8 @@ fn receipt() -> ErasedClockObservationReceipt {
         retention_capacity_backpressure: false,
         execution_provenance: Vec::new(),
         granular_invalidations: Vec::new(),
+        granular_invalidation_coverage:
+            crate::domain_computation::primary_graph::WorthQueryGranularInvalidationCoverage::Exact,
     }
 }
 

@@ -1,6 +1,5 @@
 use crate::data::error::SignalError;
 use crate::facade::DiagnosticsTier;
-use crate::logic::planner::StageExecutor;
 use crate::tests::domains::fintech::world::{
     compile_financial_locality_world_at_tier, FinancialLocalityScenario,
     FinancialRestoreLifecycleEvidence, FinancialWorldDefinition, LocalityCaseContract,
@@ -112,12 +111,33 @@ pub(super) fn certify_locality_completions(
                     FinancialWorldDefinition::locality_case(case_seed, case),
                     trace_index,
                     DiagnosticsTier::Operational,
-                    StageExecutor::Serial,
-                )?);
+                    1,
+                )
+                .inspect_err(|error| {
+                    eprintln!(
+                        "locality completion failed: lane={lane:?} scenario={:?} scale={:?} seed={case_seed} trace={trace_index}: {error:?}",
+                        case.scenario(), case.scale
+                    );
+                })?);
             }
-            let mut compiled =
-                compile_financial_locality_world_at_tier(definition, DiagnosticsTier::Operational)?;
-            restore_lifecycle.push(compiled.certify_restore_locality_lifecycle()?);
+            let mut compiled = compile_financial_locality_world_at_tier(
+                definition,
+                DiagnosticsTier::Operational,
+            )
+            .inspect_err(|error| {
+                eprintln!(
+                    "locality restore compile failed: lane={lane:?} scale={:?} seed={case_seed}: {error:?}",
+                    case.scale
+                );
+            })?;
+            restore_lifecycle.push(compiled.certify_restore_locality_lifecycle().inspect_err(
+                |error| {
+                    eprintln!(
+                        "locality restore lifecycle failed: lane={lane:?} scale={:?} seed={case_seed}: {error:?}",
+                        case.scale
+                    );
+                },
+            )?);
         }
     }
     Ok(FinancialLocalityCompletions {
@@ -150,8 +170,14 @@ fn certify_family(
                     FinancialWorldDefinition::locality_case(case_seed, case),
                     trace_index,
                     DiagnosticsTier::Operational,
-                    StageExecutor::Serial,
-                )?);
+                    1,
+                )
+                .inspect_err(|error| {
+                    eprintln!(
+                        "locality completion failed: lane={lane:?} scenario={scenario:?} scale={:?} seed={case_seed} trace={trace_index}: {error:?}",
+                        case.scale
+                    );
+                })?);
             }
         }
     }

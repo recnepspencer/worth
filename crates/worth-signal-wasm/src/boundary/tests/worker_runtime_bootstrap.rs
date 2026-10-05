@@ -266,7 +266,7 @@ fn diagnostics_boundary_exposes_worker_unavailable_compatibility_certification()
         package.incompatibility_artifact,
         "dedicatedWorkerUnavailable"
     );
-    assert_eq!(package.hidden_fallback_allowed, false);
+    assert!(!package.hidden_fallback_allowed);
     assert_eq!(package.fallback_count, 0);
     assert_eq!(package.callback_declaration_count, 0);
     assert_eq!(package.denial_digest.len(), 64);

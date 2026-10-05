@@ -51,6 +51,82 @@ fn basic_fixture() -> worth_harness::facade::ScenarioFixture<SignalFixtureFactor
     .compile()
 }
 
+fn checked_fixture() -> worth_harness::facade::ScenarioFixture<SignalFixtureFactory> {
+    ScenarioPlan::new(
+        "signal-checked",
+        SignalFixtureFactory::new(|| {
+            let mut builder = SignalHarnessRuntimeBuilder::new();
+            let source = builder
+                .graph_mut()
+                .node()
+                .with_contract(
+                    NodeContract::wildcard().with_bounded_inputs(BoundedSignalInputs::default()),
+                )
+                .build();
+            let dependent = builder
+                .graph_mut()
+                .node()
+                .with_contract(NodeContract::wildcard().with_bounded_inputs(
+                    BoundedSignalInputs::new([DeclaredSignalInput::new(source, ASPECT_A)]),
+                ))
+                .build();
+            builder
+                .graph_mut()
+                .append_dependency(dependent, source, ASPECT_A)?;
+            builder.insert_label("source", source);
+            builder.insert_label("dependent", dependent);
+            builder.set_evaluator(BasicEvaluator { source });
+            builder.set_checked_evaluator(
+                move |ctx: &mut CheckedEvaluationContext<'_, '_, '_, '_, ()>| {
+                    let value = if ctx.node() == source {
+                        1
+                    } else {
+                        ctx.read(source, ASPECT_A)? + 1
+                    };
+                    Ok::<_, SignalError>(AspectVersion::zero().with(ASPECT_A, value))
+                },
+            );
+            builder
+                .with_execution_authority(
+                    crate::tests::leased_execution::support::shared_authority().clone(),
+                    crate::tests::leased_execution::support::request(2, 1_000_000),
+                )
+                .build()
+        }),
+    )
+    .declare_input("source")
+    .declare_observation("dependent")
+    .compile()
+}
+
+#[test]
+fn signal_harness_parallel_profiles_use_a_shared_lease_and_checked_inputs() {
+    let adapter = SignalHarnessBridge;
+    let fixture = checked_fixture();
+    let request = ExecutionRequest::new("pull-dependent", vec!["dependent".to_string()]);
+    for profile in [
+        ExecutionProfile::staged_parallel("staged"),
+        ExecutionProfile::full_parallel("full"),
+    ] {
+        let mut session = adapter.create_runtime().unwrap();
+        adapter.load_fixture(&mut session, &fixture).unwrap();
+        let run = adapter
+            .execute(&mut session, &fixture, &request, &profile)
+            .unwrap();
+        assert_eq!(run.target_statuses.len(), 1);
+        assert_eq!(
+            session
+                .runtime()
+                .unwrap()
+                .graph()
+                .node_aspect_version(session.runtime().unwrap().resolve("dependent").unwrap(),)
+                .unwrap()
+                .get(ASPECT_A),
+            2
+        );
+    }
+}
+
 #[test]
 fn signal_harness_bridge_executes_serial_fixture() {
     let adapter = SignalHarnessBridge;

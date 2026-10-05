@@ -1,13 +1,14 @@
 use crate::data::aspect::AspectVersion;
 use crate::data::error::SignalError;
 use crate::data::handle::NodeId;
+use crate::logic::checked_context::CheckedEvaluationContext;
 use crate::logic::context::EvaluationContext;
 use crate::logic::evaluation::EvaluationRequestMode;
 use crate::logic::evaluation::IntoEvaluationOutput;
-use crate::logic::planner::{ExecutionReport, StageExecutor};
+use crate::logic::planner::ExecutionReport;
+use worth_execution::ExecutionResourceLease;
 
 use super::super::super::state::SignalRuntime;
-use super::super::shared::executor_for_strategy;
 
 pub(super) enum ExecutionIntent<'a> {
     Targets {
@@ -26,7 +27,6 @@ where
     runtime: &'a mut SignalRuntime<D, I, E, Ctx, T>,
     targets: Vec<NodeId>,
     request_mode: EvaluationRequestMode,
-    executor: Option<StageExecutor>,
 }
 
 impl<'a, D, I, E, Ctx, T> RuntimeExecutionRequest<'a, D, I, E, Ctx, T>
@@ -45,7 +45,6 @@ where
             runtime,
             targets,
             request_mode,
-            executor: None,
         }
     }
 
@@ -59,19 +58,11 @@ where
         self
     }
 
-    pub fn with_executor(mut self, executor: StageExecutor) -> Self {
-        self.executor = Some(executor);
-        self
-    }
-
     pub fn run<F, O>(self, runtime_ctx: &Ctx, evaluator: &F) -> Result<ExecutionReport, SignalError>
     where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
         O: IntoEvaluationOutput,
     {
-        let executor = self
-            .executor
-            .unwrap_or_else(|| executor_for_strategy(self.runtime.derive_evaluation_strategy()));
         self.runtime.execute_evaluation(
             ExecutionIntent::Targets {
                 targets: &self.targets,
@@ -79,7 +70,29 @@ where
             },
             runtime_ctx,
             evaluator,
-            executor,
+            None,
+        )
+    }
+
+    pub fn run_checked<F, O>(
+        self,
+        runtime_ctx: &Ctx,
+        evaluator: &F,
+        lease: &ExecutionResourceLease<'_>,
+    ) -> Result<ExecutionReport, SignalError>
+    where
+        F: for<'graph, 'work, 'run, 'lease> Fn(
+                &mut CheckedEvaluationContext<'graph, 'work, 'run, 'lease, Ctx>,
+            ) -> Result<O, SignalError>
+            + Sync,
+        O: IntoEvaluationOutput,
+    {
+        self.runtime.evaluate_checked(
+            &self.targets,
+            self.request_mode,
+            runtime_ctx,
+            evaluator,
+            lease,
         )
     }
 
@@ -93,9 +106,6 @@ where
                 "guided read requires exactly one target; use read_many for multiple targets",
             ));
         };
-        let executor = self
-            .executor
-            .unwrap_or_else(|| executor_for_strategy(self.runtime.derive_evaluation_strategy()));
         if !matches!(
             self.runtime.graph.get_state(*node)?,
             crate::data::node::NodeState::Clean
@@ -107,7 +117,7 @@ where
                 },
                 runtime_ctx,
                 evaluator,
-                executor,
+                None,
             )?;
         }
         self.runtime.graph.node_aspect_version(*node)
@@ -134,9 +144,6 @@ where
             })
             .collect::<Vec<_>>();
         if !pending.is_empty() {
-            let executor = self.executor.unwrap_or_else(|| {
-                executor_for_strategy(self.runtime.derive_evaluation_strategy())
-            });
             self.runtime.execute_evaluation(
                 ExecutionIntent::Targets {
                     targets: &pending,
@@ -144,7 +151,7 @@ where
                 },
                 runtime_ctx,
                 evaluator,
-                executor,
+                None,
             )?;
         }
         self.targets

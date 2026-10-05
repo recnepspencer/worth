@@ -1,6 +1,5 @@
 use worth_runtime_world::facade::{
     ProductBranchIdentity, ProductBranchIncarnation, ProductBranchObservation,
-    ProductBranchReferenceSnapshot,
 };
 
 /// Descriptive cache affinity for one World product-branch occurrence.
@@ -14,6 +13,12 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryProductIdempot
 }
 
 impl WorthQueryProductIdempotencyAffinity {
+    pub(in crate::domain_computation::primary_graph::provider) fn comparison_name_len(
+        &self,
+    ) -> usize {
+        self.branch.name().as_str().len()
+    }
+
     pub(in crate::domain_computation::primary_graph) const fn incarnation(
         &self,
     ) -> ProductBranchIncarnation {
@@ -29,12 +34,12 @@ impl WorthQueryProductIdempotencyAffinity {
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn from_reference(
-        snapshot: &ProductBranchReferenceSnapshot,
+    pub(in crate::domain_computation::primary_graph) fn from_publication(
+        publication: &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
     ) -> Self {
         Self::new(
-            snapshot.branch_identity().clone(),
-            snapshot.lifecycle_incarnation(),
+            publication.product_branch().clone(),
+            publication.product_incarnation(),
         )
     }
 

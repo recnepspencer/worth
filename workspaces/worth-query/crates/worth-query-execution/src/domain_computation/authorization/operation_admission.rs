@@ -46,12 +46,22 @@ mod elevation_request;
 mod graph_work_inspection;
 #[path = "operation_admission/idempotency_binding.rs"]
 mod idempotency_binding;
+#[path = "operation_admission/identity_admitted.rs"]
+mod identity_admitted;
 #[path = "operation_admission/mandatory_review.rs"]
 mod mandatory_review;
+#[path = "operation_admission/output_demand.rs"]
+mod output_demand;
+#[path = "operation_admission/selected_conventional.rs"]
+mod selected_conventional;
+pub(in crate::domain_computation) use selected_conventional::{
+    authorize_public_mutation_on_selected, SelectedConventionalAdmissionStop,
+};
 
 pub(in crate::domain_computation::authorization) use authorization_basis::WorthQueryOperationAuthorizationBasis;
 
 static NEXT_OPERATION_ADMISSION_IDENTITY: AtomicU64 = AtomicU64::new(1);
+const RESOURCE_LABEL: &str = "worth-query-application-admission:";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct WorthQueryOperationAdmissionIdentity(u64);
@@ -64,7 +74,7 @@ impl WorthQueryOperationAdmissionIdentity {
     pub(in crate::domain_computation::authorization) fn resource_binding_identity(
         self,
     ) -> Arc<str> {
-        Arc::from(format!("worth-query-application-admission:{}", self.0))
+        Arc::from(format!("{RESOURCE_LABEL}{}", self.0))
     }
 
     fn mint_from(counter: &AtomicU64) -> Option<Self> {
@@ -121,7 +131,7 @@ pub struct WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scop
     scope_entity_name: String,
     authentication_valid_until: Instant,
     request_scope: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-    contracts: WorthQueryCompiledApplicationOperationContracts,
+    contracts: Arc<WorthQueryCompiledApplicationOperationContracts>,
     mutation_preconditions: WorthQueryBoundMutationPreconditions,
     authorization: Option<WorthQueryRetainedAuthorizationDecisionFacts>,
     governed_input_identity: Option<[u8; 32]>,
@@ -129,6 +139,8 @@ pub struct WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scop
     graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     source_partition_identity: Option<[u8; 32]>,
     source_facts: Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
+    required_output_demand:
+        Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
     _marker: PhantomData<fn(Input) -> (Schema, Operation, Scope)>,
 }
 

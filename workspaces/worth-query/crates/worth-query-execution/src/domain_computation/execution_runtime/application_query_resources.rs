@@ -75,7 +75,34 @@ impl WorthQueryApplicationQueryResourceProfile {
         maximum_result_count: NonZeroUsize,
         request_maximum_work: NonZeroUsize,
     ) -> WorthQueryGraphReadBudget {
-        WorthQueryGraphReadBudget::bounded(
+        let (index, result, intermediate) =
+            self.admission_limits(maximum_result_count, request_maximum_work);
+        WorthQueryGraphReadBudget::bounded(index, result, intermediate)
+    }
+
+    pub(crate) fn admission_budget_admitted<Stop>(
+        self,
+        maximum_result_count: NonZeroUsize,
+        request_maximum_work: NonZeroUsize,
+        admit: &mut impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<
+        WorthQueryGraphReadBudget,
+        worth_query_admission::integration::WorthQueryCanonicalIdentityStop<Stop>,
+    > {
+        admit(4, 0).map_err(
+            worth_query_admission::integration::WorthQueryCanonicalIdentityStop::Admission,
+        )?;
+        let (index, result, intermediate) =
+            self.admission_limits(maximum_result_count, request_maximum_work);
+        WorthQueryGraphReadBudget::bounded_admitted(index, result, intermediate, admit)
+    }
+
+    fn admission_limits(
+        self,
+        maximum_result_count: NonZeroUsize,
+        request_maximum_work: NonZeroUsize,
+    ) -> (usize, usize, usize) {
+        (
             self.maximum_inline_index_bytes.get(),
             self.maximum_result_bytes_per_root
                 .get()

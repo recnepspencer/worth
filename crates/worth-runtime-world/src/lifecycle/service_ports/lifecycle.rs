@@ -55,6 +55,24 @@ impl RuntimeWorldLifecyclePort {
             .reclaim_history(request)
             .map_err(RuntimeWorldServiceDenial::Denied)
     }
+    /// Retires every commit behind `keep` that nothing protects: no product
+    /// head, second child, observation, traversal, receipt or unconsumed
+    /// delivery. The oldest kept commit becomes the history base, and a
+    /// retired commit between kept ones is spliced out of the ancestry, so
+    /// a traversal skips it and reports that it crossed retired history.
+    /// Inspecting or continuing ancestry past the base fails closed. Returns
+    /// the retired commits, oldest first.
+    pub fn retire_unprotected_history(
+        &self,
+        keep: &crate::identity::CompositeCommitIdentity,
+    ) -> Result<
+        Vec<crate::identity::CompositeCommitIdentity>,
+        RuntimeWorldServiceDenial<HistoryReclamationDenial>,
+    > {
+        self.service()?
+            .retire_unprotected_history(keep)
+            .map_err(RuntimeWorldServiceDenial::Denied)
+    }
     pub fn reclaim_retention(
         &self,
         keys: &[crate::inspection::RuntimeWorldRetentionKey],

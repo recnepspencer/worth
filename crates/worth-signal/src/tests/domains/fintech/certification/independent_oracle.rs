@@ -1,19 +1,16 @@
 use std::collections::BTreeMap;
 
-#[cfg(feature = "parallel")]
 use std::collections::BTreeSet;
 
 use worth_harness::facade::{InvariantCheck, InvariantReport};
 
 use crate::facade::SignalError;
 
-#[cfg(feature = "parallel")]
 use worth_harness::facade::{
     ArtifactSurface, DifferentialOutcome, UnsupportedWorkflowComparison,
     WorkflowCertificationReport,
 };
 
-#[cfg(feature = "parallel")]
 use crate::facade::{compare_lineage_records, compare_replay_slices};
 
 use super::workflow_session::{
@@ -107,14 +104,63 @@ pub(super) fn check_invariant(
     })
 }
 
-#[cfg(feature = "parallel")]
 pub(super) fn compare_signal_fintech_overlap(
+    left: &WorkflowCertificationReport<CertifiedFintechWorkflowSession>,
+    right: &WorkflowCertificationReport<CertifiedFintechWorkflowSession>,
+) -> DifferentialOutcome {
+    let mut outcome = compare_signal_fintech_visible_overlap(left, right);
+    outcome.skipped_surfaces.clear();
+    outcome
+        .compared_surfaces
+        .insert(ArtifactSurface::ReplayRecoveryTruthState);
+    let left_replays = &left.session.session_data.named_replays;
+    let right_replays = &right.session.session_data.named_replays;
+    if left_replays.keys().ne(right_replays.keys()) {
+        outcome
+            .mismatches
+            .push("named replay aliases diverged".to_string());
+    }
+    for (alias, left_replay) in left_replays {
+        let Some(right_replay) = right_replays.get(alias) else {
+            continue;
+        };
+        let replay_diff = compare_replay_slices(left_replay, right_replay);
+        if !replay_diff.mismatches.is_empty() {
+            outcome.mismatches.push(format!(
+                "replay overlap drift for `{alias}`: {} mismatches",
+                replay_diff.mismatches.len()
+            ));
+        }
+    }
+    let left_lineages = &left.session.session_data.named_lineages;
+    let right_lineages = &right.session.session_data.named_lineages;
+    if left_lineages.keys().ne(right_lineages.keys()) {
+        outcome
+            .mismatches
+            .push("named lineage aliases diverged".to_string());
+    }
+    for (alias, left_lineage) in left_lineages {
+        let Some(right_lineage) = right_lineages.get(alias) else {
+            continue;
+        };
+        let lineage_diff = compare_lineage_records(left_lineage, right_lineage);
+        if !lineage_diff.mismatches.is_empty() {
+            outcome.mismatches.push(format!(
+                "lineage overlap drift for `{alias}`: {} mismatches",
+                lineage_diff.mismatches.len()
+            ));
+        }
+    }
+    outcome.matched = outcome.mismatches.is_empty();
+    outcome
+}
+
+pub(super) fn compare_signal_fintech_visible_overlap(
     left: &WorkflowCertificationReport<CertifiedFintechWorkflowSession>,
     right: &WorkflowCertificationReport<CertifiedFintechWorkflowSession>,
 ) -> DifferentialOutcome {
     let mut compared_surfaces = BTreeSet::new();
     let mut mismatches = Vec::new();
-    let mut skipped_surfaces = Vec::new();
 
     compared_surfaces.insert(ArtifactSurface::BranchHeadState);
     let left_branch_heads = left
@@ -159,42 +205,12 @@ pub(super) fn compare_signal_fintech_overlap(
         mismatches.push("snapshot-visible truth audit surfaces diverged".to_string());
     }
 
-    compared_surfaces.insert(ArtifactSurface::ReplayRecoveryTruthState);
-    for alias in ["analysis_replay_after", "correction_replay"] {
-        let replay_diff = compare_replay_slices(
-            left.session.session_data.named_replays.get(alias).unwrap(),
-            right.session.session_data.named_replays.get(alias).unwrap(),
-        );
-        if !replay_diff.mismatches.is_empty() {
-            mismatches.push(format!(
-                "replay overlap drift for `{alias}`: {} mismatches",
-                replay_diff.mismatches.len()
-            ));
-        }
-    }
-    skipped_surfaces.push(UnsupportedWorkflowComparison {
+    let skipped_surfaces = vec![UnsupportedWorkflowComparison {
         surface: ArtifactSurface::ReplayRecoveryTruthState,
-        reason: "main branch replay cursor/frame exactness is not yet guaranteed across executor variants for this hostile workflow".to_string(),
-    });
-    let lineage_diff = compare_lineage_records(
-        left.session
-            .session_data
-            .named_lineages
-            .get("correction_lineage")
-            .unwrap(),
-        right
-            .session
-            .session_data
-            .named_lineages
-            .get("correction_lineage")
-            .unwrap(),
-    );
-    if !lineage_diff.mismatches.is_empty() {
-        mismatches.push(format!(
-            "lineage overlap drift: {} mismatches",
-            lineage_diff.mismatches.len()
-        ));
-    }
+        reason:
+            "ordinary demand reads and checked planned evaluations use different demand algorithms"
+                .to_string(),
+    }];
 
     DifferentialOutcome {
         matched: mismatches.is_empty(),

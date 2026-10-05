@@ -27,6 +27,12 @@ impl WorthQueryApplicationQueryBasisCustody {
         self.product.retained_clone()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn selected_product(
+        &self,
+    ) -> &crate::basis::WorthQueryProductObservationLease {
+        &self.product
+    }
+
     /// The selected snapshot may serve a fresh security stage only while its
     /// complete World occurrence and Relational owner still match that stage.
     pub(in crate::domain_computation::primary_graph) fn can_reuse_security_snapshot_at(
@@ -52,6 +58,16 @@ impl WorthQueryApplicationQueryBasisCustody {
             .then(|| self.application_basis.snapshot_handle())
     }
 
+    /// Permission can reuse the source selection's snapshot when the exact
+    /// Product basis already completed its own program-inspection phase.
+    pub(in crate::domain_computation::primary_graph) fn reusable_permission_snapshot(
+        &self,
+    ) -> Option<&worth_relational::facade::snapshots::SnapshotHandle> {
+        self.application_basis
+            .selected_program_inspected()
+            .then(|| self.application_basis.snapshot_handle())
+    }
+
     pub(in crate::domain_computation::primary_graph::application_query) fn identity(
         &self,
     ) -> &WorthQueryApplicationBasisIdentity {
@@ -64,7 +80,7 @@ impl WorthQueryApplicationQueryBasisCustody {
         self.application_basis.version_id()
     }
 
-    pub(in crate::domain_computation::primary_graph::application_query) fn snapshot_handle(
+    pub(in crate::domain_computation::primary_graph) fn snapshot_handle(
         &self,
     ) -> &worth_relational::facade::snapshots::SnapshotHandle {
         self.application_basis.snapshot_handle()

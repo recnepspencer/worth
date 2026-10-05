@@ -17,7 +17,7 @@ pub struct WorthQueryOutputReadinessDeliveryEvidence {
 }
 
 impl WorthQueryOutputReadinessDeliveryEvidence {
-    pub(in crate::domain_computation::primary_graph) const fn from_restoration() -> Self {
+    pub(in crate::domain_computation::primary_graph) const fn without_execution() -> Self {
         Self {
             producer_contacts: 0,
             delivery_contacts: 0,

@@ -1,16 +1,9 @@
+mod conditions;
+
 use crate::data::comparator::ComparatorPolicyResolver;
 use crate::data::error::SignalError;
 use crate::data::graph::SignalGraph;
-use crate::data::handle::NodeId;
-use crate::data::node::EvaluationCondition;
 use crate::data::proof::invalidation::revalidation::NodeInvalidationInput;
-use crate::data::temporal::{
-    DeferredTemporalEligibility, LoweredTemporalEligibility, ReadyTemporalEligibility,
-    TemporalCondition,
-};
-use crate::logic::evaluation::{
-    ConditionEvaluationContext, ConditionResolver, DefaultConditionResolver,
-};
 use crate::logic::prepared::PreparedEvaluation;
 
 use super::super::types::EligibleTask;
@@ -21,7 +14,7 @@ use super::temporal::TemporalLoweringContext;
 pub(super) enum PrevalidatedTask {
     Prepared(PreparedEvaluation),
     NeedsCompute {
-        temporal_ready: Option<ReadyTemporalEligibility>,
+        temporal_ready: Option<crate::data::temporal::ReadyTemporalEligibility>,
         ready_invalidation:
             Option<crate::data::proof::invalidation::progression::ReadyInvalidationBatch>,
     },
@@ -31,25 +24,51 @@ pub(super) fn prevalidate_stage_tasks(
     graph: &mut SignalGraph,
     tasks: &[EligibleTask],
     stage_index: u32,
+    task_offset: usize,
     readiness_epoch: crate::data::proof::invalidation::progression::InvalidationReadinessEpoch,
     comparator_resolver: &mut impl ComparatorPolicyResolver,
     temporal_lowering: &TemporalLoweringContext,
+    mut work: Option<&mut worth_execution::MapKernelContext<'_, '_>>,
+    mut preparation: Option<&mut crate::data::request_preparation::SignalPreparationBudget>,
 ) -> Result<Vec<PrevalidatedTask>, SignalError> {
+    super::work::checkpoint(work.as_deref_mut(), tasks.len())?;
     let mut prevalidated = Vec::with_capacity(tasks.len());
     for task in tasks {
-        let prepared = if let Some(prepared) = prepare_invalidation_outcome(graph, task)? {
+        let dependency_count = graph.current_runtime_dependencies_of(task.node)?.len();
+        let snapshot_count = graph.get_dep_snapshot(task.node)?.entries().len();
+        super::work::checkpoint(
+            work.as_deref_mut(),
+            dependency_count
+                .saturating_add(snapshot_count)
+                .saturating_add(1),
+        )?;
+        let prepared = if let Some(prepared) = prepare_invalidation_outcome(
+            graph,
+            task,
+            work.as_deref_mut(),
+            preparation.as_deref_mut(),
+        )? {
             prepared
-        } else if let Some(prepared) =
-            prepare_condition_outcome_if_blocked(graph, task, temporal_lowering)?
-        {
+        } else if let Some(prepared) = conditions::prepare_condition_outcome_if_blocked(
+            graph,
+            task,
+            temporal_lowering,
+            work.as_deref_mut(),
+            preparation.as_deref_mut(),
+        )? {
             prepared
         } else {
-            prepare_validated_clean_if_unchanged(graph, task, comparator_resolver)?.unwrap_or(
-                PrevalidatedTask::NeedsCompute {
-                    temporal_ready: None,
-                    ready_invalidation: None,
-                },
-            )
+            prepare_validated_clean_if_unchanged(
+                graph,
+                task,
+                comparator_resolver,
+                work.as_deref_mut(),
+                preparation.as_deref_mut(),
+            )?
+            .unwrap_or(PrevalidatedTask::NeedsCompute {
+                temporal_ready: None,
+                ready_invalidation: None,
+            })
         };
         prevalidated.push(prepared);
     }
@@ -57,8 +76,11 @@ pub(super) fn prevalidate_stage_tasks(
         graph,
         tasks,
         stage_index,
+        task_offset,
         readiness_epoch,
         &mut prevalidated,
+        work,
+        preparation,
     )?;
     Ok(prevalidated)
 }
@@ -66,17 +88,28 @@ pub(super) fn prevalidate_stage_tasks(
 fn prepare_invalidation_outcome(
     graph: &SignalGraph,
     task: &EligibleTask,
+    mut work: Option<&mut worth_execution::MapKernelContext<'_, '_>>,
+    mut preparation: Option<&mut crate::data::request_preparation::SignalPreparationBudget>,
 ) -> Result<Option<PrevalidatedTask>, SignalError> {
-    match graph.node_invalidation_input(task.node)? {
+    match graph.node_invalidation_input_with_execution_work(
+        task.node,
+        work.as_deref_mut(),
+        preparation.as_deref_mut(),
+    )? {
         NodeInvalidationInput::Pending(_) => {
-            let dependencies = capture_current_dependencies_without_refresh(graph, task.node)?;
+            let dependencies = capture_current_dependencies_without_refresh(
+                graph,
+                task.node,
+                work.as_deref_mut(),
+                preparation.as_deref_mut(),
+            )?;
             Ok(Some(PrevalidatedTask::Prepared(
                 PreparedEvaluation::deferred_by_invalidation().with_dependencies(dependencies),
             )))
         }
         NodeInvalidationInput::Resolved(_) => {
             let structural = graph
-                .pending_dependency_revalidation(task.node)?
+                .node_pending_revalidation(task.node)?
                 .is_some_and(|pending| pending.requires_structural_recompute());
             Ok(structural.then_some(PrevalidatedTask::NeedsCompute {
                 temporal_ready: None,
@@ -96,7 +129,8 @@ fn prepare_invalidation_outcome(
             if !validates_clean {
                 return Ok(None);
             }
-            let dependencies = capture_current_dependencies_without_refresh(graph, task.node)?;
+            let dependencies =
+                capture_current_dependencies_without_refresh(graph, task.node, work, preparation)?;
             Ok(Some(PrevalidatedTask::Prepared(
                 PreparedEvaluation::validated_clean().with_dependencies(dependencies),
             )))
@@ -104,184 +138,15 @@ fn prepare_invalidation_outcome(
     }
 }
 
-fn prepare_condition_outcome_if_blocked(
-    graph: &mut SignalGraph,
-    task: &EligibleTask,
-    temporal_lowering: &TemporalLoweringContext,
-) -> Result<Option<PrevalidatedTask>, SignalError> {
-    let invalidation = graph.node_invalidation_input(task.node)?;
-    let Some(dirty_aspects) = invalidation.resolved_dirty_aspects() else {
-        let dependencies = capture_current_dependencies_without_refresh(graph, task.node)?;
-        return Ok(Some(PrevalidatedTask::Prepared(
-            PreparedEvaluation::deferred_by_invalidation().with_dependencies(dependencies),
-        )));
-    };
-    let required_context = graph.get_contract(task.node)?.semantics.required_context;
-    let max_dependency_delta = max_dependency_delta(graph, task.node)?;
-    let ctx = ConditionEvaluationContext {
-        node: task.node,
-        request_mode: task.request_mode,
-        dirty_aspects,
-        max_dependency_delta,
-        required_context,
-    };
-    let has_dependency_snapshot = !graph.get_dep_snapshot(task.node)?.entries().is_empty();
-    let mut default_resolver = DefaultConditionResolver;
-
-    match graph.node_eval_config(task.node)?.condition.clone() {
-        EvaluationCondition::Always | EvaluationCondition::OnDemand => Ok(None),
-        EvaluationCondition::AspectFilter(mask) => {
-            if !has_dependency_snapshot
-                || dirty_aspects.is_empty()
-                || dirty_aspects.intersects(mask)
-            {
-                Ok(None)
-            } else {
-                prepare_condition_blocked_result(
-                    graph,
-                    task.node,
-                    PreparedEvaluation::deferred_by_condition(),
-                )
-            }
-        }
-        EvaluationCondition::DeltaThreshold(threshold) => {
-            if !has_dependency_snapshot
-                || dirty_aspects.is_empty()
-                || (max_dependency_delta as f64) > threshold
-            {
-                Ok(None)
-            } else {
-                prepare_condition_blocked_result(
-                    graph,
-                    task.node,
-                    PreparedEvaluation::reverted_clean_by_condition(),
-                )
-            }
-        }
-        EvaluationCondition::Temporal(condition) => {
-            graph.with_telemetry(|telemetry| {
-                telemetry.temporal.temporal_eligibility_lowering_count += 1;
-            });
-            lower_temporal_condition(graph, task.node, condition, &ctx, temporal_lowering)
-        }
-        EvaluationCondition::Custom(key) => {
-            if default_resolver.resolve_custom(&key, &ctx)? {
-                Ok(None)
-            } else {
-                prepare_condition_blocked_result(
-                    graph,
-                    task.node,
-                    PreparedEvaluation::deferred_by_condition(),
-                )
-            }
-        }
-        EvaluationCondition::Installed(_) => Err(SignalError::invalid_input(
-            "installed conditions require the owner-bound conditional execution entry point",
-        )),
-    }
-}
-
-fn prepare_condition_blocked_result(
-    graph: &mut SignalGraph,
-    node: NodeId,
-    prepared: PreparedEvaluation,
-) -> Result<Option<PrevalidatedTask>, SignalError> {
-    let dependencies = capture_current_dependencies_without_refresh(graph, node)?;
-    Ok(Some(PrevalidatedTask::Prepared(
-        prepared.with_dependencies(dependencies),
-    )))
-}
-
-fn lower_temporal_condition(
-    graph: &mut SignalGraph,
-    node: NodeId,
-    condition: TemporalCondition,
-    ctx: &ConditionEvaluationContext,
-    temporal_lowering: &TemporalLoweringContext,
-) -> Result<Option<PrevalidatedTask>, SignalError> {
-    if let Some(prevalidated) =
-        lower_temporal_condition_from_runtime_clock(condition.clone(), temporal_lowering)
-    {
-        return match prevalidated {
-            PrevalidatedTask::Prepared(prepared) => {
-                prepare_condition_blocked_result(graph, node, prepared)
-            }
-            other => Ok(Some(other)),
-        };
-    }
-
-    if let Some(ready) = temporal_lowering.ready_wake_for_node(node) {
-        if ready.condition() == &condition {
-            return Ok(Some(PrevalidatedTask::NeedsCompute {
-                temporal_ready: Some(ReadyTemporalEligibility::runtime_wake_backed(
-                    condition,
-                    ready.id(),
-                    ready.ready_ordinal(),
-                    ready.ready_tick(),
-                )),
-                ready_invalidation: None,
-            }));
-        }
-        return Err(SignalError::internal(format!(
-            "ready temporal wake {} for node {} carried a descriptor different from the node declaration",
-            ready.id().get(),
-            node
-        )));
-    }
-
-    let Some(authority_tick) = temporal_lowering.current_runtime_tick() else {
-        return Err(SignalError::invalid_input(format!(
-            "temporal condition for node {node} requires runtime-owned temporal lowering"
-        )));
-    };
-
-    let _ = ctx;
-    prepare_condition_blocked_result(
-        graph,
-        node,
-        PreparedEvaluation::deferred_by_time(LoweredTemporalEligibility::Deferred(
-            DeferredTemporalEligibility::runtime_wake_deferred(condition, authority_tick),
-        )),
-    )
-}
-
-fn lower_temporal_condition_from_runtime_clock(
-    condition: TemporalCondition,
-    temporal_lowering: &TemporalLoweringContext,
-) -> Option<PrevalidatedTask> {
-    match condition.clone() {
-        TemporalCondition::AtOrAfter(at_or_after) => {
-            let authority_tick = temporal_lowering.runtime_tick_for(at_or_after.clock_domain())?;
-            if authority_tick >= at_or_after.tick() {
-                Some(PrevalidatedTask::NeedsCompute {
-                    temporal_ready: Some(ReadyTemporalEligibility::runtime_clock_backed(
-                        condition,
-                        authority_tick,
-                    )),
-                    ready_invalidation: None,
-                })
-            } else {
-                Some(PrevalidatedTask::Prepared(
-                    PreparedEvaluation::deferred_by_time(LoweredTemporalEligibility::Deferred(
-                        DeferredTemporalEligibility::runtime_clock_backed(
-                            condition,
-                            authority_tick,
-                        ),
-                    )),
-                ))
-            }
-        }
-        _ => None,
-    }
-}
-
 fn prepare_validated_clean_if_unchanged(
     graph: &mut SignalGraph,
     task: &EligibleTask,
     comparator_resolver: &mut impl ComparatorPolicyResolver,
+    mut work: Option<&mut worth_execution::MapKernelContext<'_, '_>>,
+    mut preparation: Option<&mut crate::data::request_preparation::SignalPreparationBudget>,
 ) -> Result<Option<PrevalidatedTask>, SignalError> {
     if matches!(
-        graph.node_invalidation_input(task.node)?,
+        graph.node_invalidation_input_with_execution_work(task.node, work.as_deref_mut(), preparation.as_deref_mut())?,
         NodeInvalidationInput::Resolved(ref causes) if causes.is_source_recompute()
     ) {
         return Ok(None);
@@ -304,21 +169,37 @@ fn prepare_validated_clean_if_unchanged(
         return Ok(None);
     }
 
-    let preview =
-        super::super::validation::preview_maybe_stale(graph, task.node, comparator_resolver)?;
+    let preview = super::super::validation::preview_maybe_stale(
+        graph,
+        task.node,
+        comparator_resolver,
+        work.as_deref_mut(),
+        preparation.as_deref_mut(),
+    )?;
     if !preview.unchanged {
         return Ok(None);
     }
 
-    let dependencies = capture_current_dependencies_without_refresh(graph, task.node)?;
+    let dependencies =
+        capture_current_dependencies_without_refresh(graph, task.node, work, preparation)?;
     Ok(Some(PrevalidatedTask::Prepared(
         PreparedEvaluation::validated_clean().with_dependencies(dependencies),
     )))
 }
 
-fn max_dependency_delta(graph: &SignalGraph, node: NodeId) -> Result<u64, SignalError> {
+fn max_dependency_delta(
+    graph: &SignalGraph,
+    node: crate::data::handle::NodeId,
+    mut work: Option<&mut worth_execution::MapKernelContext<'_, '_>>,
+) -> Result<u64, SignalError> {
     let mut max_delta = 0;
     for snapshot_entry in graph.get_dep_snapshot(node)?.entries() {
+        super::work::checkpoint(
+            work.as_deref_mut(),
+            snapshot_entry.scope.as_ref().map_or(1, |scope| {
+                scope.path().total_segment_bytes().saturating_add(9)
+            }),
+        )?;
         if !graph.is_alive(snapshot_entry.source) {
             continue;
         }

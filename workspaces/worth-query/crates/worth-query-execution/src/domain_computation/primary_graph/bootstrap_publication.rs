@@ -156,6 +156,11 @@ pub(super) fn map_bootstrap_commit_denial(
     };
     let kind = match &error {
         Error::PublicationDeferred { deferred, .. } => match deferred {
+            Deferred::CompanionRegistrationPending
+            | Deferred::CompanionRebindRequired
+            | Deferred::CompanionPreflight(_) => {
+                WorthQueryPrimaryGraphInstallationDenialKind::RelationalDeferred(*deferred)
+            }
             Deferred::PatchPositionReservationContended => {
                 WorthQueryPrimaryGraphInstallationDenialKind::PatchPositionReservationContended
             }

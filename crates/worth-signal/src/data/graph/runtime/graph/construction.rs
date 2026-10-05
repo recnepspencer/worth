@@ -54,6 +54,8 @@ impl Clone for SignalGraph {
             observation_sessions,
             observation_capture_cleanup: Some(observation_capture_cleanup),
             pending_repeated_invalidation_admissions: Default::default(),
+            #[cfg(test)]
+            epoch_output_preparation_fault_after: Default::default(),
         }
     }
 }
@@ -65,7 +67,6 @@ impl Default for SignalGraph {
 }
 
 impl SignalGraph {
-    pub(super) const PARALLELISM_NODE_THRESHOLD: usize = 1_000;
     pub(super) const GC_PRESSURE_TOMBSTONE_RATIO: f32 = 0.30;
 
     pub fn new() -> Self {
@@ -124,6 +125,8 @@ impl SignalGraph {
             observation_sessions,
             observation_capture_cleanup: Some(observation_capture_cleanup),
             pending_repeated_invalidation_admissions: Default::default(),
+            #[cfg(test)]
+            epoch_output_preparation_fault_after: Default::default(),
         }
     }
 

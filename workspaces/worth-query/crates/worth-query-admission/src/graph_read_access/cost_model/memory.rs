@@ -1,3 +1,5 @@
+use std::fmt::{self, Write};
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryGraphReadMemoryByteEstimate {
     adjacency_bytes: usize,
@@ -112,8 +114,9 @@ impl WorthQueryGraphReadMemoryByteEstimate {
         self.result_bytes += bytes;
     }
 
-    pub(crate) fn digest_part(&self) -> String {
-        format!(
+    pub(crate) fn write_digest_part(&self, output: &mut dyn Write) -> fmt::Result {
+        write!(
+            output,
             "memory:adjacency:{}:reverse:{}:frontier:{}:visited:{}:dedup:{}:predicate:{}:ordering:{}:proof:{}:result:{}",
             self.adjacency_bytes,
             self.reverse_adjacency_bytes,

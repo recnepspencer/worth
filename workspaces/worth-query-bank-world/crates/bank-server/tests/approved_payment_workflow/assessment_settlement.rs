@@ -17,7 +17,7 @@ use super::support::request_scope;
 use super::{authentication, journey};
 
 #[test]
-fn a_spent_round_reports_pending_and_a_later_call_resumes_the_same_demand() {
+fn one_source_reading_settles_and_a_later_call_answers_the_same_demand() {
     let fixture = world();
     let approver = fixture.authenticate(APPROVER);
     let scope = request_scope();
@@ -38,17 +38,62 @@ fn a_spent_round_reports_pending_and_a_later_call_resumes_the_same_demand() {
     assert!(
         matches!(
             workflow.settle_payment_assessment(&mut demand),
+            Ok(BankApprovedPaymentAssessmentProgress::Settled(_))
+        ),
+        "one round of one source reading settles the assessment"
+    );
+    let assessment = match workflow.settle_payment_assessment(&mut demand) {
+        Ok(BankApprovedPaymentAssessmentProgress::Settled(settled)) => settled,
+        Ok(BankApprovedPaymentAssessmentProgress::Pending) => {
+            panic!("a settled demand answers its settlement again")
+        }
+        Err(denial) => panic!("a settled demand answers its settlement again: {denial}"),
+    };
+    require_completed(
+        workflow
+            .accept_assessment(instance, authority, &assessment, &key("assessment:accept"))
+            .expect("the settled assessment is accepted"),
+        "review/payment",
+    );
+}
+
+#[test]
+fn an_undelivered_readiness_reports_pending_and_a_later_call_resumes_the_same_demand() {
+    let fixture = world();
+    let approver = fixture.authenticate(APPROVER);
+    let scope = request_scope();
+    let workflow = fixture
+        .world
+        .runtime
+        .approved_business_payment(&approver, &scope);
+    let authority = authority(&fixture);
+    let instance = awaiting_payment_assessment(&workflow, &authority);
+    let mut demand = workflow
+        .begin_payment_assessment(
+            instance.clone(),
+            authority.clone(),
+            policy(1, 1),
+            &key("assessment:settle"),
+        )
+        .expect("the payment assessment demand starts");
+    fixture
+        .world
+        .runtime
+        .delay_next_output_readiness_delivery_for_test();
+    assert!(
+        matches!(
+            workflow.settle_payment_assessment(&mut demand),
             Ok(BankApprovedPaymentAssessmentProgress::Pending)
         ),
-        "one source reading cannot settle the assessment"
+        "a readiness delivery that has not arrived is a wait outside the call"
     );
-    let assessment = (0..8)
-        .find_map(|_| match workflow.settle_payment_assessment(&mut demand) {
-            Ok(BankApprovedPaymentAssessmentProgress::Settled(settled)) => Some(settled),
-            Ok(BankApprovedPaymentAssessmentProgress::Pending) => None,
-            Err(denial) => panic!("the resumed demand must keep advancing: {denial}"),
-        })
-        .expect("later calls resume the same demand to settlement");
+    let assessment = match workflow.settle_payment_assessment(&mut demand) {
+        Ok(BankApprovedPaymentAssessmentProgress::Settled(settled)) => settled,
+        Ok(BankApprovedPaymentAssessmentProgress::Pending) => {
+            panic!("the delivered readiness settles the resumed demand")
+        }
+        Err(denial) => panic!("the resumed demand must keep advancing: {denial}"),
+    };
     require_completed(
         workflow
             .accept_assessment(instance, authority, &assessment, &key("assessment:accept"))
@@ -76,12 +121,16 @@ fn notified_rounds_carry_one_call_to_settlement() {
             &key("assessment:settle"),
         )
         .expect("the payment assessment demand starts");
+    fixture
+        .world
+        .runtime
+        .delay_next_output_readiness_delivery_for_test();
     assert!(
         matches!(
             workflow.settle_payment_assessment(&mut demand),
             Ok(BankApprovedPaymentAssessmentProgress::Settled(_))
         ),
-        "each advancing round notifies the demand, so the next round runs"
+        "the round the delivery interrupts notifies the demand, so the next round runs"
     );
 }
 

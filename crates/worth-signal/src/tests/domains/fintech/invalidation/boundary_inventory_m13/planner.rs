@@ -16,11 +16,11 @@ pub(super) const PLANNER_AND_EXECUTOR_BOUNDARIES: &[ExactBoundarySymbol] = &[
         1
     ),
     boundary!(
-        "serial and parallel readiness call sites",
+        "epoch readiness call and import",
         "logic/planner/precompute/read_preparation.rs",
         "../../../../../logic/planner/precompute/read_preparation.rs",
         "prevalidate_stage_tasks",
-        4
+        2
     ),
     boundary!(
         "prepared-plan execution facade",
@@ -30,9 +30,23 @@ pub(super) const PLANNER_AND_EXECUTOR_BOUNDARIES: &[ExactBoundarySymbol] = &[
         1
     ),
     boundary!(
+        "prepared-plan execution owner",
+        "logic/planner/execution/prepared_plan.rs",
+        "../../../../../logic/planner/execution/prepared_plan.rs",
+        "execute_prepared_plan",
+        1
+    ),
+    boundary!(
         "policy-governed execution entry",
         "logic/planner/execution/mod.rs",
         "../../../../../logic/planner/execution/mod.rs",
+        "execute_prepared_plan_with_policy",
+        1
+    ),
+    boundary!(
+        "prepared-plan policy delegation",
+        "logic/planner/execution/prepared_plan.rs",
+        "../../../../../logic/planner/execution/prepared_plan.rs",
         "execute_prepared_plan_with_policy",
         2
     ),
@@ -44,9 +58,9 @@ pub(super) const PLANNER_AND_EXECUTOR_BOUNDARIES: &[ExactBoundarySymbol] = &[
         2
     ),
     boundary!(
-        "stage dispatch call site",
-        "logic/planner/execution/mod.rs",
-        "../../../../../logic/planner/execution/mod.rs",
+        "epoch stage dispatch call and import",
+        "logic/planner/execution/epochs.rs",
+        "../../../../../logic/planner/execution/epochs.rs",
         "execute_stage",
         2
     ),
@@ -86,17 +100,31 @@ pub(super) const PLANNER_AND_EXECUTOR_BOUNDARIES: &[ExactBoundarySymbol] = &[
         1
     ),
     boundary!(
-        "lowered execution-form call",
+        "checked lowered execution-form call",
         "logic/planner/apply/stage.rs",
         "../../../../../logic/planner/apply/stage.rs",
-        "build_stage_execution_form",
+        "build_checked_stage_execution_form",
         1
     ),
     boundary!(
-        "lowered execution-form owner",
+        "checked lowered execution-form owner",
         "logic/planner/apply/stage/lowering.rs",
         "../../../../../logic/planner/apply/stage/lowering.rs",
-        "build_stage_execution_form",
+        "build_checked_stage_execution_form",
+        1
+    ),
+    boundary!(
+        "legacy lowered execution-form call",
+        "logic/planner/apply/stage.rs",
+        "../../../../../logic/planner/apply/stage.rs",
+        "build_legacy_stage_execution_form",
+        1
+    ),
+    boundary!(
+        "legacy lowered execution-form owner",
+        "logic/planner/apply/stage/lowering.rs",
+        "../../../../../logic/planner/apply/stage/lowering.rs",
+        "build_legacy_stage_execution_form",
         1
     ),
     boundary!(
@@ -170,53 +198,53 @@ pub(super) const PLANNER_AND_EXECUTOR_BOUNDARIES: &[ExactBoundarySymbol] = &[
         4
     ),
     boundary!(
-        "stage precompute dispatch call",
+        "stage preparation call",
         "logic/planner/precompute/stage.rs",
         "../../../../../logic/planner/precompute/stage.rs",
-        "dispatch_stage_precompute",
-        2
-    ),
-    boundary!(
-        "stage precompute dispatch owner",
-        "logic/planner/precompute/dispatch.rs",
-        "../../../../../logic/planner/precompute/dispatch.rs",
-        "dispatch_stage_precompute",
+        "prepare_epoch",
         1
     ),
     boundary!(
-        "serial precompute dispatch",
-        "logic/planner/precompute/dispatch.rs",
-        "../../../../../logic/planner/precompute/dispatch.rs",
-        "dispatch_stage_precompute_serial",
+        "checked and legacy epoch preparation owner",
+        "logic/planner/precompute/read_preparation.rs",
+        "../../../../../logic/planner/precompute/read_preparation.rs",
+        "prepare_epoch",
+        1
+    ),
+    boundary!(
+        "legacy serial epoch owner",
+        "logic/planner/precompute/read_preparation.rs",
+        "../../../../../logic/planner/precompute/read_preparation.rs",
+        "prepare_legacy_epoch",
+        2
+    ),
+    boundary!(
+        "bounded graph epoch admission",
+        "logic/planner/precompute/graph_batch.rs",
+        "../../../../../logic/planner/precompute/graph_batch.rs",
+        "epoch_width",
+        1
+    ),
+    boundary!(
+        "checked map lowering owner",
+        "logic/planner/precompute/read_preparation.rs",
+        "../../../../../logic/planner/precompute/read_preparation.rs",
+        "lower_checked_map",
+        2
+    ),
+    boundary!(
+        "checked map publication reconciliation",
+        "logic/planner/precompute/read_preparation.rs",
+        "../../../../../logic/planner/precompute/read_preparation.rs",
+        "reconcile_prepared_values",
+        2
+    ),
+    boundary!(
+        "graph batch live binding admission",
+        "logic/planner/precompute/graph_batch.rs",
+        "../../../../../logic/planner/precompute/graph_batch.rs",
+        "current_binding",
         3
-    ),
-    boundary!(
-        "parallel precompute dispatch",
-        "logic/planner/precompute/dispatch.rs",
-        "../../../../../logic/planner/precompute/dispatch.rs",
-        "dispatch_stage_precompute_parallel",
-        2
-    ),
-    boundary!(
-        "serial precompute owner",
-        "logic/planner/precompute/read_preparation.rs",
-        "../../../../../logic/planner/precompute/read_preparation.rs",
-        "precompute_stage_serial",
-        1
-    ),
-    boundary!(
-        "staged-parallel precompute owner",
-        "logic/planner/precompute/read_preparation.rs",
-        "../../../../../logic/planner/precompute/read_preparation.rs",
-        "precompute_stage_parallel",
-        1
-    ),
-    boundary!(
-        "full-parallel patch preparation owner",
-        "logic/planner/precompute/read_preparation.rs",
-        "../../../../../logic/planner/precompute/read_preparation.rs",
-        "build_parallel_stage_patches",
-        1
     ),
     boundary!(
         "grouped concurrent apply call",
@@ -254,17 +282,24 @@ pub(super) const PLANNER_AND_EXECUTOR_BOUNDARIES: &[ExactBoundarySymbol] = &[
         1
     ),
     boundary!(
-        "parallel prepared-commit publication call",
+        "parallel epoch preparation call",
         "logic/planner/apply/stage/concurrent_packets.rs",
         "../../../../../logic/planner/apply/stage/concurrent_packets.rs",
-        "publish_prepared_parallel_apply_commit_packet",
+        "prepare_parallel_apply_epoch",
         1
     ),
     boundary!(
-        "parallel prepared-commit publication owner",
-        "data/graph/runtime/effect/output_commit.rs",
-        "../../../../../data/graph/runtime/effect/output_commit.rs",
-        "publish_prepared_parallel_apply_commit_packet",
+        "obsolete group-local publication removed",
+        "logic/planner/apply/stage/concurrent_packets.rs",
+        "../../../../../logic/planner/apply/stage/concurrent_packets.rs",
+        "publish_group_local_task_commit",
+        0
+    ),
+    boundary!(
+        "parallel epoch preparation owner",
+        "data/graph/runtime/effect/output_commit/epoch.rs",
+        "../../../../../data/graph/runtime/effect/output_commit/epoch.rs",
+        "prepare_parallel_apply_epoch",
         1
     ),
 ];

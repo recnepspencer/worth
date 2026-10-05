@@ -176,14 +176,14 @@ fn derived_index_contract_persisted_recovery_preserves_entity_field_equals_parit
 }
 
 #[test]
-fn derived_index_contract_entity_field_equals_is_stable_across_execution_models() {
+fn derived_index_contract_entity_field_equals_is_stable_with_leased_index_build() {
     fn build_runtime(
-        execution_model: RelationalExecutionModel,
+        leased: bool,
     ) -> (
         crate::facade::runtime::RelationalRuntime,
         crate::facade::snapshots::SnapshotHandle,
     ) {
-        let runtime = runtime_with_test_schema_execution_model(execution_model);
+        let runtime = runtime_with_test_schema();
         let alpha = create_entity_outcome(&runtime, "alpha");
         let index = runtime.index_authority().register(DerivedIndexDefinition {
             index_id: DerivedIndexId(0),
@@ -193,21 +193,24 @@ fn derived_index_contract_entity_field_equals_is_stable_across_execution_models(
             },
             branch_scoped: false,
         });
-        let build = runtime
-            .index_authority()
-            .build_for_commit(DerivedIndexBuildRequest {
-                source_commit_id: alpha.commit.commit_id,
-                branch_id: BranchId("main".to_string()),
-                index_ids: vec![index.index_id],
-            });
+        let request = DerivedIndexBuildRequest {
+            source_commit_id: alpha.commit.commit_id,
+            branch_id: BranchId("main".to_string()),
+            index_ids: vec![index.index_id],
+        };
+        let build = if leased {
+            runtime
+                .index_authority()
+                .build_for_commit_with_lease(request, &test_execution_lease())
+        } else {
+            runtime.index_authority().build_for_commit(request)
+        };
         assert!(build.failed_indexes.is_empty());
         (runtime, alpha.snapshot.clone())
     }
 
-    let (serial_runtime, serial_snapshot) =
-        build_runtime(RelationalExecutionModel::SingleLaneExecution);
-    let (staged_runtime, staged_snapshot) =
-        build_runtime(RelationalExecutionModel::ParallelPreparation);
+    let (serial_runtime, serial_snapshot) = build_runtime(false);
+    let (staged_runtime, staged_snapshot) = build_runtime(true);
 
     let serial_context = serial_runtime
         .read_truth()
@@ -297,14 +300,12 @@ fn derived_index_contract_entity_field_equals_is_stable_across_execution_models(
 
 #[test]
 fn derived_index_contract_staged_parallel_generation_matches_serial_reference() {
-    fn build_runtime(
-        execution_model: RelationalExecutionModel,
-    ) -> (
+    fn build_runtime() -> (
         crate::facade::runtime::RelationalRuntime,
         crate::facade::history::CommitId,
         Vec<crate::facade::indexes::DerivedIndexId>,
     ) {
-        let runtime = runtime_with_test_schema_execution_model(execution_model);
+        let runtime = runtime_with_test_schema();
         let commit = create_entity_outcome(&runtime, "main-a");
         let name_index = runtime.index_authority().register(DerivedIndexDefinition {
             index_id: DerivedIndexId(0),
@@ -330,10 +331,8 @@ fn derived_index_contract_staged_parallel_generation_matches_serial_reference() 
         )
     }
 
-    let (serial_runtime, serial_commit_id, index_ids) =
-        build_runtime(RelationalExecutionModel::SingleLaneExecution);
-    let (staged_runtime, staged_commit_id, staged_index_ids) =
-        build_runtime(RelationalExecutionModel::ParallelPreparation);
+    let (serial_runtime, serial_commit_id, index_ids) = build_runtime();
+    let (staged_runtime, staged_commit_id, staged_index_ids) = build_runtime();
 
     serial_runtime.performance_access().reset_counters();
     staged_runtime.performance_access().reset_counters();
@@ -347,11 +346,14 @@ fn derived_index_contract_staged_parallel_generation_matches_serial_reference() 
         });
     let staged = staged_runtime
         .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
-            source_commit_id: staged_commit_id,
-            branch_id: BranchId("main".to_string()),
-            index_ids: staged_index_ids,
-        });
+        .build_for_commit_with_lease(
+            DerivedIndexBuildRequest {
+                source_commit_id: staged_commit_id,
+                branch_id: BranchId("main".to_string()),
+                index_ids: staged_index_ids,
+            },
+            &test_execution_lease(),
+        );
 
     let staged_counters = staged_runtime.performance_access().counters();
 

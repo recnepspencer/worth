@@ -1,12 +1,10 @@
-use crate::facade::runtime::RelationalExecutionModel;
 use crate::facade::transactions::CommitTraceEvent;
 use crate::tests::support::*;
 
 #[test]
 fn staged_parallel_commit_records_preparation_strategy_and_packet_counters() {
-    let runtime =
-        runtime_with_test_schema_execution_model(RelationalExecutionModel::ParallelPreparation);
-    let result = create_entity_outcome(&runtime, "staged");
+    let runtime = runtime_with_test_schema();
+    let result = create_entity_outcome_with_lease(&runtime, "staged", &test_execution_lease());
 
     assert!(result.complexity_delta().preparation_packet_count >= 1);
     assert!(result.complexity_delta().preparation_parallel_legal_count >= 1);
@@ -31,13 +29,15 @@ fn staged_parallel_commit_records_preparation_strategy_and_packet_counters() {
         .invariant_executions()
         .iter()
         .find(|execution| {
-            execution.metadata().execution_model() == RelationalExecutionModel::ParallelPreparation
+            execution
+                .metadata()
+                .preparation_strategy()
+                .is_some_and(|strategy| {
+                    strategy.selected_mode
+                        == crate::authority::commit::preparation::planning::strategy::PreparationStrategySelection::StagedParallel
+                })
         })
         .expect("staged preparation execution");
-    assert_eq!(
-        staged_execution.metadata().execution_model(),
-        RelationalExecutionModel::ParallelPreparation
-    );
     assert_eq!(
         staged_execution
             .metadata()
@@ -51,7 +51,6 @@ fn staged_parallel_commit_records_preparation_strategy_and_packet_counters() {
     assert!(result.commit_log().events().iter().any(|event| matches!(
         event,
         CommitTraceEvent::InvariantEvaluated {
-            execution_model: RelationalExecutionModel::ParallelPreparation,
             preparation_selected_mode: Some(
                 crate::authority::commit::preparation::planning::strategy::PreparationStrategySelection::StagedParallel
             ),
@@ -62,13 +61,12 @@ fn staged_parallel_commit_records_preparation_strategy_and_packet_counters() {
 
 #[test]
 fn staged_parallel_patch_preparation_matches_serial_patch_surface() {
-    let serial_runtime =
-        runtime_with_test_schema_execution_model(RelationalExecutionModel::SingleLaneExecution);
-    let staged_runtime =
-        runtime_with_test_schema_execution_model(RelationalExecutionModel::ParallelPreparation);
+    let serial_runtime = runtime_with_test_schema();
+    let staged_runtime = runtime_with_test_schema();
 
     let serial = create_entity_outcome(&serial_runtime, "patch-parity");
-    let staged = create_entity_outcome(&staged_runtime, "patch-parity");
+    let staged =
+        create_entity_outcome_with_lease(&staged_runtime, "patch-parity", &test_execution_lease());
 
     assert_eq!(serial.patch(), staged.patch());
     assert_eq!(serial.envelope().patch, staged.envelope().patch);

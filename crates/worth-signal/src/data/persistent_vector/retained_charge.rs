@@ -10,12 +10,32 @@ use crate::data::retained_storage::{
 use super::{ForkPage, PersistentVector, PersistentVectorStorage};
 
 impl<T: Clone, const PAGE_LEN: usize> PersistentVector<T, PAGE_LEN> {
+    pub(crate) fn empty_persistent_overlay_charge() -> Result<Charge, Denial> {
+        Self::new()
+            .charge_after_persistent_fork()
+            .ok_or(Denial::ChargeOverflow)
+    }
+
     /// Constant-time carried fact. Missing accounting never triggers a scan.
     pub(crate) fn prepared_retained_charge(
         &self,
     ) -> Result<Charge, super::RetainedVectorMutationDenial> {
         self.retained_charge
             .ok_or(super::RetainedVectorMutationDenial::PreparationRequired)
+    }
+
+    pub(crate) fn prepared_fork_charge(
+        &self,
+    ) -> Result<
+        crate::data::retained_storage::RetainedStorageForkCharge,
+        super::RetainedVectorMutationDenial,
+    > {
+        let source = self.prepared_retained_charge()?;
+        let retained = self.charge_after_persistent_fork().ok_or(
+            super::RetainedVectorMutationDenial::Accounting(Denial::ChargeOverflow),
+        )?;
+        crate::data::retained_storage::RetainedStorageForkCharge::from_charges(source, retained)
+            .map_err(Into::into)
     }
 
     pub(super) fn charge_after_persistent_fork(&self) -> Option<Charge> {

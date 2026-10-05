@@ -1,9 +1,10 @@
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 mod access;
 mod artifacts;
 mod checkpoint;
 mod definition;
+mod deserialization;
 mod layout;
 mod state;
 mod state_transitions;
@@ -20,7 +21,7 @@ pub(crate) use layout::{
 pub use state::NodeState;
 
 /// Internal storage for a single signal node.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct NodeEntry {
     #[serde(flatten)]
     definition: NodeDefinitionData,

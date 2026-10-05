@@ -1,5 +1,6 @@
 mod fork_growth;
 mod insertion;
+pub(crate) use insertion::PreparedSegmentBatchInsertion;
 mod persistent_fork;
 use crate::data::retained_storage::RetainedStorageBacking;
 use serde::{Deserialize, Serialize};

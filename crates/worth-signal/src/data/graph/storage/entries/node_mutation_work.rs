@@ -6,7 +6,7 @@ use crate::logic::evaluation::EvaluationWork;
 impl SignalGraph {
     pub(crate) fn admit_effect_node_mutation_work(
         &self,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         // Producer: version, artifact, cause release/cache, clean/deferred
         // state, snapshot ID and final waiter projection. Cold storage also
@@ -17,7 +17,7 @@ impl SignalGraph {
 
     pub(crate) fn admit_downstream_node_mutation_work(
         &self,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         // At most one cause replacement (handle/cache/state) and one waiter
         // projection per node in the deduplicated prepared resolution map.
@@ -29,7 +29,7 @@ impl SignalGraph {
         hot: usize,
         warm: usize,
         cold: usize,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         if matches!(work, EvaluationWork::Ordinary) {
             return Ok(());

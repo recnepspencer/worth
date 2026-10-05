@@ -74,12 +74,12 @@ impl WorthQueryAdmittedGraphWorkPlan {
         self.identity
     }
 
-    pub const fn obligation_identity(&self) -> &WorthQueryInstalledGraphObligationSetIdentity {
+    pub fn obligation_identity(&self) -> &WorthQueryInstalledGraphObligationSetIdentity {
         self.selected.identity()
     }
 
     #[doc(hidden)]
-    pub const fn binding_identity(&self) -> &ApplicationSchemaBindingIdentity {
+    pub fn binding_identity(&self) -> &ApplicationSchemaBindingIdentity {
         self.selected.binding_identity()
     }
 

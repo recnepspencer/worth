@@ -1,3 +1,4 @@
+mod bounded_inputs;
 mod checkpoint_image;
 mod condition;
 mod contract;
@@ -10,6 +11,7 @@ pub use crate::data::performance::{
     SuppressionBasis,
 };
 pub use crate::data::reuse::NodeReuseContract;
+pub use bounded_inputs::{BoundedSignalInputs, DeclaredSignalInput};
 pub use checkpoint_image::CheckpointNodeImage;
 pub(crate) use checkpoint_image::CheckpointNodeImageParts;
 pub(crate) use condition::InstalledSignalConditionRole;

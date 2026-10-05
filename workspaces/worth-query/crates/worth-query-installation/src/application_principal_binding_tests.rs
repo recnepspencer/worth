@@ -1,6 +1,8 @@
 use worth_foundational::facade::AspectValue;
 #[path = "application_principal_binding_tests/result_only.rs"]
 mod result_only;
+#[path = "application_principal_binding_tests/retained_validation.rs"]
+mod retained_validation;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
     ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
@@ -357,6 +359,12 @@ fn forged_string_identity_binding() -> ApplicationPrincipalBindingRef<
 }
 
 fn installed_index() -> WorthQueryInstalledPackageIndex {
+    installed_index_in_runtime(WorthQueryInstallationRuntimeIdentity::fresh())
+}
+
+fn installed_index_in_runtime(
+    runtime: WorthQueryInstallationRuntimeIdentity,
+) -> WorthQueryInstalledPackageIndex {
     let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
         "identity_installation_test",
         1,
@@ -369,7 +377,7 @@ fn installed_index() -> WorthQueryInstalledPackageIndex {
         .admit(package)
         .unwrap();
     WorthQueryInstalledPackageIndex::build(
-        WorthQueryInstallationRuntimeIdentity::fresh(),
+        runtime,
         WorthQueryInstallationGeneration::initial(),
         [admitted],
     )

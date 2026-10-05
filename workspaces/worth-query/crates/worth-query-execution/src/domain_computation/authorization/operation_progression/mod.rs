@@ -1,6 +1,9 @@
 //! Owner-sealed progression from authorization into operation admission.
 
 mod authority_validation;
+pub(in crate::domain_computation) use authority_validation::{
+    authorize_public_mutation_on_selected, SelectedConventionalAdmissionStop,
+};
 
 pub use authority_validation::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use authority_validation::WorthQueryAdmittedApplicationOperation;

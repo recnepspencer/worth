@@ -73,18 +73,17 @@ fn append_dependency(material: &mut String, dependency: &SignalConditionalDepend
     match dependency.scope.as_ref() {
         None => token(material, "dependency-scope", "none"),
         Some(scope) => {
-            token(material, "dependency-scope", "partition");
-            text_field(material, "dependency-partition", scope.partition.0.as_str());
-            match scope.detail.as_deref() {
-                Some(detail) => text_field(material, "dependency-detail", detail),
-                None => token(material, "dependency-detail", "none"),
+            token(material, "dependency-scope", "path");
+            field(material, "dependency-scope-depth", scope.path().depth());
+            for segment in scope.path().segments() {
+                text_field(material, "dependency-scope-segment", segment);
             }
             token(
                 material,
-                "dependency-match",
-                match scope.match_mode {
-                    crate::data::output::PartitionMatchMode::WholePartition => "whole",
-                    crate::data::output::PartitionMatchMode::PartitionAndDetail => "detail",
+                "dependency-coverage",
+                match scope.coverage() {
+                    crate::data::output::ScopeCoverage::Subtree => "subtree",
+                    crate::data::output::ScopeCoverage::Exact => "exact",
                 },
             );
         }

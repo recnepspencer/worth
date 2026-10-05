@@ -214,7 +214,6 @@ impl LocalityRedMutation {
 #[test]
 fn every_assigned_red_mutation_breaks_its_scenario_owned_observation() {
     use crate::facade::DiagnosticsTier;
-    use crate::logic::planner::StageExecutor;
     use crate::tests::domains::fintech::certification::invalidation::{
         locality_receipt::validate_case_results, FinancialLocalityExpectationManifest,
         FreshFinancialLocalityRecompute,
@@ -237,7 +236,7 @@ fn every_assigned_red_mutation_breaks_its_scenario_owned_observation() {
         );
         let fresh = FreshFinancialLocalityRecompute::run(compiled.locality_definition());
         let (baseline, _) = compiled
-            .observe_locality_action_trace_with_executor(0, StageExecutor::Serial)
+            .observe_locality_action_trace_with_workers(0, 1)
             .unwrap();
         validate_case_results(&compiled, &manifest, &fresh, &baseline).unwrap();
 

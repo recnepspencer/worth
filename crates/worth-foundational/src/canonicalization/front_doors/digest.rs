@@ -15,6 +15,33 @@ use super::super::{
 pub struct CanonicalDigestFrontDoor;
 
 impl CanonicalDigestFrontDoor {
+    pub fn derive_with_admission<Stop>(
+        self,
+        ready: CanonicalDigestDerivationReadyArtifact,
+        admit: &mut impl FnMut(usize, usize) -> Result<(), Stop>,
+    ) -> Result<CanonicalDerivedDigest, super::super::CanonicalDigestAdmissionStop<Stop>> {
+        super::super::derive_canonical_digest_with_admission(ready, admit)
+    }
+
+    /// Runs the ordinary grammar with before-allocation resource admission.
+    pub fn for_sequence_with_admission<Stop>(
+        self,
+        sequence: CanonicalBasisReadyArtifact,
+        algorithm_id: CanonicalDigestAlgorithmId,
+        budget: CanonicalDigestWorkBudget,
+        admit: &mut impl FnMut(usize, usize) -> Result<(), Stop>,
+    ) -> Result<
+        CanonicalDigestDerivationReadyArtifact,
+        super::super::CanonicalDigestAdmissionStop<Stop>,
+    > {
+        super::super::digest_slots::prepare_sequence_with_admission(
+            sequence,
+            algorithm_id,
+            budget,
+            admit,
+        )
+    }
+
     pub fn for_sequence(
         self,
         sequence: CanonicalBasisReadyArtifact,

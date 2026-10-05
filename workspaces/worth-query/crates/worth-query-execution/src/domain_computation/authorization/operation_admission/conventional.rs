@@ -218,7 +218,9 @@ fn construct_admitted_operation<Schema, Principal, PrincipalIdentity, Operation,
         preparation,
         authorization,
     } = observed;
-    let contracts = preparation.operation.contracts().clone();
+    let contracts = preparation
+        .operation
+        .retain_compiled_contracts_for_admission();
     let canonical_work = WorthQueryCanonicalWorkPhases::new(
         contracts.canonical_work(),
         preparation.preconditions.canonical_work(),
@@ -256,6 +258,7 @@ fn construct_admitted_operation<Schema, Principal, PrincipalIdentity, Operation,
         graph_work: preparation.graph_work,
         source_partition_identity: None,
         source_facts: Vec::new(),
+        required_output_demand: None,
         _marker: PhantomData,
     }
 }

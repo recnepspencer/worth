@@ -2,7 +2,7 @@ use crate::authority::commit::preparation::packets::index::{
     IndexFragmentIdentity, IndexPreparationHeader, IndexPreparationPacket,
 };
 use crate::authority::commit::preparation::planning::strategy::{
-    strategy_for_parallel_packets, PreparationStrategy, SerialPreparationReason,
+    strategy_for_parallel_packets, PreparationStrategy,
 };
 use crate::authority::commit::preparation::proofs::kinds::PreparationProofKind;
 use crate::authority::commit::preparation::proofs::locality::{
@@ -10,10 +10,13 @@ use crate::authority::commit::preparation::proofs::locality::{
     PreparationRecordDomain, PreparationWriteExclusionClass,
 };
 use crate::authority::commit::preparation::reduction::keys::IndexReductionKey;
-use crate::config::data::RelationalExecutionModel;
 use crate::indexes::data::{DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind};
 use crate::runtime::RelationalRuntime;
 use crate::validation::data::InvariantGroupSet;
+use worth_execution::ExecutionResourceLease;
+
+mod checked;
+pub(super) use checked::plan_index_packets_checked;
 
 pub(super) fn planned_index_definitions(
     runtime: &RelationalRuntime,
@@ -34,54 +37,51 @@ pub(super) fn planned_index_definitions(
 }
 
 pub(super) fn choose_index_preparation_strategy(
-    runtime: &RelationalRuntime,
+    _runtime: &RelationalRuntime,
+    lease: Option<&ExecutionResourceLease>,
     packet_count: usize,
 ) -> PreparationStrategy {
-    if !matches!(
-        runtime.config.execution.execution_model,
-        RelationalExecutionModel::ParallelPreparation
-    ) {
-        return PreparationStrategy::serial(SerialPreparationReason::ExecutionModelSerial);
-    }
-
-    strategy_for_parallel_packets(runtime.config.execution.execution_model, packet_count)
+    strategy_for_parallel_packets(lease, packet_count)
 }
 
 pub(super) fn plan_index_packets(
-    definitions: &[DerivedIndexDefinition],
+    definitions: Vec<DerivedIndexDefinition>,
 ) -> Vec<IndexPreparationPacket> {
     definitions
-        .iter()
-        .cloned()
+        .into_iter()
         .enumerate()
-        .map(|(packet_index, definition)| {
-            let record_domain = match definition.kind {
-                DerivedIndexKind::EntityField { .. } => PreparationRecordDomain::Entity,
-                DerivedIndexKind::RelationField { .. } => PreparationRecordDomain::Relation,
-                DerivedIndexKind::RelatedEntityOrdering { .. } => PreparationRecordDomain::Mixed,
-                DerivedIndexKind::RelationJoin(_) => PreparationRecordDomain::Mixed,
-            };
-            IndexPreparationPacket {
-                header: IndexPreparationHeader {
-                    packet_index,
-                    identity: IndexFragmentIdentity {
-                        index_id: definition.index_id,
-                        packet_index,
-                    },
-                    reduction_key: IndexReductionKey::new(definition.index_id, packet_index),
-                    proof_kind: PreparationProofKind::ReadOnlyShared,
-                    locality: PreparationLocalityProof {
-                        observation_scope:
-                            crate::validation::engine::InvariantObservationKind::Committed,
-                        record_domain,
-                        partition_scope: PreparationPartitionScope::AllObserved,
-                        invariant_group_scope: InvariantGroupSet::empty(),
-                        read_set_approximation: PreparationReadSetApproximation::FullObservedScan,
-                        write_exclusion: PreparationWriteExclusionClass::PublicationExcluded,
-                    },
-                },
-                definition,
-            }
-        })
+        .map(|(packet_index, definition)| packet_for_definition(packet_index, definition))
         .collect()
+}
+
+fn packet_for_definition(
+    packet_index: usize,
+    definition: DerivedIndexDefinition,
+) -> IndexPreparationPacket {
+    let record_domain = match definition.kind {
+        DerivedIndexKind::EntityField { .. } => PreparationRecordDomain::Entity,
+        DerivedIndexKind::RelationField { .. } => PreparationRecordDomain::Relation,
+        DerivedIndexKind::RelatedEntityOrdering { .. } => PreparationRecordDomain::Mixed,
+        DerivedIndexKind::RelationJoin(_) => PreparationRecordDomain::Mixed,
+    };
+    IndexPreparationPacket {
+        header: IndexPreparationHeader {
+            packet_index,
+            identity: IndexFragmentIdentity {
+                index_id: definition.index_id,
+                packet_index,
+            },
+            reduction_key: IndexReductionKey::new(definition.index_id, packet_index),
+            proof_kind: PreparationProofKind::ReadOnlyShared,
+            locality: PreparationLocalityProof {
+                observation_scope: crate::validation::engine::InvariantObservationKind::Committed,
+                record_domain,
+                partition_scope: PreparationPartitionScope::AllObserved,
+                invariant_group_scope: InvariantGroupSet::empty(),
+                read_set_approximation: PreparationReadSetApproximation::FullObservedScan,
+                write_exclusion: PreparationWriteExclusionClass::PublicationExcluded,
+            },
+        },
+        definition,
+    }
 }

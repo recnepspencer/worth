@@ -77,6 +77,12 @@ where
     pub fn owner_identity(&self) -> RuntimeWorldOwnerIdentity {
         self.root.owner_identity()
     }
+
+    /// Borrow the authority installed by the host for request lease admission.
+    pub fn execution_authority(&self) -> Option<&worth_execution::ExecutionAuthority> {
+        self.root.state.execution_authority.as_deref()
+    }
+
     pub fn publication_port(&self) -> RuntimeWorldPublicationPort<D, I, E, Ctx, T> {
         RuntimeWorldPublicationPort::new(Arc::downgrade(&self.root))
     }

@@ -45,14 +45,37 @@ impl RelationalPreparationPort {
         &self,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+        self.prepare_branch_transaction_inner(transaction, None)
+    }
+
+    pub fn prepare_branch_transaction_with_lease(
+        &self,
+        transaction: crate::mvcc::BranchBoundRelationalTransaction,
+        lease: &worth_execution::ExecutionResourceLease<'_>,
+    ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+        self.prepare_branch_transaction_inner(transaction, Some(lease))
+    }
+
+    fn prepare_branch_transaction_inner(
+        &self,
+        transaction: crate::mvcc::BranchBoundRelationalTransaction,
+        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
         let _operation = self.admit_operation()?;
         let configuration = self.binding.configuration_binding();
         let epoch = configuration.operation();
         let runtime = self.binding.runtime_snapshot_from(&epoch);
-        let proposal = runtime
-            .validate_branch_transaction(transaction)
-            .map_err(attach_validation_rejection)?;
-        self.prepare_validated_proposal_inner(&runtime, proposal)
+        let runtime = if lease.is_some() {
+            runtime.with_commit_work_budget()
+        } else {
+            runtime
+        };
+        let proposal = match lease {
+            Some(lease) => runtime.validate_branch_transaction_with_lease(transaction, lease),
+            None => runtime.validate_branch_transaction(transaction),
+        }
+        .map_err(attach_validation_rejection)?;
+        self.prepare_validated_proposal_inner(&runtime, proposal, lease)
     }
 
     pub(crate) fn prepare_validated_proposal(
@@ -63,7 +86,7 @@ impl RelationalPreparationPort {
         let configuration = self.binding.configuration_binding();
         let epoch = configuration.operation();
         let runtime = self.binding.runtime_snapshot_from(&epoch);
-        self.prepare_validated_proposal_inner(&runtime, proposal)
+        self.prepare_validated_proposal_inner(&runtime, proposal, None)
     }
 
     /// Consume a prepared candidate without publishing it and release its
@@ -85,6 +108,7 @@ impl RelationalPreparationPort {
         &self,
         runtime: &RelationalPreparationRuntime,
         proposal: crate::mvcc::ValidatedRelationalProposal,
+        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
         let proposal = runtime.revalidate_proposal_for_publication(proposal)?;
         crate::authority::commit::pipeline::prepare_authoritative_commit(
@@ -92,6 +116,7 @@ impl RelationalPreparationPort {
             crate::authority::commit::pipeline::AuthoritativeCommitContext::from_validated_proposal(
                 proposal,
             ),
+            lease,
         )
     }
 
@@ -142,6 +167,7 @@ fn attach_validation_rejection(error: TransactionCommitError) -> TransactionComm
             commit_log.record_rejection(phase, Some(error.code()), None, error.detail());
         }
         TransactionCommitError::Interrupted { .. }
+        | TransactionCommitError::Execution { .. }
         | TransactionCommitError::PublicationDenied { .. }
         | TransactionCommitError::PublicationDeferred { .. }
         | TransactionCommitError::PublicationFailed { .. } => {

@@ -144,9 +144,11 @@ pub(super) use optional_output_binding::{
 #[path = "fixture/program_required_binding.rs"]
 mod program_required_binding;
 pub(super) use capability_touch_binding::CapabilityTouchMutationBinding;
+pub(in crate::domain_computation::primary_graph) use program_required_binding::{
+    ProgramRequiredInput, ProgramRequiredMutationBinding,
+};
 pub(super) use program_required_binding::{
-    ProgramRequiredInput, ProgramRequiredMutationBinding, ProgramRequiredOperation,
-    ProgramRequiredSiblingBinding,
+    ProgramRequiredOperation, ProgramRequiredSiblingBinding,
 };
 #[path = "fixture/program_roster.rs"]
 mod program_roster;
@@ -172,7 +174,8 @@ pub(in crate::domain_computation::primary_graph) use capability_world_installati
 };
 pub(in crate::domain_computation::primary_graph) use schema_types::*;
 pub(in crate::domain_computation::primary_graph) use world_installation::{
-    installed_authorization_world, installed_authorization_world_with_label,
+    installed_authorization_world, installed_authorization_world_with_completed_evidence_capacity,
+    installed_authorization_world_with_label, installed_authorization_world_with_product_resources,
     installed_authorization_world_with_resource_profile, installed_blocked_authorization_world,
     installed_two_principal_authorization_world,
 };

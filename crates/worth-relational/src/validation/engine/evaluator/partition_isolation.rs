@@ -6,7 +6,7 @@ use super::super::context::InvariantExecutionContext;
 use super::common::canonicalize_violations;
 
 pub(super) fn evaluate_partition_isolation_contract(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     contract: &LoweredPartitionIsolationContract,
 ) -> Vec<InvariantViolation> {
@@ -17,8 +17,14 @@ pub(super) fn evaluate_partition_isolation_contract(
     context.metrics().count_relation_contracts_evaluated(1);
     let mut violations = Vec::new();
     for edge in &scope.planned_edges {
+        if !context.checkpoint(1) {
+            return Vec::new();
+        }
         context.metrics().count_relation_slot_scans(1);
         if edge.source.partition_id() != edge.target.partition_id() {
+            if !context.claim_result(4096) {
+                return Vec::new();
+            }
             violations.push(partition_isolation_violation(
                 class,
                 contract,
@@ -29,8 +35,14 @@ pub(super) fn evaluate_partition_isolation_contract(
         }
     }
     for edge in &scope.visible_edges {
+        if !context.checkpoint(1) {
+            return Vec::new();
+        }
         context.metrics().count_relation_slot_scans(1);
         if edge.source.partition_id != edge.target.partition_id {
+            if !context.claim_result(4096) {
+                return Vec::new();
+            }
             violations.push(partition_isolation_violation(
                 class,
                 contract,

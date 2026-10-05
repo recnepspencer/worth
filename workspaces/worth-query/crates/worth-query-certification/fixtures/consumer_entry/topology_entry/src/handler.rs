@@ -73,6 +73,14 @@ where
                 }
             }
             PlanarOperation::PublishDerivedOutput(output) => {
+                // These fixture keys exercise actual context consumption for
+                // the opted-in initial producer. The ordinary key keeps the
+                // tracked projection-only decision path.
+                if output.body_key == "anchor-isolated" {
+                    let _ = reader.reader().version();
+                } else if output.body_key == "anchor-island" {
+                    let _ = reader.key_identity();
+                }
                 let entity =
                     match reader.resolve_entity(BodyKey::reference(), output.body_key.clone()) {
                         Ok(entity) => entity,

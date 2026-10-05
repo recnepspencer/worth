@@ -35,9 +35,12 @@ mod service_denial;
 pub use service_denial::RuntimeWorldServiceDenial;
 
 #[cfg(feature = "test-operation-control")]
-mod operation_control;
+pub(crate) mod operation_control;
 #[cfg(feature = "test-operation-control")]
-pub use operation_control::{RuntimeWorldOperationControl, RuntimeWorldProductComparePause};
+pub use operation_control::{
+    RuntimeWorldOperationControl, RuntimeWorldProductComparePause,
+    RuntimeWorldProductCurrentnessPause,
+};
 
 #[cfg(test)]
 pub(crate) use ports::RuntimeWorldProductPublicationService;

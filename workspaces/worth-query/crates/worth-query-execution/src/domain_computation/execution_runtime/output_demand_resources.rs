@@ -1,13 +1,18 @@
 use std::num::NonZeroUsize;
 
-/// Host-owned allowances for output resolution. These are per-demand limits,
-/// not an aggregate memory reservation or a producer's measured consumption.
+/// Host-owned allowances for output resolution. Producer limits are per demand;
+/// registry obligation custody, demand records, and required-key indexing have
+/// separate aggregate retained-byte limits.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryOutputDemandResourceProfile {
     source_currentness_work: NonZeroUsize,
     producer_work: NonZeroUsize,
     producer_retained_bytes: NonZeroUsize,
     settlement_attempts: NonZeroUsize,
+    registry_obligation_retained_bytes: NonZeroUsize,
+    registry_record_retained_bytes: NonZeroUsize,
+    registry_required_retained_bytes: NonZeroUsize,
+    lineage_retained_bytes: NonZeroUsize,
 }
 
 /// Limits carried through source selection, production, and recovery. Admission
@@ -38,7 +43,47 @@ impl WorthQueryOutputDemandResourceProfile {
             producer_work,
             producer_retained_bytes,
             settlement_attempts,
+            registry_obligation_retained_bytes: NonZeroUsize::new(4 * 1_024 * 1_024).unwrap(),
+            registry_record_retained_bytes: NonZeroUsize::new(64 * 1_024 * 1_024).unwrap(),
+            registry_required_retained_bytes: NonZeroUsize::new(4 * 1_024 * 1_024).unwrap(),
+            lineage_retained_bytes: NonZeroUsize::new(64 * 1_024 * 1_024).unwrap(),
         }
+    }
+
+    pub const fn with_registry_obligation_retained_bytes(mut self, maximum: NonZeroUsize) -> Self {
+        self.registry_obligation_retained_bytes = maximum;
+        self
+    }
+
+    pub const fn registry_obligation_retained_bytes(self) -> usize {
+        self.registry_obligation_retained_bytes.get()
+    }
+
+    pub const fn with_registry_record_retained_bytes(mut self, maximum: NonZeroUsize) -> Self {
+        self.registry_record_retained_bytes = maximum;
+        self
+    }
+
+    pub const fn registry_record_retained_bytes(self) -> usize {
+        self.registry_record_retained_bytes.get()
+    }
+
+    pub const fn with_registry_required_retained_bytes(mut self, maximum: NonZeroUsize) -> Self {
+        self.registry_required_retained_bytes = maximum;
+        self
+    }
+
+    pub const fn registry_required_retained_bytes(self) -> usize {
+        self.registry_required_retained_bytes.get()
+    }
+
+    pub const fn with_lineage_retained_bytes(mut self, maximum: NonZeroUsize) -> Self {
+        self.lineage_retained_bytes = maximum;
+        self
+    }
+
+    pub const fn lineage_retained_bytes(self) -> usize {
+        self.lineage_retained_bytes.get()
     }
 
     pub const fn limits(self) -> WorthQueryOutputDemandLimits {
@@ -136,5 +181,14 @@ mod tests {
         );
         assert_eq!(small.constrain(standard.limits()), small.limits());
         assert_eq!(narrow.for_artifact(100, 100), narrow);
+    }
+
+    #[test]
+    fn registry_obligation_limit_is_independent_of_artifact_allowances() {
+        let host = WorthQueryOutputDemandResourceProfile::standard();
+        let registry_limited =
+            host.with_registry_obligation_retained_bytes(NonZeroUsize::new(128).unwrap());
+        assert_eq!(registry_limited.registry_obligation_retained_bytes(), 128);
+        assert_eq!(registry_limited.limits(), host.limits());
     }
 }

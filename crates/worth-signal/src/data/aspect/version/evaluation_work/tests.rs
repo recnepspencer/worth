@@ -1,146 +1,123 @@
 use super::*;
-use crate::data::aspect::Aspect;
+use crate::data::aspect::{Aspect, PartitionVersionMap};
+use crate::data::output::{PartitionSubscription, ScopePath};
 use crate::data::retained_storage::RetainedStoragePreparation as Work;
 
-fn version(n: u64) -> AspectVersion {
+fn path(depth: usize, leaf: &str) -> ScopePath {
+    ScopePath::new((0..depth).map(|n| {
+        if n + 1 == depth {
+            leaf.to_owned()
+        } else {
+            format!("p{n}")
+        }
+    }))
+    .unwrap()
+}
+
+fn stamp(n: u64) -> AspectVersion {
     AspectVersion::zero().with(Aspect::new(0), n)
 }
 
-fn fixture(unrelated: &str) -> PartitionVersionOverrides {
-    let mut values = PartitionVersionOverrides::default();
-    for partition in ["selected", unrelated] {
-        for detail in ["first", "second", "third"] {
-            values.apply_evaluation(
-                version(1),
-                &[ChangedRegion::new(partition).with_detail(detail)],
-            );
-        }
-    }
-    values
-}
-
 #[test]
-fn scoped_evaluation_range_matches_independent_full_map_reference() {
-    for case in 0..32 {
-        let source = fixture("unrelated");
-        let mut expected_partitions = source.partitions.clone();
-        let mut expected_details = source.details.clone();
-        let regions: Vec<_> = (0..case)
-            .map(|n| {
-                let partition = if n % 3 == 0 { "selected" } else { "new" };
-                if n % 4 == 0 {
-                    ChangedRegion::new(partition)
-                } else {
-                    ChangedRegion::new(partition).with_detail(format!("detail-{}", n % 5))
-                }
-            })
-            .collect();
-        // Deliberately full-map reference: no ordered range, same public meaning.
-        for region in &regions {
-            expected_partitions.insert(region.partition.clone(), version(9));
-            if let Some(detail) = &region.detail {
-                expected_details.insert(
-                    PartitionSubscription::partition_and_detail(
-                        region.partition.clone(),
-                        detail.clone(),
-                    ),
-                    version(9),
-                );
-            } else {
-                for (scope, value) in &mut expected_details {
-                    if scope.partition == region.partition {
-                        *value = version(9);
-                    }
-                }
-            }
-        }
-        let mut candidate = source.clone();
-        let mut work = Work::new(100_000_000);
-        candidate
-            .admit_evaluation_work(&regions, &mut EvaluationWork::Conditional(&mut work))
-            .unwrap();
-        assert_eq!(candidate, source);
-        candidate.apply_evaluation(version(9), &regions);
-        assert_eq!(candidate.partitions, expected_partitions);
-        assert_eq!(candidate.details, expected_details);
-        for detail in ["first", "second", "third"] {
+fn exact_leaf_writes_preserve_siblings_and_advance_subtree_ancestors() {
+    for depth in [1, 2, 4, 8] {
+        let leaf = path(depth, "left");
+        let sibling = path(depth, "right");
+        let mut map = PartitionVersionOverrides::default();
+        let region = ChangedRegion::exact(leaf.clone());
+        map.apply_evaluation(stamp(7), &[region]);
+        assert_eq!(
+            map.scoped_or_global(&PartitionSubscription::exact(leaf.clone()), stamp(7))
+                .get(Aspect::new(0)),
+            7
+        );
+        assert_eq!(
+            map.scoped_or_global(&PartitionSubscription::exact(sibling), stamp(7))
+                .get(Aspect::new(0)),
+            0
+        );
+        assert_eq!(
+            map.scoped_or_global(&PartitionSubscription::subtree(leaf.clone()), stamp(7))
+                .get(Aspect::new(0)),
+            7
+        );
+        if depth > 1 {
+            let ancestor = leaf.prefix(depth - 1).unwrap();
             assert_eq!(
-                candidate.scoped_or_global(
-                    &PartitionSubscription::partition_and_detail("unrelated", detail),
-                    version(0)
-                ),
-                version(1)
+                map.scoped_or_global(&PartitionSubscription::subtree(ancestor.clone()), stamp(7))
+                    .get(Aspect::new(0)),
+                7
+            );
+            assert_eq!(
+                map.scoped_or_global(&PartitionSubscription::exact(ancestor), stamp(7))
+                    .get(Aspect::new(0)),
+                0
             );
         }
     }
 }
 
 #[test]
-fn scoped_evaluation_admits_exact_shared_work_before_mutation() {
-    let source = fixture("unrelated");
-    let regions = [
-        ChangedRegion::new("selected").with_detail("new"),
-        ChangedRegion::new("selected"),
-    ];
-    let mut measured = Work::new(100_000_000);
-    source
-        .admit_evaluation_work(&regions, &mut EvaluationWork::Conditional(&mut measured))
+fn subtree_write_reaches_unseen_deep_leaf_and_survives_fork_and_json() {
+    let ancestor = path(2, "branch");
+    let descendant = ancestor
+        .clone()
+        .with_segment("three")
+        .unwrap()
+        .with_segment("four")
+        .unwrap()
+        .with_segment("five")
+        .unwrap()
+        .with_segment("six")
+        .unwrap()
+        .with_segment("seven")
+        .unwrap()
+        .with_segment("eight")
+        .unwrap();
+    let mut source = PartitionVersionMap::zero();
+    source.apply_evaluation(stamp(11), &[ChangedRegion::subtree(ancestor.clone())]);
+    let fork = source.clone();
+    let restored: PartitionVersionMap =
+        serde_json::from_str(&serde_json::to_string(&fork).unwrap()).unwrap();
+    assert_eq!(
+        restored.version_for_scope(
+            Aspect::new(0),
+            Some(&PartitionSubscription::exact(descendant))
+        ),
+        11
+    );
+    assert_eq!(
+        restored.version_for_scope(
+            Aspect::new(0),
+            Some(&PartitionSubscription::exact(ancestor))
+        ),
+        11
+    );
+    assert_eq!(
+        restored.version_for_scope(
+            Aspect::new(0),
+            Some(&PartitionSubscription::exact(path(2, "sibling")))
+        ),
+        0
+    );
+    assert_eq!(source, fork);
+    let mut obsolete = serde_json::to_value(&source).unwrap();
+    obsolete.as_object_mut().unwrap().remove("overrides");
+    obsolete["partitions"] = serde_json::json!({});
+    assert!(serde_json::from_value::<PartitionVersionMap>(obsolete).is_err());
+}
+
+#[test]
+fn admission_counts_each_prefix_and_rejects_one_visit_short() {
+    let regions = [ChangedRegion::exact(path(8, "leaf"))];
+    let map = PartitionVersionOverrides::default();
+    let mut measured = Work::new(usize::MAX);
+    map.admit_evaluation_work(&regions, &mut EvaluationWork::Conditional(&mut measured))
         .unwrap();
     let cost = measured.visits();
-    for available in [cost - 1, cost] {
-        let mut work = Work::new(cost + 31);
-        work.reserve_visits(cost + 31 - available).unwrap();
-        let mut candidate = source.clone();
-        let result =
-            candidate.admit_evaluation_work(&regions, &mut EvaluationWork::Conditional(&mut work));
-        assert_eq!(candidate, source);
-        if available == cost {
-            result.unwrap();
-            candidate.apply_evaluation(version(9), &regions);
-            assert_eq!(
-                candidate.scoped_or_global(
-                    &PartitionSubscription::partition_and_detail("selected", "new"),
-                    version(0)
-                ),
-                version(9)
-            );
-        } else {
-            assert_eq!(
-                result,
-                Err(SignalError::ConditionalEvaluationWorkExhausted {
-                    maximum_visits: cost + 31
-                })
-            );
-        }
-    }
-}
-
-#[test]
-fn scoped_evaluation_does_not_charge_unrelated_payloads_as_matching_details() {
-    let regions = [ChangedRegion::new("selected")];
-    let mut costs = Vec::new();
-    for unrelated in ["z".to_owned(), "z".repeat(10000)] {
-        let values = fixture(&unrelated);
-        let mut work = Work::new(100_000_000);
-        values
-            .admit_evaluation_work(&regions, &mut EvaluationWork::Conditional(&mut work))
-            .unwrap();
-        costs.push(work.visits());
-    }
-    assert_eq!(costs[0], costs[1]);
-    let values = fixture("unrelated");
-    let mut short = Work::new(100_000_000);
-    values
-        .admit_evaluation_work(
-            &[ChangedRegion::new("x").with_detail("x")],
-            &mut EvaluationWork::Conditional(&mut short),
-        )
-        .unwrap();
-    assert!(matches!(
-        values.admit_evaluation_work(
-            &[ChangedRegion::new("x".repeat(10000)).with_detail("x".repeat(10000))],
-            &mut EvaluationWork::Conditional(&mut Work::new(short.visits()))
-        ),
-        Err(SignalError::ConditionalEvaluationWorkExhausted { .. })
-    ));
+    let mut short = Work::new(cost - 1);
+    assert!(map
+        .admit_evaluation_work(&regions, &mut EvaluationWork::Conditional(&mut short))
+        .is_err());
+    assert!(map.paths.is_empty());
 }

@@ -90,6 +90,8 @@ pub(crate) fn historical_failure_class_for_delivery_error(
         | BridgeDeliveryErrorKind::HistoricalSelectorMissingCommit
         | BridgeDeliveryErrorKind::InvalidWideningAdmission
         | BridgeDeliveryErrorKind::SnapshotReadFailure
+        | BridgeDeliveryErrorKind::ExecutionCancelled
+        | BridgeDeliveryErrorKind::ExecutionDeadlineElapsed
         | BridgeDeliveryErrorKind::SnapshotReadContractViolation
         | BridgeDeliveryErrorKind::SignalSinkRejection => {
             BridgeHistoricalEvaluationFailureClass::RejectedHistoricalResolutionFailure

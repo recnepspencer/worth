@@ -1,7 +1,7 @@
 use super::*;
 use crate::application_invariant_acceptance::proof::settle;
 
-pub(in crate::application_invariant_acceptance::proof::application_program) fn running_root_supersession_preserves_sibling(
+pub(in crate::application_invariant_acceptance::proof::application_program) fn running_roots_follow_the_newer_publication(
     foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
         ConsumerSchema,
     >,
@@ -44,6 +44,9 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
     let mut first = first
         .start_required_outputs(&request, controls)
         .unwrap_or_else(|failure| panic!("the first roots start: {:?}", failure.denial()));
+    world
+        .application
+        .delay_next_output_readiness_delivery_for_test();
     assert!(matches!(
         first.required_output_mut().advance(&request).unwrap(),
         WorthQueryDiscoveredProgramOutputProgress::Pending
@@ -104,19 +107,22 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
             WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
         }
     });
+    // The call that completes the interrupted root also refreshes the rows
+    // the newer publication requires, so the older roots follow those
+    // outputs instead of stopping superseded.
     assert_eq!(
         first_settled
             .superseded_roots()
             .map(|root| root.body_key())
             .collect::<Vec<_>>(),
-        ["sibling-b", "sibling-c"]
+        [""; 0]
     );
     assert_eq!(
         first_settled
             .root_outputs()
             .map(|(root, _)| root.body_key())
             .collect::<Vec<_>>(),
-        ["remote-b"]
+        ["remote-b", "sibling-b", "sibling-c"]
     );
     let settled = settle(|| {
         match second

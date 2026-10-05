@@ -5,6 +5,9 @@ use crate::authority::commit::preparation::proofs::locality::{
     PreparationPartitionScope, PreparationReadSetApproximation, PreparationRecordDomain,
     PreparationWriteExclusionClass,
 };
+use crate::validation::engine::budget::{
+    InvariantBudget, InvariantBudgetStop, LeasedInvariantBudget,
+};
 use crate::validation::engine::InvariantRuntimeView;
 
 use super::envelope::InvariantWorkerEnvelope;
@@ -17,13 +20,38 @@ pub(crate) fn evaluate_invariant_packet<'state>(
     runtime: &InvariantRuntimeView<'state>,
     packet: &InvariantWorkPacket<'state>,
 ) -> InvariantWorkerEnvelope {
+    evaluate_invariant_packet_inner(runtime, packet, None)
+}
+
+pub(crate) fn evaluate_invariant_packet_checked<'state>(
+    runtime: &InvariantRuntimeView<'state>,
+    packet: &InvariantWorkPacket<'state>,
+    context: &mut crate::execution::PacketKernelContext<'_, '_, '_>,
+    status: worth_execution::ExecutionLeaseStatus,
+) -> Result<InvariantWorkerEnvelope, InvariantBudgetStop> {
+    let budget = LeasedInvariantBudget::new(context, status);
+    let envelope = evaluate_invariant_packet_inner(runtime, packet, Some(&budget));
+    if let Some(failure) = budget.take_failure() {
+        return Err(failure);
+    }
+    if !budget.ensure_result_total(envelope.owned_allocation_capacity_bytes()) {
+        return Err(budget.take_failure().expect("result claim recorded stop"));
+    }
+    Ok(envelope)
+}
+
+fn evaluate_invariant_packet_inner<'state>(
+    runtime: &InvariantRuntimeView<'state>,
+    packet: &InvariantWorkPacket<'state>,
+    budget: Option<&dyn InvariantBudget>,
+) -> InvariantWorkerEnvelope {
     let preparation_failures = invariant_packet_failures(packet);
     debug_assert!(
         preparation_failures.is_empty(),
         "planned invariant packet violated preparation proof contract: {:?}",
         preparation_failures
     );
-    let evaluation = registered_rule::evaluate_registered_rule(runtime, packet);
+    let evaluation = registered_rule::evaluate_registered_rule(runtime, packet, budget);
     let reduced = verdict_reduction::reduce_invariant_verdicts(packet, evaluation);
 
     let worker_result_count = reduced.results.len();

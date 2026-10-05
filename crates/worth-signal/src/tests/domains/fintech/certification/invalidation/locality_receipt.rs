@@ -6,8 +6,6 @@ use super::{
 use crate::data::error::SignalError;
 use crate::data::telemetry::{InvalidationPerformedCounter, SignalInvalidationRealizedCounters};
 use crate::facade::{DiagnosticsTier, SignalRuntimePolicy};
-use crate::logic::planner::StageExecutor;
-#[cfg(feature = "parallel")]
 use crate::tests::domains::fintech::world::FinancialPerformedCanonicalWork;
 use crate::tests::domains::fintech::world::{
     compile_financial_locality_world, compile_financial_locality_world_with_policy,
@@ -23,11 +21,8 @@ pub(crate) struct FinancialLocalityCaseEvidence {
     identity: FinancialCanonicalCaseIdentity,
     counters: SignalInvalidationRealizedCounters,
     canonical_work_items: usize,
-    #[cfg(feature = "parallel")]
     operational_digest: worth_foundational::facade::CanonicalDigestId,
-    #[cfg(feature = "parallel")]
     execution_stage_outcomes: Vec<crate::logic::planner::StageExecutionOutcome>,
-    #[cfg(feature = "parallel")]
     performed_work: FinancialPerformedCanonicalWork,
     necessary_evaluations: Vec<LocalitySemanticOutputId>,
     measurement: FinancialLocalityCaseMeasurement,
@@ -75,24 +70,20 @@ impl FinancialLocalityCaseEvidence {
         self.canonical_work_items
     }
 
-    #[cfg(feature = "parallel")]
     pub(crate) const fn operational_digest(&self) -> worth_foundational::facade::CanonicalDigestId {
         self.operational_digest
     }
 
-    #[cfg(feature = "parallel")]
     pub(crate) fn execution_stage_outcomes(
         &self,
     ) -> &[crate::logic::planner::StageExecutionOutcome] {
         &self.execution_stage_outcomes
     }
 
-    #[cfg(feature = "parallel")]
     pub(crate) fn identity_digest(&self) -> worth_foundational::facade::CanonicalDigestId {
         self.identity.digest_id()
     }
 
-    #[cfg(feature = "parallel")]
     pub(in crate::tests::domains::fintech) fn performed_work(
         &self,
     ) -> &FinancialPerformedCanonicalWork {
@@ -128,13 +119,13 @@ pub(crate) fn verify_locality_case(
     definition: FinancialWorldDefinition,
     trace_index: usize,
     diagnostics_tier: DiagnosticsTier,
-    executor: StageExecutor,
+    workers: usize,
 ) -> Result<FinancialLocalityCaseEvidence, SignalError> {
     verify_locality_case_with_policy(
         definition,
         trace_index,
         SignalRuntimePolicy::for_tier(diagnostics_tier),
-        executor,
+        workers,
     )
 }
 
@@ -142,7 +133,7 @@ pub(crate) fn verify_locality_case_with_policy(
     definition: FinancialWorldDefinition,
     trace_index: usize,
     policy: SignalRuntimePolicy,
-    executor: StageExecutor,
+    workers: usize,
 ) -> Result<FinancialLocalityCaseEvidence, SignalError> {
     let started = std::time::Instant::now();
     report_scheduled_step(&definition, trace_index, "compile", started.elapsed());
@@ -171,7 +162,7 @@ pub(crate) fn verify_locality_case_with_policy(
         started.elapsed(),
     );
     let (observation, performed) =
-        compiled.observe_locality_action_trace_with_executor(trace_index, executor)?;
+        compiled.observe_locality_action_trace_with_workers(trace_index, workers)?;
     report_scheduled_step(
         compiled.definition(),
         trace_index,
@@ -190,8 +181,9 @@ pub(crate) fn verify_locality_case_with_policy(
         &manifest,
         diagnostics_tier,
         performed,
+        observation.physical_ready_batches,
+        observation.physical_ready_peak,
     )?;
-    #[cfg(feature = "parallel")]
     let operational_digest =
         compiled.locality_operational_digest_with_work(&observation.performed_work)?;
     Ok(FinancialLocalityCaseEvidence {
@@ -204,11 +196,8 @@ pub(crate) fn verify_locality_case_with_policy(
         identity,
         counters: observation.performed_counters,
         canonical_work_items: manifest.canonical_work().len(),
-        #[cfg(feature = "parallel")]
         operational_digest,
-        #[cfg(feature = "parallel")]
         execution_stage_outcomes: observation.execution_stage_outcomes,
-        #[cfg(feature = "parallel")]
         performed_work: observation.performed_work,
         necessary_evaluations: manifest.necessary_evaluations().iter().copied().collect(),
         measurement: FinancialLocalityCaseMeasurement {
@@ -282,7 +271,11 @@ pub(super) fn validate_case_results(
         )));
     }
     require_expected_performed_work(manifest, &observation.performed_work)?;
-    let expected = expected_counters(manifest);
+    let expected = expected_counters(
+        manifest,
+        observation.physical_ready_batches,
+        observation.physical_ready_peak,
+    );
     let drifts = InvalidationPerformedCounter::ALL
         .into_iter()
         .filter_map(|counter| {
@@ -304,12 +297,19 @@ pub(super) fn validate_case_results(
     Ok(())
 }
 
-fn expected_counters(
+pub(super) fn expected_counters(
     manifest: &FinancialLocalityExpectationManifest,
+    physical_batches: u64,
+    physical_peak: u64,
 ) -> SignalInvalidationRealizedCounters {
     let rows = ExpectedLocalityCounterRow::ALL;
     SignalInvalidationRealizedCounters::from_values(std::array::from_fn(|index| {
-        manifest.counter_manifest().value(rows[index])
+        match rows[index] {
+            ExpectedLocalityCounterRow::MaximumReadyFrontierWidth
+            | ExpectedLocalityCounterRow::PeakBatchMemoryItems => physical_peak,
+            ExpectedLocalityCounterRow::BatchLocalAllocations => physical_batches,
+            row => manifest.counter_manifest().value(row),
+        }
     }))
 }
 

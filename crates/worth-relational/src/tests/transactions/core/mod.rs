@@ -37,6 +37,7 @@ mod prepared_candidate_lifecycle;
 mod prepared_candidates;
 mod publication_atomic_visibility;
 mod publication_branch_locality;
+mod publication_companion;
 mod publication_owner_lifecycle;
 mod publication_route_handoff;
 mod publication_selected_root;

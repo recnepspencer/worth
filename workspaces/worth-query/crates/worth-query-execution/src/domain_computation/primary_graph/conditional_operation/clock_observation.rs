@@ -70,6 +70,9 @@ pub enum WorthQueryConditionalClockObservationFailureKind {
     RetentionIdentityExhausted,
     /// The runtime ran out of snapshot identities.
     SnapshotIdentityExhausted,
+    /// Rebuilding the operation from truth after its commit cursor fell
+    /// behind the retained subscription window was denied.
+    ReconstructionDenied(super::installation::WorthQueryConditionalRuntimeInstallationDenialKind),
 }
 
 /// A clock observation that failed, with its kind and a detail message.
@@ -119,6 +122,8 @@ pub struct WorthQueryConditionalClockObservationReceipt<Clock> {
     retention_capacity_backpressure: bool,
     execution_provenance: Vec<super::WorthQueryConditionalExecutionProvenance>,
     granular_invalidations: Vec<worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery>,
+    granular_invalidation_coverage:
+        crate::domain_computation::primary_graph::WorthQueryGranularInvalidationCoverage,
 }
 
 impl<Clock> WorthQueryConditionalClockObservationReceipt<Clock> {
@@ -209,6 +214,7 @@ impl<Clock> WorthQueryConditionalClockObservationReceipt<Clock> {
             self.granular_invalidation_installation.clone(),
             std::mem::take(&mut self.granular_invalidations),
             self.granular_source_read_basis.clone(),
+            self.granular_invalidation_coverage,
         )
     }
 }
@@ -217,15 +223,26 @@ impl<Clock> WorthQueryConditionalClockObservationReceipt<Clock> {
 pub enum WorthQueryConditionalClockObservationOutcome<Clock> {
     /// The reading was accepted and processed.
     Accepted(WorthQueryConditionalClockObservationReceipt<Clock>),
-    /// The reading repeats one already accepted; the receipt describes it.
+    /// The reading repeats one already accepted. Its batch still carries every
+    /// owed granular invalidation, including commits reconsidered during this
+    /// observation; consume it through
+    /// [`WorthQueryConditionalClockObservationReceipt::take_granular_invalidation_batch`]
+    /// exactly as for an accepted reading, or those invalidations are lost.
     Duplicate(WorthQueryConditionalClockObservationReceipt<Clock>),
-    /// The reading is older than one already accepted; nothing was processed.
+    /// The reading's sequence is not newer than one already accepted. The
+    /// clock did not advance and no wake came due, but authoritative commits
+    /// may already have been reconsidered; their granular invalidations stay
+    /// owed to the next accepted or duplicate reading's batch.
     Stale,
-    /// The reading arrived out of order; nothing was processed.
+    /// The reading's coordinate runs behind one already accepted. As for
+    /// [`Self::Stale`], the clock did not advance and any invalidations
+    /// already consumed stay owed to the next accepted or duplicate
+    /// reading's batch.
     Reordered,
     /// The clock binding or source is closed.
     Closed,
-    /// The observation failed.
+    /// The observation failed. Invalidations it already consumed stay owed
+    /// to the next accepted or duplicate reading's batch.
     Failed(WorthQueryConditionalClockObservationFailure),
 }
 
@@ -256,16 +273,7 @@ where
         let outcome = self
             .operation
             .observe_clock(&bridge, self.runtime, &self.truth);
-        if outcome.routes_changed {
-            let registry = self
-                .runtime
-                .conditional_operations
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .snapshot();
-            registry.synchronize_commit_routes(self.runtime);
-        }
-        outcome.outcome.typed(
+        outcome.typed(
             granular_invalidation_installation,
             Some(granular_source_read_basis),
         )

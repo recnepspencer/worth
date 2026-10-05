@@ -140,6 +140,8 @@ impl SignalGraph {
                 invalidation_performed_counters,
                 invalidation_performed_work,
                 pending_repeated_invalidation_admissions: Default::default(),
+                #[cfg(test)]
+                epoch_output_preparation_fault_after: Default::default(),
             },
             SignalGraphForkWork::shared_without_node_copy(),
         )

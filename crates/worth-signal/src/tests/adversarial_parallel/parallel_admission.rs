@@ -1,201 +1,181 @@
-use std::num::NonZeroUsize;
-
 use crate::facade::{
-    mark_dirty, EvaluationRequestMode, ParallelAdmissionPolicy, ParallelAdmissionReason,
-    ParallelApplyMode, ParallelExecutionPolicy, SignalGraph, SignalRuntimePolicy,
-    StageExecutionOutcome, StageExecutor,
+    mark_dirty, EvaluationRequestMode, ParallelAdmissionPolicy, SignalGraph, SignalRuntimePolicy,
+    StageExecutionOutcome,
 };
-use crate::tests::support::{version_ab, GraphDependencyBatchExt, ASPECT_A};
+use crate::tests::leased_execution::support::{authority, request};
+use crate::tests::support::{version_ab, ASPECT_A};
 
-use super::executor_policy::aggressive_parallel_runtime_policy;
-use crate::logic::planner::types::ApplyPlanSerialFallbackReason;
+use super::executor_policy::{aggressive_parallel_runtime_policy, bounded_contract};
 
 #[test]
-fn many_thin_stages_remain_serial_under_parallel_threshold() {
-    let mut graph = SignalGraph::new();
-    let mut chain = Vec::new();
-    for _ in 0..32 {
-        chain.push(graph.node().build());
-    }
-    for index in 1..chain.len() {
-        graph
-            .append_dependency(chain[index], chain[index - 1], ASPECT_A)
+fn many_thin_stages_use_one_worker_with_bounded_physical_memory_growth() {
+    let mut peaks = Vec::new();
+    for length in [8, 32] {
+        let mut graph = SignalGraph::new();
+        let mut chain = Vec::new();
+        for _ in 0..length {
+            let inputs = chain.last().copied().into_iter().collect::<Vec<_>>();
+            chain.push(
+                graph
+                    .node()
+                    .with_contract(bounded_contract(&inputs))
+                    .build(),
+            );
+        }
+        let lease = authority().request_lease(request(4, 2_000_000)).unwrap();
+        let report = graph
+            .evaluate_checked(
+                &[chain[length - 1]],
+                EvaluationRequestMode::Default,
+                &(),
+                &|ctx| {
+                    let position = chain.iter().position(|&node| node == ctx.node()).unwrap();
+                    let value = if position == 0 {
+                        1
+                    } else {
+                        ctx.read(chain[position - 1], ASPECT_A)? + 1
+                    };
+                    Ok(version_ab(value, 0))
+                },
+                &lease,
+            )
             .unwrap();
+        assert_eq!(
+            graph
+                .node_aspect_version(chain[length - 1])
+                .unwrap()
+                .get(ASPECT_A),
+            length as u64
+        );
+        assert_eq!(report.tasks_executed, length as u32);
+        assert!(report
+            .stages
+            .iter()
+            .all(|stage| stage.outcome == StageExecutionOutcome::CompletedSerial));
+        assert!(report
+            .execution
+            .iter()
+            .all(|execution| execution.physical().active_workers_high_watermark() <= 1));
+        peaks.push(
+            report
+                .execution
+                .iter()
+                .map(|execution| execution.physical().peak_charged_memory_bytes())
+                .max()
+                .unwrap(),
+        );
     }
+    // Growing from eight to thirty-two stages keeps observed physical memory
+    // growth within one MiB, including plan and report storage.
+    assert!(
+        peaks[1] <= peaks[0] + 1024 * 1024,
+        "physical memory growth exceeded the bound: {peaks:?}"
+    );
+}
 
-    let bootstrap = graph
-        .build_evaluation_plan(&chain, EvaluationRequestMode::ForceOnDemand)
-        .unwrap();
-    graph
-        .execute_prepared_plan(&bootstrap, &(), &|ctx| Ok(ctx.finish(version_ab(1, 0))))
-        .unwrap();
-
-    mark_dirty(&mut graph, chain[0], ASPECT_A).unwrap();
-    let plan = graph
-        .build_evaluation_plan(&[chain[chain.len() - 1]], EvaluationRequestMode::Default)
-        .unwrap();
-    let before = graph.telemetry().execution.parallel_stage_dispatch_count;
+#[test]
+fn wide_checked_epoch_records_the_workers_that_actually_ran() {
+    let mut graph = SignalGraph::new();
+    graph.set_runtime_policy(aggressive_parallel_runtime_policy());
+    let nodes = (0..16)
+        .map(|_| graph.node().with_contract(bounded_contract(&[])).build())
+        .collect::<Vec<_>>();
+    let lease = authority().request_lease(request(4, 2_000_000)).unwrap();
     let report = graph
-        .execute_prepared_plan_with_executor(
-            &plan,
+        .evaluate_checked(
+            &nodes,
+            EvaluationRequestMode::Default,
             &(),
-            &|ctx| Ok(ctx.finish(version_ab(2, 0))),
-            StageExecutor::parallel(3),
+            &|ctx| {
+                for _ in 0..4096 {
+                    ctx.work().checkpoint(1).map_err(|_| {
+                        crate::facade::SignalError::invalid_input("test kernel stopped")
+                    })?;
+                    std::thread::yield_now();
+                }
+                Ok(version_ab(ctx.node().index() as u64 + 1, 0))
+            },
+            &lease,
         )
         .unwrap();
-
-    assert_eq!(
-        graph.telemetry().execution.parallel_stage_dispatch_count,
-        before
+    let workers = report
+        .execution
+        .iter()
+        .map(|execution| execution.physical().active_workers_high_watermark())
+        .max()
+        .unwrap();
+    assert!(
+        workers > 1,
+        "wide checked kernels must exercise the shared parallel backend"
     );
+    assert!(workers <= 4);
     assert!(report
         .stages
         .iter()
-        .all(|stage| { matches!(stage.outcome, StageExecutionOutcome::CompletedSerial) }));
+        .any(|stage| stage.outcome == StageExecutionOutcome::CompletedParallel));
+    assert!(graph.telemetry().execution.parallel_stage_dispatch_count > 0);
 }
 
 #[test]
-fn wide_stage_crosses_parallel_threshold() {
+fn one_worker_lease_does_not_report_parallel_dispatch_for_wide_work() {
     let mut graph = SignalGraph::new();
     graph.set_runtime_policy(aggressive_parallel_runtime_policy());
-    let left = graph.node().build();
-    let right = graph.node().build();
-    let requested = [left, right];
-
-    let bootstrap = graph
-        .build_evaluation_plan(&requested, EvaluationRequestMode::ForceOnDemand)
-        .unwrap();
-    graph
-        .execute_prepared_plan(&bootstrap, &(), &|ctx| Ok(ctx.finish(version_ab(1, 0))))
-        .unwrap();
-
-    mark_dirty(&mut graph, left, ASPECT_A).unwrap();
-    mark_dirty(&mut graph, right, ASPECT_A).unwrap();
-    let plan = graph
-        .build_evaluation_plan(&requested, EvaluationRequestMode::Default)
-        .unwrap();
-    assert_eq!(plan.summary.max_stage_width, 2);
-    let before = graph.telemetry().execution.parallel_stage_dispatch_count;
+    let nodes = (0..16)
+        .map(|_| graph.node().with_contract(bounded_contract(&[])).build())
+        .collect::<Vec<_>>();
+    let lease = authority().request_lease(request(1, 2_000_000)).unwrap();
     let report = graph
-        .execute_prepared_plan_with_executor(
-            &plan,
+        .evaluate_checked(
+            &nodes,
+            EvaluationRequestMode::Default,
             &(),
-            &|ctx| Ok(ctx.finish(version_ab(2, 0))),
-            StageExecutor::parallel(2),
+            &|ctx| Ok(version_ab(ctx.node().index() as u64 + 1, 0)),
+            &lease,
         )
         .unwrap();
-
-    assert_eq!(
-        graph.telemetry().execution.parallel_stage_dispatch_count,
-        before + 1
-    );
-    assert_eq!(report.stages.len(), 1);
+    assert!(report
+        .execution
+        .iter()
+        .all(|execution| execution.physical().active_workers_high_watermark() <= 1));
     assert!(report
         .stages
         .iter()
-        .any(|stage| { matches!(stage.outcome, StageExecutionOutcome::CompletedParallel) }));
+        .all(|stage| stage.outcome == StageExecutionOutcome::CompletedSerial));
+    assert_eq!(graph.telemetry().execution.parallel_stage_dispatch_count, 0);
 }
 
 #[test]
-fn full_parallel_splits_wide_stage_into_deterministic_apply_groups() {
-    let mut graph = SignalGraph::new();
-    graph.set_runtime_policy(aggressive_parallel_runtime_policy());
-    let requested: Vec<_> = (0..4).map(|_| graph.node().build()).collect();
-
-    let bootstrap = graph
-        .build_evaluation_plan(&requested, EvaluationRequestMode::ForceOnDemand)
-        .unwrap();
-    graph
-        .execute_prepared_plan(&bootstrap, &(), &|ctx| Ok(ctx.finish(version_ab(1, 0))))
-        .unwrap();
-
-    for &node in &requested {
-        mark_dirty(&mut graph, node, ASPECT_A).unwrap();
-    }
-
-    let plan = graph
-        .build_evaluation_plan(&requested, EvaluationRequestMode::Default)
-        .unwrap();
-    let policy = ParallelExecutionPolicy::new(NonZeroUsize::new(1).unwrap())
-        .with_apply_group_min_width(2)
-        .with_max_concurrent_apply_groups(2);
-    let report = graph
-        .execute_prepared_plan_with_executor(
-            &plan,
-            &(),
-            &|ctx| Ok(ctx.finish(version_ab(2, 0))),
-            StageExecutor::full_parallel(1).with_parallel_policy(policy),
-        )
-        .unwrap();
-
-    assert_eq!(report.stages.len(), 1);
-    let stage = &report.stages[0];
-    assert!(matches!(
-        stage.outcome,
-        StageExecutionOutcome::CompletedParallel
-    ));
-    assert_eq!(
-        stage.apply_mode,
-        Some(ParallelApplyMode::GroupedConcurrentApply)
-    );
-    assert_eq!(
-        stage.parallel_admission_reason,
-        Some(ParallelAdmissionReason::AdmittedProofSafeGroupedConcurrent)
-    );
-    assert_eq!(stage.apply_group_count, 2);
-    assert_eq!(stage.serial_fallback_group_count, 0);
-    assert_eq!(stage.concurrent_apply_task_count, requested.len() as u32);
-}
-
-#[test]
-fn full_parallel_stays_serial_below_installed_policy_threshold() {
+fn installed_threshold_keeps_small_checked_epochs_serial() {
     let mut graph = SignalGraph::new();
     graph.set_runtime_policy(SignalRuntimePolicy::operational().with_parallel_admission(
         ParallelAdmissionPolicy {
-            throughput_min_parallel_tasks: 1,
-            balanced_min_parallel_tasks: 1,
-            latency_bounded_min_parallel_tasks: 1,
+            throughput_min_parallel_tasks: 8,
+            balanced_min_parallel_tasks: 8,
+            latency_bounded_min_parallel_tasks: 8,
             full_parallel_min_tasks: 8,
         },
     ));
-    let requested: Vec<_> = (0..2).map(|_| graph.node().build()).collect();
-    let bootstrap = graph
-        .build_evaluation_plan(&requested, EvaluationRequestMode::ForceOnDemand)
-        .unwrap();
-    graph
-        .execute_prepared_plan(&bootstrap, &(), &|ctx| Ok(ctx.finish(version_ab(1, 0))))
-        .unwrap();
-    for &node in &requested {
-        mark_dirty(&mut graph, node, ASPECT_A).unwrap();
-    }
-
+    let nodes = std::array::from_fn::<_, 2, _>(|_| {
+        graph.node().with_contract(bounded_contract(&[])).build()
+    });
     let plan = graph
-        .build_evaluation_plan(&requested, EvaluationRequestMode::Default)
+        .build_evaluation_plan(&nodes, EvaluationRequestMode::Default)
         .unwrap();
-    let executor_policy = ParallelExecutionPolicy::new(NonZeroUsize::new(1).unwrap())
-        .with_apply_group_min_width(1)
-        .with_max_concurrent_apply_groups(2);
-    let before_dispatch = graph.telemetry().execution.parallel_stage_dispatch_count;
+    let lease = authority().request_lease(request(4, 2_000_000)).unwrap();
     let report = graph
-        .execute_prepared_plan_with_executor(
-            &plan,
-            &(),
-            &|ctx| Ok(ctx.finish(version_ab(2, 0))),
-            StageExecutor::full_parallel(1).with_parallel_policy(executor_policy),
-        )
+        .execute_prepared_plan_checked(&plan, &(), &|_| Ok(version_ab(2, 0)), &lease)
         .unwrap();
-
-    assert_eq!(
-        graph.telemetry().execution.parallel_stage_dispatch_count,
-        before_dispatch,
-        "full-parallel execution must honor the installed threshold"
-    );
+    assert!(report
+        .execution
+        .iter()
+        .all(|execution| execution.physical().active_workers_high_watermark() <= 1));
     assert!(report
         .stages
         .iter()
-        .all(|stage| matches!(stage.outcome, StageExecutionOutcome::CompletedSerial)));
-    assert!(report.stages.iter().any(|stage| {
-        stage.serial_apply_rejection_reason
-            == Some(ApplyPlanSerialFallbackReason::BelowFullParallelThreshold)
-    }));
+        .all(|stage| stage.outcome == StageExecutionOutcome::CompletedSerial));
+    assert_eq!(graph.telemetry().execution.parallel_stage_dispatch_count, 0);
+    for node in nodes {
+        mark_dirty(&mut graph, node, ASPECT_A).unwrap();
+        assert_eq!(graph.node_aspect_version(node).unwrap().get(ASPECT_A), 2);
+    }
 }

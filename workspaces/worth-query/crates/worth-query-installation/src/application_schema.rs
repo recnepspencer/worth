@@ -42,6 +42,7 @@ pub(crate) use compilation::{
     compile_application_schema, ApplicationSchemaCompilationDenial,
     ApplicationSchemaCompilationInput,
 };
+pub(crate) use installed_principal_binding::AdmittedPrincipalBindingStop;
 pub(crate) use native_contract::{
     compile_native_contract_catalog, compile_portable_native_contract_records,
     WorthQueryApplicationSchemaContractCatalogDenial,

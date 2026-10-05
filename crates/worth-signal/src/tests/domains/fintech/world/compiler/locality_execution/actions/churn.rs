@@ -14,11 +14,14 @@ use crate::logic::context::EvaluationContext;
 use crate::logic::invalidation::scheduling::{
     admit_current_readiness, execute_ready, lower_current_work,
 };
-use crate::logic::planner::{StageExecutionOutcome, StageExecutor};
+use crate::logic::planner::{StageExecutionOutcome, StageExecutionRecord};
 use crate::tests::domains::fintech::world::{
     FinancialLocalityAction, FinancialLocalitySubscription, LocalitySemanticOutputId,
 };
+use crate::tests::leased_execution::support::{authority, request};
 
+use super::super::physical_ready::captured_bindings;
+use super::super::PhysicalReadyWitness;
 use super::super::{signal_aspect, CompiledFinancialLocalityWorld};
 use super::churn_program::ChurnEvaluationProgram;
 use super::LocalityExecutionSettlement;
@@ -26,7 +29,7 @@ use super::LocalityExecutionSettlement;
 pub(super) fn run_churn_trace(
     world: &mut CompiledFinancialLocalityWorld,
     trace_index: usize,
-    executor: StageExecutor,
+    workers: usize,
 ) -> Result<LocalityExecutionSettlement, SignalError> {
     let actions = world.locality_definition().action_traces()[trace_index]
         .actions()
@@ -39,6 +42,8 @@ pub(super) fn run_churn_trace(
     let evaluator = |view: &mut EvaluationContext<'_, ()>| program.evaluate(view);
     let mut staged = BTreeMap::<u16, ReadyInvalidationBatch>::new();
     let mut stage_outcomes = Vec::new();
+    let mut stage_records = Vec::new();
+    let mut physical_ready = PhysicalReadyWitness::default();
     for (index, action) in actions.iter().copied().enumerate() {
         match action {
             FinancialLocalityAction::CommitFactor(mutation) => {
@@ -49,15 +54,28 @@ pub(super) fn run_churn_trace(
                     source,
                     signal_aspect(mutation.aspect),
                 )?;
-                world.runtime.transaction(&mut (), |tx| {
-                    tx.read_with_executor(source, &evaluator, executor)
-                        .map(|_| ())
-                })?;
+                let before = captured_bindings(world.runtime.graph());
+                world
+                    .runtime
+                    .transaction(&mut (), |tx| tx.read(source, &evaluator).map(|_| ()))?;
+                physical_ready.record_transaction(
+                    source,
+                    world.runtime.graph(),
+                    &before,
+                    &captured_bindings(world.runtime.graph()),
+                )?;
                 let is_pre_rewire = actions.get(index + 1).is_some_and(|next| {
                     matches!(next, FinancialLocalityAction::StagePreRewireWork { .. })
                 });
                 if !is_pre_rewire {
-                    settle_current_frontier(world, &evaluator, executor, &mut stage_outcomes)?;
+                    settle_current_frontier(
+                        world,
+                        &program,
+                        workers,
+                        &mut stage_outcomes,
+                        &mut stage_records,
+                        &mut physical_ready,
+                    )?;
                 }
             }
             FinancialLocalityAction::StagePreRewireWork { round, binding } => {
@@ -155,7 +173,8 @@ pub(super) fn run_churn_trace(
     Ok(LocalityExecutionSettlement {
         evaluated_outputs: program.evaluated_outputs(),
         stage_outcomes,
-        stage_records: Vec::new(),
+        stage_records,
+        physical_ready: Some(physical_ready),
     })
 }
 
@@ -177,12 +196,11 @@ fn current_ready(
 
 fn settle_current_frontier(
     world: &mut CompiledFinancialLocalityWorld,
-    evaluator: &(impl Fn(
-        &mut EvaluationContext<'_, ()>,
-    ) -> Result<crate::logic::evaluation::EvaluationOutput, SignalError>
-          + Sync),
-    executor: StageExecutor,
+    program: &ChurnEvaluationProgram,
+    workers: usize,
     stage_outcomes: &mut Vec<StageExecutionOutcome>,
+    stage_records: &mut Vec<StageExecutionRecord>,
+    physical_ready: &mut PhysicalReadyWitness,
 ) -> Result<(), SignalError> {
     let waves = world
         .locality_definition()
@@ -204,15 +222,39 @@ fn settle_current_frontier(
         if nodes.is_empty() {
             continue;
         }
-        let plan = world
-            .runtime
-            .graph_mut()
-            .build_evaluation_plan(&nodes, EvaluationRequestMode::Default)?;
-        let report =
-            world
-                .runtime
-                .execute_prepared_plan_with_executor(&plan, &(), evaluator, executor)?;
-        stage_outcomes.extend(report.stages.into_iter().map(|stage| stage.outcome));
+        // Cover the complete churn wave under a finite request shared by
+        // serial and parallel certification postures.
+        let mut admission = request(workers, 100_000_000);
+        admission.policy = worth_foundational::ExecutionRequestPolicy::new(
+            admission.policy.posture(),
+            admission.policy.determinism(),
+            worth_foundational::ExecutionBudget::new(
+                admission.policy.budget().max_workers(),
+                64 * 1024 * 1024,
+                100_000_000,
+            ),
+        );
+        let lease = authority()
+            .request_lease(admission)
+            .map_err(|_| SignalError::invalid_input("churn host lease denied"))?;
+        let before = captured_bindings(world.runtime.graph());
+        let report = world.runtime.evaluate_checked(
+            &nodes,
+            EvaluationRequestMode::Default,
+            &(),
+            &|view| program.evaluate_checked(view),
+            &lease,
+        )?;
+        physical_ready.record_checked(
+            &before,
+            &captured_bindings(world.runtime.graph()),
+            &report.stages,
+        )?;
+        program.record_completed(&report);
+        for stage in report.stages {
+            stage_outcomes.push(stage.outcome);
+            stage_records.push(stage);
+        }
     }
     Ok(())
 }

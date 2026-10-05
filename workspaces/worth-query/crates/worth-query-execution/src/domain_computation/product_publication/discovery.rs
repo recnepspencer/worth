@@ -51,6 +51,19 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQueryProductUnpublishedRecoveryReleaseFailure,
     >{
         let handle = recovery.record_handle().clone();
+        let provider_release = match self
+            .primary_provider
+            .unpublished_idempotency_disposition()
+            .reserve_release(&handle)
+        {
+            Ok(reservation) => reservation,
+            Err(()) => {
+                return Err(recovery_failure(
+                    recovery,
+                    WorthQueryProductUnpublishedRecoveryReleaseDenial::ProviderBusy,
+                ))
+            }
+        };
         let effects = match self
             .product_runtime
             .owner
@@ -85,7 +98,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 ))
             }
         };
-        disposition.release(&handle);
+        if let Some(provider_release) = provider_release {
+            provider_release.finish();
+        }
         let cleanup_identity = reservation.install_unpublished(cleanup);
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup::new(
             self.product_runtime.clone(),

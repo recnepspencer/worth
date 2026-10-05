@@ -6,11 +6,9 @@ use crate::data::handle::NodeId;
 use crate::data::node::NodeState;
 use crate::logic::context::EvaluationContext;
 use crate::logic::evaluation::{EvaluationRequestMode, IntoEvaluationOutput};
-use crate::logic::planner::StageExecutor;
 
 use super::super::super::transaction::SignalTransaction;
 use super::super::request_order::requested_dependency_order;
-use super::super::shared::executor_for_strategy;
 
 /// What one `evaluate_demand` / `evaluate_observed_demand` call did.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -82,23 +80,6 @@ where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
         O: IntoEvaluationOutput,
     {
-        self.evaluate_demand_with_executor(
-            evaluator,
-            standing_demand,
-            executor_for_strategy(self.graph.derive_evaluation_strategy()),
-        )
-    }
-
-    pub fn evaluate_demand_with_executor<F, O>(
-        &mut self,
-        evaluator: &F,
-        standing_demand: &[NodeId],
-        executor: StageExecutor,
-    ) -> Result<ObservedDemandSummary, SignalError>
-    where
-        F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
-        O: IntoEvaluationOutput,
-    {
         let mut summary = ObservedDemandSummary::default();
         if self.observations.registration_count() == 0 && standing_demand.is_empty() {
             return Ok(summary);
@@ -120,7 +101,7 @@ where
             return Ok(summary);
         }
 
-        // Same convergence bound as `read_with_executor`: each pass that
+        // Same convergence bound as `read`: each pass that
         // executes something settles at least one node, so a graph of N live
         // nodes never needs more than N passes.
         let max_passes = self.graph.active_node_count().saturating_add(1);
@@ -134,11 +115,10 @@ where
                     if matches!(self.graph.get_state(node)?, NodeState::Clean) {
                         continue;
                     }
-                    let report = self.evaluate_with_plan_and_executor(
+                    let report = self.evaluate_with_plan(
                         node,
                         evaluator,
                         EvaluationRequestMode::ForceOnDemand,
-                        executor,
                     )?;
                     scheduled = scheduled.saturating_add(report.task_count);
                     executed = executed.saturating_add(report.tasks_executed);

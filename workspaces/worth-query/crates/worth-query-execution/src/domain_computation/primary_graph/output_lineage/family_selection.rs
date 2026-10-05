@@ -59,11 +59,21 @@ impl WorthQueryApplicationOutputLineage {
                         continue;
                     }
                     // A newer descriptive head must not revive an older fact-bearing output.
-                    if let Some(facts) = &recorded.observed_source_facts {
+                    if let Some(facts) = recorded.observed_source_facts() {
                         candidates.push(WorthQueryCurrentOutputCandidate {
+                            consumed_outputs: Arc::clone(&recorded.consumed_outputs),
+                            verification_requirement: recorded.verification_requirement(),
+                            settlement_identity: Arc::clone(&recorded.settlement_identity),
                             correspondence: Arc::clone(&recorded.correspondence),
                             output_role: output_role.clone(),
-                            observed_source_facts: Arc::clone(facts),
+                            observed_source_facts: facts,
+                            native_output_witness: recorded
+                                .performed_origin
+                                .as_ref()
+                                .and_then(|origin| origin.get())
+                                .unwrap_or(recorded)
+                                .native_output_witness_cell()
+                                .map(Arc::clone),
                         });
                     }
                 }

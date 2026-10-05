@@ -34,7 +34,8 @@ pub use owner_cleanup::{
 };
 pub(crate) use publication_binding::WorthQueryProductPublicationBinding;
 pub(crate) use receipt::{
-    WorthQueryProductPublicationReceipt, WorthQueryReservedProductPublicationReceipt,
+    WorthQueryCommitHistoryHold, WorthQueryProductPublicationReceipt,
+    WorthQueryReservedProductPublicationReceipt,
 };
 #[cfg(test)]
 pub(in crate::domain_computation) use relational_publication::preserve_delivery_authority;
@@ -54,4 +55,6 @@ pub use runtime::WorthQueryProductRuntime;
 #[doc(hidden)]
 pub use shared_root::WorthQueryProductSharedRoot;
 pub use source_installation::WorthQueryProductRelationalInstallation;
-pub use source_owner::WorthQueryRelationalSourceOwner;
+pub use source_owner::{
+    WorthQueryRelationalSourceInstallationDenial, WorthQueryRelationalSourceOwner,
+};

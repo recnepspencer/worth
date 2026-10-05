@@ -1,18 +1,38 @@
 use std::sync::{Arc, Condvar, Mutex};
 
+use super::record_capacity::fixture_capacity as test_record_capacity;
 use super::supersession::supersede_predecessors;
 use super::{
     DemandRecord, DemandRegistryState, DemandState, DemandWake, WorthQueryOutputDemandInterest,
     WorthQueryOutputDemandKey, WorthQueryOutputDemandNotifications, WorthQueryOutputDemandRegistry,
     WorthQueryOutputSchedulingResult,
 };
+use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
+use worth_relational::facade::mvcc::CompanionPreflightBudget;
 
+fn record_admission() -> InvalidationEditAdmission {
+    InvalidationEditAdmission::new(CompanionPreflightBudget {
+        maximum_work_visits: 1_000_000,
+        maximum_preparation_bytes: 8 * 1024 * 1024,
+    })
+}
+
+mod caller_chain;
+mod closed_retirement;
+mod prerequisite_retry;
 mod ready_reuse;
+mod record_capacity;
 mod recovery_posture;
+mod replacement_preparation;
+mod required_lifecycle;
+mod required_stop;
+mod required_work;
+mod selected_execution_release;
 mod semantic_epoch;
+mod settlement_work;
 mod source_custody;
 
 mod support;
@@ -80,12 +100,15 @@ fn scheduling_failure_is_terminal_and_last_interest_releases_the_record() {
     let occurrence = occurrence();
     let demand_key = key("producer", 5, 1);
     let wake = Arc::new(DemandWake {
+        _record_capacity: test_record_capacity(),
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
     registry.state.lock().unwrap().records.insert(
         demand_key.clone(),
         DemandRecord {
+            _record_capacity: test_record_capacity(),
+            source_commit_capacity: None,
             wake: Arc::clone(&wake),
             ..record(occurrence, DemandState::Scheduling, 1)
         },
@@ -118,18 +141,21 @@ fn required_failure_is_released_with_its_last_interest() {
     let occurrence = occurrence();
     let demand_key = key("required", 5, 1);
     let wake = Arc::new(DemandWake {
+        _record_capacity: test_record_capacity(),
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
     registry.state.lock().unwrap().records.insert(
         demand_key.clone(),
         DemandRecord {
-            required: true,
+            _record_capacity: test_record_capacity(),
+            source_commit_capacity: None,
+            required_interests: 1,
             wake: Arc::clone(&wake),
             ..record(occurrence, DemandState::Scheduling, 1)
         },
     );
-    let demand_interest = interest(&registry, demand_key.clone(), wake);
+    let demand_interest = required_interest(&registry, demand_key.clone(), wake);
     let denial = WorthQueryOutputDemandDenial::new(
         WorthQueryOutputDemandDenialKind::ProducerUnavailable,
         "required producer stopped before scheduling",
@@ -155,12 +181,15 @@ fn retiring_occurrence_closes_live_work_and_completion_cannot_resurrect_it() {
     let occurrence = occurrence();
     let demand_key = key("producer", 5, 1);
     let wake = Arc::new(DemandWake {
+        _record_capacity: test_record_capacity(),
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
     registry.state.lock().unwrap().records.insert(
         demand_key.clone(),
         DemandRecord {
+            _record_capacity: test_record_capacity(),
+            source_commit_capacity: None,
             wake: Arc::clone(&wake),
             ..record(occurrence, DemandState::Scheduling, 1)
         },
@@ -273,12 +302,15 @@ fn denied_executor_releases_the_shared_claim_for_its_peer() {
     let occurrence = occurrence();
     let demand_key = key("shared-authorization", 1, 1);
     let wake = Arc::new(DemandWake {
+        _record_capacity: test_record_capacity(),
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
     registry.state.lock().unwrap().records.insert(
         demand_key.clone(),
         DemandRecord {
+            _record_capacity: test_record_capacity(),
+            source_commit_capacity: None,
             wake: Arc::clone(&wake),
             ..record(occurrence, DemandState::Scheduled, 2)
         },

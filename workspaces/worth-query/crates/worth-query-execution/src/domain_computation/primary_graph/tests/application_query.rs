@@ -28,6 +28,7 @@ mod root_guard_basis;
 mod root_selection;
 mod runtime_support;
 mod scope_liveness;
+mod shared_basis;
 
 fn installed_query(
     world: &super::fixture::AuthorizationWorld,

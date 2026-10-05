@@ -3,7 +3,7 @@ use crate::data::error::SignalError;
 use crate::diagnostics::ExecutionFailurePhase;
 use crate::logic::context::EvaluationContext;
 use crate::logic::evaluation::IntoEvaluationOutput;
-use crate::logic::planner::{EvaluationPlan, ExecutionReport, StageExecutor};
+use crate::logic::planner::{EvaluationPlan, ExecutionReport};
 
 use super::super::super::transaction::SignalTransaction;
 use super::super::shared::{absorb_execution_report_telemetry, execute_plan_with_runtime_config};
@@ -15,11 +15,10 @@ where
     Ctx: Sync,
     T: Copy + Ord,
 {
-    pub fn execute_prepared_plan_with_executor<F, O>(
+    pub fn execute_prepared_plan<F, O>(
         &mut self,
         plan: &EvaluationPlan,
         evaluator: &F,
-        executor: StageExecutor,
     ) -> Result<ExecutionReport, SignalError>
     where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
@@ -39,7 +38,7 @@ where
             &*self.runtime_ctx,
             plan,
             evaluator,
-            executor,
+            None,
         ) {
             Ok(report) => report,
             Err(err) => {

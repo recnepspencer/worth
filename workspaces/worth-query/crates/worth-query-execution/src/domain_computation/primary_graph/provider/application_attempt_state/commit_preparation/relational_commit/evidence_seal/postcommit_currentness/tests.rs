@@ -39,10 +39,10 @@ fn producer_decision_field_uses_native_revision_after_value_aba() {
     };
     let facts = rebase_at_current(&world, vec![field.clone()]);
     let durable = crate::domain_computation::primary_graph::application_checkpoint::decode_producer_facts(
-        &crate::domain_computation::primary_graph::application_checkpoint::encode_producer_facts(&facts)
-            .expect("the rebased non-query producer decision field is checkpoint-comparable"),
-    )
-    .expect("the complete producer fact set round-trips");
+            &crate::domain_computation::primary_graph::application_checkpoint::encode_producer_facts(&facts)
+                .expect("the rebased non-query producer decision field is checkpoint-comparable"),
+        )
+        .expect("the complete producer fact set round-trips");
     assert_eq!(durable.as_ref(), facts.as_ref());
     assert!(matches!(
         facts[0],
@@ -109,6 +109,42 @@ fn producer_decision_absence_uses_native_presence_revision() {
 }
 
 #[test]
+fn a_source_revision_the_effect_moved_is_kept_and_reported_superseded() {
+    let world = installed_authorization_world(true);
+    let (entity, locator) = account_note(&world, "account-1");
+    let read = rebase_at_current(
+        &world,
+        vec![WorthQueryApplicationObservedFact::AbsentField {
+            entity_id: entity,
+            kind: world
+                .application
+                .runtime
+                .primary_graph()
+                .unwrap()
+                .layout
+                .entity_kind(AccountIdentity::reference().entity())
+                .unwrap(),
+            locator: planned(&locator),
+        }],
+    );
+    assert_eq!(
+        rebase_result_at_current(&world, read.to_vec()),
+        RebasedSourceFacts::Exact(Arc::clone(&read)),
+        "a source revision nothing moved stays exact"
+    );
+
+    set_note(&world, entity, locator, "moved");
+    assert_eq!(
+        rebase_result_at_current(&world, read.to_vec()),
+        RebasedSourceFacts::SupersededByOwnEffect {
+            facts: Arc::clone(&read),
+            ordinals: Arc::from([0]),
+        },
+        "the fact keeps the revision its source read and is reported stale"
+    );
+}
+
+#[test]
 fn unavailable_native_revision_never_authorizes_output_reuse() {
     let world = installed_authorization_world(true);
     let (entity, note) = account_note(&world, "account-1");
@@ -117,7 +153,7 @@ fn unavailable_native_revision_never_authorizes_output_reuse() {
         note.aspect().aspect_key().clone(),
         CanonicalFieldPath::single(FieldKey::new("undeclared").unwrap()),
     );
-    let facts = rebase_at_current(
+    let rebased = rebase_result_at_current(
         &world,
         vec![WorthQueryApplicationObservedFact::AbsentField {
             entity_id: entity,
@@ -133,15 +169,11 @@ fn unavailable_native_revision_never_authorizes_output_reuse() {
         }],
     );
     assert!(matches!(
-        facts[0],
-        WorthQueryApplicationObservedFact::SourceFieldRevision {
-            native_revision: None,
+        rebased,
+        RebasedSourceFacts::VerificationRequired {
+            reason: RebaseVerificationReason::NativeRevisionUnavailable,
             ..
         }
-    ));
-    assert!(matches!(
-        output_selection(&world, &facts),
-        OutputDependencySelection::FreshRequired
     ));
 }
 
@@ -187,7 +219,23 @@ fn rebase_at_current(
     world: &AuthorizationWorld,
     facts: Vec<WorthQueryApplicationObservedFact>,
 ) -> Arc<[WorthQueryApplicationObservedFact]> {
+    match rebase_result_at_current(world, facts) {
+        RebasedSourceFacts::Exact(facts) => facts,
+        other => panic!("fresh native facts must be exact: {other:?}"),
+    }
+}
+
+fn rebase_result_at_current(
+    world: &AuthorizationWorld,
+    facts: Vec<WorthQueryApplicationObservedFact>,
+) -> RebasedSourceFacts {
     let selected = world.selected_product();
+    let mut admission = crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::new(
+            worth_relational::facade::mvcc::CompanionPreflightBudget {
+                maximum_work_visits: 64,
+                maximum_preparation_bytes: 1024 * 1024,
+            },
+        );
     world
         .application
         .runtime
@@ -198,10 +246,11 @@ fn rebase_at_current(
             rebase(
                 runtime,
                 selected.application_basis().snapshot_handle(),
-                facts,
+                PreparedSourceFactRebase::admit(facts).unwrap(),
+                &BTreeSet::new(),
                 true,
                 64,
-                64,
+                Some(&mut admission),
             )
         })
 }

@@ -8,7 +8,7 @@ impl SignalGraph {
         cause: &ResolvedDependencyCause,
         prepared: &ProducedAspectDelta,
         regions: usize,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         if matches!(work, EvaluationWork::Ordinary) {
             return Ok(());
@@ -24,12 +24,7 @@ impl SignalGraph {
             },
             work,
         )?;
-        let bytes = scope.map_or(Some(0), |s| {
-            s.partition
-                .0
-                .len()
-                .checked_add(s.detail.as_ref().map_or(0, String::len))
-        });
+        let bytes = scope.map_or(Some(0), |s| s.path().checked_segment_bytes());
         let comparison = bytes
             .and_then(|n| n.checked_mul(2))
             .and_then(|n| n.checked_add(64));

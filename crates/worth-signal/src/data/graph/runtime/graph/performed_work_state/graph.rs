@@ -3,7 +3,7 @@ impl SignalGraph {
     pub(crate) fn prepare_invalidation_performed_work(
         &self,
         binding: &crate::data::proof::invalidation::progression::InvalidationWorkBindingAxes,
-        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
     ) -> Result<Option<super::PreparedPerformedWorkCapture>, crate::data::error::SignalError> {
         use crate::logic::evaluation::EvaluationWork;
         let ledger = self.arena.retained_node_ledger.as_ref();
@@ -29,11 +29,11 @@ impl SignalGraph {
     pub(crate) fn snapshot_invalidation_performed_targets(
         &self,
         captures_work: bool,
-        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
     ) -> Result<super::PerformedTargetSnapshot, crate::data::error::SignalError> {
         use crate::logic::evaluation::EvaluationWork;
         let ledger = self.arena.retained_node_ledger.as_ref();
-        let snapshot = |work: &mut EvaluationWork<'_>| {
+        let snapshot = |work: &mut EvaluationWork<'_, '_>| {
             if captures_work {
                 self.invalidation_performed_work
                     .snapshot_targets(ledger, work)

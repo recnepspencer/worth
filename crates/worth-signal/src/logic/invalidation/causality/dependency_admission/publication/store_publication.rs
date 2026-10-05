@@ -93,7 +93,7 @@ impl PreparedDirectCauseStores {
 
     pub(crate) fn prepare_retained(
         self,
-        graph: &SignalGraph,
+        graph: &mut SignalGraph,
         ledger: &Arc<SignalConditionalRetentionLedger>,
         maximum: RetainedStorageCharge,
         work: &mut RetainedStoragePreparation,

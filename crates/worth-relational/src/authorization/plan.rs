@@ -11,6 +11,11 @@ use super::{
     RelationalAuthorizationRelatedEntityConstraint,
 };
 
+mod clone_admission;
+pub use clone_admission::{
+    RelationalAuthorizationPathCloneStop, RelationalAuthorizationPlanAdmissionStop,
+};
+
 #[derive(
     Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Serialize, serde::Deserialize,
 )]
@@ -200,14 +205,35 @@ impl RelationalAuthorizationObservationPlan {
         paths: impl IntoIterator<Item = RelationalAuthorizationPathPlan>,
         proposed_effects: impl IntoIterator<Item = RelationalAuthorizationEffectTarget>,
     ) -> Result<Self, RelationalAuthorizationPlanDenial> {
+        Self::try_new_owned(
+            snapshot,
+            principal,
+            scope,
+            principal_kind,
+            scope_kind,
+            paths.into_iter().collect(),
+            proposed_effects.into_iter().collect(),
+        )
+    }
+
+    /// Consume caller-admitted owned path buffers without another collection.
+    pub fn try_new_owned(
+        snapshot: SnapshotHandle,
+        principal: EntityId,
+        scope: EntityId,
+        principal_kind: KindId,
+        scope_kind: KindId,
+        paths: Vec<RelationalAuthorizationPathPlan>,
+        proposed_effects: Vec<RelationalAuthorizationEffectTarget>,
+    ) -> Result<Self, RelationalAuthorizationPlanDenial> {
         let plan = Self {
             snapshot,
             principal,
             scope,
             principal_kind,
             scope_kind,
-            paths: paths.into_iter().collect(),
-            proposed_effects: proposed_effects.into_iter().collect(),
+            paths,
+            proposed_effects,
         };
         validate_plan(&plan)?;
         Ok(plan)
@@ -239,22 +265,5 @@ impl RelationalAuthorizationObservationPlan {
 
     pub fn proposed_effects(&self) -> &[RelationalAuthorizationEffectTarget] {
         &self.proposed_effects
-    }
-
-    pub(crate) fn comparison_at(
-        &self,
-        snapshot: SnapshotHandle,
-    ) -> Result<Self, RelationalAuthorizationPlanDenial> {
-        let plan = Self {
-            snapshot,
-            principal: self.principal,
-            scope: self.scope,
-            principal_kind: self.principal_kind,
-            scope_kind: self.scope_kind,
-            paths: self.paths.clone(),
-            proposed_effects: self.proposed_effects.clone(),
-        };
-        validate_plan(&plan)?;
-        Ok(plan)
     }
 }

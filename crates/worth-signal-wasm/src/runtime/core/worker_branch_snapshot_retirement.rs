@@ -7,10 +7,10 @@ use super::RuntimeCore;
 pub(super) struct WorkerBranchSnapshotRetirement;
 
 impl WorkerBranchSnapshotRetirement {
-    pub(super) fn admitted_for<'a>(
-        snapshots: &'a BTreeMap<(u64, u64), AdmittedSignalBranchSnapshot>,
+    pub(super) fn admitted_for(
+        snapshots: &BTreeMap<(u64, u64), AdmittedSignalBranchSnapshot>,
         branch_id: u64,
-    ) -> Vec<&'a AdmittedSignalBranchSnapshot> {
+    ) -> Vec<&AdmittedSignalBranchSnapshot> {
         snapshots
             .range((branch_id, 0)..=(branch_id, u64::MAX))
             .map(|(_, snapshot)| snapshot)

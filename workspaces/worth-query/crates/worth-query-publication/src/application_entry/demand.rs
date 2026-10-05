@@ -14,4 +14,5 @@ pub use request::{
 };
 pub use settlement::{
     WorthQueryApplicationOutputDemandProgress, WorthQueryApplicationOutputDemandSettlement,
+    WorthQueryOutputSettlementPosture,
 };

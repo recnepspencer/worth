@@ -8,6 +8,9 @@ use super::{
     CompactionState, NodeArena, NodeColdData, NodeDefinitionData, NodeHotData, NodeWarmData, Slot,
 };
 
+mod warm_row;
+use warm_row::WarmWire;
+
 // The wire's warm rows retain their existing shape. Separating live definition
 // storage must not erase installed meaning when reading an existing graph.
 #[derive(Deserialize)]
@@ -20,14 +23,6 @@ struct ArenaWire {
     active_nodes: u32,
     #[serde(default)]
     compaction: CompactionState,
-}
-
-#[derive(Deserialize)]
-struct WarmWire {
-    #[serde(flatten)]
-    definition: NodeDefinitionData,
-    #[serde(flatten)]
-    evaluation: NodeWarmData,
 }
 
 #[derive(Serialize)]

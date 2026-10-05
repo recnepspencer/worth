@@ -170,11 +170,12 @@ impl RuntimeCore {
                 .telemetry()
                 .execution
                 .serial_executor_usage_count,
-            parallel_executor_usage_count: self
+            execution_report: self
                 .runtime
                 .telemetry()
                 .execution
-                .parallel_executor_usage_count,
+                .last_execution_report
+                .map(Into::into),
             output_serialization_count: self.web_metrics.output_serialization_count,
             output_serialization_breadth: self.web_metrics.output_serialization_breadth,
             js_callback_invocation_count: observation_callback_stats

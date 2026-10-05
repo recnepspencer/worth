@@ -1,75 +1,92 @@
-use std::{any::Any, marker::PhantomData, sync::Arc};
+use std::{any::Any, sync::Arc};
 
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationIdentities, ApplicationMutationIntent, ApplicationMutationScopeResolution,
-    WorthQueryApplicationOutputRole,
+    ApplicationMutationIntent, ApplicationMutationScopeResolution, WorthQueryApplicationOutputRole,
 };
-use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
 use worth_query_declaration::facade::application_schema::{
-    ApplicationSchema, ApplicationStructuredValueBinding, TypedMutationPreconditions,
+    ApplicationSchema, TypedMutationPreconditions,
 };
 
 use super::{
-    WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
-    WorthQueryProducerCommitAuthority, WorthQueryProducerOutputFamily,
+    ProducerSourceBinding as SourceBinding, ProducerSourceQuery as SourceQuery,
+    ProducerSourceValue as SourceValue, WorthQueryApplicationProducerBinding,
+    WorthQueryApplicationProducerProvider, WorthQueryProducerCommitAuthority,
 };
 use crate::basis::WorthQueryProductBranch;
+use crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::{
-    HandlerResult, WorthQueryApplicationCommitReceipt, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryObservedSource, WorthQueryPrimaryGraphApplicationRuntime,
+    RequiredOutputDemandContext, RequiredOutputExecution, WorthQueryApplicationCommitReceipt,
+    WorthQueryApplicationIdempotencyBinding, WorthQueryPrimaryGraphApplicationRuntime,
     WorthQueryPrincipalResolutionMode,
 };
 
 use super::demand::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
 
-mod authorization;
+mod admitted;
 mod denial;
+mod input_cutoff;
+mod input_identity;
+mod input_reuse;
+mod installed;
 mod outcome;
-use authorization::authorize_typed;
-use denial::{denial, execution_failed, failed, identity_unavailable};
-use outcome::commit_receipt;
+mod post_authorization;
+mod readiness;
+mod required_cue;
+mod selected;
+mod selected_public;
+mod source_readmission;
+use selected::InstalledSelectedProducerExecutor;
+use super::demand::disclosure::{
+    FreshOutputDisclosure, ValidatedOutputDisclosure, ValidatedProducerInput,
+};
+use admitted::execute_fresh;
+pub(super) use denial::ProducerExecutionStop;
+use denial::{
+    denial, execution_failed, failed, identity_unavailable, query_admission_denied,
+    principal_rejected, query_execution_denied, request_authority_denied,
+    scope_rejected,
+};
+use input_identity::encode_input;
+use input_reuse::{prepared_key, require_selected_program};
+pub(super) use installed::TypedInstalledProducer;
+use outcome::PreparedProducerExecutionOutcome;
+pub(super) use outcome::ProducerExecutionOutcome;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_cue::RequiredCueProgress;
+use outcome::{commit_receipt, completed_handler};
+use source_readmission::readmit_source;
 
-type SourceBinding<Schema, Binding> =
-    <<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source;
-type SourceValue<Schema, Binding> = <<SourceBinding<Schema, Binding> as ApplicationQueryBinding<
-    Schema,
->>::ResultBinding as ApplicationStructuredValueBinding>::Value;
-type SourceQuery<Schema, Binding> =
-    <SourceBinding<Schema, Binding> as ApplicationQueryBinding<Schema>>::Query;
 type Operation<Schema, Binding> =
     <Binding as WorthQueryApplicationProducerBinding<Schema>>::Operation;
 
-pub(super) trait InstalledProducerExecutor<Schema>: Send + Sync {
-    fn authorize_interest(
-        &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        request_scope: &WorthQueryRequestScope,
-        branch: WorthQueryProductBranch,
-        source: &dyn Any,
-    ) -> Result<(), WorthQueryOutputDemandDenial>;
-
+pub(super) trait InstalledProducerExecutor<Schema>:
+    InstalledSelectedProducerExecutor<Schema> + Send + Sync
+{
     fn execute(
         &self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
         branch: WorthQueryProductBranch,
-        source: &dyn Any,
-        observed_source: &dyn Any,
+        required_output: RequiredOutputExecution,
+        input: ValidatedProducerInput<'_>,
         successor_of: Option<[u8; 32]>,
         commit_authority: WorthQueryProducerCommitAuthority,
-        maximum_lineage_work: usize,
-    ) -> Result<WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial>;
+        edition: super::InstalledProducerEdition,
+        limits: WorthQueryOutputDemandLimits,
+        request_admission: &mut InvalidationEditAdmission,
+        producer_contacts: &mut usize,
+    ) -> Result<PreparedProducerExecutionOutcome, ProducerExecutionStop>;
 
     fn resources(&self, source: &dyn Any) -> Option<super::WorthQueryProducerDemandResources>;
 
     fn readiness_record(
         &self,
         receipt: &WorthQueryApplicationCommitReceipt,
+        admission: Option<&mut InvalidationEditAdmission>,
     ) -> Result<
         worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
         WorthQueryOutputDemandDenial,
@@ -78,34 +95,16 @@ pub(super) trait InstalledProducerExecutor<Schema>: Send + Sync {
     fn preserved_readiness_output(&self, receipt: &WorthQueryApplicationCommitReceipt) -> bool;
 }
 
-pub(super) struct TypedInstalledProducer<Schema, Binding>
-where
-    Schema: ApplicationSchema,
-    Binding: WorthQueryApplicationProducerBinding<Schema>,
-{
-    provider: Arc<Binding::Provider>,
-    marker: PhantomData<fn() -> Schema>,
-}
-
-impl<Schema, Binding> TypedInstalledProducer<Schema, Binding>
-where
-    Schema: ApplicationSchema,
-    Binding: WorthQueryApplicationProducerBinding<Schema>,
-{
-    pub(super) fn new(provider: Arc<Binding::Provider>) -> Self {
-        Self {
-            provider,
-            marker: PhantomData,
-        }
-    }
-}
-
 impl<Schema, Binding> InstalledProducerExecutor<Schema> for TypedInstalledProducer<Schema, Binding>
 where
     Schema: ApplicationSchema + 'static,
     Binding: WorthQueryApplicationProducerBinding<Schema>,
     Binding::Provider: WorthQueryApplicationProducerProvider<Schema, Binding>,
-    SourceValue<Schema, Binding>: 'static,
+    SourceValue<Schema, Binding>:
+        crate::domain_computation::primary_graph::WorthQueryApplicationProjection<
+                Schema,
+                SourceQuery<Schema, Binding>,
+            > + 'static,
     SourceQuery<Schema, Binding>: 'static,
 {
     fn preserved_readiness_output(&self, receipt: &WorthQueryApplicationCommitReceipt) -> bool {
@@ -122,47 +121,37 @@ where
     fn readiness_record(
         &self,
         receipt: &WorthQueryApplicationCommitReceipt,
+        admission: Option<&mut InvalidationEditAdmission>,
     ) -> Result<
         worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
         WorthQueryOutputDemandDenial,
     > {
+        let admitted = admission.is_some();
+        if let Some(admission) = admission {
+            readiness::admit_readiness_record(
+                <Binding::OutputRole as WorthQueryApplicationOutputRole>::NAME,
+                receipt,
+                admission,
+            )?;
+        }
         let entity = receipt
             .output_correspondence()
             .entity_for_binding_role::<Binding::Operation>(
                 <Binding::OutputRole as WorthQueryApplicationOutputRole>::NAME,
             )
-            .map_err(|error| failed(Binding::IDENTITY, error))?;
+            .map_err(|error| {
+                if admitted {
+                    denial(WorthQueryOutputDemandDenialKind::ProducerUnavailable, "")
+                } else {
+                    failed(Binding::IDENTITY, error)
+                }
+            })?;
         Ok(
             worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(
                 entity.partition_id.0,
                 entity.local_slot.0,
                 entity.generation.0,
             ),
-        )
-    }
-
-    fn authorize_interest(
-        &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        request_scope: &WorthQueryRequestScope,
-        branch: WorthQueryProductBranch,
-        source: &dyn Any,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let source = source
-            .downcast_ref::<SourceValue<Schema, Binding>>()
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::ForeignSource,
-                    Binding::IDENTITY,
-                )
-            })?;
-        authorize_typed::<Schema, Binding>(
-            runtime,
-            principal,
-            request_scope,
-            branch,
-            self.provider.operation_input(source),
         )
     }
 
@@ -178,188 +167,89 @@ where
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
         branch: WorthQueryProductBranch,
-        source: &dyn Any,
-        observed_source: &dyn Any,
+        required_output: RequiredOutputExecution,
+        input: ValidatedProducerInput<'_>,
         successor_of: Option<[u8; 32]>,
         commit_authority: WorthQueryProducerCommitAuthority,
-        maximum_lineage_work: usize,
-    ) -> Result<WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial> {
-        let source = source
-            .downcast_ref::<SourceValue<Schema, Binding>>()
+        edition: super::InstalledProducerEdition,
+        limits: WorthQueryOutputDemandLimits,
+        request_admission: &mut InvalidationEditAdmission,
+        producer_contacts: &mut usize,
+    ) -> Result<PreparedProducerExecutionOutcome, ProducerExecutionStop> {
+        let (required_output, ready_backing) = required_output.into_parts();
+        if !edition.admits_binding::<Schema, Binding>() {
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                Binding::IDENTITY,
+            )
+            .into());
+        }
+        let input = input
+            .take::<SourceQuery<Schema, Binding>, SourceValue<Schema, Binding>>(edition)
             .ok_or_else(|| {
                 denial(
                     WorthQueryOutputDemandDenialKind::ForeignSource,
                     Binding::IDENTITY,
                 )
             })?;
-        let observed_source = observed_source
-            .downcast_ref::<WorthQueryObservedSource<SourceQuery<Schema, Binding>>>()
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::ForeignSource,
-                    Binding::IDENTITY,
-                )
-            })?;
-        execute_typed::<Schema, Binding>(
-            runtime,
-            principal,
-            request_scope,
-            branch,
-            self.provider.as_ref(),
-            source,
-            observed_source.clone(),
-            successor_of,
-            commit_authority,
-            maximum_lineage_work,
-        )
-    }
-}
-
-fn execute_typed<Schema, Binding>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-    request_scope: &WorthQueryRequestScope,
-    branch: WorthQueryProductBranch,
-    provider: &Binding::Provider,
-    source: &SourceValue<Schema, Binding>,
-    observed_source: WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
-    successor_of: Option<[u8; 32]>,
-    commit_authority: WorthQueryProducerCommitAuthority,
-    maximum_lineage_work: usize,
-) -> Result<WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial>
-where
-    Schema: ApplicationSchema + 'static,
-    Binding: WorthQueryApplicationProducerBinding<Schema>,
-{
-    let input = provider.operation_input(source);
-    let source_epoch = observed_source.idempotency_identity();
-    let key = provider.idempotency_key(source, &source_epoch.bytes());
-    let identities =
-        ApplicationMutationIdentities::<Schema, Operation<Schema, Binding>>::encode(&key, &input)
-            .map_err(|error| identity_unavailable(Binding::IDENTITY, error))?;
-    let binding = runtime
-        .installed_schema()
-        .installed_mutation_binding::<Operation<Schema, Binding>>()
-        .map_err(|error| failed(Binding::IDENTITY, error))?;
-    let selected = runtime
-        .on_branch(branch)
-        .select()
-        .map_err(|error| failed(Binding::IDENTITY, error))?;
-    let principal = selected
-        .resolve_authenticated_principal(
-            binding.principal_binding(),
-            external_principal,
-            request_scope,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .map_err(|error| failed(Binding::IDENTITY, error))?;
-    let (scope_field, scope_value) = input
-        .scope_binding()
-        .into_field_parts(principal.principal_identity());
-    let scope = selected
-        .resolve_entity(
-            scope_field,
-            scope_value,
-            request_scope,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .map_err(|error| failed(Binding::IDENTITY, error))?;
-    let mut admission = selected
-        .authorize_operation(
-            &principal,
-            &scope,
-            binding.operation(),
-            TypedMutationPreconditions::default(),
-            request_scope,
-        )
-        .map_err(|error| failed(Binding::IDENTITY, error))?;
-    let bound_source = runtime
-        .bind_application_source_expectation::<Operation<Schema, Binding>, _>(
-            &mut admission,
-            observed_source,
-            input.input(),
-        )
-        .map_err(|error| failed(Binding::IDENTITY, error))?;
-    let completed = match runtime
-        .execute_mutation_handler::<Operation<Schema, Binding>>(
-            &identities,
-            principal.principal_identity(),
-            admission,
-        )
-        .map_err(|error| execution_failed(Binding::IDENTITY, error))?
-    {
-        HandlerResult::Completed(completed) => completed,
-        HandlerResult::DomainDenied(domain_denial) => {
-            return Err(WorthQueryOutputDemandDenial::producer_domain_denied(
-                format!(
-                    "{}: producer domain denial: {domain_denial:?}",
-                    Binding::IDENTITY
-                ),
-                provider.domain_denial_reason(&domain_denial),
-            ))
-        }
-        HandlerResult::ExecutionDenied(error) => return Err(failed(Binding::IDENTITY, error)),
-        HandlerResult::Cancelled => {
-            return Err(denial(
-                WorthQueryOutputDemandDenialKind::Cancelled,
-                "producer cancelled",
-            ))
-        }
-        HandlerResult::DeadlineExceeded => {
-            return Err(denial(
-                WorthQueryOutputDemandDenialKind::TimedOut,
-                "producer deadline exceeded",
-            ))
-        }
-    };
-    let (mut program, _) = completed.into_parts(); // Retries bind the complete typed dependency set.
-    let (key_identity, dependency_identity) = program
-        .producer_idempotency_identities::<Operation<Schema, Binding>>(
-            runtime,
-            *identities.key_identity(),
-            successor_of,
-            maximum_lineage_work,
-        )
-        .map_err(|identity_denial| {
-            if identity_denial
-                == crate::domain_computation::primary_graph::application_attempt::WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded
-            {
-                // This admitted demand cannot increase its limit; execution closes terminally.
-                denial(
-                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                    Binding::IDENTITY,
-                )
-            } else {
-                denial(
-                    WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-                    format!("{}: {identity_denial:?}", Binding::IDENTITY),
+        let outcome = match input {
+            ValidatedOutputDisclosure::Fresh(proof) => execute_fresh::<Schema, Binding>(
+                runtime,
+                principal,
+                request_scope,
+                branch,
+                required_output,
+                self.provider.as_ref(),
+                proof,
+                successor_of,
+                commit_authority,
+                edition,
+                limits,
+                request_admission,
+                producer_contacts,
+            ),
+            ValidatedOutputDisclosure::RetainedProgram(proof) => {
+                if matches!(
+                    commit_authority,
+                    WorthQueryProducerCommitAuthority::Ordinary
+                ) || !proof.admits(principal, request_scope)
+                {
+                    return Err(denial(
+                        WorthQueryOutputDemandDenialKind::Superseded,
+                        Binding::IDENTITY,
+                    )
+                    .into());
+                }
+                let fresh = readmit_source::<Schema, Binding>(
+                    runtime,
+                    principal,
+                    request_scope,
+                    branch,
+                    proof.source(),
+                    limits,
+                    request_admission,
+                    edition,
+                )?;
+                execute_fresh::<Schema, Binding>(
+                    runtime,
+                    principal,
+                    request_scope,
+                    branch,
+                    required_output,
+                    self.provider.as_ref(),
+                    fresh,
+                    successor_of,
+                    commit_authority,
+                    edition,
+                    limits,
+                    request_admission,
+                    producer_contacts,
                 )
             }
-        })?;
-    let idempotency = bound_source
-        .bind_idempotency(
-            WorthQueryApplicationIdempotencyBinding::new(
-                key_identity,
-                *identities.input_identity(),
-            )
-            .bind_mutation::<Schema, Operation<Schema, Binding>>(),
-        )
-        .bind_producer_dependency(&dependency_identity);
-    let program = program
-        .with_output_demand_observation()
-        .with_producer_required_invariants(Binding::REQUIRED_INVARIANTS);
-    let outcome = match commit_authority {
-        WorthQueryProducerCommitAuthority::Ordinary => {
-            runtime.compare_and_commit_application(program, idempotency)
-        }
-        WorthQueryProducerCommitAuthority::ProgramOutput => runtime
-            .compare_and_commit_application_for_program_output_producer(program, idempotency, None),
-        WorthQueryProducerCommitAuthority::SelectedProgram { identity, revision } => runtime
-            .compare_and_commit_application_for_program_output_producer(
-                program,
-                idempotency,
-                Some((&identity, &revision)),
-            ),
-    };
-    commit_receipt(Binding::IDENTITY, outcome)
+        }?;
+        Ok(PreparedProducerExecutionOutcome::new(
+            outcome,
+            ready_backing,
+        ))
+    }
 }

@@ -122,6 +122,9 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
     /// but this runtime no longer holds its receipt. Retrying the same request
     /// cannot commit it again.
     IdempotencyReceiptNotRetained,
+    /// The key's commit took effect and has left the declared idempotency
+    /// window. Retrying the same request cannot commit it again.
+    IdempotencyWindowExpired,
     /// The key's recorded intent was written by an earlier encoding that
     /// cannot be checked against this request.
     IdempotencyIntentUnverifiable,
@@ -261,6 +264,7 @@ const fn idempotency_kind(
         }
         Resolution::CommittedReceiptNotRetained { .. } => Request::IdempotencyReceiptNotRetained,
         Resolution::RecordedIntentUnverifiable => Request::IdempotencyIntentUnverifiable,
+        Resolution::IdempotencyWindowExpired => Request::IdempotencyWindowExpired,
     }
 }
 

@@ -207,10 +207,18 @@ fn direct_demand<'application, 'principal, 'scope>(
 ) -> worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandSettlement<
     PlanarQuery,
 > {
+    // Producer contact and retained artifact policy are this test's subject.
+    // Source verification uses the same independent allowance as the public
+    // cutoff journeys; the installed host still restricts both lanes.
+    let source_work =
+        worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard()
+            .limits()
+            .source_currentness_work();
     let controls = WorthQueryOutputDemandControls::new(
         NonZeroUsize::new(4_096).unwrap(),
         NonZeroUsize::new(8_192).unwrap(),
-    );
+    )
+    .source_currentness_work(NonZeroUsize::new(source_work).unwrap());
     let mut demand = request
         .demand(PlanarOutputDemand::new("anchor-a"))
         .controls(controls)

@@ -36,15 +36,17 @@ impl PublicBridgeRuntimeHarness {
         let relational_runtime = relational_runtime.unwrap_or_else(|| {
             worth_relational::facade::runtime::RelationalRuntimeBuilder::new().build()
         });
+        let product_world_resources = public_product_world_resources();
         let source =
             worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner::new(
                 relational_runtime,
                 "public-graph",
+                product_world_resources.invalidation_resources(),
             )
             .expect("public bridge tests require one real Relational product source");
         let bridge = bridge::public_bridge(&source);
 
-        WorthQueryRuntime::builder(public_product_world_resources())
+        WorthQueryRuntime::builder(product_world_resources)
             .aspect_contracts(public_bridge_aspect_contracts())
             .expect("public bridge aspect contracts should install")
             .relational_source_owner(source)

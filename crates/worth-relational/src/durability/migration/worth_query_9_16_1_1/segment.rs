@@ -120,6 +120,7 @@ impl LegacyCanonicalCommitEnvelope {
                 publication_mode: self.patch.publication_mode,
                 authoritative_record_patches: self.patch.authoritative_record_patches,
             },
+            crate::history::data::RelationalDescriptiveTouchGraph::unavailable(),
             self.diagnostics_summary,
             lineage,
             self.derived_index_artifacts,

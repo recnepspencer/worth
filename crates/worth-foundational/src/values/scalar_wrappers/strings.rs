@@ -10,6 +10,13 @@ pub enum InternedString {
 }
 
 impl InternedString {
+    pub fn owned_allocation_capacity_bytes(&self) -> usize {
+        match self {
+            Self::Raw(value) => value.capacity(),
+            Self::Symbol(_) => 0,
+        }
+    }
+
     pub fn as_symbol(&self) -> Option<Symbol> {
         match self {
             Self::Raw(_) => None,

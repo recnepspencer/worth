@@ -1,6 +1,6 @@
 //! Restore tracked output lineage at the checkpoint boundary, before any demand.
 use super::super::{
-    application_checkpoint::decode_producer_facts,
+    application_checkpoint::decode_producer_facts_for_wire_version,
     application_query::WorthQueryCheckpointSourceIdentity, output_lineage::RecordedSourceIdentity,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphInstallationDenial,
     WorthQueryPrimaryGraphInstallationDenialKind,
@@ -32,15 +32,17 @@ pub(super) fn restore<Schema: ApplicationSchema>(
             recovered.correspondence.binding_type(),
             checkpoint.producer_facts.as_deref(),
         ) else {
-            // Older outputs without producer facts retain descriptive prior identity only.
+            // An output without producer facts retains descriptive prior identity only.
             continue;
         };
-        let facts = decode_producer_facts(bytes).map_err(|detail| {
-            WorthQueryPrimaryGraphInstallationDenial::new(
-                WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-                detail,
-            )
-        })?;
+        let facts =
+            decode_producer_facts_for_wire_version(bytes, checkpoint.producer_fact_wire_version)
+                .map_err(|detail| {
+                    WorthQueryPrimaryGraphInstallationDenial::new(
+                        WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+                        detail,
+                    )
+                })?;
         lineage.record_restoration(
             binding,
             application.runtime.authority_identity().as_u64(),
@@ -56,6 +58,9 @@ pub(super) fn restore<Schema: ApplicationSchema>(
             checkpoint.idempotency_key,
             facts,
             checkpoint.resources,
+            // The row is recorded, not verified: its first reader or demand
+            // compares its facts and output in full.
+            None,
         );
     }
     Ok(())

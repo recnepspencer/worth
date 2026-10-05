@@ -21,7 +21,7 @@ impl SignalGraph {
         &mut self,
         node: NodeId,
         growth: Charge,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
         edit: impl FnOnce(&mut NodeEvaluationMutation<'_>) -> R,
     ) -> Result<R, SignalError> {
         self.validate_handle(node)?;
@@ -32,6 +32,9 @@ impl SignalGraph {
             EvaluationWork::Conditional(work) => {
                 self.mutate_reserved_evaluation_node(node, growth, work, edit)
             }
+            EvaluationWork::RequestCheckpoint(_) => Err(SignalError::internal(
+                "request discovery checkpoint cannot prepare retained mutation",
+            )),
             EvaluationWork::Ordinary => {
                 let maximum = self
                     .installed_runtime_policy()

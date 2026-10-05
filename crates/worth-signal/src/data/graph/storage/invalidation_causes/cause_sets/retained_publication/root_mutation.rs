@@ -3,13 +3,46 @@
 use super::{
     accounted_map, accounted_vector, admit_root_peak, map_accounting, map_map_mutation,
     map_vector_capacity, map_vector_mutation, map_vector_staging, root_charges,
-    CauseStoreRootCharges, RetainedCauseStorePublicationDraft,
+    CanonicalCauseSetStore, CauseStoreRootCharges, RetainedCauseStorePublicationDraft,
 };
 use crate::data::error::SignalError;
 use crate::data::proof::invalidation::output_commit::ProducedAspectDelta;
 use crate::data::retained_storage::{
     RetainedStorageCharge as Charge, RetainedStoragePreparation as Work,
 };
+
+impl CanonicalCauseSetStore {
+    /// Constant-time conversion growth of the five authoritative roots. Their
+    /// writer-maintained facts avoid traversing historical cause payload.
+    pub(crate) fn epoch_fork_growth_bound(&self) -> Result<Charge, SignalError> {
+        let sets = self
+            .sets
+            .prepared_fork_charge()
+            .map_err(map_vector_mutation)?;
+        let generations = self
+            .slot_generations
+            .prepared_fork_charge()
+            .map_err(map_vector_mutation)?;
+        let free = self
+            .free_indices
+            .prepared_fork_charge()
+            .map_err(map_vector_mutation)?;
+        let commits = self
+            .published_output_commits
+            .prepared_fork_charge()
+            .map_err(map_map_mutation)?;
+        let references = self
+            .output_commit_reference_counts
+            .prepared_fork_charge()
+            .map_err(map_map_mutation)?;
+        sets.source_growth
+            .checked_add(generations.source_growth)
+            .and_then(|charge| charge.checked_add(free.source_growth))
+            .and_then(|charge| charge.checked_add(commits.source_growth))
+            .and_then(|charge| charge.checked_add(references.source_growth))
+            .map_err(map_accounting)
+    }
+}
 
 impl RetainedCauseStorePublicationDraft {
     pub(super) fn replace_set(

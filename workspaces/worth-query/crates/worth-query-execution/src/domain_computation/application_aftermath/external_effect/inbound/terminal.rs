@@ -28,13 +28,9 @@ impl WorthQueryInboundTerminalOwnerResult {
         }
     }
 
-    /// The runtime hands the actual performed Relational commit to its
-    /// conditional journal while this terminal's delivery remains exclusive.
-    /// A retry observes the settled bit and cannot record the commit again.
-    pub(in crate::domain_computation) fn settle_after_conditional_handoff(
-        &self,
-        handoff: impl FnOnce(),
-    ) -> bool {
+    /// Settles this terminal's one-shot fresh delivery while the delivery
+    /// remains exclusive. A retry observes the settled bit and returns early.
+    pub(in crate::domain_computation) fn settle_fresh_delivery(&self) -> bool {
         let _handoff = self
             .delivery_handoff
             .lock()
@@ -42,12 +38,7 @@ impl WorthQueryInboundTerminalOwnerResult {
         if self.delivery_settled.load(Ordering::Acquire) {
             return true;
         }
-        handoff();
-        if !self
-            .performed
-            .publication()
-            .settle_fresh_delivery_after_owner_handoff()
-        {
+        if !self.performed.publication().discharge_fresh_delivery() {
             return false;
         }
         self.delivery_settled.store(true, Ordering::Release);

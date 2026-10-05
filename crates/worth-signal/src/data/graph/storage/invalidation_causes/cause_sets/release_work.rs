@@ -8,7 +8,7 @@ impl CanonicalCauseSetStore {
     pub(crate) fn admit_release_work(
         &self,
         current: PendingCauseSetId,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         if current == PendingCauseSetId::EMPTY {
             return Ok(());

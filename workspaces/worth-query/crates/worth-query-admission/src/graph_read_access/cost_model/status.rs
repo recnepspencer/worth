@@ -1,4 +1,5 @@
 use super::budget::{DEFAULT_INLINE_EPHEMERAL_INDEX_BYTES, DEFAULT_INLINE_EPHEMERAL_RESULT_BYTES};
+use std::fmt::{self, Write};
 
 const DEFAULT_BROAD_TRAVERSAL_INTERMEDIATE_SET_SIZE: usize = 16;
 
@@ -42,7 +43,14 @@ impl WorthQueryGraphReadCostEstimateStatus {
     }
 
     pub(crate) fn digest_part(&self) -> String {
-        format!("status:{}", self.as_str())
+        let mut text = String::new();
+        self.write_digest_part(&mut text)
+            .expect("String formatting cannot fail");
+        text
+    }
+
+    pub(crate) fn write_digest_part(&self, output: &mut dyn Write) -> fmt::Result {
+        write!(output, "status:{}", self.as_str())
     }
 }
 
@@ -94,6 +102,13 @@ impl WorthQueryGraphReadComplexityContract {
     }
 
     pub(crate) fn digest_part(&self) -> String {
-        format!("complexity_contract:{}", self.as_str())
+        let mut text = String::new();
+        self.write_digest_part(&mut text)
+            .expect("String formatting cannot fail");
+        text
+    }
+
+    pub(crate) fn write_digest_part(&self, output: &mut dyn Write) -> fmt::Result {
+        write!(output, "complexity_contract:{}", self.as_str())
     }
 }

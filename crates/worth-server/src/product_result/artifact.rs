@@ -16,6 +16,10 @@ pub struct WorthServerProductResultArtifactError {
 }
 
 impl WorthServerProductResultArtifactError {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        crate::product_adapter::execution_pipeline::read_batch_accounting::string(&self.detail)
+    }
+
     fn serialization_failed(error: serde_json::Error) -> Self {
         Self {
             code: WorthServerProductResultArtifactErrorCode::SerializationFailed,
@@ -65,6 +69,15 @@ pub struct WorthServerProductResultArtifact {
 }
 
 impl WorthServerProductResultArtifact {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use crate::product_adapter::execution_pipeline::read_batch_accounting::string;
+        self.contract
+            .owned_allocation_capacity_bytes()
+            .saturating_add(self.body.owned_allocation_capacity_bytes())
+            .saturating_add(string(&self.body_digest))
+            .saturating_add(string(&self.artifact_digest))
+    }
+
     pub fn publish_json<T>(
         contract: &WorthServerProductResultContract,
         value: &T,

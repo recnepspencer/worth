@@ -19,6 +19,7 @@ test-durability-faults = ["worth-relational/test-durability-faults"]
 [dependencies]
 worth-foundational = { path = "../worth-foundational" }
 worth-proof = { path = "../worth-proof" }
+worth-execution = { path = "../worth-execution" }
 worth-relational = { path = "../worth-relational" }
 worth-runtime-bridge = { path = "../worth-runtime-bridge" }
 worth-signal = { path = "../worth-signal" }

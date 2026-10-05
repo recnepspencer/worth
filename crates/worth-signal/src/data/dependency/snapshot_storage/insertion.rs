@@ -28,7 +28,7 @@ impl DependencySnapshotStore {
         &mut self,
         snapshot: DependencySnapshot,
         shapes: &mut DependencySnapshotShapeStore,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<PreparedSnapshotInsertion, SignalError> {
         let snapshot = snapshot.canonicalize_with_work(work)?;
         if snapshot.entries().is_empty() {
@@ -42,27 +42,21 @@ impl DependencySnapshotStore {
                 self.rebuild_interner_if_needed();
                 self.rebuild_shape_handles_if_needed(shapes);
             }
-            EvaluationWork::Conditional(_) => self
+            EvaluationWork::Conditional(_) | EvaluationWork::RequestCheckpoint(_) => self
                 .require_retained_indexes(shapes)
                 .map_err(|_| SignalError::SnapshotIndexUnavailable)?,
         }
         work.reserve(Some(snapshot.entries().len()))?;
         let mut bytes = Some(16usize);
         for entry in snapshot.entries() {
-            bytes = bytes
-                .and_then(|n| n.checked_add(32))
-                .and_then(|n| {
-                    n.checked_add(entry.scope.as_ref().map_or(0, |s| s.partition.0.len()))
-                })
-                .and_then(|n| {
-                    n.checked_add(
-                        entry
-                            .scope
-                            .as_ref()
-                            .and_then(|s| s.detail.as_ref())
-                            .map_or(0, String::len),
-                    )
-                });
+            bytes = bytes.and_then(|n| n.checked_add(32)).and_then(|n| {
+                n.checked_add(
+                    entry
+                        .scope
+                        .as_ref()
+                        .map_or(0, |s| s.path().total_segment_bytes()),
+                )
+            });
         }
         let comparison = bytes.and_then(|n| n.checked_mul(2));
         let steps = self.interner.lookup_steps();

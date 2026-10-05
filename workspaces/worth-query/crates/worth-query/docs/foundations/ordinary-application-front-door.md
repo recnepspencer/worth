@@ -495,9 +495,13 @@ than translating every transport success or failure into a business result:
 #     application_entry::{
 #         WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestMutationDenial,
 #     },
-#     primary_graph::{WorthQueryApplicationCommitReceipt, WorthQueryApplicationUncommitted},
+#     primary_graph::{
+#         WorthQueryApplicationCommitReceipt, WorthQueryApplicationUncommitted,
+#         WorthQueryHistoricalApplicationCommit,
+#     },
 # };
 # fn publish(_: WorthQueryApplicationCommitReceipt) {}
+# fn refresh_current_state(_: WorthQueryHistoricalApplicationCommit) {}
 # fn inspect_uncommitted(_: WorthQueryApplicationUncommitted) {}
 # fn explain_domain(_: BankProposalDenial) {}
 # fn explain_request(_: WorthQueryApplicationRequestMutationDenial) {}
@@ -521,6 +525,9 @@ let outcome = bank
 match outcome {
     Ok(WorthQueryApplicationMutationOutcome::Committed { receipt, .. })
     | Ok(WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt)) => publish(receipt),
+    Ok(WorthQueryApplicationMutationOutcome::PreviouslyCommitted(observation)) => {
+        refresh_current_state(observation)
+    }
     Ok(WorthQueryApplicationMutationOutcome::Commit(uncommitted)) => inspect_uncommitted(uncommitted),
     Ok(WorthQueryApplicationMutationOutcome::DomainDenied(reason)) => explain_domain(reason),
     Err(reason) => explain_request(reason),

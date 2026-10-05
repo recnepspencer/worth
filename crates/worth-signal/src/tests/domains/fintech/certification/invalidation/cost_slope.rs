@@ -1,7 +1,6 @@
 use crate::data::error::SignalError;
 use crate::data::telemetry::InvalidationPerformedCounter as Counter;
 use crate::facade::DiagnosticsTier;
-use crate::logic::planner::StageExecutor;
 use crate::tests::domains::fintech::world::{
     FinancialLocalityScenario, FinancialWorldDefinition, LocalityScaleTuple, SparseFanoutAxis,
 };
@@ -180,12 +179,7 @@ pub(in crate::tests::domains::fintech) fn certify_scheduled_cost_slopes_from_cas
 }
 
 fn run(definition: FinancialWorldDefinition) -> Result<FinancialLocalityCaseEvidence, SignalError> {
-    verify_locality_case(
-        definition,
-        0,
-        DiagnosticsTier::Operational,
-        StageExecutor::Serial,
-    )
+    verify_locality_case(definition, 0, DiagnosticsTier::Operational, 1)
 }
 
 fn certify_index_disjoint(

@@ -14,7 +14,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::IdempotencyReceiptNotRetained { commit },
             stage: WorthQueryApplicationCommitDenialStage::Idempotency,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 
@@ -24,7 +24,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::IdempotencyIntentUnverifiable,
             stage: WorthQueryApplicationCommitDenialStage::Idempotency,
             detail: None,
-            custom_invariant: None,
+            cause: None,
         }
     }
 }

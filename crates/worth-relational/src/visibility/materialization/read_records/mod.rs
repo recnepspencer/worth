@@ -4,14 +4,17 @@ mod reader;
 mod visibility;
 
 pub(crate) use projection::{
+    authoritative_state_query_locus_comparison_key, authoritative_state_query_locus_value,
     entity_query_locus_comparison_key, entity_query_locus_value,
-    relation_query_locus_comparison_key,
+    relation_query_locus_comparison_key, relation_query_locus_value,
 };
 pub use projection::{
     AdjacencyStructuralRevision, AdjacencyStructuralRevisionDenial, EntityProjectionRecord,
     EntityRecordProjection, ProjectionAspectFilter, ProjectionAspectFilterMode,
     ProjectionAspectRequirement, ProjectionAspectScope, RelationProjectionRecord,
-    RelationRecordProjection, RelationalAdjacencyDirection, RelationalEntityRetirement,
+    RelationRecordProjection, RelationalAdjacencyDirection, RelationalAdjacencyVisit,
+    RelationalBorrowedRecordReadDenial, RelationalEntityMetadata, RelationalEntityRetirement,
+    RelationalRelationMetadata, RelationalSnapshotProjectionAdmissionStop,
     VisibilityProjectionView,
 };
 pub use reader::{
@@ -19,7 +22,9 @@ pub use reader::{
     BoundedFrontierAdjacencyTruthRead, BoundedFrontierFieldEqualityTruthRead,
     BoundedRelationKindTruthRead, EntityKindTruthReadLimitExceeded,
     FrontierAdjacencyTruthReadLimitExceeded, FrontierFieldEqualityTruthReadLimitExceeded,
-    RelationKindTruthReadDenial, RelationKindTruthReadLimitExceeded, VisibilityReadContext,
+    PositionedRelationalSnapshot, QueryLeasedReadOutcome, QueryReadExecutionStop,
+    QueryReadPacketDenial, RelationKindTruthReadDenial, RelationKindTruthReadLimitExceeded,
+    RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial, VisibilityReadContext,
 };
 
 use crate::runtime::RelationalRuntime;

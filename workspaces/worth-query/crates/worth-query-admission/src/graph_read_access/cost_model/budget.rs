@@ -1,5 +1,8 @@
 use super::{WorthQueryGraphReadAccessCostEstimate, WorthQueryGraphReadAccessCostEstimateDigest};
 use crate::admission_digest::hash_parts;
+use std::fmt::{self, Write};
+
+mod admitted;
 
 pub(crate) const DEFAULT_INLINE_EPHEMERAL_INDEX_BYTES: usize = 5120;
 pub(crate) const DEFAULT_INLINE_EPHEMERAL_RESULT_BYTES: usize = 2048;
@@ -67,15 +70,42 @@ impl WorthQueryGraphReadBudget {
         &self,
         estimate: &WorthQueryGraphReadAccessCostEstimate,
     ) -> WorthQueryGraphReadBudgetCheck {
-        let class = if estimate.supported().index_bytes() > self.max_inline_index_bytes
+        let class = self.classify_supported_cost(estimate);
+        WorthQueryGraphReadBudgetCheck::new(self, estimate.digest(), class)
+    }
+
+    pub(crate) fn check_supported_cost_admitted<Stop>(
+        &self,
+        estimate: &WorthQueryGraphReadAccessCostEstimate,
+        mut admit: impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<WorthQueryGraphReadBudgetCheck, AdmittedDigestTextStop<Stop>> {
+        let budget = self.digest().as_str();
+        let cost = estimate.digest().as_str();
+        admit(3, 0).map_err(AdmittedDigestTextStop::Admission)?;
+        for value in [budget, cost] {
+            let bytes = u64::try_from(value.len())
+                .map_err(|_| AdmittedDigestTextStop::AccountingOverflow)?;
+            admit(bytes, bytes).map_err(AdmittedDigestTextStop::Admission)?;
+        }
+        Ok(WorthQueryGraphReadBudgetCheck::new(
+            self,
+            estimate.digest(),
+            self.classify_supported_cost(estimate),
+        ))
+    }
+
+    fn classify_supported_cost(
+        &self,
+        estimate: &WorthQueryGraphReadAccessCostEstimate,
+    ) -> WorthQueryGraphReadBudgetClass {
+        if estimate.supported().index_bytes() > self.max_inline_index_bytes
             || estimate.supported().result_bytes() > self.max_inline_result_bytes
             || estimate.intrinsic().intermediate_set_size() > self.max_inline_intermediate_set_size
         {
             WorthQueryGraphReadBudgetClass::exceeds_inline_ephemeral_budget()
         } else {
             WorthQueryGraphReadBudgetClass::inline_ephemeral_candidate()
-        };
-        WorthQueryGraphReadBudgetCheck::new(self, estimate.digest(), class)
+        }
     }
 
     fn new(
@@ -83,11 +113,16 @@ impl WorthQueryGraphReadBudget {
         max_inline_result_bytes: usize,
         max_inline_intermediate_set_size: usize,
     ) -> Self {
-        let parts = vec![
-            format!("max_index:{max_inline_index_bytes}"),
-            format!("max_result:{max_inline_result_bytes}"),
-            format!("max_intermediate:{max_inline_intermediate_set_size}"),
-        ];
+        let parts = budget_fields(
+            max_inline_index_bytes,
+            max_inline_result_bytes,
+            max_inline_intermediate_set_size,
+        )
+        .map(|(label, value)| {
+            let mut text = String::new();
+            write_budget_field(&mut text, label, value).expect("String formatting cannot fail");
+            text
+        });
         Self {
             digest: WorthQueryGraphReadBudgetDigest::from_parts(&parts),
             max_inline_index_bytes,
@@ -95,6 +130,18 @@ impl WorthQueryGraphReadBudget {
             max_inline_intermediate_set_size,
         }
     }
+}
+
+fn budget_fields(index: usize, result: usize, intermediate: usize) -> [(&'static str, usize); 3] {
+    [
+        ("max_index", index),
+        ("max_result", result),
+        ("max_intermediate", intermediate),
+    ]
+}
+
+fn write_budget_field(output: &mut dyn Write, label: &str, value: usize) -> fmt::Result {
+    write!(output, "{label}:{value}")
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -239,3 +286,4 @@ impl WorthQueryGraphReadInlineEphemeralAllowance {
         Self { kind }
     }
 }
+use crate::graph_read_access::digest_text::AdmittedDigestTextStop;

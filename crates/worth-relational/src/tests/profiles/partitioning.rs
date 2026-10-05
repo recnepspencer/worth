@@ -1,5 +1,4 @@
 use crate::facade::diagnostics::DiagnosticCode;
-use crate::facade::runtime::RelationalExecutionModel;
 use crate::facade::transactions::{CommitConflict, TransactionCommitError};
 use crate::tests::support::*;
 
@@ -68,12 +67,12 @@ fn bulk_create_entities_match_equivalent_singular_creates() {
 #[test]
 fn staged_parallel_bulk_entity_import_matches_serial_reference() {
     fn bulk_commit(
-        execution_model: RelationalExecutionModel,
+        leased: bool,
     ) -> (
         crate::facade::transactions::CommitResult,
         Vec<Option<String>>,
     ) {
-        let runtime = runtime_with_test_schema_execution_model(execution_model);
+        let runtime = runtime_with_test_schema();
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
         txn.push_batch(WorkerIntentBatch::new("bulk").push(MutationIntent::Create(
             CreateIntent::BulkEntities(BulkEntityCreateIntent {
@@ -104,7 +103,12 @@ fn staged_parallel_bulk_entity_import_matches_serial_reference() {
             }),
         )))
         .expect("test staging stays within configured resource budgets");
-        let outcome = txn.commit(&runtime).unwrap();
+        let outcome = if leased {
+            runtime.commit_branch_transaction_with_lease(txn, &test_execution_lease())
+        } else {
+            txn.commit(&runtime)
+        }
+        .unwrap();
         let read = runtime
             .read_truth()
             .read_snapshot(&outcome.snapshot)
@@ -117,8 +121,8 @@ fn staged_parallel_bulk_entity_import_matches_serial_reference() {
         (outcome, names)
     }
 
-    let (serial_outcome, serial_names) = bulk_commit(RelationalExecutionModel::SingleLaneExecution);
-    let (staged_outcome, staged_names) = bulk_commit(RelationalExecutionModel::ParallelPreparation);
+    let (serial_outcome, serial_names) = bulk_commit(false);
+    let (staged_outcome, staged_names) = bulk_commit(true);
 
     assert_eq!(
         staged_outcome.changed_records.len(),

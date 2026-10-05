@@ -28,6 +28,7 @@ pub(super) fn lower_evidence_dependency(
         entity_partition: field("entity-partition")?,
         entity_slot: field("entity-slot")?,
         entity_generation: field("entity-generation")?,
+        native_entity_kind: field("native-entity-kind")?,
         aspect: field("aspect")?,
         field: field("field")?,
         field_presence: field("field-presence")?,
@@ -42,6 +43,7 @@ pub(super) fn lower_evidence_dependency(
         .required("entity-partition", ScalarAspectType::UInt64)
         .required("entity-slot", ScalarAspectType::UInt64)
         .required("entity-generation", ScalarAspectType::UInt64)
+        .optional("native-entity-kind", ScalarAspectType::UInt64)
         .optional("aspect", ScalarAspectType::String)
         .optional("field", ScalarAspectType::String)
         .optional("field-presence", ScalarAspectType::String)

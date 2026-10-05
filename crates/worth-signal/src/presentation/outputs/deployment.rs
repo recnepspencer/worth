@@ -1,5 +1,5 @@
-use crate::logic::planner::StageExecutor;
 use crate::runtime_policy::SignalRuntimePolicy;
+use worth_foundational::ExecutionPosture;
 
 /// Recommended deployment presets for common workload shapes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -14,25 +14,25 @@ pub enum SignalDeploymentPreset {
     Kernel,
 }
 
-/// Recommended runtime policy and executor pairing for a deployment preset.
+/// Recommended runtime policy and requested execution posture for a deployment preset.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SignalDeploymentPlan {
     pub preset: SignalDeploymentPreset,
     pub runtime_policy: SignalRuntimePolicy,
-    pub executor: StageExecutor,
+    pub requested_posture: ExecutionPosture,
     pub summary: &'static str,
     pub certification_command: &'static str,
 }
 
 impl SignalDeploymentPreset {
-    /// Return the recommended runtime policy, executor, summary, and local
+    /// Return the recommended runtime policy, posture, summary, and local
     /// certification command for this deployment shape.
     pub fn recommended(self) -> SignalDeploymentPlan {
         match self {
             Self::WebDevelopment => SignalDeploymentPlan {
                 preset: self,
                 runtime_policy: SignalRuntimePolicy::web_development(),
-                executor: recommended_parallel_executor(Self::WebDevelopment),
+                requested_posture: ExecutionPosture::Automatic,
                 summary: "Low-overhead operational policy with conservative parallelism for request/interaction-driven workloads.",
                 certification_command:
                     "bash scripts/ci/run_signal_local_certification.sh web",
@@ -40,7 +40,7 @@ impl SignalDeploymentPreset {
             Self::GameEngine => SignalDeploymentPlan {
                 preset: self,
                 runtime_policy: SignalRuntimePolicy::game_engine(),
-                executor: recommended_parallel_executor(Self::GameEngine),
+                requested_posture: ExecutionPosture::Automatic,
                 summary:
                     "Operational-first policy with earlier staged parallelism for frame-style recomputation.",
                 certification_command:
@@ -49,7 +49,7 @@ impl SignalDeploymentPreset {
             Self::Fintech => SignalDeploymentPlan {
                 preset: self,
                 runtime_policy: SignalRuntimePolicy::fintech(),
-                executor: recommended_parallel_executor(Self::Fintech),
+                requested_posture: ExecutionPosture::Automatic,
                 summary:
                     "Development-rich policy with stronger replay detail and conservative deterministic parallel admission.",
                 certification_command:
@@ -58,7 +58,7 @@ impl SignalDeploymentPreset {
             Self::Kernel => SignalDeploymentPlan {
                 preset: self,
                 runtime_policy: SignalRuntimePolicy::kernel(),
-                executor: recommended_parallel_executor(Self::Kernel),
+                requested_posture: ExecutionPosture::Automatic,
                 summary:
                     "Forensic-rich policy with extended observability and conservative full-parallel admission for heavy compute kernels.",
                 certification_command:
@@ -66,19 +66,4 @@ impl SignalDeploymentPreset {
             },
         }
     }
-}
-
-#[cfg(feature = "parallel")]
-fn recommended_parallel_executor(preset: SignalDeploymentPreset) -> StageExecutor {
-    match preset {
-        SignalDeploymentPreset::WebDevelopment => StageExecutor::conservative_parallel(),
-        SignalDeploymentPreset::GameEngine => StageExecutor::aggressive_parallel(),
-        SignalDeploymentPreset::Fintech => StageExecutor::balanced_parallel(),
-        SignalDeploymentPreset::Kernel => StageExecutor::conservative_parallel(),
-    }
-}
-
-#[cfg(not(feature = "parallel"))]
-fn recommended_parallel_executor(_preset: SignalDeploymentPreset) -> StageExecutor {
-    StageExecutor::Serial
 }

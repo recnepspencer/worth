@@ -2,7 +2,12 @@ use worth_query_installation::facade::ApplicationSchema;
 
 mod dependent;
 mod restoration;
+mod retained_observation;
+mod selected_custody;
+mod selection_mode;
+mod source_admission;
 mod source_custody;
+pub(super) use selection_mode::SourceAdmissionSelection;
 pub(super) use source_custody::validate_prepared_source_carrier;
 
 use super::super::{
@@ -203,7 +208,7 @@ where
         admission_kind: crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind,
         expected_source_commit: Option<&worth_runtime_world::facade::CompositeCommitIdentity>,
         successor_of: Option<
-            &crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority,
+            crate::domain_computation::primary_graph::application_output_demand::OutputRefreshPredecessor<'_>,
         >,
         retained_program_basis: Option<
             std::sync::Arc<
@@ -214,169 +219,21 @@ where
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        let limits = self.output_demand_resource_profile().constrain(limits);
-        std::num::NonZeroUsize::new(limits.source_currentness_work()).ok_or_else(|| {
-            denial(
-                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                Family::IDENTITY,
-            )
-            .with_recovery_posture(super::super::WorthQueryOutputDemandRecoveryPosture::Retryable)
-        })?;
-        let selected = self.select_output_producer_with_retained_basis::<Family>(
-            selection_source.unwrap_or(&observed_source),
-            profile_kind,
-            limits.source_currentness_work(),
-            retained_program_basis.as_deref(),
-        )?;
-        let entry = self
-            .installed_producers
-            .entries
-            .get(&selected.identity)
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-                    format!(
-                        "{}: selected producer is absent from the installed registry",
-                        selected.identity
-                    ),
-                )
-            })?;
-        let source_epoch = observed_source.output_source_epoch().ok_or_else(|| {
-            denial(
-                WorthQueryOutputDemandDenialKind::ForeignSource,
-                Family::IDENTITY,
-            )
-        })?;
-        let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(
-            selected.identity.clone(),
-            source_epoch.clone(),
-        );
-        let product_occurrence =
-            observed_source
-                .selected_product_occurrence()
-                .ok_or_else(|| {
-                    denial(
-                        WorthQueryOutputDemandDenialKind::ForeignSource,
-                        Family::IDENTITY,
-                    )
-                })?;
-        let source_scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
-            observed_source.source_root(),
-        );
-        // Only the exact retained-candidate selection has compared the full
-        // persisted producer facts at the current native basis. A fresh
-        // selection may never adopt a matching checkpoint by identity alone.
-        let restored = if selected.exact_retained_output {
-            let expected_key = selected.retained_idempotency_key.ok_or_else(|| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
-                    "exact retained output has no idempotency identity",
-                )
-            })?;
-            let output_binding = selected.retained_output_binding.ok_or_else(|| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
-                    "exact retained output has no output binding",
-                )
-            })?;
-            self.readmit_checkpoint_output(
-                &selected.identity,
-                output_binding,
-                expected_key,
-                &observed_source,
-                source_epoch,
-                source_scope,
-            )?
-        } else {
-            None
-        };
-        if let Some(restored) = restored {
-            let resources = restored.checkpoint.resources.ok_or_else(|| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
-                    "restored output has no retained producer resource profile",
-                )
-            })?;
-            super::resources::validate_retained_resources(resources, &selected.identity, limits)?;
-            let (interest, newly_adopted) = self.output_demands.admit_restored(
-                key,
-                source_scope,
-                product_occurrence,
-                restored.clone(),
-            )?;
-            if newly_adopted {
-                self.record_restored_output(source_scope, &restored)?;
-            }
-            return Ok(WorthQueryAdmittedOutputDemand {
-                runtime_authority: self.runtime.authority_identity().as_u64(),
-                schema_binding: self.installed_schema.binding_identity(),
-                selected,
-                observed_source,
-                limits,
-                resources: Some(resources),
-                resources_validated: true,
-                producer_contacts_in_this_demand: 0,
-                admission_kind,
-                retained_program_basis,
-                interest: Some(interest),
-            });
-        }
-        // Exact source currentness has already been proved by Query selection.
-        // An unchanged output must not contact the provider just to estimate
-        // resources for work it will not perform. A racing fresh execution
-        // validates the same limits before producer execution.
-        let resources = if selected.exact_retained_output {
-            let resources = selected.retained_resources.ok_or_else(|| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
-                    "retained output has no producer resource profile",
-                )
-            })?;
-            super::resources::validate_retained_resources(resources, &selected.identity, limits)?;
-            resources
-        } else {
-            super::resources::validate_demand_resources(
-                entry.executor.as_ref(),
-                &source,
-                &selected.identity,
-                limits,
-            )?
-        };
-        let interest = match performed_source {
-            Some(source_commit) => self.output_demands.admit_performed(
-                key,
-                &source_commit,
-                source_scope,
-                product_occurrence,
-            )?,
-            None => self.output_demands.admit(
-                key,
-                Some(observed_source.selected_product_commit().ok_or_else(|| {
-                    denial(
-                        WorthQueryOutputDemandDenialKind::ForeignSource,
-                        Family::IDENTITY,
-                    )
-                })?),
-                source_scope,
-                product_occurrence,
-                admission_kind,
-                expected_source_commit,
-                successor_of,
-            )?,
-        };
-        let resources_validated = !selected.exact_retained_output;
-        Ok(WorthQueryAdmittedOutputDemand {
-            runtime_authority: self.runtime.authority_identity().as_u64(),
-            schema_binding: self.installed_schema.binding_identity(),
-            selected,
+        let mut admission = self.demand_request_admission();
+        self.admit_output_demand_with_source_admitted::<Family>(
+            &source,
             observed_source,
+            selection_source,
+            profile_kind,
             limits,
-            resources: Some(resources),
-            resources_validated,
-            producer_contacts_in_this_demand: 0,
+            performed_source,
             admission_kind,
+            expected_source_commit,
+            successor_of,
             retained_program_basis,
-            interest: Some(interest),
-        })
+            SourceAdmissionSelection::Ordinary,
+            &mut admission,
+        )
+        .map_err(|stop| self.starting_custody_stop(stop, &mut admission))
     }
 }

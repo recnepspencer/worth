@@ -38,6 +38,8 @@ pub enum WorthQueryApplicationIdempotencyResolutionDenialKind {
     /// operation part cannot be checked against this request. Neither the same
     /// intent nor drift is proven.
     RecordedIntentUnverifiable,
+    /// The key's commit left the declared idempotency window.
+    IdempotencyWindowExpired,
 }
 
 /// A refusal to resolve an idempotency key. Nothing took effect.
@@ -95,6 +97,13 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
         }
     }
 
+    pub(super) const fn branch_coordination_capacity_exhausted() -> Self {
+        Self {
+            kind: WorthQueryApplicationIdempotencyResolutionDenialKind::RetentionCapacityExhausted,
+            authorization: None,
+        }
+    }
+
     pub(super) fn from_provider(denial: Provider) -> Self {
         let kind = match denial {
             Provider::ActiveSnapshotCapacityExhausted {
@@ -121,6 +130,9 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
             }
             Provider::RecordedIntentUnverifiable => {
                 WorthQueryApplicationIdempotencyResolutionDenialKind::RecordedIntentUnverifiable
+            }
+            Provider::WindowExpired => {
+                WorthQueryApplicationIdempotencyResolutionDenialKind::IdempotencyWindowExpired
             }
         };
         Self {

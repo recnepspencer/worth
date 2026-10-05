@@ -7,7 +7,7 @@ mod declaration;
 mod denial;
 mod envelope;
 mod execution;
-mod execution_pipeline;
+pub(crate) mod execution_pipeline;
 mod lane_coordination;
 mod outcome;
 mod payload;
@@ -48,7 +48,7 @@ pub use outcome::{
 };
 pub use payload::WorthServerProductOperationPayload;
 pub use plan::WorthServerLoweredProductOperationPlan;
-pub use read_batch::WorthServerExecutedProductReadBatch;
+pub use read_batch::{WorthServerExecutedProductReadBatch, WorthServerProductReadBatchStop};
 pub use registration::{
     WorthServerProductAdapterRegistrationReceipt, WorthServerProductApplicationAdapterRegistration,
 };

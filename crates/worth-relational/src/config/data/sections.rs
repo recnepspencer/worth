@@ -1,5 +1,4 @@
 use crate::commit_strategies::data::CommitStrategyRegistration;
-use crate::config::data::{PlanningContract, RelationalExecutionModel};
 use crate::diagnostics::data::RelationalDiagnosticsProfile;
 use crate::history::data::{BranchId, HistoryRetentionClass, VersionGraphPolicy};
 use crate::schema::data::{
@@ -26,8 +25,6 @@ pub struct RelationIntegrityScopeBudget {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutionConfig {
     pub runtime_name: String,
-    pub execution_model: RelationalExecutionModel,
-    pub planning: PlanningContract,
     pub compiled_lane_policy: CompiledLanePolicy,
     pub relation_integrity_scope_budget: RelationIntegrityScopeBudget,
 }
