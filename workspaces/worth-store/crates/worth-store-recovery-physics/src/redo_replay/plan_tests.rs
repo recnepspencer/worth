@@ -17,6 +17,8 @@ mod group_atomic;
 mod historical_consumed;
 #[path = "plan_tests/historical_retired.rs"]
 mod historical_retired;
+#[path = "plan_tests/member_limits.rs"]
+mod member_limits;
 #[path = "plan_tests/observation_membership.rs"]
 mod observation_membership;
 #[path = "plan_tests/projection_mutants.rs"]
@@ -114,7 +116,10 @@ fn page_lsn_and_operation_fate_make_one_fixed_apply_or_skip_decision() {
     assert_eq!(promoted.indeterminate(), 0);
     assert_eq!(
         plan_physical_redo(vec![indeterminate], Vec::new(), 0),
-        Err(PhysicalRedoPlanningDenial::TargetLimit)
+        Err(PhysicalRedoPlanningDenial::TargetLimit {
+            observed: 1,
+            admitted: 0
+        })
     );
 
     let durable = PhysicalRedoMemberInput::new(

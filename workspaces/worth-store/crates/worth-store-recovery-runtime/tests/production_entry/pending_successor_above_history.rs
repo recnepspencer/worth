@@ -7,8 +7,14 @@ use super::*;
 use pending_wal_world::PendingWalWorld;
 use std::fs;
 use worth_store_recovery_runtime::{
-    PhysicalRecoveryOutcome, RecoveredPhysicalRuntimeHandoff, WorthStoreRecovery,
+    PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure, PhysicalRecoveryOutcome,
+    RecoveredPhysicalRuntimeHandoff, WorthStoreRecovery,
 };
+
+/// What the first reopen of the frontier world needs. Fixed: about 140 root
+/// steps stand above its checkpoint, and each is charged what its member
+/// declares it wrote, whichever blocks the ingest landed in.
+const FRONTIER_NEED: u64 = 1000;
 
 pub(super) fn recover(world: &PendingWalWorld, stage: &str) -> RecoveredPhysicalRuntimeHandoff {
     match WorthStoreRecovery::recover(world.recovery_request()) {
@@ -31,6 +37,38 @@ pub(super) fn recover(world: &PendingWalWorld, stage: &str) -> RecoveredPhysical
         ),
         _ => panic!("{stage} did not recover"),
     }
+}
+
+/// One manifest entry short of `need` is that limit, reached by the refused
+/// charge, and `need` recovers. Neither attempt is sealed, so the world is
+/// left for the recovery that is.
+fn assert_needs_exactly(world: &PendingWalWorld, need: u64, stage: &str) {
+    let recover = |entries| {
+        WorthStoreRecovery::recover(
+            certified_release_serving::request_for_long_ingest_with_manifest_entries(
+                world.root(),
+                entries,
+            ),
+        )
+    };
+    let PhysicalRecoveryOutcome::Blocked(blocked) = recover(need - 1) else {
+        panic!("{stage}: {} entries must block", need - 1)
+    };
+    assert_eq!(blocked.recovery_effects(), 0);
+    assert_eq!(
+        blocked.evidence().limit,
+        Some(PhysicalRecoveryLimitFailure {
+            dimension: PhysicalRecoveryLimitDimension::ManifestEntries,
+            observed: need,
+            admitted: need - 1,
+        }),
+        "{stage}: denial={:?}",
+        blocked.evidence().planning_denial,
+    );
+    let PhysicalRecoveryOutcome::Recovered(handoff) = recover(need) else {
+        panic!("{stage}: {need} entries must recover")
+    };
+    drop(handoff);
 }
 
 /// Recovers the parked batch, seals Serving on it, and publishes a
@@ -102,11 +140,16 @@ fn assert_pending_then_completed(world: &PendingWalWorld, stage: &str) {
 /// killed. Its chain leaves the ordered releases at the checkpoint head.
 #[test]
 fn pending_successor_of_an_ordered_release_above_a_head_checkpoint_recovers() {
+    let world = ordered_release_above_a_head_checkpoint();
+    assert_pending_then_completed(&world, "pending successor of an ordered release");
+}
+
+pub(super) fn ordered_release_above_a_head_checkpoint() -> PendingWalWorld {
     let world = pending_wal_world::first();
     world.kill_second_after_certified_retirement();
     world.kill_distinct_release_before_checkpoint();
     world.kill_successor_of_first_object();
-    assert_pending_then_completed(&world, "pending successor of an ordered release");
+    world
 }
 
 /// The checkpoint heads both objects. The first object's next batch completes
@@ -114,6 +157,11 @@ fn pending_successor_of_an_ordered_release_above_a_head_checkpoint_recovers() {
 /// checkpoint head, is killed above that foreign history.
 #[test]
 fn pending_successor_of_a_checkpoint_head_above_foreign_history_recovers() {
+    let world = successor_of_a_checkpoint_head_above_foreign_history();
+    assert_pending_then_completed(&world, "pending successor of a checkpoint head");
+}
+
+pub(super) fn successor_of_a_checkpoint_head_above_foreign_history() -> PendingWalWorld {
     let world = pending_wal_world::first();
     assert_eq!(
         recover_and_checkpoint(&world, "first object", [0xd1; 32]),
@@ -126,20 +174,27 @@ fn pending_successor_of_a_checkpoint_head_above_foreign_history_recovers() {
     );
     world.kill_successor_of_first_object();
     world.kill_successor_of_distinct_object();
-    assert_pending_then_completed(&world, "pending successor of a checkpoint head");
+    world
 }
 
 /// The killed batch extends the checkpoint head directly and is terminal, so
 /// its head effect replaces the head it replayed with a terminal entry.
 #[test]
 fn pending_terminal_successor_of_a_checkpoint_head_recovers() {
+    let world = terminal_successor_of_a_checkpoint_head();
+    assert_pending_then_completed(&world, "pending terminal successor of a checkpoint head");
+}
+
+/// A checkpoint heads the first object, and the batch that would complete
+/// its release is killed above that checkpoint.
+pub(super) fn terminal_successor_of_a_checkpoint_head() -> PendingWalWorld {
     let world = pending_wal_world::first();
     assert_eq!(
         recover_and_checkpoint(&world, "first object", [0xd3; 32]),
         1
     );
     world.kill_full_batch_successor_of_first_object();
-    assert_pending_then_completed(&world, "pending terminal successor of a checkpoint head");
+    world
 }
 
 /// No checkpoint heads the object: its first release completed above the
@@ -159,6 +214,7 @@ fn pending_successor_of_a_first_release_without_a_checkpoint_head_recovers() {
 #[test]
 fn pending_successors_of_a_generation_with_a_resume_frontier_recover_to_a_terminal_head() {
     let world = pending_wal_world::first_with_resume_frontier();
+    assert_needs_exactly(&world, FRONTIER_NEED, "frontier object");
     assert_eq!(
         recover_and_checkpoint(&world, "frontier object", [0xd4; 32]),
         1

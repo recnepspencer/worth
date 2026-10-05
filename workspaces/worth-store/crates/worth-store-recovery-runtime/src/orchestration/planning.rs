@@ -6,6 +6,7 @@ mod denial;
 mod manifest_entry_budget;
 mod operation_join;
 mod page_observation;
+mod redo_limit;
 mod released_directory;
 mod resident_memory;
 mod resolved_basis;

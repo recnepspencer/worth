@@ -13,16 +13,26 @@ use worth_store_physical_format::{
 };
 use worth_store_wal::WalLsnRange;
 
-use super::ReleasedInventoryView;
+use super::{ExceededRootHistoryBound, ReleasedInventoryView};
 use crate::{AdmittedRootStepMemberView, PhysicalRedoGroupBinding, RecoveryOperationFate};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OrdinaryRootStepDenial {
-    BoundExceeded,
+    BoundExceeded(ExceededRootHistoryBound),
     InvalidSource,
     InvalidResult,
     InvalidMember,
     InvalidDelta,
+}
+
+impl OrdinaryRootStepDenial {
+    /// The admitted bound this check ran past, where that is why it stopped.
+    pub const fn exceeded_bound(self) -> Option<ExceededRootHistoryBound> {
+        match self {
+            Self::BoundExceeded(exceeded) => Some(exceeded),
+            _ => None,
+        }
+    }
 }
 
 /// A checked edge in an ordered root chain, not a Blob lifecycle certificate.
@@ -63,6 +73,8 @@ impl VerifiedOrdinaryRootStep {
         maximum_entries: u64,
     ) -> Option<u64> {
         scratch_charge(source, result, projection, maximum_entries)
+            .ok()
+            .flatten()
     }
     /// An early C.9 member view lets PageAdmission prove a historical root
     /// chain before the later immutable redo plan can be constructed.
@@ -145,9 +157,11 @@ impl VerifiedOrdinaryRootStep {
         maximum_scratch_bytes: u64,
     ) -> Result<Self, OrdinaryRootStepDenial> {
         use OrdinaryRootStepDenial as Denial;
-        if maximum_entries == 0 || maximum_scratch_bytes == 0 {
-            return Err(Denial::BoundExceeded);
-        }
+        let scratch_bytes = scratch_charge(source, result, projection, maximum_entries)
+            .and_then(|charge| {
+                ExceededRootHistoryBound::scratch_within(charge, maximum_scratch_bytes)
+            })
+            .map_err(Denial::BoundExceeded)?;
         if matches!(fate, RecoveryOperationFate::ProvenNoEffect)
             || matches!(
                 projection.operation(),
@@ -159,9 +173,6 @@ impl VerifiedOrdinaryRootStep {
         {
             return Err(Denial::InvalidMember);
         }
-        let scratch_bytes = scratch_charge(source, result, projection, maximum_entries)
-            .filter(|charge| *charge <= maximum_scratch_bytes)
-            .ok_or(Denial::BoundExceeded)?;
         let source_topology =
             transcript(source, format, maximum_entries).map_err(|_| Denial::InvalidSource)?;
         let result_topology =
@@ -236,7 +247,7 @@ fn scratch_charge(
     result: ReleasedInventoryView<'_>,
     projection: &PersistedPhysicalRecoveryProjection,
     limit: u64,
-) -> Option<u64> {
+) -> Result<Option<u64>, ExceededRootHistoryBound> {
     let counts = [
         source.routes.len(),
         source.segments.len(),
@@ -255,20 +266,17 @@ fn scratch_charge(
             _ => 0,
         },
     ];
-    if counts.iter().any(|count| *count as u64 > limit) {
-        return None;
-    }
-    let range_count = projection.placements().len().checked_mul(2)?;
+    ExceededRootHistoryBound::entries_within(counts, limit)?;
+    let range_count = projection.placements().len() as u64 * 2;
     let total = counts
         .into_iter()
-        .try_fold(range_count as u64, |sum, count| {
-            sum.checked_add(count as u64)
-        })?;
+        .try_fold(range_count, |sum, count| sum.checked_add(count as u64));
     // Charge the observed cardinality, not the caller's admitted ceiling:
     // Store may supply a large ceiling for a tiny actual root step. The 512
     // byte multiplier covers three ordered maps, route vector, arena splits,
     // and both transcript builders. No allocation precedes this charge.
-    total.checked_mul(512)?.checked_add(16 * 1024)
+    // An overflowed charge is `None`: it is past every bound.
+    Ok(total.and_then(|total| total.checked_mul(512)?.checked_add(16 * 1024)))
 }
 
 #[path = "ordinary_root_step/delta.rs"]

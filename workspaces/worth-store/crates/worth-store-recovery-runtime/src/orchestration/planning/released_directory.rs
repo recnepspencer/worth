@@ -70,9 +70,7 @@ pub(super) fn read(
                 generation: selected.entry.data_generation(),
             };
             budget.consume(1).map_err(|_| Denial::ManifestEntryLimit)?;
-            resident
-                .trace_slots_diagnostic(trace, 1)
-                .map_err(Denial::from)?;
+            resident.trace_slots(trace, 1).map_err(Denial::from)?;
             resident
                 .transient(u64::from(page_bytes))
                 .map_err(|_| Denial::ResidentBoundExceeded)?;

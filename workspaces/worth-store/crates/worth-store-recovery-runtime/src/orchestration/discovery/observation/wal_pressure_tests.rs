@@ -107,6 +107,9 @@ fn run() {
         match checkpoint::observe_checkpoint(
             &mut discovery,
             limits,
+            worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
+                .admit()
+                .unwrap(),
             &mut remaining_manifest,
             &mut counters,
             &mut trace,

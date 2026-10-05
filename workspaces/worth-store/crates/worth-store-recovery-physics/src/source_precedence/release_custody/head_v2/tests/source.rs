@@ -39,6 +39,8 @@ pub(super) struct AdmittedSource {
     pub(super) checkpoint: VerifiedCheckpointStream,
     pub(super) root: DurablePhysicalRootManifest,
     pub(super) head: ReleaseCustodyHeadBlockV1,
+    /// Every block of the head tree, the leaf first, each at its block number less one.
+    pub(super) blocks: Vec<ReleaseCustodyHeadBlockV1>,
     pub(super) entry: ReleaseCustodyHeadEntryV1,
     pub(super) digest: [u8; 32],
 }
@@ -48,11 +50,45 @@ pub(super) fn admitted_source() -> AdmittedSource {
 }
 
 pub(super) fn admitted_source_with_cutoff(cutoff: u64) -> AdmittedSource {
+    admitted_source_under(cutoff, 0)
+}
+
+/// The one head's leaf under `levels` single-child branches: a sound tree of
+/// `levels + 1` blocks that holds one head.
+pub(super) fn admitted_source_under(cutoff: u64, levels: u16) -> AdmittedSource {
     let format = record_format();
-    let identity = PhysicalCheckpointIdentity::new(store(), NonZeroU64::new(1).unwrap());
-    let record = |ordinal| PersistedRecordIdentity::new([9; 16], ordinal).unwrap();
-    let entry = ReleaseCustodyHeadEntryV1::new(
-        ReleaseCustodyHeadKeyV1::new([9; 16], 1).unwrap(),
+    let entry = head_entry(1);
+    let head = ReleaseCustodyHeadBlockV1::leaf(7, 1, 1, vec![entry], format).unwrap();
+    let mut blocks = vec![head];
+    for level in 1..=levels {
+        let child = blocks.last().unwrap().reference(format);
+        let block = u64::from(level) + 1;
+        blocks.push(
+            ReleaseCustodyHeadBlockV1::branch(7, 1, block, level, vec![child], format).unwrap(),
+        );
+    }
+    admitted_source_of(cutoff, entry, blocks)
+}
+
+/// A roster of one head whose tree is a level-one root over two leaves, the
+/// second holding a head the roster does not count.
+pub(super) fn admitted_source_over_two_leaves() -> AdmittedSource {
+    let format = record_format();
+    let entry = head_entry(1);
+    let left = ReleaseCustodyHeadBlockV1::leaf(7, 1, 1, vec![entry], format).unwrap();
+    let right = ReleaseCustodyHeadBlockV1::leaf(7, 1, 2, vec![head_entry(2)], format).unwrap();
+    let children = vec![left.reference(format), right.reference(format)];
+    let root = ReleaseCustodyHeadBlockV1::branch(7, 1, 3, 1, children, format).unwrap();
+    admitted_source_of(20, entry, vec![left, right, root])
+}
+
+fn record(ordinal: u64) -> PersistedRecordIdentity {
+    PersistedRecordIdentity::new([9; 16], ordinal).unwrap()
+}
+
+fn head_entry(key: u64) -> ReleaseCustodyHeadEntryV1 {
+    ReleaseCustodyHeadEntryV1::new(
+        ReleaseCustodyHeadKeyV1::new([9; 16], key).unwrap(),
         record(1),
         [1; 32],
         record(3),
@@ -65,11 +101,22 @@ pub(super) fn admitted_source_with_cutoff(cutoff: u64) -> AdmittedSource {
         1,
         false,
     )
-    .unwrap();
-    let head = ReleaseCustodyHeadBlockV1::leaf(7, 1, 1, vec![entry], format).unwrap();
+    .unwrap()
+}
+
+/// The source whose head tree is `blocks`, each at its block number less
+/// one, the root last; the roster counts `entry` alone.
+fn admitted_source_of(
+    cutoff: u64,
+    entry: ReleaseCustodyHeadEntryV1,
+    blocks: Vec<ReleaseCustodyHeadBlockV1>,
+) -> AdmittedSource {
+    let format = record_format();
+    let identity = PhysicalCheckpointIdentity::new(store(), NonZeroU64::new(1).unwrap());
+    let head = blocks[0].clone();
     let root = DurablePhysicalRootManifest::builder(1, 7, 4, 19)
-        .release_custody_head_root(Some(head.reference(format)))
-        .next_release_custody_head_block(2)
+        .release_custody_head_root(Some(blocks.last().unwrap().reference(format)))
+        .next_release_custody_head_block(blocks.len() as u64 + 1)
         .admit()
         .unwrap();
     let root_bytes = root.encode(format);
@@ -220,6 +267,7 @@ pub(super) fn admitted_source_with_cutoff(cutoff: u64) -> AdmittedSource {
         checkpoint: verified,
         root,
         head,
+        blocks,
         entry,
         digest,
     }

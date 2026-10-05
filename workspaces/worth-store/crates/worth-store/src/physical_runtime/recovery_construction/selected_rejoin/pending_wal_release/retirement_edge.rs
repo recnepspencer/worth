@@ -275,7 +275,7 @@ fn recheck(
         format,
         delta::MAX_TRANSITION_ENTRIES,
     )
-    .map_err(|_| Denial::RoutingFrame)
+    .map_err(|denial| delta::replay_denial(denial.exceeded_bound()))
 }
 
 #[cfg(test)]

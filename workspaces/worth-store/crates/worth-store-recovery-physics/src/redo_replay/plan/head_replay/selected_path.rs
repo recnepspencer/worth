@@ -7,7 +7,7 @@ use worth_store_physical_format::{
     ReleaseCustodyHeadBlockReferenceV1,
 };
 
-use super::SelectedReleaseHeadReplayDenial;
+use super::{ExceededHeadReplayBound, HeadReplayBound, SelectedReleaseHeadReplayDenial};
 
 /// Deny before any read when the carried frames exceed the admitted effect
 /// bytes, or when recomputing, reading, or retaining them exceeds the heap.
@@ -17,28 +17,28 @@ pub(super) fn require_claim_bounds(
     maximum_effect_bytes: u64,
     remaining_additional_heap_bytes: u64,
 ) -> Result<(), SelectedReleaseHeadReplayDenial> {
-    let total = claim
-        .framed_bytes()
-        .ok_or(SelectedReleaseHeadReplayDenial::BoundExceeded)?;
-    if total > maximum_effect_bytes {
-        return Err(SelectedReleaseHeadReplayDenial::BoundExceeded);
-    }
-    let verification_peak = claim
-        .verification_additional_peak_bytes(format)
-        .ok_or(SelectedReleaseHeadReplayDenial::BoundExceeded)?;
-    let clone_bytes = claim
-        .owned_heap_bytes()
-        .ok_or(SelectedReleaseHeadReplayDenial::BoundExceeded)?;
+    ExceededHeadReplayBound::within(
+        HeadReplayBound::EffectBytes,
+        claim.framed_bytes(),
+        maximum_effect_bytes,
+    )?;
     let read_buffer = u64::from(format.page_size().bytes());
-    if verification_peak.max(read_buffer).max(clone_bytes) > remaining_additional_heap_bytes {
-        return Err(SelectedReleaseHeadReplayDenial::BoundExceeded);
-    }
+    let held = claim
+        .verification_additional_peak_bytes(format)
+        .zip(claim.owned_heap_bytes())
+        .map(|(verification, clone)| verification.max(read_buffer).max(clone));
+    ExceededHeadReplayBound::within(
+        HeadReplayBound::HeapBytes,
+        held,
+        remaining_additional_heap_bytes,
+    )?;
     Ok(())
 }
 
 /// Re-read every carried source path frame through `read` and require the
 /// exact carried bytes, which `require_claim_bounds` has already bounded.
-/// Returns the total bytes read from the selected tree.
+/// Returns the total bytes read from the selected tree: the carried frames'
+/// own, so their count is one `require_claim_bounds` has already taken.
 pub(super) fn reread_source_path<Read, ReadError>(
     claim: PersistedReleaseHeadTreeClaim<'_>,
     format: PhysicalRecordFormatDeclaration,
@@ -51,15 +51,10 @@ where
     for node in claim.source_path() {
         let frame = read(node.reference(), u64::from(format.page_size().bytes()))
             .map_err(|_| SelectedReleaseHeadReplayDenial::Read)?;
-        read_bytes = read_bytes
-            .checked_add(
-                u64::try_from(frame.len())
-                    .map_err(|_| SelectedReleaseHeadReplayDenial::BoundExceeded)?,
-            )
-            .ok_or(SelectedReleaseHeadReplayDenial::BoundExceeded)?;
         if frame != node.frame() {
             return Err(SelectedReleaseHeadReplayDenial::SourcePath);
         }
+        read_bytes = read_bytes.saturating_add(frame.len() as u64);
     }
     Ok(read_bytes)
 }

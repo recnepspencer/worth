@@ -97,6 +97,12 @@ pub enum ReleaseCustodyHeadWalkDenial<ReadError, VisitError> {
     Root,
     DuplicateNode,
     BoundExceeded,
+    /// The caller's node bound was reached. The blocks read verified; this
+    /// says nothing about the tree beyond the count that passed the bound.
+    NodeBound {
+        observed: u64,
+        admitted: u64,
+    },
     Allocation {
         requested: u64,
         cause: std::collections::TryReserveError,

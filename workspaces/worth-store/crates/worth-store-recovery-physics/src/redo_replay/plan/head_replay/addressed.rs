@@ -131,15 +131,14 @@ impl VerifiedOrderedReleasedHeadReplayV14 {
     }
 }
 
-fn require_two_page_window(
+pub(super) fn require_two_page_window(
     format: PhysicalRecordFormatDeclaration,
     remaining_additional_heap_bytes: u64,
 ) -> Result<(), SelectedReleaseHeadReplayDenial> {
-    let required = u64::from(format.page_size().bytes())
-        .checked_mul(2)
-        .ok_or(SelectedReleaseHeadReplayDenial::BoundExceeded)?;
-    if required > remaining_additional_heap_bytes {
-        return Err(SelectedReleaseHeadReplayDenial::BoundExceeded);
-    }
+    ExceededHeadReplayBound::within(
+        HeadReplayBound::HeapBytes,
+        u64::from(format.page_size().bytes()).checked_mul(2),
+        remaining_additional_heap_bytes,
+    )?;
     Ok(())
 }

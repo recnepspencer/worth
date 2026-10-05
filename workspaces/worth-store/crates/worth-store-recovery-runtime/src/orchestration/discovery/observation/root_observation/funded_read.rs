@@ -11,11 +11,17 @@ use worth_store_physical_format::{
 };
 
 use crate::entry::{
-    PhysicalRecoveryBlockKind, PhysicalRecoveryRootProtocolArtifact as Artifact,
-    PhysicalRecoverySourceDenial, PhysicalRecoverySourceReadAllocationBoundary as Boundary,
+    PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension as Dimension,
+    PhysicalRecoveryRootProtocolArtifact as Artifact, PhysicalRecoverySourceDenial,
+    PhysicalRecoverySourceReadAllocationBoundary as Boundary,
     PhysicalRecoverySourceReadAllocationDenial as Cause,
 };
-use crate::orchestration::discovery::DiscoveryFailure;
+use crate::orchestration::discovery::{refused_read, DiscoveryFailure};
+use crate::orchestration::reader_limit::{OversizedArtifact, ReadCeiling};
+
+/// The inner `Err` is the artifact found larger than its own ceiling.
+pub(super) type RootRead =
+    Result<Result<ObservedRecoveryArtifact, OversizedArtifact>, DiscoveryFailure>;
 
 pub(super) struct FundedRootReads<'window, 'owner> {
     allocation: &'window mut PhysicalRecoveryReadAllocation<'owner>,
@@ -36,23 +42,24 @@ impl<'window, 'owner> FundedRootReads<'window, 'owner> {
         &mut self,
         discovery: &mut BoundedRecoveryFilesystemDiscovery,
         role: RootSelectorRole,
-    ) -> Result<ObservedRecoveryArtifact, DiscoveryFailure> {
+    ) -> RootRead {
         let address = match role {
             RootSelectorRole::Current => RecordArtifactFile::CurrentRootSelector,
             RootSelectorRole::Previous => RecordArtifactFile::PreviousRootSelector,
         };
         let artifact = super::selector_artifact(role);
-        discovery
-            .read_record_artifact_with_allocator(address, ROOT_SELECTOR_BYTES as u64, |length| {
-                self.allocate(length)
+        let ceiling = ReadCeiling::of_artifact(ROOT_SELECTOR_BYTES as u64);
+        match discovery.read_record_artifact_with_allocator(
+            address,
+            ceiling.requested(),
+            |length| self.allocate(length),
+        ) {
+            Ok(observed) => Ok(Ok(observed)),
+            Err(failure) => refused(artifact, failure, |failure| {
+                refused_read(failure, ceiling, Dimension::ObservationBytes)
             })
-            .map_err(|failure| {
-                map_read_failure(
-                    artifact,
-                    failure,
-                    super::super::map_selector_discovery_failure,
-                )
-            })
+            .map(Err),
+        }
     }
 
     pub(super) fn read_root(
@@ -60,17 +67,20 @@ impl<'window, 'owner> FundedRootReads<'window, 'owner> {
         discovery: &mut BoundedRecoveryFilesystemDiscovery,
         role: RootSelectorRole,
         generation: u64,
-        maximum: u64,
-        map_discovery: impl FnOnce(RecoveryDiscoveryFailure) -> DiscoveryFailure,
-    ) -> Result<ObservedRecoveryArtifact, DiscoveryFailure> {
+        ceiling: ReadCeiling,
+    ) -> RootRead {
         let artifact = super::root_artifact(role, generation);
-        discovery
-            .read_record_artifact_with_allocator(
-                RecordArtifactFile::RootManifest { generation },
-                maximum,
-                |length| self.allocate(length),
-            )
-            .map_err(|failure| map_read_failure(artifact, failure, map_discovery))
+        match discovery.read_record_artifact_with_allocator(
+            RecordArtifactFile::RootManifest { generation },
+            ceiling.requested(),
+            |length| self.allocate(length),
+        ) {
+            Ok(observed) => Ok(Ok(observed)),
+            Err(failure) => refused(artifact, failure, |failure| {
+                refused_read(failure, ceiling, Dimension::ManifestBytes)
+            })
+            .map(Err),
+        }
     }
 
     fn allocate(&mut self, length: usize) -> Result<Vec<u8>, Cause> {
@@ -123,21 +133,26 @@ impl<'window, 'owner> FundedRootReads<'window, 'owner> {
     }
 }
 
-fn map_read_failure(
+fn refused(
     artifact: Artifact,
     failure: RecoveryDiscoveryAllocationFailure<Cause>,
-    map_discovery: impl FnOnce(RecoveryDiscoveryFailure) -> DiscoveryFailure,
-) -> DiscoveryFailure {
+    refused_read: impl FnOnce(RecoveryDiscoveryFailure) -> Result<OversizedArtifact, DiscoveryFailure>,
+) -> Result<OversizedArtifact, DiscoveryFailure> {
     match failure {
-        RecoveryDiscoveryAllocationFailure::Discovery(failure) => map_discovery(failure),
+        RecoveryDiscoveryAllocationFailure::Discovery(failure) => refused_read(failure),
         RecoveryDiscoveryAllocationFailure::Allocation {
             requested, cause, ..
-        } => allocation_failure(artifact, Boundary::ReadBuffer, requested as u64, cause),
+        } => Err(allocation_failure(
+            artifact,
+            Boundary::ReadBuffer,
+            requested as u64,
+            cause,
+        )),
         RecoveryDiscoveryAllocationFailure::BufferLengthMismatch {
             requested,
             observed,
             ..
-        } => allocation_failure(
+        } => Err(allocation_failure(
             artifact,
             Boundary::ReadBuffer,
             requested as u64,
@@ -145,7 +160,7 @@ fn map_read_failure(
                 requested,
                 observed,
             },
-        ),
+        )),
     }
 }
 

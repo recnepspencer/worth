@@ -19,30 +19,7 @@ pub(crate) fn publish_synthetic_nonempty_genesis(
         .free_space_root(Some(free_space))
         .admit()
         .unwrap();
-    let selector = DurableRootSelector::new(
-        store,
-        format,
-        RootSelectorIdentity::new(1).unwrap(),
-        RootSelectorRole::Current,
-        1,
-        None,
-        None,
-    )
-    .unwrap();
-    let records = root.join("families").join("records");
-    let roots = records.join("roots");
-    std::fs::create_dir_all(&roots).unwrap();
-    std::fs::write(records.join("root-current.selector"), selector.encode()).unwrap();
-    std::fs::write(
-        roots.join("root-0000000000000001.manifest"),
-        manifest.encode(format),
-    )
-    .unwrap();
-    std::fs::write(
-        roots.join("root-0000000000000001-block-0000000000000001.manifest"),
-        block_bytes,
-    )
-    .unwrap();
+    write_genesis(root, store, format, &manifest, vec![block_bytes]);
 }
 
 pub(crate) fn publish_synthetic_branched_genesis(
@@ -72,6 +49,108 @@ pub(crate) fn publish_synthetic_branched_genesis(
         .free_space_root(Some(free_space))
         .admit()
         .unwrap();
+    write_genesis(
+        root,
+        store,
+        format,
+        &manifest,
+        vec![left_bytes, right_bytes, branch_bytes],
+    );
+}
+
+/// One leaf of one placement under `branches` branches of one child each,
+/// the root last, under a manifest whose record count asks for that height.
+/// Every block is sound on its own; the leaves hold fewer entries than the
+/// manifest counts, which only a whole walk can see.
+pub(crate) fn publish_synthetic_chained_genesis(
+    root: &Path,
+    store: worth_store_physical_format::store_namespace::StableStoreIdentity,
+    branches: u16,
+) {
+    let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
+    let leaf = PhysicalRootRoutingBlock::leaf(7, 1, 1, vec![placement(1)], 2).unwrap();
+    let mut blocks = vec![leaf.encode(format)];
+    let mut reference = leaf.reference(durable_artifact_checksum(&blocks[0]));
+    for level in 1..=branches {
+        let block = u64::from(level) + 1;
+        let branch = PhysicalRootRoutingBlock::branch(7, 1, block, level, vec![reference], 2)
+            .expect("a branch of one child is a sound routing block");
+        let encoded = branch.encode(format);
+        reference = branch.reference(durable_artifact_checksum(&encoded));
+        blocks.push(encoded);
+    }
+    let free_key = FreeSpaceKey::arena(ExtentArenaId::new(1).unwrap(), 0);
+    let free_space =
+        FreeSpaceBlockReference::new(1, 1, 0, 0x0102_0304, free_key, free_key).unwrap();
+    // The manifest fixes the root's level as the least height that covers its
+    // record count; one record more than a full tree one level shorter holds
+    // asks for exactly this chain's height.
+    let manifest = DurablePhysicalRootManifest::builder(1, 7, 2, 0x8a9b_acbd)
+        .record_count((1_u64 << branches) + 1)
+        .next_block(blocks.len() as u64 + 1)
+        .routing_root(Some(reference))
+        .free_space_root(Some(free_space))
+        .admit()
+        .unwrap();
+    write_genesis(root, store, format, &manifest, blocks);
+}
+
+/// Leaves holding `leaves` entries each, in order, under branches of two
+/// children until one root, under a manifest counting `record_count`.
+pub(crate) fn publish_synthetic_paired_genesis(
+    root: &Path,
+    store: worth_store_physical_format::store_namespace::StableStoreIdentity,
+    record_count: u64,
+    leaves: &[u64],
+) {
+    let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
+    let mut blocks = Vec::new();
+    let mut level = Vec::new();
+    let mut ordinal = 0;
+    for &count in leaves {
+        let placements = (ordinal + 1..=ordinal + count).map(placement).collect();
+        ordinal += count;
+        let leaf = PhysicalRootRoutingBlock::leaf(7, 1, blocks.len() as u64 + 1, placements, 2)
+            .expect("a leaf of one or two ordered entries");
+        let encoded = leaf.encode(format);
+        level.push(leaf.reference(durable_artifact_checksum(&encoded)));
+        blocks.push(encoded);
+    }
+    let mut height = 0;
+    while level.len() > 1 {
+        height += 1;
+        let children = std::mem::take(&mut level);
+        for pair in children.chunks(2) {
+            let block = blocks.len() as u64 + 1;
+            let branch = PhysicalRootRoutingBlock::branch(7, 1, block, height, pair.to_vec(), 2)
+                .expect("a branch of one or two ordered children");
+            let encoded = branch.encode(format);
+            level.push(branch.reference(durable_artifact_checksum(&encoded)));
+            blocks.push(encoded);
+        }
+    }
+    let free_key = FreeSpaceKey::arena(ExtentArenaId::new(1).unwrap(), 0);
+    let free_space =
+        FreeSpaceBlockReference::new(1, 1, 0, 0x0102_0304, free_key, free_key).unwrap();
+    let manifest = DurablePhysicalRootManifest::builder(1, 7, 2, 0x8a9b_acbd)
+        .record_count(record_count)
+        .next_block(blocks.len() as u64 + 1)
+        .routing_root(Some(level[0]))
+        .free_space_root(Some(free_space))
+        .admit()
+        .expect("the record count asks for the paired tree's height");
+    write_genesis(root, store, format, &manifest, blocks);
+}
+
+/// Writes the current selector, its root manifest, and its routing blocks
+/// numbered from one in order.
+fn write_genesis(
+    root: &Path,
+    store: worth_store_physical_format::store_namespace::StableStoreIdentity,
+    format: PhysicalRecordFormatDeclaration,
+    manifest: &DurablePhysicalRootManifest,
+    blocks: Vec<Vec<u8>>,
+) {
     let selector = DurableRootSelector::new(
         store,
         format,
@@ -91,7 +170,8 @@ pub(crate) fn publish_synthetic_branched_genesis(
         manifest.encode(format),
     )
     .unwrap();
-    for (block, bytes) in [(1, left_bytes), (2, right_bytes), (3, branch_bytes)] {
+    for (index, bytes) in blocks.into_iter().enumerate() {
+        let block = index + 1;
         std::fs::write(
             roots.join(format!("root-0000000000000001-block-{block:016}.manifest")),
             bytes,

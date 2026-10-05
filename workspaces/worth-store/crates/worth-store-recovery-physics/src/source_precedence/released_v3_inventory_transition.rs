@@ -1,7 +1,7 @@
 //! One canonical, bounded V3 source-to-result inventory predicate shared by
 //! C.8 and Store. A transcript of two valid trees alone is not a legal drop.
 
-use super::VerifiedReleasedDirectoryReplacement;
+use super::{ExceededRootHistoryBound, VerifiedReleasedDirectoryReplacement};
 use crate::VerifiedSelectedReleaseHeadReplayV14;
 
 #[path = "released_v3_inventory_transition/delta.rs"]
@@ -20,10 +20,20 @@ pub enum ReleasedV3InventoryTransitionDenial {
         requested_bytes: u64,
         cause: std::collections::TryReserveError,
     },
-    BoundExceeded,
+    BoundExceeded(ExceededRootHistoryBound),
     InvalidSource,
     InvalidResult,
     InvalidDelta,
+}
+
+impl ReleasedV3InventoryTransitionDenial {
+    /// The admitted bound this check ran past, where that is why it stopped.
+    pub const fn exceeded_bound(&self) -> Option<ExceededRootHistoryBound> {
+        match self {
+            Self::BoundExceeded(exceeded) => Some(*exceeded),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -50,6 +60,15 @@ impl<'a> ReleasedInventoryView<'a> {
             segments,
             free_entries,
         }
+    }
+
+    /// How many routes, segments and free entries this view holds.
+    pub(crate) const fn entry_counts(self) -> [usize; 3] {
+        [
+            self.routes.len(),
+            self.segments.len(),
+            self.free_entries.len(),
+        ]
     }
 }
 
@@ -170,13 +189,20 @@ impl VerifiedReleasedV3InventoryTransition {
         maximum_scratch_bytes: u64,
     ) -> Result<Self, ReleasedV3InventoryTransitionDenial> {
         use ReleasedV3InventoryTransitionDenial as Denial;
-        if maximum_entries == 0 || maximum_scratch_bytes == 0 {
-            return Err(Denial::BoundExceeded);
-        }
-        let scratch_bytes =
-            Self::maximum_construction_heap_bytes(source, result, projected, maximum_entries)
-                .filter(|bytes| *bytes <= maximum_scratch_bytes)
-                .ok_or(Denial::BoundExceeded)?;
+        let counts = [source.entry_counts(), result.entry_counts()];
+        let step = [dropped.len(), projected.len()];
+        let scratch_bytes = ExceededRootHistoryBound::entries_within(
+            counts.into_iter().flatten().chain(step),
+            maximum_entries,
+        )
+        .and_then(|()| {
+            // Every count is within the entries, so no estimate is an overflow.
+            ExceededRootHistoryBound::scratch_within(
+                Self::maximum_construction_heap_bytes(source, result, projected, maximum_entries),
+                maximum_scratch_bytes,
+            )
+        })
+        .map_err(Denial::BoundExceeded)?;
         let source_topology =
             transcript_reserved(source, format, maximum_entries, maximum_scratch_bytes)?;
         let result_topology =
@@ -195,8 +221,6 @@ impl VerifiedReleasedV3InventoryTransition {
             directory_replacement,
         ) || dropped.is_empty()
             || projected.is_empty()
-            || dropped.len() as u64 > maximum_entries
-            || projected.len() as u64 > maximum_entries
             || dropped.windows(2).any(|pair| pair[0] >= pair[1])
             || projected
                 .windows(2)
@@ -247,11 +271,10 @@ impl VerifiedReleasedV3InventoryTransition {
             reserve::<CurrentPhysicalRecordPlacement>(projected.len(), 0, maximum_scratch_bytes)?;
         retained_projected.extend_from_slice(projected);
         let conversion_peak = ((retained_projected.capacity() + retained_projected.len()) as u64)
-            .checked_mul(std::mem::size_of::<CurrentPhysicalRecordPlacement>() as u64)
-            .ok_or(Denial::BoundExceeded)?;
-        if conversion_peak > maximum_scratch_bytes {
-            return Err(Denial::BoundExceeded);
-        }
+            .checked_mul(std::mem::size_of::<CurrentPhysicalRecordPlacement>() as u64);
+        let conversion_peak =
+            ExceededRootHistoryBound::scratch_within(conversion_peak, maximum_scratch_bytes)
+                .map_err(Denial::BoundExceeded)?;
         Ok(Self {
             source: source_topology,
             result: result_topology,
@@ -312,15 +335,13 @@ pub(super) fn reserve<T>(
     maximum: u64,
 ) -> Result<Vec<T>, ReleasedV3InventoryTransitionDenial> {
     use ReleasedV3InventoryTransitionDenial as Denial;
-    let requested_bytes = (count as u64)
-        .checked_mul(std::mem::size_of::<T>() as u64)
-        .ok_or(Denial::BoundExceeded)?;
-    if retained
-        .checked_add(requested_bytes)
-        .is_none_or(|bytes| bytes > maximum)
-    {
-        return Err(Denial::BoundExceeded);
-    }
+    // What `count` values and the bytes already retained need together.
+    let within = |count: usize| {
+        let bytes = (count as u64).checked_mul(std::mem::size_of::<T>() as u64);
+        let needed = bytes.and_then(|bytes| retained.checked_add(bytes));
+        ExceededRootHistoryBound::scratch_within(needed, maximum).map_err(Denial::BoundExceeded)
+    };
+    let requested_bytes = within(count)? - retained;
     let mut values = Vec::new();
     values
         .try_reserve_exact(count)
@@ -328,15 +349,7 @@ pub(super) fn reserve<T>(
             requested_bytes,
             cause,
         })?;
-    let actual = (values.capacity() as u64)
-        .checked_mul(std::mem::size_of::<T>() as u64)
-        .ok_or(Denial::BoundExceeded)?;
-    if retained
-        .checked_add(actual)
-        .is_none_or(|bytes| bytes > maximum)
-    {
-        return Err(Denial::BoundExceeded);
-    }
+    within(values.capacity())?;
     Ok(values)
 }
 

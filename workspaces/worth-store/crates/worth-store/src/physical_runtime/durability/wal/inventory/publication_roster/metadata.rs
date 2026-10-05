@@ -73,7 +73,7 @@ pub(super) fn decode_metadata(
             format,
         )
         .map_err(|denial| match denial {
-            worth_store_physical_format::CanonicalRedoWireDenial::TargetLimit
+            worth_store_physical_format::CanonicalRedoWireDenial::TargetLimit { .. }
             | worth_store_physical_format::CanonicalRedoWireDenial::ProjectionEntryLimit => {
                 PhysicalWalOpenFailure::ReopenAllocationLimitExceeded {
                     admitted: available_bytes,

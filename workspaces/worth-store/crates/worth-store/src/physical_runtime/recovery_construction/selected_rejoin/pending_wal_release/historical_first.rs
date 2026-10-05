@@ -226,7 +226,7 @@ fn verify_delta(
         maximum_scratch,
         expected.directory_replacement(),
     )
-    .map_err(|_| Denial::RoutingFrame)?;
+    .map_err(|denial| delta::replay_denial(denial.exceeded_bound()))?;
     if &actual != expected {
         return Err(Denial::RoutingFrame);
     }

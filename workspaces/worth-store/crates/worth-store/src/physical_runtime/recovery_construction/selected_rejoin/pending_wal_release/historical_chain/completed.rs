@@ -128,7 +128,7 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn verif
         );
         drop(grant);
         resident.release(required);
-        rechecked.map_err(|_| Denial::RoutingFrame)?;
+        rechecked.map_err(|denial| delta::replay_denial(denial.exceeded_bound()))?;
         fold.apply(CompletedHistoryHeadStep::Ordinary {
             source: &source.root,
             result: &result.root,

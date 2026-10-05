@@ -9,6 +9,8 @@ use std::fs;
 
 #[path = "published_above_checkpoint/damaged_history.rs"]
 mod damaged_history;
+#[path = "published_above_checkpoint/limit_sweep.rs"]
+mod limit_sweep;
 #[path = "published_above_checkpoint/manifest_entry_limit.rs"]
 mod manifest_entry_limit;
 

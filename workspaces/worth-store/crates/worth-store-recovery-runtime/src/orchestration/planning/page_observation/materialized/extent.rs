@@ -15,6 +15,7 @@ use worth_store_recovery_physics::{
 };
 
 use super::{super::PageObservationFailure, observed::required_observed};
+use crate::orchestration::reader_limit::extent_page_ceiling;
 
 pub(crate) struct RecoveryExtentManifest {
     manifest: DurableExtentManifest,
@@ -33,29 +34,24 @@ pub(crate) fn observe_extent(
     placement: DurableExtentRecordPlacement,
     target: &PhysicalRedoTarget,
     format: PhysicalRecordFormatDeclaration,
-    byte_limit: u64,
     manifests: &mut BTreeMap<(u64, u64), RecoveryExtentManifest>,
     integrity: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) -> Result<RecoveryPageObservation, PageObservationFailure> {
     let key = (placement.extent().get(), placement.extent_generation());
     admit_manifest_once(
-        discovery, placement, target, format, byte_limit, key, manifests, integrity,
+        discovery, placement, target, format, key, manifests, integrity,
     )?;
     let admitted = manifests
         .get(&key)
         .expect("successful admission installs the exact extent manifest");
-    admit_chunk(
-        discovery, placement, target, format, byte_limit, admitted, integrity,
-    )
+    admit_chunk(discovery, placement, target, format, admitted, integrity)
 }
 
-#[allow(clippy::too_many_arguments)]
 fn admit_manifest_once(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     placement: DurableExtentRecordPlacement,
     target: &PhysicalRedoTarget,
     format: PhysicalRecordFormatDeclaration,
-    byte_limit: u64,
     key: (u64, u64),
     manifests: &mut BTreeMap<(u64, u64), RecoveryExtentManifest>,
     integrity: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
@@ -67,7 +63,7 @@ fn admit_manifest_once(
         arena: placement.arena_range().arena().get(),
     };
     let observed = required_observed(
-        discovery.read_extent_manifest(placement.arena_range(), byte_limit),
+        discovery.read_extent_manifest(placement.arena_range(), extent_page_ceiling(format)),
         Some(target.identity()),
         artifact,
     )?;
@@ -114,7 +110,6 @@ fn admit_chunk(
     placement: DurableExtentRecordPlacement,
     target: &PhysicalRedoTarget,
     format: PhysicalRecordFormatDeclaration,
-    byte_limit: u64,
     admitted: &RecoveryExtentManifest,
     integrity: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) -> Result<RecoveryPageObservation, PageObservationFailure> {
@@ -125,7 +120,7 @@ fn admit_chunk(
             placement.arena_range(),
             plan.offset,
             plan.length,
-            byte_limit,
+            extent_page_ceiling(format),
         ),
         Some(target.identity()),
         plan.artifact,

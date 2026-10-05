@@ -4,8 +4,7 @@ use super::artifact::{backed_checkpoint_artifact, backed_record_artifact};
 use super::resident_read::map_allocated_failure;
 use super::{
     DiscoveryMediaBacking, FilesystemObservation, ObservedRecoveryArtifact,
-    RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope,
-    RecoveryDiscoveryFailure,
+    RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact, RecoveryDiscoveryFailure,
 };
 use crate::filesystem_media::{ArtifactTreeFailureKind, ArtifactTreeReadAllocator};
 use worth_store_physical_format::RecordArtifactFile;
@@ -67,19 +66,7 @@ impl<M: DiscoveryMediaBacking> FilesystemObservation<M> {
         offset
             .checked_add(length)
             .ok_or_else(|| RecoveryDiscoveryFailure::invalid(context.clone()))?;
-        let admitted = self.remaining_bytes.min(byte_limit);
-        if length == 0 || length > admitted {
-            return Err(RecoveryDiscoveryFailure::ByteLimitExceeded {
-                observed: self.counters.bytes_read.saturating_add(length),
-                admitted: self.maximum_bytes.min(byte_limit),
-                scope: if self.remaining_bytes <= byte_limit {
-                    RecoveryDiscoveryByteLimitScope::Observation
-                } else {
-                    RecoveryDiscoveryByteLimitScope::Requested
-                },
-            }
-            .into());
-        }
+        self.admit_range(&context, length, byte_limit)?;
         self.admit_backed_record_read(&context)?;
         let capacity = usize::try_from(length)
             .map_err(|_| RecoveryDiscoveryFailure::invalid(context.clone()))?;

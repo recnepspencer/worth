@@ -283,7 +283,7 @@ fn verify_delta_with_storage<S: RouteWalkStorage>(
             .ok_or(Denial::BoundExceeded)?,
         edge.transition().directory_replacement(),
     )
-    .map_err(|_| Denial::RoutingFrame)?;
+    .map_err(|denial| delta::replay_denial(denial.exceeded_bound()))?;
     if &actual != edge.transition() {
         return Err(Denial::RoutingFrame);
     }

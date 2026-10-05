@@ -86,8 +86,9 @@ fn observe_routes(
             {
                 return Err(HistoricalFailure::Invalid);
             }
-            let entries = observe_routes_with_budget(discovery, root, format, budget, trace)
-                .map_err(|_| HistoricalFailure::Invalid)?;
+            let root_unit = budget.charge_root()?;
+            let entries =
+                observe_routes_with_budget(discovery, root, format, &root_unit, budget, trace)?;
             if entries
                 .binary_search_by_key(&anchor, |placement| placement.record())
                 .is_err()

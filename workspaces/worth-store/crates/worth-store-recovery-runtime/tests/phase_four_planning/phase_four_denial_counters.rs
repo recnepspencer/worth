@@ -238,8 +238,16 @@ fn redo_admission_denial_retains_sampled_freshness_and_reconciled_fates() {
     assert_eq!(
         blocked.evidence().planning_denial,
         Some(PhysicalRecoveryPlanningDenial::Redo(
-            PhysicalRedoPlanningDenial::TargetLimit,
+            PhysicalRedoPlanningDenial::TargetLimit {
+                observed: 2,
+                admitted: 1,
+            },
         ))
+    );
+    let limit = blocked.evidence().limit.expect("the exhausted limit");
+    assert_eq!(
+        (limit.dimension, limit.observed, limit.admitted),
+        (PhysicalRecoveryLimitDimension::RedoTargets, 2, 1)
     );
     let counters = blocked.evidence().planning_counters.unwrap();
     assert_eq!(counters.page_extent_reads(), 0);

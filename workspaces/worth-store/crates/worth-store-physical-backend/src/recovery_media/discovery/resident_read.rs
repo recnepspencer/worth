@@ -110,19 +110,7 @@ impl<M: super::DiscoveryMediaBacking> FilesystemObservation<M> {
         let context = RecoveryDiscoveryArtifact::Record(address);
         let artifact = record_artifact(address)?;
         let length = u64::from(length);
-        let admitted = self.remaining_bytes.min(byte_limit);
-        if length == 0 || length > admitted {
-            return Err(RecoveryDiscoveryFailure::ByteLimitExceeded {
-                observed: self.counters.bytes_read.saturating_add(length),
-                admitted: self.maximum_bytes.min(byte_limit),
-                scope: if self.remaining_bytes <= byte_limit {
-                    RecoveryDiscoveryByteLimitScope::Observation
-                } else {
-                    RecoveryDiscoveryByteLimitScope::Requested
-                },
-            }
-            .into());
-        }
+        self.admit_range(&context, length, byte_limit)?;
         if self.remaining_entries == 0 {
             return Err(RecoveryDiscoveryFailure::EntryLimitExceeded {
                 observed: 1,
@@ -186,7 +174,6 @@ impl<M: super::DiscoveryMediaBacking> FilesystemObservation<M> {
             u64,
         ) -> Result<Vec<u8>, ArtifactTreeAllocatedReadFailure<E>>,
     ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryAllocationFailure<E>> {
-        let observation_is_tighter = self.remaining_bytes <= byte_limit;
         let effective_byte_limit = byte_limit.min(self.remaining_bytes);
         if self.remaining_entries == 0 {
             return Err(RecoveryDiscoveryFailure::EntryLimitExceeded {
@@ -243,24 +230,7 @@ impl<M: super::DiscoveryMediaBacking> FilesystemObservation<M> {
                         admitted: effective_byte_limit,
                     },
                 );
-                Err(RecoveryDiscoveryFailure::ByteLimitExceeded {
-                    observed: if observation_is_tighter {
-                        self.counters.bytes_read.saturating_add(limit.observed)
-                    } else {
-                        limit.observed
-                    },
-                    admitted: if observation_is_tighter {
-                        self.maximum_bytes
-                    } else {
-                        limit.admitted
-                    },
-                    scope: if observation_is_tighter {
-                        RecoveryDiscoveryByteLimitScope::Observation
-                    } else {
-                        RecoveryDiscoveryByteLimitScope::Requested
-                    },
-                }
-                .into())
+                Err(self.read_refused(byte_limit, limit.observed).into())
             }
             Err(failure) => Err(map_allocated_failure(failure, context, 0)),
         }

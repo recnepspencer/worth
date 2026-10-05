@@ -1,6 +1,6 @@
 use crate::entry::{
-    PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure, PhysicalRecoveryOutcome,
-    PhysicalRecoverySuccessorCandidateDenial,
+    PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure,
+    PhysicalRecoveryOutcome, PhysicalRecoverySuccessorCandidateDenial,
 };
 use crate::progression::{
     derive_execution_basis, requires_successor_candidate, CandidateMaterializationCost,
@@ -11,6 +11,10 @@ use crate::progression::{
 use super::super::context::PlanningContext;
 use super::super::resolved_basis::ResolvedPlanningBasis;
 use super::super::successor_candidate_observation;
+
+#[cfg(test)]
+#[path = "execution_basis/candidate_limit_tests.rs"]
+mod candidate_limit_tests;
 
 pub(super) struct ExecutionProducts {
     pub(super) staging: RecoveryStagingLayoutPlan,
@@ -82,7 +86,6 @@ pub(super) fn derive(
             context.selection.root().selected().manifest(),
             context.selection.root().selected().selector().format(),
             &mut basis.observed_pages.manifest_budget,
-            context.limits.manifest_entries,
             remaining_observation_bytes,
             &mut context.integrity_trace,
             &mut allowance,
@@ -102,7 +105,7 @@ pub(super) fn derive(
         match attempt.result {
             Ok(candidate) => candidate,
             Err(denial) => {
-                let limit = candidate_limit(&context, &denial, remaining_observation_bytes);
+                let limit = candidate_limit(&context.limits, &denial, remaining_observation_bytes);
                 let required_peak = match &denial {
                     PhysicalRecoverySuccessorCandidateDenial::RecoveryMemoryBytes {
                         observed,
@@ -256,7 +259,7 @@ pub(super) fn derive(
 }
 
 fn candidate_limit(
-    context: &PlanningContext,
+    limits: &PhysicalRecoveryLimitDeclaration,
     denial: &PhysicalRecoverySuccessorCandidateDenial,
     remaining_observation_bytes: u64,
 ) -> Option<PhysicalRecoveryLimitFailure> {
@@ -270,22 +273,11 @@ fn candidate_limit(
             observed: *observed,
             admitted: *admitted,
         }),
-        PhysicalRecoverySuccessorCandidateDenial::Discovery {
-            failure:
-                worth_store::physical_runtime::RecoveryDiscoveryFailure::ByteLimitExceeded {
-                    observed,
-                    ..
-                },
-            ..
-        } => Some(PhysicalRecoveryLimitFailure {
-            dimension: PhysicalRecoveryLimitDimension::ObservationBytes,
-            observed: context
-                .limits
-                .observation_bytes
-                .saturating_sub(remaining_observation_bytes)
-                .saturating_add(*observed),
-            admitted: context.limits.observation_bytes,
-        }),
+        // An artifact that outgrew the ceiling of its own read is damage.
+        PhysicalRecoverySuccessorCandidateDenial::Discovery { failure, .. } => {
+            super::historical_publication::discovery_failure(failure.clone())
+                .limit(limits, remaining_observation_bytes)
+        }
         PhysicalRecoverySuccessorCandidateDenial::ManifestEntryLimit {
             observed, admitted, ..
         } => Some(PhysicalRecoveryLimitFailure {

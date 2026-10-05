@@ -12,7 +12,9 @@ use worth_store_physical_format::{
 };
 use worth_store_wal::WalLsnRange;
 
-use super::{VerifiedOrdinaryRootStep, VerifiedReleasedV3InventoryTransition};
+use super::{
+    ExceededRootHistoryBound, VerifiedOrdinaryRootStep, VerifiedReleasedV3InventoryTransition,
+};
 use crate::{AdmittedRootStepMemberView, PhysicalRedoGroupBinding, RecoveryOperationFate};
 
 #[path = "ordered_root_history/retirement.rs"]
@@ -27,8 +29,18 @@ pub enum OrderedRootHistoryDenial {
     Source,
     Effect,
     WalOrder,
-    Bound,
+    Bound(ExceededRootHistoryBound),
     Incomplete,
+}
+
+impl OrderedRootHistoryDenial {
+    /// The admitted bound this history ran past, where that is why it stopped.
+    pub const fn exceeded_bound(self) -> Option<ExceededRootHistoryBound> {
+        match self {
+            Self::Bound(exceeded) => Some(exceeded),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -150,7 +162,6 @@ pub struct OrderedRootHistoryBuilder {
     retained_projected_bytes: u64,
     peak_effect_scratch_bytes: u64,
     peak_scratch_bytes: u64,
-    maximum_edges: u64,
     maximum_scratch_bytes: u64,
 }
 
@@ -162,14 +173,11 @@ impl OrderedRootHistoryBuilder {
         checkpoint_wal_cutoff: u64,
         checkpoint_topology: PhysicalInventoryTranscriptV1,
         format: PhysicalRecordFormatDeclaration,
-        maximum_edges: u64,
         maximum_scratch_bytes: u64,
     ) -> Result<Self, OrderedRootHistoryDenial> {
         let root_sha256: [u8; 32] = Sha256::digest(checkpoint_root.encode(format)).into();
         if root_sha256 != checkpoint_root_frame_sha256
             || !checkpoint_topology.matches_headers(checkpoint_root, checkpoint_free, format)
-            || maximum_edges == 0
-            || maximum_scratch_bytes == 0
         {
             return Err(OrderedRootHistoryDenial::Source);
         }
@@ -185,7 +193,6 @@ impl OrderedRootHistoryBuilder {
             retained_projected_bytes: 0,
             peak_effect_scratch_bytes: 0,
             peak_scratch_bytes: 0,
-            maximum_edges,
             maximum_scratch_bytes,
         })
     }
@@ -240,11 +247,10 @@ impl OrderedRootHistoryBuilder {
         {
             return Err(OrderedRootHistoryDenial::Effect);
         }
-        let retained = (transition.projected().len() as u64)
-            .checked_mul(std::mem::size_of::<
-                worth_store_physical_format::CurrentPhysicalRecordPlacement,
-            >() as u64)
-            .ok_or(OrderedRootHistoryDenial::Bound)?;
+        // A size past every count is past every bound; the reservation says so.
+        let retained = (transition.projected().len() as u64).saturating_mul(std::mem::size_of::<
+            worth_store_physical_format::CurrentPhysicalRecordPlacement,
+        >() as u64);
         self.check_edge(member, result_root, transition.scratch_bytes(), retained)?;
         self.edges.push(VerifiedOrderedRootEdge::Released(
             VerifiedReleasedRootEdge {
@@ -294,33 +300,26 @@ impl OrderedRootHistoryBuilder {
         effect_scratch: u64,
         retained_projected_increment: u64,
     ) -> Result<(), OrderedRootHistoryDenial> {
-        let count = self
-            .edges
-            .len()
-            .checked_add(1)
-            .ok_or(OrderedRootHistoryDenial::Bound)?;
-        let roster_bytes = (count as u64)
-            .checked_mul(
-                (std::mem::size_of::<VerifiedOrderedRootEdge>()
-                    + std::mem::size_of::<[u8; 32]>()
-                    + 8 * std::mem::size_of::<usize>()) as u64,
-            )
-            .ok_or(OrderedRootHistoryDenial::Bound)?;
+        use ExceededRootHistoryBound as Exceeded;
+        // The scratch bounds the edges: each one retains its own bytes.
+        let count = self.edges.len() as u64 + 1;
+        let edge_bytes = (std::mem::size_of::<VerifiedOrderedRootEdge>()
+            + std::mem::size_of::<[u8; 32]>()
+            + 8 * std::mem::size_of::<usize>()) as u64;
         let effect_peak = self.peak_effect_scratch_bytes.max(effect_scratch);
         let retained_projected = self
             .retained_projected_bytes
-            .checked_add(retained_projected_increment)
-            .ok_or(OrderedRootHistoryDenial::Bound)?;
-        let peak = effect_peak
-            .checked_add(roster_bytes)
-            .and_then(|bytes| bytes.checked_add(retained_projected))
-            .ok_or(OrderedRootHistoryDenial::Bound)?;
-        if count as u64 > self.maximum_edges || peak > self.maximum_scratch_bytes {
-            return Err(OrderedRootHistoryDenial::Bound);
-        }
-        self.edges
-            .try_reserve(1)
-            .map_err(|_| OrderedRootHistoryDenial::Bound)?;
+            .saturating_add(retained_projected_increment);
+        let needed = count
+            .checked_mul(edge_bytes)
+            .and_then(|bytes| bytes.checked_add(effect_peak))
+            .and_then(|bytes| bytes.checked_add(retained_projected));
+        let peak = Exceeded::scratch_within(needed, self.maximum_scratch_bytes)
+            .map_err(OrderedRootHistoryDenial::Bound)?;
+        // The host refusing scratch this bound admitted is the same refusal.
+        self.edges.try_reserve(1).map_err(|_| {
+            OrderedRootHistoryDenial::Bound(Exceeded::scratch(peak, self.maximum_scratch_bytes))
+        })?;
         self.retained_projected_bytes = retained_projected;
         self.peak_effect_scratch_bytes = effect_peak;
         self.peak_scratch_bytes = peak;

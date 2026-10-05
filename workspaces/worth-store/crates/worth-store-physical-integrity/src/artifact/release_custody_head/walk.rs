@@ -60,7 +60,6 @@ pub(super) fn walk<P: ReleaseCustodyHeadWalkPort>(
     let mut frame_bytes = 0_u64;
     while let Some((reference, depth)) = stack.pop() {
         if depth > limits.max_depth
-            || nodes >= limits.max_nodes
             || reference.generation() > root.generation()
             || reference.block() >= root.next_release_custody_head_block()
         {
@@ -109,12 +108,16 @@ pub(super) fn walk<P: ReleaseCustodyHeadWalkPort>(
             }
         } else if let Some(children) = view.children() {
             let child_count = view.count();
-            if nodes
-                .checked_add(stack.len() as u64)
-                .and_then(|count| count.checked_add(child_count as u64))
-                .is_none_or(|count| count > limits.max_nodes)
-            {
-                return Err(Denial::BoundExceeded);
+            // Every block the walk reads is admitted here, with its siblings,
+            // before it is stacked: the root is one block of a bound of one.
+            let observed = nodes
+                .saturating_add(stack.len() as u64)
+                .saturating_add(child_count as u64);
+            if observed > limits.max_nodes {
+                return Err(Denial::NodeBound {
+                    observed,
+                    admitted: limits.max_nodes,
+                });
             }
             let required = stack
                 .len()

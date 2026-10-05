@@ -12,6 +12,7 @@ use crate::entry::{
     PhysicalRecoverySourceReadAllocationDenial as Cause,
 };
 use crate::orchestration::discovery::DiscoveryFailure;
+use crate::orchestration::reader_limit::OversizedArtifact;
 
 pub(in super::super) fn window_admission_failure(
     cause: PhysicalRecoveryRejoinResidentAdmissionDenial,
@@ -24,12 +25,12 @@ pub(in super::super) fn window_admission_failure(
     )
 }
 
-pub(super) fn map_read_failure(
+pub(super) fn refused(
     denial: RecoveryDiscoveryAllocationFailure<PhysicalRecoveryObservationAllocationDenial>,
-    map_discovery: impl FnOnce(RecoveryDiscoveryFailure) -> DiscoveryFailure,
-) -> DiscoveryFailure {
-    match denial {
-        RecoveryDiscoveryAllocationFailure::Discovery(denial) => map_discovery(denial),
+    refused_read: impl FnOnce(RecoveryDiscoveryFailure) -> Result<OversizedArtifact, DiscoveryFailure>,
+) -> Result<OversizedArtifact, DiscoveryFailure> {
+    Err(match denial {
+        RecoveryDiscoveryAllocationFailure::Discovery(denial) => return refused_read(denial),
         RecoveryDiscoveryAllocationFailure::Allocation {
             artifact,
             requested,
@@ -63,7 +64,7 @@ pub(super) fn map_read_failure(
                 observed,
             },
         ),
-    }
+    })
 }
 
 pub(super) fn parser_failure(

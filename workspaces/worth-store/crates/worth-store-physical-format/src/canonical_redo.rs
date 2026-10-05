@@ -70,9 +70,17 @@ pub struct CanonicalRedoWireRecord {
 pub enum CanonicalRedoWireDenial {
     MalformedMember,
     WrongDomain,
-    RecordCountLimit,
-    TargetLimit,
-    DistinctTargetLimit,
+    /// The member names more targets than the decode admitted: `observed` is
+    /// the count that first passed `admitted`.
+    TargetLimit {
+        observed: u64,
+        admitted: u64,
+    },
+    /// One more distinct target than the decode admitted.
+    DistinctTargetLimit {
+        observed: u64,
+        admitted: u64,
+    },
     InvalidRecordOrder,
     NonCanonicalTargetOrder,
     LsnRangeMismatch,
@@ -171,11 +179,13 @@ fn decode_in_storage<S: PhysicalRecoveryDecodeStorage>(
     if span != count.max(1) {
         return Err(CanonicalRedoWireDenial::LsnRangeMismatch.into());
     }
+    // A count the member cannot hold is damage, so it is refused as that
+    // before it can be weighed against the caller's limit.
+    let capacity = cursor.count_backed_by(count, 4 + 8 + 8 + 8)?;
     if count > maximum_targets {
-        return Err(CanonicalRedoWireDenial::TargetLimit.into());
+        let (observed, admitted) = (count, maximum_targets);
+        return Err(CanonicalRedoWireDenial::TargetLimit { observed, admitted }.into());
     }
-    cursor.require_count_backing(count, 4 + 8 + 8 + 8)?;
-    let capacity = usize::try_from(count).map_err(|_| CanonicalRedoWireDenial::RecordCountLimit)?;
     let mut records = reserve_vec(capacity, storage)?;
     let mut target_count = 0_u64;
     for expected_ordinal in 0..count {
@@ -301,18 +311,21 @@ impl<'a> Cursor<'a> {
     const fn new(bytes: &'a [u8]) -> Self {
         Self { remaining: bytes }
     }
-    fn require_count_backing(
+    /// A count the remaining bytes can hold at `minimum_bytes` each. A count
+    /// they cannot hold is not a count of anything in this member.
+    fn count_backed_by(
         &self,
         count: u64,
         minimum_bytes: usize,
-    ) -> Result<(), CanonicalRedoWireDenial> {
-        let required = usize::try_from(count)
+    ) -> Result<usize, CanonicalRedoWireDenial> {
+        usize::try_from(count)
             .ok()
-            .and_then(|count| count.checked_mul(minimum_bytes));
-        if required.is_none_or(|required| required > self.remaining.len()) {
-            return Err(CanonicalRedoWireDenial::MalformedMember);
-        }
-        Ok(())
+            .filter(|count| {
+                count
+                    .checked_mul(minimum_bytes)
+                    .is_some_and(|required| required <= self.remaining.len())
+            })
+            .ok_or(CanonicalRedoWireDenial::MalformedMember)
     }
     fn byte(&mut self) -> Result<u8, CanonicalRedoWireDenial> {
         Ok(self.take(1)?[0])

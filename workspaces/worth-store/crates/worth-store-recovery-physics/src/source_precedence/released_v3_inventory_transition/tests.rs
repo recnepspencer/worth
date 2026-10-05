@@ -1,10 +1,12 @@
 use super::*;
+use crate::ExceededRootHistoryBound as Exceeded;
 use worth_store_physical_format::{
     durable_artifact_checksum, DurableExtentRecordPlacement, ExtentArenaId,
     IndexedThroughBlobPublication, PhysicalExtentId, PhysicalFreeSpaceMembershipBlock,
     PhysicalGeneration, PhysicalGenerationAuthority, PhysicalRootRoutingBlock,
     SelectedRecordContentClass, SelectedRecordRouteMetadata,
 };
+use ReleasedV3InventoryTransitionDenial as Denial;
 
 pub(super) fn record(number: u64) -> PersistedRecordIdentity {
     PersistedRecordIdentity::new([4; 16], number).unwrap()
@@ -179,8 +181,26 @@ fn checked_transition_rejects_self_consistent_same_count_route_and_free_forgery(
             exact_peak - 1,
             None,
         ),
-        Err(ReleasedV3InventoryTransitionDenial::BoundExceeded)
+        Err(Denial::BoundExceeded(Exceeded::scratch(
+            exact_peak,
+            exact_peak - 1
+        )))
     );
+    // Each view holds two routes: one entry admits neither.
+    let narrow = VerifiedReleasedV3InventoryTransition::admit(
+        source,
+        result,
+        &dropped,
+        &projected,
+        format,
+        1,
+        1 << 20,
+        None,
+    );
+    let past_entries = Denial::BoundExceeded(Exceeded::entries(2, 1));
+    assert_eq!(narrow, Err(past_entries.clone()));
+    assert_eq!(past_entries.exceeded_bound(), Some(Exceeded::entries(2, 1)));
+    assert_eq!(Denial::InvalidDelta.exceeded_bound(), None);
     let exact = VerifiedReleasedV3InventoryTransition::admit(
         source, result, &dropped, &projected, format, 16, exact_peak, None,
     )

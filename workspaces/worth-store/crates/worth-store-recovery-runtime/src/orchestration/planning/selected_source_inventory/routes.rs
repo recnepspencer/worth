@@ -2,6 +2,7 @@
 //! Shared by historical completion and preplanning root-chain admission.
 
 use std::collections::{BTreeSet, VecDeque};
+use std::convert::Infallible;
 
 use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
 use worth_store_physical_format::{
@@ -9,28 +10,108 @@ use worth_store_physical_format::{
     PhysicalTreeIdentity, RecordArtifactFile,
 };
 
-use super::{invalid, ManifestEntryBudget, PageObservationFailure, ResidentAllowance};
+use super::{
+    invalid, ManifestEntryBudget, PageObservationFailure, ResidentAllowance, ResidentTraceDenial,
+    RootUnit,
+};
 use crate::integrity_ingress::RecoveryIntegrityIngressTrace;
+
+/// What a routes traversal keeps in memory, told to whoever bounds that.
+pub(in crate::orchestration::planning) trait RoutesHold {
+    type Refused;
+    fn block(&mut self, format: PhysicalRecordFormatDeclaration) -> Result<(), Self::Refused>;
+    fn trace_slot(
+        &mut self,
+        trace: &mut RecoveryIntegrityIngressTrace,
+    ) -> Result<(), Self::Refused>;
+    fn entries(&mut self, count: usize, entry_bytes: usize) -> Result<(), Self::Refused>;
+}
+
+/// A traversal bounded by its entries and observation bytes alone.
+struct Unheld;
+
+impl RoutesHold for Unheld {
+    type Refused = Infallible;
+
+    fn block(&mut self, _: PhysicalRecordFormatDeclaration) -> Result<(), Infallible> {
+        Ok(())
+    }
+
+    fn trace_slot(&mut self, _: &mut RecoveryIntegrityIngressTrace) -> Result<(), Infallible> {
+        Ok(())
+    }
+
+    fn entries(&mut self, _: usize, _: usize) -> Result<(), Infallible> {
+        Ok(())
+    }
+}
+
+impl RoutesHold for ResidentAllowance {
+    type Refused = ResidentTraceDenial;
+
+    fn block(&mut self, format: PhysicalRecordFormatDeclaration) -> Result<(), Self::Refused> {
+        ResidentAllowance::block(self, format).map_err(ResidentTraceDenial::from)
+    }
+
+    fn trace_slot(
+        &mut self,
+        trace: &mut RecoveryIntegrityIngressTrace,
+    ) -> Result<(), Self::Refused> {
+        self.trace_slots(trace, 1)
+    }
+
+    fn entries(&mut self, count: usize, entry_bytes: usize) -> Result<(), Self::Refused> {
+        ResidentAllowance::entries(self, count, entry_bytes).map_err(ResidentTraceDenial::from)
+    }
+}
+
+/// Why a routes traversal stopped: what it observed, or what it was refused
+/// room to hold. The second is never an entry or byte limit.
+pub(in crate::orchestration::planning) enum RoutesFailure<R> {
+    Observation(PageObservationFailure),
+    Held(R),
+}
+
+impl<R> From<PageObservationFailure> for RoutesFailure<R> {
+    fn from(failure: PageObservationFailure) -> Self {
+        Self::Observation(failure)
+    }
+}
 
 pub(in crate::orchestration::planning) fn observe_routes_with_budget(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     root: &DurablePhysicalRootManifest,
     format: PhysicalRecordFormatDeclaration,
+    root_unit: &RootUnit,
     budget: &mut ManifestEntryBudget,
     trace: &mut RecoveryIntegrityIngressTrace,
 ) -> Result<Vec<CurrentPhysicalRecordPlacement>, PageObservationFailure> {
-    let mut resident = ResidentAllowance::new(u64::MAX);
-    observe_routes_with_resident_budget(discovery, root, format, budget, trace, &mut resident)
+    observe_routes_held(
+        discovery,
+        root,
+        format,
+        root_unit,
+        budget,
+        trace,
+        &mut Unheld,
+    )
+    .map_err(|failure| match failure {
+        RoutesFailure::Observation(failure) => failure,
+        RoutesFailure::Held(never) => match never {},
+    })
 }
 
-pub(in crate::orchestration::planning) fn observe_routes_with_resident_budget(
+/// Every route under `root`, each leaf entry charged. The root's own entry
+/// is charged where the root is read.
+pub(in crate::orchestration::planning) fn observe_routes_held<H: RoutesHold>(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     root: &DurablePhysicalRootManifest,
     format: PhysicalRecordFormatDeclaration,
+    _root_unit: &RootUnit,
     budget: &mut ManifestEntryBudget,
     trace: &mut RecoveryIntegrityIngressTrace,
-    resident: &mut ResidentAllowance,
-) -> Result<Vec<CurrentPhysicalRecordPlacement>, PageObservationFailure> {
+    hold: &mut H,
+) -> Result<Vec<CurrentPhysicalRecordPlacement>, RoutesFailure<H::Refused>> {
     let root_artifact = RecordArtifactFile::RootManifest {
         generation: root.generation(),
     };
@@ -40,17 +121,16 @@ pub(in crate::orchestration::planning) fn observe_routes_with_resident_budget(
     let mut visited = BTreeSet::new();
     let mut entries = Vec::new();
     while let Some(reference) = pending.pop_front() {
-        resident.block(format)?;
+        hold.block(format).map_err(RoutesFailure::Held)?;
         let artifact = RecordArtifactFile::RootRoutingBlock {
             generation: reference.generation(),
             block: reference.block(),
         };
         // Two references that reach one block contradict the tree.
         if !visited.insert((reference.generation(), reference.block())) {
-            return Err(invalid(artifact));
+            return Err(invalid(artifact).into());
         }
-        budget.consume(1)?;
-        resident.trace_slots(trace, 1)?;
+        hold.trace_slot(trace).map_err(RoutesFailure::Held)?;
         let observed = super::required_source(
             discovery.read_root_routing_block(
                 reference.generation(),
@@ -74,20 +154,21 @@ pub(in crate::orchestration::planning) fn observe_routes_with_resident_budget(
         })?;
         if let Some(found) = projected.block.entries() {
             budget.consume(found.len())?;
-            resident.entries(
+            hold.entries(
                 found.len(),
                 std::mem::size_of::<CurrentPhysicalRecordPlacement>(),
-            )?;
+            )
+            .map_err(RoutesFailure::Held)?;
             entries.extend_from_slice(found);
         } else if let Some(children) = projected.block.children() {
-            budget.consume(children.len())?;
-            resident.entries(
+            hold.entries(
                 children.len(),
                 std::mem::size_of::<worth_store_physical_format::ManifestBlockReference>(),
-            )?;
+            )
+            .map_err(RoutesFailure::Held)?;
             pending.extend(children.iter().copied());
         } else {
-            return Err(invalid(artifact));
+            return Err(invalid(artifact).into());
         }
     }
     entries.sort_unstable_by_key(|route| route.record());
@@ -97,7 +178,7 @@ pub(in crate::orchestration::planning) fn observe_routes_with_resident_budget(
             .any(|pair| pair[0].record() == pair[1].record())
     {
         // The root counts records its tree does not route, or routes one twice.
-        return Err(invalid(root_artifact));
+        return Err(invalid(root_artifact).into());
     }
     Ok(entries)
 }

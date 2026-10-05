@@ -25,7 +25,7 @@ mod tier_routes;
 
 use absent_target::{AbsentTarget, SelectedFrontier};
 pub(in crate::orchestration::planning) use allocation_truth::InlineAllocationTruth;
-pub(super) use failure::PageObservationFailure;
+pub(super) use failure::{PageObservationFailure, ReaderLimit};
 use materialized::{observe_extent, observe_inline, selected_inline_target};
 
 pub(super) struct PageObservationAttempt {
@@ -49,8 +49,6 @@ pub(super) struct ObservedPageBasis {
 pub(super) use historical_drop::HistoricalDropEvidence;
 pub(super) use ordered_history::OrderedReleasedObservation;
 
-pub(super) use selected_basis::{artifact_read_ceiling, ArtifactReadCeilingDenial};
-
 #[derive(Clone, Copy)]
 pub(super) struct TierEvidence<'a> {
     pub(super) selection: &'a PhysicalSourceSelection,
@@ -70,7 +68,6 @@ pub(super) fn observe_selected_pages(
     placements: &[CurrentPhysicalRecordPlacement],
     admitted_redo: &worth_store_recovery_physics::AdmittedPhysicalRedoMembers,
     format: PhysicalRecordFormatDeclaration,
-    maximum_entries: u64,
     admitted_manifest_entries: u64,
     maximum_manifest_entries: u64,
     maximum_bytes: u64,
@@ -79,7 +76,10 @@ pub(super) fn observe_selected_pages(
 ) -> (AdmittedRecoveryFilesystemMedia, PageObservationAttempt) {
     let targets = admitted_redo.observation_targets();
     let mut discovery = media
-        .bounded_discovery(maximum_entries, maximum_bytes)
+        .bounded_discovery(
+            crate::orchestration::reader_limit::UNCOUNTED_READS,
+            maximum_bytes,
+        )
         .expect("admitted nonzero recovery limits create a bounded planning reader");
     let mut integrity = crate::integrity_ingress::RecoveryIntegrityIngressTrace::new();
     let mut manifest_budget = super::manifest_entry_budget::ManifestEntryBudget::new(
@@ -97,7 +97,6 @@ pub(super) fn observe_selected_pages(
         format,
         admitted_manifest_entries,
         &mut manifest_budget,
-        maximum_bytes,
         maximum_staging_bytes,
         &mut integrity,
         integrity_trace,
@@ -131,17 +130,17 @@ fn observe(
     format: PhysicalRecordFormatDeclaration,
     admitted_manifest_entries: u64,
     budget: &mut super::manifest_entry_budget::ManifestEntryBudget,
-    byte_limit: u64,
     maximum_staging_bytes: u64,
     integrity: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) -> Result<ObservedPageBasis, PageObservationFailure> {
+    let selected_unit = budget.charge_root()?;
     let mut selected_source = super::selected_source_inventory::observe_with_budget(
         discovery,
         root_manifest,
         format,
+        &selected_unit,
         budget,
-        byte_limit,
         integrity_trace,
     )?;
     let tier_custody = tier_routes::validate(
@@ -152,12 +151,13 @@ fn observe(
         tier_evidence,
     )?;
     if let Some((fallback, fallback_format)) = retained_fallback {
+        let fallback_unit = budget.charge_root()?;
         let fallback_source = super::selected_source_inventory::observe_with_budget(
             discovery,
             fallback,
             fallback_format,
+            &fallback_unit,
             budget,
-            byte_limit,
             integrity_trace,
         )?;
         let mut source_artifacts = selected_source.source_artifacts.into_vec();
@@ -208,7 +208,6 @@ fn observe(
                     inline,
                     target,
                     format,
-                    byte_limit,
                     &selected_source.segment_pages,
                     integrity,
                 )?);
@@ -223,7 +222,6 @@ fn observe(
                         extent,
                         target,
                         format,
-                        byte_limit,
                         &mut extent_manifests,
                         integrity,
                     )?);
@@ -258,7 +256,6 @@ fn observe(
             release_intents: tier_evidence.sample.release_intents(),
             format,
             budget,
-            byte_limit,
             maximum_entries: admitted_manifest_entries,
             maximum_staging_bytes,
             trace: integrity_trace,

@@ -14,7 +14,9 @@ use worth_store_recovery_physics::{
     PhysicalRedoProjection, PhysicalRewriteAdmission, PhysicalSourceSelection,
 };
 
+use super::super::historical_publication::{discovery_failure, HistoricalFailure};
 use super::decode_record;
+use crate::orchestration::reader_limit::extent_page_ceiling;
 
 /// The selected extent placement an extent rewrite redo names, if any.
 ///
@@ -25,7 +27,7 @@ pub(super) fn selected_source(
     selection: &PhysicalSourceSelection,
     rewrite: PhysicalRewriteRedo,
 ) -> Option<DurableExtentRecordPlacement> {
-    let record = decode_record(rewrite.record_identity()).ok()?;
+    let record = decode_record(rewrite.record_identity())?;
     rewrite.extent_arena()?;
     selection
         .page_facts()
@@ -47,35 +49,41 @@ pub(super) fn selected_source(
 pub(super) fn prove(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     format: PhysicalRecordFormatDeclaration,
-    byte_limit: u64,
     rewrite: PhysicalRewriteRedo,
     placement: DurableExtentRecordPlacement,
-) -> Result<(), ()> {
+) -> Result<(), HistoricalFailure> {
     if !names_successor(rewrite)
         || placement.extent_generation() != rewrite.destination_generation()
-        || placement.arena_range() != rewrite.extent_arena().ok_or(())?.destination()
+        || placement.arena_range()
+            != rewrite
+                .extent_arena()
+                .ok_or(HistoricalFailure::Invalid)?
+                .destination()
     {
-        return Err(());
+        return Err(HistoricalFailure::Invalid);
     }
-    let (manifest, payload) = read_generation(discovery, format, byte_limit, rewrite, placement)?;
+    let (manifest, payload) = read_generation(discovery, format, rewrite, placement)?;
     let (frames, expected) = encode_successor(format, rewrite, placement, &payload)?;
     if manifest != expected {
-        return Err(());
+        return Err(HistoricalFailure::Invalid);
     }
-    let layout = ExtentArenaFrameLayout::new(format, manifest.alignment()).ok_or(())?;
+    let layout = ExtentArenaFrameLayout::new(format, manifest.alignment())
+        .ok_or(HistoricalFailure::Invalid)?;
     for (ordinal, frame) in (1_u32..).zip(frames) {
         let observed = discovery
             .read_extent_range(
                 placement.arena_range(),
-                layout.chunk_offset(ordinal).ok_or(())?,
+                layout
+                    .chunk_offset(ordinal)
+                    .ok_or(HistoricalFailure::Invalid)?,
                 frame.len() as u32,
-                byte_limit,
+                extent_page_ceiling(format),
             )
-            .map_err(|_| ())?
+            .map_err(discovery_failure)?
             .into_bytes()
-            .ok_or(())?;
+            .ok_or(HistoricalFailure::Invalid)?;
         if observed != frame {
-            return Err(());
+            return Err(HistoricalFailure::Invalid);
         }
     }
     Ok(())
@@ -86,19 +94,18 @@ pub(super) fn project(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     selection: &PhysicalSourceSelection,
     format: PhysicalRecordFormatDeclaration,
-    byte_limit: u64,
     admission: PhysicalRewriteAdmission,
     source: DurableExtentRecordPlacement,
-) -> Result<PhysicalRedoProjection, ()> {
+) -> Result<PhysicalRedoProjection, HistoricalFailure> {
     let rewrite = admission.redo();
-    let arena = rewrite.extent_arena().ok_or(())?;
+    let arena = rewrite.extent_arena().ok_or(HistoricalFailure::Invalid)?;
     if !names_successor(rewrite) || source.extent_generation() != rewrite.source_generation() {
-        return Err(());
+        return Err(HistoricalFailure::Invalid);
     }
     if source.arena_range() != arena.source() {
-        return Err(());
+        return Err(HistoricalFailure::Invalid);
     }
-    let (_, payload) = read_generation(discovery, format, byte_limit, rewrite, source)?;
+    let (_, payload) = read_generation(discovery, format, rewrite, source)?;
     let (frames, manifest) = encode_successor(format, rewrite, source, &payload)?;
     let destination = DurableExtentRecordPlacement::new_selected(
         source.record(),
@@ -107,37 +114,42 @@ pub(super) fn project(
         arena.destination(),
         source.route_metadata(),
     )
-    .ok_or(())?;
+    .ok_or(HistoricalFailure::Invalid)?;
     let artifact = RecordArtifactFile::ExtentArena {
         arena: arena.destination().arena().get(),
     };
     let mut persisted = Vec::with_capacity(frames.len());
-    let layout = ExtentArenaFrameLayout::new(format, arena.alignment()).ok_or(())?;
+    let layout =
+        ExtentArenaFrameLayout::new(format, arena.alignment()).ok_or(HistoricalFailure::Invalid)?;
     let mut completed = 0_u64;
     let capacity = u64::from(manifest.chunk_payload_capacity());
     for (ordinal, bytes) in (1_u32..).zip(frames.iter()) {
         let coordinate = chunk_coordinate(manifest, completed, ordinal)?;
-        let length = u32::try_from(bytes.len()).map_err(|_| ())?;
+        let length = u32::try_from(bytes.len()).map_err(|_| HistoricalFailure::Invalid)?;
         persisted.push(
             PersistedPhysicalRecoveryFrame::new(
                 PersistedPhysicalDataFrameSubject::ExtentChunk(coordinate),
                 RecordFrameCoordinate::new(
                     artifact,
-                    arena.destination().offset() + layout.chunk_offset(ordinal).ok_or(())?,
+                    arena.destination().offset()
+                        + layout
+                            .chunk_offset(ordinal)
+                            .ok_or(HistoricalFailure::Invalid)?,
                     length,
                 )
-                .ok_or(())?,
+                .ok_or(HistoricalFailure::Invalid)?,
                 bytes,
             )
-            .ok_or(())?,
+            .ok_or(HistoricalFailure::Invalid)?,
         );
         completed += (manifest.logical_bytes() - completed).min(capacity);
     }
     let manifest_file = PersistedPhysicalRecoveryManifest::new(
-        RecordFrameCoordinate::new(artifact, arena.destination().offset(), 104).ok_or(())?,
+        RecordFrameCoordinate::new(artifact, arena.destination().offset(), 104)
+            .ok_or(HistoricalFailure::Invalid)?,
         &manifest.encode(format),
     )
-    .ok_or(())?;
+    .ok_or(HistoricalFailure::Invalid)?;
     // No inline allocation or tail changes; the publication inherits both. The
     // allocation charge is the runtime's two-page streaming working set.
     let root_state = PersistedPhysicalRecoveryRootState::new(
@@ -148,7 +160,7 @@ pub(super) fn project(
         None,
         None,
     )
-    .ok_or(())?;
+    .ok_or(HistoricalFailure::Invalid)?;
     let projection = PersistedPhysicalRecoveryProjection::new(
         rewrite.source_root_generation(),
         root_state,
@@ -158,7 +170,7 @@ pub(super) fn project(
         Vec::new(),
         vec![manifest_file],
     )
-    .ok_or(())?;
+    .ok_or(HistoricalFailure::Invalid)?;
     Ok(PhysicalRedoProjection::from_rewrite_materialization(
         admission.operation(),
         admission.group(),
@@ -177,30 +189,37 @@ fn names_successor(rewrite: PhysicalRewriteRedo) -> bool {
 fn read_generation(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     format: PhysicalRecordFormatDeclaration,
-    byte_limit: u64,
     rewrite: PhysicalRewriteRedo,
     placement: DurableExtentRecordPlacement,
-) -> Result<(DurableExtentManifest, Vec<u8>), ()> {
+) -> Result<(DurableExtentManifest, Vec<u8>), HistoricalFailure> {
     let manifest_bytes = discovery
-        .read_extent_manifest(placement.arena_range(), byte_limit)
-        .map_err(|_| ())?
+        .read_extent_manifest(placement.arena_range(), extent_page_ceiling(format))
+        .map_err(discovery_failure)?
         .into_bytes()
-        .ok_or(())?;
+        .ok_or(HistoricalFailure::Invalid)?;
     let (manifest, manifest_format) =
-        DurableExtentManifest::decode(&manifest_bytes).map_err(|_| ())?;
+        DurableExtentManifest::decode(&manifest_bytes).map_err(|_| HistoricalFailure::Invalid)?;
     if manifest_format != format
         || manifest.record() != placement.record()
         || manifest.extent_cell() != placement.extent_cell()
         || manifest.logical_bytes() != placement.payload_bytes()
         || manifest.logical_bytes() != u64::from(rewrite.source_length())
-        || manifest.alignment() != rewrite.extent_arena().ok_or(())?.alignment()
+        || manifest.alignment()
+            != rewrite
+                .extent_arena()
+                .ok_or(HistoricalFailure::Invalid)?
+                .alignment()
     {
-        return Err(());
+        return Err(HistoricalFailure::Invalid);
     }
-    let layout = ExtentArenaFrameLayout::new(format, manifest.alignment()).ok_or(())?;
-    if layout.allocated_bytes(manifest.chunk_count()).ok_or(())? != placement.arena_range().length()
+    let layout = ExtentArenaFrameLayout::new(format, manifest.alignment())
+        .ok_or(HistoricalFailure::Invalid)?;
+    if layout
+        .allocated_bytes(manifest.chunk_count())
+        .ok_or(HistoricalFailure::Invalid)?
+        != placement.arena_range().length()
     {
-        return Err(());
+        return Err(HistoricalFailure::Invalid);
     }
     let mut payload = Vec::with_capacity(rewrite.source_length() as usize);
     for ordinal in 1..=manifest.chunk_count() {
@@ -213,22 +232,25 @@ fn read_generation(
         let frame = discovery
             .read_extent_range(
                 placement.arena_range(),
-                layout.chunk_offset(ordinal).ok_or(())?,
+                layout
+                    .chunk_offset(ordinal)
+                    .ok_or(HistoricalFailure::Invalid)?,
                 frame_length as u32,
-                byte_limit,
+                extent_page_ceiling(format),
             )
-            .map_err(|_| ())?
+            .map_err(discovery_failure)?
             .into_bytes()
-            .ok_or(())?;
-        let (chunk, chunk_format) = decode_extent_chunk(&frame, coordinate).map_err(|_| ())?;
+            .ok_or(HistoricalFailure::Invalid)?;
+        let (chunk, chunk_format) =
+            decode_extent_chunk(&frame, coordinate).map_err(|_| HistoricalFailure::Invalid)?;
         if chunk_format != format {
-            return Err(());
+            return Err(HistoricalFailure::Invalid);
         }
         payload.extend_from_slice(chunk);
     }
     let digest: [u8; 32] = Sha256::digest(&payload).into();
     if digest != rewrite.source_digest() {
-        return Err(());
+        return Err(HistoricalFailure::Invalid);
     }
     Ok((manifest, payload))
 }
@@ -240,16 +262,18 @@ fn encode_successor(
     rewrite: PhysicalRewriteRedo,
     placement: DurableExtentRecordPlacement,
     payload: &[u8],
-) -> Result<(Vec<Vec<u8>>, DurableExtentManifest), ()> {
+) -> Result<(Vec<Vec<u8>>, DurableExtentManifest), HistoricalFailure> {
     let cell = PhysicalGenerationAuthority::for_canonical_physical_format()
         .record_extent_cell(placement.extent())
         .with_extent_generation(
-            PhysicalGeneration::from_raw(rewrite.destination_generation()).map_err(|_| ())?,
+            PhysicalGeneration::from_raw(rewrite.destination_generation())
+                .map_err(|_| HistoricalFailure::Invalid)?,
         );
     let capacity = format.page_size().bytes() as usize
         - (worth_store_physical_format::DURABLE_EXTENT_FRAME_HEADER_BYTES
             + worth_store_physical_format::EXTENT_CHUNK_METADATA_BYTES);
-    let chunks = u32::try_from(payload.len().div_ceil(capacity)).map_err(|_| ())?;
+    let chunks =
+        u32::try_from(payload.len().div_ceil(capacity)).map_err(|_| HistoricalFailure::Invalid)?;
     let manifest = DurableExtentManifest::new(
         format,
         placement.record(),
@@ -257,15 +281,19 @@ fn encode_successor(
         payload.len() as u64,
         format.page_size().bytes(),
         chunks,
-        rewrite.extent_arena().ok_or(())?.alignment(),
+        rewrite
+            .extent_arena()
+            .ok_or(HistoricalFailure::Invalid)?
+            .alignment(),
     )
-    .ok_or(())?;
+    .ok_or(HistoricalFailure::Invalid)?;
     let mut frames = Vec::with_capacity(chunks as usize);
     let mut completed = 0_usize;
     for ordinal in 1..=chunks {
         let length = (payload.len() - completed).min(capacity);
         let coordinate = chunk_coordinate(manifest, completed as u64, ordinal)?;
-        let mut chunk = prepare_extent_chunk(format, coordinate, length).map_err(|_| ())?;
+        let mut chunk = prepare_extent_chunk(format, coordinate, length)
+            .map_err(|_| HistoricalFailure::Invalid)?;
         chunk
             .payload_mut()
             .copy_from_slice(&payload[completed..completed + length]);
@@ -275,7 +303,7 @@ fn encode_successor(
             DurableFrameKind::Extent,
             PhysicalPageLsn::new(rewrite.page_lsn()),
         )
-        .map_err(|_| ())?;
+        .map_err(|_| HistoricalFailure::Invalid)?;
         frames.push(bytes);
         completed += length;
     }
@@ -286,7 +314,7 @@ fn chunk_coordinate(
     manifest: DurableExtentManifest,
     offset: u64,
     ordinal: u32,
-) -> Result<ExtentChunkCoordinate, ()> {
+) -> Result<ExtentChunkCoordinate, HistoricalFailure> {
     ExtentChunkCoordinate::new(
         manifest.record(),
         manifest.extent_cell(),
@@ -294,5 +322,5 @@ fn chunk_coordinate(
         offset,
         ordinal,
     )
-    .ok_or(())
+    .ok_or(HistoricalFailure::Invalid)
 }

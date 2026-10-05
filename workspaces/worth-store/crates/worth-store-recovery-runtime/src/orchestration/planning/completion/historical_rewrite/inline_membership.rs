@@ -30,8 +30,7 @@ pub(super) fn source(
     rewrite: PhysicalRewriteRedo,
     placement: DurableInlineRecordPlacement,
 ) -> Result<SourceInlineSpan, HistoricalFailure> {
-    let pages = super::super::rewrite_span::historical_page_count(rewrite, format)
-        .map_err(|_| HistoricalFailure::Invalid)?;
+    let pages = super::super::rewrite_span::historical_page_count(rewrite, format)?;
     let start = u32::try_from(rewrite.source_offset() / u64::from(format.page_size().bytes()))
         .map_err(|_| HistoricalFailure::Invalid)?;
     if rewrite.extent_arena().is_some()
@@ -67,8 +66,7 @@ pub(super) fn verify(
     placement: DurableInlineRecordPlacement,
     source: &SourceInlineSpan,
 ) -> Result<(), HistoricalFailure> {
-    let pages = super::super::rewrite_span::historical_page_count(rewrite, format)
-        .map_err(|_| HistoricalFailure::Invalid)?;
+    let pages = super::super::rewrite_span::historical_page_count(rewrite, format)?;
     let entries = collect(
         discovery,
         root,
@@ -103,8 +101,7 @@ pub(super) fn verify_inline_coordinates(
     destination: DurableInlineRecordPlacement,
     result_entries: &[RecordSegmentPageManifestEntry],
 ) -> Result<(), HistoricalFailure> {
-    let pages = super::super::rewrite_span::historical_page_count(rewrite, format)
-        .map_err(|_| HistoricalFailure::Invalid)?;
+    let pages = super::super::rewrite_span::historical_page_count(rewrite, format)?;
     let start = u32::try_from(rewrite.source_offset() / u64::from(format.page_size().bytes()))
         .map_err(|_| HistoricalFailure::Invalid)?;
     if source.record() != destination.record()
@@ -166,15 +163,14 @@ fn collect(
     let end = start.checked_add(pages).ok_or(HistoricalFailure::Invalid)?;
     let mut pending = root.segment_root().into_iter().collect::<VecDeque<_>>();
     let mut found = vec![None; pages as usize];
+    // One placement's pages are one lookup, wherever the tree holds them.
+    budget.consume(1)?;
     while let Some(reference) = pending.pop_front() {
         let segment = placement.segment().get();
         if reference.first().segment().get() > segment || reference.last().segment().get() < segment
         {
             continue;
         }
-        budget
-            .consume(1)
-            .map_err(|_| HistoricalFailure::ManifestEntries)?;
         let observed = discovery
             .read_segment_membership_block(
                 reference.generation(),
@@ -191,17 +187,18 @@ fn collect(
             tree,
             reference,
             root.node_capacity(),
-            budget.remaining(),
+            // The lookup is charged; each block is one view, of no more
+            // entries than recovery admits, whatever is left of them.
+            budget.admitted(),
             trace,
         )
         .map_err(|failure| match failure {
-            MembershipProjectionFailure::EntryLimit { .. } => HistoricalFailure::ManifestEntries,
+            MembershipProjectionFailure::EntryLimit { observed } => {
+                budget.refuse_view(observed).into()
+            }
             MembershipProjectionFailure::Integrity(_) => HistoricalFailure::Invalid,
         })?;
         if let Some(entries) = block.entries() {
-            budget
-                .consume(entries.len())
-                .map_err(|_| HistoricalFailure::ManifestEntries)?;
             for entry in entries {
                 if entry.page_cell().segment_id().get() != segment
                     || entry.data_generation() != generation
@@ -225,9 +222,6 @@ fn collect(
             ));
         } else {
             let children = block.children().ok_or(HistoricalFailure::Invalid)?;
-            budget
-                .consume(children.len())
-                .map_err(|_| HistoricalFailure::ManifestEntries)?;
             if children
                 .iter()
                 .any(|child| child.level().checked_add(1) != Some(reference.level()))

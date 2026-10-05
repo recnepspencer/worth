@@ -5,20 +5,20 @@ use worth_store_physical_format::{
 };
 
 use super::artifact_read::{read as read_artifact, retain_successor};
-use super::denial::{admit_successor_read, consume_successor, invalid};
+use super::denial::{consume_successor, invalid};
 use super::materialization::CandidateMaterialization;
 use super::resident::{memory_failure, trace_slots};
 use super::tree_walk_resident::{root_projection_scratch, VisitedNodes};
 use crate::entry::PhysicalRecoverySuccessorCandidateDenial;
-use crate::orchestration::planning::manifest_entry_budget::ManifestEntryBudget;
+use crate::orchestration::planning::manifest_entry_budget::{ManifestEntryBudget, RootUnit};
 use crate::progression::{PlanningResidentAllowance, RecoveryObservedCandidateArtifact};
 
 pub(super) fn read(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     root: &DurablePhysicalRootManifest,
     format: PhysicalRecordFormatDeclaration,
+    _root_unit: &RootUnit,
     budget: &mut ManifestEntryBudget,
-    byte_limit: u64,
     artifacts: &mut Vec<RecoveryObservedCandidateArtifact>,
     referenced_artifacts: &mut Vec<RecordArtifactFile>,
     materialization: &mut CandidateMaterialization,
@@ -50,7 +50,6 @@ pub(super) fn read(
             .map_err(|failure| memory_failure(artifact, allowance, failure))?;
         referenced_artifacts.push(artifact);
         materialization.retain_reference();
-        admit_successor_read(budget, artifact)?;
         if !visited
             .insert((reference.generation(), reference.block()), allowance)
             .map_err(|failure| memory_failure(artifact, allowance, failure))?
@@ -63,7 +62,7 @@ pub(super) fn read(
             .retain(scratch)
             .map_err(|failure| memory_failure(artifact, allowance, failure))?;
         trace_slots(artifact, integrity_trace, allowance)?;
-        let source = read_artifact(discovery, artifact, byte_limit, allowance)?;
+        let source = read_artifact(discovery, artifact, format, allowance)?;
         let tree =
             PhysicalTreeIdentity::new(root.tree_identity()).ok_or_else(|| invalid(artifact))?;
         let projected = crate::integrity_ingress::projection::root_routing_block(
@@ -91,7 +90,6 @@ pub(super) fn read(
                 .map_err(|failure| memory_failure(artifact, allowance, failure))?;
             entries.extend_from_slice(found);
         } else if let Some(children) = block.children() {
-            consume_successor(budget, children.len(), artifact)?;
             allowance
                 .grow(&mut pending, children.len())
                 .map_err(|failure| memory_failure(artifact, allowance, failure))?;

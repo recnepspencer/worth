@@ -25,7 +25,7 @@ fn absent_optional_root_reads_with_zero_resident_space() {
     let artifact = RecordArtifactFile::RootManifest {
         generation: GENERATION,
     };
-    let observed = read(&mut discovery, artifact, 4096, &mut resident).unwrap();
+    let observed = read(&mut discovery, artifact, format(), &mut resident).unwrap();
     assert!(observed.bytes().is_none());
     assert_eq!(resident.used(), 0);
     assert_eq!(discovery.counters().bytes_read, 0);
@@ -45,7 +45,7 @@ fn present_root_reports_exact_resident_crossing_without_reading_bytes() {
     let artifact = RecordArtifactFile::RootManifest {
         generation: GENERATION,
     };
-    let denial = read(&mut discovery, artifact, 4096, &mut resident).unwrap_err();
+    let denial = read(&mut discovery, artifact, format(), &mut resident).unwrap_err();
     assert!(matches!(
         denial,
         PhysicalRecoverySuccessorCandidateDenial::RecoveryMemoryBytes {
@@ -72,7 +72,7 @@ fn cumulative_discovery_limit_remains_a_discovery_denial() {
     let artifact = RecordArtifactFile::RootManifest {
         generation: GENERATION,
     };
-    let denial = read(&mut discovery, artifact, 4096, &mut resident).unwrap_err();
+    let denial = read(&mut discovery, artifact, format(), &mut resident).unwrap_err();
     assert!(matches!(
         denial,
         PhysicalRecoverySuccessorCandidateDenial::Discovery {
@@ -90,6 +90,48 @@ fn cumulative_discovery_limit_remains_a_discovery_denial() {
     discovery.finish();
 }
 
+/// A root manifest is one page of its format at most. A longer one is
+/// damage, however little resident space the candidate has left.
+#[test]
+fn a_root_past_its_page_is_damage_whatever_resident_space_is_left() {
+    let fixture = Fixture::new("successor-root-oversized", true);
+    let page = u64::from(format().page_size().bytes());
+    let artifact = RecordArtifactFile::RootManifest {
+        generation: GENERATION,
+    };
+    let path = fixture
+        .root
+        .join("families/records/roots")
+        .join(artifact.file_name());
+    std::fs::write(path, vec![0_u8; page as usize + 1]).unwrap();
+    let media = QualifiedRecoveryFilesystemMedia::qualify_existing(&fixture.root)
+        .unwrap()
+        .admit_persisted_store()
+        .unwrap();
+    let mut discovery = media.bounded_discovery(4, 4 * page).unwrap();
+    for resident_space in [16, page, 2 * page] {
+        let mut resident = PlanningResidentAllowance::new(0, resident_space).unwrap();
+        let denial = read(&mut discovery, artifact, format(), &mut resident).unwrap_err();
+        assert!(
+            matches!(
+                denial,
+                PhysicalRecoverySuccessorCandidateDenial::Discovery {
+                    failure: RecoveryDiscoveryFailure::ByteLimitExceeded {
+                        observed,
+                        scope: RecoveryDiscoveryByteLimitScope::Requested,
+                        ..
+                    },
+                    ..
+                } if observed == page + 1
+            ),
+            "{resident_space} resident bytes: {denial:?}",
+        );
+        assert_eq!(resident.used(), 0);
+    }
+    assert_eq!(discovery.counters().bytes_read, 0);
+    discovery.finish();
+}
+
 #[test]
 fn sufficient_resident_space_retains_exact_canonical_root_bytes() {
     let fixture = Fixture::new("successor-root-adequate", true);
@@ -103,11 +145,15 @@ fn sufficient_resident_space_retains_exact_canonical_root_bytes() {
     let artifact = RecordArtifactFile::RootManifest {
         generation: GENERATION,
     };
-    let observed = read(&mut discovery, artifact, 4096, &mut resident).unwrap();
+    let observed = read(&mut discovery, artifact, format(), &mut resident).unwrap();
     assert_eq!(observed.bytes(), Some(fixture.bytes.as_slice()));
     assert_eq!(observed.owned_heap_bytes(), Some(admitted));
     assert_eq!(resident.used(), admitted);
     discovery.finish();
+}
+
+fn format() -> PhysicalRecordFormatDeclaration {
+    PhysicalRecordFormatDeclaration::builder().admit().unwrap()
 }
 
 struct Fixture {
@@ -130,11 +176,10 @@ impl Fixture {
             panic!("production media admission");
         };
         media.close();
-        let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
         let bytes = DurablePhysicalRootManifest::builder(GENERATION, 11, 4, 19)
             .admit()
             .unwrap()
-            .encode(format);
+            .encode(format());
         if present {
             let roots = root.join("families/records/roots");
             std::fs::create_dir_all(&roots).unwrap();

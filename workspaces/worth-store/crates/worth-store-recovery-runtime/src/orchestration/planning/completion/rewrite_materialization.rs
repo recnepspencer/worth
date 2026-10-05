@@ -16,6 +16,10 @@ use worth_store_recovery_physics::{
 
 use super::super::context::PlanningContext;
 use super::super::resolved_basis::ResolvedPlanningBasis;
+use super::historical_publication::{
+    charge_reader, discovery_failure, remaining_observation, unobserved, HistoricalFailure,
+};
+use crate::orchestration::reader_limit::UNCOUNTED_READS;
 
 #[path = "historical_rewrite.rs"]
 mod historical_rewrite;
@@ -56,49 +60,44 @@ pub(super) fn install(
         return Ok(context);
     }
     let format = context.authority.record_format;
-    let byte_limit = context.limits.observation_bytes;
+    // Whole generations are read here: they cost the observation bytes the
+    // earlier phases left, and the phases after are left what these leave.
+    let remaining_bytes = match remaining_observation(&context, basis) {
+        Ok(remaining_bytes) => remaining_bytes,
+        Err(failure) => return Err(unobserved(context, basis, failure, 0)),
+    };
     let media = context.authority.media;
     let mut discovery = media
-        .bounded_discovery(64, byte_limit)
+        .bounded_discovery(UNCOUNTED_READS, remaining_bytes)
         .expect("admitted nonzero recovery limits create a bounded planning reader");
-    let mut applying = Vec::new();
-    for admission in current {
-        match rewrite_disposition(
-            &mut discovery,
-            &context.selection,
-            format,
-            byte_limit,
-            admission,
-        ) {
-            Ok(RewriteDisposition::Published) => {}
-            Ok(RewriteDisposition::Apply) => applying.push(admission),
-            Err(()) => {
-                context.authority.media = discovery.finish();
-                return Err(context.redo_block(basis.planning_counters(), None));
+    let built = (|| {
+        let mut applying = Vec::new();
+        for admission in current {
+            match rewrite_disposition(&mut discovery, &context.selection, format, admission)? {
+                RewriteDisposition::Published => {}
+                RewriteDisposition::Apply => applying.push(admission),
             }
         }
-    }
-    if applying.is_empty() {
-        context.authority.media = discovery.finish();
-        return Ok(context);
-    }
-    let built = applying
-        .into_iter()
-        .map(|admission| {
-            project_rewrite(
-                &mut discovery,
-                &context.selection,
-                &basis.observed_pages.selected_source,
-                format,
-                byte_limit,
-                admission,
-            )
-        })
-        .collect::<Result<Vec<_>, ()>>();
+        let source = &basis.observed_pages.selected_source;
+        applying
+            .into_iter()
+            .map(|admission| {
+                project_rewrite(
+                    &mut discovery,
+                    &context.selection,
+                    source,
+                    format,
+                    admission,
+                )
+            })
+            .collect::<Result<Vec<_>, HistoricalFailure>>()
+    })();
+    let counters = discovery.counters();
     context.authority.media = discovery.finish();
+    charge_reader(basis, counters);
     let projections = match built {
         Ok(projections) => projections,
-        Err(()) => return Err(context.redo_block(basis.planning_counters(), None)),
+        Err(failure) => return Err(unobserved(context, basis, failure, remaining_bytes)),
     };
     for projection in projections {
         basis.redo.install_rewrite_materialization(projection);
@@ -115,13 +114,12 @@ fn rewrite_disposition(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     selection: &worth_store_recovery_physics::PhysicalSourceSelection,
     format: PhysicalRecordFormatDeclaration,
-    byte_limit: u64,
     admission: PhysicalRewriteAdmission,
-) -> Result<RewriteDisposition, ()> {
+) -> Result<RewriteDisposition, HistoricalFailure> {
     let rewrite = admission.redo();
     let selected = selection.root().selected().selector().root_generation();
     if rewrite.resulting_root_generation() == selected {
-        prove_published_rewrite(discovery, selection, format, byte_limit, admission)?;
+        prove_published_rewrite(discovery, selection, format, admission)?;
         return Ok(RewriteDisposition::Published);
     }
     if rewrite.source_root_generation() == selected
@@ -129,28 +127,27 @@ fn rewrite_disposition(
     {
         return Ok(RewriteDisposition::Apply);
     }
-    Err(())
+    Err(HistoricalFailure::Invalid)
 }
 
 fn prove_published_rewrite(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     selection: &worth_store_recovery_physics::PhysicalSourceSelection,
     format: PhysicalRecordFormatDeclaration,
-    byte_limit: u64,
     admission: PhysicalRewriteAdmission,
-) -> Result<(), ()> {
+) -> Result<(), HistoricalFailure> {
     let rewrite = admission.redo();
     if let Some(placement) = rewrite_extent::selected_source(selection, rewrite) {
-        return rewrite_extent::prove(discovery, format, byte_limit, rewrite, placement);
+        return rewrite_extent::prove(discovery, format, rewrite, placement);
     }
     let page_bytes = format.page_size().bytes();
     if rewrite.destination_offset() != 0
         || rewrite.destination_length() != page_bytes
         || rewrite.source_length() != page_bytes
     {
-        return rewrite_span::prove(discovery, selection, format, byte_limit, admission);
+        return rewrite_span::prove(discovery, selection, format, admission);
     }
-    let record = decode_record(rewrite.record_identity())?;
+    let record = decode_record(rewrite.record_identity()).ok_or(HistoricalFailure::Invalid)?;
     let inline = selection
         .page_facts()
         .placements()
@@ -166,57 +163,58 @@ fn prove_published_rewrite(
             }
             _ => None,
         })
-        .ok_or(())?;
+        .ok_or(HistoricalFailure::Invalid)?;
     let source_page = discovery
         .read_segment_range(
             inline.segment().get(),
             rewrite.source_generation(),
             rewrite.source_offset(),
             rewrite.source_length(),
-            byte_limit,
+            u64::from(page_bytes),
         )
-        .map_err(|_| ())?
+        .map_err(discovery_failure)?
         .into_bytes()
-        .ok_or(())?;
+        .ok_or(HistoricalFailure::Invalid)?;
     let source_digest: [u8; 32] = Sha256::digest(&source_page).into();
     if source_digest != rewrite.source_digest() {
-        return Err(());
+        return Err(HistoricalFailure::Invalid);
     }
     let mut expected =
         restamp_inline_page_generation(format, &source_page, rewrite.destination_placement())
-            .map_err(|_| ())?;
+            .map_err(|_| HistoricalFailure::Invalid)?;
     encode_data_frame_page_lsn(
         &mut expected,
         DurableFrameKind::InlinePage,
         PhysicalPageLsn::new(rewrite.page_lsn()),
     )
-    .map_err(|_| ())?;
+    .map_err(|_| HistoricalFailure::Invalid)?;
     let page = discovery
         .read_segment_range(
             inline.segment().get(),
             rewrite.destination_generation(),
             rewrite.destination_offset(),
             rewrite.destination_length(),
-            byte_limit,
+            u64::from(page_bytes),
         )
-        .map_err(|_| ())?
+        .map_err(discovery_failure)?
         .into_bytes()
-        .ok_or(())?;
+        .ok_or(HistoricalFailure::Invalid)?;
     if page != expected {
-        return Err(());
+        return Err(HistoricalFailure::Invalid);
     }
-    let geometry = inspect_inline_page(format, &page).map_err(|_| ())?;
+    let geometry = inspect_inline_page(format, &page).map_err(|_| HistoricalFailure::Invalid)?;
     if geometry.page_cell() != inline.page_cell() {
-        return Err(());
+        return Err(HistoricalFailure::Invalid);
     }
-    let page_lsn =
-        decode_data_frame_page_lsn(&page, DurableFrameKind::InlinePage).map_err(|_| ())?;
+    let page_lsn = decode_data_frame_page_lsn(&page, DurableFrameKind::InlinePage)
+        .map_err(|_| HistoricalFailure::Invalid)?;
     if page_lsn.get() != rewrite.page_lsn() {
-        return Err(());
+        return Err(HistoricalFailure::Invalid);
     }
-    let records = inspect_inline_page_records(format, &page).map_err(|_| ())?;
+    let records =
+        inspect_inline_page_records(format, &page).map_err(|_| HistoricalFailure::Invalid)?;
     if !records.iter().any(|found| found.record() == record) {
-        return Err(());
+        return Err(HistoricalFailure::Invalid);
     }
     Ok(())
 }
@@ -226,14 +224,11 @@ fn project_rewrite(
     selection: &worth_store_recovery_physics::PhysicalSourceSelection,
     source: &crate::progression::RecoverySelectedSourceInventory,
     format: PhysicalRecordFormatDeclaration,
-    byte_limit: u64,
     admission: PhysicalRewriteAdmission,
-) -> Result<PhysicalRedoProjection, ()> {
+) -> Result<PhysicalRedoProjection, HistoricalFailure> {
     let rewrite = admission.redo();
     if let Some(extent) = rewrite_extent::selected_source(selection, rewrite) {
-        return rewrite_extent::project(
-            discovery, selection, format, byte_limit, admission, extent,
-        );
+        return rewrite_extent::project(discovery, selection, format, admission, extent);
     }
     let page_bytes = format.page_size().bytes();
     let selected_generation = selection.root().selected().selector().root_generation();
@@ -241,14 +236,14 @@ fn project_rewrite(
         || rewrite.destination_length() != page_bytes
         || rewrite.source_length() != page_bytes
     {
-        return rewrite_span::project(discovery, selection, source, format, byte_limit, admission);
+        return rewrite_span::project(discovery, selection, source, format, admission);
     }
     if rewrite.source_root_generation() != selected_generation
         || rewrite.resulting_root_generation() != selected_generation.saturating_add(1)
     {
-        return Err(());
+        return Err(HistoricalFailure::Invalid);
     }
-    let record = decode_record(rewrite.record_identity())?;
+    let record = decode_record(rewrite.record_identity()).ok_or(HistoricalFailure::Invalid)?;
     let placements = selection.page_facts().placements();
     let inline = placements
         .iter()
@@ -263,12 +258,12 @@ fn project_rewrite(
             }
             _ => None,
         })
-        .ok_or(())?;
+        .ok_or(HistoricalFailure::Invalid)?;
     let selected = source
         .segment_pages
         .get(&(inline.segment().get(), inline.page().get()))
         .copied()
-        .ok_or(())?;
+        .ok_or(HistoricalFailure::Invalid)?;
     let entry = selected.entry;
     let page_bytes = u64::from(format.page_size().bytes());
     if entry.page_generation() != rewrite.source_placement()
@@ -277,7 +272,7 @@ fn project_rewrite(
         || entry.frame_index() >= entry.data_page_count()
         || u64::from(entry.frame_index()) * page_bytes != rewrite.source_offset()
     {
-        return Err(());
+        return Err(HistoricalFailure::Invalid);
     }
     let page = discovery
         .read_segment_range(
@@ -285,37 +280,41 @@ fn project_rewrite(
             rewrite.source_generation(),
             rewrite.source_offset(),
             rewrite.source_length(),
-            byte_limit,
+            page_bytes,
         )
-        .map_err(|_| ())?
+        .map_err(discovery_failure)?
         .into_bytes()
-        .ok_or(())?;
+        .ok_or(HistoricalFailure::Invalid)?;
     if page.len() != rewrite.source_length() as usize {
-        return Err(());
+        return Err(HistoricalFailure::Invalid);
     }
     let digest: [u8; 32] = Sha256::digest(&page).into();
     if digest != rewrite.source_digest() {
-        return Err(());
+        return Err(HistoricalFailure::Invalid);
     }
     let mut restamped =
         restamp_inline_page_generation(format, &page, rewrite.destination_placement())
-            .map_err(|_| ())?;
+            .map_err(|_| HistoricalFailure::Invalid)?;
     encode_data_frame_page_lsn(
         &mut restamped,
         DurableFrameKind::InlinePage,
         PhysicalPageLsn::new(rewrite.page_lsn()),
     )
-    .map_err(|_| ())?;
+    .map_err(|_| HistoricalFailure::Invalid)?;
     let authority = PhysicalGenerationAuthority::for_canonical_physical_format();
-    let segment_id = PhysicalSegmentId::from_raw(inline.segment().get()).map_err(|_| ())?;
-    let page_id = PhysicalPageId::from_raw(inline.page().get()).map_err(|_| ())?;
+    let segment_id = PhysicalSegmentId::from_raw(inline.segment().get())
+        .map_err(|_| HistoricalFailure::Invalid)?;
+    let page_id =
+        PhysicalPageId::from_raw(inline.page().get()).map_err(|_| HistoricalFailure::Invalid)?;
     let destination_page = authority
         .page_cell(segment_id, page_id)
         .with_page_generation(
-            PhysicalGeneration::from_raw(rewrite.destination_placement()).map_err(|_| ())?,
+            PhysicalGeneration::from_raw(rewrite.destination_placement())
+                .map_err(|_| HistoricalFailure::Invalid)?,
         );
     let destination_segment = authority.segment_cell(segment_id).with_segment_generation(
-        PhysicalGeneration::from_raw(rewrite.destination_generation()).map_err(|_| ())?,
+        PhysicalGeneration::from_raw(rewrite.destination_generation())
+            .map_err(|_| HistoricalFailure::Invalid)?,
     );
     let coordinate = RecordFrameCoordinate::new(
         RecordArtifactFile::Segment {
@@ -325,13 +324,13 @@ fn project_rewrite(
         rewrite.destination_offset(),
         rewrite.destination_length(),
     )
-    .ok_or(())?;
+    .ok_or(HistoricalFailure::Invalid)?;
     let frame = PersistedPhysicalRecoveryFrame::new(
         PersistedPhysicalDataFrameSubject::InlinePage(destination_page),
         coordinate,
         &restamped,
     )
-    .ok_or(())?;
+    .ok_or(HistoricalFailure::Invalid)?;
     let mut rebound = Vec::new();
     for placement in placements {
         let CurrentPhysicalRecordPlacement::Inline(existing) = placement else {
@@ -350,18 +349,18 @@ fn project_rewrite(
                 existing.payload_bytes(),
                 existing.route_metadata(),
             )
-            .ok_or(())?,
+            .ok_or(HistoricalFailure::Invalid)?,
         );
     }
     rebound.sort_by_key(|placement| placement.record());
     if rebound.is_empty() {
-        return Err(());
+        return Err(HistoricalFailure::Invalid);
     }
     let capacity = inline.segment_page_capacity();
-    let allocation =
-        PersistedInlineSegmentAllocation::new(destination_segment, capacity, 1).ok_or(())?;
+    let allocation = PersistedInlineSegmentAllocation::new(destination_segment, capacity, 1)
+        .ok_or(HistoricalFailure::Invalid)?;
     let update = RecordSegmentPageManifestEntry::new(destination_page, destination_segment, 1, 0)
-        .ok_or(())?;
+        .ok_or(HistoricalFailure::Invalid)?;
     let root_state = PersistedPhysicalRecoveryRootState::new(
         rewrite.candidate_bytes(),
         1,
@@ -370,7 +369,7 @@ fn project_rewrite(
         Some(record),
         Some(destination_segment),
     )
-    .ok_or(())?;
+    .ok_or(HistoricalFailure::Invalid)?;
     let projection = PersistedPhysicalRecoveryProjection::new(
         rewrite.source_root_generation(),
         root_state,
@@ -383,7 +382,7 @@ fn project_rewrite(
         vec![update],
         Vec::new(),
     )
-    .ok_or(())?;
+    .ok_or(HistoricalFailure::Invalid)?;
     Ok(PhysicalRedoProjection::from_rewrite_materialization(
         admission.operation(),
         admission.group(),
@@ -392,9 +391,9 @@ fn project_rewrite(
     ))
 }
 
-fn decode_record(bytes: [u8; 32]) -> Result<PersistedRecordIdentity, ()> {
+fn decode_record(bytes: [u8; 32]) -> Option<PersistedRecordIdentity> {
     let mut epoch = [0; 16];
     epoch.copy_from_slice(&bytes[..16]);
-    let ordinal = u64::from_le_bytes(bytes[16..24].try_into().map_err(|_| ())?);
-    PersistedRecordIdentity::new(epoch, ordinal).ok_or(())
+    let ordinal = u64::from_le_bytes(bytes[16..24].try_into().ok()?);
+    PersistedRecordIdentity::new(epoch, ordinal)
 }

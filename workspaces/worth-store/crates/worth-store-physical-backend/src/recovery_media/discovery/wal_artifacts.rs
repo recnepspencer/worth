@@ -213,13 +213,8 @@ impl<M: super::DiscoveryMediaBacking> FilesystemObservation<M> {
                     Outcome::Observed(bytes) => bytes,
                     Outcome::Mismatch(mismatch) => return Ok(Outcome::Mismatch(mismatch)),
                 };
-                remaining_wal_bytes = remaining_wal_bytes.checked_sub(byte_count(&bytes)).ok_or(
-                    RecoveryDiscoveryFailure::ByteLimitExceeded {
-                        observed: byte_limit,
-                        admitted: remaining_wal_bytes,
-                        scope: RecoveryDiscoveryByteLimitScope::Requested,
-                    },
-                )?;
+                // The read was left these bytes and returned no more of them.
+                remaining_wal_bytes = remaining_wal_bytes.saturating_sub(byte_count(&bytes));
                 self.counters.wal_bytes_read = self
                     .counters
                     .wal_bytes_read

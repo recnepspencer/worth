@@ -39,7 +39,7 @@ impl Fixture {
             16,
             1 << 20,
         )
-        .is_some()
+        .is_ok()
     }
 }
 

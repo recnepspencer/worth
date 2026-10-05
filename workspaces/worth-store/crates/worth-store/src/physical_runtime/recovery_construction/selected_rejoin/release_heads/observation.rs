@@ -212,7 +212,9 @@ fn walk_denial(
             }
             _ => Denial::Resident(PhysicalRecoveryRejoinResidentDenial::SizeOverflow { admitted }),
         },
-        ReleaseCustodyHeadWalkDenial::BoundExceeded => Denial::BoundExceeded,
+        // Store names one bound until its denial carries the walker's count.
+        ReleaseCustodyHeadWalkDenial::BoundExceeded
+        | ReleaseCustodyHeadWalkDenial::NodeBound { .. } => Denial::BoundExceeded,
         _ => Denial::CertificateRoster,
     }
 }

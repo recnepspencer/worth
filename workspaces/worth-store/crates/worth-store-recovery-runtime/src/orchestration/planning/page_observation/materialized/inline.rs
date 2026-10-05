@@ -56,7 +56,6 @@ pub(crate) fn observe_inline(
     placement: DurableInlineRecordPlacement,
     target: &PhysicalRedoTarget,
     format: PhysicalRecordFormatDeclaration,
-    byte_limit: u64,
     entries: &BTreeMap<(u64, u64), RecoverySelectedSegmentPage>,
     integrity: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) -> Result<RecoveryPageObservation, PageObservationFailure> {
@@ -67,7 +66,7 @@ pub(crate) fn observe_inline(
             plan.selected.entry.data_generation(),
             plan.offset,
             plan.page_bytes,
-            byte_limit,
+            u64::from(plan.page_bytes),
         ),
         Some(target.identity()),
         plan.artifact,

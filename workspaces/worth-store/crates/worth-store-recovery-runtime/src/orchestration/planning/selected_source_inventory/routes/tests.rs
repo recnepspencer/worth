@@ -2,12 +2,14 @@
 //! is a limit the operator admitted too low.
 
 use worth_store_physical_format::{
-    durable_artifact_checksum, DurablePhysicalRootManifest, ManifestBlockReference,
-    PersistedRecordIdentity, PhysicalRootRoutingBlock, RecordArtifactFile,
+    durable_artifact_checksum, CurrentPhysicalRecordPlacement, DurablePhysicalRootManifest,
+    ManifestBlockReference, PersistedRecordIdentity, PhysicalRootRoutingBlock, RecordArtifactFile,
 };
 
-use super::super::{ManifestEntryBudget, PageObservationFailure};
-use super::observe_routes_with_budget;
+use super::super::{
+    ManifestEntryBudget, PageObservationFailure, ResidentAllowance, ResidentTraceDenial,
+};
+use super::{observe_routes_held, observe_routes_with_budget, RoutesFailure};
 use crate::integrity_ingress::RecoveryIntegrityIngressTrace;
 use crate::orchestration::planning::selected_world_fixture::{selected_world, SelectedSource};
 
@@ -21,10 +23,12 @@ fn routed(
 ) -> Result<u64, PageObservationFailure> {
     let mut budget = ManifestEntryBudget::new(AMPLE, 0);
     let mut trace = RecoveryIntegrityIngressTrace::default();
+    let root_unit = budget.charge_root()?;
     observe_routes_with_budget(
         source.discovery,
         root,
         source.format,
+        &root_unit,
         &mut budget,
         &mut trace,
     )
@@ -126,5 +130,55 @@ fn a_routing_block_two_references_reach_is_damaged() {
                 },
             }),
         );
+    });
+}
+
+#[test]
+fn routes_their_holder_has_no_room_for_are_refused_as_held_and_never_as_an_entry_limit() {
+    selected_world("routes-held", 4).read(|source| {
+        let root = source.root;
+        let mut held = |maximum: u64| {
+            let mut budget = ManifestEntryBudget::new(AMPLE, 0);
+            let mut trace = RecoveryIntegrityIngressTrace::default();
+            let mut resident = ResidentAllowance::new(maximum);
+            let root_unit = budget.charge_root().unwrap();
+            let outcome = observe_routes_held(
+                source.discovery,
+                root,
+                source.format,
+                &root_unit,
+                &mut budget,
+                &mut trace,
+                &mut resident,
+            )
+            .map(|routes| routes.len() as u64);
+            let held = (resident.used(), trace.owned_heap_bytes());
+            (outcome, resident.peak(), budget.refused_at(), held)
+        };
+        let (routed, need, _, (used, traced)) = held(1 << 30);
+        assert!(matches!(routed, Ok(count) if count == root.record_count()));
+        // One leaf block: its window, its trace slot and its routes are held.
+        let page = u64::from(source.format.page_size().bytes());
+        let route = std::mem::size_of::<CurrentPhysicalRecordPlacement>() as u64;
+        assert_eq!(
+            Some(used),
+            traced.map(|traced| 4 * page + 512 + traced + root.record_count() * (2 * route + 64)),
+        );
+        assert!(need >= used);
+        // Exactly what the traversal holds at once is enough.
+        let (at_need, peak, refused_at, _) = held(need);
+        assert!(matches!(at_need, Ok(count) if count == root.record_count()));
+        assert_eq!((peak, refused_at), (need, None));
+        // One byte less is the holder's refusal, and no entry was refused.
+        for short in [need - 1, 0] {
+            let (outcome, _, refused_at, _) = held(short);
+            assert!(matches!(
+                outcome,
+                Err(RoutesFailure::Held(
+                    ResidentTraceDenial::ResidentBoundExceeded
+                ))
+            ));
+            assert_eq!(refused_at, None);
+        }
     });
 }

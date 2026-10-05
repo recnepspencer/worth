@@ -9,6 +9,8 @@
 //! evidence, so they cannot disagree about which basis an edge has.
 
 use sha2::{Digest, Sha256};
+
+use crate::ExceededRootHistoryBound;
 use worth_store_physical_format::{
     DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest, PhysicalInventoryTranscriptV1,
     PhysicalRecordFormatDeclaration,
@@ -163,10 +165,21 @@ impl VerifiedRetirementRootEdge {
         if source.routes != result.routes || source.segments != result.segments {
             return Err(Denial::Effect);
         }
+        // A view past the admitted entries is that bound. Within it, a view
+        // that is not one well-formed inventory is not the edge's source or
+        // not its effect.
+        ExceededRootHistoryBound::entries_within(
+            source
+                .entry_counts()
+                .into_iter()
+                .chain(result.entry_counts()),
+            maximum_entries,
+        )
+        .map_err(Denial::Bound)?;
         Ok(Self {
             basis,
-            source: transcript(source, format, maximum_entries).map_err(|_| Denial::Bound)?,
-            result: transcript(result, format, maximum_entries).map_err(|_| Denial::Bound)?,
+            source: transcript(source, format, maximum_entries).map_err(|_| Denial::Source)?,
+            result: transcript(result, format, maximum_entries).map_err(|_| Denial::Effect)?,
         })
     }
 

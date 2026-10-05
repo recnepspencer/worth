@@ -5,7 +5,7 @@ use sha2::Digest;
 
 #[path = "admission/projection_budget.rs"]
 mod projection_budget;
-use projection_budget::consume_projection_limits;
+use projection_budget::ProjectionBudget;
 
 pub fn admit_physical_redo_members(
     mut members: Vec<PhysicalRedoMemberInput>,
@@ -21,17 +21,18 @@ pub fn admit_physical_redo_members(
     let mut targets = 0_u64;
     let mut scratch_bytes = 0_u64;
     let mut distinct = BTreeSet::new();
-    let mut projection = limits.projection;
+    let mut projection = ProjectionBudget::new(limits.projection);
     let mut prior_end = None;
     for member in members {
         if prior_end.is_some_and(|end| end != member.lsn_range.start()) {
             return Err(PhysicalRedoPlanningDenial::LsnRangeMismatch);
         }
         prior_end = Some(member.lsn_range.end_exclusive());
-        if let Some(copy) = super::source_copy::admit(&member, format, projection)? {
+        let ceiling = ProjectionBudget::member_ceiling(member.canonical_redo());
+        if let Some(copy) = super::source_copy::admit(&member, format, ceiling)? {
             scratch_bytes =
                 super::source_copy::charge(scratch_bytes, &copy, limits.recovery_memory_bytes)?;
-            consume_projection_limits(&mut projection, copy.projection())?;
+            projection.consume(copy.projection())?;
             source_copies.push(copy);
             continue;
         }
@@ -59,9 +60,10 @@ pub fn admit_physical_redo_members(
             member.lsn_range(),
             limits.targets.saturating_sub(targets),
             Some((&mut distinct, limits.distinct_targets)),
-            projection,
+            ceiling,
             format,
-        )?;
+        )
+        .map_err(|denial| denial.after_targets(targets))?;
         scratch_bytes = super::supersession::admit_scratch_bytes(
             scratch_bytes,
             &records,
@@ -77,7 +79,7 @@ pub fn admit_physical_redo_members(
                     .sum(),
             )
             .ok_or(PhysicalRedoPlanningDenial::CounterOverflow)?;
-        consume_projection_limits(&mut projection, &decoded)?;
+        projection.consume(&decoded)?;
         admitted.push(AdmittedPhysicalRedoMember {
             lsn_range: member.lsn_range(),
             operation: member.operation(),
@@ -315,7 +317,8 @@ pub fn physical_redo_target_identities(
             &mut distinct,
             maximum_distinct_targets,
             format,
-        )?;
+        )
+        .map_err(|denial| denial.after_targets(targets.len() as u64))?;
         for record in records {
             targets.extend(record.targets().iter().map(PhysicalRedoTarget::identity));
         }
@@ -342,7 +345,8 @@ pub fn physical_redo_observation_target_identities(
             member.lsn_range(),
             remaining,
             format,
-        )?;
+        )
+        .map_err(|denial| denial.after_targets(targets.len() as u64))?;
         for record in records {
             targets.extend(record.targets().iter().map(PhysicalRedoTarget::identity));
         }
@@ -369,7 +373,8 @@ pub fn physical_redo_observation_targets(
             member.lsn_range(),
             remaining,
             format,
-        )?;
+        )
+        .map_err(|denial| denial.after_targets(targets.len() as u64))?;
         for record in records {
             targets.extend(record.targets().iter().cloned());
         }

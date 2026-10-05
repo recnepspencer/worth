@@ -4,6 +4,7 @@ mod handoff;
 mod manifest_facts;
 mod planning;
 mod publication;
+mod reader_limit;
 mod recovery;
 mod reopen;
 mod staging;

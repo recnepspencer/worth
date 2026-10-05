@@ -174,10 +174,11 @@ impl PlanningContext {
     pub(super) fn redo_denial_block(
         self,
         planning_counters: RecoveryPlanningCounters,
-        limit: Option<PhysicalRecoveryLimitFailure>,
         denial: PhysicalRedoPlanningDenial,
     ) -> PhysicalRecoveryOutcome {
         let integrity_trace = self.integrity_trace;
+        let limit =
+            super::redo_limit::redo_limit(&self.limits, self.counters.manifest_entries, denial);
         redo_denial_block(
             self.authority,
             self.coordination,

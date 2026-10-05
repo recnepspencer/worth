@@ -1,8 +1,9 @@
-use worth_store::physical_runtime::{RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryFailure};
+use worth_store::physical_runtime::RecoveryDiscoveryFailure;
 use worth_store_physical_format::RecordArtifactFile;
 use worth_store_recovery_physics::PhysicalRedoTargetIdentity;
 
 use crate::entry::{HistoricalDropAdmissionStage, PhysicalRecoveryPageAdmissionDenial};
+pub(crate) use crate::orchestration::reader_limit::ReaderLimit;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum PageObservationFailure {
@@ -40,25 +41,25 @@ pub(crate) enum PageObservationFailure {
     InvalidPage(PhysicalRedoTargetIdentity),
     ManifestEntryLimit,
     ByteLimit,
+    /// The ordered walk outgrew the scratch admitted as staging bytes. It
+    /// needed at least this many; a step that knows only that it needed more
+    /// than it had left says zero.
+    StagingByteLimit {
+        at_least: u64,
+    },
 }
 
 impl PageObservationFailure {
-    /// A failed media read. Only an exhausted observation budget is a limit:
-    /// the bytes observation may read, or the addressed reads its remaining
-    /// manifest entries admit. A read that exceeded the ceiling requested for
-    /// its one artifact found an artifact larger than its format admits, which
-    /// is damage.
+    /// A failed media read: a limit where `ReaderLimit` says so, damage
+    /// everywhere else.
     pub(crate) fn media(
         target: Option<PhysicalRedoTargetIdentity>,
         failure: RecoveryDiscoveryFailure,
     ) -> Self {
-        match failure {
-            RecoveryDiscoveryFailure::ByteLimitExceeded {
-                scope: RecoveryDiscoveryByteLimitScope::Observation,
-                ..
-            } => Self::ByteLimit,
-            RecoveryDiscoveryFailure::EntryLimitExceeded { .. } => Self::ManifestEntryLimit,
-            failure => Self::Media { target, failure },
+        match ReaderLimit::of(&failure) {
+            Some(ReaderLimit::ObservationBytes { .. }) => Self::ByteLimit,
+            Some(ReaderLimit::Reads { .. }) => Self::ManifestEntryLimit,
+            None => Self::Media { target, failure },
         }
     }
 
@@ -108,6 +109,7 @@ impl PageObservationFailure {
             Self::InvalidPage(target) => PhysicalRecoveryPageAdmissionDenial::InvalidPage(target),
             Self::ManifestEntryLimit => PhysicalRecoveryPageAdmissionDenial::ManifestEntryLimit,
             Self::ByteLimit => PhysicalRecoveryPageAdmissionDenial::ObservationByteLimit,
+            Self::StagingByteLimit { .. } => PhysicalRecoveryPageAdmissionDenial::StagingByteLimit,
         }
     }
 }
@@ -115,7 +117,9 @@ impl PageObservationFailure {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use worth_store::physical_runtime::RecoveryDiscoveryArtifact;
+    use worth_store::physical_runtime::{
+        RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope,
+    };
 
     #[test]
     fn only_an_exhausted_observation_budget_is_a_limit() {

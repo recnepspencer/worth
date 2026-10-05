@@ -1,9 +1,7 @@
 //! Observes checkpoint-source custody independently of the newer selected
 //! post-WAL root. Only the joined controls claim leaves this boundary.
 
-use worth_store_physical_integrity::{
-    ReleaseCustodyHeadWalkDenial, ReleaseCustodyHeadWalkLimitsV1,
-};
+use worth_store_physical_integrity::ReleaseCustodyHeadWalkDenial;
 use worth_store_recovery_physics::{
     SelectedCustodyDenial, SelectedHeadRosterAdmissionDenial,
     VerifiedCheckpointReleaseHeadRosterV2, VerifiedSelectedReleaseHeadCustodyV2,
@@ -18,7 +16,12 @@ use crate::entry::{
     PhysicalRecoverySelectedReleaseHeadDenial as Denial,
 };
 use crate::integrity_ingress::{admit_addressed_root, RecoveryArtifactNamespaceJoin};
-use crate::orchestration::planning::selected_source_inventory::{self, ResidentAllowance};
+use crate::orchestration::planning::completion::historical_publication::{
+    discovery_failure, remaining_observation, HistoricalFailure,
+};
+use crate::orchestration::planning::selected_source_inventory::{
+    self, ResidentAllowance, ResidentTraceDenial, RoutesFailure,
+};
 use crate::progression::PlanningCustody;
 
 const ARTIFACT: &str = "checkpoint-source-release-head-v2";
@@ -27,23 +30,13 @@ pub(super) fn admit(
     mut context: PlanningContext,
     basis: &mut ResolvedPlanningBasis,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
-    let remaining_entries = basis.observed_pages.manifest_budget.remaining();
-    let remaining_bytes = context
-        .limits
-        .observation_bytes
-        .saturating_sub(context.counters.bytes_observed)
-        .saturating_sub(basis.observed_pages.bytes_read)
-        .saturating_sub(basis.observed_pages.candidate_bytes_read)
-        .saturating_sub(basis.observed_pages.source_copy_bytes_read)
-        .saturating_sub(basis.observed_pages.historical_publication_bytes_read);
-    if remaining_entries == 0 || remaining_bytes == 0 {
-        let denial = if remaining_entries == 0 {
-            Denial::ManifestEntryLimit
-        } else {
-            Denial::ObservationByteLimit
-        };
-        return Err(block(context, basis, denial, None));
-    }
+    let remaining_bytes = match remaining_observation(&context, basis) {
+        Ok(remaining_bytes) => remaining_bytes,
+        Err(failure) => {
+            let limit = failure.limit(&context.limits, 0);
+            return Err(block(context, basis, Denial::ObservationByteLimit, limit));
+        }
+    };
     let mut resident = match resident_basis::seed(&context, basis) {
         Ok(resident) => resident,
         Err(limit) => {
@@ -62,7 +55,10 @@ pub(super) fn admit(
     let mut discovery = context
         .authority
         .media
-        .bounded_discovery(remaining_entries, remaining_bytes)
+        .bounded_discovery(
+            crate::orchestration::reader_limit::UNCOUNTED_READS,
+            remaining_bytes,
+        )
         .expect("positive V2 checkpoint-source bounds");
     let mut scratch = 0;
     let claim = observe(
@@ -70,7 +66,6 @@ pub(super) fn admit(
         &context.selection,
         shared.stream(),
         context.authority.record_format,
-        remaining_bytes,
         &mut basis.observed_pages.manifest_budget,
         &mut context.integrity_trace,
         &mut scratch,
@@ -95,7 +90,8 @@ pub(super) fn admit(
     let claim = match claim {
         Ok(claim) => claim,
         Err(denial) => {
-            let limit = resident_basis::limit_failure(&context, &resident);
+            let limit = resident_basis::limit_failure(&context, &resident)
+                .or_else(|| limit_of(&denial, &context.limits, remaining_bytes));
             return Err(block(context, basis, denial, limit));
         }
     };
@@ -112,7 +108,6 @@ fn observe(
     selection: &worth_store_recovery_physics::PhysicalSourceSelection,
     stream: &worth_store_physical_integrity::VerifiedCheckpointStream,
     format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
-    byte_limit: u64,
     budget: &mut crate::orchestration::planning::manifest_entry_budget::ManifestEntryBudget,
     trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
     scratch: &mut u64,
@@ -127,10 +122,12 @@ fn observe(
         .transient(
             u64::from(format.page_size().bytes())
                 .checked_mul(3)
-                .ok_or(Denial::ManifestEntryLimit)?,
+                .ok_or(Denial::WalkLimits)?,
         )
         .map_err(|_| resident_denial(resident))?;
-    budget.consume(1).map_err(|_| Denial::ManifestEntryLimit)?;
+    let root_unit = budget
+        .charge_root()
+        .map_err(|_| Denial::ManifestEntryLimit)?;
     let observed = discovery
         .read_root_manifest(generation, u64::from(format.page_size().bytes()))
         .map_err(|failure| Denial::SourceRootRead {
@@ -149,39 +146,39 @@ fn observe(
     if observed_format != format {
         return Err(Denial::SourceRootFormatMismatch);
     }
-    let routes = selected_source_inventory::observe_routes_with_resident_budget(
-        discovery, &root, format, budget, trace, resident,
+    let routes = selected_source_inventory::observe_routes_held(
+        discovery, &root, format, &root_unit, budget, trace, resident,
     )
-    .map_err(|failure| Denial::SourceRoutes(failure.evidence()))?;
-    let entries = budget.remaining();
+    .map_err(|failure| routes_denial(failure, resident))?;
+    // Walking the head roster is one lookup, however many blocks hold it.
+    budget.consume(1).map_err(|_| Denial::ManifestEntryLimit)?;
+    // The lookup is charged; the walk is admitted as one view, of no more
+    // entries than recovery admits, whatever earlier phases left of them.
+    let entries = budget.admitted();
     // Even an empty remainder must produce the same typed resident denial,
     // before constructing walker metadata or encoding the source root.
     resident
         .transient(
             u64::from(format.page_size().bytes())
                 .checked_mul(2)
-                .ok_or(Denial::ManifestEntryLimit)?,
+                .ok_or(Denial::WalkLimits)?,
         )
         .map_err(|_| resident_denial(resident))?;
     let memory = resident.remaining();
     // Entry cardinality and resident storage are separate denial dimensions.
     // The physics owner preflights the declared head backing against memory.
     let maximum_heads = entries;
-    let limits =
-        ReleaseCustodyHeadWalkLimitsV1::new(entries.max(1), maximum_heads, byte_limit, memory, 16)
-            .ok_or(Denial::WalkLimits)?;
-    let roster = match VerifiedCheckpointReleaseHeadRosterV2::admit_checkpoint_source(
+    // Physics bounds the walk's shape by the verified roster, not by this
+    // budget. Each head block is read under its own ceiling, one page; the
+    // reader's allowance is the only byte budget, and it says when it ran out.
+    let roster = VerifiedCheckpointReleaseHeadRosterV2::admit_checkpoint_source(
         selection,
         stream,
         &root,
         format,
-        limits,
         maximum_heads,
         memory,
         |reference, maximum| {
-            budget
-                .consume(1)
-                .map_err(|_| ReadDenial::ManifestEntryLimit { reference })?;
             resident
                 .transient(u64::from(format.page_size().bytes()))
                 .map_err(|_| {
@@ -209,52 +206,13 @@ fn observe(
             copied.extend_from_slice(bytes);
             Ok(copied)
         },
-    ) {
-        Ok(roster) => roster,
-        Err(SelectedHeadRosterAdmissionDenial::Custody(
-            SelectedCustodyDenial::ResidentBoundExceeded { required, admitted },
-        )) => {
-            // Preserve the owner's requested local window alongside the
-            // already-live aggregate seed; do not relabel authority failures.
-            let _ = resident.transient(required);
-            return Err(Denial::ResidentBoundExceeded { required, admitted });
-        }
-        Err(SelectedHeadRosterAdmissionDenial::Custody(denial)) => {
-            return Err(Denial::Roster(denial))
-        }
-        Err(SelectedHeadRosterAdmissionDenial::Allocation { requested, cause }) => {
-            return Err(Denial::HeadWalk(WalkDenial::Allocation {
-                requested,
-                cause,
-            }));
-        }
-        Err(SelectedHeadRosterAdmissionDenial::Walk(denial)) => {
-            return Err(Denial::HeadWalk(match denial {
-                ReleaseCustodyHeadWalkDenial::Read(denial) => WalkDenial::Read(denial),
-                ReleaseCustodyHeadWalkDenial::Visit(()) => WalkDenial::EntryCountExceeded,
-                ReleaseCustodyHeadWalkDenial::Storage(denial) => WalkDenial::Read(denial),
-                ReleaseCustodyHeadWalkDenial::Format(denial) => WalkDenial::Format(denial),
-                ReleaseCustodyHeadWalkDenial::Root => WalkDenial::Root,
-                ReleaseCustodyHeadWalkDenial::DuplicateNode => WalkDenial::DuplicateNode,
-                ReleaseCustodyHeadWalkDenial::BoundExceeded => WalkDenial::BoundExceeded,
-                ReleaseCustodyHeadWalkDenial::Allocation { requested, cause } => {
-                    WalkDenial::Allocation { requested, cause }
-                }
-                ReleaseCustodyHeadWalkDenial::ResidentBoundExceeded { required, admitted } => {
-                    WalkDenial::ResidentBoundExceeded { required, admitted }
-                }
-            }));
-        }
-    };
+    )
+    .map_err(|denial| roster_refused(denial, resident))?;
     resident
         .transient(roster.admission_peak_resident_bytes())
         .map_err(|_| resident_denial(resident))?;
     resident
-        .bytes(
-            roster
-                .owned_heap_bytes()
-                .ok_or(Denial::ManifestEntryLimit)?,
-        )
+        .bytes(roster.owned_heap_bytes().ok_or(Denial::WalkLimits)?)
         .map_err(|_| resident_denial(resident))?;
     let controls = super::head_v2_controls::read_checkpoint_source_controls(
         discovery, &routes, &roster, format, budget, trace, scratch, resident,
@@ -268,10 +226,10 @@ fn observe(
     resident
         .transient(
             u64::try_from(decode_peak)
-                .map_err(|_| Denial::ManifestEntryLimit)?
+                .map_err(|_| Denial::WalkLimits)?
                 .checked_mul(3)
                 .and_then(|v| v.checked_add(u64::from(format.page_size().bytes())))
-                .ok_or(Denial::ManifestEntryLimit)?,
+                .ok_or(Denial::WalkLimits)?,
         )
         .map_err(|_| resident_denial(resident))?;
     roster
@@ -291,6 +249,70 @@ fn resident_denial(resident: &ResidentAllowance) -> Denial {
     Denial::ResidentBoundExceeded { required, admitted }
 }
 
+/// Why the source routes went unobserved: what observation says of them, or
+/// the room this phase had no allowance to hold. The second is never an
+/// entry limit.
+fn routes_denial(
+    failure: RoutesFailure<ResidentTraceDenial>,
+    resident: &ResidentAllowance,
+) -> Denial {
+    match failure {
+        RoutesFailure::Observation(failure) => Denial::SourceRoutes(failure.evidence()),
+        RoutesFailure::Held(ResidentTraceDenial::ResidentBoundExceeded) => {
+            resident_denial(resident)
+        }
+        // The head walk's allocation denial is the one this phase can name.
+        RoutesFailure::Held(ResidentTraceDenial::Allocation { requested, cause }) => {
+            Denial::HeadWalk(WalkDenial::Allocation { requested, cause })
+        }
+    }
+}
+
+/// What physics refused of the roster or of the walk under it.
+fn roster_refused(
+    denial: SelectedHeadRosterAdmissionDenial<ReadDenial>,
+    resident: &mut ResidentAllowance,
+) -> Denial {
+    match denial {
+        SelectedHeadRosterAdmissionDenial::Custody(
+            SelectedCustodyDenial::ResidentBoundExceeded { required, admitted },
+        ) => {
+            // Preserve the owner's requested local window alongside the
+            // already-live aggregate seed; do not relabel authority failures.
+            let _ = resident.transient(required);
+            Denial::ResidentBoundExceeded { required, admitted }
+        }
+        SelectedHeadRosterAdmissionDenial::Custody(denial) => Denial::Roster(denial),
+        // The verified roster counts more heads than recovery admits entries.
+        SelectedHeadRosterAdmissionDenial::HeadEntries { observed, admitted } => {
+            Denial::RosterEntryLimit { observed, admitted }
+        }
+        SelectedHeadRosterAdmissionDenial::Allocation { requested, cause } => {
+            Denial::HeadWalk(WalkDenial::Allocation { requested, cause })
+        }
+        SelectedHeadRosterAdmissionDenial::Walk(denial) => Denial::HeadWalk(match denial {
+            ReleaseCustodyHeadWalkDenial::Read(denial) => WalkDenial::Read(denial),
+            // The tree holds more heads than the verified roster counts.
+            ReleaseCustodyHeadWalkDenial::Visit(()) => WalkDenial::EntryCountExceeded,
+            ReleaseCustodyHeadWalkDenial::Storage(denial) => WalkDenial::Read(denial),
+            ReleaseCustodyHeadWalkDenial::Format(denial) => WalkDenial::Format(denial),
+            ReleaseCustodyHeadWalkDenial::Root => WalkDenial::Root,
+            ReleaseCustodyHeadWalkDenial::DuplicateNode => WalkDenial::DuplicateNode,
+            ReleaseCustodyHeadWalkDenial::BoundExceeded => WalkDenial::BoundExceeded,
+            // The bound is the verified roster's shape, not a budget of ours.
+            ReleaseCustodyHeadWalkDenial::NodeBound { observed, admitted } => {
+                WalkDenial::RosterBlockCeiling { observed, admitted }
+            }
+            ReleaseCustodyHeadWalkDenial::Allocation { requested, cause } => {
+                WalkDenial::Allocation { requested, cause }
+            }
+            ReleaseCustodyHeadWalkDenial::ResidentBoundExceeded { required, admitted } => {
+                WalkDenial::ResidentBoundExceeded { required, admitted }
+            }
+        }),
+    }
+}
+
 fn block(
     context: PlanningContext,
     basis: &ResolvedPlanningBasis,
@@ -305,3 +327,49 @@ fn block(
         PhysicalRecoveryPlanningDenial::SelectedReleaseHead(denial),
     )
 }
+
+/// The limit a denied observation names, with the value that passed it. A
+/// roster of more heads than recovery admits entries carries its own count.
+fn limit_of(
+    denial: &Denial,
+    limits: &crate::entry::PhysicalRecoveryLimitDeclaration,
+    remaining_bytes: u64,
+) -> Option<crate::entry::PhysicalRecoveryLimitFailure> {
+    match *denial {
+        Denial::RosterEntryLimit { observed, admitted } => {
+            Some(crate::entry::PhysicalRecoveryLimitFailure {
+                dimension: crate::entry::PhysicalRecoveryLimitDimension::ManifestEntries,
+                observed,
+                admitted,
+            })
+        }
+        _ => unread(denial)?.limit(limits, remaining_bytes),
+    }
+}
+
+/// What a denied observation says about recovery's limits.
+fn unread(denial: &Denial) -> Option<HistoricalFailure> {
+    use crate::entry::PhysicalRecoveryPageAdmissionDenial as Page;
+    use crate::entry::PhysicalRecoveryReleaseHeadControlDenial as Control;
+    match denial {
+        Denial::ManifestEntryLimit
+        | Denial::SourceRoutes(Page::ManifestEntryLimit)
+        | Denial::HeadWalk(WalkDenial::Read(ReadDenial::ManifestEntryLimit { .. }))
+        | Denial::Control(Control::ManifestEntryLimit) => Some(HistoricalFailure::ManifestEntries),
+        Denial::ObservationByteLimit | Denial::SourceRoutes(Page::ObservationByteLimit) => {
+            Some(HistoricalFailure::ObservationBytes(None))
+        }
+        Denial::SourceRootRead { failure, .. }
+        | Denial::HeadWalk(WalkDenial::Read(ReadDenial::Media { failure, .. })) => {
+            Some(discovery_failure(failure.clone()))
+        }
+        Denial::Control(Control::ControlRead { denial, .. }) => {
+            Some(HistoricalFailure::from(denial.clone()))
+        }
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+#[path = "head_v2_tests.rs"]
+mod tests;

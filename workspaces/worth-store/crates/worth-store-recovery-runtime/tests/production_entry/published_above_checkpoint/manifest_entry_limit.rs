@@ -1,77 +1,44 @@
-//! Ordering the retirements above the checkpoint reads the manifests of every
-//! root generation among them. A request that admits too few manifest entries
-//! for that walk must be told so, not that a WAL image is an invalid target.
+//! Ordering the retirements above the checkpoint charges what every root
+//! step among them declares it wrote. A request that admits one manifest
+//! entry too few must be told so, with the count the refused charge reached,
+//! and the same request with that one entry more recovers.
 
 use super::super::*;
 use pending_wal_world::{PendingWalWorld, Tail, Workload};
 use worth_store::physical_runtime::ServingPhysicalRuntime;
 use worth_store_recovery_runtime::{
-    PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension, PhysicalRecoveryOutcome,
-    PhysicalRecoveryPageAdmissionDenial, PhysicalRecoveryPlanningDenial, WorthStoreRecovery,
+    PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure, PhysicalRecoveryOutcome,
+    WorthStoreRecovery,
 };
 
-/// The entries the two-chunk worlds admit; the idle world recovers under
-/// them.
-const SUFFICIENT: u64 = 4096;
+/// What the idle world needs: three two-chunk objects published above the
+/// checkpoint, no release. Fixed, not measured: the charge counts what the
+/// workload wrote and not which blocks its records landed in, and a measured
+/// need alone cannot tell whether planning counted the entries discovery
+/// charged before it.
+pub(super) const IDLE_NEED: u64 = 166;
 
-/// What the idle world needs. Fixed as well as measured: a measured need
-/// follows whatever planning counts, so alone it cannot tell whether
-/// planning counted the entries discovery charged before it.
-const IDLE_NEED: u64 = 524;
+/// What the released world needs: one release completed above the
+/// checkpoint and its successor pending.
+pub(super) const RELEASED_NEED: u64 = 168;
 
-/// A limit the released world's walk runs out under, on a charge of one
-/// entry.
-const RELEASED_WALK_LIMIT: u64 = 193;
+/// What the first reopen needs where two releases completed above a
+/// checkpoint that heads the first of them, and its third batch is pending:
+/// the retirements among them differ in the free extents they leave.
+const ORDERED_NEED: u64 = 377;
 
-/// The limit the released world's walk fits under exactly, which leaves no
-/// entry for the source root its drop reads next.
-const RELEASED_SOURCE_ROOT_LIMIT: u64 = 209;
-
-/// Whether planning succeeds under this many entries. Every block is under
-/// the need, whichever phase raised it and whether or not it named a limit.
-fn plans(root: &Path, manifest_entries: u64) -> bool {
-    let selected = certified_release_serving::request_with_manifest_entries(root, manifest_entries)
-        .admit()
-        .ok()
-        .and_then(|admitted| admitted.discover().ok())
-        .and_then(|discovered| discovered.select().ok());
-    match selected.map(|selected| selected.plan()) {
-        None => false,
-        Some(Err(PhysicalRecoveryOutcome::Blocked(blocked))) => {
-            assert_eq!(blocked.recovery_effects(), 0);
-            false
-        }
-        Some(Err(outcome)) => panic!("planning neither blocked nor planned: {outcome:?}"),
-        Some(Ok(planned)) => {
-            let PhysicalRecoveryOutcome::Refused(cancelled) = planned.cancel_before_execution()
-            else {
-                panic!("a measured plan must cancel without execution")
-            };
-            assert_eq!(cancelled.recovery_effects(), 0);
-            true
-        }
-    }
+/// A release completed above the checkpoint: the walk runs for its drop,
+/// which then reads the source root it released from.
+pub(super) fn released_world() -> PendingWalWorld {
+    let world = pending_wal_world::first();
+    world.kill_successor_of_first_object();
+    world
 }
 
-/// The fewest manifest entries planning succeeds under. Planning has no
-/// effect, so the same media answers every probe.
-fn planning_need(root: &Path) -> u64 {
-    assert!(plans(root, SUFFICIENT));
-    let (mut denied, mut admitted) = (0, SUFFICIENT);
-    while admitted - denied > 1 {
-        let probe = denied + (admitted - denied) / 2;
-        if plans(root, probe) {
-            admitted = probe;
-        } else {
-            denied = probe;
-        }
-    }
-    admitted
-}
-
-/// The count the refused charge would have reached, from a recovery that
-/// must block on the manifest-entry limit it was admitted under.
-fn refused_at(world: &PendingWalWorld, admitted: u64, stage: &str) -> u64 {
+/// One entry short of the need is that limit, and the refused charge is the
+/// one that reaches the need. The blocked attempt has no effect.
+fn assert_one_entry_short_reports_the_limit(world: &PendingWalWorld, need: u64, stage: &str) {
+    let admitted = need - 1;
     let outcome = WorthStoreRecovery::recover(
         certified_release_serving::request_with_manifest_entries(world.root(), admitted),
     );
@@ -87,53 +54,19 @@ fn refused_at(world: &PendingWalWorld, admitted: u64, stage: &str) -> u64 {
         evidence.counters.manifest_entries,
     );
     assert_eq!(
-        (blocked.kind, &evidence.planning_denial),
-        (
-            PhysicalRecoveryBlockKind::PageAdmission,
-            &Some(PhysicalRecoveryPlanningDenial::Page(
-                PhysicalRecoveryPageAdmissionDenial::ManifestEntryLimit
-            ))
-        ),
-        "{stage}: running out of {admitted} entries is that limit, not a denied target",
+        evidence.limit,
+        Some(PhysicalRecoveryLimitFailure {
+            dimension: PhysicalRecoveryLimitDimension::ManifestEntries,
+            observed: need,
+            admitted,
+        }),
+        "{stage}: denial={:?}",
+        evidence.planning_denial,
     );
-    let limit = evidence.limit.expect("typed manifest-entry limit");
-    assert_eq!(
-        limit.dimension,
-        PhysicalRecoveryLimitDimension::ManifestEntries
-    );
-    assert_eq!(limit.admitted, admitted);
-    limit.observed
 }
 
-/// Just under the need, the walk is the consumer that runs out: the selected
-/// inventory before it fit, and with no release above the checkpoint nothing
-/// after the walk reads a manifest. Answers the need.
-fn assert_one_entry_short_reports_the_limit(world: &PendingWalWorld, stage: &str) -> u64 {
-    let need = planning_need(world.root());
-    let mut crossings = Vec::new();
-    for admitted in [need - 1, need - 2, need - 3] {
-        let observed = refused_at(world, admitted, stage);
-        // The refused charge crossed the limit without passing the need, and
-        // one entry short it is the charge that reaches the need.
-        assert!(
-            admitted < observed && observed <= need,
-            "{stage}: observed {observed} under {admitted} of {need}",
-        );
-        if admitted + 1 == need {
-            assert_eq!(observed, need, "{stage}");
-        }
-        crossings.push(observed);
-    }
-    // The walk ends on the records of one routing leaf, charged together,
-    // so the two shorter limits fall inside that one charge. The
-    // report names the count the charge would have reached, not one more
-    // than whichever limit refused it.
-    assert_eq!(crossings[1], crossings[2], "{stage}: {crossings:?}");
-    need
-}
-
-/// Recovers under exactly the need. The blocked attempts left the media as
-/// the kill did, and what planning needed is all recovery needs.
+/// Recovers under exactly the need. The blocked attempt left the media as
+/// the kill did.
 fn serve_under(world: &PendingWalWorld, need: u64, stage: &str) -> ServingPhysicalRuntime {
     let outcome = WorthStoreRecovery::recover(
         certified_release_serving::request_with_manifest_entries(world.root(), need),
@@ -151,43 +84,33 @@ fn serve_under(world: &PendingWalWorld, need: u64, stage: &str) -> ServingPhysic
 /// No release walked the history: the walk runs only for the retired pages.
 #[test]
 fn a_walk_for_retired_pages_one_manifest_entry_short_reports_that_limit() {
+    let stage = "published above the checkpoint";
     let world =
         pending_wal_world::published_above_checkpoint(Workload::ThreeSmallObjects, Tail::Idle);
-    let need = assert_one_entry_short_reports_the_limit(&world, "published above the checkpoint");
-    assert_eq!(
-        need, IDLE_NEED,
-        "the need counts the entries discovery charged before planning",
-    );
-    let serving = serve_under(&world, need, "published above the checkpoint");
+    assert_one_entry_short_reports_the_limit(&world, IDLE_NEED, stage);
+    let serving = serve_under(&world, IDLE_NEED, stage);
     world.assert_objects_read_back(&serving);
     serving.close();
 }
 
-/// A release completed above the checkpoint: the walk runs for its drop,
-/// which then reads the source root it released from. The limits these
-/// tests admit are fixed, not measured against a need.
-fn released_world() -> PendingWalWorld {
-    let world = pending_wal_world::first();
-    world.kill_successor_of_first_object();
-    world
+#[test]
+fn a_historical_release_one_manifest_entry_short_reports_that_limit() {
+    let stage = "released above the checkpoint";
+    let world = released_world();
+    assert_one_entry_short_reports_the_limit(&world, RELEASED_NEED, stage);
+    serve_under(&world, RELEASED_NEED, stage).close();
 }
 
 #[test]
-fn a_walk_for_a_historical_release_out_of_manifest_entries_reports_that_limit() {
-    let observed = refused_at(
-        &released_world(),
-        RELEASED_WALK_LIMIT,
-        "the walk for a release above the checkpoint",
+fn an_ordered_release_above_a_head_checkpoint_one_manifest_entry_short_reports_that_limit() {
+    let stage = "ordered release above a head checkpoint";
+    let world = pending_successor_above_history::ordered_release_above_a_head_checkpoint();
+    assert_one_entry_short_reports_the_limit(&world, ORDERED_NEED, stage);
+    let outcome = WorthStoreRecovery::recover(
+        certified_release_serving::request_with_manifest_entries(world.root(), ORDERED_NEED),
     );
-    assert_eq!(observed, RELEASED_WALK_LIMIT + 1);
-}
-
-#[test]
-fn a_source_root_of_a_historical_release_out_of_manifest_entries_reports_that_limit() {
-    let observed = refused_at(
-        &released_world(),
-        RELEASED_SOURCE_ROOT_LIMIT,
-        "the source root of a release above the checkpoint",
+    assert!(
+        matches!(outcome, PhysicalRecoveryOutcome::Recovered(_)),
+        "{stage}: {ORDERED_NEED} entries must recover: {outcome:?}",
     );
-    assert_eq!(observed, RELEASED_SOURCE_ROOT_LIMIT + 1);
 }

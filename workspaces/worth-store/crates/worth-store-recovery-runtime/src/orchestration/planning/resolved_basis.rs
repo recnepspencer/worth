@@ -96,61 +96,6 @@ pub(super) fn resolve(
     mut context: PlanningContext,
     admitted: AdmittedPlanningBasis,
 ) -> Result<(PlanningContext, ResolvedPlanningBasis), PhysicalRecoveryOutcome> {
-    let observation_targets = admitted.redo.observation_targets();
-    let read_ceiling = match page_observation::artifact_read_ceiling(
-        context.selection.page_facts().placements(),
-        &observation_targets,
-        admitted.remaining_manifest_entries,
-        context.selection.root().retained_previous().is_some(),
-    ) {
-        Ok(ceiling) => ceiling,
-        Err(page_observation::ArtifactReadCeilingDenial::ManifestEntriesExhausted) => {
-            let admitted_entries = context.limits.manifest_entries;
-            let planning_counters = counters::after_fates(
-                &admitted.sample,
-                &admitted.fates,
-                PhysicalRedoPlanCounters::default(),
-                0,
-                0,
-            );
-            return Err(context.block_with_planning_attempt_denial(
-                PhysicalRecoveryBlockKind::PageAdmission,
-                planning_counters,
-                "selected-source-inventory",
-                Some(PhysicalRecoveryLimitFailure {
-                    dimension: PhysicalRecoveryLimitDimension::ManifestEntries,
-                    observed: admitted_entries.saturating_add(1),
-                    admitted: admitted_entries,
-                }),
-                PhysicalRecoveryPlanningDenial::Page(
-                    PageObservationFailure::ManifestEntryLimit.evidence(),
-                ),
-            ));
-        }
-        Err(page_observation::ArtifactReadCeilingDenial::Overflow) => {
-            let admitted_entries = context.limits.manifest_entries;
-            let planning_counters = counters::after_fates(
-                &admitted.sample,
-                &admitted.fates,
-                PhysicalRedoPlanCounters::default(),
-                0,
-                0,
-            );
-            return Err(context.block_with_planning_attempt_denial(
-                PhysicalRecoveryBlockKind::PageAdmission,
-                planning_counters,
-                "selected-source-inventory",
-                Some(PhysicalRecoveryLimitFailure {
-                    dimension: PhysicalRecoveryLimitDimension::ManifestEntries,
-                    observed: u64::MAX,
-                    admitted: admitted_entries,
-                }),
-                PhysicalRecoveryPlanningDenial::Page(
-                    PageObservationFailure::ManifestEntryLimit.evidence(),
-                ),
-            ));
-        }
-    };
     let remaining_observation_bytes = context
         .limits
         .observation_bytes
@@ -203,7 +148,6 @@ pub(super) fn resolve(
         context.selection.page_facts().placements(),
         &admitted.redo,
         admitted.format,
-        read_ceiling.addressed_reads,
         context.limits.manifest_entries,
         admitted.remaining_manifest_entries,
         remaining_observation_bytes,
@@ -285,13 +229,13 @@ pub(super) fn resolve(
         .map(|truth| (truth.next_segment, truth.page_capacity));
     let redo = match admitted.redo.plan(observations) {
         Ok(plan) => plan,
-        Err(denial) => return Err(context.redo_denial_block(denial_counters, None, denial)),
+        Err(denial) => return Err(context.redo_denial_block(denial_counters, denial)),
     };
     let redo = match redo
         .admit_inline_allocation_truth(context.selection.page_facts().placements(), inline_truth)
     {
         Ok(redo) => redo,
-        Err(denial) => return Err(context.redo_denial_block(denial_counters, None, denial)),
+        Err(denial) => return Err(context.redo_denial_block(denial_counters, denial)),
     };
     let fates = reconcile_materialized_operation_fates(admitted.fates, &redo);
     Ok((
@@ -340,6 +284,15 @@ fn observation_limit(
                 .unwrap_or_else(|| context.limits.manifest_entries.saturating_add(1)),
             admitted: context.limits.manifest_entries,
         }),
+        // The walk stops at the first step its scratch cannot hold, and so
+        // needed at least one byte more than was admitted.
+        PageObservationFailure::StagingByteLimit { at_least } => {
+            Some(PhysicalRecoveryLimitFailure {
+                dimension: PhysicalRecoveryLimitDimension::StagingBytes,
+                observed: (*at_least).max(context.limits.staging_bytes.saturating_add(1)),
+                admitted: context.limits.staging_bytes,
+            })
+        }
         _ => None,
     }
 }

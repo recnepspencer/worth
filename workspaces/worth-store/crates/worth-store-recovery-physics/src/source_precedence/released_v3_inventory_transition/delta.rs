@@ -66,11 +66,9 @@ pub(super) fn validate_arenas(
                 .map(|candidate| next.max(candidate))
         })
         .ok_or(Denial::InvalidDelta)?;
-    if next
-        .checked_sub(first)
-        .is_none_or(|count| count > maximum_entries)
-    {
-        return Err(Denial::BoundExceeded);
+    if next - first > maximum_entries {
+        let past = super::ExceededRootHistoryBound::entries(next - first, maximum_entries);
+        return Err(Denial::BoundExceeded(past));
     }
     for range in &ranges {
         if range.end() > source.free.arena_capacity()

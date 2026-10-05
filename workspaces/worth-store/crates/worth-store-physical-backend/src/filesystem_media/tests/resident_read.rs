@@ -8,7 +8,8 @@ use super::super::{
 };
 use crate::recovery_media::{
     AdmittedRecoveryFilesystemMedia, BoundedRecoveryFilesystemDiscovery,
-    RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact, RecoveryDiscoveryFailure,
+    RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope,
+    RecoveryDiscoveryFailure,
 };
 
 #[derive(Debug, PartialEq, Eq)]
@@ -83,6 +84,50 @@ fn whole_reads_allocate_after_observed_length_and_preserve_c4_counters() {
     assert_eq!(discovery.counters().bytes_read, 14);
     assert_eq!(discovery.counters().addressed_artifacts_read, 2);
     assert_eq!(discovery.counters().fixed_slots_read, 0);
+}
+
+/// A whole artifact longer than the ceiling its caller named passed that
+/// ceiling, however few bytes the reader has left. Only an artifact within
+/// its ceiling runs the reader out of bytes.
+#[test]
+fn a_whole_artifact_past_its_ceiling_is_never_the_readers_own_limit() {
+    use RecoveryDiscoveryByteLimitScope::{Observation, Requested};
+    let address = RecordArtifactFile::RootManifest { generation: 6 };
+    // Seven bytes on media, read under (ceiling, reader bytes).
+    for (ceiling, reader, observed, admitted, scope) in [
+        (6, 32, 7, 6, Requested),
+        (6, 4, 7, 6, Requested),
+        (6, 6, 7, 6, Requested),
+        (7, 6, 7, 6, Observation),
+        (8, 4, 7, 4, Observation),
+    ] {
+        let refused = RecoveryDiscoveryFailure::ByteLimitExceeded {
+            observed,
+            admitted,
+            scope,
+        };
+        let (_parent, _observer, mut discovery) = discovery(
+            |root| write_root_artifact(root, address, b"present"),
+            4,
+            reader,
+        );
+        assert_eq!(
+            discovery.read_root_manifest(6, ceiling).err(),
+            Some(refused.clone()),
+            "addressed read under ceiling {ceiling} with {reader} bytes",
+        );
+        let allocated = discovery.read_record_artifact_with_allocator(address, ceiling, |_| {
+            Ok::<_, DeniedAllocation>(Vec::new())
+        });
+        assert!(
+            matches!(
+                &allocated,
+                Err(RecoveryDiscoveryAllocationFailure::Discovery(failure)) if *failure == refused
+            ),
+            "allocated read under ceiling {ceiling} with {reader} bytes: {allocated:?}",
+        );
+        assert_eq!(discovery.counters().bytes_read, 0);
+    }
 }
 
 #[test]
@@ -300,6 +345,7 @@ fn extent_relative_range_is_admitted_before_allocator_or_positioned_read() {
     assert_eq!(discovery.counters().addressed_artifacts_read, 1);
 }
 
+mod range_refusal;
 mod record_storage;
 mod wal_context;
 mod wal_path;

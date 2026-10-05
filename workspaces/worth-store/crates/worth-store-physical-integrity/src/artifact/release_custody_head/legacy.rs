@@ -164,6 +164,7 @@ fn map_denial<ReadError, VisitError>(
         Denial::Format(error) => Denial::Format(error),
         Denial::Root => Denial::Root,
         Denial::DuplicateNode => Denial::DuplicateNode,
+        Denial::NodeBound { observed, admitted } => Denial::NodeBound { observed, admitted },
         Denial::ResidentBoundExceeded { required, admitted } => {
             Denial::ResidentBoundExceeded { required, admitted }
         }

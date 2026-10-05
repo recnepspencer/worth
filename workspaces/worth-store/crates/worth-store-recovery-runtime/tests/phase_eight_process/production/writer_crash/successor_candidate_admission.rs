@@ -21,7 +21,7 @@ use super::successor_candidate_media::{
 fn successor_candidate_denial_is_typed_and_residency_is_admitted_before_allocation() {
     let world = candidate_world(0xC8_09_00_27, 0xC8_19_00_27);
     let generation = world.writer.history.current_root_generation().unwrap() + 1;
-    assert_resident_denial_before_candidate_read(&world, generation);
+    assert_oversized_candidate_is_damage_before_its_read(&world, generation);
     let conflict_root = world.parent_path().join("typed-successor-conflict");
     copy_directory(&world.writer.root, &conflict_root);
     mutate_candidate(&conflict_root, generation, "inflated");
@@ -100,16 +100,25 @@ fn successor_candidate_denial_is_typed_and_residency_is_admitted_before_allocati
     assert_exact_limits(&world, exact_peak, exact_observation);
 }
 
-fn assert_resident_denial_before_candidate_read(world: &ProcessWorld, generation: u64) {
+/// A candidate root is at most one page. One as long as all the memory
+/// recovery admits is damage, not that memory running out: no limit is named,
+/// and it is refused on its length, before a byte of it is read or held.
+fn assert_oversized_candidate_is_damage_before_its_read(world: &ProcessWorld, generation: u64) {
     const RESIDENT_LIMIT: u64 = 64 << 20;
-    let root = world.parent_path().join("candidate-read-resident-denied");
+    let root = world.parent_path().join("candidate-read-oversized");
     copy_directory(&world.writer.root, &root);
     let candidate = candidate_root_path(&root, generation);
     let original_length = std::fs::metadata(&candidate).unwrap().len();
     let original_media = raw_media_snapshot(&root);
+    let (_, format) = worth_store_physical_format::DurablePhysicalRootManifest::decode(
+        &std::fs::read(&candidate).unwrap(),
+        u16::MAX,
+    )
+    .unwrap();
+    let page = u64::from(format.page_size().bytes());
     // Keep the genuine writer's candidate prefix, but make its unselected
-    // file larger than the remaining resident window. set_len does not build
-    // a 64 MiB test buffer; the production backend must stop at metadata.
+    // file as long as the whole resident limit. set_len does not build a
+    // 64 MiB test buffer; the production backend must stop at metadata.
     let file = std::fs::OpenOptions::new()
         .write(true)
         .open(&candidate)
@@ -122,26 +131,37 @@ fn assert_resident_denial_before_candidate_read(world: &ProcessWorld, generation
     ) {
         Err(PhysicalRecoveryOutcome::Blocked(blocked)) => blocked,
         Ok(_) => panic!("oversized candidate must deny before its buffer allocation"),
-        Err(other) => panic!("candidate resident admission must block: {other:?}"),
+        Err(other) => panic!("an oversized candidate must block: {other:?}"),
     };
     assert_eq!(blocked.recovery_effects(), 0);
     let evidence = blocked.evidence();
-    assert!(matches!(evidence.planning_denial, Some(
-        PhysicalRecoveryPlanningDenial::SuccessorCandidate(
-            PhysicalRecoverySuccessorCandidateDenial::RecoveryMemoryBytes {
-                artifact: RecordArtifactFile::RootManifest { generation: observed_generation },
-                generation: denial_generation,
-                observed,
-                admitted: RESIDENT_LIMIT,
-            }
+    let Some(PhysicalRecoveryPlanningDenial::SuccessorCandidate(
+        PhysicalRecoverySuccessorCandidateDenial::Discovery {
+            artifact,
+            generation: denial_generation,
+            failure:
+                RecoveryDiscoveryFailure::ByteLimitExceeded {
+                    observed,
+                    admitted,
+                    scope,
+                },
+        },
+    )) = evidence.planning_denial
+    else {
+        panic!(
+            "an oversized candidate root is damage: {:?}",
+            evidence.planning_denial
         )
-    ) if observed_generation == generation && denial_generation == generation && observed > RESIDENT_LIMIT));
-    let limit = evidence.limit.unwrap();
+    };
     assert_eq!(
-        limit.dimension,
-        PhysicalRecoveryLimitDimension::RecoveryMemoryBytes
+        (artifact, denial_generation),
+        (RecordArtifactFile::RootManifest { generation }, generation)
     );
-    assert_eq!(limit.admitted, RESIDENT_LIMIT);
+    // The length is the file's and the ceiling the root's own, under every
+    // budget of this recovery.
+    assert_eq!(scope, RecoveryDiscoveryByteLimitScope::Requested);
+    assert_eq!((observed, admitted), (RESIDENT_LIMIT, page));
+    assert_eq!(evidence.limit, None, "damage names no limit");
     let counters = evidence.planning_counters.unwrap();
     assert_eq!(counters.successor_candidate_reads(), 0);
     assert_eq!(counters.successor_candidate_bytes(), 0);

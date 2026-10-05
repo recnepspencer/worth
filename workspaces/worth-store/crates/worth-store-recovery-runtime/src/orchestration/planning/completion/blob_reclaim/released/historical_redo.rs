@@ -66,15 +66,10 @@ pub(in crate::orchestration::planning::completion) fn verify_historical(
             {
                 return Err(HistoricalFailure::Invalid);
             }
+            let root_unit = budget.charge_root()?;
             let inventory = selected_source_inventory::observe_with_budget(
-                discovery,
-                root,
-                format,
-                budget,
-                u64::from(format.page_size().bytes()),
-                trace,
-            )
-            .map_err(|_| HistoricalFailure::Invalid)?;
+                discovery, root, format, &root_unit, budget, trace,
+            )?;
             if <[u8; 32]>::from(Sha256::digest(inventory.free_space.encode(format)))
                 != custody.source_free_space_frame_sha256()
             {
@@ -229,15 +224,10 @@ pub(in crate::orchestration::planning::completion) fn verify_historical(
             if route.is_none() {
                 return Err(HistoricalFailure::Invalid);
             }
+            let root_unit = budget.charge_root()?;
             let inventory = selected_source_inventory::observe_with_budget(
-                discovery,
-                root,
-                format,
-                budget,
-                u64::from(format.page_size().bytes()),
-                trace,
-            )
-            .map_err(|_| HistoricalFailure::Invalid)?;
+                discovery, root, format, &root_unit, budget, trace,
+            )?;
             Ok((root.clone(), inventory))
         },
     )?;
@@ -266,7 +256,7 @@ pub(in crate::orchestration::planning::completion) fn verify_historical(
     {
         return Err(context.redo_block(basis.planning_counters(), None));
     }
-    let Some((transition, input_scratch)) = verified_historical_release_transition(
+    let Ok((transition, input_scratch)) = verified_historical_release_transition(
         &historical_source.0,
         &historical_source.1,
         &source_routes,

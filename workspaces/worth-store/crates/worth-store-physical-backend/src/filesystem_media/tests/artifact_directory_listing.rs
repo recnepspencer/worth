@@ -188,6 +188,12 @@ fn injected_artifact_listing_denial_keeps_entries_intact_and_same_owner_retries(
 fn long_local_artifact_directory_preserves_unicode_and_near_maximum_names() {
     use std::os::windows::ffi::OsStrExt;
 
+    if !super::allocation_probe::alone_in_its_process(
+        module_path!(),
+        "long_local_artifact_directory_preserves_unicode_and_near_maximum_names",
+    ) {
+        return;
+    }
     let parent = tempfile::tempdir().unwrap();
     let mut root = parent.path().to_path_buf();
     for component in ["a", "b", "c", "d", "e"] {

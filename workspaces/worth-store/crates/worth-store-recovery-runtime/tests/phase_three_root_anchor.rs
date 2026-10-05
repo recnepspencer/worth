@@ -12,7 +12,7 @@ use worth_store_recovery_physics::{
     PhysicalRootCandidateDenial, PhysicalRootSelectionDenial, SelectedPhysicalRootRole,
 };
 use worth_store_recovery_runtime::{
-    PhysicalRecoveryOutcome, PhysicalRecoveryRootProtocolArtifact,
+    PhysicalRecoveryLimits, PhysicalRecoveryOutcome, PhysicalRecoveryRootProtocolArtifact,
     PhysicalRecoveryRootProtocolDenial, PhysicalRecoverySourceDenial,
 };
 
@@ -290,6 +290,39 @@ fn damaged_current_survives_a_later_previous_slot_media_failure() {
             denial,
             PhysicalRecoverySourceDenial::MediaObservation { .. }
         )));
+}
+
+/// Discovery's reader counts no reads of its own: each count the caller
+/// admits is counted before the read it bounds. At the smallest counts a
+/// caller can admit, both selectors, the previous root and the fallback
+/// catalog are still read, and the previous root is selected.
+#[test]
+fn the_smallest_admitted_counts_still_read_the_selectors_and_the_fallback_catalog() {
+    let parent = tempfile::tempdir().unwrap();
+    let root = parent.path().join("exact-anchor");
+    let store = initialize_store(&root);
+    publish_synthetic_genesis(&root, store);
+    publish_previous_and_anchor(&root, store, 2);
+    // Discovery admits no fewer than the two selectors; one of every other
+    // count it reads under.
+    let mut declaration = limit_declaration(2, 1, 8 * 1024);
+    declaration.manifest_entries = 1;
+    declaration.checkpoint_candidates = 1;
+    let selected =
+        admitted_recovery_with_limits(&root, PhysicalRecoveryLimits::admit(declaration).unwrap())
+            .discover()
+            .unwrap()
+            .select()
+            .unwrap();
+    assert_eq!(
+        selected.root_role(),
+        SelectedPhysicalRootRole::PreviousFallback
+    );
+    let counters = selected.discovery_counters();
+    assert_eq!(counters.previous_selector_integrity_admissions, 1);
+    assert_eq!(counters.previous_root_integrity_admissions, 1);
+    assert_eq!(counters.bootstrap_integrity_admissions, 1);
+    let _ = selected.cancel_before_reconstruction();
 }
 
 fn publish_previous_and_anchor(

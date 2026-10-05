@@ -14,6 +14,9 @@ use worth_store_physical_format::{
 };
 use worth_store_wal::LogSequenceNumber;
 
+#[path = "bound_tests.rs"]
+mod bounds;
+
 fn record(number: u64) -> PersistedRecordIdentity {
     PersistedRecordIdentity::new([4; 16], number).unwrap()
 }

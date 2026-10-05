@@ -20,6 +20,9 @@ mod addressed;
 #[cfg(test)]
 #[path = "head_replay/budget_tests.rs"]
 mod budget_tests;
+#[path = "head_replay/exceeded_bound.rs"]
+mod exceeded_bound;
+pub use exceeded_bound::{ExceededHeadReplayBound, HeadReplayBound};
 #[path = "head_replay/selected_path.rs"]
 mod selected_path;
 #[path = "head_replay/terminal_retirement.rs"]
@@ -32,8 +35,14 @@ pub enum SelectedReleaseHeadReplayDenial {
     NotAdmittedTerminalHeadRetirement,
     SourceRoot,
     SourcePath,
-    BoundExceeded,
+    BoundExceeded(ExceededHeadReplayBound),
     Read,
+}
+
+impl From<ExceededHeadReplayBound> for SelectedReleaseHeadReplayDenial {
+    fn from(past: ExceededHeadReplayBound) -> Self {
+        Self::BoundExceeded(past)
+    }
 }
 
 /// Borrowed proof of the exact WAL-chosen head effect. It can only borrow a

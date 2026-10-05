@@ -179,3 +179,43 @@ fn non_tail_page_generation_must_advance_by_one() {
         Err(HistoricalFailure::Invalid)
     ));
 }
+
+#[test]
+fn collecting_one_placements_pages_is_one_lookup_charged_before_its_reads() {
+    use crate::orchestration::planning::manifest_entry_budget::ManifestEntryBudget;
+    use crate::orchestration::planning::selected_world_fixture::selected_world;
+    const ADMITTED: u64 = 4_096;
+    let placement = coordinates().source;
+    let collect = |name: &str, observed: u64| {
+        selected_world(name, 4).read(|source| {
+            let mut budget = ManifestEntryBudget::new(ADMITTED, observed);
+            let mut trace = Default::default();
+            let outcome = super::collect(
+                source.discovery,
+                source.root,
+                &mut budget,
+                &mut trace,
+                &mut 0,
+                source.format,
+                placement,
+                u64::MAX,
+                0,
+                1,
+                None,
+            )
+            .map(|_| ());
+            let reads = source.discovery.counters().addressed_artifacts_read;
+            (outcome, budget.remaining(), reads)
+        })
+    };
+    // None left: refused as that limit, before any read.
+    assert_eq!(
+        collect("inline-lookup-none-left", ADMITTED),
+        (Err(HistoricalFailure::ManifestEntries), 0, 0)
+    );
+    // One left pays for the lookup, however many entries its leaves hold. No
+    // page of this world carries that generation, so it verifies nothing.
+    let (outcome, remaining, reads) = collect("inline-lookup-one-left", ADMITTED - 1);
+    assert_eq!((outcome, remaining), (Err(HistoricalFailure::Invalid), 0));
+    assert!(reads > 0, "the lookup read the segment tree");
+}

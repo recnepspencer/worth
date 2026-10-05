@@ -20,12 +20,30 @@ pub(in crate::orchestration::planning) struct SuccessorCandidateObservationAttem
         crate::entry::PhysicalRecoveryRootProtocolCounters,
 }
 
+/// What an attempt with no observation bytes left reports. No reader can
+/// be opened on nothing, so this says what one would have: its own budget
+/// ran out at the first byte of the candidate root. That is a limit, not an
+/// oversized root.
+pub(in crate::orchestration::planning) fn out_of_observation_bytes(
+    selected_generation: u64,
+) -> PhysicalRecoverySuccessorCandidateDenial {
+    let generation = selected_generation.saturating_add(1);
+    PhysicalRecoverySuccessorCandidateDenial::Discovery {
+        artifact: worth_store_physical_format::RecordArtifactFile::RootManifest { generation },
+        generation,
+        failure: worth_store::physical_runtime::RecoveryDiscoveryFailure::ByteLimitExceeded {
+            observed: 1,
+            admitted: 0,
+            scope: worth_store::physical_runtime::RecoveryDiscoveryByteLimitScope::Observation,
+        },
+    }
+}
+
 pub(in crate::orchestration::planning) fn observe(
     media: AdmittedRecoveryFilesystemMedia,
     selected: &DurablePhysicalRootManifest,
     format: PhysicalRecordFormatDeclaration,
     budget: &mut ManifestEntryBudget,
-    maximum_manifest_entries: u64,
     maximum_bytes: u64,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
     allowance: &mut PlanningResidentAllowance,
@@ -33,35 +51,14 @@ pub(in crate::orchestration::planning) fn observe(
     AdmittedRecoveryFilesystemMedia,
     SuccessorCandidateObservationAttempt,
 ) {
-    let Some(maximum_entries) = budget.remaining().checked_add(2) else {
-        return failed(
-            media,
-            PhysicalRecoverySuccessorCandidateDenial::ManifestEntryLimit {
-                artifact: worth_store_physical_format::RecordArtifactFile::RootManifest {
-                    generation: selected.generation().saturating_add(1),
-                },
-                generation: selected.generation().saturating_add(1),
-                observed: maximum_manifest_entries.saturating_add(1),
-                admitted: maximum_manifest_entries,
-            },
-        );
-    };
     if maximum_bytes == 0 {
-        let artifact = worth_store_physical_format::RecordArtifactFile::RootManifest {
-            generation: selected.generation().saturating_add(1),
-        };
-        return failed(media, PhysicalRecoverySuccessorCandidateDenial::Discovery {
-            artifact,
-            generation: selected.generation().saturating_add(1),
-            failure: worth_store::physical_runtime::RecoveryDiscoveryFailure::ByteLimitExceeded {
-                observed: 1,
-                admitted: 0,
-                scope: worth_store::physical_runtime::RecoveryDiscoveryByteLimitScope::Requested,
-            },
-        });
+        return failed(media, out_of_observation_bytes(selected.generation()));
     }
     let mut discovery = media
-        .bounded_discovery(maximum_entries, maximum_bytes)
+        .bounded_discovery(
+            crate::orchestration::reader_limit::UNCOUNTED_READS,
+            maximum_bytes,
+        )
         .expect("remaining recovery observation limits are nonzero");
     let mut materialization = CandidateMaterialization::default();
     let mut root_protocol_counters = crate::entry::PhysicalRecoveryRootProtocolCounters::default();
@@ -70,7 +67,6 @@ pub(in crate::orchestration::planning) fn observe(
         selected,
         format,
         budget,
-        maximum_bytes,
         &mut materialization,
         &mut root_protocol_counters,
         integrity_trace,

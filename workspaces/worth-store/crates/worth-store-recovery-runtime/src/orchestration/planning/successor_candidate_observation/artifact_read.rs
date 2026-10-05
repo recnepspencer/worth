@@ -1,12 +1,10 @@
-use worth_store::physical_runtime::{
-    BoundedRecoveryFilesystemDiscovery, ObservedRecoveryArtifact, RecoveryDiscoveryByteLimitScope,
-    RecoveryDiscoveryFailure,
-};
-use worth_store_physical_format::RecordArtifactFile;
+use worth_store::physical_runtime::{BoundedRecoveryFilesystemDiscovery, ObservedRecoveryArtifact};
+use worth_store_physical_format::{PhysicalRecordFormatDeclaration, RecordArtifactFile};
 
 use super::artifact_generation;
 use super::resident::memory_failure;
 use crate::entry::PhysicalRecoverySuccessorCandidateDenial;
+use crate::orchestration::reader_limit::{PastCeiling, ReadCeiling};
 use crate::progression::{
     PlanningMemoryDenial, PlanningResidentAllowance, RecoveryObservedCandidateArtifact,
 };
@@ -15,18 +13,24 @@ use crate::progression::{
 #[path = "artifact_read/tests.rs"]
 mod tests;
 
-/// Read only within both the discovery request and the still-live planning
-/// allocation window. The backend checks file length before allocating its
+/// Read only within both the artifact's own ceiling and the still-live
+/// planning allocation window. Each manifest artifact of a candidate is at
+/// most one page of `format`, so a larger one is damage and no budget stands
+/// in for that ceiling. The backend checks file length before allocating its
 /// exact-length byte vector; an absent optional artifact costs no resident
 /// bytes even when the window has no space left.
 pub(super) fn read(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     artifact: RecordArtifactFile,
-    byte_limit: u64,
+    format: PhysicalRecordFormatDeclaration,
     allowance: &mut PlanningResidentAllowance,
 ) -> Result<ObservedRecoveryArtifact, PhysicalRecoverySuccessorCandidateDenial> {
-    let resident_limit = allowance.remaining();
-    let requested = byte_limit.min(resident_limit);
+    let ceiling = ReadCeiling::within(
+        u64::from(format.page_size().bytes()),
+        allowance.used().saturating_add(allowance.remaining()),
+        allowance.remaining(),
+    );
+    let requested = ceiling.requested();
     let result = match artifact {
         RecordArtifactFile::RootManifest { generation } => {
             discovery.read_root_manifest(generation, requested)
@@ -64,21 +68,21 @@ pub(super) fn read(
                 .map_err(|failure| memory_failure(artifact, allowance, failure))?;
             Ok(observed)
         }
-        Err(RecoveryDiscoveryFailure::ByteLimitExceeded {
-            observed,
-            scope: RecoveryDiscoveryByteLimitScope::Requested,
-            ..
-        }) if resident_limit < byte_limit && observed <= byte_limit => Err(memory_failure(
-            artifact,
-            allowance,
-            PlanningMemoryDenial::RecoveryMemoryBytes {
-                observed: allowance.used().checked_add(observed).unwrap_or(u64::MAX),
-            },
-        )),
-        Err(failure) => Err(PhysicalRecoverySuccessorCandidateDenial::Discovery {
-            artifact,
-            generation: artifact_generation(artifact),
-            failure,
+        Err(failure) => Err(match ceiling.passed(&failure) {
+            Some(PastCeiling::Budget { observed, .. }) => memory_failure(
+                artifact,
+                allowance,
+                PlanningMemoryDenial::RecoveryMemoryBytes { observed },
+            ),
+            // Past its own ceiling the artifact is damage, as is every
+            // refusal that is not the reader's own limit.
+            Some(PastCeiling::Artifact) | None => {
+                PhysicalRecoverySuccessorCandidateDenial::Discovery {
+                    artifact,
+                    generation: artifact_generation(artifact),
+                    failure,
+                }
+            }
         }),
     }
 }

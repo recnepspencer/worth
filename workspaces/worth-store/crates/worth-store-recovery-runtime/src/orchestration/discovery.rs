@@ -1,4 +1,4 @@
-use worth_store::physical_runtime::{RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryFailure};
+use worth_store::physical_runtime::RecoveryDiscoveryFailure;
 use worth_store_recovery_physics::PhysicalBootstrapFallbackAnchor;
 use worth_store_recovery_physics::{PhysicalRecoveryResidue, PhysicalRootSlotObservation};
 
@@ -9,6 +9,9 @@ use crate::entry::{
     PhysicalRecoverySourceDenial,
 };
 
+use super::reader_limit::{
+    OversizedArtifact, PastCeiling, ReadCeiling, ReaderLimit, UNCOUNTED_READS,
+};
 use super::{ManifestFactsDiscovery, RecoveryCoordination};
 
 mod observation;
@@ -167,25 +170,6 @@ pub(crate) fn discover_sources(
             ),
         ));
     }
-    let maximum_manifest_blocks = declaration
-        .manifest_entries
-        .checked_mul(2)
-        .and_then(|value| value.checked_add(2));
-    let maximum_entries = match maximum_manifest_blocks.and_then(|blocks| {
-        6_u64
-            .checked_add(declaration.wal_segments)
-            .and_then(|entries| entries.checked_add(blocks))
-    }) {
-        Some(limit) => limit,
-        None => {
-            return Err((
-                authority,
-                coordination,
-                PhysicalRecoveryBlock::DiscoveryLimit,
-                PhysicalRecoveryBlockEvidence::default(),
-            ));
-        }
-    };
     let AdmittedPlatformAuthority {
         media,
         session,
@@ -194,7 +178,7 @@ pub(crate) fn discover_sources(
         record_format,
     } = authority;
     let mut discovery = media
-        .bounded_discovery(maximum_entries, declaration.observation_bytes)
+        .bounded_discovery(UNCOUNTED_READS, declaration.observation_bytes)
         .expect("a nonzero admitted discovery limit constructs a bounded observer");
     let mut counters = crate::progression::PhysicalRecoveryDiscoveryCounters::default();
     let mut ingress_trace = crate::integrity_ingress::RecoveryIntegrityIngressTrace::new();
@@ -260,87 +244,60 @@ pub(crate) fn discover_sources(
     }
 }
 
-pub(super) fn map_discovery_failure(
+/// A read the reader refused. `Ok` is an artifact larger than its own
+/// ceiling: damage, which the caller words for the artifact it read. `Err`
+/// blocks discovery. `reader_limit` decides what is a limit, and
+/// `budget_dimension` names the caller's budget that narrowed `ceiling`.
+pub(super) fn refused_read(
     failure: RecoveryDiscoveryFailure,
-    entry_dimension: PhysicalRecoveryLimitDimension,
-    byte_dimension: PhysicalRecoveryLimitDimension,
-) -> DiscoveryFailure {
-    match failure {
-        RecoveryDiscoveryFailure::EntryLimitExceeded { observed, admitted } => DiscoveryFailure {
-            kind: PhysicalRecoveryBlock::DiscoveryLimit,
-            limit: Some(PhysicalRecoveryLimitFailure {
-                dimension: entry_dimension,
+    ceiling: ReadCeiling,
+    budget_dimension: PhysicalRecoveryLimitDimension,
+) -> Result<OversizedArtifact, DiscoveryFailure> {
+    let (dimension, observed, admitted) =
+        match (ReaderLimit::of(&failure), ceiling.passed(&failure)) {
+            // Discovery's reader counts no reads: each count limit counts its
+            // own before the read, so the reader's count names none of them.
+            (Some(ReaderLimit::Reads { .. }), _) => {
+                return Err(DiscoveryFailure::from(
+                    PhysicalRecoveryBlock::DiscoveryLimit,
+                ))
+            }
+            (Some(ReaderLimit::ObservationBytes { observed, admitted }), _) => (
+                PhysicalRecoveryLimitDimension::ObservationBytes,
                 observed,
                 admitted,
-            }),
-            source_denials: Vec::new(),
-            integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace::new(),
-            integrity_observations: crate::entry::PhysicalRecoveryIntegrityObservations::default(),
-        },
-        RecoveryDiscoveryFailure::ByteLimitExceeded {
-            observed,
-            admitted,
-            scope,
-        } => DiscoveryFailure {
-            kind: PhysicalRecoveryBlock::DiscoveryLimit,
-            limit: Some(PhysicalRecoveryLimitFailure {
-                dimension: match scope {
-                    RecoveryDiscoveryByteLimitScope::Observation => {
-                        PhysicalRecoveryLimitDimension::ObservationBytes
-                    }
-                    RecoveryDiscoveryByteLimitScope::Requested => byte_dimension,
-                },
-                observed,
-                admitted,
-            }),
-            source_denials: Vec::new(),
-            integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace::new(),
-            integrity_observations: crate::entry::PhysicalRecoveryIntegrityObservations::default(),
-        },
-        RecoveryDiscoveryFailure::Media { artifact, failure } => DiscoveryFailure {
-            kind: PhysicalRecoveryBlock::MediaObservation,
-            limit: None,
-            source_denials: vec![PhysicalRecoverySourceDenial::MediaObservation {
-                artifact,
-                failure: PhysicalRecoveryMediaObservationFailure::Backend {
-                    kind: failure.kind(),
-                    io_kind: failure.io_kind(),
-                },
-            }],
-            integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace::new(),
-            integrity_observations: crate::entry::PhysicalRecoveryIntegrityObservations::default(),
-        },
-        RecoveryDiscoveryFailure::InvalidAddress { artifact } => DiscoveryFailure {
-            kind: PhysicalRecoveryBlock::MediaObservation,
-            limit: None,
-            source_denials: vec![PhysicalRecoverySourceDenial::MediaObservation {
-                artifact,
-                failure: PhysicalRecoveryMediaObservationFailure::InvalidAddress,
-            }],
-            integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace::new(),
-            integrity_observations: crate::entry::PhysicalRecoveryIntegrityObservations::default(),
-        },
-    }
+            ),
+            (None, Some(PastCeiling::Budget { observed, admitted })) => {
+                (budget_dimension, observed, admitted)
+            }
+            (None, Some(PastCeiling::Artifact)) => return Ok(OversizedArtifact),
+            (None, None) => return Err(media_observation(failure)),
+        };
+    Err(discovery_limit(dimension, observed, admitted))
 }
 
-pub(super) fn map_cumulative_discovery_failure(
-    failure: RecoveryDiscoveryFailure,
-    entry_dimension: PhysicalRecoveryLimitDimension,
-    byte_dimension: PhysicalRecoveryLimitDimension,
-    admitted_bytes: u64,
-    remaining_bytes: u64,
-) -> DiscoveryFailure {
-    let mut mapped = map_discovery_failure(failure, entry_dimension, byte_dimension);
-    let Some(limit) = mapped.limit.as_mut() else {
-        return mapped;
+fn media_observation(failure: RecoveryDiscoveryFailure) -> DiscoveryFailure {
+    let mut blocked = DiscoveryFailure::from(PhysicalRecoveryBlock::MediaObservation);
+    let (artifact, failure) = match failure {
+        RecoveryDiscoveryFailure::Media { artifact, failure } => (
+            artifact,
+            PhysicalRecoveryMediaObservationFailure::Backend {
+                kind: failure.kind(),
+                io_kind: failure.io_kind(),
+            },
+        ),
+        RecoveryDiscoveryFailure::InvalidAddress { artifact } => (
+            artifact,
+            PhysicalRecoveryMediaObservationFailure::InvalidAddress,
+        ),
+        // `refused_read` decided every count and byte refusal before this.
+        RecoveryDiscoveryFailure::EntryLimitExceeded { .. }
+        | RecoveryDiscoveryFailure::ByteLimitExceeded { .. } => return blocked,
     };
-    if limit.dimension == byte_dimension {
-        limit.observed = admitted_bytes
-            .saturating_sub(remaining_bytes)
-            .saturating_add(limit.observed);
-        limit.admitted = admitted_bytes;
-    }
-    mapped
+    blocked
+        .source_denials
+        .push(PhysicalRecoverySourceDenial::MediaObservation { artifact, failure });
+    blocked
 }
 
 fn limit_evidence(

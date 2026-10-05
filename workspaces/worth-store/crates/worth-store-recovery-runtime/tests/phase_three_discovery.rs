@@ -310,7 +310,7 @@ fn cumulative_wal_bytes_stop_before_the_crossing_artifact() {
 }
 
 #[test]
-fn aggregate_manifest_entries_stop_before_the_crossing_leaf_is_extended() {
+fn aggregate_manifest_entries_stop_before_the_crossing_tree_is_read() {
     let crossing_parent = tempfile::tempdir().unwrap();
     let crossing_root = crossing_parent.path().join("store");
     let crossing_store = initialize_store(&crossing_root);
@@ -333,6 +333,7 @@ fn aggregate_manifest_entries_stop_before_the_crossing_leaf_is_extended() {
         PhysicalRecoveryLimitDimension::ManifestEntries
     );
     assert_eq!((limit.observed, limit.admitted), (3, 2));
+    assert_eq!(blocked.evidence().counters.manifest_blocks, 0);
     assert_eq!(blocked.recovery_effects(), 0);
 
     let exact_parent = tempfile::tempdir().unwrap();

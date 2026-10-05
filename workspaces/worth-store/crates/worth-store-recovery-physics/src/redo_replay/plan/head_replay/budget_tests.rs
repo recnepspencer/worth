@@ -133,8 +133,39 @@ fn insufficient_extra_heap_denies_before_selected_path_read() {
         RecoveryOperationFate::Indeterminate,
         [5; 32],
     );
-    assert_eq!(denial, Err(SelectedReleaseHeadReplayDenial::BoundExceeded));
+    let needed = effect
+        .verification_additional_peak_bytes(format)
+        .unwrap()
+        .max(effect.owned_heap_bytes().unwrap())
+        .max(u64::from(format.page_size().bytes()));
+    assert_eq!(
+        denial,
+        Err(SelectedReleaseHeadReplayDenial::BoundExceeded(
+            ExceededHeadReplayBound {
+                bound: HeadReplayBound::HeapBytes,
+                observed: needed,
+                admitted: 0,
+            }
+        ))
+    );
     assert_eq!(reads, 0);
+}
+
+#[test]
+fn an_addressed_read_window_the_heap_cannot_hold_names_the_heap_and_two_pages() {
+    let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
+    let pages = 2 * u64::from(format.page_size().bytes());
+    assert_eq!(addressed::require_two_page_window(format, pages), Ok(()));
+    assert_eq!(
+        addressed::require_two_page_window(format, pages - 1),
+        Err(SelectedReleaseHeadReplayDenial::BoundExceeded(
+            ExceededHeadReplayBound {
+                bound: HeadReplayBound::HeapBytes,
+                observed: pages,
+                admitted: pages - 1,
+            }
+        ))
+    );
 }
 
 #[test]

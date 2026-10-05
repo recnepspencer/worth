@@ -4,6 +4,7 @@ mod checkpoint_base;
 mod checkpoint_covered_wal;
 mod compaction_product;
 mod current_previous_root;
+mod exceeded_bound;
 mod historical_release_root_chain;
 mod historical_release_root_prefix;
 mod no_release_custody;
@@ -38,6 +39,7 @@ pub use current_previous_root::{
     select_current_previous_root, PhysicalBootstrapFallbackAnchor, PhysicalRootSelectionDenial,
     SelectedPhysicalRoot, SelectedPhysicalRootRole,
 };
+pub use exceeded_bound::{ExceededRootHistoryBound, RootHistoryBound};
 pub use historical_release_root_chain::{
     HistoricalReleaseRootChainBuilder, HistoricalReleaseRootChainDenial,
     VerifiedHistoricalReleaseRootChain,

@@ -127,8 +127,10 @@ pub(super) fn admit(
                 record_identities: context.limits.redo_targets,
                 placements: remaining_manifest_entries,
                 segment_updates: remaining_manifest_entries,
-                manifests: remaining_manifest_entries,
-                total_entries: remaining_manifest_entries,
+                manifests: redo_bytes,
+                total_entries: remaining_manifest_entries
+                    .saturating_mul(2)
+                    .saturating_add(redo_bytes),
                 inline_allocations: remaining_manifest_entries,
             },
         },
@@ -137,18 +139,7 @@ pub(super) fn admit(
         Err(denial) => {
             let planning_counters =
                 counters::after_fates(&sample, &fates, PhysicalRedoPlanCounters::default(), 0, 0);
-            let limit = match denial {
-                worth_store_recovery_physics::PhysicalRedoPlanningDenial::RecoveryMemoryLimit {
-                    observed,
-                    admitted,
-                } => Some(PhysicalRecoveryLimitFailure {
-                    dimension: PhysicalRecoveryLimitDimension::RecoveryMemoryBytes,
-                    observed,
-                    admitted,
-                }),
-                _ => None,
-            };
-            return Err(context.redo_denial_block(planning_counters, limit, denial));
+            return Err(context.redo_denial_block(planning_counters, denial));
         }
     };
     let targets = redo.target_identities();

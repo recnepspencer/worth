@@ -7,8 +7,9 @@ use worth_store_physical_format::{
 };
 
 use super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
-use super::super::historical_publication::HistoricalFailure;
+use super::super::historical_publication::{remaining_observation, unobserved, HistoricalFailure};
 use super::record;
+use crate::orchestration::reader_limit::UNCOUNTED_READS;
 
 #[path = "selected/record_semantics.rs"]
 mod record_semantics;
@@ -136,32 +137,15 @@ fn scan_source(
 ) -> Result<(PlanningContext, Vec<PersistedRecordIdentity>), crate::entry::PhysicalRecoveryOutcome>
 {
     let selected = context.selection.page_facts().placements();
-    let remaining_entries = basis.observed_pages.manifest_budget.remaining();
-    let remaining_bytes = context
-        .limits
-        .observation_bytes
-        .saturating_sub(context.counters.bytes_observed)
-        .saturating_sub(basis.observed_pages.bytes_read)
-        .saturating_sub(basis.observed_pages.candidate_bytes_read)
-        .saturating_sub(basis.observed_pages.source_copy_bytes_read)
-        .saturating_sub(basis.observed_pages.historical_publication_bytes_read);
-    if remaining_entries == 0 || remaining_bytes == 0 {
-        return Err(denial(
-            context,
-            basis,
-            if remaining_entries == 0 {
-                HistoricalFailure::ManifestEntries
-            } else {
-                HistoricalFailure::ObservationBytes(1)
-            },
-            remaining_bytes,
-        ));
-    }
+    let remaining_bytes = match remaining_observation(&context, basis) {
+        Ok(remaining_bytes) => remaining_bytes,
+        Err(failure) => return Err(unobserved(context, basis, failure, 0)),
+    };
     let format = context.authority.record_format;
     let mut discovery = context
         .authority
         .media
-        .bounded_discovery(remaining_entries, remaining_bytes)
+        .bounded_discovery(UNCOUNTED_READS, remaining_bytes)
         .expect("nonzero selected reclaim scan limits");
     let descriptor_candidate_count = match kind {
         SourceInspectionKind::DropDescriptor { .. } => manifest.dropped().len(),
@@ -284,7 +268,7 @@ fn scan_source(
                 + (candidate_chunk_ordinals.capacity() * std::mem::size_of::<Option<u64>>()) as u64,
         );
     if let Err(failure) = result {
-        return Err(denial(context, basis, failure, remaining_bytes));
+        return Err(unobserved(context, basis, failure, remaining_bytes));
     }
     if matches!(
         kind,
@@ -334,34 +318,6 @@ fn candidate_coverage_conflicts(
 #[cfg(test)]
 #[path = "selected/tests.rs"]
 mod tests;
-
-fn denial(
-    context: PlanningContext,
-    basis: &ResolvedPlanningBasis,
-    failure: HistoricalFailure,
-    remaining_bytes: u64,
-) -> crate::entry::PhysicalRecoveryOutcome {
-    let limit = match failure {
-        HistoricalFailure::Invalid => None,
-        HistoricalFailure::ManifestEntries => Some(crate::entry::PhysicalRecoveryLimitFailure {
-            dimension: crate::entry::PhysicalRecoveryLimitDimension::ManifestEntries,
-            observed: context.limits.manifest_entries.saturating_add(1),
-            admitted: context.limits.manifest_entries,
-        }),
-        HistoricalFailure::ObservationBytes(observed) => {
-            Some(crate::entry::PhysicalRecoveryLimitFailure {
-                dimension: crate::entry::PhysicalRecoveryLimitDimension::ObservationBytes,
-                observed: context
-                    .limits
-                    .observation_bytes
-                    .saturating_sub(remaining_bytes)
-                    .saturating_add(observed),
-                admitted: context.limits.observation_bytes,
-            })
-        }
-    };
-    context.redo_block(basis.planning_counters(), limit)
-}
 
 fn candidate_kind(
     fact: &BlobRecordV1<'_>,

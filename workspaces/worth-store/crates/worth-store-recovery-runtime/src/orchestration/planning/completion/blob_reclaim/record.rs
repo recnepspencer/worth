@@ -24,9 +24,8 @@ impl From<PhysicalRecoverySelectedRecordReadDenial> for HistoricalFailure {
             | PhysicalRecoverySelectedRecordReadDenial::ChunkRead { failure, .. } => {
                 historical_publication::discovery_failure(failure)
             }
-            PhysicalRecoverySelectedRecordReadDenial::ManifestEntryLimit
-            | PhysicalRecoverySelectedRecordReadDenial::ResidentBoundExceeded
-            | PhysicalRecoverySelectedRecordReadDenial::Allocation { .. } => Self::ManifestEntries,
+            PhysicalRecoverySelectedRecordReadDenial::ManifestEntryLimit => Self::ManifestEntries,
+            // A resident allowance that refused names its own limit.
             _ => Self::Invalid,
         }
     }
@@ -35,7 +34,6 @@ impl From<PhysicalRecoverySelectedRecordReadDenial> for HistoricalFailure {
 impl From<ResidentTraceDenial> for PhysicalRecoverySelectedRecordReadDenial {
     fn from(denial: ResidentTraceDenial) -> Self {
         match denial {
-            ResidentTraceDenial::SizeOverflow => Self::ManifestEntryLimit,
             ResidentTraceDenial::ResidentBoundExceeded => Self::ResidentBoundExceeded,
             ResidentTraceDenial::Allocation { requested, cause } => {
                 Self::Allocation { requested, cause }
@@ -179,12 +177,13 @@ fn read_impl(
         return Err(PhysicalRecoverySelectedRecordReadDenial::InvalidPayload);
     }
     let page_limit = u64::from(format.page_size().bytes());
+    // Reading one record charges one entry, however many chunks hold it.
     budget
         .consume(1)
         .map_err(|_| PhysicalRecoverySelectedRecordReadDenial::ManifestEntryLimit)?;
     if let Some(ledger) = resident.as_deref_mut() {
         ledger
-            .trace_slots_diagnostic(trace, 1)
+            .trace_slots(trace, 1)
             .map_err(PhysicalRecoverySelectedRecordReadDenial::from)?;
         ledger
             .transient(page_limit)
@@ -236,7 +235,7 @@ fn read_impl(
     };
     drop(observed);
     let payload_bytes = usize::try_from(placement.payload_bytes())
-        .map_err(|_| PhysicalRecoverySelectedRecordReadDenial::ManifestEntryLimit)?;
+        .map_err(|_| PhysicalRecoverySelectedRecordReadDenial::InvalidPayload)?;
     let mut payload = Vec::new();
     payload.try_reserve_exact(payload_bytes).map_err(|cause| {
         PhysicalRecoverySelectedRecordReadDenial::Allocation {
@@ -248,7 +247,7 @@ fn read_impl(
         let extra_capacity = payload
             .capacity()
             .checked_sub(payload_bytes)
-            .ok_or(PhysicalRecoverySelectedRecordReadDenial::ManifestEntryLimit)?;
+            .ok_or(PhysicalRecoverySelectedRecordReadDenial::InvalidPayload)?;
         ledger
             .bytes(extra_capacity as u64)
             .map_err(|_| PhysicalRecoverySelectedRecordReadDenial::ResidentBoundExceeded)?;
@@ -268,12 +267,9 @@ fn read_impl(
         let relative = layout
             .chunk_offset(ordinal)
             .ok_or(PhysicalRecoverySelectedRecordReadDenial::InvalidPayload)?;
-        budget
-            .consume(1)
-            .map_err(|_| PhysicalRecoverySelectedRecordReadDenial::ManifestEntryLimit)?;
         if let Some(ledger) = resident.as_deref_mut() {
             ledger
-                .trace_slots_diagnostic(trace, 1)
+                .trace_slots(trace, 1)
                 .map_err(PhysicalRecoverySelectedRecordReadDenial::from)?;
             ledger
                 .transient(frame_length as u64)

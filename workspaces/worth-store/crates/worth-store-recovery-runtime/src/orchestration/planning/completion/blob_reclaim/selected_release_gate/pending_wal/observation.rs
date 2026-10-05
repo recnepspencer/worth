@@ -3,23 +3,7 @@
 use worth_store_physical_format::BLOB_CONTROL_FRAME_MAX_BYTES;
 use worth_store_recovery_physics::WitnessedSelectedControlFrame;
 
-use super::{PlanningContext, ResolvedPlanningBasis};
-
-pub(super) fn bounds(
-    context: &PlanningContext,
-    basis: &ResolvedPlanningBasis,
-) -> Option<(u64, u64)> {
-    let remaining_entries = basis.observed_pages.manifest_budget.remaining();
-    let remaining_bytes = context
-        .limits
-        .observation_bytes
-        .saturating_sub(context.counters.bytes_observed)
-        .saturating_sub(basis.observed_pages.bytes_read)
-        .saturating_sub(basis.observed_pages.candidate_bytes_read)
-        .saturating_sub(basis.observed_pages.source_copy_bytes_read)
-        .saturating_sub(basis.observed_pages.historical_publication_bytes_read);
-    (remaining_entries != 0 && remaining_bytes != 0).then_some((remaining_entries, remaining_bytes))
-}
+use super::ResolvedPlanningBasis;
 
 pub(super) fn record_selected_reads(
     basis: &mut ResolvedPlanningBasis,

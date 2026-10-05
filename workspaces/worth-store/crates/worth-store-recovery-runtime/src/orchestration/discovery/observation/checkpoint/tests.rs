@@ -83,6 +83,9 @@ fn resealed_checkpoint_zero_root_is_denied_before_addressed_source_read() {
     let failure = match super::observe_checkpoint(
         &mut discovery,
         limits(),
+        worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
+            .admit()
+            .unwrap(),
         &mut remaining_manifest_bytes,
         &mut counters,
         &mut trace,

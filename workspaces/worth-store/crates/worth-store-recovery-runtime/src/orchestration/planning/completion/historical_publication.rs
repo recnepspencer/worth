@@ -1,39 +1,157 @@
 //! Bounded addressed-root and targeted routing evidence for historical
 //! publications. A later selected generation alone is never publication proof.
 
-use worth_store::physical_runtime::{RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryFailure};
+use worth_store::physical_runtime::RecoveryDiscoveryFailure;
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DurablePhysicalRootManifest, ManifestBlockReference,
     PhysicalTreeIdentity,
 };
 
+#[cfg(test)]
+#[path = "historical_publication/failure_tests.rs"]
+mod failure_tests;
 #[path = "historical_publication/route_inventory.rs"]
 mod route_inventory;
 pub(super) use route_inventory::{
     observe_all_routes, observe_all_routes_of_root, RootRouteInventory,
 };
 
+use crate::entry::{
+    PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure,
+};
 use crate::integrity_ingress::{admit_addressed_root, RecoveryArtifactNamespaceJoin};
 use crate::orchestration::planning::{
-    context::PlanningContext, manifest_entry_budget::ManifestEntryBudget,
+    context::PlanningContext,
+    manifest_entry_budget::ManifestEntryBudget,
+    page_observation::{PageObservationFailure, ReaderLimit},
     resolved_basis::ResolvedPlanningBasis,
 };
+use crate::orchestration::reader_limit::UNCOUNTED_READS;
 
+/// Why a completion phase could not observe history: failed verification,
+/// or one of recovery's limits.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::orchestration::planning) enum HistoricalFailure {
     Invalid,
     ManifestEntries,
-    ObservationBytes(u64),
+    /// The bytes the phase's reader had observed at the crossing, where the
+    /// reader counted them.
+    ObservationBytes(Option<u64>),
+    /// The staging bytes the phase needed.
+    StagingBytes(u64),
 }
 
-pub(super) fn discovery_failure(failure: RecoveryDiscoveryFailure) -> HistoricalFailure {
-    match failure {
-        RecoveryDiscoveryFailure::EntryLimitExceeded { .. } => HistoricalFailure::ManifestEntries,
-        RecoveryDiscoveryFailure::ByteLimitExceeded {
-            observed,
-            scope: RecoveryDiscoveryByteLimitScope::Observation,
-            ..
-        } => HistoricalFailure::ObservationBytes(observed),
-        _ => HistoricalFailure::Invalid,
+impl HistoricalFailure {
+    /// The limit this failure names, with the value recovery admitted.
+    /// `remaining_bytes` is what the phase's reader started with.
+    pub(in crate::orchestration::planning) fn limit(
+        self,
+        limits: &PhysicalRecoveryLimitDeclaration,
+        remaining_bytes: u64,
+    ) -> Option<PhysicalRecoveryLimitFailure> {
+        match self {
+            Self::Invalid => None,
+            Self::ManifestEntries => Some(PhysicalRecoveryLimitFailure {
+                dimension: PhysicalRecoveryLimitDimension::ManifestEntries,
+                observed: limits.manifest_entries.saturating_add(1),
+                admitted: limits.manifest_entries,
+            }),
+            Self::ObservationBytes(observed) => {
+                let admitted = limits.observation_bytes;
+                Some(PhysicalRecoveryLimitFailure {
+                    dimension: PhysicalRecoveryLimitDimension::ObservationBytes,
+                    observed: observed.map_or(admitted.saturating_add(1), |observed| {
+                        admitted
+                            .saturating_sub(remaining_bytes)
+                            .saturating_add(observed)
+                    }),
+                    admitted,
+                })
+            }
+            Self::StagingBytes(observed) => Some(PhysicalRecoveryLimitFailure {
+                dimension: PhysicalRecoveryLimitDimension::StagingBytes,
+                observed,
+                admitted: limits.staging_bytes,
+            }),
+        }
+    }
+}
+
+impl From<PageObservationFailure> for HistoricalFailure {
+    fn from(failure: PageObservationFailure) -> Self {
+        match failure {
+            PageObservationFailure::ManifestEntryLimit => Self::ManifestEntries,
+            PageObservationFailure::ByteLimit => Self::ObservationBytes(None),
+            _ => Self::Invalid,
+        }
+    }
+}
+
+pub(in crate::orchestration::planning) fn discovery_failure(
+    failure: RecoveryDiscoveryFailure,
+) -> HistoricalFailure {
+    match ReaderLimit::of(&failure) {
+        Some(ReaderLimit::Reads { .. }) => HistoricalFailure::ManifestEntries,
+        Some(ReaderLimit::ObservationBytes { observed, .. }) => {
+            HistoricalFailure::ObservationBytes(Some(observed))
+        }
+        None => HistoricalFailure::Invalid,
+    }
+}
+
+/// A completion phase stopped before it could verify: the block names the
+/// limit that ran out, and none where verification failed.
+/// `remaining_bytes` is what the phase's reader started with.
+pub(in crate::orchestration::planning) fn unobserved(
+    context: PlanningContext,
+    basis: &ResolvedPlanningBasis,
+    failure: HistoricalFailure,
+    remaining_bytes: u64,
+) -> crate::entry::PhysicalRecoveryOutcome {
+    let limit = failure.limit(&context.limits, remaining_bytes);
+    context.redo_block(basis.planning_counters(), limit)
+}
+
+/// The observation bytes left to a completion phase, or the limit that has
+/// already run out.
+pub(in crate::orchestration::planning) fn remaining_observation(
+    context: &PlanningContext,
+    basis: &ResolvedPlanningBasis,
+) -> Result<u64, HistoricalFailure> {
+    let remaining_bytes = context
+        .limits
+        .observation_bytes
+        .saturating_sub(context.counters.bytes_observed)
+        .saturating_sub(basis.observed_pages.bytes_read)
+        .saturating_sub(basis.observed_pages.candidate_bytes_read)
+        .saturating_sub(basis.observed_pages.source_copy_bytes_read)
+        .saturating_sub(basis.observed_pages.historical_publication_bytes_read);
+    left_to_observe(remaining_bytes)
+}
+
+/// Charges what a completion phase's reader read, once it has finished, to
+/// the observation bytes every later phase is left with.
+pub(in crate::orchestration::planning) fn charge_reader(
+    basis: &mut ResolvedPlanningBasis,
+    counters: worth_store::physical_runtime::RecoveryDiscoveryCounters,
+) {
+    let observed = &mut basis.observed_pages;
+    observed.historical_publication_reads = observed
+        .historical_publication_reads
+        .saturating_add(counters.addressed_artifacts_read);
+    observed.historical_publication_bytes_read = observed
+        .historical_publication_bytes_read
+        .saturating_add(counters.bytes_read);
+}
+
+/// A phase cannot open its reader with no observation bytes left, so it has
+/// met that limit. Entries are refused where they are charged: a phase that
+/// charges none is refused none.
+fn left_to_observe(bytes: u64) -> Result<u64, HistoricalFailure> {
+    if bytes == 0 {
+        Err(HistoricalFailure::ObservationBytes(None))
+    } else {
+        Ok(bytes)
     }
 }
 
@@ -51,51 +169,21 @@ pub(super) fn observe<R>(
         &mut u64,
     ) -> Result<R, HistoricalFailure>,
 ) -> Result<(PlanningContext, R), crate::entry::PhysicalRecoveryOutcome> {
-    let remaining_entries = basis.observed_pages.manifest_budget.remaining();
-    let remaining_bytes = context
-        .limits
-        .observation_bytes
-        .saturating_sub(context.counters.bytes_observed)
-        .saturating_sub(basis.observed_pages.bytes_read)
-        .saturating_sub(basis.observed_pages.candidate_bytes_read)
-        .saturating_sub(basis.observed_pages.source_copy_bytes_read)
-        .saturating_sub(basis.observed_pages.historical_publication_bytes_read);
-    if remaining_entries == 0 || remaining_bytes == 0 {
-        let limit = crate::entry::PhysicalRecoveryLimitFailure {
-            dimension: if remaining_entries == 0 {
-                crate::entry::PhysicalRecoveryLimitDimension::ManifestEntries
-            } else {
-                crate::entry::PhysicalRecoveryLimitDimension::ObservationBytes
-            },
-            observed: if remaining_entries == 0 {
-                context.limits.manifest_entries.saturating_add(1)
-            } else {
-                context.limits.observation_bytes.saturating_add(1)
-            },
-            admitted: if remaining_entries == 0 {
-                context.limits.manifest_entries
-            } else {
-                context.limits.observation_bytes
-            },
-        };
-        return Err(context.redo_block(basis.planning_counters(), Some(limit)));
-    }
+    let remaining_bytes = match remaining_observation(&context, basis) {
+        Ok(remaining_bytes) => remaining_bytes,
+        Err(failure) => return Err(unobserved(context, basis, failure, 0)),
+    };
     let format = context.authority.record_format;
     let store = context.authority.media.store_identity();
     let media = context.authority.media;
     let mut discovery = media
-        .bounded_discovery(remaining_entries, remaining_bytes)
+        .bounded_discovery(UNCOUNTED_READS, remaining_bytes)
         .expect("admitted nonzero historical publication observation limits");
     let mut callback_scratch = 0;
     let result = (|| {
         let root_source = discovery
             .read_root_manifest(generation, u64::from(format.page_size().bytes()))
             .map_err(discovery_failure)?;
-        basis
-            .observed_pages
-            .manifest_budget
-            .consume(1)
-            .map_err(|_| HistoricalFailure::ManifestEntries)?;
         let admitted = admit_addressed_root(
             RecoveryArtifactNamespaceJoin::from_canonical(&root_source),
             store,
@@ -128,14 +216,7 @@ pub(super) fn observe<R>(
     })();
     let counters = discovery.counters();
     context.authority.media = discovery.finish();
-    basis.observed_pages.historical_publication_reads = basis
-        .observed_pages
-        .historical_publication_reads
-        .saturating_add(counters.addressed_artifacts_read);
-    basis.observed_pages.historical_publication_bytes_read = basis
-        .observed_pages
-        .historical_publication_bytes_read
-        .saturating_add(counters.bytes_read);
+    charge_reader(basis, counters);
     basis
         .observed_pages
         .historical_publication_peak_scratch_bytes = basis
@@ -144,29 +225,7 @@ pub(super) fn observe<R>(
         .max(u64::from(format.page_size().bytes()) * 2 + callback_scratch);
     let value = match result {
         Ok(value) => value,
-        Err(failure) => {
-            let limit = match failure {
-                HistoricalFailure::Invalid => None,
-                HistoricalFailure::ManifestEntries => {
-                    Some(crate::entry::PhysicalRecoveryLimitFailure {
-                        dimension: crate::entry::PhysicalRecoveryLimitDimension::ManifestEntries,
-                        observed: context.limits.manifest_entries.saturating_add(1),
-                        admitted: context.limits.manifest_entries,
-                    })
-                }
-                HistoricalFailure::ObservationBytes(observed) => {
-                    let admitted = context.limits.observation_bytes;
-                    Some(crate::entry::PhysicalRecoveryLimitFailure {
-                        dimension: crate::entry::PhysicalRecoveryLimitDimension::ObservationBytes,
-                        observed: admitted
-                            .saturating_sub(remaining_bytes)
-                            .saturating_add(observed),
-                        admitted,
-                    })
-                }
-            };
-            return Err(context.redo_block(basis.planning_counters(), limit));
-        }
+        Err(failure) => return Err(unobserved(context, basis, failure, remaining_bytes)),
     };
     Ok((context, value))
 }
@@ -180,6 +239,9 @@ pub(super) fn find_route(
     trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
     scratch: &mut u64,
 ) -> Result<Option<CurrentPhysicalRecordPlacement>, HistoricalFailure> {
+    // One lookup charges one entry, however many blocks its path crosses
+    // and however many neighbors share its leaf.
+    budget.consume(1)?;
     let mut reference = root
         .routing_root()
         .filter(|reference| reference.contains(record));
@@ -189,9 +251,6 @@ pub(super) fn find_route(
             return Err(HistoricalFailure::Invalid);
         }
         previous_level = Some(current.level());
-        budget
-            .consume(1)
-            .map_err(|_| HistoricalFailure::ManifestEntries)?;
         let observed = discovery
             .read_root_routing_block(
                 current.generation(),
@@ -215,9 +274,6 @@ pub(super) fn find_route(
             *scratch = (*scratch).max(
                 (entries.len() * std::mem::size_of::<CurrentPhysicalRecordPlacement>()) as u64,
             );
-            budget
-                .consume(entries.len())
-                .map_err(|_| HistoricalFailure::ManifestEntries)?;
             return Ok(entries
                 .iter()
                 .copied()
@@ -229,9 +285,6 @@ pub(super) fn find_route(
             .ok_or(HistoricalFailure::Invalid)?;
         *scratch =
             (*scratch).max((children.len() * std::mem::size_of::<ManifestBlockReference>()) as u64);
-        budget
-            .consume(children.len())
-            .map_err(|_| HistoricalFailure::ManifestEntries)?;
         reference = unique_child(children, record)?;
     }
     Ok(None)

@@ -193,7 +193,7 @@ impl ReleasedDrops<'_> {
         {
             return Err(invalid(operation, Stage::ManifestBinding));
         }
-        let source = source_root(
+        let (source, _source_unit) = source_root(
             walk.discovery,
             drop.projection.source_root_generation(),
             walk.format,

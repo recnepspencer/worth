@@ -8,6 +8,12 @@ use worth_store_physical_format::{
 
 use crate::progression::RecoverySelectedSourceInventory;
 
+use super::walk_failure::{Verdict, WalkFailure};
+
+#[cfg(test)]
+#[path = "resident_tests.rs"]
+mod tests;
+
 pub(super) fn manifest_retained_bytes(manifest: &DropSetManifestV3) -> Option<u64> {
     (manifest.dropped().len() as u64)
         .checked_mul(std::mem::size_of::<PersistedRecordIdentity>() as u64)?
@@ -86,24 +92,24 @@ fn segment_entries_bounded(
     inventory: &RecoverySelectedSourceInventory,
     maximum_entries: u64,
     available_bytes: u64,
-) -> Option<Vec<RecordSegmentPageManifestEntry>> {
-    let count = u64::try_from(inventory.segment_pages.len()).ok()?;
-    let bytes = count.checked_mul(std::mem::size_of::<RecordSegmentPageManifestEntry>() as u64)?;
-    if count > maximum_entries || bytes > available_bytes {
-        return None;
+) -> Result<Vec<RecordSegmentPageManifestEntry>, WalkFailure> {
+    let width = std::mem::size_of::<RecordSegmentPageManifestEntry>() as u64;
+    let count = inventory.segment_pages.len() as u64;
+    if count > maximum_entries {
+        return Err(WalkFailure::ManifestEntryLimit);
+    }
+    if count.checked_mul(width).proven()? > available_bytes {
+        return Err(WalkFailure::MORE_SCRATCH);
     }
     let mut entries = Vec::new();
     entries
         .try_reserve_exact(inventory.segment_pages.len())
-        .ok()?;
-    if (entries.capacity() as u64)
-        .checked_mul(std::mem::size_of::<RecordSegmentPageManifestEntry>() as u64)?
-        > available_bytes
-    {
-        return None;
+        .proven()?;
+    if (entries.capacity() as u64).checked_mul(width).proven()? > available_bytes {
+        return Err(WalkFailure::MORE_SCRATCH);
     }
     entries.extend(inventory.segment_pages.values().map(|page| page.entry));
-    Some(entries)
+    Ok(entries)
 }
 
 pub(super) fn segment_pair_bounded(
@@ -111,23 +117,30 @@ pub(super) fn segment_pair_bounded(
     result: &RecoverySelectedSourceInventory,
     maximum_entries: u64,
     available_bytes: u64,
-) -> Option<(
-    Vec<RecordSegmentPageManifestEntry>,
-    Vec<RecordSegmentPageManifestEntry>,
-    u64,
-)> {
+) -> Result<
+    (
+        Vec<RecordSegmentPageManifestEntry>,
+        Vec<RecordSegmentPageManifestEntry>,
+        u64,
+    ),
+    WalkFailure,
+> {
     let source_segments = segment_entries_bounded(source, maximum_entries, available_bytes)?;
     let source_bytes = (source_segments.capacity() as u64)
-        .checked_mul(std::mem::size_of::<RecordSegmentPageManifestEntry>() as u64)?;
+        .checked_mul(std::mem::size_of::<RecordSegmentPageManifestEntry>() as u64)
+        .proven()?;
     let result_segments = segment_entries_bounded(
         result,
         maximum_entries,
-        available_bytes.checked_sub(source_bytes)?,
+        available_bytes.checked_sub(source_bytes).in_scratch()?,
     )?;
     let scratch = (source_segments.capacity() as u64)
-        .checked_add(result_segments.capacity() as u64)?
-        .checked_mul(std::mem::size_of::<RecordSegmentPageManifestEntry>() as u64)?;
-    Some((source_segments, result_segments, scratch))
+        .checked_add(result_segments.capacity() as u64)
+        .and_then(|count| {
+            count.checked_mul(std::mem::size_of::<RecordSegmentPageManifestEntry>() as u64)
+        })
+        .proven()?;
+    Ok((source_segments, result_segments, scratch))
 }
 
 pub(super) fn dropped_bounded(
@@ -135,25 +148,25 @@ pub(super) fn dropped_bounded(
     derived: &[PersistedRecordIdentity],
     maximum_entries: u64,
     available_bytes: u64,
-) -> Option<Vec<PersistedRecordIdentity>> {
-    let count = manifest.len().checked_add(derived.len())?;
-    let bytes = (count as u64).checked_mul(std::mem::size_of::<PersistedRecordIdentity>() as u64)?;
-    if count as u64 > maximum_entries || bytes > available_bytes {
-        return None;
+) -> Result<Vec<PersistedRecordIdentity>, WalkFailure> {
+    let width = std::mem::size_of::<PersistedRecordIdentity>() as u64;
+    let count = manifest.len().checked_add(derived.len()).proven()?;
+    if count as u64 > maximum_entries {
+        return Err(WalkFailure::ManifestEntryLimit);
+    }
+    if (count as u64).checked_mul(width).proven()? > available_bytes {
+        return Err(WalkFailure::MORE_SCRATCH);
     }
     let mut dropped = Vec::new();
-    dropped.try_reserve_exact(count).ok()?;
-    if (dropped.capacity() as u64)
-        .checked_mul(std::mem::size_of::<PersistedRecordIdentity>() as u64)?
-        > available_bytes
-    {
-        return None;
+    dropped.try_reserve_exact(count).proven()?;
+    if (dropped.capacity() as u64).checked_mul(width).proven()? > available_bytes {
+        return Err(WalkFailure::MORE_SCRATCH);
     }
     dropped.extend_from_slice(manifest);
     dropped.extend_from_slice(derived);
     dropped.sort_unstable();
     if dropped.windows(2).any(|pair| pair[0] == pair[1]) {
-        return None;
+        return Err(WalkFailure::Unverified);
     }
-    Some(dropped)
+    Ok(dropped)
 }

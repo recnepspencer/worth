@@ -49,6 +49,13 @@ pub enum PhysicalManifestObservationDenial {
         reference: ManifestBlockReference,
         denial: PhysicalRecoveryRootProtocolDenial,
     },
+    /// The routing tree's leaves hold more entries than its verified
+    /// manifest's record count. `admitted` is that count; recovery sets no
+    /// such limit.
+    RecordCountCeiling {
+        observed: u64,
+        admitted: u64,
+    },
 }
 use worth_store_recovery_physics::{
     PhysicalCheckpointBaseDenial, PhysicalPageFactDenial, PhysicalRootCandidateDenial,

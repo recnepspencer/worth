@@ -3,6 +3,10 @@
 
 use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
 use super::resident_basis;
+use crate::orchestration::planning::completion::historical_publication::{
+    remaining_observation, unobserved, HistoricalFailure,
+};
+use crate::orchestration::reader_limit::UNCOUNTED_READS;
 use crate::progression::PlanningCustody;
 
 #[path = "pending_wal/claim.rs"]
@@ -42,13 +46,14 @@ pub(super) fn admit(
     let Some(member) = member_fate::witness(&context, basis, projection) else {
         return Err(context.redo_block(basis.planning_counters(), None));
     };
-    let Some((remaining_entries, remaining_bytes)) = observation::bounds(&context, basis) else {
-        return Err(context.redo_block(basis.planning_counters(), None));
+    let remaining_bytes = match remaining_observation(&context, basis) {
+        Ok(remaining_bytes) => remaining_bytes,
+        Err(failure) => return Err(unobserved(context, basis, failure, 0)),
     };
     let mut discovery = context
         .authority
         .media
-        .bounded_discovery(remaining_entries, remaining_bytes)
+        .bounded_discovery(UNCOUNTED_READS, remaining_bytes)
         .expect("positive pending-WAL control inspection bounds");
     let format = context.authority.record_format;
     let mut scratch = 0;
@@ -69,7 +74,7 @@ pub(super) fn admit(
     // A WAL path is only a claim until the actual selected head namespace
     // supplies the exact source frames. Keep its proof separate from the
     // checkpoint-source roster; it advances the effective post-WAL root.
-    let head_replay = if witnesses.is_some() {
+    let head_replay = if witnesses.is_ok() {
         head_replay::admit(
             &mut discovery,
             &mut basis.observed_pages.manifest_budget,
@@ -80,7 +85,7 @@ pub(super) fn admit(
             &mut resident,
         )
     } else {
-        None
+        Err(HistoricalFailure::Invalid)
     };
     let directory_replacement = directory::admit(
         &context.selection,
@@ -100,18 +105,25 @@ pub(super) fn admit(
         resident.peak(),
         reservation_count,
     );
-    let Some((manifest, reservation)) = witnesses else {
-        let limit = resident_basis::limit_failure(&context, &resident);
-        return Err(context.redo_block(basis.planning_counters(), limit));
-    };
-    let Some(head_replay) = head_replay else {
-        let limit = resident_basis::limit_failure(&context, &resident);
-        return Err(context.redo_block(basis.planning_counters(), limit));
+    // A refused resident allowance names its own limit; any other failure
+    // says whether a limit ran out or verification failed.
+    let (manifest, reservation, head_replay) = match witnesses
+        .and_then(|(manifest, reservation)| Ok((manifest, reservation, head_replay?)))
+    {
+        Ok(admitted) => admitted,
+        Err(failure) => {
+            let limit = resident_basis::limit_failure(&context, &resident)
+                .or_else(|| failure.limit(&context.limits, remaining_bytes));
+            return Err(context.redo_block(basis.planning_counters(), limit));
+        }
     };
     let directory_replacement = match directory_replacement {
         Ok(proof) => proof,
         Err(denial) => {
-            let limit = resident_basis::limit_failure(&context, &resident);
+            let limit = resident_basis::limit_failure(&context, &resident).or_else(|| {
+                directory::unread(&denial)
+                    .and_then(|failure| failure.limit(&context.limits, remaining_bytes))
+            });
             return Err(context.block_with_planning_attempt_denial(
                 crate::entry::PhysicalRecoveryBlockKind::RedoPlanning,
                 basis

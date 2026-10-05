@@ -19,17 +19,17 @@ pub(super) fn decode_targets<S: PhysicalRecoveryDecodeStorage>(
     if count == 0 {
         return Err(CanonicalRedoWireDenial::InvalidTarget.into());
     }
+    // A count the member cannot hold is damage, so it is refused as that
+    // before it can be weighed against the caller's limit.
+    let capacity = cursor.count_backed_by(count, 8 + 32 + 1)?;
     *total = total
         .checked_add(count)
         .ok_or(CanonicalRedoWireDenial::CounterOverflow)?;
     if *total > maximum {
-        return Err(CanonicalRedoWireDenial::TargetLimit.into());
+        let (observed, admitted) = (*total, maximum);
+        return Err(CanonicalRedoWireDenial::TargetLimit { observed, admitted }.into());
     }
-    cursor.require_count_backing(count, 8 + 32 + 1)?;
-    let mut targets = reserve_vec(
-        usize::try_from(count).map_err(|_| CanonicalRedoWireDenial::TargetLimit)?,
-        storage,
-    )?;
+    let mut targets = reserve_vec(capacity, storage)?;
     let mut prior = None;
     for _ in 0..count {
         let encoded = cursor.field()?;
@@ -38,7 +38,11 @@ pub(super) fn decode_targets<S: PhysicalRecoveryDecodeStorage>(
         if let Some((identities, maximum_distinct)) = distinct.as_mut() {
             let identity = target.identity();
             if !identities.contains(&identity) && identities.len() as u64 == *maximum_distinct {
-                return Err(CanonicalRedoWireDenial::DistinctTargetLimit.into());
+                let admitted = *maximum_distinct;
+                let observed = admitted.saturating_add(1);
+                return Err(
+                    CanonicalRedoWireDenial::DistinctTargetLimit { observed, admitted }.into(),
+                );
             }
             identities.insert(identity);
         }

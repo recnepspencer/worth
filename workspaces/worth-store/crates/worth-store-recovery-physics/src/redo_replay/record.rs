@@ -171,10 +171,11 @@ const fn map_wire_denial(denial: CanonicalRedoWireDenial) -> PhysicalRedoPlannin
     match denial {
         CanonicalRedoWireDenial::MalformedMember => PhysicalRedoPlanningDenial::MalformedMember,
         CanonicalRedoWireDenial::WrongDomain => PhysicalRedoPlanningDenial::WrongDomain,
-        CanonicalRedoWireDenial::RecordCountLimit => PhysicalRedoPlanningDenial::RecordCountLimit,
-        CanonicalRedoWireDenial::TargetLimit => PhysicalRedoPlanningDenial::TargetLimit,
-        CanonicalRedoWireDenial::DistinctTargetLimit => {
-            PhysicalRedoPlanningDenial::DistinctTargetLimit
+        CanonicalRedoWireDenial::TargetLimit { observed, admitted } => {
+            PhysicalRedoPlanningDenial::TargetLimit { observed, admitted }
+        }
+        CanonicalRedoWireDenial::DistinctTargetLimit { observed, admitted } => {
+            PhysicalRedoPlanningDenial::DistinctTargetLimit { observed, admitted }
         }
         CanonicalRedoWireDenial::InvalidRecordOrder => {
             PhysicalRedoPlanningDenial::InvalidRecordOrder

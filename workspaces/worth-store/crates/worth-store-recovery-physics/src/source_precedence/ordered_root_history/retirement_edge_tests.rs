@@ -18,6 +18,7 @@ use super::{
     RetirementReleaseIntent, VerifiedRetirementRootEdge,
 };
 use crate::source_precedence::{ordinary_root_step::transcript, ReleasedInventoryView};
+use crate::ExceededRootHistoryBound as Exceeded;
 use crate::OrderedRootHistoryDenial as Denial;
 
 const CUTOFF: u64 = 16;
@@ -108,6 +109,10 @@ fn edge(source: &Root, result: &Root, start: u64) -> VerifiedRetirementRootEdge 
 }
 
 fn builder(checkpoint: &Root, cutoff: u64) -> OrderedRootHistoryBuilder {
+    bounded(checkpoint, cutoff, u64::MAX)
+}
+
+fn bounded(checkpoint: &Root, cutoff: u64, scratch: u64) -> OrderedRootHistoryBuilder {
     let topology = transcript(checkpoint.view(), format(), LIMIT).unwrap();
     OrderedRootHistoryBuilder::begin(
         &checkpoint.root,
@@ -116,8 +121,7 @@ fn builder(checkpoint: &Root, cutoff: u64) -> OrderedRootHistoryBuilder {
         cutoff,
         topology,
         format(),
-        4,
-        u64::MAX,
+        scratch,
     )
     .unwrap()
 }
@@ -174,6 +178,39 @@ fn admit_requires_the_exact_candidate_root_and_unchanged_membership() {
         ..result.view()
     };
     assert_eq!(admit(source.view(), segmented, exact), Err(Denial::Effect));
+}
+
+#[test]
+fn a_history_past_a_bound_names_the_bound_and_what_it_needed() {
+    let checkpoint = root(CHECKPOINT, 2);
+    let (first_root, second_root) = (root(CHECKPOINT + 1, 2), root(CHECKPOINT + 2, 2));
+    // Each view holds one free entry: a bound of none admits neither.
+    let exact = basis(CHECKPOINT, 15, first_root.sha256());
+    assert_eq!(
+        VerifiedRetirementRootEdge::admit(checkpoint.view(), first_root.view(), exact, format(), 0),
+        Err(Denial::Bound(Exceeded::entries(1, 0)))
+    );
+    let first = edge(&checkpoint, &first_root, 14);
+    let second = edge(&first_root, &second_root, 15);
+
+    let mut wide = bounded(&checkpoint, CUTOFF, u64::MAX);
+    advance(&mut wide, first, &first_root).unwrap();
+    let one = wide.peak_scratch_bytes;
+    advance(&mut wide, second, &second_root).unwrap();
+    let two = wide.peak_scratch_bytes;
+    assert!(one > 0 && two == 2 * one);
+    // Exactly the first edge's scratch admits one edge and names the second's.
+    let mut exact = bounded(&checkpoint, CUTOFF, one);
+    advance(&mut exact, first, &first_root).unwrap();
+    let past = Denial::Bound(Exceeded::scratch(two, one));
+    assert_eq!(advance(&mut exact, second, &second_root), Err(past));
+    assert_eq!(past.exceeded_bound(), Some(Exceeded::scratch(two, one)));
+    assert_eq!(Denial::Effect.exceeded_bound(), None);
+    let mut none = bounded(&checkpoint, CUTOFF, 0);
+    assert_eq!(
+        advance(&mut none, first, &first_root),
+        Err(Denial::Bound(Exceeded::scratch(one, 0)))
+    );
 }
 
 #[test]

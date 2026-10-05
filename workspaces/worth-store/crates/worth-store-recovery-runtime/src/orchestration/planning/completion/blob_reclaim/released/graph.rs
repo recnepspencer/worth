@@ -13,6 +13,7 @@ use worth_store_physical_format::{
 
 use super::super::record;
 use super::closure_evidence::ReleasedClosureEvidence;
+use crate::orchestration::planning::completion::historical_publication::HistoricalFailure;
 use crate::{
     integrity_ingress::RecoveryIntegrityIngressTrace,
     orchestration::planning::manifest_entry_budget::ManifestEntryBudget,
@@ -23,6 +24,8 @@ use crate::{
 mod child_tests;
 #[path = "graph/reuse_source.rs"]
 mod reuse_source;
+
+const INVALID: HistoricalFailure = HistoricalFailure::Invalid;
 
 #[derive(Clone, Copy)]
 enum ExpectedKind {
@@ -53,7 +56,7 @@ pub(super) fn authenticate(
     trace: &mut RecoveryIntegrityIngressTrace,
     scratch: &mut u64,
     reached: &mut BTreeSet<PersistedRecordIdentity>,
-) -> Option<[u8; 32]> {
+) -> Result<[u8; 32], HistoricalFailure> {
     let publication = source.publication();
     let mut transcript = Sha256::new();
     transcript.update(b"store.physical.released-drop-closure.v1");
@@ -72,14 +75,14 @@ pub(super) fn authenticate(
         && closure_evidence.settles_absent_root(publication.root_record())
     {
         transcript.update(0_u64.to_le_bytes());
-        return Some(transcript.finalize().into());
+        return Ok(transcript.finalize().into());
     }
     while let Some(edge) = pending.pop() {
         let Some(route) = routed(routes, edge.record) else {
             // Only the graph root is queued without a route of its own.
-            return None;
+            return Err(INVALID);
         };
-        edge_count = edge_count.checked_add(1)?;
+        edge_count = edge_count.checked_add(1).ok_or(INVALID)?;
         let admitted_class = match edge.kind {
             ExpectedKind::Root | ExpectedKind::Tree(_) => {
                 route.content_class() == SelectedRecordContentClass::Blob(BlobRecordKind::TreeNode)
@@ -92,9 +95,10 @@ pub(super) fn authenticate(
             ),
         };
         if !matches!(route, CurrentPhysicalRecordPlacement::Extent(_)) || !admitted_class {
-            return None;
+            return Err(INVALID);
         }
-        let Ok(bytes) = record::read(
+        // A read that ran out of its limits says so; it found no damage.
+        let bytes = record::read(
             discovery,
             format,
             Some(route),
@@ -103,11 +107,9 @@ pub(super) fn authenticate(
             budget,
             trace,
             scratch,
-        ) else {
-            return None;
-        };
+        )?;
         let Ok(fact) = decode_blob_record(&bytes) else {
-            return None;
+            return Err(INVALID);
         };
         transcript.update([u8::from(edge.parent.is_some())]);
         update_record(&mut transcript, edge.parent);
@@ -124,7 +126,7 @@ pub(super) fn authenticate(
                     || node.covered_bytes() != edge.covered
                     || <[u8; 32]>::from(Sha256::digest(&bytes)) != edge.digest
                 {
-                    return None;
+                    return Err(INVALID);
                 }
                 if reached.insert(edge.record)
                     && !push_children(
@@ -136,7 +138,7 @@ pub(super) fn authenticate(
                         closure_evidence,
                     )
                 {
-                    return None;
+                    return Err(INVALID);
                 }
             }
             (ExpectedKind::Tree(level), BlobRecordV1::TreeNode(node)) => {
@@ -146,7 +148,7 @@ pub(super) fn authenticate(
                     || node.covered_bytes() != edge.covered
                     || node.canonical_digest() != edge.digest
                 {
-                    return None;
+                    return Err(INVALID);
                 }
                 if reached.insert(edge.record)
                     && !push_children(
@@ -158,7 +160,7 @@ pub(super) fn authenticate(
                         closure_evidence,
                     )
                 {
-                    return None;
+                    return Err(INVALID);
                 }
             }
             (ExpectedKind::Chunk, BlobRecordV1::Chunk(chunk)) => {
@@ -176,7 +178,7 @@ pub(super) fn authenticate(
                             .saturating_sub(edge.start)
                             .min(u64::from(publication.chunk_size()))
                 {
-                    return None;
+                    return Err(INVALID);
                 }
                 reached.insert(edge.record);
             }
@@ -188,7 +190,10 @@ pub(super) fn authenticate(
                     edge.start,
                     edge.covered,
                     edge.digest,
-                ) || !reuse_source::verify_selected_source(
+                ) {
+                    return Err(INVALID);
+                }
+                reuse_source::verify_selected_source(
                     discovery,
                     format,
                     routes,
@@ -197,19 +202,17 @@ pub(super) fn authenticate(
                     budget,
                     trace,
                     scratch,
-                ) {
-                    return None;
-                }
+                )?;
                 reached.insert(edge.record);
             }
-            _ => return None,
+            _ => return Err(INVALID),
         }
         if reached.len() > routes.len() {
-            return None;
+            return Err(INVALID);
         }
     }
     transcript.update(edge_count.to_le_bytes());
-    Some(transcript.finalize().into())
+    Ok(transcript.finalize().into())
 }
 
 fn update_record(transcript: &mut Sha256, record: Option<PersistedRecordIdentity>) {

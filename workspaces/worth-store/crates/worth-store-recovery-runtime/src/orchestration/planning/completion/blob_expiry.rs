@@ -114,9 +114,7 @@ fn read_selected_declaration(
         return Err(HistoricalFailure::Invalid);
     }
     let limit = u64::from(format.page_size().bytes());
-    budget
-        .consume(1)
-        .map_err(|_| HistoricalFailure::ManifestEntries)?;
+    budget.consume(1)?;
     let observed = discovery
         .read_extent_manifest(placement.arena_range(), limit)
         .map_err(historical_publication::discovery_failure)?;
@@ -169,9 +167,6 @@ fn read_selected_declaration(
             + manifest.logical_bytes(),
     )
     .map_err(|_| HistoricalFailure::Invalid)?;
-    budget
-        .consume(1)
-        .map_err(|_| HistoricalFailure::ManifestEntries)?;
     let frame = discovery
         .read_extent_range(placement.arena_range(), relative, frame_length, limit)
         .map_err(historical_publication::discovery_failure)?;
@@ -255,5 +250,66 @@ mod tests {
             NonZeroU64::new(6),
         ));
         assert!(!crosses_declared_horizon(declaration(5), witness, None));
+    }
+
+    #[test]
+    fn reading_the_selected_declaration_is_charged_one_entry_before_its_read() {
+        use crate::orchestration::planning::selected_world_fixture::selected_world;
+        use worth_store_physical_format::{
+            DurableExtentRecordPlacement, ExtentArenaId, ExtentArenaRange, PersistedRecordIdentity,
+            PhysicalExtentId, PhysicalGeneration, PhysicalGenerationAuthority,
+            SelectedRecordContentClass, SelectedRecordRouteMetadata,
+        };
+        let record = PersistedRecordIdentity::new([1; 16], 9).unwrap();
+        let cell = PhysicalGenerationAuthority::for_canonical_physical_format()
+            .record_extent_cell(PhysicalExtentId::from_raw(9).unwrap())
+            .with_extent_generation(PhysicalGeneration::from_raw(1).unwrap());
+        let range = ExtentArenaRange::new(ExtentArenaId::new(9).unwrap(), 0, 64).unwrap();
+        let metadata =
+            SelectedRecordRouteMetadata::primary(SelectedRecordContentClass::Opaque).unwrap();
+        let route = CurrentPhysicalRecordPlacement::Extent(
+            DurableExtentRecordPlacement::new_selected(
+                record,
+                cell,
+                DECLARATION_FRAME_BYTES,
+                range,
+                metadata,
+            )
+            .unwrap(),
+        );
+        let terminal = BlobSessionAbandonedV1::new(
+            [1; 16],
+            [2; 16],
+            record,
+            [3; 32],
+            BlobAbandonmentReasonV1::ExplicitAbort,
+        )
+        .unwrap();
+        let read = |name: &str, observed: u64| {
+            selected_world(name, 4).read(|source| {
+                let mut budget = ManifestEntryBudget::new(8, observed);
+                let mut trace = Default::default();
+                let outcome = read_selected_declaration(
+                    source.discovery,
+                    source.format,
+                    Some(route),
+                    terminal,
+                    &mut budget,
+                    &mut trace,
+                    &mut 0,
+                )
+                .map(|_| ());
+                let reads = source.discovery.counters().addressed_artifacts_read;
+                (outcome, budget.remaining(), reads)
+            })
+        };
+        // None left: refused as that limit, before the read.
+        assert_eq!(
+            read("declaration-read-none-left", 8),
+            (Err(HistoricalFailure::ManifestEntries), 0, 0)
+        );
+        // One left pays for the read. This world holds no such extent.
+        let (outcome, remaining, _) = read("declaration-read-one-left", 7);
+        assert_eq!((outcome, remaining), (Err(HistoricalFailure::Invalid), 0));
     }
 }

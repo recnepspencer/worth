@@ -195,7 +195,6 @@ impl BoundedRecoveryFilesystemDiscovery {
         byte_limit: u64,
         fixed: bool,
     ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryFailure> {
-        let observation_is_tighter = self.remaining_bytes <= byte_limit;
         let effective_byte_limit = byte_limit.min(self.remaining_bytes);
         if self.remaining_entries == 0 {
             return Err(RecoveryDiscoveryFailure::EntryLimitExceeded {
@@ -246,19 +245,7 @@ impl BoundedRecoveryFilesystemDiscovery {
                         admitted: effective_byte_limit,
                     },
                 );
-                if observation_is_tighter {
-                    Err(RecoveryDiscoveryFailure::ByteLimitExceeded {
-                        observed: self.counters.bytes_read.saturating_add(limit.observed),
-                        admitted: self.maximum_bytes,
-                        scope: RecoveryDiscoveryByteLimitScope::Observation,
-                    })
-                } else {
-                    Err(RecoveryDiscoveryFailure::ByteLimitExceeded {
-                        observed: limit.observed,
-                        admitted: limit.admitted,
-                        scope: RecoveryDiscoveryByteLimitScope::Requested,
-                    })
-                }
+                Err(self.read_refused(byte_limit, limit.observed))
             }
             Err(failure) => Err(RecoveryDiscoveryFailure::Media {
                 artifact: context,
@@ -286,6 +273,48 @@ fn map_media(
         }
     } else {
         RecoveryDiscoveryFailure::Media { artifact, failure }
+    }
+}
+
+impl<M> FilesystemObservation<M> {
+    /// A read of `length` bytes refused within `byte_limit` and the bytes
+    /// this reader has left: a whole artifact the tree would not read, or a
+    /// range its caller asked for. One longer than `byte_limit` passed the
+    /// ceiling its caller named for it, however little this reader has left;
+    /// only one within that ceiling ran this reader out of bytes. Where the
+    /// tree cannot tell a whole artifact's length it reports one byte past
+    /// what it was asked for, which decides the same way.
+    fn read_refused(&self, byte_limit: u64, length: u64) -> RecoveryDiscoveryFailure {
+        if length > byte_limit {
+            RecoveryDiscoveryFailure::ByteLimitExceeded {
+                observed: length,
+                admitted: byte_limit,
+                scope: RecoveryDiscoveryByteLimitScope::Requested,
+            }
+        } else {
+            RecoveryDiscoveryFailure::ByteLimitExceeded {
+                observed: self.counters.bytes_read.saturating_add(length),
+                admitted: self.maximum_bytes,
+                scope: RecoveryDiscoveryByteLimitScope::Observation,
+            }
+        }
+    }
+
+    /// Admits a range of `length` bytes before anything is opened. An empty
+    /// range addresses nothing.
+    fn admit_range(
+        &self,
+        artifact: &RecoveryDiscoveryArtifact,
+        length: u64,
+        byte_limit: u64,
+    ) -> Result<(), RecoveryDiscoveryFailure> {
+        if length == 0 {
+            Err(RecoveryDiscoveryFailure::invalid(artifact.clone()))
+        } else if length > self.remaining_bytes.min(byte_limit) {
+            Err(self.read_refused(byte_limit, length))
+        } else {
+            Ok(())
+        }
     }
 }
 

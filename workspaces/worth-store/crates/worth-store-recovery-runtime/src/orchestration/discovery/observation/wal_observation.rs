@@ -7,6 +7,7 @@ use crate::entry::{
     PhysicalRecoveryBlockKind as PhysicalRecoveryBlock, PhysicalRecoveryLimitDimension,
     PhysicalRecoveryLimits,
 };
+use crate::orchestration::reader_limit::ReadCeiling;
 use crate::progression::PhysicalRecoveryDiscoveryCounters;
 use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
 use worth_store_recovery_physics::PhysicalRecoveryResidue;
@@ -20,14 +21,18 @@ pub(super) fn observe_wal(
     counters: &mut PhysicalRecoveryDiscoveryCounters,
 ) -> Result<(WalDiscovery, Vec<PhysicalRecoveryResidue>, u64), DiscoveryFailure> {
     let declaration = limits.declaration();
+    // Nothing declares a WAL file's length, so the WAL bytes the caller
+    // admitted are the only ceiling its read has. The reader counts them
+    // across the files of this one read.
+    let wal_bytes = ReadCeiling::of_budget_alone(declaration.wal_bytes, declaration.wal_bytes);
     let observed = {
         let mut allocation = coordination
             .owner_mut()
             .begin_source_read_allocation()
             .map_err(allocation::window_admission_failure)?;
         allocation
-            .read_wal_payloads(discovery, declaration.wal_segments, declaration.wal_bytes)
-            .map_err(allocation::map_read_failure)?
+            .read_wal_payloads(discovery, declaration.wal_segments, wal_bytes.requested())
+            .map_err(|failure| allocation::map_read_failure(failure, wal_bytes))?
     };
     let wal_entries = observed.artifacts().len() as u64;
     let inspected = match discover_wal_inventory(

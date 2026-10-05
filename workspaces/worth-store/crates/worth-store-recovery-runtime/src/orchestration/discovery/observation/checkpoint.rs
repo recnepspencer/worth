@@ -1,16 +1,19 @@
-use super::super::{map_discovery_failure, CheckpointDiscovery, DiscoveryFailure};
+use super::super::{refused_read, CheckpointDiscovery, DiscoveryFailure};
 use crate::entry::{
-    PhysicalRecoveryCheckpointIntegrityDenial, PhysicalRecoveryLimitDimension,
-    PhysicalRecoveryLimits,
+    PhysicalRecoveryBlockKind, PhysicalRecoveryCheckpointIntegrityDenial,
+    PhysicalRecoveryLimitDimension, PhysicalRecoveryLimits, PhysicalRecoveryRootProtocolArtifact,
+    PhysicalRecoveryRootProtocolDenial, PhysicalRecoverySourceDenial,
 };
 use crate::integrity_ingress::{
     admit_observed_checkpoint_stream, CheckpointStreamAdmissionFailure,
     RecoveryIntegrityIngressRejection, RecoveryIntegrityIngressTrace,
 };
+use crate::orchestration::reader_limit::{OversizedArtifact, ReadCeiling};
 use crate::progression::PhysicalRecoveryDiscoveryCounters;
 use worth_store::physical_runtime::{
     BoundedRecoveryFilesystemDiscovery, PhysicalRecoveryReadAllocation,
 };
+use worth_store_physical_format::PhysicalRecordFormatDeclaration;
 
 mod allocation;
 pub(super) use allocation::window_admission_failure;
@@ -18,26 +21,53 @@ pub(super) use allocation::window_admission_failure;
 #[cfg(test)]
 mod tests;
 
+/// The checkpoint names a source root larger than a root manifest can be:
+/// the same block a source root that fails its own admission raises.
+fn oversized_source_root(
+    generation: u64,
+    refused: Result<OversizedArtifact, DiscoveryFailure>,
+) -> DiscoveryFailure {
+    match refused {
+        Err(blocked) => blocked,
+        Ok(OversizedArtifact) => DiscoveryFailure::from(PhysicalRecoveryBlockKind::Checkpoint)
+            .with_root_protocol_denials(&[PhysicalRecoverySourceDenial::RootProtocol {
+                artifact: PhysicalRecoveryRootProtocolArtifact::CheckpointSourceRoot { generation },
+                denial: PhysicalRecoveryRootProtocolDenial::NonCanonicalEncoding,
+            }]),
+    }
+}
+
 pub(super) fn observe_checkpoint(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     limits: PhysicalRecoveryLimits,
+    record_format: PhysicalRecordFormatDeclaration,
     remaining_manifest_bytes: &mut u64,
     counters: &mut PhysicalRecoveryDiscoveryCounters,
     ingress_trace: &mut RecoveryIntegrityIngressTrace,
     allocation: &mut PhysicalRecoveryReadAllocation<'_>,
 ) -> Result<CheckpointDiscovery, DiscoveryFailure> {
     let declaration = limits.declaration();
-    let artifact = allocation
-        .read_checkpoint(discovery, declaration.observation_bytes)
-        .map_err(|failure| {
-            allocation::map_read_failure(failure, |failure| {
-                map_discovery_failure(
+    // Nothing declares the stream's length, so only the observation bytes
+    // the caller admitted bound its read: those discovery has not yet read.
+    let stream = ReadCeiling::of_budget_alone(
+        declaration.observation_bytes,
+        declaration
+            .observation_bytes
+            .saturating_sub(discovery.counters().bytes_read),
+    );
+    let artifact = match allocation.read_checkpoint(discovery, stream.requested()) {
+        Ok(artifact) => artifact,
+        Err(failure) => {
+            let OversizedArtifact = allocation::refused(failure, |failure| {
+                refused_read(
                     failure,
-                    PhysicalRecoveryLimitDimension::ObservationBytes,
+                    stream,
                     PhysicalRecoveryLimitDimension::ObservationBytes,
                 )
-            })
-        })?;
+            })?;
+            return Err(PhysicalRecoveryBlockKind::Checkpoint.into());
+        }
+    };
     let mut trace = RecoveryIntegrityIngressTrace::new();
     let checkpoint = match admit_observed_checkpoint_stream(
         artifact.observed(),
@@ -49,18 +79,25 @@ pub(super) fn observe_checkpoint(
     ) {
         Ok(Some(projection)) => {
             let generation = projection.checkpoint.facts().source().root().generation();
+            // A root manifest is one page of the declared format.
+            let ceiling = ReadCeiling::within(
+                u64::from(record_format.page_size().bytes()),
+                declaration.manifest_bytes,
+                *remaining_manifest_bytes,
+            );
             let source_root = allocation
-                .read_checkpoint_source_root(discovery, generation, *remaining_manifest_bytes)
+                .read_checkpoint_source_root(discovery, generation, ceiling.requested())
                 .map_err(|failure| {
-                    allocation::map_read_failure(failure, |failure| {
-                        super::super::map_cumulative_discovery_failure(
-                            failure,
-                            PhysicalRecoveryLimitDimension::ManifestEntries,
-                            PhysicalRecoveryLimitDimension::ManifestBytes,
-                            declaration.manifest_bytes,
-                            *remaining_manifest_bytes,
-                        )
-                    })
+                    oversized_source_root(
+                        generation,
+                        allocation::refused(failure, |failure| {
+                            refused_read(
+                                failure,
+                                ceiling,
+                                PhysicalRecoveryLimitDimension::ManifestBytes,
+                            )
+                        }),
+                    )
                     .with_integrity_trace(trace.clone())
                 })?;
             let bytes = source_root

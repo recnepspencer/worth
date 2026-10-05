@@ -17,6 +17,12 @@ pub enum PhysicalRecoverySelectedReleaseHeadDenial {
     MissingCheckpoint,
     ObservationByteLimit,
     ManifestEntryLimit,
+    /// The checkpoint's verified roster counts more heads than recovery
+    /// admits manifest entries.
+    RosterEntryLimit {
+        observed: u64,
+        admitted: u64,
+    },
     ResidentBoundExceeded {
         required: u64,
         admitted: u64,
@@ -70,6 +76,12 @@ pub enum PhysicalRecoveryReleaseHeadWalkDenial {
     Root,
     DuplicateNode,
     BoundExceeded,
+    /// The tree names more blocks than one holding the verified roster's
+    /// heads can have. `admitted` is that ceiling; recovery sets no such limit.
+    RosterBlockCeiling {
+        observed: u64,
+        admitted: u64,
+    },
     Allocation {
         requested: u64,
         cause: std::collections::TryReserveError,

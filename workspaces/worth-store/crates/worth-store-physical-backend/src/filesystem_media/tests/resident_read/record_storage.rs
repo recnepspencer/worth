@@ -8,7 +8,7 @@ use crate::filesystem_media::{
 use std::{cell::RefCell, rc::Rc};
 
 #[derive(Debug, PartialEq, Eq)]
-enum StorageDenied {
+pub(super) enum StorageDenied {
     Path(Boundary),
     Payload,
 }
@@ -20,7 +20,7 @@ struct Census {
     payload_calls: usize,
 }
 
-struct PathBacking {
+pub(super) struct PathBacking {
     census: Rc<RefCell<Census>>,
     slot: usize,
     bytes: u64,
@@ -30,7 +30,7 @@ impl Drop for PathBacking {
         self.census.borrow_mut().active[self.slot] -= self.bytes;
     }
 }
-struct Storage {
+pub(super) struct Storage {
     census: Rc<RefCell<Census>>,
     deny_path: Option<Boundary>,
     deny_payload: bool,
@@ -79,7 +79,7 @@ impl ArtifactTreeReadAllocator for Storage {
         Ok(vec![0; length])
     }
 }
-fn storage(deny_path: Option<Boundary>, deny_payload: bool) -> Storage {
+pub(super) fn storage(deny_path: Option<Boundary>, deny_payload: bool) -> Storage {
     Storage {
         census: Rc::new(RefCell::new(Census::default())),
         deny_path,

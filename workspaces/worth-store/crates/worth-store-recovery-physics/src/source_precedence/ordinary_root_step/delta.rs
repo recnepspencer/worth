@@ -5,7 +5,6 @@ pub(super) fn routes_match(
     result: ReleasedInventoryView<'_>,
     projection: &PersistedPhysicalRecoveryProjection,
 ) -> Result<bool, OrdinaryRootStepDenial> {
-    use OrdinaryRootStepDenial as Denial;
     let dropped = match projection.operation() {
         Semantic::DerivedDirectory {
             retirement: Some(retirement),
@@ -60,12 +59,8 @@ pub(super) fn routes_match(
             return Ok(false);
         }
     }
-    let mut expected = Vec::new();
-    expected
-        .try_reserve_exact(routes.len())
-        .map_err(|_| Denial::BoundExceeded)?;
-    expected.extend(routes.into_values());
-    Ok(expected == result.routes)
+    Ok(routes.len() == result.routes.len()
+        && routes.into_values().eq(result.routes.iter().copied()))
 }
 
 pub(super) fn retired_witness_matches(
@@ -163,15 +158,13 @@ pub(super) fn free_matches(
                 .map(|candidate| next.max(candidate))
         })
         .ok_or(Denial::InvalidDelta)?;
-    if next_arena
-        .checked_sub(first)
-        .is_none_or(|count| count > limit)
-    {
-        return Err(Denial::BoundExceeded);
+    let past = |count: u64| Denial::BoundExceeded(ExceededRootHistoryBound::entries(count, limit));
+    if next_arena - first > limit {
+        return Err(past(next_arena - first));
     }
     for id in first..next_arena {
         if free.len() as u64 >= limit {
-            return Err(Denial::BoundExceeded);
+            return Err(past(free.len() as u64 + 1));
         }
         let range = ExtentArenaRange::new(
             ExtentArenaId::new(id).ok_or(Denial::InvalidDelta)?,
@@ -183,7 +176,7 @@ pub(super) fn free_matches(
     }
     for range in ranges {
         if free.len() as u64 > limit {
-            return Err(Denial::BoundExceeded);
+            return Err(past(free.len() as u64));
         }
         if range.end() > source.free.arena_capacity()
             || range.offset() % source.free.arena_alignment() != 0

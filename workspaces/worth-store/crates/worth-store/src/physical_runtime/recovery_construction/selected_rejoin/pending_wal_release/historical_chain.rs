@@ -296,7 +296,7 @@ pub(super) fn verify_ordinary_steps(
             delta::MAX_TRANSITION_ENTRIES,
             remaining,
         )
-        .map_err(|_| Denial::RoutingFrame)?;
+        .map_err(|denial| delta::replay_denial(denial.exceeded_bound()))?;
         let maximum_fingerprint = delta::MAX_TRANSITION_MEMORY
             .checked_sub(fixed_charge)
             .and_then(|bytes| bytes.checked_sub(matched.retained_scratch_bytes()))

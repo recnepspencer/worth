@@ -59,6 +59,12 @@ pub struct VerifiedSelectedReleaseHeadCustodyV2 {
 #[derive(Debug)]
 pub enum SelectedHeadRosterAdmissionDenial<ReadError> {
     Custody(SelectedCustodyDenial),
+    /// The checkpoint's roster counts more heads than the caller admits. The
+    /// roster verified; the caller's bound is what it passed.
+    HeadEntries {
+        observed: u64,
+        admitted: u64,
+    },
     Walk(ReleaseCustodyHeadWalkDenial<ReadError, ()>),
     Allocation {
         requested: u64,
@@ -79,7 +85,6 @@ impl VerifiedCheckpointReleaseHeadRosterV2 {
         stream: &VerifiedCheckpointStream,
         checkpoint_source_root: &DurablePhysicalRootManifest,
         format: PhysicalRecordFormatDeclaration,
-        walk_limits: ReleaseCustodyHeadWalkLimitsV1,
         maximum_head_entries: u64,
         maximum_resident_bytes: u64,
         read: Read,
@@ -114,7 +119,10 @@ impl VerifiedCheckpointReleaseHeadRosterV2 {
         let roster = roster_v2::parse(stream, source_sha, maximum_resident_bytes)?;
         let count = roster.accumulator.head_count();
         if count > maximum_head_entries {
-            return Err(denial.into());
+            return Err(SelectedHeadRosterAdmissionDenial::HeadEntries {
+                observed: count,
+                admitted: maximum_head_entries,
+            });
         }
         let batch_bytes = (roster.batches.capacity() as u64)
             .checked_mul(std::mem::size_of::<ReleaseCheckpointBatchV1>() as u64)
@@ -159,12 +167,25 @@ impl VerifiedCheckpointReleaseHeadRosterV2 {
                 maximum_resident_bytes,
             )?;
         }
-        let walk_limits = walk_limits.with_max_resident_bytes(remaining).ok_or(
-            SelectedCustodyDenial::ResidentBoundExceeded {
-                required: owned_heap.saturating_add(1),
-                admitted: maximum_resident_bytes,
-            },
-        )?;
+        // The roster's count and the root's level bound the tree's shape: one
+        // root, no more blocks on a level below it than there are heads, and
+        // one level past the root's. A sound tree cannot reach either, so
+        // neither is a limit; its blocks cost the reader's bytes and this
+        // memory, and those say when they run out.
+        let level = checkpoint_source_root
+            .release_custody_head_root()
+            .map_or(0, |root| root.level());
+        let walk_limits = ReleaseCustodyHeadWalkLimitsV1::new(
+            count.saturating_mul(u64::from(level)).saturating_add(1),
+            maximum_head_entries,
+            u64::MAX,
+            remaining,
+            level.saturating_add(1),
+        )
+        .ok_or(SelectedCustodyDenial::ResidentBoundExceeded {
+            required: owned_heap.saturating_add(1),
+            admitted: maximum_resident_bytes,
+        })?;
         let walk =
             walk_release_custody_head(checkpoint_source_root, format, walk_limits, read, |entry| {
                 if heads.len() as u64 >= count {

@@ -9,7 +9,8 @@ use worth_store_physical_format::{
     RecordFreeSpaceManifestEntry, RecordSegmentPageManifestEntry,
 };
 use worth_store_recovery_physics::{
-    ReleasedInventoryView, VerifiedPendingWalReleaseCustody, VerifiedReleasedV3InventoryTransition,
+    ExceededRootHistoryBound, ReleasedInventoryView, VerifiedPendingWalReleaseCustody,
+    VerifiedReleasedV3InventoryTransition,
 };
 
 use super::super::{
@@ -31,6 +32,15 @@ pub(super) const MAX_TRANSITION_MEMORY: u64 = MAX_DISCOVERY_BYTES;
 pub(super) const MAX_TRANSITION_ENTRIES: u64 =
     MAX_TRANSITION_MEMORY / (4 * std::mem::size_of::<CurrentPhysicalRecordPlacement>() as u64);
 const SNAPSHOT_TREE_HEADROOM: u64 = 64 << 20;
+
+/// Store's own replay of a planned step was refused: past one of Store's
+/// bounds, or not the step these roots hold.
+pub(super) fn replay_denial(exceeded: Option<ExceededRootHistoryBound>) -> Denial {
+    match exceeded {
+        Some(_) => Denial::BoundExceeded,
+        None => Denial::RoutingFrame,
+    }
+}
 
 pub(super) struct Snapshot {
     pub(super) routes: Vec<CurrentPhysicalRecordPlacement>,
@@ -167,7 +177,7 @@ pub(super) fn verify(
         remaining,
         expected_transition.directory_replacement(),
     )
-    .map_err(|_| Denial::RoutingFrame)?;
+    .map_err(|denial| replay_denial(denial.exceeded_bound()))?;
     let expected = claim.topologies().ok_or(Denial::RoutingFrame)?;
     if source.transcript != actual.source_topology()
         || result.transcript != actual.result_topology()
@@ -290,5 +300,19 @@ mod tests {
             preflight_snapshot(1, 1, &mut remaining),
             Err(Denial::BoundExceeded)
         ));
+    }
+
+    #[test]
+    fn a_replay_past_a_bound_is_a_bound_and_any_other_refusal_is_the_frames() {
+        use worth_store_recovery_physics::RootHistoryBound;
+        for bound in [RootHistoryBound::Entries, RootHistoryBound::ScratchBytes] {
+            let past = ExceededRootHistoryBound {
+                bound,
+                observed: 9,
+                admitted: 8,
+            };
+            assert!(matches!(replay_denial(Some(past)), Denial::BoundExceeded));
+        }
+        assert!(matches!(replay_denial(None), Denial::RoutingFrame));
     }
 }

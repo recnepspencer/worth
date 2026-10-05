@@ -28,6 +28,8 @@ fn entry(object: u8) -> ReleaseCustodyHeadEntryV1 {
     .unwrap()
 }
 
+mod node_bound;
+
 fn limits() -> ReleaseCustodyHeadWalkLimitsV1 {
     ReleaseCustodyHeadWalkLimitsV1::new(8, 8, 8 * 16_384, 128 * 1024, 4).unwrap()
 }

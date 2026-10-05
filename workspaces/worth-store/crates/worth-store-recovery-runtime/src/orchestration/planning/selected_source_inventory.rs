@@ -9,7 +9,7 @@ use worth_store_physical_format::{
     RecordFreeSpaceManifestEntry, SegmentManifestBlockReference,
 };
 
-use super::manifest_entry_budget::ManifestEntryBudget;
+use super::manifest_entry_budget::{ManifestEntryBudget, RootUnit};
 use super::page_observation::{required_source, PageObservationFailure};
 use crate::integrity_ingress::projection::MembershipProjectionFailure;
 use crate::progression::{RecoverySelectedSegmentPage, RecoverySelectedSourceInventory};
@@ -22,8 +22,7 @@ type SelectedSegmentTopologyObservation = (
 
 #[path = "selected_source_inventory/routes.rs"]
 mod routes;
-pub(super) use routes::observe_routes_with_budget;
-pub(super) use routes::observe_routes_with_resident_budget;
+pub(super) use routes::{observe_routes_held, observe_routes_with_budget, RoutesFailure};
 #[path = "selected_source_inventory/resident.rs"]
 mod resident;
 pub(in crate::orchestration::planning) use resident::{ResidentAllowance, ResidentTraceDenial};
@@ -34,103 +33,139 @@ pub(super) fn observe(
     root: &DurablePhysicalRootManifest,
     format: PhysicalRecordFormatDeclaration,
     maximum_manifest_entries: u64,
-    byte_limit: u64,
 ) -> (
     Result<RecoverySelectedSourceInventory, PageObservationFailure>,
     crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) {
     let mut budget = ManifestEntryBudget::new(maximum_manifest_entries, 0);
     let mut integrity_trace = crate::integrity_ingress::RecoveryIntegrityIngressTrace::default();
-    let inventory = observe_with_budget(
-        discovery,
-        root,
-        format,
-        &mut budget,
-        byte_limit,
-        &mut integrity_trace,
-    );
+    let inventory = budget.charge_root().and_then(|root_unit| {
+        observe_with_budget(
+            discovery,
+            root,
+            format,
+            &root_unit,
+            &mut budget,
+            &mut integrity_trace,
+        )
+    });
     (inventory, integrity_trace)
 }
 
+/// The segment pages and free entries under `root`, each leaf entry charged.
+/// The root's own entry is charged where the root is read.
 pub(super) fn observe_with_budget(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     root: &DurablePhysicalRootManifest,
     format: PhysicalRecordFormatDeclaration,
+    root_unit: &RootUnit,
     budget: &mut ManifestEntryBudget,
-    byte_limit: u64,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) -> Result<RecoverySelectedSourceInventory, PageObservationFailure> {
-    let mut resident = ResidentAllowance::new(u64::MAX);
-    observe_with_resident_budget(
-        discovery,
-        root,
-        format,
-        budget,
-        byte_limit,
-        integrity_trace,
-        &mut resident,
-    )
+    observe_headers(discovery, root, format, root_unit, integrity_trace)?
+        .observe_segments(discovery, root, format, budget, integrity_trace)?
+        .observe_free_entries(discovery, root, format, budget, integrity_trace)
 }
 
-pub(super) fn observe_with_resident_budget(
+/// The first read of an inventory: the free-space header `root` names.
+pub(super) fn observe_headers(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     root: &DurablePhysicalRootManifest,
     format: PhysicalRecordFormatDeclaration,
-    budget: &mut ManifestEntryBudget,
-    byte_limit: u64,
+    _root_unit: &RootUnit,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
-    resident: &mut ResidentAllowance,
-) -> Result<RecoverySelectedSourceInventory, PageObservationFailure> {
-    budget.admit_pending_block_read()?;
-    let free_space = read_free_space_header(discovery, root, format, byte_limit, integrity_trace)?;
-    let (segment_pages, segment_artifacts, segment_topology) = read_segment_pages(
-        discovery,
-        root,
-        format,
-        budget,
-        byte_limit,
-        integrity_trace,
-        resident,
-    )?;
-    let (free_entries, free_artifacts, free_topology) = read_free_entries(
-        discovery,
-        &free_space,
-        format,
-        budget,
-        byte_limit,
-        integrity_trace,
-        resident,
-    )?;
-    let mut source_artifacts = BTreeSet::from([RecordArtifactFile::FreeSpaceManifest {
-        generation: root.generation(),
-    }]);
-    source_artifacts.extend(segment_artifacts);
-    source_artifacts.extend(free_artifacts);
-    Ok(RecoverySelectedSourceInventory {
-        free_space,
-        segment_pages,
-        segment_topology,
-        free_entries: free_entries.into_boxed_slice(),
-        free_topology,
-        source_artifacts: source_artifacts
-            .into_iter()
-            .collect::<Vec<_>>()
-            .into_boxed_slice(),
-    })
+) -> Result<InventoryHeaders, PageObservationFailure> {
+    read_free_space_header(discovery, root, format, integrity_trace)
+        .map(|free_space| InventoryHeaders { free_space })
+}
+
+/// An inventory read as far as its headers, with no tree under them yet.
+pub(super) struct InventoryHeaders {
+    free_space: DurableFreeSpaceManifestHeader,
+}
+
+impl InventoryHeaders {
+    pub(super) const fn free_space(&self) -> &DurableFreeSpaceManifestHeader {
+        &self.free_space
+    }
+
+    /// Reads the segment tree, each page entry charged.
+    pub(super) fn observe_segments(
+        self,
+        discovery: &mut BoundedRecoveryFilesystemDiscovery,
+        root: &DurablePhysicalRootManifest,
+        format: PhysicalRecordFormatDeclaration,
+        budget: &mut ManifestEntryBudget,
+        integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
+    ) -> Result<InventorySegments, PageObservationFailure> {
+        Ok(InventorySegments {
+            segments: read_segment_pages(discovery, root, format, budget, integrity_trace)?,
+            free_space: self.free_space,
+        })
+    }
+}
+
+/// An inventory read as far as its segment tree.
+pub(super) struct InventorySegments {
+    free_space: DurableFreeSpaceManifestHeader,
+    segments: SelectedSegmentTopologyObservation,
+}
+
+impl InventorySegments {
+    /// The segment pages read. No header counts them.
+    pub(super) fn pages(&self) -> usize {
+        self.segments.0.len()
+    }
+
+    /// Reads the free-space tree, each entry charged.
+    pub(super) fn observe_free_entries(
+        self,
+        discovery: &mut BoundedRecoveryFilesystemDiscovery,
+        root: &DurablePhysicalRootManifest,
+        format: PhysicalRecordFormatDeclaration,
+        budget: &mut ManifestEntryBudget,
+        integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
+    ) -> Result<RecoverySelectedSourceInventory, PageObservationFailure> {
+        let (segment_pages, segment_artifacts, segment_topology) = self.segments;
+        let (free_entries, free_artifacts, free_topology) =
+            read_free_entries(discovery, &self.free_space, format, budget, integrity_trace)?;
+        let mut source_artifacts = BTreeSet::from([RecordArtifactFile::FreeSpaceManifest {
+            generation: root.generation(),
+        }]);
+        source_artifacts.extend(segment_artifacts);
+        source_artifacts.extend(free_artifacts);
+        Ok(RecoverySelectedSourceInventory {
+            free_space: self.free_space,
+            segment_pages,
+            segment_topology,
+            free_entries: free_entries.into_boxed_slice(),
+            free_topology,
+            source_artifacts: source_artifacts
+                .into_iter()
+                .collect::<Vec<_>>()
+                .into_boxed_slice(),
+        })
+    }
+}
+
+/// The ceiling of every read here. A free-space manifest and a membership
+/// block are each at most one page of the format, so a larger one is damage:
+/// no budget of the caller's stands in for the artifact's own ceiling.
+fn one_page(format: PhysicalRecordFormatDeclaration) -> u64 {
+    u64::from(format.page_size().bytes())
 }
 
 fn read_free_space_header(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     root: &DurablePhysicalRootManifest,
     format: PhysicalRecordFormatDeclaration,
-    byte_limit: u64,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) -> Result<DurableFreeSpaceManifestHeader, PageObservationFailure> {
     let artifact = RecordArtifactFile::FreeSpaceManifest {
         generation: root.generation(),
     };
     let source = required_source(
-        discovery.read_free_space_manifest(root.generation(), byte_limit),
+        discovery.read_free_space_manifest(root.generation(), one_page(format)),
         None,
     )?;
     crate::integrity_ingress::projection::free_space_header(
@@ -151,9 +186,7 @@ fn read_segment_pages(
     root: &DurablePhysicalRootManifest,
     format: PhysicalRecordFormatDeclaration,
     budget: &mut ManifestEntryBudget,
-    byte_limit: u64,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
-    resident: &mut ResidentAllowance,
 ) -> Result<SelectedSegmentTopologyObservation, PageObservationFailure> {
     let mut pending = root.segment_root().into_iter().collect::<VecDeque<_>>();
     let mut visited = BTreeSet::new();
@@ -161,8 +194,6 @@ fn read_segment_pages(
     let mut pages = BTreeMap::new();
     let mut topology = BTreeMap::new();
     while let Some(reference) = pending.pop_front() {
-        budget.admit_pending_block_read()?;
-        resident.block(format)?;
         let artifact = RecordArtifactFile::SegmentMembershipBlock {
             generation: reference.generation(),
             block: reference.block(),
@@ -175,7 +206,7 @@ fn read_segment_pages(
             discovery.read_segment_membership_block(
                 reference.generation(),
                 reference.block(),
-                byte_limit,
+                one_page(format),
             ),
             None,
         )?;
@@ -195,10 +226,6 @@ fn read_segment_pages(
         topology.insert((reference.generation(), reference.block()), block.clone());
         if let Some(entries) = block.entries() {
             budget.consume(entries.len())?;
-            resident.entries(
-                entries.len(),
-                std::mem::size_of::<RecoverySelectedSegmentPage>(),
-            )?;
             for entry in entries {
                 let key = (entry.page_cell().segment_id().get(), entry.page().get());
                 let page = RecoverySelectedSegmentPage {
@@ -211,11 +238,6 @@ fn read_segment_pages(
                 }
             }
         } else if let Some(children) = block.children() {
-            budget.consume(children.len())?;
-            resident.entries(
-                children.len(),
-                std::mem::size_of::<SegmentManifestBlockReference>(),
-            )?;
             pending.extend(children.iter().copied());
         }
     }
@@ -227,9 +249,7 @@ fn read_free_entries(
     header: &DurableFreeSpaceManifestHeader,
     format: PhysicalRecordFormatDeclaration,
     budget: &mut ManifestEntryBudget,
-    byte_limit: u64,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
-    resident: &mut ResidentAllowance,
 ) -> Result<
     (
         Vec<RecordFreeSpaceManifestEntry>,
@@ -244,8 +264,6 @@ fn read_free_entries(
     let mut entries = Vec::new();
     let mut topology = BTreeMap::new();
     while let Some(reference) = pending.pop_front() {
-        budget.admit_pending_block_read()?;
-        resident.block(format)?;
         let artifact = RecordArtifactFile::FreeSpaceMembershipBlock {
             generation: reference.generation(),
             block: reference.block(),
@@ -258,7 +276,7 @@ fn read_free_entries(
             discovery.read_free_space_membership_block(
                 reference.generation(),
                 reference.block(),
-                byte_limit,
+                one_page(format),
             ),
             None,
         )?;
@@ -278,17 +296,8 @@ fn read_free_entries(
         topology.insert((reference.generation(), reference.block()), block.clone());
         if let Some(found) = block.entries() {
             budget.consume(found.len())?;
-            resident.entries(
-                found.len(),
-                std::mem::size_of::<RecordFreeSpaceManifestEntry>(),
-            )?;
             entries.extend_from_slice(found);
         } else if let Some(children) = block.children() {
-            budget.consume(children.len())?;
-            resident.entries(
-                children.len(),
-                std::mem::size_of::<worth_store_physical_format::FreeSpaceBlockReference>(),
-            )?;
             pending.extend(children.iter().copied());
         }
     }

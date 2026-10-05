@@ -11,12 +11,14 @@ use worth_store_physical_format::{
 };
 
 use super::super::super::record;
+use crate::orchestration::planning::completion::historical_publication::HistoricalFailure;
 use crate::{
     integrity_ingress::RecoveryIntegrityIngressTrace,
     orchestration::planning::manifest_entry_budget::ManifestEntryBudget,
 };
 
 const MAX_SOURCE_TREE_DEPTH: usize = 7;
+const INVALID: HistoricalFailure = HistoricalFailure::Invalid;
 
 pub(super) fn destination_matches(
     value: BlobChunkReuseClaimV2,
@@ -46,6 +48,7 @@ pub(super) fn destination_matches(
                 .min(chunk_size)
 }
 
+/// A source read that ran out of its limits says so; it found no damage.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn verify_selected_source(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
@@ -56,38 +59,14 @@ pub(super) fn verify_selected_source(
     budget: &mut ManifestEntryBudget,
     trace: &mut RecoveryIntegrityIngressTrace,
     scratch: &mut u64,
-) -> bool {
-    verify(
-        discovery,
-        format,
-        routes,
-        value,
-        claim_record,
-        budget,
-        trace,
-        scratch,
-    )
-    .is_some()
-}
-
-#[allow(clippy::too_many_arguments)]
-fn verify(
-    discovery: &mut BoundedRecoveryFilesystemDiscovery,
-    format: PhysicalRecordFormatDeclaration,
-    routes: &[CurrentPhysicalRecordPlacement],
-    value: BlobChunkReuseClaimV2,
-    claim_record: PersistedRecordIdentity,
-    budget: &mut ManifestEntryBudget,
-    trace: &mut RecoveryIntegrityIngressTrace,
-    scratch: &mut u64,
-) -> Option<()> {
+) -> Result<(), HistoricalFailure> {
     let claim = value.claim();
     let source = value.source_publication();
     if claim_record == claim.selected_chunk()
         || claim_record == claim.source_publication()
         || claim.selected_chunk() == claim.source_publication()
     {
-        return None;
+        return Err(INVALID);
     }
     // A selected source publication, when present, must be the exact V2
     // witness. Absence is permitted only because this is an admitted V2 claim.
@@ -104,12 +83,13 @@ fn verify(
             scratch,
         )?;
         if bytes != source.encode() {
-            return None;
+            return Err(INVALID);
         }
     }
     let mut offset = claim
         .source_ordinal()
-        .checked_mul(u64::from(claim.chunk_size()))?;
+        .checked_mul(u64::from(claim.chunk_size()))
+        .ok_or(INVALID)?;
     let mut record = source.root_record();
     let mut expected_digest = source.root_digest();
     let mut expected_bytes = source.total_bytes();
@@ -127,7 +107,7 @@ fn verify(
             trace,
             scratch,
         )?;
-        let node = BlobTreeNodeV1::decode(&bytes).ok()?;
+        let node = BlobTreeNodeV1::decode(&bytes).map_err(|_| INVALID)?;
         let digest = if depth == 0 {
             node.frame_digest()
         } else {
@@ -139,7 +119,7 @@ fn verify(
             || node.occurrence().session() != source.session()
             || expected_level.is_some_and(|level| node.occurrence().level() != level)
         {
-            return None;
+            return Err(INVALID);
         }
         let mut selected = None;
         for edge in node.entries() {
@@ -149,7 +129,7 @@ fn verify(
             }
             offset -= edge.covered_bytes();
         }
-        let edge = selected?;
+        let edge = selected.ok_or(INVALID)?;
         if node.occurrence().kind() == BlobTreeNodeKind::Leaf {
             selected_edge = offset == 0
                 && edge.record() == claim.selected_chunk()
@@ -157,13 +137,13 @@ fn verify(
                 && edge.covered_bytes() == u64::from(claim.chunk_length());
             break;
         }
-        expected_level = Some(node.occurrence().level().checked_sub(1)?);
+        expected_level = Some(node.occurrence().level().checked_sub(1).ok_or(INVALID)?);
         record = edge.record();
         expected_digest = edge.digest();
         expected_bytes = edge.covered_bytes();
     }
     if !selected_edge {
-        return None;
+        return Err(INVALID);
     }
     let bytes = read_selected(
         discovery,
@@ -176,8 +156,8 @@ fn verify(
         trace,
         scratch,
     )?;
-    let BlobRecordV1::Chunk(chunk) = decode_blob_record(&bytes).ok()? else {
-        return None;
+    let Ok(BlobRecordV1::Chunk(chunk)) = decode_blob_record(&bytes) else {
+        return Err(INVALID);
     };
     if chunk.occurrence().store() != source.store()
         || chunk.occurrence().session() != source.session()
@@ -186,9 +166,9 @@ fn verify(
         || chunk.stored_digest() != claim.stored_digest()
         || chunk.bytes().len() != claim.chunk_length() as usize
     {
-        return None;
+        return Err(INVALID);
     }
-    Some(())
+    Ok(())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -202,12 +182,12 @@ fn read_selected(
     budget: &mut ManifestEntryBudget,
     trace: &mut RecoveryIntegrityIngressTrace,
     scratch: &mut u64,
-) -> Option<Vec<u8>> {
-    let route = super::routed(routes, record_id)?;
+) -> Result<Vec<u8>, HistoricalFailure> {
+    let route = super::routed(routes, record_id).ok_or(INVALID)?;
     if !matches!(route, CurrentPhysicalRecordPlacement::Extent(_))
         || route.content_class() != SelectedRecordContentClass::Blob(kind)
     {
-        return None;
+        return Err(INVALID);
     }
     record::read(
         discovery,
@@ -219,7 +199,6 @@ fn read_selected(
         trace,
         scratch,
     )
-    .ok()
 }
 
 #[cfg(test)]

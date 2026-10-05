@@ -294,6 +294,9 @@ pub enum PhysicalRecoveryPageAdmissionDenial {
     InvalidPage(PhysicalRedoTargetIdentity),
     ManifestEntryLimit,
     ObservationByteLimit,
+    /// The ordered history walk needs more scratch than the staging bytes
+    /// admitted. The media was not found damaged.
+    StagingByteLimit,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

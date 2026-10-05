@@ -3,7 +3,7 @@ use worth_store_physical_format::RecordArtifactFile;
 
 use super::{
     record_artifact, BoundedRecoveryFilesystemDiscovery, ObservedRecoveryArtifact,
-    RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryFailure,
+    RecoveryDiscoveryArtifact, RecoveryDiscoveryFailure,
 };
 
 impl BoundedRecoveryFilesystemDiscovery {
@@ -17,18 +17,7 @@ impl BoundedRecoveryFilesystemDiscovery {
         let context = RecoveryDiscoveryArtifact::Record(address);
         let artifact = record_artifact(address)?;
         let length = u64::from(length);
-        let admitted = self.remaining_bytes.min(byte_limit);
-        if length == 0 || length > admitted {
-            return Err(RecoveryDiscoveryFailure::ByteLimitExceeded {
-                observed: self.counters.bytes_read.saturating_add(length),
-                admitted: self.maximum_bytes.min(byte_limit),
-                scope: if self.remaining_bytes <= byte_limit {
-                    RecoveryDiscoveryByteLimitScope::Observation
-                } else {
-                    RecoveryDiscoveryByteLimitScope::Requested
-                },
-            });
-        }
+        self.admit_range(&context, length, byte_limit)?;
         if self.remaining_entries == 0 {
             return Err(RecoveryDiscoveryFailure::EntryLimitExceeded {
                 observed: 1,

@@ -2,6 +2,7 @@
 
 use super::ResolvedPlanningBasis;
 use crate::entry::PhysicalRecoveryPlanningDenial as Denial;
+use crate::orchestration::planning::completion::historical_publication::HistoricalFailure;
 use crate::orchestration::planning::{
     released_directory, selected_source_inventory::ResidentAllowance,
 };
@@ -68,10 +69,19 @@ pub(super) fn admit(
     .map_err(Denial::ReleasedDirectoryProof);
     let payload_backing = bytes.capacity() as u64;
     drop(bytes);
+    // Handing back more than was held is no bound of the allowance.
     resident.release(payload_backing).map_err(|_| {
         Denial::ReleasedDirectorySource(
-            crate::entry::PhysicalRecoverySelectedRecordReadDenial::ResidentBoundExceeded,
+            crate::entry::PhysicalRecoverySelectedRecordReadDenial::InvalidPayload,
         )
     })?;
     proof.map(Some)
+}
+
+/// What a directory that could not be read says about recovery's limits.
+pub(super) fn unread(denial: &Denial) -> Option<HistoricalFailure> {
+    match denial {
+        Denial::ReleasedDirectorySource(denial) => Some(HistoricalFailure::from(denial.clone())),
+        _ => None,
+    }
 }

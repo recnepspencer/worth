@@ -11,13 +11,18 @@ use worth_store_recovery_physics::{PhysicalSourceSelection, WitnessedSelectedCon
 
 use super::super::super::record;
 use crate::integrity_ingress::RecoveryIntegrityIngressTrace;
+use crate::orchestration::planning::completion::historical_publication::HistoricalFailure;
 use crate::orchestration::planning::manifest_entry_budget::ManifestEntryBudget;
 use crate::orchestration::planning::selected_source_inventory::ResidentAllowance;
 
+/// Failed verification. A resident allowance that refused is read back
+/// from the allowance itself.
+const INVALID: HistoricalFailure = HistoricalFailure::Invalid;
+
 pub(super) struct SelectedPendingControls {
-    manifest: Option<WitnessedSelectedControlFrame>,
+    manifest: Result<WitnessedSelectedControlFrame, HistoricalFailure>,
     reservations: Vec<WitnessedSelectedControlFrame>,
-    invalid_reservation: bool,
+    invalid_reservation: Option<HistoricalFailure>,
 }
 
 impl SelectedPendingControls {
@@ -27,13 +32,14 @@ impl SelectedPendingControls {
 
     pub(super) fn into_witnesses(
         self,
-    ) -> Option<(WitnessedSelectedControlFrame, WitnessedSelectedControlFrame)> {
+    ) -> Result<(WitnessedSelectedControlFrame, WitnessedSelectedControlFrame), HistoricalFailure>
+    {
         let manifest = self.manifest?;
-        let [reservation] = self.reservations.try_into().ok()?;
-        if self.invalid_reservation {
-            return None;
+        if let Some(failure) = self.invalid_reservation {
+            return Err(failure);
         }
-        Some((manifest, reservation))
+        let [reservation] = self.reservations.try_into().map_err(|_| INVALID)?;
+        Ok((manifest, reservation))
     }
 }
 
@@ -46,7 +52,7 @@ pub(super) fn observe(
     scratch: &mut u64,
     descriptor: BlobReclaimDescriptorV3,
     resident: &mut ResidentAllowance,
-) -> Option<SelectedPendingControls> {
+) -> Result<SelectedPendingControls, HistoricalFailure> {
     let request = descriptor.custody().request();
     let manifest = read_control(
         selected,
@@ -63,10 +69,10 @@ pub(super) fn observe(
     // filter_map and leave one valid-looking reservation behind.
     resident
         .entries(2, std::mem::size_of::<WitnessedSelectedControlFrame>())
-        .ok()?;
+        .map_err(|_| INVALID)?;
     let mut reservations = Vec::new();
-    reservations.try_reserve_exact(2).ok()?;
-    let mut invalid_reservation = false;
+    reservations.try_reserve_exact(2).map_err(|_| INVALID)?;
+    let mut invalid_reservation = None;
     for route in selected
         .page_facts()
         .placements()
@@ -77,7 +83,7 @@ pub(super) fn observe(
                 == SelectedRecordContentClass::Blob(BlobRecordKind::OriginalDropReserved)
         })
     {
-        let Some(frame) = read_control(
+        let frame = match read_control(
             selected,
             discovery,
             format,
@@ -87,30 +93,33 @@ pub(super) fn observe(
             route.record(),
             BlobRecordKind::OriginalDropReserved,
             resident,
-        ) else {
-            invalid_reservation = true;
-            break;
+        ) {
+            Ok(frame) => frame,
+            Err(failure) => {
+                invalid_reservation = Some(failure);
+                break;
+            }
         };
         let Ok(BlobRecordV1::OriginalDropReserved(value)) = decode_blob_record(frame.bytes())
         else {
-            invalid_reservation = true;
+            invalid_reservation = Some(INVALID);
             break;
         };
         if value.manifest_record() == descriptor.base().manifest_record()
             && value.request() == request
         {
             if reservations.len() == 2 {
-                invalid_reservation = true;
+                invalid_reservation = Some(INVALID);
                 break;
             }
             reservations.push(frame);
         } else {
-            let retained = u64::try_from(frame.bytes().len()).ok()?;
+            let retained = u64::try_from(frame.bytes().len()).map_err(|_| INVALID)?;
             drop(frame);
-            resident.release(retained).ok()?;
+            resident.release(retained).map_err(|_| INVALID)?;
         }
     }
-    Some(SelectedPendingControls {
+    Ok(SelectedPendingControls {
         manifest,
         reservations,
         invalid_reservation,
@@ -128,7 +137,7 @@ pub(super) fn read_control(
     record: PersistedRecordIdentity,
     kind: BlobRecordKind,
     resident: &mut ResidentAllowance,
-) -> Option<WitnessedSelectedControlFrame> {
+) -> Result<WitnessedSelectedControlFrame, HistoricalFailure> {
     let route = selected
         .page_facts()
         .placements()
@@ -140,17 +149,19 @@ pub(super) fn read_control(
             CurrentPhysicalRecordPlacement::Extent(extent)
                 if extent.content_class() == SelectedRecordContentClass::Blob(kind)
                     && extent.payload_bytes() <= BLOB_CONTROL_FRAME_MAX_BYTES as u64)
-        })?;
-    resident.bytes(route.payload_bytes()).ok()?;
+        })
+        .ok_or(INVALID)?;
+    resident.bytes(route.payload_bytes()).map_err(|_| INVALID)?;
     resident
         .transient(
             route
                 .payload_bytes()
-                .checked_mul(3)?
-                .checked_add(u64::from(format.page_size().bytes()).checked_mul(3)?)?
-                .checked_add(1024)?,
+                .checked_mul(3)
+                .zip(u64::from(format.page_size().bytes()).checked_mul(3))
+                .and_then(|(payload, pages)| payload.checked_add(pages)?.checked_add(1024))
+                .ok_or(INVALID)?,
         )
-        .ok()?;
+        .map_err(|_| INVALID)?;
     let (bytes, witness) = record::read_with_witness(
         discovery,
         format,
@@ -161,11 +172,12 @@ pub(super) fn read_control(
         trace,
         scratch,
         resident,
-    )
-    .ok()?;
+    )?;
     if <[u8; 32]>::from(Sha256::digest(&bytes)) != witness.payload_sha256() {
-        return None;
+        return Err(INVALID);
     }
-    resident.transient(u64::try_from(bytes.len()).ok()?).ok()?;
-    WitnessedSelectedControlFrame::from_validated(bytes, witness).ok()
+    resident
+        .transient(u64::try_from(bytes.len()).map_err(|_| INVALID)?)
+        .map_err(|_| INVALID)?;
+    WitnessedSelectedControlFrame::from_validated(bytes, witness).map_err(|_| INVALID)
 }

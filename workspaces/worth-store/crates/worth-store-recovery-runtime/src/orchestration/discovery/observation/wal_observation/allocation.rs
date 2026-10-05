@@ -5,10 +5,11 @@ use crate::entry::{
     PhysicalRecoverySourceReadAllocationBoundary as Boundary,
     PhysicalRecoverySourceReadAllocationDenial as Cause,
 };
-use crate::orchestration::discovery::{discovery_limit, DiscoveryFailure};
+use crate::orchestration::discovery::{discovery_limit, refused_read, DiscoveryFailure};
+use crate::orchestration::reader_limit::{OversizedArtifact, ReadCeiling};
 use worth_store::physical_runtime::{
     FundedRecoveryWalReadFailure, PhysicalRecoveryRejoinResidentAdmissionDenial,
-    RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope, RecoveryWalAllocationDenial,
+    RecoveryDiscoveryArtifact, RecoveryDiscoveryFailure, RecoveryWalAllocationDenial,
     RecoveryWalDiscoveryFailureView, RecoveryWalReadFailureView,
 };
 
@@ -23,16 +24,23 @@ pub(super) fn window_admission_failure(
     )
 }
 
-pub(super) fn map_read_failure(failure: FundedRecoveryWalReadFailure) -> DiscoveryFailure {
-    let mut mapped = classify_read_failure(failure.diagnostic());
+pub(super) fn map_read_failure(
+    failure: FundedRecoveryWalReadFailure,
+    wal_bytes: ReadCeiling,
+) -> DiscoveryFailure {
+    let mut mapped = classify_read_failure(failure.diagnostic(), wal_bytes);
     mapped
         .source_denials
         .push(PhysicalRecoverySourceDenial::WalRead { failure });
     mapped
 }
 
-fn classify_read_failure(view: RecoveryWalReadFailureView<'_>) -> DiscoveryFailure {
+fn classify_read_failure(
+    view: RecoveryWalReadFailureView<'_>,
+    wal_bytes: ReadCeiling,
+) -> DiscoveryFailure {
     match view {
+        // The listing counts the segments it found against the caller's.
         RecoveryWalReadFailureView::Discovery(
             RecoveryWalDiscoveryFailureView::EntryLimitExceeded { observed, admitted },
         ) => discovery_limit(
@@ -46,18 +54,20 @@ fn classify_read_failure(view: RecoveryWalReadFailureView<'_>) -> DiscoveryFailu
                 admitted,
                 scope,
             },
-        ) => discovery_limit(
-            match scope {
-                RecoveryDiscoveryByteLimitScope::Observation => {
-                    PhysicalRecoveryLimitDimension::ObservationBytes
+        ) => {
+            let refused = RecoveryDiscoveryFailure::ByteLimitExceeded {
+                observed,
+                admitted,
+                scope,
+            };
+            match refused_read(refused, wal_bytes, PhysicalRecoveryLimitDimension::WalBytes) {
+                Err(limit) => limit,
+                // No WAL file has a ceiling of its own to pass.
+                Ok(OversizedArtifact) => {
+                    DiscoveryFailure::from(PhysicalRecoveryBlockKind::MediaObservation)
                 }
-                RecoveryDiscoveryByteLimitScope::Requested => {
-                    PhysicalRecoveryLimitDimension::WalBytes
-                }
-            },
-            observed,
-            admitted,
-        ),
+            }
+        }
         RecoveryWalReadFailureView::Discovery(
             RecoveryWalDiscoveryFailureView::Media { .. }
             | RecoveryWalDiscoveryFailureView::InvalidAddress { .. },

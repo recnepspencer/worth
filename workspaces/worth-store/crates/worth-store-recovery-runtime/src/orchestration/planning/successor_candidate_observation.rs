@@ -21,6 +21,8 @@ mod tree_walk_resident;
 
 use artifact_read::observed;
 pub(super) use attempt::observe;
+#[cfg(test)]
+pub(super) use attempt::out_of_observation_bytes;
 use denial::invalid;
 use materialization::CandidateMaterialization;
 
@@ -29,7 +31,6 @@ fn observe_bounded(
     selected: &DurablePhysicalRootManifest,
     format: PhysicalRecordFormatDeclaration,
     budget: &mut ManifestEntryBudget,
-    byte_limit: u64,
     materialization: &mut CandidateMaterialization,
     root_protocol_counters: &mut crate::entry::PhysicalRecoveryRootProtocolCounters,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
@@ -39,7 +40,6 @@ fn observe_bounded(
         discovery,
         selected,
         format,
-        byte_limit,
         materialization,
         root_protocol_counters,
         allowance,
@@ -49,6 +49,7 @@ fn observe_bounded(
     };
     let root = observed_root.manifest;
     let root_artifact = observed_root.artifact;
+    let root_unit = denial::charge_successor_root(budget, root_artifact)?;
     let mut artifacts = allowance
         .reserve(1)
         .map_err(|denial| resident::memory_failure(root_artifact, allowance, denial))?;
@@ -61,8 +62,8 @@ fn observe_bounded(
         discovery,
         &root,
         format,
+        &root_unit,
         budget,
-        byte_limit,
         &mut artifacts,
         &mut referenced_artifacts,
         materialization,
@@ -73,8 +74,8 @@ fn observe_bounded(
         discovery,
         &root,
         format,
+        &root_unit,
         budget,
-        byte_limit,
         &mut artifacts,
         &mut referenced_artifacts,
         materialization,
@@ -85,8 +86,8 @@ fn observe_bounded(
         discovery,
         &root,
         format,
+        &root_unit,
         budget,
-        byte_limit,
         &mut artifacts,
         &mut referenced_artifacts,
         materialization,

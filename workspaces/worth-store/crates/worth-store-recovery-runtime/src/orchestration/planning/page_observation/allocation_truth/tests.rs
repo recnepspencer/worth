@@ -56,23 +56,26 @@ fn selected_capacity_rejects_bypassing_or_prematurely_spilling_reusable_pages() 
 }
 
 #[test]
-fn selected_source_inventory_denies_before_crossing_manifest_block_read() {
-    let world = selected_world("allocation-cumulative-entry-budget", 4);
-    assert!(!world.placements.is_empty());
-    world.read(|source| {
-        let (result, _) = selected_source_inventory::observe(
-            source.discovery,
-            source.root,
-            source.format,
-            1,
-            1024 * 1024,
-        );
-        assert_eq!(
-            result,
-            Err(super::PageObservationFailure::ManifestEntryLimit)
-        );
-        assert_eq!(source.discovery.counters().addressed_artifacts_read, 2);
-    });
+fn selected_source_inventory_is_charged_its_root_and_leaf_entries_and_no_block() {
+    let observe = |name: &str, entries: u64| {
+        selected_world(name, 4).read(|source| {
+            selected_source_inventory::observe(
+                source.discovery,
+                source.root,
+                source.format,
+                entries,
+            )
+            .0
+        })
+    };
+    let inventory = observe("allocation-entry-charge-whole", 64).unwrap();
+    let need = 1 + (inventory.segment_pages.len() + inventory.free_entries.len()) as u64;
+    assert!(need > 2, "the world holds more than one leaf entry");
+    assert!(observe("allocation-entry-charge-need", need).is_ok());
+    assert_eq!(
+        observe("allocation-entry-charge-short", need - 1).err(),
+        Some(super::PageObservationFailure::ManifestEntryLimit)
+    );
 }
 
 fn assert_rejected(world: SelectedWorld, targets: Vec<PhysicalRedoTarget>) {
@@ -85,13 +88,8 @@ fn assert_admitted(world: SelectedWorld, targets: Vec<PhysicalRedoTarget>) {
 
 fn assert_result(world: SelectedWorld, targets: Vec<PhysicalRedoTarget>, expected: bool) {
     let (selected_source, integrity_trace, root, placements) = world.read(|source| {
-        let (selected_source, integrity_trace) = selected_source_inventory::observe(
-            source.discovery,
-            source.root,
-            source.format,
-            64,
-            1024 * 1024,
-        );
+        let (selected_source, integrity_trace) =
+            selected_source_inventory::observe(source.discovery, source.root, source.format, 64);
         (
             selected_source.unwrap(),
             integrity_trace,

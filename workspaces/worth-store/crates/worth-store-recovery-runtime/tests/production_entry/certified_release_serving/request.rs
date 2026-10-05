@@ -42,14 +42,22 @@ pub(crate) fn request_with_configuration(
 /// root reads more manifest entries than those worlds ever route. The ingest
 /// also leaves about 140 root generations above the checkpoint, and recovery
 /// re-reads the manifest of each one to order the retirements among them.
-/// Measured on these worlds: the first reopen takes up to 16,404 manifest
-/// entries and 44,134,018 bytes, both varying a little from run to run, and a
-/// later reopen of the pending release takes more than 17,408 entries.
+/// The first reopen is charged 998 manifest entries on every run; the bytes
+/// it reads, about 44 MiB, follow block sizes and vary a little.
 pub(crate) fn request_for_long_ingest(root: &Path) -> PhysicalRecoveryOpenRequest {
+    request_for_long_ingest_with_manifest_entries(root, 18432)
+}
+
+/// The limits of the long-ingest worlds with exactly this many manifest
+/// entries.
+pub(crate) fn request_for_long_ingest_with_manifest_entries(
+    root: &Path,
+    manifest_entries: u64,
+) -> PhysicalRecoveryOpenRequest {
     declare(
         root,
         43 << 20,
-        18432,
+        manifest_entries,
         PhysicalRecoveryStaticConfiguration::current(),
     )
 }
@@ -59,10 +67,25 @@ pub(crate) fn request_with_manifest_entries(
     root: &Path,
     manifest_entries: u64,
 ) -> PhysicalRecoveryOpenRequest {
-    declare(
+    request_narrowing(root, |declared| {
+        declared.manifest_entries = manifest_entries
+    })
+}
+
+/// The bytes every request of these worlds admits of each byte limit, but
+/// for recovery memory.
+pub(crate) const ADMITTED_BYTES: u64 = 64 << 20;
+
+/// The limits of the two-chunk worlds, but for what `narrow` declares.
+pub(crate) fn request_narrowing(
+    root: &Path,
+    narrow: impl FnOnce(&mut PhysicalRecoveryLimitDeclaration),
+) -> PhysicalRecoveryOpenRequest {
+    let mut declaration = declaration(16 << 20, 4096);
+    narrow(&mut declaration);
+    open(
         root,
-        16 << 20,
-        manifest_entries,
+        declaration,
         PhysicalRecoveryStaticConfiguration::current(),
     )
 }
@@ -73,28 +96,46 @@ fn declare(
     manifest_entries: u64,
     configuration: PhysicalRecoveryStaticConfiguration,
 ) -> PhysicalRecoveryOpenRequest {
-    let limits = PhysicalRecoveryLimits::admit(PhysicalRecoveryLimitDeclaration {
+    open(
+        root,
+        declaration(recovery_memory_bytes, manifest_entries),
+        configuration,
+    )
+}
+
+fn declaration(
+    recovery_memory_bytes: u64,
+    manifest_entries: u64,
+) -> PhysicalRecoveryLimitDeclaration {
+    PhysicalRecoveryLimitDeclaration {
         selector_candidates: 4,
         checkpoint_candidates: 64,
-        manifest_bytes: 64 << 20,
+        manifest_bytes: ADMITTED_BYTES,
         manifest_entries,
         wal_segments: 64,
         wal_frames: 4096,
-        wal_bytes: 64 << 20,
+        wal_bytes: ADMITTED_BYTES,
         redo_targets: 4096,
-        redo_bytes: 64 << 20,
+        redo_bytes: ADMITTED_BYTES,
         distinct_pages_and_extents: 4096,
         operation_bindings: 4096,
-        staging_bytes: 64 << 20,
+        staging_bytes: ADMITTED_BYTES,
         recovery_memory_bytes,
         dirty_frames: 4096,
         concurrent_commands: 8,
         publication_effects: 64,
         cleanup_candidates: 4096,
-        cleanup_bytes: 64 << 20,
-        observation_bytes: 64 << 20,
-    })
-    .expect("bounded certification limits");
+        cleanup_bytes: ADMITTED_BYTES,
+        observation_bytes: ADMITTED_BYTES,
+    }
+}
+
+fn open(
+    root: &Path,
+    declaration: PhysicalRecoveryLimitDeclaration,
+    configuration: PhysicalRecoveryStaticConfiguration,
+) -> PhysicalRecoveryOpenRequest {
+    let limits = PhysicalRecoveryLimits::admit(declaration).expect("bounded certification limits");
     let authority =
         PhysicalRecoveryPlatformAuthority::acquire(root.to_owned(), configuration.clone(), limits)
             .expect("fresh recovery platform authority");

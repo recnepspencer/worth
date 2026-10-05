@@ -7,6 +7,8 @@ use arena_io::{arena_path, extent_payload, flip_arena_byte, payload};
 mod c10_crash_evidence;
 #[allow(dead_code)]
 mod c10_phase_five_read;
+#[path = "c10_extent_rewrite_crash/observation_limit.rs"]
+mod observation_limit;
 #[allow(dead_code)]
 mod phase_three_support;
 

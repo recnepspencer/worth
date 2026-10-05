@@ -17,6 +17,7 @@ use crate::orchestration::planning::manifest_entry_budget::ManifestEntryBudget;
 use crate::orchestration::planning::selected_source_inventory::ResidentAllowance;
 
 use super::super::historical_drop::selected_control;
+use super::walk_failure::{Verdict, WalkFailure, WalkFailure::Unverified};
 
 pub(super) struct ReleasedControls {
     pub(super) descriptor: BlobReclaimDescriptorV3,
@@ -40,7 +41,7 @@ pub(super) fn bind_addressed(
     format: PhysicalRecordFormatDeclaration,
     maximum_entries: u64,
     available_bytes: u64,
-) -> Option<AddressedControls> {
+) -> Result<AddressedControls, WalkFailure> {
     let descriptor_frame = VerifiedAddressedReleasedControlFrame::admit(
         edge,
         result,
@@ -49,9 +50,10 @@ pub(super) fn bind_addressed(
         format,
         maximum_entries,
         available_bytes,
-    )
-    .ok()?;
-    let remaining = available_bytes.checked_sub(descriptor_frame.retained_bytes())?;
+    )?;
+    let remaining = available_bytes
+        .checked_sub(descriptor_frame.retained_bytes())
+        .in_scratch()?;
     let reservation_frame = VerifiedAddressedReleasedControlFrame::admit(
         edge,
         result,
@@ -60,9 +62,10 @@ pub(super) fn bind_addressed(
         format,
         maximum_entries,
         remaining,
-    )
-    .ok()?;
-    let remaining = remaining.checked_sub(reservation_frame.retained_bytes())?;
+    )?;
+    let remaining = remaining
+        .checked_sub(reservation_frame.retained_bytes())
+        .in_scratch()?;
     let manifest_frame = VerifiedAddressedReleasedControlFrame::admit(
         edge,
         result,
@@ -71,13 +74,14 @@ pub(super) fn bind_addressed(
         format,
         maximum_entries,
         remaining,
-    )
-    .ok()?;
+    )?;
     let retained_bytes = descriptor_frame
         .retained_bytes()
-        .checked_add(reservation_frame.retained_bytes())?
-        .checked_add(manifest_frame.retained_bytes())?;
-    Some(AddressedControls {
+        .checked_add(reservation_frame.retained_bytes())
+        .proven()?
+        .checked_add(manifest_frame.retained_bytes())
+        .proven()?;
+    Ok(AddressedControls {
         descriptor_frame,
         reservation_frame,
         manifest_frame,
@@ -97,17 +101,18 @@ pub(super) fn released_controls(
     budget: &mut ManifestEntryBudget,
     trace: &mut RecoveryIntegrityIngressTrace,
     resident: &mut ResidentAllowance,
-) -> Option<ReleasedControls> {
+) -> Result<ReleasedControls, WalkFailure> {
     let mut members = redo
         .admitted_drop_members()
         .filter(|(id, _, _, _)| *id == operation);
-    let (_, _, _, wal_record) = members.next()?;
+    let (_, _, _, wal_record) = members.next().proven()?;
     if members.next().is_some() || <[u8; 32]>::from(Sha256::digest(wal_record)) != descriptor_sha256
     {
-        return None;
+        return Err(Unverified);
     }
-    let BlobRecordV1::ReclaimDescriptorV3(descriptor) = decode_blob_record(wal_record).ok()? else {
-        return None;
+    let BlobRecordV1::ReclaimDescriptorV3(descriptor) = decode_blob_record(wal_record).proven()?
+    else {
+        return Err(Unverified);
     };
     let descriptor_frame = selected_control(
         discovery,
@@ -120,7 +125,7 @@ pub(super) fn released_controls(
         resident,
     )?;
     if descriptor_frame.bytes() != wal_record {
-        return None;
+        return Err(Unverified);
     }
     let manifest_frame = selected_control(
         discovery,
@@ -133,9 +138,9 @@ pub(super) fn released_controls(
         resident,
     )?;
     let BlobRecordV1::DropSetManifestV3(manifest) =
-        decode_blob_record(manifest_frame.bytes()).ok()?
+        decode_blob_record(manifest_frame.bytes()).proven()?
     else {
-        return None;
+        return Err(Unverified);
     };
     if <[u8; 32]>::from(Sha256::digest(manifest_frame.bytes()))
         != descriptor.base().manifest_frame_sha256()
@@ -143,7 +148,7 @@ pub(super) fn released_controls(
         || manifest.source_basis_digest() != descriptor.base().source_basis_digest()
         || manifest.count() != descriptor.base().manifest_count()
     {
-        return None;
+        return Err(Unverified);
     }
     let mut reservation_frame = None;
     for route in routes.iter().filter(|route| {
@@ -161,23 +166,23 @@ pub(super) fn released_controls(
             resident,
         )?;
         let BlobRecordV1::OriginalDropReserved(reservation) =
-            decode_blob_record(frame.bytes()).ok()?
+            decode_blob_record(frame.bytes()).proven()?
         else {
-            return None;
+            return Err(Unverified);
         };
         if reservation.manifest_record() == descriptor.base().manifest_record()
             && reservation.request() == descriptor.custody().request()
         {
             if reservation_frame.replace(frame).is_some() {
-                return None;
+                return Err(Unverified);
             }
         }
     }
-    Some(ReleasedControls {
+    Ok(ReleasedControls {
         descriptor,
         manifest,
         descriptor_frame,
-        reservation_frame: reservation_frame?,
+        reservation_frame: reservation_frame.proven()?,
         manifest_frame,
     })
 }

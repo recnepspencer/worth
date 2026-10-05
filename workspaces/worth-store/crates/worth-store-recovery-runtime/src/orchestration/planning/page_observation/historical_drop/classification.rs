@@ -40,7 +40,6 @@ pub(in crate::orchestration::planning::page_observation) struct HistoryWalk<'a> 
     pub(in crate::orchestration::planning::page_observation) format:
         PhysicalRecordFormatDeclaration,
     pub(in crate::orchestration::planning::page_observation) budget: &'a mut ManifestEntryBudget,
-    pub(in crate::orchestration::planning::page_observation) byte_limit: u64,
     pub(in crate::orchestration::planning::page_observation) maximum_entries: u64,
     pub(in crate::orchestration::planning::page_observation) maximum_staging_bytes: u64,
     pub(in crate::orchestration::planning::page_observation) trace:
@@ -59,7 +58,6 @@ impl HistoryWalk<'_> {
             self.release_intents,
             self.format,
             self.budget,
-            self.byte_limit,
             self.maximum_entries,
             self.maximum_staging_bytes,
             self.trace,

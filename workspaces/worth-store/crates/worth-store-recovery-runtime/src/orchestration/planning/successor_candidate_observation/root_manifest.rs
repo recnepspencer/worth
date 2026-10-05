@@ -21,7 +21,6 @@ pub(super) fn read(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     selected: &DurablePhysicalRootManifest,
     format: PhysicalRecordFormatDeclaration,
-    byte_limit: u64,
     materialization: &mut CandidateMaterialization,
     root_protocol_counters: &mut crate::entry::PhysicalRecoveryRootProtocolCounters,
     allowance: &mut PlanningResidentAllowance,
@@ -32,7 +31,7 @@ pub(super) fn read(
         })
     })?;
     let artifact = RecordArtifactFile::RootManifest { generation };
-    let source = read_artifact(discovery, artifact, byte_limit, allowance)?;
+    let source = read_artifact(discovery, artifact, format, allowance)?;
     if source.bytes().is_none() {
         return Ok(None);
     }

@@ -2,13 +2,23 @@ use super::*;
 
 #[test]
 fn record_count_is_rejected_before_record_vector_allocation() {
-    let range = WalLsnRange::new(LogSequenceNumber::new(1), LogSequenceNumber::new(3)).unwrap();
+    let range = WalLsnRange::new(LogSequenceNumber::new(1), LogSequenceNumber::new(6)).unwrap();
     let mut encoded = Vec::new();
     field(&mut encoded, REDO_DOMAIN);
-    encoded.extend_from_slice(&2_u64.to_le_bytes());
+    encoded.extend_from_slice(&5_u64.to_le_bytes());
+    // A count the member cannot hold is damage before it is any limit.
     assert_eq!(
         decode_physical_redo_records(&encoded, range, 1, test_format()),
-        Err(PhysicalRedoPlanningDenial::TargetLimit)
+        Err(PhysicalRedoPlanningDenial::MalformedMember)
+    );
+    // Five records the member can hold, each of four words at the least.
+    encoded.resize(encoded.len() + 5 * (4 + 8 + 8 + 8), 0);
+    assert_eq!(
+        decode_physical_redo_records(&encoded, range, 1, test_format()),
+        Err(PhysicalRedoPlanningDenial::TargetLimit {
+            observed: 5,
+            admitted: 1
+        })
     );
 }
 
@@ -26,7 +36,10 @@ fn new_one_over_distinct_target_is_rejected_before_retention() {
             1,
             test_format(),
         ),
-        Err(PhysicalRedoPlanningDenial::DistinctTargetLimit)
+        Err(PhysicalRedoPlanningDenial::DistinctTargetLimit {
+            observed: 2,
+            admitted: 1
+        })
     );
     assert_eq!(distinct.len(), 1);
 }

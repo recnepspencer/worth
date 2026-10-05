@@ -79,8 +79,9 @@ pub use admission::{
     physical_redo_observation_targets, physical_redo_target_identities,
 };
 pub use head_replay::{
-    SelectedReleaseHeadReplayDenial, VerifiedOrderedReleasedHeadReplayV14,
-    VerifiedSelectedReleaseHeadReplayV14, VerifiedSelectedTerminalHeadRetirementReplay,
+    ExceededHeadReplayBound, HeadReplayBound, SelectedReleaseHeadReplayDenial,
+    VerifiedOrderedReleasedHeadReplayV14, VerifiedSelectedReleaseHeadReplayV14,
+    VerifiedSelectedTerminalHeadRetirementReplay,
 };
 pub use historical_consumed::HistoricalConsumedOperationSet;
 pub use historical_retired::HistoricalRetirements;

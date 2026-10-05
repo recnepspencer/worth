@@ -5,8 +5,7 @@ use worth_store_recovery_physics::{
 };
 
 use crate::entry::{
-    PhysicalRecoveryBlockKind as PhysicalRecoveryBlock, PhysicalRecoveryLimitDimension,
-    PhysicalRecoveryLimits, PhysicalRecoverySourceDenial,
+    PhysicalRecoveryLimitDimension, PhysicalRecoveryLimits, PhysicalRecoverySourceDenial,
 };
 use crate::integrity_ingress::{
     admit_observed_bootstrap_catalog, IntegrityAdmittedRecoveryArtifact,
@@ -15,10 +14,11 @@ use crate::integrity_ingress::{
 use crate::progression::PhysicalRecoveryDiscoveryCounters;
 
 use super::super::manifest_facts::{observe_manifest_facts, ManifestObservationBudget};
+use super::super::reader_limit::{OversizedArtifact, ReadCeiling};
 use super::super::ManifestFactsDiscovery;
 use super::{
-    discovery_limit, map_discovery_failure, BootstrapDiscovery, CheckpointDiscovery,
-    DiscoveryFailure, WalDiscovery,
+    discovery_limit, refused_read, BootstrapDiscovery, CheckpointDiscovery, DiscoveryFailure,
+    WalDiscovery,
 };
 
 mod checkpoint;
@@ -88,6 +88,7 @@ pub(super) fn observe_all(
         observe_checkpoint(
             discovery,
             limits,
+            record_format,
             &mut roots.remaining_manifest_bytes,
             counters,
             ingress_trace,
@@ -147,9 +148,21 @@ fn observe_fallback_anchor(
     {
         return Ok(BootstrapDiscovery::NotRequired);
     }
-    let artifact = discovery
-        .read_bootstrap_catalog(BOOTSTRAP_CATALOG_BYTES as u64)
-        .map_err(map_selector_discovery_failure)?;
+    let ceiling = ReadCeiling::of_artifact(BOOTSTRAP_CATALOG_BYTES as u64);
+    let artifact = match discovery.read_bootstrap_catalog(ceiling.requested()) {
+        Ok(artifact) => artifact,
+        Err(failure) => {
+            let OversizedArtifact = refused_read(
+                failure,
+                ceiling,
+                PhysicalRecoveryLimitDimension::ObservationBytes,
+            )?;
+            // A catalog is its fixed frame and nothing more.
+            return Ok(BootstrapDiscovery::Rejected(
+                RecoveryIntegrityIngressRejection::NonCanonicalEncoding,
+            ));
+        }
+    };
     let mut ingress = crate::integrity_ingress::RecoveryIntegrityIngressTrace::new();
     let attempt = admit_observed_bootstrap_catalog(
         &artifact,
@@ -217,16 +230,6 @@ mod tests {
     }
 }
 
-fn map_selector_discovery_failure(
-    failure: worth_store::physical_runtime::RecoveryDiscoveryFailure,
-) -> DiscoveryFailure {
-    map_discovery_failure(
-        failure,
-        PhysicalRecoveryLimitDimension::ObservationBytes,
-        PhysicalRecoveryLimitDimension::ObservationBytes,
-    )
-}
-
 fn observe_root_manifest_facts(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     limits: PhysicalRecoveryLimits,
@@ -235,12 +238,7 @@ fn observe_root_manifest_facts(
 ) -> Result<(ManifestFactsDiscovery, ManifestFactsDiscovery), DiscoveryFailure> {
     let declaration = limits.declaration();
     let mut remaining_manifest_entries = declaration.manifest_entries;
-    let admitted_manifest_blocks = declaration
-        .manifest_entries
-        .checked_mul(2)
-        .and_then(|value| value.checked_add(2))
-        .ok_or(PhysicalRecoveryBlock::DiscoveryLimit)?;
-    let mut remaining_manifest_blocks = admitted_manifest_blocks;
+    let mut manifest_blocks = 0;
     let current_manifest_facts_result = observe_manifest_facts(
         discovery,
         &roots.current,
@@ -249,12 +247,12 @@ fn observe_root_manifest_facts(
             admitted_bytes: declaration.manifest_bytes,
             remaining_entries: &mut remaining_manifest_entries,
             admitted_entries: declaration.manifest_entries,
-            remaining_blocks: &mut remaining_manifest_blocks,
-            admitted_blocks: admitted_manifest_blocks,
+            blocks_read: &mut manifest_blocks,
         },
     );
     counters.manifest_bytes = declaration.manifest_bytes - roots.remaining_manifest_bytes;
     counters.manifest_entries = declaration.manifest_entries - remaining_manifest_entries;
+    counters.manifest_blocks = manifest_blocks;
     let current_manifest_facts = current_manifest_facts_result?;
     let previous_manifest_facts_result = observe_manifest_facts(
         discovery,
@@ -264,12 +262,12 @@ fn observe_root_manifest_facts(
             admitted_bytes: declaration.manifest_bytes,
             remaining_entries: &mut remaining_manifest_entries,
             admitted_entries: declaration.manifest_entries,
-            remaining_blocks: &mut remaining_manifest_blocks,
-            admitted_blocks: admitted_manifest_blocks,
+            blocks_read: &mut manifest_blocks,
         },
     );
     counters.manifest_bytes = declaration.manifest_bytes - roots.remaining_manifest_bytes;
     counters.manifest_entries = declaration.manifest_entries - remaining_manifest_entries;
+    counters.manifest_blocks = manifest_blocks;
     let previous_manifest_facts = match previous_manifest_facts_result {
         Ok(facts) => facts,
         Err(failure) => {
@@ -277,7 +275,5 @@ fn observe_root_manifest_facts(
             return Err(failure.with_integrity_trace(trace));
         }
     };
-    counters.manifest_blocks =
-        current_manifest_facts.block_count() + previous_manifest_facts.block_count();
     Ok((current_manifest_facts, previous_manifest_facts))
 }

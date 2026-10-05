@@ -95,7 +95,11 @@ fn c9_charges_every_terminal_head_retirement_against_the_shared_allowances() {
     let charged = admitted.scratch_bytes;
     assert_eq!(
         admit(members(), retirement::store(), limits(u64::MAX, 3)).err(),
-        Some(PhysicalRedoPlanningDenial::InvalidRecoveryProjection),
+        Some(PhysicalRedoPlanningDenial::ProjectionLimit {
+            limit: crate::PhysicalRedoProjectionLimit::TotalEntries,
+            observed: 4,
+            admitted: 3,
+        }),
         "the second member's tree frames exceed what the first left"
     );
     assert_eq!(

@@ -24,9 +24,8 @@ pub(super) fn verify(
     admission: PhysicalRewriteAdmission,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     let rewrite = admission.redo();
-    let record = match super::decode_record(rewrite.record_identity()) {
-        Ok(record) => record,
-        Err(()) => return Err(context.redo_block(basis.planning_counters(), None)),
+    let Some(record) = super::decode_record(rewrite.record_identity()) else {
+        return Err(context.redo_block(basis.planning_counters(), None));
     };
     let format = context.authority.record_format;
     if rewrite.source_root_generation().checked_add(1) != Some(rewrite.resulting_root_generation())

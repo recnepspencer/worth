@@ -12,9 +12,10 @@ use worth_store_recovery_physics::{
 use crate::integrity_ingress::{
     admit_addressed_root, RecoveryArtifactNamespaceJoin, RecoveryIntegrityIngressTrace,
 };
-use crate::orchestration::planning::page_observation::ordered_history::WalkFailure;
+use crate::orchestration::planning::page_observation::ordered_history::{Verdict, WalkFailure};
 use crate::orchestration::planning::{
-    completion::blob_reclaim::record, manifest_entry_budget::ManifestEntryBudget,
+    completion::blob_reclaim::record,
+    manifest_entry_budget::{ManifestEntryBudget, RootUnit},
     selected_source_inventory::ResidentAllowance,
 };
 
@@ -37,23 +38,26 @@ pub(in crate::orchestration::planning::page_observation) fn selected_control(
     budget: &mut ManifestEntryBudget,
     trace: &mut RecoveryIntegrityIngressTrace,
     resident: &mut ResidentAllowance,
-) -> Option<WitnessedSelectedControlFrame> {
+) -> Result<WitnessedSelectedControlFrame, WalkFailure> {
     let route = routes
         .iter()
         .copied()
-        .find(|route| route.record() == record_id)?;
+        .find(|route| route.record() == record_id)
+        .proven()?;
     if !matches!(route, CurrentPhysicalRecordPlacement::Extent(extent)
         if extent.content_class() == SelectedRecordContentClass::Blob(kind)
             && extent.payload_bytes() <= BLOB_CONTROL_FRAME_MAX_BYTES as u64)
     {
-        return None;
+        return Err(WalkFailure::Unverified);
     }
     let payload_bytes = route.payload_bytes();
-    resident.bytes(payload_bytes).ok()?;
+    resident.bytes(payload_bytes).in_scratch()?;
     // A retained payload can coexist with a replacement Box and a decoded
     // manifest's dropped-record backing. Preflight that window before media IO.
-    resident.transient(payload_bytes.checked_mul(2)?).ok()?;
-    let (bytes, witness) = record::read_with_witness(
+    resident
+        .transient(payload_bytes.checked_mul(2).proven()?)
+        .in_scratch()?;
+    let (bytes, witness) = record::read_with_witness_diagnostic(
         discovery,
         format,
         Some(route),
@@ -63,9 +67,8 @@ pub(in crate::orchestration::planning::page_observation) fn selected_control(
         trace,
         &mut 0,
         resident,
-    )
-    .ok()?;
-    WitnessedSelectedControlFrame::from_validated(bytes, witness).ok()
+    )?;
+    WitnessedSelectedControlFrame::from_validated(bytes, witness).proven()
 }
 
 pub(in crate::orchestration::planning::page_observation) fn source_root(
@@ -73,8 +76,14 @@ pub(in crate::orchestration::planning::page_observation) fn source_root(
     generation: u64,
     format: PhysicalRecordFormatDeclaration,
     budget: &mut ManifestEntryBudget,
-) -> Result<worth_store_physical_format::DurablePhysicalRootManifest, WalkFailure> {
-    budget.consume(1)?;
+) -> Result<
+    (
+        worth_store_physical_format::DurablePhysicalRootManifest,
+        RootUnit,
+    ),
+    WalkFailure,
+> {
+    let root_unit = budget.charge_root()?;
     let source = discovery.read_root_manifest(generation, u64::from(format.page_size().bytes()))?;
     let admitted = admit_addressed_root(
         RecoveryArtifactNamespaceJoin::from_canonical(&source),
@@ -85,6 +94,6 @@ pub(in crate::orchestration::planning::page_observation) fn source_root(
     .map_err(|_| WalkFailure::Unverified)?;
     let (root, observed_format) = admitted.project();
     (observed_format == format && root.generation() == generation)
-        .then_some(root)
+        .then_some((root, root_unit))
         .ok_or(WalkFailure::Unverified)
 }

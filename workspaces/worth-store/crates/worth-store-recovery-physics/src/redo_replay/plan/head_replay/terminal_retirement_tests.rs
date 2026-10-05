@@ -11,7 +11,8 @@ use crate::redo_replay::terminal_head_retirement_fixture::{
     source_leaf, store, survivor, terminal_head, SelectedTerminalHead, SOURCE_GENERATION, TREE,
 };
 use crate::{
-    admit_physical_redo_members, AdmittedPhysicalRedoMembers, PhysicalRedoAdmissionLimits,
+    admit_physical_redo_members, AdmittedPhysicalRedoMembers, ExceededHeadReplayBound,
+    HeadReplayBound, PhysicalRedoAdmissionLimits,
 };
 
 const EFFECT_BYTES: u64 = 64 * 1024;
@@ -234,13 +235,21 @@ fn bounds_and_the_exact_recomputation_deny_before_any_read() {
             format(),
             framed - 1,
             heap,
-            SelectedReleaseHeadReplayDenial::BoundExceeded,
+            SelectedReleaseHeadReplayDenial::BoundExceeded(ExceededHeadReplayBound {
+                bound: HeadReplayBound::EffectBytes,
+                observed: framed,
+                admitted: framed - 1,
+            }),
         ),
         (
             format(),
             framed,
             heap - 1,
-            SelectedReleaseHeadReplayDenial::BoundExceeded,
+            SelectedReleaseHeadReplayDenial::BoundExceeded(ExceededHeadReplayBound {
+                bound: HeadReplayBound::HeapBytes,
+                observed: heap,
+                admitted: heap - 1,
+            }),
         ),
         (wide, EFFECT_BYTES, HEAP_BYTES, DENIED_AS_RETIREMENT),
     ] {

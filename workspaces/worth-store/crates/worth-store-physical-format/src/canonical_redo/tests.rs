@@ -1,17 +1,20 @@
 use super::*;
 
+/// Storage that refuses every request and remembers the last one.
+struct Deny {
+    requested: Option<u64>,
+}
+
+impl PhysicalRecoveryDecodeStorage for Deny {
+    type Denial = &'static str;
+    fn admit_allocation(&mut self, bytes: u64) -> Result<(), Self::Denial> {
+        self.requested = Some(bytes);
+        Err("recovery pool exhausted")
+    }
+}
+
 #[test]
 fn truncated_in_policy_count_rejects_before_any_backing_request() {
-    struct Deny {
-        requested: Option<u64>,
-    }
-    impl PhysicalRecoveryDecodeStorage for Deny {
-        type Denial = &'static str;
-        fn admit_allocation(&mut self, bytes: u64) -> Result<(), Self::Denial> {
-            self.requested = Some(bytes);
-            Err("recovery pool exhausted")
-        }
-    }
     let mut bytes = Vec::new();
     field(&mut bytes, CANONICAL_REDO_V3_DOMAIN);
     bytes.extend_from_slice(&4_u64.to_le_bytes());
@@ -37,15 +40,70 @@ fn truncated_in_policy_count_rejects_before_any_backing_request() {
     assert_eq!(storage.requested, None);
 }
 
+/// The least bytes one record and one target occupy on the wire.
+const RECORD_BYTES: usize = 4 + 8 + 8 + 8;
+const TARGET_BYTES: usize = 8 + 32 + 1;
+
 #[test]
 fn count_limit_precedes_record_allocation() {
+    // Five records the member can hold, of the one target admitted.
     let mut bytes = Vec::new();
     field(&mut bytes, CANONICAL_REDO_V3_DOMAIN);
-    bytes.extend_from_slice(&2_u64.to_le_bytes());
-    assert_eq!(
-        decode_canonical_redo_v3(&bytes, 1, 3, 1, None, limits(1), format()),
-        Err(CanonicalRedoWireDenial::TargetLimit)
-    );
+    bytes.extend_from_slice(&5_u64.to_le_bytes());
+    let unbacked = bytes.len() + 5 * RECORD_BYTES - 1;
+    bytes.resize(unbacked + 1, 0);
+    let mut storage = Deny { requested: None };
+    let mut decode = |bytes: &[u8]| {
+        decode_canonical_redo_v3_with_storage(bytes, 1, 6, 1, limits(1), format(), &mut storage)
+            .map(|_| ())
+    };
+    assert!(matches!(
+        decode(&bytes),
+        Err(PhysicalRecoveryDecodeFailure::Canonical(
+            CanonicalRedoWireDenial::TargetLimit {
+                observed: 5,
+                admitted: 1
+            }
+        ))
+    ));
+    // One byte short of holding them, the count is no count of this member:
+    // damage, whatever the limit is.
+    assert!(matches!(
+        decode(&bytes[..unbacked]),
+        Err(PhysicalRecoveryDecodeFailure::Canonical(
+            CanonicalRedoWireDenial::MalformedMember
+        ))
+    ));
+    assert_eq!(storage.requested, None);
+}
+
+#[test]
+fn targets_past_the_limit_name_the_total_that_passed_it() {
+    // Two targets came before. Three more are five of the four admitted,
+    // refused before any is read or backed.
+    let mut bytes = 3_u64.to_le_bytes().to_vec();
+    bytes.resize(8 + 3 * TARGET_BYTES, 0);
+    let mut storage = Deny { requested: None };
+    let mut decode = |bytes: &[u8]| {
+        decode_targets(&mut Cursor::new(bytes), &mut 2, 4, &mut None, &mut storage).map(|_| ())
+    };
+    assert!(matches!(
+        decode(&bytes),
+        Err(PhysicalRecoveryDecodeFailure::Canonical(
+            CanonicalRedoWireDenial::TargetLimit {
+                observed: 5,
+                admitted: 4
+            }
+        ))
+    ));
+    // One byte short of holding three targets, the count is damage.
+    assert!(matches!(
+        decode(&bytes[..bytes.len() - 1]),
+        Err(PhysicalRecoveryDecodeFailure::Canonical(
+            CanonicalRedoWireDenial::MalformedMember
+        ))
+    ));
+    assert_eq!(storage.requested, None);
 }
 
 #[test]
@@ -62,7 +120,10 @@ fn distinct_limit_rejects_second_identity_before_retention() {
             limits(2),
             format(),
         ),
-        Err(CanonicalRedoWireDenial::DistinctTargetLimit)
+        Err(CanonicalRedoWireDenial::DistinctTargetLimit {
+            observed: 2,
+            admitted: 1
+        })
     );
     assert_eq!(distinct.len(), 1);
 }
