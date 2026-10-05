@@ -26,6 +26,8 @@ mod provider_idempotency;
 mod provider_inbound_completion;
 mod registry_lowering;
 mod support_admission;
+#[cfg(test)]
+mod tests;
 pub(in crate::domain_computation::primary_graph) use support_admission::WorthQuerySupportLookupStop;
 
 use super::workflow::schema::WorthQueryWorkflowLayout;
@@ -62,7 +64,8 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
     application_entity_kinds: BTreeSet<KindId>,
     application_relation_kinds: BTreeSet<KindId>,
     fields: BTreeMap<(String, String, String), WorthQueryPrimaryFieldLayout>,
-    aspect_contracts: BTreeMap<(String, AspectKey), AspectContract>,
+    aspect_contracts: BTreeMap<String, BTreeMap<AspectKey, AspectContract>>,
+    aspect_contract_count: usize,
     equality_field_keys: BTreeMap<AspectKey, BTreeSet<FieldKey>>,
     projection_field_keys: BTreeMap<AspectKey, BTreeSet<FieldKey>>,
     continuation_orderings: Vec<WorthQueryPrimaryContinuationOrderingLayout>,
@@ -99,12 +102,19 @@ impl WorthQueryPrimaryGraphLayout {
         entity: &'a str,
     ) -> impl Iterator<Item = &'a AspectKey> + Clone {
         self.aspect_contracts
-            .keys()
-            .filter_map(move |(name, aspect)| (name == entity).then_some(aspect))
+            .get(entity)
+            .into_iter()
+            .flat_map(|contracts| contracts.keys())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn native_contract_count(&self) -> usize {
-        self.aspect_contracts.len()
+    /// Both the native kind and its aspect inventory use entity-name B-trees.
+    /// The kind table contains every entity in the aspect table, so its bounded
+    /// descent also covers the aspect table without reading unrelated aspects.
+    pub(in crate::domain_computation::primary_graph) fn native_output_lookup_work(
+        &self,
+        entity: &str,
+    ) -> Option<u64> {
+        self.entity_kind_lookup_work(entity)?.checked_mul(2)
     }
 
     pub(super) fn lower(
@@ -115,17 +125,18 @@ impl WorthQueryPrimaryGraphLayout {
         let (entity_kinds, relation_kinds) = lower_kind_ids(schema, existing_registry)?;
         let (schema_id, schema_version_id) = relational_schema_basis(schema, existing_registry)?;
         let mut registry = RelationalSchemaRegistry::new();
-        let mut aspect_contracts = BTreeMap::new();
+        let mut aspect_contracts: BTreeMap<String, BTreeMap<AspectKey, AspectContract>> =
+            BTreeMap::new();
         let lowered_contracts = lower_application_contract_bindings(native_contracts);
         let mut contracts_by_entity = lowered_contracts.by_entity;
 
         for (entity, kind_id) in &entity_kinds {
             let aspects = contracts_by_entity.remove(entity).unwrap_or_default();
             for binding in &aspects {
-                aspect_contracts.insert(
-                    (entity.clone(), binding.aspect_key()),
-                    binding.contract.clone(),
-                );
+                aspect_contracts
+                    .entry(entity.clone())
+                    .or_default()
+                    .insert(binding.aspect_key(), binding.contract.clone());
             }
             registry = register_entity(
                 registry,
@@ -196,6 +207,7 @@ impl WorthQueryPrimaryGraphLayout {
                 application_entity_kinds,
                 application_relation_kinds,
                 fields,
+                aspect_contract_count: aspect_contracts.values().map(BTreeMap::len).sum(),
                 aspect_contracts,
                 equality_field_keys,
                 projection_field_keys,
@@ -323,12 +335,11 @@ impl WorthQueryPrimaryGraphLayout {
         entity: &str,
         aspect: &AspectKey,
     ) -> Option<&AspectContract> {
-        self.aspect_contracts
-            .get(&(entity.to_string(), aspect.clone()))
+        self.aspect_contracts.get(entity)?.get(aspect)
     }
 
     pub(in crate::domain_computation::primary_graph) fn aspect_contract_count(&self) -> usize {
-        self.aspect_contracts.len()
+        self.aspect_contract_count
     }
 
     pub(super) const fn provider_idempotency(&self) -> &WorthQueryProviderIdempotencyLayout {

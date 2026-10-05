@@ -149,21 +149,11 @@ impl PreparedNativeOutputWitness {
             if posture == WorthQueryApplicationOutputPosture::Retire {
                 return Ok(None);
             }
-            let name_lookup_work = layout
-                .entity_kind_lookup_work(entity_name)
+            let catalog_lookup_work = layout
+                .native_output_lookup_work(entity_name)
+                .and_then(|work| work.checked_add(3))
                 .ok_or_else(overflow)?;
-            let comparison_bytes =
-                u64::try_from(entity_name.len().checked_add(1).ok_or_else(overflow)?)
-                    .map_err(|_| overflow())?;
-            let one_scan_work = u64::try_from(layout.native_contract_count())
-                .ok()
-                .and_then(|count| count.checked_mul(comparison_bytes))
-                .ok_or_else(overflow)?;
-            admission.charge_external_work(
-                one_scan_work
-                    .checked_add(name_lookup_work)
-                    .ok_or_else(overflow)?,
-            )?;
+            admission.charge_external_work(catalog_lookup_work)?;
             if layout.entity_kind(entity_name).is_none() {
                 return Ok(None);
             }
@@ -172,10 +162,10 @@ impl PreparedNativeOutputWitness {
                 .and_then(|n| n.checked_add(entity_name.len() as u64))
                 .ok_or_else(overflow)?;
             catalog_work = catalog_work
-                .checked_add(one_scan_work)
-                .and_then(|work| work.checked_add(name_lookup_work))
+                .checked_add(catalog_lookup_work)
                 .ok_or_else(overflow)?;
             for aspect in layout.native_output_aspects(entity_name) {
+                admission.charge_external_work(1)?;
                 aspect_count = aspect_count.checked_add(1).ok_or_else(overflow)?;
                 name_bytes = name_bytes
                     .checked_add(aspect.as_str().len() as u64)
@@ -190,15 +180,10 @@ impl PreparedNativeOutputWitness {
             .and_then(|bytes| u64::try_from(bytes).ok())
             .and_then(|bytes| bytes.checked_add(name_bytes))
             .ok_or_else(overflow)?;
-        // A second catalog walk builds the owned probes. Later performed-root
-        // reads and canonical role comparisons are also paid before cutover.
+        // A second selected-kind lookup builds the owned probes. Later
+        // performed-root reads and canonical role comparisons are also prepaid.
         let visits = role_count
-            .checked_mul(
-                layout
-                    .native_contract_count()
-                    .checked_add(2)
-                    .ok_or_else(overflow)?,
-            )
+            .checked_mul(2)
             .and_then(|count| count.checked_add(aspect_count))
             .ok_or_else(overflow)? as u64;
         // Vec slot widths and the Arc cell are retained memory. Constructing

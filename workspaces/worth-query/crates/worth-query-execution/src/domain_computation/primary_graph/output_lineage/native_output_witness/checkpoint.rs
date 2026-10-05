@@ -76,6 +76,7 @@ impl SealedNativeOutputWitness {
                 .and_then(|n| n.checked_add(name.len() as u64))
                 .ok_or_else(overflow)?;
             for aspect in layout.native_output_aspects(name) {
+                admission.charge_external_work(1)?;
                 aspect_count = aspect_count.checked_add(1).ok_or_else(overflow)?;
                 name_bytes = name_bytes
                     .checked_add(aspect.as_str().len() as u64)
@@ -141,13 +142,10 @@ fn prepay_catalog(
     admission: &mut InvalidationEditAdmission,
 ) -> Result<(), CompanionPreflightStop> {
     admission.charge_external_work(3)?;
-    let lookup = layout.entity_kind_lookup_work(name).ok_or_else(overflow)?;
-    let scan = u64::try_from(layout.native_contract_count())
-        .ok()
-        .and_then(|count| count.checked_mul(name.len().checked_add(1)? as u64))
-        .and_then(|work| work.checked_add(lookup))
+    let lookup = layout
+        .native_output_lookup_work(name)
         .ok_or_else(overflow)?;
-    admission.charge_external_work(scan)
+    admission.charge_external_work(lookup)
 }
 
 fn checkpoint_entity_matches(
