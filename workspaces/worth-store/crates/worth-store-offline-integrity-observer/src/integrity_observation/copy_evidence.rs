@@ -2,6 +2,7 @@
 //! complete fields at verified WAL boundaries and never scans user payloads.
 use super::{
     families::durable_frame::{read_u32, read_u64},
+    families::physical_fields::route_metadata_valid,
     sha256::sha256,
 };
 
@@ -89,9 +90,9 @@ impl CopyIntentFact {
         let (source_route_metadata, destination_route_metadata) = if classified {
             let source: [u8; 7] = body[200..207].try_into().ok()?;
             let destination: [u8; 7] = body[207..214].try_into().ok()?;
-            if !valid_route_metadata(&source)
+            if !route_metadata_valid(&source)
                 || source[0] == 0
-                || !valid_route_metadata(&destination)
+                || !route_metadata_valid(&destination)
                 || source[..4] != destination[..4]
             {
                 return None;
@@ -301,20 +302,6 @@ fn parse_embedded_intent(bytes: &[u8]) -> Option<CopyIntentFact> {
     let mut fact = CopyIntentFact::decode(bytes, (1, 2))?;
     fact.lsn = 0;
     Some(fact)
-}
-
-fn valid_route_metadata(bytes: &[u8]) -> bool {
-    if bytes.len() != 7 || bytes[5..] != [0; 2] || bytes[4] > 2 {
-        return false;
-    }
-    let family = u16::from_le_bytes([bytes[2], bytes[3]]);
-    match (bytes[0], bytes[1], family) {
-        (0, 0, 0) => bytes[4] == 0,
-        (1, 0, 0) | (4, 0, 0) => true,
-        (2, 1..=16, 0) => true,
-        (3, 0, 1..) => true,
-        _ => false,
-    }
 }
 
 struct Cursor<'a>(&'a [u8]);

@@ -1,18 +1,22 @@
-use std::collections::BTreeMap;
-
 mod assembly;
+mod coverage;
 mod frontier;
 mod graph;
 mod logical_digest;
 mod projection;
+mod proof;
 mod quarantine;
 mod reclaim;
 mod reclaim_release;
 mod reuse_claims;
+#[cfg(test)]
+mod reuse_source_fixture;
+mod row_index;
+mod source_edge;
 mod terminal;
 #[cfg(test)]
 mod tests;
-use super::blob_record::{self, BlobFact};
+use super::blob_record::{self, BlobFact, FrameKind};
 use super::child_expectation::{ChildExpectation, ChildScope};
 use super::journal_walk::SelectedCheckpointEvidence;
 use super::record_walk::route_inventory::RouteInventory;
@@ -21,7 +25,9 @@ use super::{
     OfflineIntegrityOutcome as Outcome, OfflinePhysicalBlastRadius as Blast,
     OfflinePhysicalDamageCause as Cause,
 };
-use graph::{declaration, uncertain_dependency};
+use coverage::{Coverage, Unread};
+use graph::{declaration, edge_names_child, uncertain_dependency, EdgePosition};
+use row_index::RowIndex;
 struct Pending {
     record: [u8; 24],
     logical_bytes: u64,
@@ -44,10 +50,20 @@ struct Selected {
     record: [u8; 24],
     path: String,
     generation: u64,
-    family: OfflineArtifactFamily,
+    /// The kind the record's route or its first bytes declare, when either
+    /// says one. A row whose frame was read is of the kind of its fact.
+    kind: Option<FrameKind>,
     fact: Option<BlobFact>,
     outcome: Outcome,
     route: Option<ExtentRoute>,
+}
+
+impl Selected {
+    /// A row is reported under the family of its kind.
+    fn family(&self) -> OfflineArtifactFamily {
+        self.kind
+            .map_or(OfflineArtifactFamily::Unrecognized, |kind| kind.family)
+    }
 }
 
 pub(crate) struct HistoricalBlobSource {
@@ -67,6 +83,8 @@ impl HistoricalBlobSource {
 pub(crate) struct BlobRecordWalk {
     pending: Option<Pending>,
     selected: Vec<Selected>,
+    unread: Vec<Unread>,
+    coverage: Coverage,
     maximum_graph_edges: u64,
     retained_graph_edges: u64,
     checkpoint: SelectedCheckpointEvidence,
@@ -80,6 +98,8 @@ impl BlobRecordWalk {
         Self {
             pending: None,
             selected: Vec::new(),
+            unread: Vec::new(),
+            coverage: Coverage::Complete,
             maximum_graph_edges,
             retained_graph_edges: 0,
             checkpoint,
@@ -112,6 +132,8 @@ impl BlobRecordWalk {
         if let Some(pending) = self.pending.take() {
             self.selected.push(projection::incomplete(pending, None));
         }
+        // An unread record gets no row here: a record that the source does
+        // not answer for is unknown to every check that consults the source.
         HistoricalBlobSource {
             generation,
             rows: self.selected,
@@ -144,42 +166,17 @@ impl BlobRecordWalk {
     }
 
     fn validate_selected_claim_graph(&mut self) {
-        let mut records: BTreeMap<[u8; 24], usize> = BTreeMap::new();
-        let mut sessions: BTreeMap<[u8; 16], usize> = BTreeMap::new();
-        let mut duplicate_rows = Vec::new();
-        for (index, selected) in self.selected.iter().enumerate() {
-            if let Some(prior) = records.get(&selected.record).copied() {
-                if self.selected[prior].fact != selected.fact {
-                    duplicate_rows.push(prior);
-                    duplicate_rows.push(index);
-                }
-            } else {
-                records.insert(selected.record, index);
-            }
-            if selected
-                .fact
-                .as_ref()
-                .is_some_and(|fact| matches!(fact, BlobFact::Declaration { .. }))
-            {
-                let fact = selected.fact.as_ref().expect("checked declaration");
-                let session = fact.session().expect("declaration has session");
-                if let Some(prior) = sessions.get(&session).copied() {
-                    if self.selected[prior].record != selected.record {
-                        duplicate_rows.push(prior);
-                        duplicate_rows.push(index);
-                    }
-                } else {
-                    sessions.insert(session, index);
-                }
-            }
+        self.admit_unread();
+        let rows = RowIndex::new(&self.selected, &self.coverage);
+        for row in rows.duplicates(&self.selected) {
+            self.selected[row].outcome = damage(Cause::DuplicateIdentity);
         }
-        for index in duplicate_rows {
-            self.selected[index].outcome = damage(Cause::DuplicateIdentity);
-        }
-        graph::validate_chunks(&mut self.selected, &sessions, &records);
-        let reuse_claims = reuse_claims::validate(&mut self.selected, &sessions, &records);
+        graph::validate_chunks(&mut self.selected, &rows);
+        reuse_claims::validate(&mut self.selected, &rows);
+        let (records, sessions) = (&rows.records, &rows.sessions);
         let claims = frontier::ClaimIndex::new(
             &self.selected,
+            &rows,
             self.maximum_graph_edges
                 .saturating_sub(self.retained_graph_edges),
         );
@@ -190,12 +187,11 @@ impl BlobRecordWalk {
             let Some(fact) = self.selected[index].fact.as_ref() else {
                 continue;
             };
-            let uncertain = uncertain_dependency(fact, &self.selected, &sessions, &records);
+            let uncertain = uncertain_dependency(fact, &self.selected, &rows);
             if let Some(outcome) = uncertain {
                 self.selected[index].outcome = outcome;
                 continue;
             }
-            let mut graph_uncertainty = None;
             let outcome = match fact {
                 BlobFact::Declaration { .. }
                 | BlobFact::Abandoned { .. }
@@ -216,75 +212,26 @@ impl BlobRecordWalk {
                     entries,
                     ..
                 } => {
-                    if declaration(&self.selected, &sessions, *session)
+                    if declaration(&self.selected, sessions, *session)
                         .is_none_or(|(declared_store, _, _, _, _)| declared_store != store)
                     {
                         Some(Cause::ScopeMismatch)
                     } else {
-                        let mut mismatch = None;
-                        for (position, edge) in entries.iter().enumerate() {
-                            let expected_index = node_index
-                                .checked_mul(4096)
-                                .and_then(|start| start.checked_add(position as u64));
-                            let valid = records
+                        let resolved = entries.iter().enumerate().all(|(position, edge)| {
+                            let position = EdgePosition {
+                                session,
+                                kind: *kind,
+                                level: *level,
+                                index: node_index
+                                    .checked_mul(4096)
+                                    .and_then(|start| start.checked_add(position as u64)),
+                            };
+                            records
                                 .get(&edge.record)
-                                .and_then(|target| self.selected[*target].fact.as_ref())
-                                .is_some_and(|target| match (*kind, target) {
-                                    (
-                                        1,
-                                        BlobFact::Chunk {
-                                            digest,
-                                            length,
-                                            ordinal,
-                                            session: child_session,
-                                            ..
-                                        },
-                                    ) => {
-                                        (*digest == edge.digest
-                                            && *length == edge.covered
-                                            && Some(*ordinal) == expected_index
-                                            && *child_session == *session)
-                                            || expected_index.is_some_and(|ordinal| {
-                                                reuse_claims.get(&(*session, ordinal)).is_some_and(
-                                                    |claim| match reuse_claims::selected_reuse_edge(
-                                                        &self.selected[*claim],
-                                                        edge,
-                                                    ) {
-                                                        Some(Outcome::Intact) => true,
-                                                        Some(unknown @ Outcome::Unknown(_)) => {
-                                                            graph_uncertainty = Some(unknown);
-                                                            true
-                                                        }
-                                                        _ => false,
-                                                    },
-                                                )
-                                            })
-                                    }
-                                    (
-                                        2,
-                                        BlobFact::Node {
-                                            digest,
-                                            covered,
-                                            level: child_level,
-                                            index: child_index,
-                                            session: child_session,
-                                            ..
-                                        },
-                                    ) => {
-                                        *digest == edge.digest
-                                            && *covered == edge.covered
-                                            && child_level.checked_add(1) == Some(*level)
-                                            && Some(*child_index) == expected_index
-                                            && *child_session == *session
-                                    }
-                                    _ => false,
-                                });
-                            if !valid {
-                                mismatch = Some(Cause::Pointer);
-                                break;
-                            }
-                        }
-                        mismatch
+                                .and_then(|child| self.selected[*child].fact.as_ref())
+                                .is_some_and(|child| edge_names_child(&position, edge, child))
+                        });
+                        (!resolved).then_some(Cause::Pointer)
                     }
                 }
                 BlobFact::Publication {
@@ -298,7 +245,7 @@ impl BlobRecordWalk {
                     scope,
                     ..
                 } => {
-                    let declared = declaration(&self.selected, &sessions, *session).is_some_and(
+                    let declared = declaration(&self.selected, sessions, *session).is_some_and(
                         |(s, o, sc, size, bytes)| {
                             s == store
                                 && o == object
@@ -341,7 +288,7 @@ impl BlobRecordWalk {
                     };
                     self.selected[index].outcome = frontier::validate(
                         &self.selected,
-                        &records,
+                        records,
                         claims,
                         frontier::Claim {
                             store: *store,
@@ -359,15 +306,13 @@ impl BlobRecordWalk {
             };
             if let Some(cause) = outcome {
                 self.selected[index].outcome = damage(cause);
-            } else if let Some(unknown) = graph_uncertainty {
-                self.selected[index].outcome = unknown;
             }
         }
-        terminal::validate(&mut self.selected, &sessions, &records, &self.checkpoint);
-        reclaim::validate(&mut self.selected, &records, self.selected_root_generation);
+        terminal::validate(&mut self.selected, sessions, records, &self.checkpoint);
+        reclaim::validate(&mut self.selected, &rows, self.selected_root_generation);
         reclaim_release::validate(
             &mut self.selected,
-            &records,
+            &rows,
             self.historical_source.as_ref(),
             &self.routes,
         );

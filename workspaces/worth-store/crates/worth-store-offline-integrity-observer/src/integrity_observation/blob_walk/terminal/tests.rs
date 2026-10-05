@@ -5,7 +5,9 @@ fn row(record: [u8; 24], fact: BlobFact) -> Selected {
         record,
         path: "arena".into(),
         generation: 1,
-        family: fact.family().into(),
+        kind: Some(crate::integrity_observation::blob_record::FrameKind::of(
+            &fact,
+        )),
         fact: Some(fact),
         outcome: Outcome::Intact,
         route: None,

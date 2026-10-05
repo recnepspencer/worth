@@ -166,6 +166,32 @@ fn control_frame(kind: u8, payload: &[u8]) -> Vec<u8> {
     frame
 }
 
+#[test]
+fn every_declared_kind_code_has_a_reader_and_no_other_code_is_a_frame() {
+    for kind in 0..=u8::MAX {
+        for occurrence_flag in [0_u16, 1] {
+            let mut frame = control_frame(kind, &[]);
+            frame[10..12].copy_from_slice(&occurrence_flag.to_le_bytes());
+            rehash(&mut frame);
+            let framing = super::super::record_walk::damage(
+                Cause::Framing,
+                Some((0, frame.len() as u64)),
+                Blast::Artifact,
+            );
+            let mut counters = OfflineIntegrityObservationCounters::default();
+            // An empty payload is never a fact. A declared kind is read (and
+            // found malformed) by its own reader; any other code is not a frame.
+            let denied = decode(&frame, Some([1; 16]), &mut counters).err();
+            assert!(denied.is_some(), "kind {kind}");
+            assert_eq!(
+                denied == Some(framing),
+                FrameKind::declared(kind).is_none(),
+                "kind {kind} occurrence flag {occurrence_flag}"
+            );
+        }
+    }
+}
+
 fn independent_v2_manifest_payload() -> Vec<u8> {
     let mut payload = Vec::new();
     payload.extend_from_slice(&[1; 16]);

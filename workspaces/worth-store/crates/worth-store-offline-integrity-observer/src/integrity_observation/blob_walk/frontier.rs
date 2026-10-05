@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 
-use super::super::blob_record::BlobFact;
+use super::super::blob_record::{BlobFact, FrameRole};
 use super::super::OfflinePhysicalDamageCause as Cause;
+use super::row_index::RowIndex;
 use super::{damage, Outcome, Selected};
 
 #[cfg(test)]
@@ -42,51 +43,45 @@ enum Prefix {
 /// one scan or sort per frontier record.
 pub(super) struct ClaimIndex {
     by_session: BTreeMap<[u8; 16], BTreeMap<u64, ChunkClaim>>,
-    unlocated_uncertainty: Option<Outcome>,
 }
 
 impl ClaimIndex {
-    pub(super) fn new(selected: &[Selected], maximum_claims: u64) -> Option<Self> {
+    pub(super) fn new(selected: &[Selected], rows: &RowIndex, maximum_claims: u64) -> Option<Self> {
         if !selected
             .iter()
             .any(|row| matches!(row.fact.as_ref(), Some(BlobFact::Frontier { .. })))
         {
             return Some(Self {
                 by_session: BTreeMap::new(),
-                unlocated_uncertainty: None,
             });
         }
-        let unlocated_uncertainty = selected.iter().find_map(|row| {
-            row.fact
-                .is_none()
-                .then(|| match &row.outcome {
-                    Outcome::Unknown(_) | Outcome::Indeterminate(_) | Outcome::Unsupported(_) => {
-                        Some(row.outcome.clone())
-                    }
-                    Outcome::Intact | Outcome::Damaged(_) => None,
-                })
-                .flatten()
-        });
+        // A session's prefix names its claims by ordinal alone: a claim that
+        // no row answers may be selected where the walk could not see.
+        let unlocated_uncertainty = rows.unlocated(FrameRole::ChunkClaim).cloned();
         let mut by_session: BTreeMap<[u8; 16], BTreeMap<u64, ChunkClaim>> = BTreeMap::new();
         let mut count = 0_u64;
         for row in selected {
-            let (session, ordinal, length, digest, selected_chunk) = match &row.fact {
-                Some(BlobFact::Chunk {
+            // A session's chunk at one ordinal is the selected row that claims
+            // it: its own chunk frame, or its reuse claim. A frontier names
+            // that row, never the source chunk a reuse claim borrows.
+            let Some(
+                BlobFact::Chunk {
                     session,
                     ordinal,
                     length,
                     digest,
                     ..
-                }) => (session, ordinal, length, digest, row.record),
-                Some(BlobFact::ReuseClaim {
+                }
+                | BlobFact::ReuseClaim {
                     session,
                     ordinal,
                     length,
                     digest,
-                    chunk_record,
                     ..
-                }) => (session, ordinal, length, digest, *chunk_record),
-                _ => continue,
+                },
+            ) = &row.fact
+            else {
+                continue;
             };
             let claims = by_session.entry(*session).or_default();
             match claims.entry(*ordinal) {
@@ -94,10 +89,9 @@ impl ClaimIndex {
                     let prior = occupied.get_mut();
                     // An exact duplicate observation of the same selected
                     // claim is harmless; a distinct selected claim is not.
-                    if prior.record != selected_chunk
+                    if prior.record != row.record
                         || prior.digest != *digest
                         || prior.length != *length
-                        || matches!(row.fact, Some(BlobFact::ReuseClaim { .. }))
                     {
                         prior.duplicate_ordinal = true;
                     }
@@ -110,7 +104,7 @@ impl ClaimIndex {
                     }
                     vacant.insert(ChunkClaim {
                         ordinal: *ordinal,
-                        record: selected_chunk,
+                        record: row.record,
                         digest: *digest,
                         length: *length,
                         outcome: row.outcome.clone(),
@@ -132,10 +126,7 @@ impl ClaimIndex {
                 claim.prefix = prefix.clone();
             }
         }
-        Some(Self {
-            by_session,
-            unlocated_uncertainty,
-        })
+        Some(Self { by_session })
     }
 
     fn last(&self, session: [u8; 16], next_ordinal: u64) -> Option<&ChunkClaim> {
@@ -202,11 +193,10 @@ pub(super) fn validate(
     if !declared {
         return damage(Cause::Pointer);
     }
+    // The frontier names its last chunk by record, and that record's row is
+    // decided: no row that the walk could not see is the claim of that record.
     let Some(last) = claims.last(frontier.session, frontier.next_chunk_ordinal) else {
-        return claims
-            .unlocated_uncertainty
-            .clone()
-            .unwrap_or_else(|| damage(Cause::Pointer));
+        return damage(Cause::Pointer);
     };
     if last.ordinal.checked_add(1) != Some(frontier.next_chunk_ordinal)
         || last.record != frontier.last_chunk_record

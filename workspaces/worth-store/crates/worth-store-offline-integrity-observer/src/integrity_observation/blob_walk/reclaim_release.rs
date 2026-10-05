@@ -5,11 +5,16 @@ use std::collections::BTreeMap;
 
 use super::super::record_walk::route_inventory::{RouteClass, RouteInventory};
 use super::super::OfflineUnknownPhysicalReason as Unknown;
+use super::proof::Proof;
+use super::row_index::RowIndex;
 use super::{damage, BlobFact, Cause, HistoricalBlobSource, Outcome, Selected};
+
+#[cfg(test)]
+mod tests;
 
 pub(super) fn validate(
     rows: &mut [Selected],
-    records: &BTreeMap<[u8; 24], usize>,
+    found: &RowIndex,
     historical: Option<&HistoricalBlobSource>,
     routes: &RouteInventory,
 ) {
@@ -21,6 +26,7 @@ pub(super) fn validate(
             rows[index].fact,
             Some(BlobFact::ReleasedDropSetManifest { .. })
         ) {
+            let records = &found.records;
             rows[index].outcome = manifest_outcome(rows, records, historical, routes, index);
         }
     }
@@ -32,7 +38,7 @@ pub(super) fn validate(
             rows[index].fact,
             Some(BlobFact::ReleasedReclaimDescriptor { .. })
         ) {
-            rows[index].outcome = descriptor_outcome(rows, records, historical, routes, index);
+            rows[index].outcome = descriptor_outcome(rows, found, historical, routes, index);
         }
     }
 }
@@ -102,7 +108,7 @@ fn manifest_outcome(
 
 fn descriptor_outcome(
     rows: &[Selected],
-    records: &BTreeMap<[u8; 24], usize>,
+    found: &RowIndex,
     historical: Option<&HistoricalBlobSource>,
     routes: &RouteInventory,
     index: usize,
@@ -137,7 +143,8 @@ fn descriptor_outcome(
     if historical.is_none_or(|source| !source.routes_intact || source.generation != *source_root) {
         return Outcome::Unknown(Unknown::ParentScopeUnavailable);
     }
-    let Some(manifest) = records.get(manifest_record).and_then(|row| rows.get(*row)) else {
+    let manifest = found.records.get(manifest_record);
+    let Some(manifest) = manifest.and_then(|row| rows.get(*row)) else {
         return damage(Cause::Pointer);
     };
     if manifest.outcome != Outcome::Intact {
@@ -159,7 +166,9 @@ fn descriptor_outcome(
         || basis_digest != manifest_basis
         || manifest_digest != frame_digest
         || usize::from(*manifest_count) != dropped.len()
-        || dropped.iter().any(|record| records.contains_key(record))
+        // A dropped record that is not gone contradicts the descriptor. One
+        // that may be gone decides nothing: no check makes this row intact.
+        || found.all_gone(dropped) == Proof::Contradicted
     {
         return damage(Cause::Pointer);
     }
@@ -218,7 +227,7 @@ fn route_inventory_intact(rows: &[Selected], routes: &RouteInventory) -> bool {
                     && row
                         .fact
                         .as_ref()
-                        .is_some_and(|fact| fact.route_kind_matches(*kind))
+                        .is_some_and(|fact| fact.kind_code() == *kind)
             }),
             RouteClass::Opaque | RouteClass::DerivedDirectory | RouteClass::BTreeNode => true,
         })

@@ -1,6 +1,6 @@
 use super::{
     durable_frame::{read_u16, read_u32, read_u64},
-    physical_fields::{record_key, scope},
+    physical_fields::{record_key, route_metadata_valid, scope},
     tree_frame::read_tree_frame,
     tree_reference::{branches, ordered},
 };
@@ -143,14 +143,5 @@ fn route_class_valid(entry: &[u8], schema: u8) -> bool {
     if schema == 2 {
         return field == [0; 7];
     }
-    if schema != 3 || field[5..] != [0; 2] || field[4] > 2 {
-        return false;
-    }
-    match field[0] {
-        0 => field[..4] == [0; 4] && field[4] == 0,
-        1 | 4 => field[1..4] == [0; 3],
-        2 => (1..=14).contains(&field[1]) && field[2..4] == [0; 2],
-        3 => field[1] == 0 && read_u16(field, 2) != 0,
-        _ => false,
-    }
+    schema == 3 && route_metadata_valid(field)
 }

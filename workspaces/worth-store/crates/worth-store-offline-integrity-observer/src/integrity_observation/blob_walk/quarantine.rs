@@ -1,50 +1,95 @@
-use std::collections::BTreeMap;
 use std::path::Path;
 
 use super::super::blob_record::{self, BlobFact};
 use super::super::{BoundedMediaWalk, OfflinePhysicalDamageCause as Cause};
-use super::{damage, graph, logical_digest, reuse_claims, Outcome, Selected};
+use super::coverage::Coverage;
+use super::proof::{needed_row, Needed, Proof};
+use super::row_index::RowIndex;
+use super::source_edge::{self, SourceClaim};
+use super::{damage, logical_digest, Outcome, Selected};
 
 /// A kind-12 frame is intact only when its source key and both selected
 /// original occurrences are proven and the chunks have different bytes. This
 /// proof reopens only the two routed chunks and retains no global byte cache.
-pub(super) fn validate(rows: &mut [Selected], root: &Path, walk: &mut BoundedMediaWalk) {
-    let records: BTreeMap<[u8; 24], usize> = rows
-        .iter()
-        .enumerate()
-        .filter(|(_, row)| row.fact.is_some())
-        .map(|(index, row)| (row.record, index))
-        .collect();
-    let sessions: BTreeMap<[u8; 16], usize> = rows
-        .iter()
-        .enumerate()
-        .filter_map(|(index, row)| match row.fact.as_ref() {
-            Some(BlobFact::Declaration { session, .. }) => Some((*session, index)),
-            _ => None,
-        })
-        .collect();
+pub(super) fn validate(
+    rows: &mut [Selected],
+    coverage: &Coverage,
+    root: &Path,
+    walk: &mut BoundedMediaWalk,
+) {
+    validate_reading(rows, coverage, &mut |row| {
+        selected_chunk_bytes(row, root, walk)
+    });
+}
+
+type ChunkBytes<'a> = dyn FnMut(&Selected) -> Result<Vec<u8>, Outcome> + 'a;
+
+fn validate_reading(rows: &mut [Selected], coverage: &Coverage, chunk_bytes: &mut ChunkBytes) {
+    // Every selected row, as the claim graph indexes them: a row that could not
+    // be read still answers for its record with its own outcome.
+    let found = RowIndex::new(rows, coverage);
     for index in 0..rows.len() {
-        if rows[index].outcome != Outcome::Intact
-            || !matches!(
-                rows[index].fact.as_ref(),
-                Some(BlobFact::DedupeQuarantine { .. })
-            )
-        {
+        if rows[index].outcome != Outcome::Intact {
             continue;
         }
-        rows[index].outcome = outcome(rows, &sessions, &records, index, root, walk);
+        let Some(fact @ BlobFact::DedupeQuarantine { .. }) = rows[index].fact.as_ref() else {
+            continue;
+        };
+        let outcome = outcome(rows, &found, fact, chunk_bytes);
+        rows[index].outcome = outcome;
     }
 }
 
 fn outcome(
     rows: &[Selected],
-    sessions: &BTreeMap<[u8; 16], usize>,
-    records: &BTreeMap<[u8; 24], usize>,
-    index: usize,
-    root: &Path,
-    walk: &mut BoundedMediaWalk,
+    found: &RowIndex,
+    fact: &BlobFact,
+    chunk_bytes: &mut ChunkBytes,
 ) -> Outcome {
-    let Some(BlobFact::DedupeQuarantine {
+    let BlobFact::DedupeQuarantine {
+        source_chunk,
+        conflicting_chunk,
+        ..
+    } = fact
+    else {
+        return damage(Cause::Framing);
+    };
+    let graph = graph_proof(rows, found, fact);
+    // Rows that are not the two occurrences the quarantine names have no
+    // bytes to compare: the contradiction stands however a reread would end.
+    if graph == Proof::Contradicted {
+        return damage(Cause::Pointer);
+    }
+    // The byte comparison reads only the two chunks, so it is decided whenever
+    // both are intact, whatever else could not be observed.
+    let intact = |record: &[u8; 24]| {
+        let row = found.records.get(record).map(|index| &rows[*index]);
+        row.filter(|row| row.outcome == Outcome::Intact)
+    };
+    let (Some(source), Some(conflicting)) = (intact(source_chunk), intact(conflicting_chunk))
+    else {
+        return graph.outcome(Cause::Pointer);
+    };
+    let source = match chunk_bytes(source) {
+        Ok(bytes) => bytes,
+        Err(outcome) => return outcome,
+    };
+    let conflicting = match chunk_bytes(conflicting) {
+        Ok(bytes) => bytes,
+        Err(outcome) => return outcome,
+    };
+    if source == conflicting {
+        damage(Cause::ScopeMismatch)
+    } else {
+        graph.outcome(Cause::Pointer)
+    }
+}
+
+/// Everything a quarantine says of selected rows short of their bytes: its
+/// destination declaration, the conflicting chunk as that destination's own
+/// occurrence, and the source chunk as an occurrence of the source generation.
+fn graph_proof(rows: &[Selected], found: &RowIndex, fact: &BlobFact) -> Proof {
+    let BlobFact::DedupeQuarantine {
         store,
         scope,
         digest,
@@ -55,86 +100,61 @@ fn outcome(
         destination_session,
         destination_ordinal,
         conflicting_chunk,
-    }) = rows[index].fact.as_ref()
+    } = fact
     else {
-        return damage(Cause::Framing);
+        return Proof::Contradicted;
     };
-    let Some(source_index) = records.get(source_chunk).copied() else {
-        return damage(Cause::Pointer);
+    let size = u64::from(*chunk_size);
+    let remaining = |total: u64| {
+        destination_ordinal
+            .checked_mul(size)
+            .and_then(|start| total.checked_sub(start))
     };
-    let Some(conflict_index) = records.get(conflicting_chunk).copied() else {
-        return damage(Cause::Pointer);
+    let declaration = || found.declaration(destination_session);
+    let destination = Proof::on_row(rows, declaration(), |declared| {
+        matches!(declared, BlobFact::Declaration {
+            store: declared_store, scope: declared_scope, chunk_size: declared_size, total, ..
+        } if declared_store == store
+            && declared_scope == scope
+            && declared_size == chunk_size
+            && remaining(*total).is_some_and(|bytes| bytes > 0))
+    });
+    // Only a destination declaration whose frame was read decides the
+    // conflicting chunk's length.
+    let declared_total = match needed_row(rows, declaration()) {
+        Ok(Needed {
+            fact: BlobFact::Declaration { total, .. },
+            ..
+        }) => Some(*total),
+        _ => None,
     };
-    let Some(publication_index) = records.get(source_publication).copied() else {
-        return damage(Cause::Pointer);
+    let conflicting = Proof::on_row(rows, found.record(conflicting_chunk), |chunk| {
+        matches!(chunk, BlobFact::Chunk {
+            store: conflict_store, session, ordinal, chunk_size: conflict_size, length, ..
+        } if conflict_store == store
+            && session == destination_session
+            && ordinal == destination_ordinal
+            && conflict_size == chunk_size
+            && declared_total.is_none_or(|total| {
+                remaining(total).map(|bytes| bytes.min(size)) == Some(*length)
+            }))
+    });
+    let source_store = Proof::on_row(rows, found.record(source_chunk), |chunk| {
+        chunk.store() == *store
+    });
+    let source = SourceClaim {
+        publication: *source_publication,
+        ordinal: *source_ordinal,
+        chunk: *source_chunk,
+        digest: *digest,
+        length: None,
+        scope: *scope,
+        chunk_size: *chunk_size,
     };
-    for dependency in [publication_index, source_index, conflict_index] {
-        if rows[dependency].outcome != Outcome::Intact {
-            return graph::dependency_uncertainty(&rows[dependency])
-                .unwrap_or_else(|| damage(Cause::Pointer));
-        }
-    }
-    let destination_valid = graph::declaration(rows, sessions, *destination_session).is_some_and(
-        |(declared_store, _, declared_scope, declared_size, declared_total)| {
-            declared_store == store
-                && declared_scope == scope
-                && declared_size == chunk_size
-                && destination_ordinal
-                    .checked_mul(u64::from(*chunk_size))
-                    .and_then(|start| declared_total.checked_sub(start))
-                    .is_some_and(|remaining| remaining > 0)
-        },
-    );
-    let Some(BlobFact::Chunk {
-        store: source_store,
-        length: source_length,
-        digest: source_digest,
-        ..
-    }) = rows[source_index].fact.as_ref()
-    else {
-        return damage(Cause::Pointer);
-    };
-    let conflict_valid = matches!(rows[conflict_index].fact.as_ref(), Some(BlobFact::Chunk {
-        store: conflict_store, session, ordinal, chunk_size: size,
-        length, ..
-    }) if conflict_store == store && session == destination_session
-        && ordinal == destination_ordinal && size == chunk_size
-        && destination_ordinal.checked_mul(u64::from(*chunk_size))
-            .and_then(|start| graph::declaration(rows, sessions, *destination_session)
-                .and_then(|(_, _, _, _, total)| total.checked_sub(start)))
-            .map(|remaining| remaining.min(u64::from(*chunk_size))) == Some(*length));
-    if !destination_valid
-        || !conflict_valid
-        || source_store != store
-        || source_digest != digest
-        || !reuse_claims::source_edge(
-            rows,
-            sessions,
-            records,
-            *source_publication,
-            *source_ordinal,
-            *source_chunk,
-            *digest,
-            *source_length,
-            *scope,
-            *chunk_size,
-        )
-    {
-        return damage(Cause::Pointer);
-    }
-    let source = match selected_chunk_bytes(&rows[source_index], root, walk) {
-        Ok(bytes) => bytes,
-        Err(outcome) => return outcome,
-    };
-    let conflicting = match selected_chunk_bytes(&rows[conflict_index], root, walk) {
-        Ok(bytes) => bytes,
-        Err(outcome) => return outcome,
-    };
-    if source == conflicting {
-        damage(Cause::ScopeMismatch)
-    } else {
-        Outcome::Intact
-    }
+    destination
+        .and(conflicting)
+        .and(source_store)
+        .and(source_edge::proof(rows, found, &source, None))
 }
 
 fn selected_chunk_bytes(
@@ -153,3 +173,7 @@ fn selected_chunk_bytes(
     }
     Ok(payload[140..].to_vec())
 }
+
+#[cfg(test)]
+#[path = "quarantine/tests.rs"]
+mod tests;

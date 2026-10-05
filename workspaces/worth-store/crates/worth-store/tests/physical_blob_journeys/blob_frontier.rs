@@ -15,6 +15,9 @@ use super::fixture::{
     admitted_blob_scope, placement, serving_from_initialization, serving_from_open,
 };
 
+#[path = "blob_frontier/reused_last_chunk.rs"]
+mod reused_last_chunk;
+
 const CHUNK: usize = 64 * 1024;
 
 #[test]

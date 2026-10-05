@@ -11,7 +11,9 @@ use worth_store::physical_runtime::{
     PhysicalRecordPlacementPolicy, PublishedBlobGeneration, ServingPhysicalRuntime,
 };
 use worth_store_blob_chunks::BlobChunkSize;
+use worth_store_physical_format::{decode_blob_record, BlobRecordV1};
 
+use super::blob_ingest_process::{observed_without_damage, selected_root};
 use super::fixture::{admitted_blob_scope, placement, serving_from_initialization};
 
 const CHUNK: usize = 64 << 10;
@@ -186,7 +188,63 @@ fn released_generation_one_record_batches_keep_post_order_custody_and_end_in_no_
         BlobReclaimDisposition::ProvenNoEffect
     );
     assert!(repeated.dropped_records().is_empty());
+    let released_descriptors = super::blob_frontier::selected_blob_records(&serving)
+        .iter()
+        .filter(|(_, bytes)| {
+            matches!(
+                decode_blob_record(bytes),
+                Ok(BlobRecordV1::ReclaimDescriptorV3(_))
+            )
+        })
+        .count();
+    assert!(
+        released_descriptors > 0,
+        "the completed release keeps its descriptor selected"
+    );
     serving.close();
+    // What the offline observer says of a completed release, which is less
+    // than "this store is healthy": the observation is complete, no artifact it
+    // reaches is damaged, and the release certificate is intact.
+    let artifacts =
+        observed_without_damage(directory.path(), "c11-blob-release", "post-order-released");
+    let mut release_certificates = artifacts
+        .iter()
+        .filter(|artifact| artifact["family"] == "checkpoint_release_certificate")
+        .peekable();
+    assert!(
+        release_certificates.peek().is_some(),
+        "the checkpoint that completed the release certifies it"
+    );
+    for certificate in release_certificates {
+        assert_eq!(certificate["outcome"]["posture"], "intact", "{certificate}");
+    }
+    // A completed release selects a head-bound root (envelope schema 10). The
+    // offline observer does not read that schema yet, so it cannot say this
+    // root's routing is intact; it must say so rather than guess. When the
+    // observer learns the schema, this becomes the intact assertion.
+    let selected = selected_root(&artifacts);
+    let manifest = &selected[0]["outcome"];
+    assert_eq!(manifest["posture"], "unsupported", "{manifest}");
+    assert_eq!(manifest["axis"], "envelope_schema", "{manifest}");
+    assert_eq!(manifest["observed"], 10, "{manifest}");
+    assert_eq!(
+        selected.len(),
+        1,
+        "no routing block of the unread root is observed: {selected:?}"
+    );
+    // Under a root it cannot read, the observer reaches no selected blob record,
+    // not even the release descriptor counted above, and still reports a
+    // complete observation. "Without damage" therefore says nothing about the
+    // blob rows of a released store. This pins that gap; it does not excuse it.
+    let blob_rows: Vec<_> = artifacts
+        .iter()
+        .filter(|artifact| {
+            artifact["family"]
+                .as_str()
+                .is_some_and(|family| family.starts_with("blob_"))
+        })
+        .collect();
+    assert!(blob_rows.is_empty(), "{blob_rows:?}");
 }
 
 #[test]

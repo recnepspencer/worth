@@ -1,9 +1,5 @@
 //! Parsed C.11 selected-record claims, distinct from their graph verdicts.
 
-use worth_foundational::PhysicalArtifactFamily as Family;
-
-use super::super::OfflineArtifactFamily;
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum BlobFact {
     Abandoned {
@@ -198,54 +194,40 @@ pub(crate) struct BlobEdge {
 }
 
 impl BlobFact {
-    pub(crate) const fn route_kind_matches(&self, code: u8) -> bool {
+    /// The kind code of the frame this fact was read from. A selected route
+    /// classifies the record by the same code.
+    pub(crate) const fn kind_code(&self) -> u8 {
         match self {
-            Self::Declaration { .. } => code == 1,
-            Self::Chunk { .. } => code == 2,
-            Self::Node { .. } => code == 3,
-            Self::Publication { .. } => code == 4,
-            Self::Frontier { .. } => code == 5,
-            Self::Abandoned { .. } => code == 6,
-            Self::DropSetManifest { .. } => matches!(code, 7 | 9),
-            Self::ReclaimDescriptor { .. } => code == 8,
-            Self::OriginalDropReserved { .. } => code == 10,
-            Self::ReuseClaim { source_witness, .. } => {
-                if source_witness.is_some() {
-                    code == 15
-                } else {
-                    code == 11
-                }
-            }
-            Self::DedupeQuarantine { .. } => code == 12,
-            Self::ReleasedDropSetManifest { .. } => code == 13,
-            Self::ReleasedReclaimDescriptor { custody, .. } => {
-                if custody.is_some() {
-                    code == 16
-                } else {
-                    code == 14
-                }
-            }
-        }
-    }
-    pub(crate) const fn family(&self) -> OfflineArtifactFamily {
-        match self {
-            Self::Declaration { .. } | Self::Abandoned { .. } | Self::ReuseClaim { .. } => {
-                OfflineArtifactFamily::Declared(Family::BlobResumeSession)
-            }
-            Self::DedupeQuarantine { .. } => OfflineArtifactFamily::DedupeQuarantine,
-            Self::Chunk { .. } => OfflineArtifactFamily::Declared(Family::BlobChunkFrame),
-            Self::Node { .. } => OfflineArtifactFamily::Declared(Family::BlobTreeNode),
-            Self::Publication { .. } => {
-                OfflineArtifactFamily::Declared(Family::BlobGenerationPublication)
-            }
-            Self::Frontier { .. } => OfflineArtifactFamily::Declared(Family::BlobResumeSession),
-            Self::DropSetManifest { .. } | Self::ReleasedDropSetManifest { .. } => {
-                OfflineArtifactFamily::Declared(Family::BlobDropSetManifest)
-            }
-            Self::OriginalDropReserved { .. } => OfflineArtifactFamily::OriginalDropReservation,
-            Self::ReclaimDescriptor { .. } | Self::ReleasedReclaimDescriptor { .. } => {
-                OfflineArtifactFamily::Declared(Family::BlobReclaimDescriptor)
-            }
+            Self::Declaration { .. } => 1,
+            Self::Chunk { .. } => 2,
+            Self::Node { .. } => 3,
+            Self::Publication { .. } => 4,
+            Self::Frontier { .. } => 5,
+            Self::Abandoned { .. } => 6,
+            Self::DropSetManifest {
+                never_reserved_slot_generation: None,
+                ..
+            } => 7,
+            Self::ReclaimDescriptor { .. } => 8,
+            Self::DropSetManifest {
+                never_reserved_slot_generation: Some(_),
+                ..
+            } => 9,
+            Self::OriginalDropReserved { .. } => 10,
+            Self::ReuseClaim {
+                source_witness: None,
+                ..
+            } => 11,
+            Self::DedupeQuarantine { .. } => 12,
+            Self::ReleasedDropSetManifest { .. } => 13,
+            Self::ReleasedReclaimDescriptor { custody: None, .. } => 14,
+            Self::ReuseClaim {
+                source_witness: Some(_),
+                ..
+            } => 15,
+            Self::ReleasedReclaimDescriptor {
+                custody: Some(_), ..
+            } => 16,
         }
     }
 

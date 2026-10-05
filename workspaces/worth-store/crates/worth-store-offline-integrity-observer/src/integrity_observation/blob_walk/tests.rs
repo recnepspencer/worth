@@ -69,7 +69,7 @@ fn bounded_second_extent_frame_keeps_blob_indeterminate_at_finish() {
         outcome,
         Outcome::Indeterminate(OfflineIndeterminatePhysicalReason::ByteBoundExceeded)
     );
-    blobs.note_extent_chunk_outcome(&second, &outcome);
+    blobs.note_outcome(&second, &outcome);
     // A later, unrelated queue bound must not relabel this frame's byte bound.
     assert_eq!(
         walk.entry_bound(),
@@ -97,7 +97,7 @@ fn bounded_second_extent_frame_keeps_blob_indeterminate_at_finish() {
         interruption: None,
     });
     let unavailable = Outcome::Unknown(OfflineUnknownPhysicalReason::PhysicalAliasNotReinspected);
-    aliased.note_extent_chunk_outcome(&second, &unavailable);
+    aliased.note_outcome(&second, &unavailable);
     let rows = aliased.finish(&root, &mut walk, false);
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0].outcome(), &unavailable);
@@ -138,7 +138,7 @@ fn selected(record: [u8; 24], fact: BlobFact) -> Selected {
         record,
         path: "arena.bin".into(),
         generation: 1,
-        family: fact.family().into(),
+        kind: Some(blob_record::FrameKind::of(&fact)),
         fact: Some(fact),
         outcome: Outcome::Intact,
         route: None,

@@ -1,230 +1,261 @@
-use super::super::super::blob_record::BlobEdge;
-use super::super::OfflineArtifactFamily;
+use super::super::reuse_source_fixture::{
+    chunk, claim, declare_other, declare_total, record, row, selected_source, subsets, walked,
+    witness, CHUNK, CLAIM, DESTINATION_DECLARATION, DIGEST, OTHER, SOURCE, SOURCE_CHUNK,
+    SOURCE_DECLARATION, SOURCE_LEAF, SOURCE_PUBLICATION,
+};
 use super::*;
-use worth_foundational::PhysicalArtifactFamily as Family;
 
-fn record(ordinal: u64) -> [u8; 24] {
-    let mut bytes = [1; 24];
-    bytes[16..].copy_from_slice(&ordinal.to_le_bytes());
-    bytes
+const LENGTH: u64 = CHUNK as u64;
+
+/// Every row of `selected_source` its claim is judged against.
+const DEPENDENCIES: [usize; 5] = [
+    SOURCE_DECLARATION,
+    SOURCE_CHUNK,
+    SOURCE_LEAF,
+    SOURCE_PUBLICATION,
+    DESTINATION_DECLARATION,
+];
+
+/// The dependencies a claim reaches by record. A row whose frame could not be
+/// read keeps its record and its outcome but has no fact.
+const BY_RECORD: [usize; 3] = [SOURCE_CHUNK, SOURCE_LEAF, SOURCE_PUBLICATION];
+
+fn unavailable() -> Outcome {
+    Outcome::Unknown(Unknown::WalCoverageUnavailable)
 }
 
-fn row(record: [u8; 24], generation: u64, fact: BlobFact) -> Selected {
-    Selected {
-        record,
-        path: String::new(),
-        generation,
-        family: OfflineArtifactFamily::Declared(Family::BlobResumeSession),
-        fact: Some(fact),
-        outcome: Outcome::Intact,
-        route: None,
+pub(super) fn mismatch() -> Outcome {
+    damage(Cause::ScopeMismatch)
+}
+
+/// The claim row's outcome once the claim graph has walked the rows.
+pub(super) fn claim_outcome(rows: Vec<Selected>) -> Outcome {
+    let rows = walked(rows);
+    let claim = rows.iter().find(|row| row.record == record(6));
+    claim.expect("the claim row").outcome.clone()
+}
+
+/// The rows' frames were read, but the walk could not settle the rows.
+fn undecided(mut rows: Vec<Selected>, dependencies: &[usize]) -> Vec<Selected> {
+    for dependency in dependencies {
+        rows[*dependency].outcome = unavailable();
     }
+    rows
+}
+
+/// The row's frame could not be read.
+fn unread(mut rows: Vec<Selected>, dependency: usize) -> Vec<Selected> {
+    rows[dependency].fact = None;
+    rows[dependency].outcome = unavailable();
+    rows
 }
 
 #[test]
 fn selected_source_edge_and_destination_scope_authorize_one_reuse_claim() {
-    let scope = [3; 32];
-    let digest = [4; 32];
-    let source = [5; 16];
-    let destination = [6; 16];
-    let rows = vec![
-        row(
-            record(1),
-            1,
-            BlobFact::Declaration {
-                store: [1; 16],
-                session: source,
-                frame_digest: [7; 32],
-                object: [8; 16],
-                scope,
-                chunk_size: 64 << 10,
-                total: 64 << 10,
-                max_checkpoint_sequence: 9,
-            },
-        ),
-        row(
-            record(2),
-            2,
-            BlobFact::Chunk {
-                store: [1; 16],
-                session: source,
-                ordinal: 0,
-                chunk_size: 64 << 10,
-                length: 64 << 10,
-                digest,
-            },
-        ),
-        row(
-            record(3),
-            3,
-            BlobFact::Node {
-                store: [1; 16],
-                session: source,
-                kind: 1,
-                level: 0,
-                index: 0,
-                covered: 64 << 10,
-                digest: [9; 32],
-                frame_digest: [10; 32],
-                entries: vec![BlobEdge {
-                    digest,
-                    record: record(2),
-                    covered: 64 << 10,
-                }],
-            },
-        ),
-        row(
-            record(4),
-            4,
-            BlobFact::Publication {
-                store: [1; 16],
-                frame_digest: [14; 32],
-                session: source,
-                object: [8; 16],
-                generation: 1,
-                root: record(3),
-                root_digest: [10; 32],
-                total: 64 << 10,
-                logical_digest: [11; 32],
-                chunk_size: 64 << 10,
-                scope,
-            },
-        ),
-        row(
-            record(5),
-            5,
-            BlobFact::Declaration {
-                store: [1; 16],
-                session: destination,
-                frame_digest: [12; 32],
-                object: [13; 16],
-                scope,
-                chunk_size: 64 << 10,
-                total: 64 << 10,
-                max_checkpoint_sequence: 14,
-            },
-        ),
-        row(
-            record(6),
-            6,
-            BlobFact::ReuseClaim {
-                store: [1; 16],
-                session: destination,
-                ordinal: 0,
-                scope,
-                chunk_size: 64 << 10,
-                length: 64 << 10,
-                digest,
-                chunk_record: record(2),
-                source_publication: record(4),
-                source_ordinal: 0,
-                source_witness: None,
-            },
-        ),
-    ];
-    let sessions = BTreeMap::from([(source, 0), (destination, 4)]);
-    let records = rows
-        .iter()
-        .enumerate()
-        .map(|(index, row)| (row.record, index))
-        .collect();
-    let mut accepted = rows;
-    let claims = validate(&mut accepted, &sessions, &records);
-    assert_eq!(claims.get(&(destination, 0)), Some(&5));
-    assert_eq!(accepted[5].outcome, Outcome::Intact);
-    accepted[3].generation = 100;
-    validate(&mut accepted, &sessions, &records);
+    assert_eq!(claim_outcome(selected_source()), Outcome::Intact);
+
+    let mut rewritten = selected_source();
+    rewritten[SOURCE_PUBLICATION].generation = 100;
     assert_eq!(
-        accepted[5].outcome,
+        claim_outcome(rewritten),
         Outcome::Intact,
         "rewritten source placement is not a later source publication"
     );
-    if let Some(BlobFact::Chunk { ordinal, .. }) = accepted[1].fact.as_mut() {
-        *ordinal = 1;
-    }
-    validate(&mut accepted, &sessions, &records);
-    assert!(matches!(accepted[5].outcome, Outcome::Damaged(_)));
-    if let Some(BlobFact::Chunk { ordinal, .. }) = accepted[1].fact.as_mut() {
-        *ordinal = 0;
-    }
-    accepted[5].outcome = Outcome::Intact;
-    if let Some(BlobFact::ReuseClaim { scope, .. }) = accepted[5].fact.as_mut() {
+
+    let mut another_scope = selected_source();
+    if let Some(BlobFact::ReuseClaim { scope, .. }) = another_scope[CLAIM].fact.as_mut() {
         *scope = [99; 32];
     }
-    validate(&mut accepted, &sessions, &records);
-    assert!(matches!(accepted[5].outcome, Outcome::Damaged(_)));
+    assert_eq!(claim_outcome(another_scope), mismatch());
+}
 
-    accepted.remove(3);
-    accepted[4].outcome = Outcome::Intact;
-    if let Some(BlobFact::ReuseClaim {
-        scope,
-        source_witness,
-        ..
-    }) = accepted[4].fact.as_mut()
-    {
-        *scope = [3; 32];
-        *source_witness = Some(ReuseSourceWitness {
-            frame_digest: [14; 32],
-            store: [1; 16],
-            session: source,
-            object: [8; 16],
-            generation: 1,
-            root: record(3),
-            root_digest: [10; 32],
-            total: 64 << 10,
-            chunk_size: 64 << 10,
-            scope: [3; 32],
-        });
+#[test]
+fn two_claims_for_one_ordinal_of_a_session_are_both_duplicates() {
+    let mut rows = selected_source();
+    rows.push(row(9, claim(None)));
+    let rows = walked(rows);
+    assert_eq!(rows[CLAIM].outcome, damage(Cause::DuplicateIdentity));
+    assert_eq!(rows[CLAIM + 1].outcome, damage(Cause::DuplicateIdentity));
+
+    // The identity is the session and the ordinal: a claim on another ordinal
+    // is judged on its own, here as one past the declared total.
+    let mut another_ordinal = claim(None);
+    if let BlobFact::ReuseClaim { ordinal, .. } = &mut another_ordinal {
+        *ordinal = 1;
     }
-    accepted.push(row(
-        record(7),
-        7,
-        BlobFact::ReleasedDropSetManifest {
-            store: [1; 16],
-            frame_digest: [15; 32],
-            attempt: [16; 16],
-            object: [8; 16],
-            session: source,
-            generation: 1,
-            root: record(3),
-            root_digest: [10; 32],
-            publication_record: record(4),
-            publication_digest: [14; 32],
-            issuer_evidence_digest: [18; 32],
-            basis_digest: [17; 32],
-            dropped: vec![record(4)],
-            never_reserved_slot_generation: 5,
+    let mut rows = selected_source();
+    rows.push(row(9, another_ordinal));
+    let rows = walked(rows);
+    assert_eq!(rows[CLAIM].outcome, Outcome::Intact);
+    assert_eq!(rows[CLAIM + 1].outcome, mismatch());
+}
+
+#[test]
+fn an_unavailable_row_a_claim_depends_on_is_not_a_mismatch() {
+    for dependencies in subsets(&DEPENDENCIES).skip(1) {
+        assert_eq!(
+            claim_outcome(undecided(selected_source(), &dependencies)),
+            unavailable(),
+            "rows {dependencies:?}"
+        );
+    }
+    for dependency in DEPENDENCIES {
+        let mut rows = selected_source();
+        rows[dependency].outcome = damage(Cause::Truncation);
+        assert_eq!(
+            claim_outcome(rows),
+            mismatch(),
+            "a damaged row {dependency} proves nothing for the claim"
+        );
+    }
+    for dependency in BY_RECORD {
+        assert_eq!(
+            claim_outcome(unread(selected_source(), dependency)),
+            unavailable(),
+            "row {dependency}"
+        );
+    }
+}
+
+/// What frames that were read contradict, how it is written into
+/// `selected_source`, and the rows whose unread frame hides it.
+type Contradiction = (&'static str, fn(&mut Vec<Selected>), &'static [usize]);
+
+const CONTRADICTIONS: [Contradiction; 7] = [
+    (
+        "a claim past its destination's declared bytes",
+        |rows| {
+            if let Some(BlobFact::ReuseClaim { ordinal, .. }) = rows[CLAIM].fact.as_mut() {
+                *ordinal = 1;
+            }
         },
-    ));
-    accepted.push(row(
-        record(8),
-        8,
-        BlobFact::ReleasedReclaimDescriptor {
-            store: [1; 16],
-            frame_digest: [19; 32],
-            attempt: [16; 16],
-            basis_digest: [17; 32],
-            manifest_record: record(7),
-            manifest_digest: [15; 32],
-            manifest_count: 1,
-            source_root: 6,
-            candidate_root: 7,
-            predecessor: None,
-            cumulative_dropped: 1,
-            terminal: false,
-            custody: None,
+        &[],
+    ),
+    (
+        "a borrowed chunk of another digest",
+        |rows| rows[SOURCE_CHUNK] = row(2, chunk(SOURCE, 0, LENGTH, [20; 32])),
+        &[SOURCE_CHUNK],
+    ),
+    (
+        "a borrowed chunk of another length",
+        |rows| rows[SOURCE_CHUNK] = row(2, chunk(SOURCE, 0, LENGTH - 1, DIGEST)),
+        &[SOURCE_CHUNK],
+    ),
+    (
+        "a borrowed chunk of another ordinal",
+        |rows| rows[SOURCE_CHUNK] = row(2, chunk(SOURCE, 1, LENGTH, DIGEST)),
+        &[SOURCE_CHUNK],
+    ),
+    (
+        // The chunk is its own session's intact occurrence, and only the
+        // publication names the source session of an unwitnessed claim.
+        "a borrowed chunk of another session",
+        |rows| {
+            rows[SOURCE_CHUNK] = row(2, chunk(OTHER, 0, LENGTH, DIGEST));
+            declare_other(rows);
         },
-    ));
-    let post_release_records = accepted
-        .iter()
-        .enumerate()
-        .map(|(index, row)| (row.record, index))
-        .collect();
-    let post_release_sessions = BTreeMap::from([(source, 0), (destination, 3)]);
-    validate(&mut accepted, &post_release_sessions, &post_release_records);
+        &[SOURCE_CHUNK, SOURCE_PUBLICATION],
+    ),
+    (
+        "a leaf edge that names another chunk",
+        |rows| {
+            if let Some(BlobFact::Node { entries, .. }) = rows[SOURCE_LEAF].fact.as_mut() {
+                entries[0].record = record(90);
+            }
+        },
+        &[SOURCE_LEAF, SOURCE_PUBLICATION],
+    ),
+    (
+        "a source declared with another total",
+        |rows| declare_total(rows, SOURCE_DECLARATION, 2 * LENGTH),
+        &[SOURCE_PUBLICATION],
+    ),
+];
+
+/// A frame that was read contradicts the claim whatever the walk left
+/// undecided, of that row or of any other; only the frame that could not be
+/// read hides what it would have said.
+/// `an_unavailable_row_a_claim_depends_on_is_not_a_mismatch` is the same world
+/// without the contradiction.
+#[test]
+fn a_contradiction_among_intact_rows_is_a_mismatch_whatever_other_row_is_unknown() {
+    for (name, contradict, hidden_by) in CONTRADICTIONS {
+        let contradicted = || {
+            let mut rows = selected_source();
+            contradict(&mut rows);
+            rows
+        };
+        for dependencies in subsets(&DEPENDENCIES) {
+            assert_eq!(
+                claim_outcome(undecided(contradicted(), &dependencies)),
+                mismatch(),
+                "{name}, rows {dependencies:?} undecided"
+            );
+        }
+        for dependency in BY_RECORD {
+            let expected = if hidden_by.contains(&dependency) {
+                unavailable()
+            } else {
+                mismatch()
+            };
+            assert_eq!(
+                claim_outcome(unread(contradicted(), dependency)),
+                expected,
+                "{name}, row {dependency} unread"
+            );
+        }
+    }
+}
+
+#[test]
+fn a_witness_is_the_selected_publication_and_names_the_source_when_it_is_unknown() {
+    let witnessed = |witness: ReuseSourceWitness| {
+        let mut rows = selected_source();
+        rows[CLAIM] = row(6, claim(Some(witness)));
+        rows
+    };
+    assert_eq!(claim_outcome(witnessed(witness())), Outcome::Intact);
+
+    let another_generation = ReuseSourceWitness {
+        generation: 2,
+        ..witness()
+    };
+    for dependencies in subsets(&DEPENDENCIES) {
+        assert_eq!(
+            claim_outcome(undecided(witnessed(another_generation), &dependencies)),
+            mismatch(),
+            "rows {dependencies:?} undecided"
+        );
+    }
     assert_eq!(
-        accepted[4].outcome,
-        Outcome::Unknown(Unknown::WalCoverageUnavailable),
-        "selected V3/V2 provenance cannot invent selected WAL fate"
+        claim_outcome(unread(witnessed(another_generation), SOURCE_PUBLICATION)),
+        unavailable(),
+        "only the publication's own frame contradicts a witness of it"
     );
+
+    // The witness says whose chunk is borrowed when the publication cannot.
+    let rows = unread(witnessed(witness()), SOURCE_PUBLICATION);
+    assert_eq!(claim_outcome(rows), unavailable());
+    let mut rows = unread(witnessed(witness()), SOURCE_PUBLICATION);
+    rows[SOURCE_CHUNK] = row(2, chunk(OTHER, 0, LENGTH, DIGEST));
+    declare_other(&mut rows);
+    assert_eq!(claim_outcome(rows), mismatch());
+}
+
+/// The walk here visited every record the selected root routes, and a record
+/// whose frame it could not read keeps a row, so a record with no row is
+/// absent from the store. `unseen_tests` has the same rows unread and
+/// unvisited, which are not absent.
+#[test]
+fn a_row_that_is_not_selected_under_a_selected_publication_is_a_mismatch() {
+    for absent in [
+        DESTINATION_DECLARATION,
+        SOURCE_LEAF,
+        SOURCE_CHUNK,
+        SOURCE_DECLARATION,
+    ] {
+        let mut rows = selected_source();
+        rows.remove(absent);
+        assert_eq!(claim_outcome(rows), mismatch(), "row {absent}");
+    }
 }

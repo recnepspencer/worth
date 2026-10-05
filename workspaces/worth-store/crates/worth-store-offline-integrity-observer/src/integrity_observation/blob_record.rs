@@ -1,5 +1,6 @@
 //! Independent C.11 inner-frame reader. This module intentionally does not
-//! import the physical-format blob parser or C.9 validator.
+//! import the physical-format blob parser or C.9 validator. The set of kind
+//! codes is the format's declaration; every payload is read independently.
 
 use super::sha256::Sha256;
 use super::{
@@ -11,6 +12,7 @@ use super::{
 mod abandoned;
 mod fact;
 mod frontier;
+mod kind;
 mod primitives;
 mod quarantine;
 mod reclaim;
@@ -19,13 +21,11 @@ mod reuse_claim;
 mod tests;
 
 pub(crate) use fact::{BlobEdge, BlobFact, ReuseSourceWitness};
+pub(crate) use kind::{FrameKind, FrameRole};
 use primitives::{admitted_chunk_size, nonzero, u32_at, u64_at};
 
 const MAGIC: &[u8; 8] = b"WRC11BLB";
 const HEADER: usize = 48;
-const CHUNK_MAX: usize = 1 << 20;
-const NODE_MAX: usize = 512 << 10;
-const CONTROL_MAX: usize = 64 << 10;
 
 pub(crate) fn is_blob_prefix(bytes: &[u8]) -> bool {
     bytes.starts_with(MAGIC)
@@ -41,27 +41,17 @@ pub(crate) fn decode(
     if bytes.len() < HEADER || !is_blob_prefix(bytes) {
         return Err(fail(Cause::Framing));
     }
-    let kind = bytes[8];
-    let maximum = match kind {
-        1 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 => CONTROL_MAX,
-        2 => CHUNK_MAX,
-        3 => NODE_MAX,
-        _ => return Err(fail(Cause::Framing)),
+    let Some(kind) = FrameKind::declared(bytes[8]) else {
+        return Err(fail(Cause::Framing));
     };
     if bytes[9] != 1
-        || bytes.len() > maximum
+        || bytes.len() > kind.maximum_bytes
         || bytes[12..16] != ((bytes.len() - HEADER) as u32).to_le_bytes()
     {
         return Err(fail(Cause::Framing));
     }
     let flags = u16::from_le_bytes(bytes[10..12].try_into().expect("fixed header"));
-    if flags
-        != if kind == 2 || kind == 3 || kind == 11 || kind == 12 || kind == 15 {
-            1
-        } else {
-            0
-        }
-    {
+    if flags != u16::from(kind.occurrence_claim) {
         return Err(fail(Cause::MalformedPayload));
     }
     let payload = &bytes[HEADER..];
@@ -72,14 +62,7 @@ pub(crate) fn decode(
     if bytes[16..48] != hasher.finish() {
         return Err(fail(Cause::ChecksumMismatch));
     }
-    if matches!(kind, 13 | 14) && payload.get(32) == Some(&1) {
-        // The versioned failed-ingest source is format-valid but has no Store
-        // writer or independent offline semantic admission in this phase.
-        return Err(Outcome::Unknown(
-            OfflineUnknownPhysicalReason::ParentScopeUnavailable,
-        ));
-    }
-    let fact = match kind {
+    let fact = match kind.code {
         1 => {
             counters.checksum_calculations += 1;
             declaration(payload, super::sha256::sha256(bytes))
@@ -105,6 +88,13 @@ pub(crate) fn decode(
             .ok_or_else(|| fail(Cause::MalformedPayload))?,
         11 => reuse_claim::decode(payload).ok_or_else(|| fail(Cause::MalformedPayload))?,
         12 => quarantine::decode(payload).ok_or_else(|| fail(Cause::MalformedPayload))?,
+        13 | 14 if payload.get(32) == Some(&1) => {
+            // The versioned failed-ingest source is format-valid but has no Store
+            // writer or independent offline semantic admission in this phase.
+            return Err(Outcome::Unknown(
+                OfflineUnknownPhysicalReason::ParentScopeUnavailable,
+            ));
+        }
         13 => reclaim::decode_manifest_v3(payload, super::sha256::sha256(bytes))
             .ok_or_else(|| fail(Cause::MalformedPayload))?,
         14 => reclaim::decode_descriptor_v2(payload, super::sha256::sha256(bytes))
@@ -113,8 +103,9 @@ pub(crate) fn decode(
             .ok_or_else(|| fail(Cause::MalformedPayload))?,
         16 => reclaim::decode_descriptor_v3(payload, super::sha256::sha256(bytes))
             .ok_or_else(|| fail(Cause::MalformedPayload))?,
-        _ => unreachable!("known kind"),
+        _ => unreachable!("every declared kind has a reader"),
     };
+    debug_assert_eq!(FrameKind::of(&fact), kind, "a fact names its own kind");
     let Some(expected_store) = expected_store else {
         return Err(Outcome::Unknown(
             OfflineUnknownPhysicalReason::StoreIdentityUnavailable,

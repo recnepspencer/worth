@@ -1,6 +1,10 @@
 use std::collections::BTreeMap;
 
+use super::super::blob_record::FrameRole;
 use super::super::OfflineUnknownPhysicalReason as Unknown;
+use super::graph::dependency_uncertainty;
+use super::proof::Proof;
+use super::row_index::RowIndex;
 use super::{damage, BlobFact, Cause, Outcome, Selected};
 
 #[cfg(test)]
@@ -9,9 +13,10 @@ mod tests;
 /// Selected custody is checked here; a manifest without a descriptor is not a drop.
 pub(super) fn validate(
     rows: &mut [Selected],
-    records: &BTreeMap<[u8; 24], usize>,
+    found: &RowIndex,
     selected_root_generation: Option<u64>,
 ) {
+    let records = &found.records;
     for index in 0..rows.len() {
         if rows[index].outcome != Outcome::Intact {
             continue;
@@ -57,7 +62,7 @@ pub(super) fn validate(
                 Some(BlobFact::ReclaimDescriptor { .. })
             )
         {
-            rows[index].outcome = descriptor_outcome(rows, records, &reservations, index);
+            rows[index].outcome = descriptor_outcome(rows, found, &reservations, index);
         }
     }
 }
@@ -169,7 +174,7 @@ fn reservation_outcome(
 
 fn descriptor_outcome(
     rows: &[Selected],
-    records: &BTreeMap<[u8; 24], usize>,
+    found: &RowIndex,
     reservations: &BTreeMap<[u8; 24], usize>,
     index: usize,
 ) -> Outcome {
@@ -189,6 +194,7 @@ fn descriptor_outcome(
     if manifest_record == &rows[index].record {
         return damage(Cause::Pointer);
     }
+    let records = &found.records;
     let Some(manifest) = records.get(manifest_record).and_then(|row| rows.get(*row)) else {
         return damage(Cause::Pointer);
     };
@@ -212,35 +218,42 @@ fn descriptor_outcome(
         || basis_digest != manifest_basis
         || manifest_digest != frame_digest
         || usize::from(*manifest_count) != dropped.len()
-        || dropped.iter().any(|record| records.contains_key(record))
     {
         return damage(Cause::Pointer);
     }
+    let mut proof = found.all_gone(dropped);
     if never_reserved_slot_generation.is_some() {
         let reserved = reservations
             .get(manifest_record)
             .and_then(|index| rows.get(*index));
-        let exact = reserved.is_some_and(|reserved| {
-            reserved.outcome == Outcome::Intact
-                && matches!(reserved.fact.as_ref(),
-                    Some(BlobFact::OriginalDropReserved {
-                        store: reserved_store,
-                        attempt: reserved_attempt,
-                        manifest_record: reserved_manifest,
-                        manifest_digest: reserved_digest,
-                        basis_digest: reserved_basis,
-                        reserved_selected_generation,
-                        ..
-                    }) if reserved_store == store
-                        && reserved_attempt == attempt
-                        && reserved_manifest == manifest_record
-                        && reserved_digest == manifest_digest
-                        && reserved_basis == basis_digest
-                        && reserved_selected_generation == source_root)
-        });
+        let Some(reserved) = reserved else {
+            // No reservation that was read names the manifest.
+            let proof = proof.and(found.none_found(FrameRole::DropReservation));
+            return proof.outcome(Cause::Pointer);
+        };
+        let exact = matches!(reserved.fact.as_ref(),
+            Some(BlobFact::OriginalDropReserved {
+                store: reserved_store,
+                attempt: reserved_attempt,
+                manifest_record: reserved_manifest,
+                manifest_digest: reserved_digest,
+                basis_digest: reserved_basis,
+                reserved_selected_generation,
+                ..
+            }) if reserved_store == store
+                && reserved_attempt == attempt
+                && reserved_manifest == manifest_record
+                && reserved_digest == manifest_digest
+                && reserved_basis == basis_digest
+                && reserved_selected_generation == source_root);
         if !exact {
             return damage(Cause::Pointer);
         }
+        // A matching reservation that is itself undecided decides nothing.
+        if reserved.outcome != Outcome::Intact {
+            let undecided = dependency_uncertainty(reserved);
+            proof = proof.and(undecided.map_or(Proof::Contradicted, Proof::Undecided));
+        }
     }
-    Outcome::Intact
+    proof.outcome(Cause::Pointer)
 }

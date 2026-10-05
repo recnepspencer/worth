@@ -106,9 +106,7 @@ impl SelectedRecordRouteMetadata {
         let content_class = match (encoded[0], encoded[1], family) {
             (0, 0, 0) => SelectedRecordContentClass::UnknownLegacy,
             (1, 0, 0) => SelectedRecordContentClass::Opaque,
-            (2, code, 0) => {
-                SelectedRecordContentClass::Blob(BlobRecordKind::from_route_code(code)?)
-            }
+            (2, code, 0) => SelectedRecordContentClass::Blob(BlobRecordKind::from_code(code)?),
             (3, 0, family_code @ 1..) => SelectedRecordContentClass::BTreeNode { family_code },
             (4, 0, 0) => SelectedRecordContentClass::DerivedDirectory,
             _ => return None,

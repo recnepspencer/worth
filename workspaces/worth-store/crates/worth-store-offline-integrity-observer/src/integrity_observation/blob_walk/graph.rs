@@ -1,19 +1,18 @@
 use std::collections::BTreeMap;
 
-use super::super::blob_record::BlobFact;
+use super::super::blob_record::{BlobEdge, BlobFact};
 use super::super::OfflineIntegrityOutcome as Outcome;
 use super::super::OfflinePhysicalDamageCause as Cause;
-use super::{damage, BlobRecordWalk, ChildExpectation, ChildScope, Selected};
+use super::proof::Proof;
+use super::row_index::RowIndex;
+use super::Selected;
 
-/// Classify every selected chunk before a frontier summarizes any prefix.
-/// Selected rows have no ordinal order, so this must precede frontier indexing.
-pub(super) fn validate_chunks(
-    selected: &mut [Selected],
-    sessions: &BTreeMap<[u8; 16], usize>,
-    records: &BTreeMap<[u8; 24], usize>,
-) {
-    for index in 0..selected.len() {
-        if selected[index].outcome != Outcome::Intact {
+/// Classify every selected chunk against its session's declaration before a
+/// frontier summarizes any prefix. Selected rows have no ordinal order, so
+/// this must precede frontier indexing.
+pub(super) fn validate_chunks(selected: &mut [Selected], index: &RowIndex) {
+    for row in 0..selected.len() {
+        if selected[row].outcome != Outcome::Intact {
             continue;
         }
         let Some(BlobFact::Chunk {
@@ -23,59 +22,87 @@ pub(super) fn validate_chunks(
             chunk_size,
             length,
             ..
-        }) = selected[index].fact.as_ref()
+        }) = selected[row].fact.as_ref()
         else {
             continue;
         };
-        if let Some(outcome) = uncertain_dependency(
-            selected[index].fact.as_ref().expect("selected chunk"),
-            selected,
-            sessions,
-            records,
-        ) {
-            selected[index].outcome = outcome;
-            continue;
-        }
-        let valid = declaration(selected, sessions, *session).is_some_and(
-            |(declared_store, _, _, declared_chunk_size, total)| {
-                let start = ordinal.checked_mul(u64::from(*chunk_size));
-                let expected_length = start.and_then(|start| {
-                    total
-                        .checked_sub(start)
-                        .map(|remaining| remaining.min(u64::from(*chunk_size)))
-                });
-                *declared_store == *store
-                    && *declared_chunk_size == *chunk_size
-                    && expected_length == Some(*length)
-            },
-        );
-        if !valid {
-            selected[index].outcome = damage(Cause::ScopeMismatch);
-        }
+        let size = u64::from(*chunk_size);
+        let expected_length = |total: &u64| {
+            ordinal
+                .checked_mul(size)
+                .and_then(|start| total.checked_sub(start))
+                .map(|remaining| remaining.min(size))
+        };
+        let declared = Proof::on_row(selected, index.declaration(session), |declaration| {
+            matches!(declaration, BlobFact::Declaration {
+                store: declared_store, chunk_size: declared_size, total, ..
+            } if declared_store == store
+                && declared_size == chunk_size
+                && expected_length(total) == Some(*length))
+        });
+        selected[row].outcome = declared.outcome(Cause::ScopeMismatch);
     }
 }
 
-impl BlobRecordWalk {
-    pub(crate) fn note_extent_chunk_outcome(
-        &mut self,
-        expected: &ChildExpectation,
-        outcome: &Outcome,
-    ) {
-        let ChildScope::ExtentChunk { record, .. } = expected.scope else {
-            return;
-        };
-        if *outcome == Outcome::Intact {
-            return;
-        }
-        if let Some(pending) = self
-            .pending
-            .as_mut()
-            .filter(|pending| pending.record == record)
-        {
-            if pending.interruption.is_none() {
-                pending.interruption = Some(outcome.clone());
+/// The position a tree node gives one of its edges.
+pub(super) struct EdgePosition<'a> {
+    pub(super) session: &'a [u8; 16],
+    pub(super) kind: u8,
+    pub(super) level: u8,
+    /// Chunk ordinal under a leaf, child node index under a branch.
+    pub(super) index: Option<u64>,
+}
+
+/// A branch edge names the next-lower node of its session. A leaf edge names
+/// the selected row that claims that ordinal for its session: the session's
+/// own chunk frame, or its reuse claim, whose authenticated source edge
+/// `reuse_claims` checks. It never names another session's chunk.
+pub(super) fn edge_names_child(
+    position: &EdgePosition<'_>,
+    edge: &BlobEdge,
+    child: &BlobFact,
+) -> bool {
+    match (position.kind, child) {
+        (
+            1,
+            BlobFact::Chunk {
+                session,
+                ordinal,
+                length,
+                digest,
+                ..
             }
+            | BlobFact::ReuseClaim {
+                session,
+                ordinal,
+                length,
+                digest,
+                ..
+            },
+        ) => {
+            session == position.session
+                && Some(*ordinal) == position.index
+                && *length == edge.covered
+                && *digest == edge.digest
         }
+        (
+            2,
+            BlobFact::Node {
+                session,
+                level,
+                index,
+                covered,
+                digest,
+                ..
+            },
+        ) => {
+            session == position.session
+                && level.checked_add(1) == Some(position.level)
+                && Some(*index) == position.index
+                && *covered == edge.covered
+                && *digest == edge.digest
+        }
+        _ => false,
     }
 }
 
@@ -89,21 +116,28 @@ pub(super) fn dependency_uncertainty(row: &Selected) -> Option<Outcome> {
     }
 }
 
+/// The outcome of the first row `fact` names that is undecided, or that the
+/// walk cannot say is absent. The checks that follow this gate read the rows
+/// by record and by session without asking again: once the gate passes, a row
+/// they do not find is absent from the store.
 pub(super) fn uncertain_dependency(
     fact: &BlobFact,
     selected: &[Selected],
-    sessions: &BTreeMap<[u8; 16], usize>,
-    records: &BTreeMap<[u8; 24], usize>,
+    index: &RowIndex,
 ) -> Option<Outcome> {
-    let session_outcome = |session: &[u8; 16]| {
-        sessions
-            .get(session)
-            .and_then(|prior| dependency_uncertainty(&selected[*prior]))
+    let outcome_of = |sought: Result<usize, Proof>| match sought {
+        Ok(row) => dependency_uncertainty(&selected[row]),
+        Err(Proof::Undecided(outcome)) => Some(outcome),
+        Err(Proof::Holds | Proof::Contradicted) => None,
     };
-    let record_outcome = |record: &[u8; 24]| {
-        records
-            .get(record)
-            .and_then(|prior| dependency_uncertainty(&selected[*prior]))
+    let record_outcome = |record: &[u8; 24]| outcome_of(index.record(record));
+    // A declaration that a frame names by session alone.
+    let declared_outcome = |session: &[u8; 16]| outcome_of(index.declaration(session));
+    // The session's declaration when the frame also names it by record: the
+    // record lookup says what its absence means.
+    let session_outcome = |session: &[u8; 16]| {
+        let declaration = index.sessions.get(session);
+        declaration.and_then(|row| dependency_uncertainty(&selected[*row]))
     };
     match fact {
         BlobFact::Declaration { .. } => None,
@@ -112,31 +146,18 @@ pub(super) fn uncertain_dependency(
             declaration_record,
             ..
         } => session_outcome(session).or_else(|| record_outcome(declaration_record)),
-        BlobFact::Chunk { session, .. } => session_outcome(session),
-        BlobFact::ReuseClaim {
-            session,
-            chunk_record,
-            source_publication,
-            ..
-        } => session_outcome(session)
-            .or_else(|| record_outcome(chunk_record))
-            .or_else(|| record_outcome(source_publication)),
-        BlobFact::DedupeQuarantine {
-            source_publication,
-            source_chunk,
-            destination_session,
-            conflicting_chunk,
-            ..
-        } => session_outcome(destination_session)
-            .or_else(|| record_outcome(source_publication))
-            .or_else(|| record_outcome(source_chunk))
-            .or_else(|| record_outcome(conflicting_chunk)),
+        // A chunk, a reuse claim and a dedupe quarantine weigh the rows they
+        // could not observe against the rows that contradict them in their
+        // own proofs.
+        BlobFact::Chunk { .. }
+        | BlobFact::ReuseClaim { .. }
+        | BlobFact::DedupeQuarantine { .. } => None,
         BlobFact::Node {
             session, entries, ..
-        } => session_outcome(session)
+        } => declared_outcome(session)
             .or_else(|| entries.iter().find_map(|edge| record_outcome(&edge.record))),
         BlobFact::Publication { session, root, .. } => {
-            session_outcome(session).or_else(|| record_outcome(root))
+            declared_outcome(session).or_else(|| record_outcome(root))
         }
         BlobFact::Frontier {
             session,
@@ -165,6 +186,9 @@ pub(super) fn uncertain_dependency(
         } => record_outcome(manifest_record),
     }
 }
+
+#[cfg(test)]
+mod tests;
 
 pub(super) fn declaration<'a>(
     selected: &'a [Selected],

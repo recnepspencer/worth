@@ -41,7 +41,7 @@ impl HistoricalBlobCollector {
     ) {
         if self.matches(origin, generation) {
             if let Some(walk) = self.walk.as_mut() {
-                walk.note_extent_chunk_outcome(expected, outcome);
+                walk.note_outcome(expected, outcome);
             }
         }
     }

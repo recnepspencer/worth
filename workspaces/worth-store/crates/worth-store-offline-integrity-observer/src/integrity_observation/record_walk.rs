@@ -79,7 +79,7 @@ pub(crate) fn observe_records(
             if prior != &expected {
                 let outcome = damage(Cause::ScopeMismatch, None, Blast::Artifact);
                 if origin.selected_blob(root_generation, current_generation) {
-                    blobs.note_extent_chunk_outcome(&expected, &outcome);
+                    blobs.note_outcome(&expected, &outcome);
                 }
                 historical_blobs.note(origin, root_generation, &expected, &outcome);
                 note_route_failure(
@@ -97,8 +97,9 @@ pub(crate) fn observe_records(
         if visited.len() as u64 >= walk.maximum_entries() {
             let outcome = walk.entry_bound();
             if origin.selected_blob(root_generation, current_generation) {
-                blobs.note_extent_chunk_outcome(&expected, &outcome);
+                blobs.note_outcome(&expected, &outcome);
             }
+            blobs.note_walk_stopped(&outcome);
             historical_blobs.note(origin, root_generation, &expected, &outcome);
             note_route_failure(
                 origin,
@@ -143,7 +144,7 @@ pub(crate) fn observe_records(
                     let outcome =
                         Outcome::Unknown(OfflineUnknownPhysicalReason::PhysicalAliasNotReinspected);
                     if origin.selected_blob(root_generation, current_generation) {
-                        blobs.note_extent_chunk_outcome(&expected, &outcome);
+                        blobs.note_outcome(&expected, &outcome);
                     }
                     historical_blobs.note(origin, root_generation, &expected, &outcome);
                     note_route_failure(
@@ -277,7 +278,7 @@ pub(crate) fn observe_records(
             }
         };
         if origin.selected_blob(root_generation, current_generation) {
-            blobs.note_extent_chunk_outcome(&expected, &outcome);
+            blobs.note_outcome(&expected, &outcome);
         }
         historical_blobs.note(origin, root_generation, &expected, &outcome);
         if outcome != Outcome::Intact {

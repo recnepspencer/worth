@@ -63,7 +63,9 @@ pub(super) struct DecodedEnvelope<'a> {
 }
 
 impl BlobRecordKind {
-    pub(crate) const fn from_route_code(byte: u8) -> Option<Self> {
+    /// The one decode of a persisted kind code. An inner frame's kind byte and
+    /// the kind a selected route classifies a record as are the same code.
+    pub(crate) const fn from_code(byte: u8) -> Option<Self> {
         match byte {
             1 => Some(Self::SessionDeclared),
             2 => Some(Self::Chunk),
@@ -82,28 +84,6 @@ impl BlobRecordKind {
             15 => Some(Self::ChunkReuseClaimV2),
             16 => Some(Self::ReclaimDescriptorV3),
             _ => None,
-        }
-    }
-
-    fn from_byte(byte: u8) -> Result<Self, BlobRecordDenial> {
-        match byte {
-            1 => Ok(Self::SessionDeclared),
-            2 => Ok(Self::Chunk),
-            3 => Ok(Self::TreeNode),
-            4 => Ok(Self::GenerationPublished),
-            5 => Ok(Self::SessionFrontier),
-            6 => Ok(Self::SessionAbandoned),
-            7 => Ok(Self::DropSetManifest),
-            8 => Ok(Self::ReclaimDescriptor),
-            9 => Ok(Self::DropSetManifestV2),
-            10 => Ok(Self::OriginalDropReserved),
-            11 => Ok(Self::ChunkReuseClaim),
-            12 => Ok(Self::DedupeQuarantine),
-            13 => Ok(Self::DropSetManifestV3),
-            14 => Ok(Self::ReclaimDescriptorV2),
-            15 => Ok(Self::ChunkReuseClaimV2),
-            16 => Ok(Self::ReclaimDescriptorV3),
-            _ => Err(BlobRecordDenial::UnknownKind),
         }
     }
 
@@ -221,7 +201,7 @@ pub(super) fn decode(bytes: &[u8]) -> Result<DecodedEnvelope<'_>, BlobRecordDeni
     if bytes[..8] != MAGIC {
         return Err(BlobRecordDenial::WrongMagic);
     }
-    let kind = BlobRecordKind::from_byte(bytes[8])?;
+    let kind = BlobRecordKind::from_code(bytes[8]).ok_or(BlobRecordDenial::UnknownKind)?;
     if bytes[9] != BLOB_RECORD_VERSION {
         return Err(BlobRecordDenial::UnsupportedVersion);
     }

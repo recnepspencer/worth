@@ -7,6 +7,14 @@ use crate::integrity_declarations::{
     PhysicalIntegrityCoverageBoundary as Boundary, PhysicalIntegrityCoveredRange,
     PhysicalIntegrityFormatDeclaration, PhysicalIntegrityFormatVersion,
 };
+use crate::BlobRecordKind;
+
+/// Whether `code` is an inner-frame kind this format writes. A selected route
+/// classifies a blob record by the same code. An independent reader admits
+/// exactly these codes, so a new kind cannot leave it behind unnoticed.
+pub const fn blob_record_kind_is_declared(code: u8) -> bool {
+    BlobRecordKind::from_code(code).is_some()
+}
 
 const ENVELOPE_RANGES: &[PhysicalIntegrityCoveredRange] = &[
     PhysicalIntegrityCoveredRange::new(Boundary::Fixed(0), Boundary::Fixed(16)),
@@ -73,6 +81,28 @@ pub const BLOB_RECLAIM_DESCRIPTOR_INTEGRITY_DECLARATION: PhysicalIntegrityFormat
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn declared_kind_codes_are_exactly_the_kinds_the_record_decoder_names() {
+        for code in 0..=u8::MAX {
+            let kind = BlobRecordKind::from_code(code);
+            assert_eq!(
+                blob_record_kind_is_declared(code),
+                kind.is_some(),
+                "code {code}"
+            );
+            if let Some(kind) = kind {
+                assert_eq!(kind as u8, code, "a kind decodes from its own code");
+            }
+        }
+        let newest = BlobRecordKind::ReclaimDescriptorV3 as u8;
+        assert!(blob_record_kind_is_declared(
+            BlobRecordKind::ChunkReuseClaimV2 as u8
+        ));
+        assert!(blob_record_kind_is_declared(newest));
+        assert!(!blob_record_kind_is_declared(0));
+        assert!(!blob_record_kind_is_declared(newest + 1));
+    }
 
     #[test]
     fn chunk_and_tree_declare_both_outer_and_canonical_content_sha() {

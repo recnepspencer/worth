@@ -1,11 +1,22 @@
+use super::super::coverage::Coverage;
+use super::super::reuse_source_fixture::unread as unread_frame_of;
 use super::*;
+use crate::integrity_observation::OfflineIndeterminatePhysicalReason as Indeterminate;
+
+/// Check the rows of a walk that visited every routed record.
+fn check(rows: &mut [Selected], selected_root_generation: Option<u64>) {
+    let found = RowIndex::new(rows, &Coverage::Complete);
+    validate(rows, &found, selected_root_generation);
+}
 
 fn row(record: [u8; 24], fact: BlobFact) -> Selected {
     Selected {
         record,
         path: "arena".into(),
         generation: 1,
-        family: fact.family().into(),
+        kind: Some(crate::integrity_observation::blob_record::FrameKind::of(
+            &fact,
+        )),
         fact: Some(fact),
         outcome: Outcome::Intact,
         route: None,
@@ -61,8 +72,7 @@ fn manifest_alone_is_custody_and_descriptor_requires_exact_absence() {
             },
         ),
     ];
-    let mut records = BTreeMap::from([(declaration, 0), (abandoned, 1), (manifest, 2)]);
-    validate(&mut rows, &records, None);
+    check(&mut rows, None);
     assert_eq!(rows[2].outcome, Outcome::Intact);
 
     rows.push(row(
@@ -78,8 +88,7 @@ fn manifest_alone_is_custody_and_descriptor_requires_exact_absence() {
             candidate_root: 4,
         },
     ));
-    records.insert(descriptor, 3);
-    validate(&mut rows, &records, None);
+    check(&mut rows, None);
     assert_eq!(rows[3].outcome, Outcome::Intact);
 
     rows.push(row(
@@ -93,18 +102,17 @@ fn manifest_alone_is_custody_and_descriptor_requires_exact_absence() {
             digest: [12; 32],
         },
     ));
-    records.insert(dropped, 4);
-    validate(&mut rows, &records, None);
+    check(&mut rows, None);
     assert!(matches!(rows[3].outcome, Outcome::Damaged(_)));
 }
 
-fn v2_graph() -> (Vec<Selected>, BTreeMap<[u8; 24], usize>) {
+fn v2_graph() -> Vec<Selected> {
     let declaration = [1; 24];
     let abandoned = [2; 24];
     let manifest = [3; 24];
     let reserved = [4; 24];
     let descriptor = [5; 24];
-    let rows = vec![
+    vec![
         row(
             declaration,
             BlobFact::Declaration {
@@ -175,33 +183,25 @@ fn v2_graph() -> (Vec<Selected>, BTreeMap<[u8; 24], usize>) {
                 candidate_root: 5,
             },
         ),
-    ];
-    let records = BTreeMap::from([
-        (declaration, 0),
-        (abandoned, 1),
-        (manifest, 2),
-        (reserved, 3),
-        (descriptor, 4),
-    ]);
-    (rows, records)
+    ]
 }
 
 #[test]
 fn v2_reservation_and_descriptor_join_exact_selected_manifest() {
-    let (mut rows, records) = v2_graph();
-    validate(&mut rows, &records, Some(5));
+    let mut rows = v2_graph();
+    check(&mut rows, Some(5));
     assert!(rows.iter().all(|row| row.outcome == Outcome::Intact));
 
-    let (mut rows, records) = v2_graph();
+    let mut rows = v2_graph();
     rows.pop();
-    validate(&mut rows, &records, Some(4));
+    check(&mut rows, Some(4));
     assert_eq!(rows[2].outcome, Outcome::Intact);
     assert_eq!(rows[3].outcome, Outcome::Intact);
 }
 
 #[test]
 fn v2_mismatched_or_duplicate_reservation_cannot_validate_descriptor() {
-    let (mut rows, records) = v2_graph();
+    let mut rows = v2_graph();
     let Some(BlobFact::OriginalDropReserved {
         manifest_digest, ..
     }) = rows[3].fact.as_mut()
@@ -209,16 +209,15 @@ fn v2_mismatched_or_duplicate_reservation_cannot_validate_descriptor() {
         panic!("reservation fixture");
     };
     *manifest_digest = [99; 32];
-    validate(&mut rows, &records, Some(5));
+    check(&mut rows, Some(5));
     assert_eq!(rows[2].outcome, Outcome::Intact);
     assert!(matches!(rows[3].outcome, Outcome::Damaged(_)));
     assert!(matches!(rows[4].outcome, Outcome::Damaged(_)));
 
-    let (mut rows, mut records) = v2_graph();
+    let mut rows = v2_graph();
     let duplicate = row([7; 24], rows[3].fact.clone().unwrap());
-    records.insert(duplicate.record, rows.len());
     rows.push(duplicate);
-    validate(&mut rows, &records, Some(5));
+    check(&mut rows, Some(5));
     assert!(matches!(rows[3].outcome, Outcome::Damaged(_)));
     assert!(matches!(rows[5].outcome, Outcome::Damaged(_)));
     assert!(matches!(rows[4].outcome, Outcome::Damaged(_)));
@@ -226,8 +225,86 @@ fn v2_mismatched_or_duplicate_reservation_cannot_validate_descriptor() {
 
 #[test]
 fn future_reservation_generation_is_not_selected_custody() {
-    let (mut rows, records) = v2_graph();
-    validate(&mut rows, &records, Some(3));
+    let mut rows = v2_graph();
+    check(&mut rows, Some(3));
     assert!(matches!(rows[3].outcome, Outcome::Damaged(_)));
     assert!(matches!(rows[4].outcome, Outcome::Damaged(_)));
+}
+
+/// A descriptor's reservation is found by what its frame says, so a row whose
+/// frame could not be read may be it, and so may a row the walk did not visit.
+#[test]
+fn a_reservation_the_walk_could_not_see_leaves_its_descriptor_undecided() {
+    const RESERVED: usize = 3;
+    let descriptor = |rows: &[Selected]| rows.last().expect("the descriptor").outcome.clone();
+    let unread = Outcome::Unknown(Unknown::PhysicalAliasNotReinspected);
+    let bound = Outcome::Indeterminate(Indeterminate::EntryBoundExceeded);
+
+    let mut absent = v2_graph();
+    absent.remove(RESERVED);
+    check(&mut absent, Some(5));
+    assert_eq!(descriptor(&absent), damage(Cause::Pointer));
+
+    let mut unread_frame = v2_graph();
+    unread_frame[RESERVED].fact = None;
+    unread_frame[RESERVED].outcome = unread.clone();
+    check(&mut unread_frame, Some(5));
+    assert_eq!(descriptor(&unread_frame), unread);
+
+    let mut unvisited = v2_graph();
+    unvisited.remove(RESERVED);
+    let cut_short = RowIndex::new(&unvisited, &Coverage::CutShort(bound.clone()));
+    validate(&mut unvisited, &cut_short, Some(5));
+    assert_eq!(descriptor(&unvisited), bound);
+
+    // A reservation that was read and agrees, but is itself undecided.
+    let mut unselected_root = v2_graph();
+    check(&mut unselected_root, None);
+    let undecided = Outcome::Unknown(Unknown::SelectorUnavailable);
+    assert_eq!(unselected_root[RESERVED].outcome, undecided);
+    assert_eq!(descriptor(&unselected_root), undecided);
+
+    // An unread frame of another kind is not the reservation; one whose kind
+    // the walk could not tell may be.
+    let beside = |kind: Option<u8>, outcome: &Outcome| {
+        let mut rows = v2_graph();
+        rows[RESERVED] = unread_frame_of([9; 24], kind, outcome.clone());
+        check(&mut rows, Some(5));
+        descriptor(&rows)
+    };
+    assert_eq!(beside(Some(2), &unread), damage(Cause::Pointer));
+    assert_eq!(beside(Some(10), &unread), unread);
+    assert_eq!(beside(None, &unread), unread);
+    // A frame that was read and is damaged is not a reservation unseen.
+    let damaged = damage(Cause::ChecksumMismatch);
+    assert_eq!(beside(None, &damaged), damage(Cause::Pointer));
+}
+
+/// A descriptor says that the records its manifest dropped are gone. A record
+/// that still has a row contradicts it, read or not; a walk that was cut short
+/// cannot say that a record has none.
+#[test]
+fn a_dropped_record_the_walk_did_not_visit_leaves_its_descriptor_undecided() {
+    const DROPPED: [u8; 24] = [6; 24];
+    const DESCRIPTOR: usize = 4;
+    let unread = Outcome::Unknown(Unknown::PhysicalAliasNotReinspected);
+    let bound = Outcome::Indeterminate(Indeterminate::EntryBoundExceeded);
+    let cut_short = Coverage::CutShort(bound.clone());
+    let judged = |mut rows: Vec<Selected>, coverage: &Coverage| {
+        let found = RowIndex::new(&rows, coverage);
+        validate(&mut rows, &found, Some(5));
+        rows
+    };
+
+    let unvisited = judged(v2_graph(), &cut_short);
+    assert_eq!(unvisited[DESCRIPTOR].outcome, bound);
+    let read = &unvisited[..DESCRIPTOR];
+    assert!(read.iter().all(|row| row.outcome == Outcome::Intact));
+
+    for coverage in [Coverage::Complete, cut_short] {
+        let mut still_routed = v2_graph();
+        still_routed.push(unread_frame_of(DROPPED, None, unread.clone()));
+        let still_routed = judged(still_routed, &coverage);
+        assert_eq!(still_routed[DESCRIPTOR].outcome, damage(Cause::Pointer));
+    }
 }

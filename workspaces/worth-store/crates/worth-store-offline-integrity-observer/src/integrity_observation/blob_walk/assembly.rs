@@ -32,7 +32,7 @@ impl BlobRecordWalk {
                     record,
                     path: expected.path.clone(),
                     generation: expected.generation,
-                    family: projection::family_from_prefix(content),
+                    kind: projection::kind_from_prefix(content),
                     fact: None,
                     outcome: damage(Cause::Framing),
                     route: None,
@@ -73,18 +73,17 @@ impl BlobRecordWalk {
         ));
         if pending.bytes.len() as u64 == pending.logical_bytes {
             let pending = self.pending.take().expect("complete pending");
-            let family = projection::family_from_prefix(&pending.bytes);
+            let kind = projection::kind_from_prefix(&pending.bytes);
             let decoded = blob_record::decode(&pending.bytes, store, counters);
             let (fact, outcome) = match decoded {
                 Ok(fact) => self.admit_fact(fact),
                 Err(outcome) => (None, outcome),
             };
-            let family = fact.as_ref().map_or(family, |fact| fact.family().into());
             self.selected.push(Selected {
                 record: pending.record,
                 path: pending.path,
                 generation: pending.generation,
-                family,
+                kind,
                 fact,
                 outcome,
                 route: Some(pending.route),

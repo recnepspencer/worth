@@ -1,14 +1,12 @@
 use std::path::Path;
 
-use worth_foundational::{
-    PhysicalArtifactFamily as Family, PhysicalArtifactGeneration, PhysicalArtifactIdentity,
-};
+use worth_foundational::{PhysicalArtifactGeneration, PhysicalArtifactIdentity};
 
+use super::super::blob_record::FrameKind;
 use super::super::OfflineBlobReclaimSourceKind;
 use super::super::{
-    BoundedMediaWalk, OfflineArtifactFamily, OfflineArtifactObservation,
-    OfflineIndeterminatePhysicalReason, OfflinePhysicalDamageCause as Cause,
-    OfflineUnknownPhysicalReason,
+    BoundedMediaWalk, OfflineArtifactObservation, OfflineIndeterminatePhysicalReason,
+    OfflinePhysicalDamageCause as Cause, OfflineUnknownPhysicalReason,
 };
 use super::{damage, logical_digest, quarantine, BlobRecordWalk, Outcome, Pending, Selected};
 
@@ -27,6 +25,8 @@ impl BlobRecordWalk {
             ));
         }
         self.validate_selected_claim_graph();
+        // Arena bytes that no route accounts for hold no selected row, so
+        // they excuse no absent one: they only keep a row from being intact.
         if !arena_routes_intact {
             for row in &mut self.selected {
                 if row.outcome == Outcome::Intact {
@@ -36,7 +36,7 @@ impl BlobRecordWalk {
             }
         }
         logical_digest::verify_publications(&mut self.selected, root, walk);
-        quarantine::validate(&mut self.selected, root, walk);
+        quarantine::validate(&mut self.selected, &self.coverage, root, walk);
         self.selected
             .into_iter()
             .map(|row| {
@@ -52,9 +52,10 @@ impl BlobRecordWalk {
                     ) => Some(OfflineBlobReclaimSourceKind::ReleasedGeneration),
                     _ => None,
                 };
+                let family = row.family();
                 let observation = OfflineArtifactObservation::new(
                     row.path,
-                    row.family,
+                    family,
                     PhysicalArtifactIdentity::new(identity).expect("short identity"),
                     PhysicalArtifactGeneration::encoded(row.generation)
                         .unwrap_or(PhysicalArtifactGeneration::NotEncoded),
@@ -90,7 +91,7 @@ pub(super) fn incomplete(pending: Pending, fallback: Option<Outcome>) -> Selecte
         record: pending.record,
         path: pending.path,
         generation: pending.generation,
-        family: family_from_prefix(&pending.bytes),
+        kind: kind_from_prefix(&pending.bytes),
         fact: None,
         outcome: pending
             .interruption
@@ -100,20 +101,62 @@ pub(super) fn incomplete(pending: Pending, fallback: Option<Outcome>) -> Selecte
     }
 }
 
-pub(super) fn family_from_prefix(bytes: &[u8]) -> OfflineArtifactFamily {
-    match bytes.get(8) {
-        Some(1 | 5 | 6 | 11) => Family::BlobResumeSession.into(),
-        Some(12) => OfflineArtifactFamily::DedupeQuarantine,
-        Some(2) => Family::BlobChunkFrame.into(),
-        Some(3) => Family::BlobTreeNode.into(),
-        Some(4) => Family::BlobGenerationPublication.into(),
-        Some(7) => Family::BlobDropSetManifest.into(),
-        Some(9) => Family::BlobDropSetManifest.into(),
-        Some(13) => Family::BlobDropSetManifest.into(),
-        Some(8) => Family::BlobReclaimDescriptor.into(),
-        Some(14) => Family::BlobReclaimDescriptor.into(),
-        Some(10) => OfflineArtifactFamily::OriginalDropReservation,
-        _ => OfflineArtifactFamily::Unrecognized,
+/// A frame is of the kind its first bytes declare whether or not its payload
+/// could be read.
+pub(super) fn kind_from_prefix(bytes: &[u8]) -> Option<FrameKind> {
+    bytes.get(8).and_then(|code| FrameKind::declared(*code))
+}
+
+#[cfg(test)]
+mod tests {
+    use worth_foundational::PhysicalArtifactFamily as Family;
+
+    use super::super::ExtentRoute;
+    use super::*;
+    use crate::integrity_observation::OfflineArtifactFamily;
+
+    fn interrupted(prefix: &[u8]) -> Selected {
+        let pending = Pending {
+            record: [1; 24],
+            logical_bytes: 64,
+            path: "arena".into(),
+            generation: 1,
+            bytes: prefix.to_vec(),
+            route: ExtentRoute {
+                format: [0; 10],
+                arena: 1,
+                extent: 1,
+                logical_bytes: 64,
+                frames: Vec::new(),
+            },
+            interruption: None,
+        };
+        incomplete(pending, None)
+    }
+
+    #[test]
+    fn an_unread_frame_is_reported_under_the_family_of_its_declared_kind() {
+        let families = [
+            (2, Family::BlobChunkFrame.into()),
+            (11, Family::BlobResumeSession.into()),
+            (15, Family::BlobResumeSession.into()),
+            (14, Family::BlobReclaimDescriptor.into()),
+            (16, Family::BlobReclaimDescriptor.into()),
+            (0, OfflineArtifactFamily::Unrecognized),
+            (17, OfflineArtifactFamily::Unrecognized),
+        ];
+        for (code, family) in families {
+            let mut prefix = b"WRC11BLB".to_vec();
+            prefix.push(code);
+            let row = interrupted(&prefix);
+            assert_eq!(row.family(), family, "kind {code}");
+            assert_eq!(row.outcome, damage(Cause::Truncation));
+        }
+        let before_the_kind_byte = interrupted(b"WRC11BLB");
+        assert_eq!(
+            before_the_kind_byte.family(),
+            OfflineArtifactFamily::Unrecognized
+        );
     }
 }
 

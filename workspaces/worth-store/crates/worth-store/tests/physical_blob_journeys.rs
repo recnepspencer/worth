@@ -82,6 +82,8 @@ mod blob_tier_epoch_wal;
 #[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/blob_tier_movement.rs"]
 mod blob_tier_movement;
+#[path = "physical_blob_journeys/blob_unread_record_observation.rs"]
+mod blob_unread_record_observation;
 #[path = "physical_blob_journeys/cache_retention.rs"]
 mod cache_retention;
 #[cfg(feature = "certification-test-authority")]

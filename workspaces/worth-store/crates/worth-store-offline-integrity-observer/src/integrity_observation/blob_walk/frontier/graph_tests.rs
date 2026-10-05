@@ -1,3 +1,4 @@
+use super::super::reuse_source_fixture::unread;
 use super::super::{BlobRecordWalk, Selected};
 use super::*;
 use crate::integrity_observation::{
@@ -14,7 +15,9 @@ fn row(record: [u8; 24], fact: BlobFact, outcome: Outcome) -> Selected {
         record,
         path: "arena".into(),
         generation: 1,
-        family: fact.family().into(),
+        kind: Some(crate::integrity_observation::blob_record::FrameKind::of(
+            &fact,
+        )),
         fact: Some(fact),
         outcome,
         route: None,
@@ -71,16 +74,17 @@ fn frontier(next: u64, bytes: u64, last: [u8; 24], digest: [u8; 32]) -> Selected
 }
 
 fn validated(rows: Vec<Selected>) -> Vec<Selected> {
-    let mut walk = BlobRecordWalk {
-        checkpoint: crate::integrity_observation::journal_walk::SelectedCheckpointEvidence::Absent,
-        pending: None,
-        selected: rows,
-        maximum_graph_edges: 16,
-        retained_graph_edges: 0,
-        selected_root_generation: None,
-        historical_source: None,
-        routes: crate::integrity_observation::record_walk::route_inventory::RouteInventory::new(),
-    };
+    validated_after(rows, None)
+}
+
+/// The rows of a walk that stopped at `bound`, if it did.
+fn validated_after(rows: Vec<Selected>, bound: Option<&Outcome>) -> Vec<Selected> {
+    let checkpoint = crate::integrity_observation::journal_walk::SelectedCheckpointEvidence::Absent;
+    let mut walk = BlobRecordWalk::new(16, checkpoint);
+    walk.selected = rows;
+    if let Some(bound) = bound {
+        walk.note_walk_stopped(bound);
+    }
     walk.validate_selected_claim_graph();
     walk.selected
 }
@@ -147,4 +151,37 @@ fn nonlast_unavailable_prefix_claim_does_not_become_pointer_damage() {
         ]);
         assert_eq!(frontier_outcome(&rows), &unavailable);
     }
+}
+
+/// A frontier names its last chunk by record. A complete walk that has no row
+/// of that record proves the frontier's pointer bad, whatever frame of another
+/// record it could not read.
+#[test]
+fn a_last_chunk_that_is_absent_is_excused_only_by_what_may_hide_its_record() {
+    const LAST: [u8; 24] = [8; 24];
+    let aliased = Outcome::Unknown(OfflineUnknownPhysicalReason::PhysicalAliasNotReinspected);
+    let bound = Outcome::Indeterminate(OfflineIndeterminatePhysicalReason::EntryBoundExceeded);
+    let without_last = |beside: Option<Selected>, stopped: Option<&Outcome>| {
+        let mut rows = vec![
+            frontier(2, 2 * CHUNK, LAST, [10; 32]),
+            declaration(2 * CHUNK),
+            chunk([7; 24], 0, [11; 32], Outcome::Intact),
+        ];
+        rows.extend(beside);
+        frontier_outcome(&validated_after(rows, stopped)).clone()
+    };
+    assert_eq!(without_last(None, None), damage(Cause::Pointer));
+    for kind in [Some(2), Some(11), Some(15), Some(5), Some(3), None] {
+        let another = unread([20; 24], kind, aliased.clone());
+        let outcome = without_last(Some(another), None);
+        assert_eq!(outcome, damage(Cause::Pointer), "{kind:?}");
+    }
+
+    // The record's own row, whose frame could not be read.
+    for kind in [Some(2), None] {
+        let own = unread(LAST, kind, aliased.clone());
+        assert_eq!(without_last(Some(own), None), aliased, "{kind:?}");
+    }
+    // A walk that did not visit every routed record.
+    assert_eq!(without_last(None, Some(&bound)), bound);
 }

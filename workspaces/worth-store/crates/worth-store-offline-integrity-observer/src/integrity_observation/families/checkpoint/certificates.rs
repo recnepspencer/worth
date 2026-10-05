@@ -210,3 +210,7 @@ mod tests;
 #[cfg(test)]
 #[path = "certificates/no_release_tests.rs"]
 mod no_release_tests;
+
+#[cfg(test)]
+#[path = "certificates/head_roster_tests.rs"]
+mod head_roster_tests;

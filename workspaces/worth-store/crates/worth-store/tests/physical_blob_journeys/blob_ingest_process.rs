@@ -197,6 +197,40 @@ pub(super) fn observe_closed_store_named(
     observe_closed_store_with_limits(root, run, scenario, 4096, 268_435_456, 2_097_152, 600_000)
 }
 
+/// A complete offline observation in which no artifact is damaged. Returns
+/// the artifacts. It says nothing about an artifact the observer did not
+/// reach: a caller that means "these rows are intact" asserts those rows.
+pub(super) fn observed_without_damage(
+    root: &Path,
+    run: &str,
+    scenario: &str,
+) -> Vec<serde_json::Value> {
+    let report = observe_closed_store_named(root, run, scenario);
+    assert_eq!(report["completeness"], "complete", "{report}");
+    let artifacts = report["artifacts"].as_array().unwrap().clone();
+    for artifact in &artifacts {
+        assert_ne!(artifact["outcome"]["posture"], "damaged", "{artifact}");
+    }
+    artifacts
+}
+
+/// The root a cleanly closed store selects: the newest root manifest, then the
+/// routing blocks of its generation. A superseded generation is no longer
+/// addressed and observes unknown.
+pub(super) fn selected_root(artifacts: &[serde_json::Value]) -> Vec<&serde_json::Value> {
+    let of_family = |family: &'static str| {
+        artifacts
+            .iter()
+            .filter(move |artifact| artifact["family"] == family)
+    };
+    let manifest = of_family("root_manifest")
+        .max_by_key(|artifact| artifact["generation"].as_u64())
+        .expect("a root manifest is observed");
+    let routing_blocks = of_family("root_routing_block")
+        .filter(|artifact| artifact["generation"] == manifest["generation"]);
+    std::iter::once(manifest).chain(routing_blocks).collect()
+}
+
 pub(super) fn observe_closed_store_with_limits(
     root: &Path,
     run: &str,

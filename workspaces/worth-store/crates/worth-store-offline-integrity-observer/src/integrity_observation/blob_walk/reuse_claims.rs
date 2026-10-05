@@ -1,49 +1,26 @@
 use std::collections::BTreeMap;
 
-use super::super::blob_record::{BlobFact, ReuseSourceWitness};
+use super::super::blob_record::{BlobFact, FrameRole, ReuseSourceWitness};
 use super::super::OfflinePhysicalDamageCause as Cause;
 use super::super::OfflineUnknownPhysicalReason as Unknown;
-use super::{damage, declaration, Outcome, Selected};
-
-pub(super) type ReuseClaims = BTreeMap<([u8; 16], u64), usize>;
-
-pub(super) fn selected_reuse_edge(
-    row: &Selected,
-    edge: &super::super::blob_record::BlobEdge,
-) -> Option<Outcome> {
-    matches!(row.fact.as_ref(), Some(BlobFact::ReuseClaim {
-        chunk_record, digest, length, ..
-    }) if chunk_record == &edge.record && digest == &edge.digest && length == &edge.covered)
-    .then(|| row.outcome.clone())
-}
+use super::proof::Proof;
+use super::row_index::RowIndex;
+use super::source_edge::{self, SourceClaim};
+use super::{damage, Outcome, Selected};
 
 /// Check a selected claim against both the destination declaration and a
 /// selected source publication's exact tree edge. A derived dedupe leaf is
 /// deliberately absent from this proof.
-pub(super) fn validate(
-    selected: &mut [Selected],
-    sessions: &BTreeMap<[u8; 16], usize>,
-    records: &BTreeMap<[u8; 24], usize>,
-) -> ReuseClaims {
-    let mut claims = ReuseClaims::new();
+pub(super) fn validate(selected: &mut [Selected], rows: &RowIndex) {
+    let mut claims: BTreeMap<([u8; 16], u64), usize> = BTreeMap::new();
     for index in 0..selected.len() {
         let Some(BlobFact::ReuseClaim {
-            store,
-            session,
-            ordinal,
-            scope,
-            chunk_size,
-            length,
-            digest,
-            chunk_record,
-            source_publication,
-            source_ordinal,
-            source_witness,
-        }) = selected[index].fact.as_ref().cloned()
+            session, ordinal, ..
+        }) = selected[index].fact.as_ref()
         else {
             continue;
         };
-        let duplicate = claims.insert((session, ordinal), index);
+        let duplicate = claims.insert((*session, *ordinal), index);
         if let Some(prior) = duplicate {
             selected[prior].outcome = damage(Cause::DuplicateIdentity);
             selected[index].outcome = damage(Cause::DuplicateIdentity);
@@ -52,260 +29,207 @@ pub(super) fn validate(
         if selected[index].outcome != Outcome::Intact {
             continue;
         }
-        let destination_valid = declaration(selected, sessions, session).is_some_and(
-            |(declared_store, _, declared_scope, declared_size, declared_total)| {
-                let expected = ordinal
-                    .checked_mul(u64::from(chunk_size))
-                    .and_then(|start| declared_total.checked_sub(start))
-                    .map(|remaining| remaining.min(u64::from(chunk_size)));
-                *declared_store == store
-                    && *declared_scope == scope
-                    && *declared_size == chunk_size
-                    && expected == Some(length)
-            },
-        );
-        if !destination_valid {
-            selected[index].outcome = damage(Cause::ScopeMismatch);
-            continue;
-        }
-        if !records.contains_key(&source_publication) {
-            selected[index].outcome = released_source_provenance(
-                selected,
-                source_publication,
-                chunk_record,
-                source_witness,
-            );
-            continue;
-        }
-        if source_witness.is_some_and(|witness| {
-            !records.get(&source_publication).is_some_and(|source| {
-                matches!(selected[*source].fact.as_ref(), Some(BlobFact::Publication {
-                    store, frame_digest, session, object, generation,
-                    root, root_digest, total, chunk_size, scope, ..
-                }) if *store == witness.store
-                    && *frame_digest == witness.frame_digest
-                    && *session == witness.session
-                    && *object == witness.object
-                    && *generation == witness.generation
-                    && *root == witness.root
-                    && *root_digest == witness.root_digest
-                    && *total == witness.total
-                    && *chunk_size == witness.chunk_size
-                    && *scope == witness.scope)
-            })
-        }) {
-            selected[index].outcome = damage(Cause::ScopeMismatch);
-            continue;
-        }
-        let source_valid = source_edge(
-            selected,
-            sessions,
-            records,
-            source_publication,
-            source_ordinal,
-            chunk_record,
-            digest,
-            length,
-            scope,
-            chunk_size,
-        );
         // Row generation is a current placement generation, not an immutable
         // append timestamp. Mutation-time C.5 root fencing proves chronology.
-        if !source_valid {
-            selected[index].outcome = damage(Cause::ScopeMismatch);
-        }
+        let proof = claim_proof(selected, rows, index);
+        selected[index].outcome = proof.outcome(Cause::ScopeMismatch);
     }
-    claims
 }
 
-fn released_source_provenance(
-    selected: &[Selected],
-    source_publication: [u8; 24],
-    chunk_record: [u8; 24],
-    witness: Option<ReuseSourceWitness>,
-) -> Outcome {
-    let Some(witness) = witness else {
-        return Outcome::Unknown(Unknown::ParentScopeUnavailable);
-    };
-    let matching = selected.iter().filter_map(|row| {
-        let Some(BlobFact::ReleasedDropSetManifest {
-            store,
-            frame_digest,
-            attempt,
-            basis_digest,
-            dropped,
-            publication_record,
-            publication_digest,
-            object,
-            session,
-            generation,
-            root,
-            root_digest,
-            ..
-        }) = row.fact.as_ref()
-        else {
-            return None;
-        };
-        (matches!(
-            row.outcome,
-            Outcome::Intact | Outcome::Unknown(Unknown::ParentScopeUnavailable)
-        ) && publication_record == &source_publication
-            && publication_digest == &witness.frame_digest
-            && store == &witness.store
-            && object == &witness.object
-            && session == &witness.session
-            && generation == &witness.generation
-            && root == &witness.root
-            && root_digest == &witness.root_digest
-            && dropped.binary_search(&source_publication).is_ok()
-            && !dropped.contains(&chunk_record))
-        .then_some((
-            row.record,
-            *store,
-            *frame_digest,
-            *attempt,
-            *basis_digest,
-            dropped.len(),
-        ))
-    });
-    for (record, store, digest, attempt, basis, count) in matching {
-        if selected.iter().any(|row| matches!(row.fact.as_ref(),
-            Some(BlobFact::ReleasedReclaimDescriptor {
-                store: descriptor_store, attempt: descriptor_attempt,
-                basis_digest, manifest_record, manifest_digest,
-                manifest_count, predecessor: None, ..
-            }) if matches!(row.outcome, Outcome::Intact | Outcome::Unknown(Unknown::WalCoverageUnavailable))
-                && *descriptor_store == store
-                && descriptor_attempt == &attempt
-                && basis_digest == &basis
-                && manifest_record == &record
-                && manifest_digest == &digest
-                && usize::from(*manifest_count) == count
-        )) {
-            // Selected records alone do not establish the WAL member that
-            // removed the publication, nor its original tree edge.
-            return Outcome::Unknown(Unknown::WalCoverageUnavailable);
-        }
-    }
-    Outcome::Unknown(Unknown::ParentScopeUnavailable)
-}
-
-#[allow(clippy::too_many_arguments)]
-pub(super) fn source_edge(
-    selected: &[Selected],
-    sessions: &BTreeMap<[u8; 16], usize>,
-    records: &BTreeMap<[u8; 24], usize>,
-    publication_record: [u8; 24],
-    source_ordinal: u64,
-    chunk_record: [u8; 24],
-    digest: [u8; 32],
-    length: u64,
-    scope: [u8; 32],
-    chunk_size: u32,
-) -> bool {
-    let Some(pub_row) = records
-        .get(&publication_record)
-        .map(|index| &selected[*index])
-    else {
-        return false;
-    };
-    let Some(BlobFact::Publication {
+fn claim_proof(selected: &[Selected], rows: &RowIndex, index: usize) -> Proof {
+    let Some(BlobFact::ReuseClaim {
         store,
         session,
+        ordinal,
+        scope,
+        chunk_size,
+        length,
+        digest,
+        chunk_record,
+        source_publication,
+        source_ordinal,
+        source_witness,
+    }) = selected[index].fact.as_ref()
+    else {
+        return Proof::Contradicted;
+    };
+    let destination = Proof::on_row(selected, rows.declaration(session), |declared| {
+        let expected = |total: &u64| {
+            ordinal
+                .checked_mul(u64::from(*chunk_size))
+                .and_then(|start| total.checked_sub(start))
+                .map(|remaining| remaining.min(u64::from(*chunk_size)))
+        };
+        matches!(declared, BlobFact::Declaration {
+            store: declared_store, scope: declared_scope, chunk_size: declared_size, total, ..
+        } if declared_store == store
+            && declared_scope == scope
+            && declared_size == chunk_size
+            && expected(total) == Some(*length))
+    });
+    let claim = SourceClaim {
+        publication: *source_publication,
+        ordinal: *source_ordinal,
+        chunk: *chunk_record,
+        digest: *digest,
+        length: Some(*length),
+        scope: *scope,
+        chunk_size: *chunk_size,
+    };
+    let witness = source_witness.as_ref();
+    let source = if rows.records.contains_key(source_publication) {
+        witnessed_publication(selected, rows, &claim, witness)
+            .and(source_edge::proof(selected, rows, &claim, witness))
+    } else {
+        // No row answers for the source publication. In a walk that visited
+        // every routed record only a release can have removed it; in a walk
+        // cut short, each row consulted here may be one it did not visit.
+        // Checked: the borrowed chunk is selected and is the occurrence that
+        // the claim, and its witness if it carries one, state; and a selected
+        // release manifest names the publication as witnessed. Not checked:
+        // the leaf edge, the root digest and the source declaration against
+        // the witness. That tree proof is not done, so a released source is
+        // never intact.
+        source_edge::chunk_unpublished(selected, rows, &claim, witness)
+            .and(released_source(selected, rows, &claim, witness))
+    };
+    destination.and(source)
+}
+
+/// A claim's own copy of its source publication against the selected
+/// publication itself.
+fn witnessed_publication(
+    selected: &[Selected],
+    rows: &RowIndex,
+    claim: &SourceClaim,
+    witness: Option<&ReuseSourceWitness>,
+) -> Proof {
+    let Some(witness) = witness else {
+        return Proof::Holds;
+    };
+    Proof::on_row(selected, rows.record(&claim.publication), |publication| {
+        matches!(publication, BlobFact::Publication {
+            store, frame_digest, session, object, generation,
+            root, root_digest, total, chunk_size, scope, ..
+        } if *store == witness.store
+            && *frame_digest == witness.frame_digest
+            && *session == witness.session
+            && *object == witness.object
+            && *generation == witness.generation
+            && *root == witness.root
+            && *root_digest == witness.root_digest
+            && *total == witness.total
+            && *chunk_size == witness.chunk_size
+            && *scope == witness.scope)
+    })
+}
+
+/// What selected release custody says of a source publication that no
+/// selected row answers for. Only a release removes a publication, and that
+/// release cannot end while a selected claim protects a chunk of the
+/// generation, so a manifest that names the publication stays selected. A
+/// claim that no such manifest answers is contradicted, unless a row that the
+/// walk could not read or did not visit may be that manifest.
+fn released_source(
+    selected: &[Selected],
+    rows: &RowIndex,
+    claim: &SourceClaim,
+    witness: Option<&ReuseSourceWitness>,
+) -> Proof {
+    let mut manifests = selected
+        .iter()
+        .filter(|row| names_source(row, claim, witness))
+        .peekable();
+    if manifests.peek().is_none() {
+        return rows.none_found(FrameRole::ReleaseManifest);
+    }
+    let removed_publication = |manifest: &Selected| {
+        matches!(manifest.fact.as_ref(),
+            Some(BlobFact::ReleasedDropSetManifest { dropped, .. })
+                if dropped.binary_search(&claim.publication).is_ok()
+                    && !dropped.contains(&claim.chunk))
+    };
+    // An unwitnessed (kind 11) claim on a released source cannot occur in the
+    // producer, which defers the release while an unwitnessed claim exists.
+    // This branch goes away with kind 11.
+    let removal_selected = witness.is_some()
+        && manifests.any(|manifest| {
+            removed_publication(manifest) && first_descriptor_selected(selected, manifest)
+        });
+    Proof::Undecided(Outcome::Unknown(if removal_selected {
+        // Selected records alone do not establish the WAL member that
+        // removed the publication, nor its original tree edge.
+        Unknown::WalCoverageUnavailable
+    } else {
+        Unknown::ParentScopeUnavailable
+    }))
+}
+
+/// Whether `row` is a release manifest of the claim's source publication, as
+/// the claim witnessed that publication if it carries a witness.
+fn names_source(row: &Selected, claim: &SourceClaim, witness: Option<&ReuseSourceWitness>) -> bool {
+    let Some(BlobFact::ReleasedDropSetManifest {
+        store,
+        object,
+        session,
+        generation,
         root,
         root_digest,
-        total,
-        chunk_size: source_size,
-        scope: source_scope,
+        publication_record,
+        publication_digest,
         ..
-    }) = pub_row.fact.as_ref()
+    }) = row.fact.as_ref()
     else {
         return false;
     };
-    if pub_row.outcome != Outcome::Intact || *source_scope != scope || *source_size != chunk_size {
-        return false;
-    }
-    let source_declaration = declaration(selected, sessions, *session).is_some_and(
-        |(declared_store, _, declared_scope, declared_size, declared_total)| {
-            declared_store == store
-                && *declared_scope == scope
-                && *declared_size == chunk_size
-                && declared_total == total
-        },
-    );
-    if !source_declaration {
-        return false;
-    }
-    let Some(mut offset) = source_ordinal.checked_mul(u64::from(chunk_size)) else {
+    !matches!(row.outcome, Outcome::Damaged(_))
+        && *publication_record == claim.publication
+        && witness.is_none_or(|witness| {
+            *publication_digest == witness.frame_digest
+                && *store == witness.store
+                && *object == witness.object
+                && *session == witness.session
+                && *generation == witness.generation
+                && *root == witness.root
+                && *root_digest == witness.root_digest
+        })
+}
+
+/// Whether the descriptor that opened a release with `manifest` is selected.
+fn first_descriptor_selected(selected: &[Selected], manifest: &Selected) -> bool {
+    let Some(BlobFact::ReleasedDropSetManifest {
+        store,
+        frame_digest,
+        attempt,
+        basis_digest,
+        dropped,
+        ..
+    }) = manifest.fact.as_ref()
+    else {
         return false;
     };
-    if offset >= *total || length != (*total - offset).min(u64::from(chunk_size)) {
-        return false;
-    }
-    let mut node_record = *root;
-    let mut expected_digest = *root_digest;
-    for depth in 0..7 {
-        let Some(row) = records.get(&node_record).map(|index| &selected[*index]) else {
-            return false;
-        };
-        let Some(BlobFact::Node {
-            session: node_session,
-            kind,
-            covered,
-            digest: node_digest,
-            frame_digest,
-            entries,
-            ..
-        }) = row.fact.as_ref()
-        else {
-            return false;
-        };
-        if row.outcome != Outcome::Intact
-            || node_session != session
-            || (if depth == 0 {
-                frame_digest
-            } else {
-                node_digest
-            }) != &expected_digest
-            || offset >= *covered
-        {
-            return false;
-        }
-        let mut selected_edge = None;
-        for edge in entries {
-            if offset < edge.covered {
-                selected_edge = Some(edge);
-                break;
-            }
-            offset -= edge.covered;
-        }
-        let Some(edge) = selected_edge else {
-            return false;
-        };
-        if *kind == 1 {
-            return edge.record == chunk_record
-                && edge.digest == digest
-                && edge.covered == length
-                && offset == 0
-                && records.get(&chunk_record).is_some_and(|index| {
-                    selected[*index].outcome == Outcome::Intact
-                        && matches!(selected[*index].fact.as_ref(), Some(BlobFact::Chunk {
-                        store: chunk_store, chunk_size: size, length: bytes,
-                        digest: stored, session: chunk_session, ordinal: chunk_ordinal,
-                    }) if chunk_store == store && *size == chunk_size
-                        && *bytes == length && *stored == digest
-                        && chunk_session == session && *chunk_ordinal == source_ordinal)
-                });
-        }
-        if *kind != 2 {
-            return false;
-        }
-        node_record = edge.record;
-        expected_digest = edge.digest;
-    }
-    false
+    selected.iter().any(|row| {
+        matches!(row.fact.as_ref(),
+            Some(BlobFact::ReleasedReclaimDescriptor {
+                store: descriptor_store, attempt: descriptor_attempt,
+                basis_digest: descriptor_basis, manifest_record, manifest_digest,
+                manifest_count, predecessor: None, ..
+            }) if !matches!(row.outcome, Outcome::Damaged(_))
+                && descriptor_store == store
+                && descriptor_attempt == attempt
+                && descriptor_basis == basis_digest
+                && *manifest_record == manifest.record
+                && manifest_digest == frame_digest
+                && usize::from(*manifest_count) == dropped.len())
+    })
 }
 
 #[cfg(test)]
+#[path = "reuse_claims/released_tests.rs"]
+mod released_tests;
+#[cfg(test)]
 #[path = "reuse_claims/tests.rs"]
 mod tests;
+#[cfg(test)]
+#[path = "reuse_claims/unseen_tests.rs"]
+mod unseen_tests;

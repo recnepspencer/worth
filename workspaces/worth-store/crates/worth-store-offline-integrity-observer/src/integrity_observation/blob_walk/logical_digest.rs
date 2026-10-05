@@ -88,12 +88,7 @@ fn visit_node<F: FnMut(&Selected) -> Result<(), Outcome>>(
     if depth > 255 {
         return Err(damage(Cause::Pointer));
     }
-    let row = selected
-        .get(*records.get(&record).ok_or_else(|| damage(Cause::Pointer))?)
-        .ok_or_else(|| damage(Cause::Pointer))?;
-    if row.outcome != Outcome::Intact {
-        return Err(dependency_uncertainty(row).unwrap_or_else(|| damage(Cause::Pointer)));
-    }
+    let row = intact_row(record, selected, records)?;
     let Some(BlobFact::Node { kind, entries, .. }) = &row.fact else {
         return Err(damage(Cause::Pointer));
     };
@@ -101,23 +96,38 @@ fn visit_node<F: FnMut(&Selected) -> Result<(), Outcome>>(
         if *kind == 2 {
             visit_node(edge.record, selected, records, depth + 1, on_chunk)?;
         } else {
-            let child = selected
-                .get(
-                    *records
-                        .get(&edge.record)
-                        .ok_or_else(|| damage(Cause::Pointer))?,
-                )
-                .ok_or_else(|| damage(Cause::Pointer))?;
-            if child.outcome != Outcome::Intact {
-                return Err(dependency_uncertainty(child).unwrap_or_else(|| damage(Cause::Pointer)));
-            }
-            let Some(BlobFact::Chunk { .. }) = &child.fact else {
-                return Err(damage(Cause::Pointer));
+            let leaf = intact_row(edge.record, selected, records)?;
+            // A reused leaf names its claim row; the bytes are the selected
+            // source chunk that claim borrows.
+            let chunk = match &leaf.fact {
+                Some(BlobFact::Chunk { .. }) => leaf,
+                Some(BlobFact::ReuseClaim { chunk_record, .. }) => {
+                    intact_row(*chunk_record, selected, records)?
+                }
+                _ => return Err(damage(Cause::Pointer)),
             };
-            on_chunk(child)?;
+            if !matches!(chunk.fact, Some(BlobFact::Chunk { .. })) {
+                return Err(damage(Cause::Pointer));
+            }
+            on_chunk(chunk)?;
         }
     }
     Ok(())
+}
+
+fn intact_row<'a>(
+    record: [u8; 24],
+    selected: &'a [Selected],
+    records: &BTreeMap<[u8; 24], usize>,
+) -> Result<&'a Selected, Outcome> {
+    let row = records
+        .get(&record)
+        .and_then(|index| selected.get(*index))
+        .ok_or_else(|| damage(Cause::Pointer))?;
+    if row.outcome != Outcome::Intact {
+        return Err(dependency_uncertainty(row).unwrap_or_else(|| damage(Cause::Pointer)));
+    }
+    Ok(row)
 }
 
 fn child_store(row: &Selected) -> Result<[u8; 16], Outcome> {

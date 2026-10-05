@@ -6,6 +6,7 @@ use crate::integrity_observation::sha256::Sha256;
 pub(super) use no_release::NoRelease;
 
 const DOMAIN: &[u8] = b"store.physical.checkpoint.released-drop-custody.v1";
+const HEAD_ROSTER_DOMAIN: &[u8] = b"store.physical.checkpoint.released-drop-custody.v2";
 const BATCH_DOMAIN: &[u8] = b"store.physical.checkpoint.released-drop-batches.v1";
 const TIP_BYTES: usize = 24 + 32 + 24 + 32 + 80 + 80 + 8 + 32;
 const PREFIX: usize = 8 + DOMAIN.len() + 2;
@@ -13,6 +14,7 @@ const BATCH_BYTES: usize =
     PREFIX + 24 + 8 + 32 + 2 + 24 + 32 + 32 + 24 + 32 + 80 + 80 + 8 + 32 + 56 + 8 + 32 + 1;
 const ACCUMULATOR_BYTES: usize =
     PREFIX + 24 + 8 + 32 + 8 + 32 + 32 + 8 + 32 + 2 + 32 + TIP_BYTES + 8 + 32 + 1;
+const HEAD_ROSTER_BYTES: usize = 8 + 32 + 8 + 32;
 
 #[derive(Clone)]
 pub(super) struct Batch {
@@ -56,20 +58,27 @@ pub(super) enum Certificate {
 }
 
 pub(super) fn decode(bytes: &[u8]) -> Option<Certificate> {
-    if bytes.len() < PREFIX
-        || bytes[..8] != (DOMAIN.len() as u64).to_le_bytes()
-        || &bytes[8..8 + DOMAIN.len()] != DOMAIN
-        || bytes[PREFIX - 2] != 1
-    {
+    if bytes.len() < PREFIX || bytes[..8] != (DOMAIN.len() as u64).to_le_bytes() {
         return None;
     }
+    // Each domain names exactly one schema byte; the two never mix.
+    let schema = match (&bytes[8..8 + DOMAIN.len()], bytes[PREFIX - 2]) {
+        (DOMAIN, 1) => 1,
+        (HEAD_ROSTER_DOMAIN, 2) => 2,
+        _ => return None,
+    };
     let mut cursor = Cursor::new(bytes, PREFIX);
-    let result = match bytes[PREFIX - 1] {
-        1 if bytes.len() == BATCH_BYTES => Certificate::Batch(read_batch(&mut cursor)?),
-        2 if bytes.len() == ACCUMULATOR_BYTES => {
-            Certificate::Accumulator(read_accumulator(&mut cursor)?)
+    let result = match (schema, bytes[PREFIX - 1]) {
+        (1, 1) if bytes.len() == BATCH_BYTES => Certificate::Batch(read_batch(&mut cursor)?),
+        (1, 2) if bytes.len() == ACCUMULATOR_BYTES => {
+            Certificate::Accumulator(read_accumulator(&mut cursor)?.0)
         }
-        3 if bytes.len() == no_release::WIRE_BYTES => {
+        (2, 2) if bytes.len() == ACCUMULATOR_BYTES + HEAD_ROSTER_BYTES => {
+            let (accumulator, has_prior) = read_accumulator(&mut cursor)?;
+            read_head_roster(&mut cursor, has_prior)?;
+            Certificate::Accumulator(accumulator)
+        }
+        (1, 3) if bytes.len() == no_release::WIRE_BYTES => {
             Certificate::NoRelease(no_release::read(&mut cursor)?)
         }
         _ => return None,
@@ -136,7 +145,8 @@ fn read_batch(cursor: &mut Cursor<'_>) -> Option<Batch> {
     })
 }
 
-fn read_accumulator(cursor: &mut Cursor<'_>) -> Option<Accumulator> {
+/// The accumulator and whether it names a prior released checkpoint.
+fn read_accumulator(cursor: &mut Cursor<'_>) -> Option<(Accumulator, bool)> {
     let checkpoint = cursor.take::<24>()?;
     let root_generation = cursor.u64()?;
     let root_sha = cursor.take::<32>()?;
@@ -189,7 +199,7 @@ fn read_accumulator(cursor: &mut Cursor<'_>) -> Option<Accumulator> {
     {
         return None;
     }
-    Some(Accumulator {
+    let accumulator = Accumulator {
         checkpoint,
         root_generation,
         root_sha,
@@ -199,7 +209,22 @@ fn read_accumulator(cursor: &mut Cursor<'_>) -> Option<Accumulator> {
         cumulative,
         cumulative_digest,
         terminal,
-    })
+    };
+    Some((accumulator, has_prior))
+}
+
+/// The schema-2 accumulator commits this checkpoint's selected-head roster and
+/// the prior released checkpoint's after the schema-1 body. A bounded format
+/// claim: roster membership is not recomputed offline.
+fn read_head_roster(cursor: &mut Cursor<'_>, has_prior: bool) -> Option<()> {
+    let _head_count = cursor.u64()?;
+    let head_digest = cursor.take::<32>()?;
+    let prior_head_count = cursor.u64()?;
+    let prior_head_digest = cursor.take::<32>()?;
+    (head_digest != [0; 32]
+        && has_prior == (prior_head_digest != [0; 32])
+        && (has_prior || prior_head_count == 0))
+        .then_some(())
 }
 
 fn tip(
