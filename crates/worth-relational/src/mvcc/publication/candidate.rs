@@ -134,6 +134,14 @@ impl PreparedRelationalCommitCandidate {
         self.custom_invariant_generation
     }
 
+    pub(crate) fn expected_basis(&self) -> Option<crate::branch::RelationalBranchBasisDescriptor> {
+        self._payload
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .as_ref()
+            .map(|payload| payload.expected_basis.clone())
+    }
+
     pub(crate) fn belongs_to_publication_owner(
         &self,
         binding: &crate::runtime::RelationalRuntimePublicationBinding,
