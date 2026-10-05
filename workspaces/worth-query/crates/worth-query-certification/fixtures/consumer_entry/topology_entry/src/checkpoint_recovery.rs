@@ -22,6 +22,7 @@ use super::*;
 mod current_output;
 mod demand_contact;
 mod demand_policy;
+mod producer_domain_denial;
 mod support;
 use support::{authenticate, install, length};
 

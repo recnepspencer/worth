@@ -1,6 +1,9 @@
 use std::future::Future;
 use std::pin::pin;
-use std::sync::{atomic::AtomicUsize, Arc};
+use std::sync::{
+    atomic::{AtomicBool, AtomicUsize},
+    Arc,
+};
 use std::task::{Context, Poll, Waker};
 use std::time::{Duration, Instant, SystemTime};
 
@@ -36,6 +39,10 @@ pub(super) fn install(
     install_with_demand_profile(checkpoint, Default::default())
 }
 
+pub(super) fn install_with_domain_denial(domain_denial: Arc<AtomicBool>) -> Application {
+    install_program_with_domain_denial::<CheckpointProgram>(None, Default::default(), domain_denial)
+}
+
 pub(super) fn install_with_demand_profile(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
@@ -54,11 +61,31 @@ where
         Contributions = <CheckpointSchema as ApplicationSchemaComposition>::Contributions,
     >,
 {
+    install_program_with_domain_denial::<Program>(
+        checkpoint,
+        profile,
+        Arc::new(AtomicBool::new(false)),
+    )
+}
+
+fn install_program_with_domain_denial<Program>(
+    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
+    domain_denial: Arc<AtomicBool>,
+) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>
+where
+    Program: ApplicationProgramDefinition<
+        CheckpointSchema,
+        Outputs = ApplicationProgramOutputs<CheckpointRoot>,
+        Contributions = <CheckpointSchema as ApplicationSchemaComposition>::Contributions,
+    >,
+{
     let configuration = (TopologyConfiguration {
         setup_calls: Arc::new(AtomicUsize::new(0)),
         invariant_calls: Arc::new(AtomicUsize::new(0)),
         invariant_probe: Arc::new(AtomicUsize::new(0)),
         producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
+        producer_domain_denial: domain_denial,
     },);
     let program = ApplicationProgramAuthoring::<CheckpointSchema, Program>::begin()
         .validated_program()

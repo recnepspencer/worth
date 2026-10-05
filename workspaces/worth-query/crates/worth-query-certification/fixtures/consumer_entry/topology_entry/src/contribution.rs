@@ -3,7 +3,7 @@ use super::{
     PositivePlanarTurn, TopologyContribution, TopologySchemaBinding,
 };
 use std::sync::{
-    atomic::{AtomicUsize, Ordering},
+    atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc,
 };
 use worth_query_decl::facade::application_schema::{
@@ -22,6 +22,7 @@ pub struct TopologyConfiguration {
     pub invariant_calls: Arc<AtomicUsize>,
     pub invariant_probe: Arc<AtomicUsize>,
     pub producer_authorization_denials: Arc<AtomicUsize>,
+    pub producer_domain_denial: Arc<AtomicBool>,
 }
 
 impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
@@ -78,6 +79,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
         )?;
         setup.producer::<InitialPlanarProducer<Schema>>(super::InitialPlanarProvider::new(
             configuration.producer_authorization_denials,
+            configuration.producer_domain_denial,
         ))?;
         setup.producer::<super::PlanarFinalOutputProducer<Schema>>(
             super::PlanarFinalOutputProvider,

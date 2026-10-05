@@ -2,7 +2,7 @@ mod external_input;
 use super::{authentication, resources, seed};
 use crate::{ConsumerProgram, ConsumerSchema};
 use std::sync::{
-    atomic::{AtomicUsize, Ordering},
+    atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc,
 };
 use worth_query_host::facade::{
@@ -33,6 +33,7 @@ pub(super) fn assert_program_cannot_omit_an_installed_rule() {
             invariant_calls: Arc::new(AtomicUsize::new(0)),
             invariant_probe: Arc::new(AtomicUsize::new(0)),
             producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
+            producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
         Arc::new(AtomicUsize::new(0)),
     );
@@ -79,6 +80,7 @@ pub(super) fn assert_program_cannot_omit_a_required_binding() {
             invariant_calls: Arc::new(AtomicUsize::new(0)),
             invariant_probe: Arc::new(AtomicUsize::new(0)),
             producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
+            producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
         Arc::new(AtomicUsize::new(0)),
     );
@@ -126,6 +128,7 @@ pub(super) fn assert_required_output_source_cannot_be_an_action() {
             invariant_calls: Arc::new(AtomicUsize::new(0)),
             invariant_probe: Arc::new(AtomicUsize::new(0)),
             producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
+            producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
         Arc::new(AtomicUsize::new(0)),
     );
@@ -266,6 +269,7 @@ fn install_with_resource_bytes(
             invariant_calls: Arc::clone(&invariant_calls),
             invariant_probe: Arc::clone(&invariant_probe),
             producer_authorization_denials: Arc::clone(&producer_authorization_denials),
+            producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
         Arc::clone(&parameter_calls),
     );

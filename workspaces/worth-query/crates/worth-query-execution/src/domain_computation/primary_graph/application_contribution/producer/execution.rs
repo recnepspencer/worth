@@ -290,12 +290,12 @@ where
     {
         HandlerResult::Completed(completed) => completed,
         HandlerResult::DomainDenied(domain_denial) => {
-            return Err(denial(
-                WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+            return Err(WorthQueryOutputDemandDenial::producer_domain_denied(
                 format!(
                     "{}: producer domain denial: {domain_denial:?}",
                     Binding::IDENTITY
                 ),
+                provider.domain_denial_reason(&domain_denial),
             ))
         }
         HandlerResult::ExecutionDenied(error) => return Err(failed(Binding::IDENTITY, error)),

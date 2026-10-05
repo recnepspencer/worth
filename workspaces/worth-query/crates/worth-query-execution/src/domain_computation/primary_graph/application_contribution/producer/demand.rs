@@ -39,6 +39,8 @@ pub enum WorthQueryOutputDemandDenialKind {
     /// The selected producer, its applicability, or its output binding is no
     /// longer installed.
     ProducerUnavailable,
+    /// The installed producer ran and its domain rejected the decision.
+    ProducerDomainDenied,
     /// The product branch could not be selected; the admission denial says why.
     ProductSelection(crate::basis::WorthQueryProductBranchAdmissionDenial),
     /// Scheduling the producer was refused and will not succeed as asked.
@@ -101,6 +103,7 @@ pub enum WorthQueryOutputDemandRecoveryPosture {
 pub struct WorthQueryOutputDemandDenial {
     kind: WorthQueryOutputDemandDenialKind,
     subject: String,
+    domain_reason: Option<&'static str>,
     pub(in crate::domain_computation::primary_graph) recovery_posture:
         WorthQueryOutputDemandRecoveryPosture,
 }
@@ -114,6 +117,12 @@ impl WorthQueryOutputDemandDenial {
         &self.subject
     }
 
+    /// Domain-owned diagnostic words, when the rejected producer supplies them.
+    /// These words do not replace the typed denial kind or confer authority.
+    pub const fn domain_reason(&self) -> Option<&'static str> {
+        self.domain_reason
+    }
+
     pub const fn recovery_posture(&self) -> WorthQueryOutputDemandRecoveryPosture {
         self.recovery_posture
     }
@@ -125,8 +134,21 @@ impl WorthQueryOutputDemandDenial {
         Self {
             kind,
             subject: subject.into(),
+            domain_reason: None,
             recovery_posture: kind.default_recovery_posture(),
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn producer_domain_denied(
+        subject: impl Into<String>,
+        reason: Option<&'static str>,
+    ) -> Self {
+        let mut denial = Self::new(
+            WorthQueryOutputDemandDenialKind::ProducerDomainDenied,
+            subject,
+        );
+        denial.domain_reason = reason;
+        denial
     }
 
     pub(in crate::domain_computation::primary_graph) fn product_selection(
@@ -164,6 +186,7 @@ impl WorthQueryOutputDemandDenialKind {
             | Self::MissingApplicableProducer
             | Self::AmbiguousApplicableProducer
             | Self::ProducerUnavailable
+            | Self::ProducerDomainDenied
             | Self::SchedulingRejected
             | Self::PublicationStale
             | Self::NoEffect

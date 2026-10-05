@@ -547,6 +547,13 @@ typed action intent + exact installed program
   family. It is not a substitute for the program-output handle when the program
   declares transitive required outputs. Source drift returns `Superseded`.
 
+An installed producer whose handler rejects its input returns
+`ProducerDomainDenied`, with terminal posture for that demand. Its provider can
+implement `domain_denial_reason(&typed_denial)` to supply static domain-owned
+words; `denial.domain_reason()` returns those diagnostic words. Missing producers
+and execution failures remain distinct. Match the typed kind for control flow;
+never parse the Debug subject or treat a reason as execution authority.
+
 ### Source expectations, exact reads, and live reads
 
 Application usage:
