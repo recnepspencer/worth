@@ -7,7 +7,7 @@ use crate::filesystem_media::{
 
 use super::{
     record_artifact, FilesystemObservation, ObservedRecoveryArtifact, RecoveryDiscoveryArtifact,
-    RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryFailure,
+    RecoveryDiscoveryFailure,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -111,13 +111,7 @@ impl<M: super::DiscoveryMediaBacking> FilesystemObservation<M> {
         let artifact = record_artifact(address)?;
         let length = u64::from(length);
         self.admit_range(&context, length, byte_limit)?;
-        if self.remaining_entries == 0 {
-            return Err(RecoveryDiscoveryFailure::EntryLimitExceeded {
-                observed: 1,
-                admitted: 0,
-            }
-            .into());
-        }
+        self.admit_read()?;
         let capacity = usize::try_from(length)
             .map_err(|_| RecoveryDiscoveryFailure::invalid(context.clone()))?;
         self.remaining_entries -= 1;
@@ -175,32 +169,11 @@ impl<M: super::DiscoveryMediaBacking> FilesystemObservation<M> {
         ) -> Result<Vec<u8>, ArtifactTreeAllocatedReadFailure<E>>,
     ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryAllocationFailure<E>> {
         let effective_byte_limit = byte_limit.min(self.remaining_bytes);
-        if self.remaining_entries == 0 {
-            return Err(RecoveryDiscoveryFailure::EntryLimitExceeded {
-                observed: 1,
-                admitted: 0,
-            }
-            .into());
-        }
+        self.admit_read()?;
         self.remaining_entries -= 1;
         match read(self.parts.artifact_tree(), effective_byte_limit) {
             Ok(bytes) => {
-                self.counters.bytes_read = self
-                    .counters
-                    .bytes_read
-                    .checked_add(bytes.len() as u64)
-                    .ok_or(RecoveryDiscoveryFailure::ByteLimitExceeded {
-                        observed: u64::MAX,
-                        admitted: self.maximum_bytes,
-                        scope: RecoveryDiscoveryByteLimitScope::Observation,
-                    })?;
-                self.remaining_bytes = self.remaining_bytes.checked_sub(bytes.len() as u64).ok_or(
-                    RecoveryDiscoveryFailure::ByteLimitExceeded {
-                        observed: bytes.len() as u64,
-                        admitted: self.maximum_bytes,
-                        scope: RecoveryDiscoveryByteLimitScope::Observation,
-                    },
-                )?;
+                self.spend_read_bytes(bytes.len() as u64)?;
                 if !fixed {
                     self.counters.addressed_artifacts_read += 1;
                 }
@@ -221,18 +194,16 @@ impl<M: super::DiscoveryMediaBacking> FilesystemObservation<M> {
                     None,
                 ))
             }
-            Err(ArtifactTreeAllocatedReadFailure::Media(failure))
-                if failure.kind() == ArtifactTreeFailureKind::AccessLimitExceeded =>
-            {
-                let limit = failure.access_limit().unwrap_or(
-                    crate::filesystem_media::ArtifactTreeAccessLimit {
-                        observed: effective_byte_limit.saturating_add(1),
-                        admitted: effective_byte_limit,
-                    },
-                );
-                Err(self.read_refused(byte_limit, limit.observed).into())
+            Err(failure) => Err(match &failure {
+                ArtifactTreeAllocatedReadFailure::Media(media) => {
+                    self.whole_read_refused(media, byte_limit, effective_byte_limit)
+                }
+                _ => None,
             }
-            Err(failure) => Err(map_allocated_failure(failure, context, 0)),
+            .map_or_else(
+                || map_allocated_failure(failure, context, 0),
+                RecoveryDiscoveryAllocationFailure::Discovery,
+            )),
         }
     }
 }

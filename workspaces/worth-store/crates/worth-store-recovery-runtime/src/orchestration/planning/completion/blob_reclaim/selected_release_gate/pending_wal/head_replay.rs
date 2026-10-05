@@ -74,10 +74,10 @@ fn refused(
     let SelectedReleaseHeadReplayDenial::BoundExceeded(past) = denial else {
         return HistoricalFailure::Invalid;
     };
-    match past.bound {
-        HeadReplayBound::EffectBytes => HistoricalFailure::StagingBytes(past.observed),
+    match past.dimension() {
+        HeadReplayBound::EffectBytes => HistoricalFailure::StagingBytes(past.observed()),
         HeadReplayBound::HeapBytes => {
-            let _ = resident.transient(past.observed);
+            let _ = resident.transient(past.observed());
             HistoricalFailure::Invalid
         }
     }
@@ -85,18 +85,16 @@ fn refused(
 
 #[cfg(test)]
 mod tests {
-    use worth_store_recovery_physics::ExceededHeadReplayBound;
+    use worth_store_recovery_physics::{test_support::head_replay_limit_for_test, HeadReplayBound};
 
     use super::*;
 
     #[test]
     fn a_bound_physics_refused_is_the_limit_that_ran_out_and_not_damage() {
         let past = |bound, observed, admitted| {
-            SelectedReleaseHeadReplayDenial::BoundExceeded(ExceededHeadReplayBound {
-                bound,
-                observed,
-                admitted,
-            })
+            SelectedReleaseHeadReplayDenial::BoundExceeded(head_replay_limit_for_test(
+                bound, observed, admitted,
+            ))
         };
         let mut resident = ResidentAllowance::new(64);
         resident.bytes(24).unwrap();

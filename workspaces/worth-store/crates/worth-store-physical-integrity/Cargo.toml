@@ -8,6 +8,7 @@ description = "Roadmap 2 S.3 physical checksums, scrub, quarantine, and corrupti
 
 [dependencies]
 worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-proof = { path = "../../../../crates/worth-proof" }
 worth-store-physical-format.workspace = true
 sha2 = "0.10"
 

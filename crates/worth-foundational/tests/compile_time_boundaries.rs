@@ -350,3 +350,8 @@ fn performance_readiness_and_grouped_surface_preserve_stronger_lane_boundaries()
     compile_fail("tests/ui/performance/readiness_boundaries/*.rs");
     compile_fail("tests/ui/performance/grouped_surface_stronger_lane/*.rs");
 }
+
+#[test]
+fn exhausted_limits_are_minted_only_by_the_owning_budget() {
+    compile_fail("tests/ui/budget_limits/*.rs");
+}

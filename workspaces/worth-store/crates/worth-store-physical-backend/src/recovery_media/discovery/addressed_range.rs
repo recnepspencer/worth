@@ -18,12 +18,7 @@ impl BoundedRecoveryFilesystemDiscovery {
         let artifact = record_artifact(address)?;
         let length = u64::from(length);
         self.admit_range(&context, length, byte_limit)?;
-        if self.remaining_entries == 0 {
-            return Err(RecoveryDiscoveryFailure::EntryLimitExceeded {
-                observed: 1,
-                admitted: 0,
-            });
-        }
+        self.admit_read()?;
         let capacity = usize::try_from(length)
             .map_err(|_| RecoveryDiscoveryFailure::invalid(context.clone()))?;
         self.remaining_entries -= 1;

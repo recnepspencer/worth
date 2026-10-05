@@ -2,10 +2,11 @@
 //! limit. One whose artifact outgrew the ceiling of its own read is damaged,
 //! and names no limit an operator could raise.
 
-use worth_store::physical_runtime::{RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryFailure};
+use worth_store::physical_runtime::FilesystemObservationBound;
 use worth_store_physical_format::RecordArtifactFile;
 
 use super::*;
+use crate::orchestration::reader_limit::refused_past;
 
 fn limits() -> PhysicalRecoveryLimitDeclaration {
     PhysicalRecoveryLimitDeclaration {
@@ -31,15 +32,11 @@ fn limits() -> PhysicalRecoveryLimitDeclaration {
     }
 }
 
-fn outgrown(scope: RecoveryDiscoveryByteLimitScope) -> PhysicalRecoverySuccessorCandidateDenial {
+fn outgrown(bound: FilesystemObservationBound) -> PhysicalRecoverySuccessorCandidateDenial {
     PhysicalRecoverySuccessorCandidateDenial::Discovery {
         artifact: RecordArtifactFile::RootManifest { generation: 9 },
         generation: 9,
-        failure: RecoveryDiscoveryFailure::ByteLimitExceeded {
-            observed: 4_001,
-            admitted: 4_000,
-            scope,
-        },
+        failure: refused_past(bound, 4_001, 4_000),
     }
 }
 
@@ -49,7 +46,7 @@ fn only_a_candidate_reader_out_of_its_own_budget_names_a_limit() {
     assert_eq!(
         candidate_limit(
             &limits,
-            &outgrown(RecoveryDiscoveryByteLimitScope::Observation),
+            &outgrown(FilesystemObservationBound::ObservationBytes),
             4_000
         ),
         Some(PhysicalRecoveryLimitFailure {
@@ -61,7 +58,7 @@ fn only_a_candidate_reader_out_of_its_own_budget_names_a_limit() {
     assert_eq!(
         candidate_limit(
             &limits,
-            &outgrown(RecoveryDiscoveryByteLimitScope::Requested),
+            &outgrown(FilesystemObservationBound::RequestedBytes),
             4_000
         ),
         None,
@@ -70,7 +67,11 @@ fn only_a_candidate_reader_out_of_its_own_budget_names_a_limit() {
 
 #[test]
 fn a_candidate_attempt_with_no_observation_bytes_left_names_that_limit() {
-    let denial = successor_candidate_observation::out_of_observation_bytes(8);
+    // No reader opens on nothing: every admitted byte was already observed.
+    let denial = PhysicalRecoverySuccessorCandidateDenial::ObservationBytesExhausted {
+        artifact: RecordArtifactFile::RootManifest { generation: 9 },
+        generation: 9,
+    };
     assert_eq!(
         candidate_limit(&limits(), &denial, 0),
         Some(PhysicalRecoveryLimitFailure {

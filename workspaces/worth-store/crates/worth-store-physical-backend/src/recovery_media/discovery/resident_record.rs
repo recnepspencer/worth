@@ -107,12 +107,7 @@ impl<M: DiscoveryMediaBacking> FilesystemObservation<M> {
         &self,
         context: &RecoveryDiscoveryArtifact,
     ) -> Result<(), RecoveryDiscoveryFailure> {
-        if self.remaining_entries == 0 {
-            return Err(RecoveryDiscoveryFailure::EntryLimitExceeded {
-                observed: 1,
-                admitted: 0,
-            });
-        }
+        self.admit_read()?;
         if !self.parts.artifact_tree().path_storage_is_qualified() {
             return Err(RecoveryDiscoveryFailure::invalid(context.clone()));
         }

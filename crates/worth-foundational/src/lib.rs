@@ -21,6 +21,8 @@
 //! - `docs/diagnostics-and-explanation-ontology/README.md`
 //! - `docs/lineage-provenance-receipts-and-support-truth/README.md`
 //! - `docs/performance/README.md`
+//! - `docs/budget-limits/README.md`: exhausted limits minted only by the
+//!   budget that owns them.
 //! - [`physical_integrity_observation`]: portable physical facts without media,
 //!   decoder, recovery, or repair authority.
 
@@ -32,6 +34,7 @@ mod boundary_artifacts;
 mod boundary_evidence;
 pub mod boundary_evidence_api;
 mod boundary_protocol;
+mod budget_limits;
 mod canonicalization;
 pub mod canonicalization_api;
 mod compatibility;

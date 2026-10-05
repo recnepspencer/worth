@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+  --> tests/ui/budget_limits/foreign_authority_cannot_mint.rs:31:70
+   |
+31 |     let _limit = ExhaustedLimit::refused(owner::OwnerBound::Entries, refusal);
+   |                  -----------------------                             ^^^^^^^ expected `OwnerAuthority`, found `ForgerAuthority`
+   |                  |
+   |                  arguments to this function are incorrect
+   |
+   = note: expected struct `Performed<BudgetRefused, OwnerAuthority, LimitCounts>`
+              found struct `Performed<BudgetRefused, ForgerAuthority, LimitCounts>`
+note: associated function defined here
+  --> src/budget_limits/exhausted_limit.rs
+   |
+   |     pub fn refused(
+   |            ^^^^^^^

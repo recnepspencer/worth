@@ -22,6 +22,9 @@ mod addressed;
 mod budget_tests;
 #[path = "head_replay/exceeded_bound.rs"]
 mod exceeded_bound;
+#[cfg(any(test, feature = "test-support"))]
+pub use exceeded_bound::head_replay_limit_for_test;
+use exceeded_bound::HeadReplayAllowance;
 pub use exceeded_bound::{ExceededHeadReplayBound, HeadReplayBound};
 #[path = "head_replay/selected_path.rs"]
 mod selected_path;
@@ -36,6 +39,9 @@ pub enum SelectedReleaseHeadReplayDenial {
     SourceRoot,
     SourcePath,
     BoundExceeded(ExceededHeadReplayBound),
+    /// A carried size past every count: no ceiling admits it, so no limit
+    /// states it.
+    SizeOverflow,
     Read,
 }
 

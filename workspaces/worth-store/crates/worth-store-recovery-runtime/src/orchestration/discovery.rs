@@ -291,8 +291,9 @@ fn media_observation(failure: RecoveryDiscoveryFailure) -> DiscoveryFailure {
             PhysicalRecoveryMediaObservationFailure::InvalidAddress,
         ),
         // `refused_read` decided every count and byte refusal before this.
-        RecoveryDiscoveryFailure::EntryLimitExceeded { .. }
-        | RecoveryDiscoveryFailure::ByteLimitExceeded { .. } => return blocked,
+        RecoveryDiscoveryFailure::Limit(_) => return blocked,
+        // A count past every count is no limit and names no artifact.
+        RecoveryDiscoveryFailure::CountOverflow(_) => return blocked,
     };
     blocked
         .source_denials

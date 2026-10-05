@@ -20,7 +20,9 @@ tempfile = "3"
 trybuild = "1.0"
 syn = { version = "2", features = ["full"] }
 serde_json = "1"
-worth-store = { workspace = true, features = ["certification-test-authority", "volatile-sync-for-tests"] }
+worth-store = { workspace = true, features = ["certification-test-authority", "volatile-sync-for-tests", "test-support"] }
+worth-store-physical-integrity = { workspace = true, features = ["test-support"] }
+worth-store-recovery-physics = { workspace = true, features = ["test-support"] }
 worth-store-authority.workspace = true
 worth-store-blob-chunks.workspace = true
 worth-store-contracts.workspace = true

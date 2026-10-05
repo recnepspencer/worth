@@ -1,8 +1,11 @@
 //! A denied head observation names a limit only where recovery ran out of
 //! one: a refused charge, or a reader out of recovery's observation bytes.
 
-use worth_store::physical_runtime::{RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryFailure};
+use worth_store::physical_runtime::{FilesystemObservationBound, RecoveryDiscoveryFailure};
 use worth_store_physical_format::PersistedRecordIdentity;
+use worth_store_physical_integrity::{
+    release_custody_head_walk_limit_for_test, ReleaseCustodyHeadWalkBound,
+};
 use worth_store_recovery_physics::SelectedCustodyDenial;
 
 use super::*;
@@ -11,13 +14,10 @@ use crate::entry::{
     PhysicalRecoveryReleaseHeadControlDenial as Control,
     PhysicalRecoverySelectedRecordReadDenial as RecordRead,
 };
+use crate::orchestration::reader_limit::refused_past;
 
-fn outgrown(scope: RecoveryDiscoveryByteLimitScope) -> RecoveryDiscoveryFailure {
-    RecoveryDiscoveryFailure::ByteLimitExceeded {
-        observed: 4_001,
-        admitted: 4_000,
-        scope,
-    }
+fn outgrown(bound: FilesystemObservationBound) -> RecoveryDiscoveryFailure {
+    refused_past(bound, 4_001, 4_000)
 }
 
 fn head_block() -> worth_store_physical_format::ReleaseCustodyHeadBlockReferenceV1 {
@@ -42,10 +42,7 @@ fn a_refused_charge_is_the_manifest_entry_limit() {
         control_read(RecordRead::ManifestEntryLimit),
         Denial::SourceRootRead {
             generation: 5,
-            failure: RecoveryDiscoveryFailure::EntryLimitExceeded {
-                observed: 1,
-                admitted: 0,
-            },
+            failure: refused_past(FilesystemObservationBound::Reads, 1, 0),
         },
     ] {
         assert_eq!(
@@ -120,10 +117,9 @@ fn a_roster_of_more_heads_than_recovery_admits_is_the_entry_limit_with_its_count
     // Nor is a tree of more blocks than that roster's heads can fill: the
     // ceiling is the roster's, and recovery sets no limit on blocks to name.
     let sprawling = roster_refused(
-        SelectedHeadRosterAdmissionDenial::Walk(ReleaseCustodyHeadWalkDenial::NodeBound {
-            observed: 9,
-            admitted: 7,
-        }),
+        SelectedHeadRosterAdmissionDenial::Walk(ReleaseCustodyHeadWalkDenial::Limit(
+            release_custody_head_walk_limit_for_test(ReleaseCustodyHeadWalkBound::Nodes, 9, 7),
+        )),
         &mut resident,
     );
     assert_eq!(
@@ -138,7 +134,7 @@ fn a_roster_of_more_heads_than_recovery_admits_is_the_entry_limit_with_its_count
 
 #[test]
 fn a_reader_out_of_observation_bytes_is_that_limit_with_the_count_it_reached() {
-    let observation = RecoveryDiscoveryByteLimitScope::Observation;
+    let observation = FilesystemObservationBound::ObservationBytes;
     for denial in [
         Denial::ObservationByteLimit,
         Denial::SourceRoutes(Page::ObservationByteLimit),
@@ -175,7 +171,7 @@ fn a_reader_out_of_observation_bytes_is_that_limit_with_the_count_it_reached() {
 
 #[test]
 fn a_head_that_failed_verification_names_no_limit() {
-    let requested = RecoveryDiscoveryByteLimitScope::Requested;
+    let requested = FilesystemObservationBound::RequestedBytes;
     for denial in [
         Denial::Roster(SelectedCustodyDenial::CertificateRoster),
         Denial::HeadWalk(WalkDenial::BoundExceeded),
@@ -195,6 +191,33 @@ fn a_head_that_failed_verification_names_no_limit() {
             "{denial:?}",
         );
     }
+}
+
+/// Physics refused the roster past this phase's resident window: that bound,
+/// with both counts. Its retained ceiling is the roster's own denial.
+#[test]
+fn a_roster_past_its_resident_window_is_the_resident_bound_with_both_counts() {
+    use worth_store_recovery_physics::{test_support::physics_limit_for_test, PhysicsBound};
+    let mut resident = ResidentAllowance::new(8);
+    let past = physics_limit_for_test(PhysicsBound::ResidentBytes, 11, 6);
+    assert_eq!(
+        roster_refused(
+            SelectedHeadRosterAdmissionDenial::Custody(SelectedCustodyDenial::Limit(past)),
+            &mut resident,
+        ),
+        Denial::ResidentBoundExceeded {
+            required: 11,
+            admitted: 6,
+        }
+    );
+    let retained = physics_limit_for_test(PhysicsBound::RetainedBytes, 11, 6);
+    assert_eq!(
+        roster_refused(
+            SelectedHeadRosterAdmissionDenial::Custody(SelectedCustodyDenial::Limit(retained)),
+            &mut resident,
+        ),
+        Denial::Roster(SelectedCustodyDenial::Limit(retained))
+    );
 }
 
 #[test]

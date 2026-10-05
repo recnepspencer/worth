@@ -39,7 +39,7 @@ fn borrowed_serving_read_denies_before_address_then_retries_with_same_media_owne
         runtime.lifecycle_state().snapshot().generation,
     );
     let failure = window
-        .read_serving_wal_payloads(runtime.record_serving_media(), 1, 4096)
+        .read_serving_wal_payloads(runtime.record_serving_media(), segments(1), 4096)
         .unwrap_err();
     let RecoveryWalReadFailureView::Allocation {
         artifact: RecoveryWalArtifactView::WalDirectory,
@@ -68,7 +68,7 @@ fn borrowed_serving_read_denies_before_address_then_retries_with_same_media_owne
     drop(failure);
     drop(held);
     let observed = window
-        .read_serving_wal_payloads(runtime.record_serving_media(), 1, 4096)
+        .read_serving_wal_payloads(runtime.record_serving_media(), segments(1), 4096)
         .unwrap();
     let [artifact] = observed.artifacts() else {
         panic!("exact original file required");

@@ -6,6 +6,7 @@ use super::{
     RecoveryDiscoveryCounters, RecoveryFilesystemQualificationError, RecoveryWalReadStorage,
 };
 use crate::filesystem_media::QualifiedFilesystemMedia;
+use std::num::NonZeroU64;
 use std::sync::atomic::Ordering;
 
 pub struct BorrowedWalFilesystemObservation<'media> {
@@ -35,6 +36,7 @@ impl QualifiedFilesystemMedia {
             discovery: FilesystemObservation {
                 parts: BorrowedMediaBacking { media: self },
                 remaining_entries: maximum_entries,
+                maximum_entries,
                 remaining_bytes: maximum_bytes,
                 maximum_bytes,
                 discovery_incarnation: incarnation,
@@ -59,7 +61,7 @@ impl BorrowedWalFilesystemObservation<'_> {
     }
     pub fn read_wal_artifacts_with_storage<S: RecoveryWalReadStorage>(
         &mut self,
-        maximum_segments: u64,
+        maximum_segments: NonZeroU64,
         byte_limit: u64,
         storage: &mut S,
     ) -> Result<Vec<ObservedWalArtifact>, RecoveryDiscoveryAllocationFailure<S::Denial>> {
@@ -69,7 +71,7 @@ impl BorrowedWalFilesystemObservation<'_> {
 
     pub fn read_selected_wal_artifacts_with_storage<S: RecoveryWalReadStorage>(
         &mut self,
-        maximum_segments: u64,
+        maximum_segments: NonZeroU64,
         byte_limit: u64,
         selection: &dyn super::RecoveryWalReadSelection,
         storage: &mut S,

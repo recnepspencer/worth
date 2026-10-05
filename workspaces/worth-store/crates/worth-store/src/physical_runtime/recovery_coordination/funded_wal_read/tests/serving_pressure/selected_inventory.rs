@@ -149,7 +149,7 @@ fn selected_read(
 ) -> Result<Outcome<FundedRecoveryWalObservations>, FundedRecoveryWalReadFailure> {
     window.read_wal_source_with_selection(
         source::WalReadSource::Recovery(discovery),
-        4,
+        segments(4),
         4096,
         Some(&SingleFile),
     )

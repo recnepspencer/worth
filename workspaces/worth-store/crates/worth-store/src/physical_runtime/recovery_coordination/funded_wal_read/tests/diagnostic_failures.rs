@@ -44,7 +44,9 @@ fn context_admission_denies_before_copy_and_payload_then_same_owner_retries() {
     );
     drop(held);
     let mut window = coordination.begin_source_read_allocation().unwrap();
-    let observed = window.read_wal_payloads(&mut discovery, 1, 4096).unwrap();
+    let observed = window
+        .read_wal_payloads(&mut discovery, segments(1), 4096)
+        .unwrap();
     assert_eq!(observed.artifacts()[0].bytes(), Some(&[17; PAYLOAD][..]));
     drop(observed);
     drop(window);
@@ -84,7 +86,7 @@ fn actual_media_read_failure_retains_name_and_cause_until_last_clone() {
     let mut discovery = media.bounded_discovery(4, 4096).unwrap();
     let mut window = coordination.begin_source_read_allocation().unwrap();
     let failure = window
-        .read_wal_payloads(&mut discovery, 1, 4096)
+        .read_wal_payloads(&mut discovery, segments(1), 4096)
         .unwrap_err();
     let RecoveryWalReadFailureView::Discovery(RecoveryWalDiscoveryFailureView::Media {
         artifact: RecoveryWalArtifactView::WalArtifact(name),
@@ -109,7 +111,9 @@ fn actual_media_read_failure_retains_name_and_cause_until_last_clone() {
     let clone = failure.clone();
     assert_eq!(clone.diagnostic(), failure.diagnostic());
     drop(failure);
-    let observed = window.read_wal_payloads(&mut discovery, 1, 4096).unwrap();
+    let observed = window
+        .read_wal_payloads(&mut discovery, segments(1), 4096)
+        .unwrap();
     assert_eq!(observed.artifacts()[0].bytes(), Some(&[17; PAYLOAD][..]));
     drop(observed);
     drop(window);
@@ -129,33 +133,4 @@ fn actual_media_read_failure_retains_name_and_cause_until_last_clone() {
     );
     assert_eq!(std::fs::read(wal.join(FIRST)).unwrap(), [17; PAYLOAD]);
     assert_eq!(discovery.finish().recovery_effect_count(), 0);
-}
-
-#[test]
-fn invalid_segment_limit_precedes_diagnostic_preparation_under_pressure() {
-    let (_directory, media, mut coordination) = world();
-    let ports = coordination.residency.ports().clone();
-    let observer = ports.allocation_events();
-    let held = ports
-        .begin_operation(Scope::Recovery, NonZeroU64::new(ORIGINAL).unwrap())
-        .unwrap();
-    let before = observer.snapshot();
-    let mut discovery = media.bounded_discovery(4, 4096).unwrap();
-    let mut window = coordination.begin_source_read_allocation().unwrap();
-    let failure = window
-        .read_wal_payloads(&mut discovery, 0, 4096)
-        .unwrap_err();
-    assert_eq!(
-        failure.diagnostic(),
-        RecoveryWalReadFailureView::Discovery(
-            RecoveryWalDiscoveryFailureView::EntryLimitExceeded {
-                observed: 0,
-                admitted: 0
-            }
-        )
-    );
-    assert_eq!(failure.charged_bytes(), 0);
-    assert_eq!(observer.snapshot(), before);
-    assert_eq!(discovery.counters().directory_entries_observed, 0);
-    drop(held);
 }

@@ -1,6 +1,7 @@
 //! Exact selected lengths gate payload allocation at the ordinary metadata boundary.
 
 use super::super::selected_wal::{SelectedReadDenial, SelectedReadStorage};
+use super::super::FilesystemObservationBound;
 use super::*;
 use crate::filesystem_media::{
     ArtifactTreeAllocatedReadFailure, ArtifactTreeFailureKind, ArtifactTreeFile,
@@ -85,20 +86,21 @@ impl<M: super::super::DiscoveryMediaBacking> FilesystemObservation<M> {
                 requested,
                 observed,
             }),
+            // The read was asked for what this inventory had left; the
+            // inventory's ceiling also holds what earlier reads took.
             Err(RecoveryDiscoveryAllocationFailure::Discovery(
-                RecoveryDiscoveryFailure::ByteLimitExceeded {
-                    observed,
-                    scope: RecoveryDiscoveryByteLimitScope::Requested,
-                    ..
-                },
-            )) => Err(RecoveryDiscoveryFailure::ByteLimitExceeded {
-                observed: byte_limit
-                    .saturating_sub(remaining_wal_bytes)
-                    .saturating_add(observed),
-                admitted: byte_limit,
-                scope: RecoveryDiscoveryByteLimitScope::Requested,
+                RecoveryDiscoveryFailure::Limit(past),
+            )) if past.dimension() == FilesystemObservationBound::RequestedBytes => {
+                Err(FilesystemObservationAllowance::held_beside(
+                    past,
+                    byte_limit.saturating_sub(remaining_wal_bytes),
+                )
+                .map_or(
+                    RecoveryDiscoveryFailure::CountOverflow(RecoveryDiscoveryCount::WalBytesRead),
+                    RecoveryDiscoveryFailure::Limit,
+                )
+                .into())
             }
-            .into()),
             Err(RecoveryDiscoveryAllocationFailure::Discovery(failure)) => Err(failure.into()),
         }
     }

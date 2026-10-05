@@ -135,10 +135,8 @@ pub(super) fn require_two_page_window(
     format: PhysicalRecordFormatDeclaration,
     remaining_additional_heap_bytes: u64,
 ) -> Result<(), SelectedReleaseHeadReplayDenial> {
-    ExceededHeadReplayBound::within(
-        HeadReplayBound::HeapBytes,
-        u64::from(format.page_size().bytes()).checked_mul(2),
-        remaining_additional_heap_bytes,
-    )?;
+    // Two pages of a `u32` page size fit a `u64`.
+    HeadReplayAllowance::heap_bytes(remaining_additional_heap_bytes)
+        .admit(u64::from(format.page_size().bytes()) * 2)?;
     Ok(())
 }

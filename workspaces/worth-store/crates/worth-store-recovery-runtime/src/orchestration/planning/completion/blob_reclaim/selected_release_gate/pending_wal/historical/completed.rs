@@ -7,7 +7,7 @@ use crate::orchestration::planning::selected_source_inventory::ResidentAllowance
 use crate::progression::PlanningCustody;
 use ordered::denial::block;
 use worth_store_recovery_physics::{
-    EffectiveReleaseHeadDenial, VerifiedEffectiveReleaseHeadRosterV14,
+    EffectiveReleaseHeadDenial, PhysicsBound, VerifiedEffectiveReleaseHeadRosterV14,
     VerifiedOrderedHistoricalReleaseCustody,
 };
 
@@ -109,8 +109,10 @@ pub(in crate::orchestration::planning::completion::blob_reclaim::selected_releas
     );
     let effective = match effective {
         Ok(effective) => effective,
-        Err(cause @ EffectiveReleaseHeadDenial::ResidentBoundExceeded { required, .. }) => {
-            let _ = resident.transient(required);
+        Err(cause @ EffectiveReleaseHeadDenial::Limit(past))
+            if past.dimension() == PhysicsBound::ResidentBytes =>
+        {
+            let _ = resident.transient(past.observed());
             let limit = super::super::super::resident_basis::limit_failure(&context, &resident);
             return Err(block(context, basis, Denial::EffectiveHeads(cause), limit));
         }

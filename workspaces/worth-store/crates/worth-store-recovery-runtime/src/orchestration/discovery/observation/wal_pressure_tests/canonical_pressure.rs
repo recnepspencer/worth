@@ -24,7 +24,7 @@ pub(super) fn deny_then_retry(
         .unwrap()
         .read_wal_payloads(
             discovery,
-            limits.declaration().wal_segments,
+            limits.wal_segments(),
             limits.declaration().wal_bytes,
         )
         .unwrap();

@@ -17,8 +17,8 @@ use super::{
     decide_ordered_root_step_basis as decide, CheckpointRetiredReleaseIntent, OrderedRootStepBasis,
     RetirementReleaseIntent, VerifiedRetirementRootEdge,
 };
+use crate::source_precedence::{entries_past, scratch_past};
 use crate::source_precedence::{ordinary_root_step::transcript, ReleasedInventoryView};
-use crate::ExceededRootHistoryBound as Exceeded;
 use crate::OrderedRootHistoryDenial as Denial;
 
 const CUTOFF: u64 = 16;
@@ -188,7 +188,7 @@ fn a_history_past_a_bound_names_the_bound_and_what_it_needed() {
     let exact = basis(CHECKPOINT, 15, first_root.sha256());
     assert_eq!(
         VerifiedRetirementRootEdge::admit(checkpoint.view(), first_root.view(), exact, format(), 0),
-        Err(Denial::Bound(Exceeded::entries(1, 0)))
+        Err(Denial::Bound(entries_past(1, 0)))
     );
     let first = edge(&checkpoint, &first_root, 14);
     let second = edge(&first_root, &second_root, 15);
@@ -202,14 +202,14 @@ fn a_history_past_a_bound_names_the_bound_and_what_it_needed() {
     // Exactly the first edge's scratch admits one edge and names the second's.
     let mut exact = bounded(&checkpoint, CUTOFF, one);
     advance(&mut exact, first, &first_root).unwrap();
-    let past = Denial::Bound(Exceeded::scratch(two, one));
+    let past = Denial::Bound(scratch_past(two, one));
     assert_eq!(advance(&mut exact, second, &second_root), Err(past));
-    assert_eq!(past.exceeded_bound(), Some(Exceeded::scratch(two, one)));
+    assert_eq!(past.exceeded_bound(), Some(scratch_past(two, one)));
     assert_eq!(Denial::Effect.exceeded_bound(), None);
     let mut none = bounded(&checkpoint, CUTOFF, 0);
     assert_eq!(
         advance(&mut none, first, &first_root),
-        Err(Denial::Bound(Exceeded::scratch(one, 0)))
+        Err(Denial::Bound(scratch_past(one, 0)))
     );
 }
 

@@ -55,26 +55,31 @@ fn refusals(
     ]
 }
 
+/// The three refusals' bounds and counts; `None` for a read that passed or a
+/// refusal that is not a limit.
+fn named_refusals(
+    discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    length: u32,
+    ceiling: u64,
+) -> [Option<(FilesystemObservationBound, u64, u64)>; 3] {
+    refusals(discovery, length, ceiling).map(|failure| failure.as_ref().and_then(named))
+}
+
 #[test]
 fn a_range_past_its_ceiling_is_never_the_readers_own_limit() {
-    use RecoveryDiscoveryByteLimitScope::{Observation, Requested};
+    use FilesystemObservationBound::{ObservationBytes, RequestedBytes};
     // A range of seven bytes, asked under (ceiling, reader bytes).
-    for (ceiling, reader, observed, admitted, scope) in [
-        (6, 32, 7, 6, Requested),
-        (6, 4, 7, 6, Requested),
-        (6, 6, 7, 6, Requested),
-        (7, 6, 7, 6, Observation),
-        (8, 4, 7, 4, Observation),
+    for (ceiling, reader, refused) in [
+        (6, 32, (RequestedBytes, 7, 6)),
+        (6, 4, (RequestedBytes, 7, 6)),
+        (6, 6, (RequestedBytes, 7, 6)),
+        (7, 6, (ObservationBytes, 7, 6)),
+        (8, 4, (ObservationBytes, 7, 4)),
     ] {
-        let refused = Some(RecoveryDiscoveryFailure::ByteLimitExceeded {
-            observed,
-            admitted,
-            scope,
-        });
         let (_parent, mut discovery) = arena_discovery(reader);
         assert_eq!(
-            refusals(&mut discovery, 7, ceiling),
-            [refused.clone(), refused.clone(), refused],
+            named_refusals(&mut discovery, 7, ceiling),
+            [Some(refused); 3],
             "ceiling {ceiling} with {reader} reader bytes",
         );
         assert_eq!(discovery.counters().bytes_read, 0);
@@ -86,15 +91,8 @@ fn a_range_within_its_ceiling_counts_the_bytes_the_reader_already_gave() {
     let (_parent, mut discovery) = arena_discovery(9);
     assert_eq!(refusals(&mut discovery, 3, 8), [None, None, None]);
     // Nine bytes are spent; one more passes the reader's nine, not the ceiling.
-    let refused = Some(RecoveryDiscoveryFailure::ByteLimitExceeded {
-        observed: 10,
-        admitted: 9,
-        scope: RecoveryDiscoveryByteLimitScope::Observation,
-    });
-    assert_eq!(
-        refusals(&mut discovery, 1, 8),
-        [refused.clone(), refused.clone(), refused],
-    );
+    let refused = Some((FilesystemObservationBound::ObservationBytes, 10, 9));
+    assert_eq!(named_refusals(&mut discovery, 1, 8), [refused; 3]);
 }
 
 #[test]

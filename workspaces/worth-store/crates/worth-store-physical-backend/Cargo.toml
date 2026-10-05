@@ -20,7 +20,7 @@ sha2 = "0.10"
 tempfile = "3"
 sysinfo = { version = "0.38.4", default-features = false, features = ["disk"] }
 worth-proof = { path = "../../../../crates/worth-proof" }
-worth-foundational = { path = "../../../../crates/worth-foundational", optional = true }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-store-contracts.workspace = true
 worth-store-authority.workspace = true
 worth-store-physical-format.workspace = true
@@ -41,10 +41,12 @@ sha2 = "0.10"
 
 [features]
 store-runtime-owner = []
+# Mints observation limits for other crates' tests. No production dependency
+# enables it.
+test-support = []
 recovery-runtime-owner = []
 certification-test-authority = [
     "store-runtime-owner",
-    "dep:worth-foundational",
 ]
 # Test-only: skip the OS flush inside synchronization media operations. Enable
 # only from dev-dependencies; release builds ignore it.

@@ -13,7 +13,8 @@ use worth_store_physical_format::{
 use worth_store_wal::WalLsnRange;
 
 use super::{
-    ExceededRootHistoryBound, VerifiedOrdinaryRootStep, VerifiedReleasedV3InventoryTransition,
+    ExceededRootHistoryBound, RootHistoryAllowance, VerifiedOrdinaryRootStep,
+    VerifiedReleasedV3InventoryTransition,
 };
 use crate::{AdmittedRootStepMemberView, PhysicalRedoGroupBinding, RecoveryOperationFate};
 
@@ -30,6 +31,8 @@ pub enum OrderedRootHistoryDenial {
     Effect,
     WalOrder,
     Bound(ExceededRootHistoryBound),
+    /// A size past every count: no ceiling admits it, so no limit states it.
+    SizeOverflow,
     Incomplete,
 }
 
@@ -300,7 +303,6 @@ impl OrderedRootHistoryBuilder {
         effect_scratch: u64,
         retained_projected_increment: u64,
     ) -> Result<(), OrderedRootHistoryDenial> {
-        use ExceededRootHistoryBound as Exceeded;
         // The scratch bounds the edges: each one retains its own bytes.
         let count = self.edges.len() as u64 + 1;
         let edge_bytes = (std::mem::size_of::<VerifiedOrderedRootEdge>()
@@ -309,17 +311,21 @@ impl OrderedRootHistoryBuilder {
         let effect_peak = self.peak_effect_scratch_bytes.max(effect_scratch);
         let retained_projected = self
             .retained_projected_bytes
-            .saturating_add(retained_projected_increment);
+            .checked_add(retained_projected_increment)
+            .ok_or(OrderedRootHistoryDenial::SizeOverflow)?;
         let needed = count
             .checked_mul(edge_bytes)
             .and_then(|bytes| bytes.checked_add(effect_peak))
-            .and_then(|bytes| bytes.checked_add(retained_projected));
-        let peak = Exceeded::scratch_within(needed, self.maximum_scratch_bytes)
+            .and_then(|bytes| bytes.checked_add(retained_projected))
+            .ok_or(OrderedRootHistoryDenial::SizeOverflow)?;
+        let scratch = RootHistoryAllowance::scratch_bytes(self.maximum_scratch_bytes);
+        let peak = scratch
+            .admit(needed)
             .map_err(OrderedRootHistoryDenial::Bound)?;
         // The host refusing scratch this bound admitted is the same refusal.
-        self.edges.try_reserve(1).map_err(|_| {
-            OrderedRootHistoryDenial::Bound(Exceeded::scratch(peak, self.maximum_scratch_bytes))
-        })?;
+        self.edges
+            .try_reserve(1)
+            .map_err(|_| OrderedRootHistoryDenial::Bound(scratch.host_refused(peak)))?;
         self.retained_projected_bytes = retained_projected;
         self.peak_effect_scratch_bytes = effect_peak;
         self.peak_scratch_bytes = peak;

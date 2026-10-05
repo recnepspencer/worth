@@ -41,10 +41,10 @@ impl WalkFailure {
     ) -> Self {
         match exceeded {
             None => Self::Unverified,
-            Some(past) => match past.bound {
-                RootHistoryBound::Entries => budget.refuse_view(past.observed).into(),
+            Some(past) => match past.dimension() {
+                RootHistoryBound::Entries => budget.refuse_view(past.observed()).into(),
                 RootHistoryBound::ScratchBytes => {
-                    Self::past_scratch(past.observed, past.admitted, maximum_scratch)
+                    Self::past_scratch(past.observed(), past.admitted(), maximum_scratch)
                 }
             },
         }
@@ -58,7 +58,7 @@ impl WalkFailure {
     ) -> Self {
         match denial {
             SelectedReleaseHeadReplayDenial::BoundExceeded(past) => {
-                Self::past_scratch(past.observed, past.admitted, maximum_scratch)
+                Self::past_scratch(past.observed(), past.admitted(), maximum_scratch)
             }
             _ => Self::Unverified,
         }
@@ -163,32 +163,27 @@ impl From<RecoveryDiscoveryFailure> for WalkFailure {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use worth_store::physical_runtime::{
-        RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope,
+    use crate::orchestration::reader_limit::refused_past;
+    use worth_store::physical_runtime::{FilesystemObservationBound, RecoveryDiscoveryArtifact};
+    use worth_store_recovery_physics::{
+        test_support::{head_replay_limit_for_test, root_history_limit_for_test},
+        HeadReplayBound, PhysicalRedoTargetIdentity, RootHistoryBound,
     };
-    use worth_store_recovery_physics::PhysicalRedoTargetIdentity;
 
     #[test]
     fn a_failed_read_is_a_limit_only_when_the_observation_budget_ran_out() {
-        let oversized = |scope| RecoveryDiscoveryFailure::ByteLimitExceeded {
-            observed: 65_537,
-            admitted: 65_536,
-            scope,
-        };
+        let oversized = |bound| refused_past(bound, 65_537, 65_536);
         assert_eq!(
-            WalkFailure::from(oversized(RecoveryDiscoveryByteLimitScope::Observation)),
+            WalkFailure::from(oversized(FilesystemObservationBound::ObservationBytes)),
             WalkFailure::ByteLimit,
         );
         assert_eq!(
-            WalkFailure::from(RecoveryDiscoveryFailure::EntryLimitExceeded {
-                observed: 1,
-                admitted: 0,
-            }),
+            WalkFailure::from(refused_past(FilesystemObservationBound::Reads, 1, 0)),
             WalkFailure::ManifestEntryLimit,
         );
         for damage in [
             // A root or routing block larger than one page is damaged media.
-            oversized(RecoveryDiscoveryByteLimitScope::Requested),
+            oversized(FilesystemObservationBound::RequestedBytes),
             RecoveryDiscoveryFailure::InvalidAddress {
                 artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint,
             },
@@ -237,11 +232,7 @@ mod tests {
     fn a_bound_physics_ran_past_is_that_limit_with_what_it_needed() {
         let mut budget = ManifestEntryBudget::new(10, 4);
         let past = |bound, observed, admitted| {
-            Some(ExceededRootHistoryBound {
-                bound,
-                observed,
-                admitted,
-            })
+            Some(root_history_limit_for_test(bound, observed, admitted))
         };
         assert_eq!(
             WalkFailure::refused(None, &mut budget, 100),
@@ -272,15 +263,10 @@ mod tests {
 
     #[test]
     fn a_replay_bound_is_the_scratch_the_walk_needed_in_all() {
-        use worth_store_recovery_physics::{ExceededHeadReplayBound, HeadReplayBound};
         use SelectedReleaseHeadReplayDenial as Replay;
         // Handed 60 of 100 bytes, the replay needed 70: the walk held 40.
         for bound in [HeadReplayBound::EffectBytes, HeadReplayBound::HeapBytes] {
-            let past = ExceededHeadReplayBound {
-                bound,
-                observed: 70,
-                admitted: 60,
-            };
+            let past = head_replay_limit_for_test(bound, 70, 60);
             assert_eq!(
                 WalkFailure::replay_refused(Replay::BoundExceeded(past), 100),
                 WalkFailure::ScratchLimit { at_least: 110 }
@@ -295,11 +281,8 @@ mod tests {
     #[test]
     fn a_control_record_the_walk_could_not_read_keeps_its_limit() {
         use PhysicalRecoverySelectedRecordReadDenial as Denial;
-        let out_of_bytes = RecoveryDiscoveryFailure::ByteLimitExceeded {
-            observed: 65_537,
-            admitted: 65_536,
-            scope: RecoveryDiscoveryByteLimitScope::Observation,
-        };
+        let out_of_bytes =
+            refused_past(FilesystemObservationBound::ObservationBytes, 65_537, 65_536);
         for (denial, failure) in [
             (Denial::ManifestEntryLimit, WalkFailure::ManifestEntryLimit),
             (Denial::ResidentBoundExceeded, WalkFailure::MORE_SCRATCH),

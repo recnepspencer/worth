@@ -1,5 +1,7 @@
 //! Native backing for qualified WAL paths, opens, listing, results and diagnostics.
 
+use std::num::NonZeroU64;
+
 use worth_store_buffer_pool::OperationAllocationGrant;
 use worth_store_physical_backend::{BoundedRecoveryFilesystemDiscovery, ObservedWalArtifact};
 use worth_store_physical_backend::{
@@ -57,7 +59,7 @@ impl PhysicalRecoveryReadAllocation<'_> {
     pub fn read_wal_payloads(
         &mut self,
         discovery: &mut BoundedRecoveryFilesystemDiscovery,
-        maximum_segments: u64,
+        maximum_segments: NonZeroU64,
         byte_limit: u64,
     ) -> Result<FundedRecoveryWalObservations, FundedRecoveryWalReadFailure> {
         self.read_wal_source(
@@ -71,11 +73,11 @@ impl PhysicalRecoveryReadAllocation<'_> {
     pub(in crate::physical_runtime) fn read_serving_wal_payloads(
         &mut self,
         media: &worth_store_physical_backend::QualifiedFilesystemMedia,
-        maximum_segments: u64,
+        maximum_segments: NonZeroU64,
         byte_limit: u64,
     ) -> Result<FundedRecoveryWalObservations, FundedRecoveryWalReadFailure> {
         let observation = media
-            .bounded_wal_observation(maximum_segments, byte_limit)
+            .bounded_wal_observation(maximum_segments.get(), byte_limit)
             .map_err(|cause| {
                 FundedRecoveryWalReadFailure::inline(
                     0,
@@ -92,7 +94,7 @@ impl PhysicalRecoveryReadAllocation<'_> {
     fn read_wal_source(
         &self,
         discovery: source::WalReadSource<'_, '_>,
-        maximum_segments: u64,
+        maximum_segments: NonZeroU64,
         byte_limit: u64,
     ) -> Result<FundedRecoveryWalObservations, FundedRecoveryWalReadFailure> {
         match self.read_wal_source_with_selection(discovery, maximum_segments, byte_limit, None)? {
@@ -104,12 +106,12 @@ impl PhysicalRecoveryReadAllocation<'_> {
     pub(in crate::physical_runtime) fn read_selected_serving_wal_payloads(
         &mut self,
         media: &worth_store_physical_backend::QualifiedFilesystemMedia,
-        maximum_segments: u64,
+        maximum_segments: NonZeroU64,
         byte_limit: u64,
         selection: &dyn RecoveryWalReadSelection,
     ) -> Result<Outcome<FundedRecoveryWalObservations>, FundedRecoveryWalReadFailure> {
         let observation = media
-            .bounded_wal_observation(maximum_segments, byte_limit)
+            .bounded_wal_observation(maximum_segments.get(), byte_limit)
             .map_err(|cause| {
                 FundedRecoveryWalReadFailure::inline(
                     0,
@@ -127,7 +129,7 @@ impl PhysicalRecoveryReadAllocation<'_> {
     fn read_wal_source_with_selection(
         &self,
         mut discovery: source::WalReadSource<'_, '_>,
-        maximum_segments: u64,
+        maximum_segments: NonZeroU64,
         byte_limit: u64,
         selection: Option<&dyn RecoveryWalReadSelection>,
     ) -> Result<Outcome<FundedRecoveryWalObservations>, FundedRecoveryWalReadFailure> {
@@ -137,16 +139,6 @@ impl PhysicalRecoveryReadAllocation<'_> {
                 0,
                 Denial::StoreMismatch,
             ));
-        }
-        match usize::try_from(maximum_segments) {
-            Ok(0) => return Err(FundedRecoveryWalReadFailure::segment_limit(0, 0)),
-            Err(_) => {
-                return Err(FundedRecoveryWalReadFailure::segment_limit(
-                    maximum_segments,
-                    usize::MAX as u64,
-                ))
-            }
-            Ok(_) => {}
         }
         if !discovery.listing_is_qualified() {
             return Err(FundedRecoveryWalReadFailure::inline(

@@ -10,6 +10,8 @@ pub use cursor::{
     RecoveryPageSource,
 };
 pub use denial::{PhysicalRedoPlanningDenial, PhysicalRedoProjectionLimit};
+#[cfg(any(test, feature = "test-support"))]
+pub use plan::head_replay_limit_for_test;
 pub use plan::{
     admit_current_source_copy_publication, admit_physical_redo_members,
     physical_redo_observation_target_identities, physical_redo_observation_targets,

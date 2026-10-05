@@ -1,9 +1,9 @@
 //! What a refused read says about recovery's limits. This is the one rule,
-//! and the only place that reads a refusal's scope: a limit comes from a
+//! and the only place that reads a refusal's bound: a limit comes from a
 //! budget the caller set, never from an artifact's own ceiling. An artifact
 //! larger than its parent or its format admits is damage.
 
-use worth_store::physical_runtime::{RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryFailure};
+use worth_store::physical_runtime::{FilesystemObservationBound, RecoveryDiscoveryFailure};
 use worth_store_physical_format::PhysicalRecordFormatDeclaration;
 
 /// The addressed reads a recovery reader may make. Every read is counted
@@ -32,35 +32,21 @@ pub(crate) enum ReaderLimit {
 }
 
 impl ReaderLimit {
+    /// Only the reader's own allowances are its limits: requested bytes are
+    /// the ceiling of the one read.
     pub(crate) const fn of(failure: &RecoveryDiscoveryFailure) -> Option<Self> {
-        match failure {
-            RecoveryDiscoveryFailure::ByteLimitExceeded {
-                observed,
-                admitted,
-                scope,
-            } => Self::of_bytes(*observed, *admitted, *scope),
-            RecoveryDiscoveryFailure::EntryLimitExceeded { observed, admitted } => {
-                Some(Self::Reads {
-                    observed: *observed,
-                    admitted: *admitted,
-                })
+        let RecoveryDiscoveryFailure::Limit(past) = failure else {
+            return None;
+        };
+        let (observed, admitted) = (past.observed(), past.admitted());
+        match past.dimension() {
+            FilesystemObservationBound::Reads | FilesystemObservationBound::Entries => {
+                Some(Self::Reads { observed, admitted })
             }
-            _ => None,
-        }
-    }
-
-    /// Bytes a reader refused. Only its observation allowance is its own:
-    /// `Requested` is the ceiling of the one read.
-    pub(crate) const fn of_bytes(
-        observed: u64,
-        admitted: u64,
-        scope: RecoveryDiscoveryByteLimitScope,
-    ) -> Option<Self> {
-        match scope {
-            RecoveryDiscoveryByteLimitScope::Observation => {
+            FilesystemObservationBound::ObservationBytes => {
                 Some(Self::ObservationBytes { observed, admitted })
             }
-            RecoveryDiscoveryByteLimitScope::Requested => None,
+            FilesystemObservationBound::RequestedBytes => None,
         }
     }
 }
@@ -125,61 +111,71 @@ impl ReadCeiling {
     /// was asked for where it cannot tell: only a length within the
     /// artifact's own ceiling leaves the caller's budget as what ended.
     pub(crate) const fn passed(self, failure: &RecoveryDiscoveryFailure) -> Option<PastCeiling> {
-        match failure {
-            RecoveryDiscoveryFailure::ByteLimitExceeded {
-                observed,
-                scope: RecoveryDiscoveryByteLimitScope::Requested,
-                ..
-            } => Some(if *observed > self.artifact {
-                PastCeiling::Artifact
-            } else {
-                PastCeiling::Budget {
-                    observed: (self.budget.saturating_sub(self.budget_left))
-                        .saturating_add(*observed),
-                    admitted: self.budget,
-                }
-            }),
-            _ => None,
+        let RecoveryDiscoveryFailure::Limit(past) = failure else {
+            return None;
+        };
+        if !matches!(past.dimension(), FilesystemObservationBound::RequestedBytes) {
+            return None;
         }
+        Some(if past.observed() > self.artifact {
+            PastCeiling::Artifact
+        } else {
+            PastCeiling::Budget {
+                observed: (self.budget.saturating_sub(self.budget_left))
+                    .saturating_add(past.observed()),
+                admitted: self.budget,
+            }
+        })
     }
+}
+
+/// A real refusal for tests: `observed` past an allowance of `admitted`.
+#[cfg(test)]
+pub(crate) fn refused_past(
+    bound: FilesystemObservationBound,
+    observed: u64,
+    admitted: u64,
+) -> RecoveryDiscoveryFailure {
+    RecoveryDiscoveryFailure::Limit(
+        worth_store::physical_runtime::filesystem_observation_limit_for_test(
+            bound, observed, admitted,
+        ),
+    )
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use worth_store::physical_runtime::RecoveryDiscoveryArtifact;
+    use FilesystemObservationBound as Bound;
 
     const PAGE: u64 = 65_536;
 
-    fn refused(observed: u64, scope: RecoveryDiscoveryByteLimitScope) -> RecoveryDiscoveryFailure {
-        RecoveryDiscoveryFailure::ByteLimitExceeded {
-            observed,
-            admitted: 7,
-            scope,
-        }
+    /// A real refusal of `observed` past an allowance of seven.
+    fn refused(observed: u64, bound: Bound) -> RecoveryDiscoveryFailure {
+        refused_past(bound, observed, 7)
     }
 
     #[test]
     fn only_the_readers_own_allowance_is_a_reader_limit() {
         assert_eq!(
-            ReaderLimit::of(&refused(9, RecoveryDiscoveryByteLimitScope::Observation)),
+            ReaderLimit::of(&refused(9, Bound::ObservationBytes)),
             Some(ReaderLimit::ObservationBytes {
                 observed: 9,
                 admitted: 7,
             }),
         );
-        assert_eq!(
-            ReaderLimit::of(&RecoveryDiscoveryFailure::EntryLimitExceeded {
-                observed: 3,
-                admitted: 2,
-            }),
-            Some(ReaderLimit::Reads {
-                observed: 3,
-                admitted: 2,
-            }),
-        );
+        for counted in [Bound::Reads, Bound::Entries] {
+            assert_eq!(
+                ReaderLimit::of(&refused(9, counted)),
+                Some(ReaderLimit::Reads {
+                    observed: 9,
+                    admitted: 7,
+                }),
+            );
+        }
         for failure in [
-            refused(9, RecoveryDiscoveryByteLimitScope::Requested),
+            refused(9, Bound::RequestedBytes),
             RecoveryDiscoveryFailure::InvalidAddress {
                 artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint,
             },
@@ -205,7 +201,7 @@ mod tests {
 
     #[test]
     fn an_artifact_past_its_own_ceiling_is_damage_under_any_budget() {
-        let requested = RecoveryDiscoveryByteLimitScope::Requested;
+        let requested = Bound::RequestedBytes;
         for left in [3 * PAGE, PAGE, 1] {
             let ceiling = ReadCeiling::within(PAGE, 3 * PAGE, left);
             assert_eq!(
@@ -239,11 +235,8 @@ mod tests {
     fn a_refusal_for_anything_but_the_ceiling_passes_none() {
         let ceiling = ReadCeiling::within(PAGE, PAGE, 1);
         for failure in [
-            refused(PAGE + 1, RecoveryDiscoveryByteLimitScope::Observation),
-            RecoveryDiscoveryFailure::EntryLimitExceeded {
-                observed: 1,
-                admitted: 0,
-            },
+            refused(PAGE + 1, Bound::ObservationBytes),
+            refused(PAGE + 1, Bound::Reads),
             RecoveryDiscoveryFailure::InvalidAddress {
                 artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint,
             },

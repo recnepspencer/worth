@@ -1,5 +1,7 @@
 //! Sealed mechanical dispatch over two real C4 observation surfaces.
 
+use std::num::NonZeroU64;
+
 use worth_store_physical_backend::{
     BorrowedWalFilesystemObservation, BoundedRecoveryFilesystemDiscovery, ObservedWalArtifact,
     RecoveryDiscoveryAllocationFailure, RecoverySelectedWalReadOutcome as Outcome,
@@ -33,7 +35,7 @@ impl WalReadSource<'_, '_> {
     }
     pub(super) fn read<S: RecoveryWalReadStorage>(
         &mut self,
-        maximum_segments: u64,
+        maximum_segments: NonZeroU64,
         byte_limit: u64,
         storage: &mut S,
         selection: Option<&dyn RecoveryWalReadSelection>,

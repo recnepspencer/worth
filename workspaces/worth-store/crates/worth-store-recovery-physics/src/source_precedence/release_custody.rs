@@ -14,7 +14,7 @@ use worth_store_physical_integrity::{
     IntegrityValidatedSelectedExtentPayload, VerifiedCheckpointFacts, VerifiedCheckpointStream,
 };
 
-use super::PhysicalSourceSelection;
+use super::{ExceededPhysicsBound, PhysicalSourceSelection};
 use crate::operation_reconciliation::{ReconciledOperationFates, RecoveryOperationFate};
 
 #[path = "release_custody/head_v2.rs"]
@@ -43,7 +43,7 @@ pub enum SelectedCustodyDenial {
     SelectedControlFrame,
     ReleaseBinding,
     DurableFate,
-    ResidentBoundExceeded { required: u64, admitted: u64 },
+    Limit(ExceededPhysicsBound),
 }
 
 /// Bytes authenticated by every C.9 extent chunk under an exact selected

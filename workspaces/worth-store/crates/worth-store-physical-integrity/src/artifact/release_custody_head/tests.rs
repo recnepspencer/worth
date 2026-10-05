@@ -153,12 +153,16 @@ fn rooted_walk_denies_insufficient_first_node_residency_without_reading() {
         |_| Ok::<_, ()>(()),
     )
     .unwrap_err();
+    let ReleaseCustodyHeadWalkDenial::Limit(limit) = denial else {
+        panic!("a resident ceiling below the root preflight is that limit");
+    };
     assert_eq!(
-        denial,
-        ReleaseCustodyHeadWalkDenial::ResidentBoundExceeded {
-            required: minimum,
-            admitted: minimum - 1,
-        }
+        (limit.dimension(), limit.observed(), limit.admitted()),
+        (
+            ReleaseCustodyHeadWalkBound::ResidentBytes,
+            minimum,
+            minimum - 1
+        )
     );
     assert_eq!(reads, 0);
 }
@@ -204,8 +208,9 @@ fn rooted_walk_denies_branch_stack_growth_before_next_read() {
     .unwrap_err();
     assert!(matches!(
         denial,
-        ReleaseCustodyHeadWalkDenial::ResidentBoundExceeded { required, admitted }
-            if required > admitted
+        ReleaseCustodyHeadWalkDenial::Limit(limit)
+            if limit.dimension() == ReleaseCustodyHeadWalkBound::ResidentBytes
+                && limit.observed() > limit.admitted()
     ));
     assert_eq!(reads, 1);
 }
@@ -283,8 +288,9 @@ fn multilevel_branch_denies_old_and_new_stack_overlap_before_leaf_read() {
     .unwrap_err();
     assert!(matches!(
         denial,
-        ReleaseCustodyHeadWalkDenial::ResidentBoundExceeded { required, admitted }
-            if required > admitted
+        ReleaseCustodyHeadWalkDenial::Limit(limit)
+            if limit.dimension() == ReleaseCustodyHeadWalkBound::ResidentBytes
+                && limit.observed() > limit.admitted()
     ));
     assert_eq!(reads, vec![154, 152]);
 }

@@ -1,3 +1,5 @@
+use std::num::NonZeroU64;
+
 use worth_proof::TransitionOutcome;
 use worth_store_physical_format::wal_frame::{encode_wal_frame_v1, WalFrameV1EncodeRequest};
 use worth_store_physical_integrity::{validate_wal_frame, UntrustedPhysicalArtifact};
@@ -40,12 +42,20 @@ fn c4_observation_cannot_be_substituted_during_segment_assembly() {
         .unwrap();
     let mut discovery_a = media_a.bounded_discovery(2, 4096).unwrap();
     let mut discovery_b = media_b.bounded_discovery(2, 4096).unwrap();
-    let observed_a = discovery_a.read_wal_artifacts(1, 4096).unwrap();
-    let repeated_a = discovery_a.read_wal_artifacts(1, 4096).unwrap();
-    let observed_b = discovery_b.read_wal_artifacts(1, 4096).unwrap();
+    let observed_a = discovery_a
+        .read_wal_artifacts(NonZeroU64::MIN, 4096)
+        .unwrap();
+    let repeated_a = discovery_a
+        .read_wal_artifacts(NonZeroU64::MIN, 4096)
+        .unwrap();
+    let observed_b = discovery_b
+        .read_wal_artifacts(NonZeroU64::MIN, 4096)
+        .unwrap();
     let media_a = discovery_a.finish();
     let mut rediscovery_a = media_a.bounded_discovery(1, 4096).unwrap();
-    let rediscovered_a = rediscovery_a.read_wal_artifacts(1, 4096).unwrap();
+    let rediscovered_a = rediscovery_a
+        .read_wal_artifacts(NonZeroU64::MIN, 4096)
+        .unwrap();
     let range = PhysicalByteRange::new(0, frame.len() as u64).unwrap();
     let scope = PhysicalArtifactScope::wal_frame(store_a, identity, range);
     let validation = validate_wal_frame(

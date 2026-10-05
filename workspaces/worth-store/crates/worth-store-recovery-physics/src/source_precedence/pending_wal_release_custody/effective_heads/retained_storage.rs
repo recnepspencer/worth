@@ -6,6 +6,7 @@ use worth_store_physical_format::ReleaseCustodyHeadEntryV1;
 use crate::VerifiedOrderedReleasedHeadReplayV14;
 
 use super::EffectiveReleaseHeadDenial;
+use crate::source_precedence::PhysicsAllowance;
 
 #[derive(Debug)]
 pub(in crate::source_precedence::pending_wal_release_custody) struct PreparedEffectiveHeadRosterV14
@@ -67,17 +68,16 @@ pub(super) fn reserve_rosters(
     let result_requested = (result_capacity as u64)
         .checked_mul(entry_bytes)
         .ok_or(EffectiveReleaseHeadDenial::BoundExceeded)?;
-    if source_requested
-        .checked_add(result_requested)
-        .is_none_or(|bytes| bytes > maximum_additional_resident_bytes)
-    {
-        return Err(EffectiveReleaseHeadDenial::ResidentBoundExceeded {
-            required: source_requested
-                .checked_add(result_requested)
-                .unwrap_or(u64::MAX),
-            admitted: maximum_additional_resident_bytes,
-        });
-    }
+    let resident = PhysicsAllowance::resident_bytes(maximum_additional_resident_bytes);
+    // A total past every count is no limit: the same overflow as each part.
+    let sum = |source: u64, result: u64| {
+        source
+            .checked_add(result)
+            .ok_or(EffectiveReleaseHeadDenial::BoundExceeded)
+    };
+    resident
+        .admit(sum(source_requested, result_requested)?)
+        .map_err(EffectiveReleaseHeadDenial::Limit)?;
     let mut source = Vec::new();
     source
         .try_reserve_exact(source_count)
@@ -85,17 +85,9 @@ pub(super) fn reserve_rosters(
     let source_allocated = (source.capacity() as u64)
         .checked_mul(entry_bytes)
         .ok_or(EffectiveReleaseHeadDenial::BoundExceeded)?;
-    if source_allocated
-        .checked_add(result_requested)
-        .is_none_or(|bytes| bytes > maximum_additional_resident_bytes)
-    {
-        return Err(EffectiveReleaseHeadDenial::ResidentBoundExceeded {
-            required: source_allocated
-                .checked_add(result_requested)
-                .unwrap_or(u64::MAX),
-            admitted: maximum_additional_resident_bytes,
-        });
-    }
+    resident
+        .admit(sum(source_allocated, result_requested)?)
+        .map_err(EffectiveReleaseHeadDenial::Limit)?;
     let mut result = Vec::new();
     result
         .try_reserve_exact(result_capacity)
@@ -103,34 +95,29 @@ pub(super) fn reserve_rosters(
     let result_allocated = (result.capacity() as u64)
         .checked_mul(entry_bytes)
         .ok_or(EffectiveReleaseHeadDenial::BoundExceeded)?;
-    if source_allocated
-        .checked_add(result_allocated)
-        .is_none_or(|bytes| bytes > maximum_additional_resident_bytes)
-    {
-        return Err(EffectiveReleaseHeadDenial::ResidentBoundExceeded {
-            required: source_allocated
-                .checked_add(result_allocated)
-                .unwrap_or(u64::MAX),
-            admitted: maximum_additional_resident_bytes,
-        });
-    }
+    resident
+        .admit(sum(source_allocated, result_allocated)?)
+        .map_err(EffectiveReleaseHeadDenial::Limit)?;
     Ok((source, result))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::source_precedence::PhysicsBound;
 
     #[test]
     fn source_and_result_backing_share_one_additional_ceiling() {
         let width = std::mem::size_of::<ReleaseCustodyHeadEntryV1>() as u64;
         let required = width * 3;
+        let EffectiveReleaseHeadDenial::Limit(past) =
+            reserve_rosters(1, 2, required - 1).unwrap_err()
+        else {
+            panic!("a roster past the ceiling is its limit");
+        };
         assert_eq!(
-            reserve_rosters(1, 2, required - 1).unwrap_err(),
-            EffectiveReleaseHeadDenial::ResidentBoundExceeded {
-                required,
-                admitted: required - 1,
-            }
+            (past.dimension(), past.observed(), past.admitted()),
+            (PhysicsBound::ResidentBytes, required, required - 1)
         );
         let (source, result) = reserve_rosters(1, 2, required).unwrap();
         assert!(source.capacity() >= 1 && result.capacity() >= 2);

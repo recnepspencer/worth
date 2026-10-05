@@ -8,12 +8,40 @@ use super::super::{
 };
 use crate::recovery_media::{
     AdmittedRecoveryFilesystemMedia, BoundedRecoveryFilesystemDiscovery,
-    RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope,
+    FilesystemObservationBound, RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact,
     RecoveryDiscoveryFailure,
 };
 
 #[derive(Debug, PartialEq, Eq)]
 struct DeniedAllocation;
+
+/// A WAL inventory's segment ceiling, which is never nothing.
+fn segments(count: u64) -> std::num::NonZeroU64 {
+    std::num::NonZeroU64::new(count).expect("a segment ceiling of at least one")
+}
+
+/// A refusal's bound and both counts, or `None` when it is not a limit.
+fn named(failure: &RecoveryDiscoveryFailure) -> Option<(FilesystemObservationBound, u64, u64)> {
+    match failure {
+        RecoveryDiscoveryFailure::Limit(past) => {
+            Some((past.dimension(), past.observed(), past.admitted()))
+        }
+        _ => None,
+    }
+}
+
+/// An allocated read's refusal, named as [`named`] names it.
+fn allocated_named<E>(
+    result: &Result<
+        crate::recovery_media::ObservedRecoveryArtifact,
+        RecoveryDiscoveryAllocationFailure<E>,
+    >,
+) -> Option<(FilesystemObservationBound, u64, u64)> {
+    match result {
+        Err(RecoveryDiscoveryAllocationFailure::Discovery(failure)) => named(failure),
+        _ => None,
+    }
+}
 
 fn discovery(
     prepare: impl FnOnce(&std::path::Path),
@@ -91,39 +119,36 @@ fn whole_reads_allocate_after_observed_length_and_preserve_c4_counters() {
 /// its ceiling runs the reader out of bytes.
 #[test]
 fn a_whole_artifact_past_its_ceiling_is_never_the_readers_own_limit() {
-    use RecoveryDiscoveryByteLimitScope::{Observation, Requested};
+    use FilesystemObservationBound::{ObservationBytes, RequestedBytes};
     let address = RecordArtifactFile::RootManifest { generation: 6 };
     // Seven bytes on media, read under (ceiling, reader bytes).
-    for (ceiling, reader, observed, admitted, scope) in [
-        (6, 32, 7, 6, Requested),
-        (6, 4, 7, 6, Requested),
-        (6, 6, 7, 6, Requested),
-        (7, 6, 7, 6, Observation),
-        (8, 4, 7, 4, Observation),
+    for (ceiling, reader, refused) in [
+        (6, 32, (RequestedBytes, 7, 6)),
+        (6, 4, (RequestedBytes, 7, 6)),
+        (6, 6, (RequestedBytes, 7, 6)),
+        (7, 6, (ObservationBytes, 7, 6)),
+        (8, 4, (ObservationBytes, 7, 4)),
     ] {
-        let refused = RecoveryDiscoveryFailure::ByteLimitExceeded {
-            observed,
-            admitted,
-            scope,
-        };
         let (_parent, _observer, mut discovery) = discovery(
             |root| write_root_artifact(root, address, b"present"),
             4,
             reader,
         );
         assert_eq!(
-            discovery.read_root_manifest(6, ceiling).err(),
-            Some(refused.clone()),
+            discovery
+                .read_root_manifest(6, ceiling)
+                .err()
+                .as_ref()
+                .and_then(named),
+            Some(refused),
             "addressed read under ceiling {ceiling} with {reader} bytes",
         );
         let allocated = discovery.read_record_artifact_with_allocator(address, ceiling, |_| {
             Ok::<_, DeniedAllocation>(Vec::new())
         });
-        assert!(
-            matches!(
-                &allocated,
-                Err(RecoveryDiscoveryAllocationFailure::Discovery(failure)) if *failure == refused
-            ),
+        assert_eq!(
+            allocated_named(&allocated),
+            Some(refused),
             "allocated read under ceiling {ceiling} with {reader} bytes: {allocated:?}",
         );
         assert_eq!(discovery.counters().bytes_read, 0);
@@ -174,12 +199,10 @@ fn limits_and_absence_precede_allocator_callback() {
         calls.set(calls.get() + 1);
         Ok::<_, DeniedAllocation>(Vec::new())
     });
-    assert!(matches!(
-        too_small,
-        Err(RecoveryDiscoveryAllocationFailure::Discovery(
-            RecoveryDiscoveryFailure::ByteLimitExceeded { .. }
-        ))
-    ));
+    assert_eq!(
+        allocated_named(&too_small),
+        Some((FilesystemObservationBound::RequestedBytes, 7, 3))
+    );
     let absent_read = discovery
         .read_record_artifact_with_allocator(absent, 16, |_| {
             calls.set(calls.get() + 1);
@@ -191,12 +214,11 @@ fn limits_and_absence_precede_allocator_callback() {
         calls.set(calls.get() + 1);
         Ok::<_, DeniedAllocation>(Vec::new())
     });
-    assert!(matches!(
-        no_entries,
-        Err(RecoveryDiscoveryAllocationFailure::Discovery(
-            RecoveryDiscoveryFailure::EntryLimitExceeded { .. }
-        ))
-    ));
+    // Two reads were admitted, and the third is past them.
+    assert_eq!(
+        allocated_named(&no_entries),
+        Some((FilesystemObservationBound::Reads, 3, 2))
+    );
     assert_eq!(calls.get(), 0);
 }
 
@@ -278,12 +300,10 @@ fn absent_and_over_limit_ranges_never_allocate() {
         calls.set(calls.get() + 1);
         Ok::<_, DeniedAllocation>(vec![0; 5])
     });
-    assert!(matches!(
-        oversized,
-        Err(RecoveryDiscoveryAllocationFailure::Discovery(
-            RecoveryDiscoveryFailure::ByteLimitExceeded { .. }
-        ))
-    ));
+    assert_eq!(
+        allocated_named(&oversized),
+        Some((FilesystemObservationBound::RequestedBytes, 5, 4))
+    );
     assert_eq!(calls.get(), 0);
     assert_eq!(discovery.counters().bytes_read, 0);
 }
@@ -345,7 +365,9 @@ fn extent_relative_range_is_admitted_before_allocator_or_positioned_read() {
     assert_eq!(discovery.counters().addressed_artifacts_read, 1);
 }
 
+mod damage;
 mod range_refusal;
 mod record_storage;
 mod wal_context;
+mod wal_limits;
 mod wal_path;

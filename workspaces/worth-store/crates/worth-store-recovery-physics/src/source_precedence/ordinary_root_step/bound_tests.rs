@@ -1,7 +1,7 @@
 //! A step past an admitted bound says which bound and what it needed.
 
 use super::*;
-use crate::ExceededRootHistoryBound as Exceeded;
+use crate::source_precedence::{entries_past, scratch_past};
 
 fn far_route(arena: u64) -> CurrentPhysicalRecordPlacement {
     let cell = PhysicalGenerationAuthority::for_canonical_physical_format()
@@ -60,11 +60,11 @@ fn a_step_past_its_entries_or_scratch_names_the_bound_and_the_need() {
 
     // The result holds three routes: that is the first count past two.
     assert_eq!(check(3, u64::MAX).map(|_| ()), Ok(()));
-    assert_eq!(check(2, u64::MAX), past(Exceeded::entries(3, 2)));
-    assert_eq!(check(0, u64::MAX), past(Exceeded::entries(2, 0)));
+    assert_eq!(check(2, u64::MAX), past(entries_past(3, 2)));
+    assert_eq!(check(0, u64::MAX), past(entries_past(2, 0)));
     let need = check(3, u64::MAX).unwrap();
     assert_eq!(check(3, need), Ok(need));
-    assert_eq!(check(3, need - 1), past(Exceeded::scratch(need, need - 1)));
+    assert_eq!(check(3, need - 1), past(scratch_past(need, need - 1)));
     assert_eq!(
         VerifiedOrdinaryRootStep::maximum_recheck_heap_bytes(source, result, &projection, 3),
         Some(need)
@@ -74,8 +74,8 @@ fn a_step_past_its_entries_or_scratch_names_the_bound_and_the_need() {
         None
     );
     assert_eq!(
-        OrdinaryRootStepDenial::BoundExceeded(Exceeded::entries(3, 2)).exceeded_bound(),
-        Some(Exceeded::entries(3, 2))
+        OrdinaryRootStepDenial::BoundExceeded(entries_past(3, 2)).exceeded_bound(),
+        Some(entries_past(3, 2))
     );
     assert_eq!(OrdinaryRootStepDenial::InvalidDelta.exceeded_bound(), None);
 }
@@ -88,7 +88,7 @@ fn the_free_ranges_a_step_would_build_are_held_to_the_entries() {
     let (root, free) = snapshot(1, &routes, &entries, 3, None, format);
     let view = ReleasedInventoryView::new(&root, &free, &routes, &[], &entries);
     let past = |observed, limit| {
-        Err(OrdinaryRootStepDenial::BoundExceeded(Exceeded::entries(
+        Err(OrdinaryRootStepDenial::BoundExceeded(entries_past(
             observed, limit,
         )))
     };

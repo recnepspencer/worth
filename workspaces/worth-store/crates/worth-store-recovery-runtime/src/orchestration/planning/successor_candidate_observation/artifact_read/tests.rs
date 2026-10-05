@@ -1,7 +1,8 @@
 use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
-    FilesystemAccessPosture, FilesystemMediaAdmission, PhysicalRuntimeAdmission, PhysicalStore,
-    QualifiedRecoveryFilesystemMedia, RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryFailure,
+    FilesystemAccessPosture, FilesystemMediaAdmission, FilesystemObservationBound,
+    PhysicalRuntimeAdmission, PhysicalStore, QualifiedRecoveryFilesystemMedia,
+    RecoveryDiscoveryFailure,
 };
 use worth_store_physical_format::{
     DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration, RecordArtifactFile,
@@ -73,19 +74,24 @@ fn cumulative_discovery_limit_remains_a_discovery_denial() {
         generation: GENERATION,
     };
     let denial = read(&mut discovery, artifact, format(), &mut resident).unwrap_err();
-    assert!(matches!(
-        denial,
-        PhysicalRecoverySuccessorCandidateDenial::Discovery {
-            artifact: RecordArtifactFile::RootManifest {
-                generation: GENERATION
-            },
-            failure: RecoveryDiscoveryFailure::ByteLimitExceeded {
-                scope: RecoveryDiscoveryByteLimitScope::Observation,
-                ..
-            },
-            ..
-        }
-    ));
+    let PhysicalRecoverySuccessorCandidateDenial::Discovery {
+        artifact: RecordArtifactFile::RootManifest {
+            generation: GENERATION,
+        },
+        failure: RecoveryDiscoveryFailure::Limit(past),
+        ..
+    } = denial
+    else {
+        panic!("the reader's own bytes ran out: {denial:?}");
+    };
+    assert_eq!(
+        (past.dimension(), past.observed(), past.admitted()),
+        (
+            FilesystemObservationBound::ObservationBytes,
+            admitted + 1,
+            admitted
+        )
+    );
     assert_eq!(resident.used(), 0);
     discovery.finish();
 }
@@ -112,18 +118,22 @@ fn a_root_past_its_page_is_damage_whatever_resident_space_is_left() {
     for resident_space in [16, page, 2 * page] {
         let mut resident = PlanningResidentAllowance::new(0, resident_space).unwrap();
         let denial = read(&mut discovery, artifact, format(), &mut resident).unwrap_err();
-        assert!(
-            matches!(
-                denial,
-                PhysicalRecoverySuccessorCandidateDenial::Discovery {
-                    failure: RecoveryDiscoveryFailure::ByteLimitExceeded {
-                        observed,
-                        scope: RecoveryDiscoveryByteLimitScope::Requested,
-                        ..
-                    },
-                    ..
-                } if observed == page + 1
-            ),
+        let past = match &denial {
+            PhysicalRecoverySuccessorCandidateDenial::Discovery {
+                failure: RecoveryDiscoveryFailure::Limit(past),
+                ..
+            } => Some((past.dimension(), past.observed(), past.admitted())),
+            _ => None,
+        };
+        // The reader names the read it refused: one asked for the page or
+        // the resident space left, whichever is smaller.
+        assert_eq!(
+            past,
+            Some((
+                FilesystemObservationBound::RequestedBytes,
+                page + 1,
+                resident_space.min(page)
+            )),
             "{resident_space} resident bytes: {denial:?}",
         );
         assert_eq!(resident.used(), 0);

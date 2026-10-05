@@ -9,6 +9,7 @@ use worth_store_physical_format::{
 use worth_store_physical_integrity::VerifiedCheckpointStream;
 
 use super::SelectedCustodyDenial;
+use crate::source_precedence::PhysicsAllowance;
 
 pub(super) struct SelectedReleaseCertificateRosterV2 {
     pub(super) batches: Vec<ReleaseCheckpointBatchV1>,
@@ -46,12 +47,10 @@ pub(super) fn parse(
         .and_then(|bytes| bytes.checked_add(RELEASE_CHECKPOINT_BATCH_WIRE_BYTES))
         .and_then(|bytes| u64::try_from(bytes).ok())
         .ok_or(denial)?;
-    if requested > maximum_resident_bytes {
-        return Err(SelectedCustodyDenial::ResidentBoundExceeded {
-            required: requested,
-            admitted: maximum_resident_bytes,
-        });
-    }
+    let resident = PhysicsAllowance::resident_bytes(maximum_resident_bytes);
+    resident
+        .admit(requested)
+        .map_err(SelectedCustodyDenial::Limit)?;
     let mut batches = Vec::new();
     batches.try_reserve_exact(batch_count).map_err(|_| denial)?;
     let allocated = batches
@@ -60,12 +59,9 @@ pub(super) fn parse(
         .and_then(|bytes| bytes.checked_add(RELEASE_CHECKPOINT_BATCH_WIRE_BYTES))
         .and_then(|bytes| u64::try_from(bytes).ok())
         .ok_or(denial)?;
-    if allocated > maximum_resident_bytes {
-        return Err(SelectedCustodyDenial::ResidentBoundExceeded {
-            required: allocated,
-            admitted: maximum_resident_bytes,
-        });
-    }
+    resident
+        .admit(allocated)
+        .map_err(SelectedCustodyDenial::Limit)?;
     let mut accumulator = None;
     let mut release_started = false;
     let mut tier_seen = false;

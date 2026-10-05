@@ -8,11 +8,12 @@ use worth_store_physical_format::{
     ReleaseCustodyHeadEntryV1,
 };
 use worth_store_physical_integrity::{
-    walk_release_custody_head, ReleaseCustodyHeadWalkDenial, ReleaseCustodyHeadWalkLimitsV1,
-    VerifiedCheckpointFacts, VerifiedCheckpointStream,
+    walk_release_custody_head, ReleaseCustodyHeadWalkBound, ReleaseCustodyHeadWalkDenial,
+    ReleaseCustodyHeadWalkLimitsV1, VerifiedCheckpointFacts, VerifiedCheckpointStream,
 };
 
 use super::{roster_v2, SelectedCustodyDenial};
+use crate::source_precedence::PhysicsAllowance;
 use crate::PhysicalSourceSelection;
 
 #[path = "head_v2/certificates.rs"]
@@ -175,6 +176,8 @@ impl VerifiedCheckpointReleaseHeadRosterV2 {
         let level = checkpoint_source_root
             .release_custody_head_root()
             .map_or(0, |root| root.level());
+        // A walk holds at least a byte, which `remaining` must leave it.
+        require_resident(owned_heap.saturating_add(1), maximum_resident_bytes)?;
         let walk_limits = ReleaseCustodyHeadWalkLimitsV1::new(
             count.saturating_mul(u64::from(level)).saturating_add(1),
             maximum_head_entries,
@@ -182,10 +185,7 @@ impl VerifiedCheckpointReleaseHeadRosterV2 {
             remaining,
             level.saturating_add(1),
         )
-        .ok_or(SelectedCustodyDenial::ResidentBoundExceeded {
-            required: owned_heap.saturating_add(1),
-            admitted: maximum_resident_bytes,
-        })?;
+        .ok_or(denial)?;
         let walk =
             walk_release_custody_head(checkpoint_source_root, format, walk_limits, read, |entry| {
                 if heads.len() as u64 >= count {
@@ -195,25 +195,29 @@ impl VerifiedCheckpointReleaseHeadRosterV2 {
                 Ok(())
             })
             .map_err(|failure| match failure {
-                ReleaseCustodyHeadWalkDenial::ResidentBoundExceeded { required, admitted } => {
-                    let aggregate = owned_heap.checked_add(required).unwrap_or(u64::MAX);
-                    if aggregate > maximum_resident_bytes {
-                        SelectedHeadRosterAdmissionDenial::Custody(
-                            SelectedCustodyDenial::ResidentBoundExceeded {
-                                required: aggregate,
-                                admitted: maximum_resident_bytes,
+                ReleaseCustodyHeadWalkDenial::Limit(walker)
+                    if walker.dimension() == ReleaseCustodyHeadWalkBound::ResidentBytes =>
+                {
+                    // What the walk held, beside what this admission owns,
+                    // against the aggregate. Within it, a stricter
+                    // caller-provided walker cap is not an exhaustion of
+                    // this aggregate admission, and neither is a total past
+                    // every count: the walk's own refusal stands for both.
+                    owned_heap
+                        .checked_add(walker.observed())
+                        .and_then(|held| {
+                            PhysicsAllowance::resident_bytes(maximum_resident_bytes)
+                                .admit(held)
+                                .err()
+                        })
+                        .map_or(
+                            SelectedHeadRosterAdmissionDenial::Walk(failure),
+                            |aggregate| {
+                                SelectedHeadRosterAdmissionDenial::Custody(
+                                    SelectedCustodyDenial::Limit(aggregate),
+                                )
                             },
                         )
-                    } else {
-                        // A stricter caller-provided walker cap is not an
-                        // exhaustion of this aggregate admission.
-                        SelectedHeadRosterAdmissionDenial::Walk(
-                            ReleaseCustodyHeadWalkDenial::ResidentBoundExceeded {
-                                required,
-                                admitted,
-                            },
-                        )
-                    }
                 }
                 failure => SelectedHeadRosterAdmissionDenial::Walk(failure),
             })?;
@@ -322,11 +326,9 @@ impl VerifiedCheckpointReleaseHeadRosterV2 {
 }
 
 fn require_resident(required: u64, admitted: u64) -> Result<(), SelectedCustodyDenial> {
-    if required > admitted {
-        Err(SelectedCustodyDenial::ResidentBoundExceeded { required, admitted })
-    } else {
-        Ok(())
-    }
+    PhysicsAllowance::resident_bytes(admitted)
+        .admit(required)
+        .map_err(SelectedCustodyDenial::Limit)
 }
 
 impl VerifiedSelectedReleaseHeadCustodyV2 {

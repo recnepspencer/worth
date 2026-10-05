@@ -124,7 +124,7 @@ fn fingerprints(
     artifacts: &[ObservedWalArtifact],
     resident: Option<&mut StoreRejoinResidentLedger>,
 ) -> Result<WalRoster<WalArtifactFingerprint>, Denial> {
-    if artifacts.len() > MAX_WAL_SEGMENTS as usize {
+    if artifacts.len() as u64 > MAX_WAL_SEGMENTS.get() {
         return Err(Denial::BoundExceeded);
     }
     if let Some(resident) = resident {

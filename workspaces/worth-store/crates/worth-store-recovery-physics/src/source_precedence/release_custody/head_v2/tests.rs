@@ -1,4 +1,5 @@
 use super::*;
+use crate::PhysicsBound;
 
 #[path = "tests/source.rs"]
 mod source;
@@ -52,11 +53,13 @@ fn v2_roster_and_rooted_walk_share_one_admission_budget_before_head_read() {
             Ok::<_, ()>(source.head.encode(format))
         },
     );
-    assert!(matches!(
-        denied,
-        Err(SelectedHeadRosterAdmissionDenial::Custody(SelectedCustodyDenial::ResidentBoundExceeded { required, admitted }))
-            if required > admitted && admitted == insufficient
-    ));
+    let Err(SelectedHeadRosterAdmissionDenial::Custody(SelectedCustodyDenial::Limit(past))) =
+        denied
+    else {
+        panic!("{denied:?}");
+    };
+    assert_eq!(past.dimension(), PhysicsBound::ResidentBytes);
+    assert!(past.observed() > past.admitted() && past.admitted() == insufficient);
     assert_eq!(denied_reads, 0);
     assert!(admitted.admission_peak_resident_bytes() <= generous);
 }
@@ -182,17 +185,14 @@ fn a_root_over_more_blocks_than_its_roster_and_level_allow_is_the_walkers_node_b
             Ok::<_, ()>(source.blocks[reference.block() as usize - 1].encode(format))
         },
     );
-    assert!(
-        matches!(
-            denied,
-            Err(SelectedHeadRosterAdmissionDenial::Walk(
-                ReleaseCustodyHeadWalkDenial::NodeBound {
-                    observed: 3,
-                    admitted: 2,
-                }
-            ))
-        ),
-        "{denied:?}"
+    let Err(SelectedHeadRosterAdmissionDenial::Walk(ReleaseCustodyHeadWalkDenial::Limit(past))) =
+        denied
+    else {
+        panic!("{denied:?}");
+    };
+    assert_eq!(
+        (past.dimension(), past.observed(), past.admitted()),
+        (ReleaseCustodyHeadWalkBound::Nodes, 3, 2)
     );
     assert_eq!(reads, 1, "only the root was read");
 }

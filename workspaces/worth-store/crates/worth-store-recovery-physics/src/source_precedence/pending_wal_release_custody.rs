@@ -20,7 +20,7 @@ use super::release_custody::{
 };
 use super::released_v3_inventory_transition::VerifiedReleasedV3InventoryTransition;
 use super::tier_custody::VerifiedSelectedTierEpochCustody;
-use super::PhysicalSourceSelection;
+use super::{ExceededPhysicsBound, PhysicalSourceSelection};
 use crate::{
     ImmutablePhysicalRedoPlan, PhysicalRedoGroupBinding, PhysicalRedoProjection,
     ReconciledOperationFates, RecoveryOperationFate, VerifiedSelectedReleaseHeadReplayV14,
@@ -58,7 +58,7 @@ pub enum PendingWalReleaseCustodyDenial {
     DurableWalFate,
     PublishedRoot,
     RetainedSizeOverflow,
-    RetainedBoundExceeded { required: u64, admitted: u64 },
+    Limit(ExceededPhysicsBound),
 }
 
 #[derive(Debug)]

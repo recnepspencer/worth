@@ -8,6 +8,7 @@ use worth_store_physical_format::{
 };
 
 use super::{verification::verify_fate, PendingWalReleaseCustodyDenial as Denial};
+use crate::source_precedence::PhysicsAllowance;
 use crate::{
     ReconciledOperationFates, RecoveryOperationFate, VerifiedAddressedCheckpointReleaseBase,
     VerifiedAddressedReleasedControlFrame, VerifiedOrderedRootEdge, VerifiedOrderedRootHistory,
@@ -214,12 +215,9 @@ impl VerifiedOrderedPendingWalReleaseBatch {
                 )
             })
             .ok_or(Denial::RetainedSizeOverflow)?;
-        if retained_bytes > remaining_retained_bytes {
-            return Err(Denial::RetainedBoundExceeded {
-                required: retained_bytes,
-                admitted: remaining_retained_bytes,
-            });
-        }
+        PhysicsAllowance::retained_bytes(remaining_retained_bytes)
+            .admit(retained_bytes)
+            .map_err(Denial::Limit)?;
         Ok(Self {
             edge_index,
             descriptor_frame,

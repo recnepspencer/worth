@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use worth_store_recovery_physics::{
-    EffectiveReleaseHeadDenial, VerifiedAddressedCheckpointReleaseBase,
+    EffectiveReleaseHeadDenial, PhysicsBound, VerifiedAddressedCheckpointReleaseBase,
     VerifiedOrderedPendingWalReleaseBatch, VerifiedOrderedReleasedHeadReplayV14,
     VerifiedPendingWalReleaseCustody, VerifiedSelectedReleaseHeadCustodyV2,
 };
@@ -80,16 +80,15 @@ pub(super) fn attach(
     );
     let backing = match prepared {
         Ok(backing) => backing,
-        Err(EffectiveReleaseHeadDenial::ResidentBoundExceeded { required, admitted }) => {
-            let _ = resident.transient(required);
+        Err(cause @ EffectiveReleaseHeadDenial::Limit(past))
+            if past.dimension() == PhysicsBound::ResidentBytes =>
+        {
+            let _ = resident.transient(past.observed());
             let limit = super::super::resident_basis::limit_failure(&context, resident);
             return Err(denial::block(
                 context,
                 basis,
-                Denial::EffectiveHeads(EffectiveReleaseHeadDenial::ResidentBoundExceeded {
-                    required,
-                    admitted,
-                }),
+                Denial::EffectiveHeads(cause),
                 limit,
             ));
         }

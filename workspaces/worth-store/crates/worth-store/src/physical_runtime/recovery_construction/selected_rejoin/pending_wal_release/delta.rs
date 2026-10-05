@@ -304,13 +304,11 @@ mod tests {
 
     #[test]
     fn a_replay_past_a_bound_is_a_bound_and_any_other_refusal_is_the_frames() {
-        use worth_store_recovery_physics::RootHistoryBound;
+        use worth_store_recovery_physics::{
+            test_support::root_history_limit_for_test, RootHistoryBound,
+        };
         for bound in [RootHistoryBound::Entries, RootHistoryBound::ScratchBytes] {
-            let past = ExceededRootHistoryBound {
-                bound,
-                observed: 9,
-                admitted: 8,
-            };
+            let past: ExceededRootHistoryBound = root_history_limit_for_test(bound, 9, 8);
             assert!(matches!(replay_denial(Some(past)), Denial::BoundExceeded));
         }
         assert!(matches!(replay_denial(None), Denial::RoutingFrame));

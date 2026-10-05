@@ -45,8 +45,11 @@ pub use page::{validate_inline_page, InlinePageIntegrityValidation};
 pub use physical_work_obligation::{
     validate_physical_work_obligation, PhysicalWorkObligationIntegrityValidation,
 };
+#[cfg(any(test, feature = "test-support"))]
+pub use release_custody_head::release_custody_head_walk_limit_for_test;
 pub use release_custody_head::{
-    walk_release_custody_head, walk_release_custody_head_with_port, ReleaseCustodyHeadWalkDenial,
+    walk_release_custody_head, walk_release_custody_head_with_port,
+    ExceededReleaseCustodyHeadWalkBound, ReleaseCustodyHeadWalkBound, ReleaseCustodyHeadWalkDenial,
     ReleaseCustodyHeadWalkLimitsV1, ReleaseCustodyHeadWalkPort, ReleaseCustodyHeadWalkV1,
 };
 pub use root::{

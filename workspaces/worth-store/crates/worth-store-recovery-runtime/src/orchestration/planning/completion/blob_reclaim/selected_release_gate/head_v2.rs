@@ -1,9 +1,9 @@
 //! Observes checkpoint-source custody independently of the newer selected
 //! post-WAL root. Only the joined controls claim leaves this boundary.
 
-use worth_store_physical_integrity::ReleaseCustodyHeadWalkDenial;
+use worth_store_physical_integrity::{ReleaseCustodyHeadWalkBound, ReleaseCustodyHeadWalkDenial};
 use worth_store_recovery_physics::{
-    SelectedCustodyDenial, SelectedHeadRosterAdmissionDenial,
+    PhysicsBound, SelectedCustodyDenial, SelectedHeadRosterAdmissionDenial,
     VerifiedCheckpointReleaseHeadRosterV2, VerifiedSelectedReleaseHeadCustodyV2,
 };
 
@@ -274,13 +274,16 @@ fn roster_refused(
     resident: &mut ResidentAllowance,
 ) -> Denial {
     match denial {
-        SelectedHeadRosterAdmissionDenial::Custody(
-            SelectedCustodyDenial::ResidentBoundExceeded { required, admitted },
-        ) => {
+        SelectedHeadRosterAdmissionDenial::Custody(SelectedCustodyDenial::Limit(past))
+            if past.dimension() == PhysicsBound::ResidentBytes =>
+        {
             // Preserve the owner's requested local window alongside the
             // already-live aggregate seed; do not relabel authority failures.
-            let _ = resident.transient(required);
-            Denial::ResidentBoundExceeded { required, admitted }
+            let _ = resident.transient(past.observed());
+            Denial::ResidentBoundExceeded {
+                required: past.observed(),
+                admitted: past.admitted(),
+            }
         }
         SelectedHeadRosterAdmissionDenial::Custody(denial) => Denial::Roster(denial),
         // The verified roster counts more heads than recovery admits entries.
@@ -299,15 +302,20 @@ fn roster_refused(
             ReleaseCustodyHeadWalkDenial::Root => WalkDenial::Root,
             ReleaseCustodyHeadWalkDenial::DuplicateNode => WalkDenial::DuplicateNode,
             ReleaseCustodyHeadWalkDenial::BoundExceeded => WalkDenial::BoundExceeded,
-            // The bound is the verified roster's shape, not a budget of ours.
-            ReleaseCustodyHeadWalkDenial::NodeBound { observed, admitted } => {
-                WalkDenial::RosterBlockCeiling { observed, admitted }
-            }
+            // The node bound is the verified roster's shape, not a budget of
+            // ours.
+            ReleaseCustodyHeadWalkDenial::Limit(past) => match past.dimension() {
+                ReleaseCustodyHeadWalkBound::Nodes => WalkDenial::RosterBlockCeiling {
+                    observed: past.observed(),
+                    admitted: past.admitted(),
+                },
+                ReleaseCustodyHeadWalkBound::ResidentBytes => WalkDenial::ResidentBoundExceeded {
+                    required: past.observed(),
+                    admitted: past.admitted(),
+                },
+            },
             ReleaseCustodyHeadWalkDenial::Allocation { requested, cause } => {
                 WalkDenial::Allocation { requested, cause }
-            }
-            ReleaseCustodyHeadWalkDenial::ResidentBoundExceeded { required, admitted } => {
-                WalkDenial::ResidentBoundExceeded { required, admitted }
             }
         }),
     }

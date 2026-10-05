@@ -217,7 +217,7 @@ fn run() {
         let raw = window
             .read_wal_payloads(
                 &mut discovery,
-                limits.declaration().wal_segments,
+                limits.wal_segments(),
                 limits.declaration().wal_bytes,
             )
             .unwrap();

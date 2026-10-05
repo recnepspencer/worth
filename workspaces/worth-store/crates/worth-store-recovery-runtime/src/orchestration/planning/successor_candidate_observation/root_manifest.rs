@@ -17,6 +17,18 @@ pub(super) struct ObservedSuccessorRoot {
     pub(super) bytes: Vec<u8>,
 }
 
+/// The generation the selected root's successor carries. The last
+/// generation has none: its root is then the artifact that is invalid.
+pub(super) fn successor_generation(
+    selected: &DurablePhysicalRootManifest,
+) -> Result<u64, PhysicalRecoverySuccessorCandidateDenial> {
+    selected.generation().checked_add(1).ok_or_else(|| {
+        invalid(RecordArtifactFile::RootManifest {
+            generation: selected.generation(),
+        })
+    })
+}
+
 pub(super) fn read(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     selected: &DurablePhysicalRootManifest,
@@ -25,11 +37,7 @@ pub(super) fn read(
     root_protocol_counters: &mut crate::entry::PhysicalRecoveryRootProtocolCounters,
     allowance: &mut PlanningResidentAllowance,
 ) -> Result<Option<ObservedSuccessorRoot>, PhysicalRecoverySuccessorCandidateDenial> {
-    let generation = selected.generation().checked_add(1).ok_or_else(|| {
-        invalid(RecordArtifactFile::RootManifest {
-            generation: selected.generation(),
-        })
-    })?;
+    let generation = successor_generation(selected)?;
     let artifact = RecordArtifactFile::RootManifest { generation };
     let source = read_artifact(discovery, artifact, format, allowance)?;
     if source.bytes().is_none() {

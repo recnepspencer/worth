@@ -78,6 +78,8 @@ pub use admission::{
     admit_physical_redo_members, physical_redo_observation_target_identities,
     physical_redo_observation_targets, physical_redo_target_identities,
 };
+#[cfg(any(test, feature = "test-support"))]
+pub use head_replay::head_replay_limit_for_test;
 pub use head_replay::{
     ExceededHeadReplayBound, HeadReplayBound, SelectedReleaseHeadReplayDenial,
     VerifiedOrderedReleasedHeadReplayV14, VerifiedSelectedReleaseHeadReplayV14,

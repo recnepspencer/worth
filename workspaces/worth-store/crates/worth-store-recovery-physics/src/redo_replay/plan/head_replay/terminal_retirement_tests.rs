@@ -6,13 +6,14 @@ use worth_store_physical_format::{
 use worth_store_wal::LogSequenceNumber;
 
 use super::*;
+use crate::redo_replay::head_replay_limit_for_test;
 use crate::redo_replay::terminal_head_retirement_fixture::{
     data_projection, format, member, nonterminal_head, projection, selected_terminal_head,
     source_leaf, store, survivor, terminal_head, SelectedTerminalHead, SOURCE_GENERATION, TREE,
 };
 use crate::{
-    admit_physical_redo_members, AdmittedPhysicalRedoMembers, ExceededHeadReplayBound,
-    HeadReplayBound, PhysicalRedoAdmissionLimits,
+    admit_physical_redo_members, AdmittedPhysicalRedoMembers, HeadReplayBound,
+    PhysicalRedoAdmissionLimits,
 };
 
 const EFFECT_BYTES: u64 = 64 * 1024;
@@ -235,21 +236,21 @@ fn bounds_and_the_exact_recomputation_deny_before_any_read() {
             format(),
             framed - 1,
             heap,
-            SelectedReleaseHeadReplayDenial::BoundExceeded(ExceededHeadReplayBound {
-                bound: HeadReplayBound::EffectBytes,
-                observed: framed,
-                admitted: framed - 1,
-            }),
+            SelectedReleaseHeadReplayDenial::BoundExceeded(head_replay_limit_for_test(
+                HeadReplayBound::EffectBytes,
+                framed,
+                framed - 1,
+            )),
         ),
         (
             format(),
             framed,
             heap - 1,
-            SelectedReleaseHeadReplayDenial::BoundExceeded(ExceededHeadReplayBound {
-                bound: HeadReplayBound::HeapBytes,
-                observed: heap,
-                admitted: heap - 1,
-            }),
+            SelectedReleaseHeadReplayDenial::BoundExceeded(head_replay_limit_for_test(
+                HeadReplayBound::HeapBytes,
+                heap,
+                heap - 1,
+            )),
         ),
         (wide, EFFECT_BYTES, HEAP_BYTES, DENIED_AS_RETIREMENT),
     ] {

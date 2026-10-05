@@ -1,17 +1,24 @@
 //! One canonical, bounded V3 source-to-result inventory predicate shared by
 //! C.8 and Store. A transcript of two valid trees alone is not a legal drop.
 
-use super::{ExceededRootHistoryBound, VerifiedReleasedDirectoryReplacement};
+use super::{ExceededRootHistoryBound, RootHistoryAllowance, VerifiedReleasedDirectoryReplacement};
 use crate::VerifiedSelectedReleaseHeadReplayV14;
 
 #[path = "released_v3_inventory_transition/delta.rs"]
 mod delta;
+#[path = "released_v3_inventory_transition/laid_out.rs"]
+mod laid_out;
+#[path = "released_v3_inventory_transition/transcripts.rs"]
+mod transcripts;
 use delta::{next_extent, root_semantics_match, routes_match, validate_arenas};
+pub use laid_out::ReleasedInventoryParts;
+pub(crate) use transcripts::transcript;
+use transcripts::{reserve, transcript_reserved};
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest,
     ExtentArenaId, ExtentArenaRange, FreeSpaceKey, PersistedRecordIdentity,
-    PhysicalInventoryTranscriptBuilderV1, PhysicalInventoryTranscriptV1,
-    PhysicalRecordFormatDeclaration, RecordFreeSpaceManifestEntry, RecordSegmentPageManifestEntry,
+    PhysicalInventoryTranscriptV1, PhysicalRecordFormatDeclaration, RecordFreeSpaceManifestEntry,
+    RecordSegmentPageManifestEntry,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -21,6 +28,8 @@ pub enum ReleasedV3InventoryTransitionDenial {
         cause: std::collections::TryReserveError,
     },
     BoundExceeded(ExceededRootHistoryBound),
+    /// A size past every count: no ceiling admits it, so no limit states it.
+    SizeOverflow,
     InvalidSource,
     InvalidResult,
     InvalidDelta,
@@ -191,18 +200,15 @@ impl VerifiedReleasedV3InventoryTransition {
         use ReleasedV3InventoryTransitionDenial as Denial;
         let counts = [source.entry_counts(), result.entry_counts()];
         let step = [dropped.len(), projected.len()];
-        let scratch_bytes = ExceededRootHistoryBound::entries_within(
-            counts.into_iter().flatten().chain(step),
-            maximum_entries,
-        )
-        .and_then(|()| {
-            // Every count is within the entries, so no estimate is an overflow.
-            ExceededRootHistoryBound::scratch_within(
-                Self::maximum_construction_heap_bytes(source, result, projected, maximum_entries),
-                maximum_scratch_bytes,
-            )
-        })
-        .map_err(Denial::BoundExceeded)?;
+        RootHistoryAllowance::entries(maximum_entries)
+            .admit_each(counts.into_iter().flatten().chain(step))
+            .map_err(Denial::BoundExceeded)?;
+        let peak =
+            Self::maximum_construction_heap_bytes(source, result, projected, maximum_entries)
+                .ok_or(Denial::SizeOverflow)?;
+        let scratch_bytes = RootHistoryAllowance::scratch_bytes(maximum_scratch_bytes)
+            .admit(peak)
+            .map_err(Denial::BoundExceeded)?;
         let source_topology =
             transcript_reserved(source, format, maximum_entries, maximum_scratch_bytes)?;
         let result_topology =
@@ -271,10 +277,11 @@ impl VerifiedReleasedV3InventoryTransition {
             reserve::<CurrentPhysicalRecordPlacement>(projected.len(), 0, maximum_scratch_bytes)?;
         retained_projected.extend_from_slice(projected);
         let conversion_peak = ((retained_projected.capacity() + retained_projected.len()) as u64)
-            .checked_mul(std::mem::size_of::<CurrentPhysicalRecordPlacement>() as u64);
-        let conversion_peak =
-            ExceededRootHistoryBound::scratch_within(conversion_peak, maximum_scratch_bytes)
-                .map_err(Denial::BoundExceeded)?;
+            .checked_mul(std::mem::size_of::<CurrentPhysicalRecordPlacement>() as u64)
+            .ok_or(Denial::SizeOverflow)?;
+        let conversion_peak = RootHistoryAllowance::scratch_bytes(maximum_scratch_bytes)
+            .admit(conversion_peak)
+            .map_err(Denial::BoundExceeded)?;
         Ok(Self {
             source: source_topology,
             result: result_topology,
@@ -300,92 +307,6 @@ impl VerifiedReleasedV3InventoryTransition {
     pub const fn directory_replacement(&self) -> Option<&VerifiedReleasedDirectoryReplacement> {
         self.directory_replacement.as_ref()
     }
-}
-
-pub(crate) fn transcript(
-    view: ReleasedInventoryView<'_>,
-    format: PhysicalRecordFormatDeclaration,
-    limit: u64,
-) -> Result<PhysicalInventoryTranscriptV1, ReleasedV3InventoryTransitionDenial> {
-    use ReleasedV3InventoryTransitionDenial as Denial;
-    let mut builder =
-        PhysicalInventoryTranscriptBuilderV1::new(view.root, view.free, format, limit)
-            .map_err(|_| Denial::InvalidSource)?;
-    for route in view.routes {
-        builder
-            .include_route(*route)
-            .map_err(|_| Denial::InvalidSource)?;
-    }
-    for segment in view.segments {
-        builder
-            .include_segment(*segment)
-            .map_err(|_| Denial::InvalidSource)?;
-    }
-    for free in view.free_entries {
-        builder
-            .include_free(*free)
-            .map_err(|_| Denial::InvalidSource)?;
-    }
-    builder.finish().map_err(|_| Denial::InvalidSource)
-}
-
-pub(super) fn reserve<T>(
-    count: usize,
-    retained: u64,
-    maximum: u64,
-) -> Result<Vec<T>, ReleasedV3InventoryTransitionDenial> {
-    use ReleasedV3InventoryTransitionDenial as Denial;
-    // What `count` values and the bytes already retained need together.
-    let within = |count: usize| {
-        let bytes = (count as u64).checked_mul(std::mem::size_of::<T>() as u64);
-        let needed = bytes.and_then(|bytes| retained.checked_add(bytes));
-        ExceededRootHistoryBound::scratch_within(needed, maximum).map_err(Denial::BoundExceeded)
-    };
-    let requested_bytes = within(count)? - retained;
-    let mut values = Vec::new();
-    values
-        .try_reserve_exact(count)
-        .map_err(|cause| Denial::Allocation {
-            requested_bytes,
-            cause,
-        })?;
-    within(values.capacity())?;
-    Ok(values)
-}
-
-fn transcript_reserved(
-    view: ReleasedInventoryView<'_>,
-    format: PhysicalRecordFormatDeclaration,
-    limit: u64,
-    maximum: u64,
-) -> Result<PhysicalInventoryTranscriptV1, ReleasedV3InventoryTransitionDenial> {
-    use ReleasedV3InventoryTransitionDenial as Denial;
-    let free = reserve::<u8>(view.free.encoded_frame_bytes(), 0, maximum)?;
-    let root = reserve::<u8>(
-        view.root.encoded_frame_bytes(),
-        free.capacity() as u64,
-        maximum,
-    )?;
-    let mut builder = PhysicalInventoryTranscriptBuilderV1::new_in_reserved(
-        view.root, view.free, format, limit, root, free,
-    )
-    .map_err(|_| Denial::InvalidSource)?;
-    for route in view.routes {
-        builder
-            .include_route(*route)
-            .map_err(|_| Denial::InvalidSource)?;
-    }
-    for segment in view.segments {
-        builder
-            .include_segment(*segment)
-            .map_err(|_| Denial::InvalidSource)?;
-    }
-    for free in view.free_entries {
-        builder
-            .include_free(*free)
-            .map_err(|_| Denial::InvalidSource)?;
-    }
-    builder.finish().map_err(|_| Denial::InvalidSource)
 }
 
 #[cfg(test)]

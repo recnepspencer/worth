@@ -14,7 +14,7 @@ use worth_store_physical_format::{
     ReleaseCustodyHeadBlockReferenceV1, ReleaseCustodyHeadEntryV1,
 };
 use worth_store_physical_integrity::{
-    walk_release_custody_head_with_port, ReleaseCustodyHeadWalkDenial,
+    walk_release_custody_head_with_port, ReleaseCustodyHeadWalkBound, ReleaseCustodyHeadWalkDenial,
     ReleaseCustodyHeadWalkLimitsV1,
 };
 
@@ -200,21 +200,28 @@ fn walk_denial(
         ReleaseCustodyHeadWalkDenial::Read(denial)
         | ReleaseCustodyHeadWalkDenial::Visit(denial)
         | ReleaseCustodyHeadWalkDenial::Storage(denial) => denial,
-        ReleaseCustodyHeadWalkDenial::ResidentBoundExceeded {
-            required,
-            admitted: limit,
-        } => match (base.checked_add(required), base.checked_add(limit)) {
-            (Some(required), Some(admitted)) => {
-                Denial::Resident(PhysicalRecoveryRejoinResidentDenial::BudgetExceeded {
-                    required,
+        ReleaseCustodyHeadWalkDenial::Limit(past)
+            if past.dimension() == ReleaseCustodyHeadWalkBound::ResidentBytes =>
+        {
+            match (
+                base.checked_add(past.observed()),
+                base.checked_add(past.admitted()),
+            ) {
+                (Some(required), Some(admitted)) => {
+                    Denial::Resident(PhysicalRecoveryRejoinResidentDenial::BudgetExceeded {
+                        required,
+                        admitted,
+                    })
+                }
+                _ => Denial::Resident(PhysicalRecoveryRejoinResidentDenial::SizeOverflow {
                     admitted,
-                })
+                }),
             }
-            _ => Denial::Resident(PhysicalRecoveryRejoinResidentDenial::SizeOverflow { admitted }),
-        },
+        }
         // Store names one bound until its denial carries the walker's count.
-        ReleaseCustodyHeadWalkDenial::BoundExceeded
-        | ReleaseCustodyHeadWalkDenial::NodeBound { .. } => Denial::BoundExceeded,
+        ReleaseCustodyHeadWalkDenial::BoundExceeded | ReleaseCustodyHeadWalkDenial::Limit(_) => {
+            Denial::BoundExceeded
+        }
         _ => Denial::CertificateRoster,
     }
 }

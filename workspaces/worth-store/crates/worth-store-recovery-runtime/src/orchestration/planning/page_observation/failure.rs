@@ -117,17 +117,12 @@ impl PageObservationFailure {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use worth_store::physical_runtime::{
-        RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope,
-    };
+    use crate::orchestration::reader_limit::refused_past;
+    use worth_store::physical_runtime::{FilesystemObservationBound, RecoveryDiscoveryArtifact};
 
     #[test]
     fn only_an_exhausted_observation_budget_is_a_limit() {
-        let oversized = |scope| RecoveryDiscoveryFailure::ByteLimitExceeded {
-            observed: 65_537,
-            admitted: 65_536,
-            scope,
-        };
+        let oversized = |bound| refused_past(bound, 65_537, 65_536);
         let target = Some(PhysicalRedoTargetIdentity::InlinePage {
             segment: 1,
             page: 2,
@@ -136,7 +131,7 @@ mod tests {
         assert_eq!(
             PageObservationFailure::media(
                 target,
-                oversized(RecoveryDiscoveryByteLimitScope::Observation)
+                oversized(FilesystemObservationBound::ObservationBytes)
             ),
             PageObservationFailure::ByteLimit,
         );
@@ -144,16 +139,13 @@ mod tests {
         assert_eq!(
             PageObservationFailure::media(
                 target,
-                RecoveryDiscoveryFailure::EntryLimitExceeded {
-                    observed: 1,
-                    admitted: 0,
-                }
+                refused_past(FilesystemObservationBound::Reads, 1, 0)
             ),
             PageObservationFailure::ManifestEntryLimit,
         );
         for failure in [
             // The artifact outgrew the ceiling of its own read.
-            oversized(RecoveryDiscoveryByteLimitScope::Requested),
+            oversized(FilesystemObservationBound::RequestedBytes),
             RecoveryDiscoveryFailure::InvalidAddress {
                 artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint,
             },

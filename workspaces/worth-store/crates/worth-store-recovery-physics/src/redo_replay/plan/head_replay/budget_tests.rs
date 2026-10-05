@@ -141,11 +141,9 @@ fn insufficient_extra_heap_denies_before_selected_path_read() {
     assert_eq!(
         denial,
         Err(SelectedReleaseHeadReplayDenial::BoundExceeded(
-            ExceededHeadReplayBound {
-                bound: HeadReplayBound::HeapBytes,
-                observed: needed,
-                admitted: 0,
-            }
+            HeadReplayAllowance::heap_bytes(0)
+                .admit(needed)
+                .unwrap_err()
         ))
     );
     assert_eq!(reads, 0);
@@ -159,11 +157,9 @@ fn an_addressed_read_window_the_heap_cannot_hold_names_the_heap_and_two_pages() 
     assert_eq!(
         addressed::require_two_page_window(format, pages - 1),
         Err(SelectedReleaseHeadReplayDenial::BoundExceeded(
-            ExceededHeadReplayBound {
-                bound: HeadReplayBound::HeapBytes,
-                observed: pages,
-                admitted: pages - 1,
-            }
+            HeadReplayAllowance::heap_bytes(pages - 1)
+                .admit(pages)
+                .unwrap_err()
         ))
     );
 }

@@ -21,8 +21,6 @@ mod tree_walk_resident;
 
 use artifact_read::observed;
 pub(super) use attempt::observe;
-#[cfg(test)]
-pub(super) use attempt::out_of_observation_bytes;
 use denial::invalid;
 use materialization::CandidateMaterialization;
 

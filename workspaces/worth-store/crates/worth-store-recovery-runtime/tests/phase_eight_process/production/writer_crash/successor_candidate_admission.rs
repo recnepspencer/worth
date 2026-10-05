@@ -1,4 +1,4 @@
-use worth_store::physical_runtime::{RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryFailure};
+use worth_store::physical_runtime::{FilesystemObservationBound, RecoveryDiscoveryFailure};
 use worth_store_physical_format::RecordArtifactFile;
 use worth_store_recovery_runtime::{
     PhysicalRecoveryLimitDimension, PhysicalRecoveryOutcome, PhysicalRecoveryPlanningDenial,
@@ -139,12 +139,7 @@ fn assert_oversized_candidate_is_damage_before_its_read(world: &ProcessWorld, ge
         PhysicalRecoverySuccessorCandidateDenial::Discovery {
             artifact,
             generation: denial_generation,
-            failure:
-                RecoveryDiscoveryFailure::ByteLimitExceeded {
-                    observed,
-                    admitted,
-                    scope,
-                },
+            failure: RecoveryDiscoveryFailure::Limit(past),
         },
     )) = evidence.planning_denial
     else {
@@ -159,8 +154,14 @@ fn assert_oversized_candidate_is_damage_before_its_read(world: &ProcessWorld, ge
     );
     // The length is the file's and the ceiling the root's own, under every
     // budget of this recovery.
-    assert_eq!(scope, RecoveryDiscoveryByteLimitScope::Requested);
-    assert_eq!((observed, admitted), (RESIDENT_LIMIT, page));
+    assert_eq!(
+        (past.dimension(), past.observed(), past.admitted()),
+        (
+            FilesystemObservationBound::RequestedBytes,
+            RESIDENT_LIMIT,
+            page
+        )
+    );
     assert_eq!(evidence.limit, None, "damage names no limit");
     let counters = evidence.planning_counters.unwrap();
     assert_eq!(counters.successor_candidate_reads(), 0);
@@ -249,19 +250,18 @@ fn assert_exact_observation_limit(world: &ProcessWorld, exact_observation: u64) 
         .expect("byte denial carries a limit");
     let Some(PhysicalRecoveryPlanningDenial::SuccessorCandidate(
         PhysicalRecoverySuccessorCandidateDenial::Discovery {
-            failure:
-                RecoveryDiscoveryFailure::ByteLimitExceeded {
-                    observed,
-                    admitted,
-                    scope,
-                },
+            failure: RecoveryDiscoveryFailure::Limit(past),
             ..
         },
     )) = blocked.evidence().planning_denial
     else {
         panic!("candidate byte denial must preserve exact backend evidence")
     };
-    assert_eq!(scope, RecoveryDiscoveryByteLimitScope::Observation);
+    let (observed, admitted) = (past.observed(), past.admitted());
+    assert_eq!(
+        past.dimension(),
+        FilesystemObservationBound::ObservationBytes
+    );
     assert_eq!(
         limit.dimension,
         PhysicalRecoveryLimitDimension::ObservationBytes

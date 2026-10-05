@@ -85,21 +85,20 @@ pub(super) fn bind_edge(
 
 #[cfg(test)]
 mod tests {
-    use worth_store::physical_runtime::{
-        RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope,
-    };
+    use worth_store::physical_runtime::{FilesystemObservationBound, RecoveryDiscoveryArtifact};
 
     use super::*;
+    use crate::orchestration::reader_limit::refused_past;
     use SelectedReleaseHeadReplayDenial as Denial;
 
     #[test]
     fn a_replay_a_read_stopped_keeps_the_reads_verdict() {
         let mut out_of_bytes = Unread::default();
-        out_of_bytes.keep(RecoveryDiscoveryFailure::ByteLimitExceeded {
-            observed: 65_537,
-            admitted: 65_536,
-            scope: RecoveryDiscoveryByteLimitScope::Observation,
-        });
+        out_of_bytes.keep(refused_past(
+            FilesystemObservationBound::ObservationBytes,
+            65_537,
+            65_536,
+        ));
         assert_eq!(
             out_of_bytes.verdict(Denial::Read, 100),
             WalkFailure::ByteLimit
@@ -113,13 +112,11 @@ mod tests {
 
     #[test]
     fn a_replay_physics_refused_is_what_physics_says() {
-        use worth_store_recovery_physics::{ExceededHeadReplayBound, HeadReplayBound};
-        let refused = |denial| Unread::default().verdict(denial, 100);
-        let past = ExceededHeadReplayBound {
-            bound: HeadReplayBound::EffectBytes,
-            observed: 70,
-            admitted: 60,
+        use worth_store_recovery_physics::{
+            test_support::head_replay_limit_for_test, HeadReplayBound,
         };
+        let refused = |denial| Unread::default().verdict(denial, 100);
+        let past = head_replay_limit_for_test(HeadReplayBound::EffectBytes, 70, 60);
         assert_eq!(
             refused(Denial::BoundExceeded(past)),
             WalkFailure::ScratchLimit { at_least: 110 }

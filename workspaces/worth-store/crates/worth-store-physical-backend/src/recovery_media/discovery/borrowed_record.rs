@@ -29,6 +29,7 @@ impl QualifiedFilesystemMedia {
             observation: FilesystemObservation {
                 parts: BorrowedMediaBacking { media: self },
                 remaining_entries: maximum_entries,
+                maximum_entries,
                 remaining_bytes: maximum_bytes,
                 maximum_bytes,
                 // Record evidence has no WAL observation identity to issue.

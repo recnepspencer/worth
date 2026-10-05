@@ -12,6 +12,8 @@ mod quarantine;
 mod scrub;
 mod validation;
 
+#[cfg(any(test, feature = "test-support"))]
+pub use artifact::release_custody_head_walk_limit_for_test;
 pub use artifact::{
     project_checkpoint_binding_frame_length, validate_blob_record,
     validate_blob_record_payload_only, validate_bootstrap_catalog, validate_btree_node,
@@ -31,11 +33,12 @@ pub use artifact::{
     CheckpointBindingIntegrityValidation, CheckpointDirtyBasisIntegrityValidation,
     CheckpointFooterEnvelopeIntegrityValidation, CheckpointFooterIntegrityValidation,
     CheckpointFooterValidationBasis, CheckpointStreamHeaderIntegrityValidation,
-    CurrentRootSelectorIntegrityValidation, ExtentArenaFrameExpectation,
-    ExtentArenaFrameIntegrityValidation, ExtentChunkIntegrityValidation,
-    ExtentManifestIntegrityValidation, FreeSpaceHeaderIntegrityValidation,
-    FreeSpaceMembershipBlockIntegrityValidation, InlinePageIntegrityValidation,
-    PhysicalWorkObligationIntegrityValidation, PreviousRootSelectorIntegrityValidation,
+    CurrentRootSelectorIntegrityValidation, ExceededReleaseCustodyHeadWalkBound,
+    ExtentArenaFrameExpectation, ExtentArenaFrameIntegrityValidation,
+    ExtentChunkIntegrityValidation, ExtentManifestIntegrityValidation,
+    FreeSpaceHeaderIntegrityValidation, FreeSpaceMembershipBlockIntegrityValidation,
+    InlinePageIntegrityValidation, PhysicalWorkObligationIntegrityValidation,
+    PreviousRootSelectorIntegrityValidation, ReleaseCustodyHeadWalkBound,
     ReleaseCustodyHeadWalkDenial, ReleaseCustodyHeadWalkLimitsV1, ReleaseCustodyHeadWalkPort,
     ReleaseCustodyHeadWalkV1, RootManifestIntegrityValidation, RootRoutingBlockIntegrityValidation,
     RootRoutingCoordinateScratchDenial, SegmentMembershipBlockIntegrityValidation,

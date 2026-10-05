@@ -23,6 +23,7 @@ use checkpoint_head_tree::unmoved_checkpoint_head_tree;
 pub(super) use retained_storage::PreparedEffectiveHeadRosterV14;
 
 use super::{PendingReleaseCheckpointBase, VerifiedPendingWalReleaseCustody};
+use crate::source_precedence::ExceededPhysicsBound;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EffectiveReleaseHeadDenial {
@@ -30,7 +31,7 @@ pub enum EffectiveReleaseHeadDenial {
     Source,
     Mutation,
     BoundExceeded,
-    ResidentBoundExceeded { required: u64, admitted: u64 },
+    Limit(ExceededPhysicsBound),
 }
 
 /// Private-field semantic fold of an exact C.9-admitted pending release member.

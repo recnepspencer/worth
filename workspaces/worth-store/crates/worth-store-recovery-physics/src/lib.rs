@@ -8,6 +8,14 @@ mod redo_replay;
 mod source_precedence;
 mod wal_prefix;
 
+/// Expected limits for other crates' tests, minted through each owner's own
+/// door. No production build enables `test-support`.
+#[cfg(any(test, feature = "test-support"))]
+pub mod test_support {
+    pub use crate::redo_replay::head_replay_limit_for_test;
+    pub use crate::source_precedence::{physics_limit_for_test, root_history_limit_for_test};
+}
+
 pub use operation_reconciliation::{
     classify_binding_freshness, reconcile_materialized_operation_fates, reconcile_operation_fates,
     OperationReconciliationDenial, ReconciledOperationFate, ReconciledOperationFates,
@@ -45,23 +53,25 @@ pub use source_precedence::{
     select_physical_recovery_sources, AddressedCheckpointBatchControl,
     AddressedReleaseHeadControlV2, AddressedReleasedControlDenial, AdmittedWalFrameRejectionKind,
     AdmittedWalSegmentPolicyInput, CheckpointCoveredWalArtifact, CheckpointRetiredReleaseIntent,
-    EffectiveReleaseHeadDenial, ExceededRootHistoryBound, HistoricalReleaseRootChainBuilder,
-    HistoricalReleaseRootChainDenial, HistoricalReleaseRootPrefixBuilder,
-    ObservedOrdinaryRootMember, OrderedHistoricalReleaseCustodyDenial, OrderedRootHistoryBuilder,
-    OrderedRootHistoryDenial, OrderedRootStepBasis, OrdinaryRootStepDenial,
-    PageLsnSkipApplyDecision, PendingWalReleaseCustodyDenial, PhysicalBootstrapFallbackAnchor,
-    PhysicalCheckpointBase, PhysicalCheckpointBaseDenial, PhysicalManifestBlockProjection,
-    PhysicalPageFactDenial, PhysicalRecoveryResidue, PhysicalRecoveryResidueKind,
-    PhysicalRecoverySource, PhysicalRootCandidateDenial, PhysicalRootManifestDenial,
-    PhysicalRootSelectionDenial, PhysicalRootSelectorDenial, PhysicalRootSlotObservation,
-    PhysicalRootSourceCandidate, PhysicalSourceSelection, PhysicalSourceSelectionDenial,
-    PhysicalSourceSelectionTrace, PhysicalWalCandidatePreparation, PhysicalWalFrameFacts,
-    PhysicalWalInterruptionFacts, PhysicalWalSegmentCandidate, PhysicalWalSegmentDisposition,
-    ReleasedDirectoryReplacementDenial, ReleasedInventoryView, ReleasedV3InventoryTransitionDenial,
-    RetirementReleaseIntent, RootHistoryBound, SelectedCompactionProduct, SelectedCustodyDenial,
-    SelectedHeadRosterAdmissionDenial, SelectedNoReleaseCustodyDenial, SelectedPhysicalPageFacts,
-    SelectedPhysicalRoot, SelectedPhysicalRootRole, SelectedPhysicalWalTail,
-    SelectedPhysicalWalTailDenial, SelectedTierCustodyDenial, SelectedTierEpochCustodySource,
+    EffectiveReleaseHeadDenial, ExceededPhysicsBound, ExceededRootHistoryBound,
+    HistoricalReleaseRootChainBuilder, HistoricalReleaseRootChainDenial,
+    HistoricalReleaseRootPrefixBuilder, ObservedOrdinaryRootMember,
+    OrderedHistoricalReleaseCustodyDenial, OrderedRootHistoryBuilder, OrderedRootHistoryDenial,
+    OrderedRootStepBasis, OrdinaryRootStepDenial, PageLsnSkipApplyDecision,
+    PendingWalReleaseCustodyDenial, PhysicalBootstrapFallbackAnchor, PhysicalCheckpointBase,
+    PhysicalCheckpointBaseDenial, PhysicalManifestBlockProjection, PhysicalPageFactDenial,
+    PhysicalRecoveryResidue, PhysicalRecoveryResidueKind, PhysicalRecoverySource,
+    PhysicalRootCandidateDenial, PhysicalRootManifestDenial, PhysicalRootSelectionDenial,
+    PhysicalRootSelectorDenial, PhysicalRootSlotObservation, PhysicalRootSourceCandidate,
+    PhysicalSourceSelection, PhysicalSourceSelectionDenial, PhysicalSourceSelectionTrace,
+    PhysicalWalCandidatePreparation, PhysicalWalFrameFacts, PhysicalWalInterruptionFacts,
+    PhysicalWalSegmentCandidate, PhysicalWalSegmentDisposition, PhysicsBound,
+    ReleasedDirectoryReplacementDenial, ReleasedInventoryParts, ReleasedInventoryView,
+    ReleasedV3InventoryTransitionDenial, RetirementReleaseIntent, RootHistoryBound,
+    SelectedCompactionProduct, SelectedCustodyDenial, SelectedHeadRosterAdmissionDenial,
+    SelectedNoReleaseCustodyDenial, SelectedPhysicalPageFacts, SelectedPhysicalRoot,
+    SelectedPhysicalRootRole, SelectedPhysicalWalTail, SelectedPhysicalWalTailDenial,
+    SelectedTierCustodyDenial, SelectedTierEpochCustodySource,
     VerifiedAddressedCheckpointReleaseBase, VerifiedAddressedReleasedControlFrame,
     VerifiedCheckpointReleaseHeadRosterV2, VerifiedEffectiveReleaseHeadRosterV14,
     VerifiedHistoricalPendingWalBatch, VerifiedHistoricalReleaseRootChain,

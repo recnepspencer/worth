@@ -15,7 +15,7 @@ use sha2::{Digest, Sha256};
 use storage::WalRoster;
 use worth_store_physical_backend::{BoundedRecoveryFilesystemDiscovery, ObservedWalArtifact};
 use worth_store_physical_format::store_namespace::NamespaceEntryType;
-const MAX_WAL_SEGMENTS: u64 = 4_096;
+const MAX_WAL_SEGMENTS: std::num::NonZeroU64 = std::num::NonZeroU64::new(4_096).unwrap();
 pub(super) const MAX_WAL_BYTES: u64 = 128 << 20;
 const MAX_WAL_FRAMES: usize = 65_536;
 pub(super) struct AdmittedWalInventory {

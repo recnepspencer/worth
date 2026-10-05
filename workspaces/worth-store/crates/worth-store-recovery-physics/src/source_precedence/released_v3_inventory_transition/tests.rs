@@ -1,5 +1,5 @@
 use super::*;
-use crate::ExceededRootHistoryBound as Exceeded;
+use crate::source_precedence::{entries_past, scratch_past};
 use worth_store_physical_format::{
     durable_artifact_checksum, DurableExtentRecordPlacement, ExtentArenaId,
     IndexedThroughBlobPublication, PhysicalExtentId, PhysicalFreeSpaceMembershipBlock,
@@ -181,7 +181,7 @@ fn checked_transition_rejects_self_consistent_same_count_route_and_free_forgery(
             exact_peak - 1,
             None,
         ),
-        Err(Denial::BoundExceeded(Exceeded::scratch(
+        Err(Denial::BoundExceeded(scratch_past(
             exact_peak,
             exact_peak - 1
         )))
@@ -197,9 +197,9 @@ fn checked_transition_rejects_self_consistent_same_count_route_and_free_forgery(
         1 << 20,
         None,
     );
-    let past_entries = Denial::BoundExceeded(Exceeded::entries(2, 1));
+    let past_entries = Denial::BoundExceeded(entries_past(2, 1));
     assert_eq!(narrow, Err(past_entries.clone()));
-    assert_eq!(past_entries.exceeded_bound(), Some(Exceeded::entries(2, 1)));
+    assert_eq!(past_entries.exceeded_bound(), Some(entries_past(2, 1)));
     assert_eq!(Denial::InvalidDelta.exceeded_bound(), None);
     let exact = VerifiedReleasedV3InventoryTransition::admit(
         source, result, &dropped, &projected, format, 16, exact_peak, None,

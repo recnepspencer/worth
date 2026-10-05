@@ -3,11 +3,12 @@
 //! does an artifact that outgrew the ceiling of its own read.
 
 use worth_store::physical_runtime::{
-    RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryFailure,
+    FilesystemObservationBound, RecoveryDiscoveryArtifact, RecoveryDiscoveryFailure,
 };
 
 use super::*;
 use crate::entry::PhysicalRecoverySelectedRecordReadDenial;
+use crate::orchestration::reader_limit::refused_past;
 
 fn limits() -> PhysicalRecoveryLimitDeclaration {
     PhysicalRecoveryLimitDeclaration {
@@ -33,12 +34,8 @@ fn limits() -> PhysicalRecoveryLimitDeclaration {
     }
 }
 
-fn outgrown(scope: RecoveryDiscoveryByteLimitScope) -> RecoveryDiscoveryFailure {
-    RecoveryDiscoveryFailure::ByteLimitExceeded {
-        observed: 4_001,
-        admitted: 4_000,
-        scope,
-    }
+fn outgrown(bound: FilesystemObservationBound) -> RecoveryDiscoveryFailure {
+    refused_past(bound, 4_001, 4_000)
 }
 
 #[test]
@@ -91,19 +88,16 @@ fn an_exhausted_limit_is_reported_with_the_value_recovery_admitted() {
 #[test]
 fn only_a_reader_out_of_its_own_budget_is_a_limit() {
     assert_eq!(
-        discovery_failure(outgrown(RecoveryDiscoveryByteLimitScope::Observation)),
+        discovery_failure(outgrown(FilesystemObservationBound::ObservationBytes)),
         HistoricalFailure::ObservationBytes(Some(4_001)),
     );
     assert_eq!(
-        discovery_failure(RecoveryDiscoveryFailure::EntryLimitExceeded {
-            observed: 1,
-            admitted: 0,
-        }),
+        discovery_failure(refused_past(FilesystemObservationBound::Reads, 1, 0)),
         HistoricalFailure::ManifestEntries,
     );
     for damage in [
         // The artifact outgrew the ceiling of its own read.
-        outgrown(RecoveryDiscoveryByteLimitScope::Requested),
+        outgrown(FilesystemObservationBound::RequestedBytes),
         RecoveryDiscoveryFailure::InvalidAddress {
             artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint,
         },
@@ -152,11 +146,11 @@ fn a_record_that_could_not_be_read_is_a_limit_only_where_its_reader_met_one() {
             HistoricalFailure::ManifestEntries,
         ),
         (
-            Denial::ManifestRead(outgrown(RecoveryDiscoveryByteLimitScope::Observation)),
+            Denial::ManifestRead(outgrown(FilesystemObservationBound::ObservationBytes)),
             HistoricalFailure::ObservationBytes(Some(4_001)),
         ),
         (
-            Denial::ManifestRead(outgrown(RecoveryDiscoveryByteLimitScope::Requested)),
+            Denial::ManifestRead(outgrown(FilesystemObservationBound::RequestedBytes)),
             HistoricalFailure::Invalid,
         ),
         (Denial::InvalidPayload, HistoricalFailure::Invalid),

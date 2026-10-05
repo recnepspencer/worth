@@ -26,10 +26,13 @@ pub use cleanup::{
     BackendRecoveryCleanupArtifactRevalidationProgress, BackendRecoveryCleanupRemovalDenialCause,
     BackendRecoveryCleanupRemovalOutcome, BackendRecoveryCleanupRemovalRequest,
 };
+#[cfg(any(test, feature = "test-support"))]
+pub use discovery::filesystem_observation_limit_for_test;
 pub use discovery::{
     BorrowedRecordFilesystemObservation, BorrowedWalFilesystemObservation,
-    BoundedRecoveryFilesystemDiscovery, ObservedRecoveryArtifact, ObservedWalArtifact,
-    RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope,
+    BoundedRecoveryFilesystemDiscovery, ExceededFilesystemObservationBound,
+    FilesystemObservationBound, ObservedRecoveryArtifact, ObservedWalArtifact,
+    RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact, RecoveryDiscoveryCount,
     RecoveryDiscoveryCounters, RecoveryDiscoveryFailure, RecoverySelectedWalReadOutcome,
     RecoveryWalListingAllocationMode, RecoveryWalObservationIdentity, RecoveryWalReadSelection,
     RecoveryWalReadStorage, RecoveryWalSelectionMismatch,

@@ -81,10 +81,11 @@ pub(super) fn derive(
             .saturating_sub(basis.observed_pages.source_copy_bytes_read)
             .saturating_sub(basis.observed_pages.historical_publication_bytes_read);
         let media = context.authority.media;
+        let selected = context.selection.root().selected();
         let (media, attempt) = successor_candidate_observation::observe(
             media,
-            context.selection.root().selected().manifest(),
-            context.selection.root().selected().selector().format(),
+            selected.manifest(),
+            selected.selector().format(),
             &mut basis.observed_pages.manifest_budget,
             remaining_observation_bytes,
             &mut context.integrity_trace,
@@ -276,6 +277,11 @@ fn candidate_limit(
         // An artifact that outgrew the ceiling of its own read is damage.
         PhysicalRecoverySuccessorCandidateDenial::Discovery { failure, .. } => {
             super::historical_publication::discovery_failure(failure.clone())
+                .limit(limits, remaining_observation_bytes)
+        }
+        // Every byte recovery admitted was observed before this reader.
+        PhysicalRecoverySuccessorCandidateDenial::ObservationBytesExhausted { .. } => {
+            super::historical_publication::HistoricalFailure::ObservationBytes(None)
                 .limit(limits, remaining_observation_bytes)
         }
         PhysicalRecoverySuccessorCandidateDenial::ManifestEntryLimit {

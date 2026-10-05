@@ -2,7 +2,7 @@
 //! phase that keeps its reader's failure names a limit only where that
 //! reader ran out of recovery's own observation bytes.
 
-use worth_store::physical_runtime::{RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryFailure};
+use worth_store::physical_runtime::{FilesystemObservationBound, RecoveryDiscoveryFailure};
 use worth_store_recovery_physics::PhysicalRedoPlanningDenial;
 use worth_store_recovery_runtime::{
     PhysicalRecoveryPageAdmissionDenial as Page, PhysicalRecoveryPlanningDenial as Planning,
@@ -17,10 +17,8 @@ use worth_store_recovery_runtime::{
 fn reader(failure: &RecoveryDiscoveryFailure) -> bool {
     matches!(
         failure,
-        RecoveryDiscoveryFailure::ByteLimitExceeded {
-            scope: RecoveryDiscoveryByteLimitScope::Observation,
-            ..
-        }
+        RecoveryDiscoveryFailure::Limit(past)
+            if past.dimension() == FilesystemObservationBound::ObservationBytes
     )
 }
 
@@ -63,6 +61,8 @@ pub(super) fn only_a_limit(denial: &Planning) -> bool {
         // Every cost denial is a limit the plan's cost ran past.
         Planning::Cost(_) => true,
         Planning::SuccessorCandidate(Candidate::Discovery { failure, .. }) => reader(failure),
+        // Every observation byte recovery admitted was read before this one.
+        Planning::SuccessorCandidate(Candidate::ObservationBytesExhausted { .. }) => true,
         Planning::SelectedReleaseHead(denial) => head(denial),
         _ => false,
     }

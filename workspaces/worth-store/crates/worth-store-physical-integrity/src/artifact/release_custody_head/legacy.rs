@@ -3,6 +3,7 @@ use worth_store_physical_format::{
     ReleaseCustodyHeadBlockReferenceV1, ReleaseCustodyHeadEntryV1,
 };
 
+use super::walk_budget::{ExceededReleaseCustodyHeadWalkBound, ReleaseCustodyHeadWalkAllowance};
 use super::{
     ReleaseCustodyHeadWalkDenial as Denial, ReleaseCustodyHeadWalkLimitsV1,
     ReleaseCustodyHeadWalkPort, ReleaseCustodyHeadWalkV1,
@@ -11,10 +12,7 @@ use super::{
 enum LegacyError<ReadError, VisitError> {
     Read(ReadError),
     Visit(VisitError),
-    Resident {
-        required: u64,
-        admitted: u64,
-    },
+    Resident(ExceededReleaseCustodyHeadWalkBound),
     Allocation {
         requested: u64,
         cause: std::collections::TryReserveError,
@@ -133,14 +131,9 @@ impl<Read, Visit> LegacyPort<Read, Visit> {
             .used
             .checked_add(extra)
             .ok_or(LegacyError::BoundExceeded)?;
-        if required > self.admitted {
-            Err(LegacyError::Resident {
-                required,
-                admitted: self.admitted,
-            })
-        } else {
-            Ok(())
-        }
+        ReleaseCustodyHeadWalkAllowance::resident_bytes(self.admitted)
+            .admit(required)
+            .map_err(LegacyError::Resident)
     }
 }
 
@@ -156,18 +149,13 @@ fn map_denial<ReadError, VisitError>(
     match denial {
         Denial::Read(LegacyError::Read(error)) => Denial::Read(error),
         Denial::Visit(LegacyError::Visit(error)) => Denial::Visit(error),
-        Denial::Read(LegacyError::Resident { required, admitted })
-        | Denial::Visit(LegacyError::Resident { required, admitted })
-        | Denial::Storage(LegacyError::Resident { required, admitted }) => {
-            Denial::ResidentBoundExceeded { required, admitted }
-        }
+        Denial::Read(LegacyError::Resident(limit))
+        | Denial::Visit(LegacyError::Resident(limit))
+        | Denial::Storage(LegacyError::Resident(limit)) => Denial::Limit(limit),
         Denial::Format(error) => Denial::Format(error),
         Denial::Root => Denial::Root,
         Denial::DuplicateNode => Denial::DuplicateNode,
-        Denial::NodeBound { observed, admitted } => Denial::NodeBound { observed, admitted },
-        Denial::ResidentBoundExceeded { required, admitted } => {
-            Denial::ResidentBoundExceeded { required, admitted }
-        }
+        Denial::Limit(limit) => Denial::Limit(limit),
         Denial::Storage(LegacyError::Allocation { requested, cause })
         | Denial::Read(LegacyError::Allocation { requested, cause })
         | Denial::Visit(LegacyError::Allocation { requested, cause }) => {

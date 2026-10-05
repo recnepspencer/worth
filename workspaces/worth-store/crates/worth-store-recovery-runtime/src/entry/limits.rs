@@ -1,3 +1,5 @@
+use std::num::NonZeroU64;
+
 use sha2::{Digest, Sha256};
 
 const HARD_MAXIMUM: u64 = u32::MAX as u64;
@@ -28,6 +30,8 @@ pub struct PhysicalRecoveryLimitDeclaration {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PhysicalRecoveryLimits {
     declaration: PhysicalRecoveryLimitDeclaration,
+    /// Each admitted dimension, as the nonzero count admission proved it.
+    admitted: [NonZeroU64; 19],
     identity: [u8; 32],
 }
 
@@ -36,10 +40,14 @@ impl PhysicalRecoveryLimits {
         declaration: PhysicalRecoveryLimitDeclaration,
     ) -> Result<Self, PhysicalRecoveryLimitDenial> {
         let values = declaration.values();
-        for (dimension, value) in LIMIT_DIMENSIONS.into_iter().zip(values) {
-            if value == 0 {
+        let mut admitted = [NonZeroU64::MIN; 19];
+        for ((dimension, value), slot) in
+            LIMIT_DIMENSIONS.into_iter().zip(values).zip(&mut admitted)
+        {
+            let Some(nonzero) = NonZeroU64::new(value) else {
                 return Err(PhysicalRecoveryLimitDenial::Zero { dimension });
-            }
+            };
+            *slot = nonzero;
             if value > HARD_MAXIMUM {
                 return Err(PhysicalRecoveryLimitDenial::AboveHardMaximum {
                     dimension,
@@ -50,8 +58,14 @@ impl PhysicalRecoveryLimits {
         }
         Ok(Self {
             declaration,
+            admitted,
             identity: limit_identity(values),
         })
+    }
+
+    /// The WAL segment ceiling, which admission proved is at least one.
+    pub(crate) const fn wal_segments(self) -> NonZeroU64 {
+        self.admitted[WAL_SEGMENTS]
     }
 
     pub(crate) const fn identity(self) -> [u8; 32] {
@@ -88,6 +102,9 @@ impl PhysicalRecoveryLimitDeclaration {
         ]
     }
 }
+
+/// Where `values` places the WAL segment ceiling.
+const WAL_SEGMENTS: usize = 4;
 
 fn limit_identity(values: [u64; 19]) -> [u8; 32] {
     let mut digest = Sha256::new();
@@ -148,12 +165,25 @@ mod tests {
                 PhysicalRecoveryLimits::admit(declaration(values)),
                 Err(PhysicalRecoveryLimitDenial::Zero { .. })
             ));
+            values[index] = 7;
+            let admitted = PhysicalRecoveryLimits::admit(declaration(values)).unwrap();
+            assert_eq!(admitted.admitted[index].get(), 7);
+            assert_eq!(admitted.declaration().values()[index], 7);
             values[index] = HARD_MAXIMUM + 1;
             assert!(matches!(
                 PhysicalRecoveryLimits::admit(declaration(values)),
                 Err(PhysicalRecoveryLimitDenial::AboveHardMaximum { .. })
             ));
         }
+    }
+
+    #[test]
+    fn the_wal_segment_ceiling_is_the_declared_one() {
+        let mut values = [1; 19];
+        values[4] = 9;
+        let limits = PhysicalRecoveryLimits::admit(declaration(values)).unwrap();
+        assert_eq!(limits.wal_segments().get(), 9);
+        assert_eq!(limits.declaration().wal_segments, 9);
     }
 
     fn declaration(values: [u64; 19]) -> PhysicalRecoveryLimitDeclaration {

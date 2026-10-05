@@ -10,7 +10,7 @@
 
 use sha2::{Digest, Sha256};
 
-use crate::ExceededRootHistoryBound;
+use crate::source_precedence::RootHistoryAllowance;
 use worth_store_physical_format::{
     DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest, PhysicalInventoryTranscriptV1,
     PhysicalRecordFormatDeclaration,
@@ -168,14 +168,14 @@ impl VerifiedRetirementRootEdge {
         // A view past the admitted entries is that bound. Within it, a view
         // that is not one well-formed inventory is not the edge's source or
         // not its effect.
-        ExceededRootHistoryBound::entries_within(
-            source
-                .entry_counts()
-                .into_iter()
-                .chain(result.entry_counts()),
-            maximum_entries,
-        )
-        .map_err(Denial::Bound)?;
+        RootHistoryAllowance::entries(maximum_entries)
+            .admit_each(
+                source
+                    .entry_counts()
+                    .into_iter()
+                    .chain(result.entry_counts()),
+            )
+            .map_err(Denial::Bound)?;
         Ok(Self {
             basis,
             source: transcript(source, format, maximum_entries).map_err(|_| Denial::Source)?,

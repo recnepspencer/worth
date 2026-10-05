@@ -6,6 +6,11 @@ use worth_store_physical_format::{
 mod legacy;
 mod seen;
 mod walk;
+mod walk_budget;
+
+#[cfg(any(test, feature = "test-support"))]
+pub use walk_budget::release_custody_head_walk_limit_for_test;
+pub use walk_budget::{ExceededReleaseCustodyHeadWalkBound, ReleaseCustodyHeadWalkBound};
 
 /// Whole-root traversal and resident limits. `max_resident_bytes` covers
 /// walker-owned scratch; a carried port may impose a stricter shared ceiling.
@@ -97,19 +102,13 @@ pub enum ReleaseCustodyHeadWalkDenial<ReadError, VisitError> {
     Root,
     DuplicateNode,
     BoundExceeded,
-    /// The caller's node bound was reached. The blocks read verified; this
-    /// says nothing about the tree beyond the count that passed the bound.
-    NodeBound {
-        observed: u64,
-        admitted: u64,
-    },
+    /// The caller's node or resident bound was reached. The blocks read
+    /// verified; this says nothing about the tree beyond the count that
+    /// passed the bound.
+    Limit(ExceededReleaseCustodyHeadWalkBound),
     Allocation {
         requested: u64,
         cause: std::collections::TryReserveError,
-    },
-    ResidentBoundExceeded {
-        required: u64,
-        admitted: u64,
     },
 }
 

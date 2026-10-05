@@ -19,6 +19,9 @@ certification-test-authority = [
 # Test-only pass-through so recovery-runtime tests reach the backend flag
 # without depending on the backend directly; release builds ignore it.
 volatile-sync-for-tests = ["worth-store-physical-backend/volatile-sync-for-tests"]
+# Test-only pass-through so recovery-runtime tests mint the backend's limits
+# without depending on the backend directly; no production build enables it.
+test-support = ["worth-store-physical-backend/test-support"]
 
 [dependencies]
 worth-store-aspect-native.workspace = true
@@ -54,6 +57,7 @@ worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-store-offline-verifier.workspace = true
 worth-store-offline-integrity-observer.workspace = true
 worth-store-physical-format = { workspace = true, features = ["certification-test-authority"] }
+worth-store-recovery-physics = { workspace = true, features = ["test-support"] }
 
 [lints]
 workspace = true

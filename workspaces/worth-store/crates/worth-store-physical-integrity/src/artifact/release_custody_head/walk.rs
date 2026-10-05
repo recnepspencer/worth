@@ -5,6 +5,7 @@ use worth_store_physical_format::{
 };
 
 use super::seen::{self, SeenHeadBlocks};
+use super::walk_budget::ReleaseCustodyHeadWalkAllowance;
 use super::{
     ReleaseCustodyHeadWalkDenial as Denial, ReleaseCustodyHeadWalkLimitsV1,
     ReleaseCustodyHeadWalkPort, ReleaseCustodyHeadWalkV1,
@@ -110,15 +111,14 @@ pub(super) fn walk<P: ReleaseCustodyHeadWalkPort>(
             let child_count = view.count();
             // Every block the walk reads is admitted here, with its siblings,
             // before it is stacked: the root is one block of a bound of one.
+            // A count past every count is no limit.
             let observed = nodes
-                .saturating_add(stack.len() as u64)
-                .saturating_add(child_count as u64);
-            if observed > limits.max_nodes {
-                return Err(Denial::NodeBound {
-                    observed,
-                    admitted: limits.max_nodes,
-                });
-            }
+                .checked_add(stack.len() as u64)
+                .and_then(|held| held.checked_add(child_count as u64))
+                .ok_or(Denial::BoundExceeded)?;
+            ReleaseCustodyHeadWalkAllowance::nodes(limits.max_nodes)
+                .admit(observed)
+                .map_err(Denial::Limit)?;
             let required = stack
                 .len()
                 .checked_add(child_count)
@@ -170,9 +170,9 @@ fn require_resident<ReadError, VisitError>(
     required: u64,
     admitted: u64,
 ) -> Result<(), Denial<ReadError, VisitError>> {
-    (required <= admitted)
-        .then_some(())
-        .ok_or(Denial::ResidentBoundExceeded { required, admitted })
+    ReleaseCustodyHeadWalkAllowance::resident_bytes(admitted)
+        .admit(required)
+        .map_err(Denial::Limit)
 }
 
 fn slot_bytes<T>(count: usize) -> Option<u64> {

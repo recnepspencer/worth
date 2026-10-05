@@ -31,7 +31,7 @@ pub(super) fn observe_wal(
             .begin_source_read_allocation()
             .map_err(allocation::window_admission_failure)?;
         allocation
-            .read_wal_payloads(discovery, declaration.wal_segments, wal_bytes.requested())
+            .read_wal_payloads(discovery, limits.wal_segments(), wal_bytes.requested())
             .map_err(|failure| allocation::map_read_failure(failure, wal_bytes))?
     };
     let wal_entries = observed.artifacts().len() as u64;

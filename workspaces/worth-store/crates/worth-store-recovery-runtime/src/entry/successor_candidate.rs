@@ -22,6 +22,12 @@ pub enum PhysicalRecoverySuccessorCandidateDenial {
         generation: u64,
         failure: RecoveryDiscoveryFailure,
     },
+    /// Recovery had no observation bytes left to open the candidate's reader
+    /// on, so no reader read or counted anything.
+    ObservationBytesExhausted {
+        artifact: RecordArtifactFile,
+        generation: u64,
+    },
     MissingArtifact {
         artifact: RecordArtifactFile,
         generation: u64,
@@ -54,6 +60,7 @@ impl PhysicalRecoverySuccessorCandidateDenial {
             Self::RecoveryMemoryBytes { artifact, .. }
             | Self::Allocation { artifact, .. }
             | Self::Discovery { artifact, .. }
+            | Self::ObservationBytesExhausted { artifact, .. }
             | Self::MissingArtifact { artifact, .. }
             | Self::InvalidArtifact { artifact, .. }
             | Self::RootProtocol { artifact, .. }

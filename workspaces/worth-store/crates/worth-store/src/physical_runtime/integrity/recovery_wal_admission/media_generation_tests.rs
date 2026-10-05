@@ -31,7 +31,9 @@ fn coordination_rejects_same_store_observed_under_another_media_generation() {
     std::fs::write(wal.join("segment-1-generation-1.wal"), &bytes).unwrap();
     let (media_b, coordination_b) = recovery_media_and_coordination(&root);
     let mut discovery_b = media_b.bounded_discovery(1, 4096).unwrap();
-    let observed = discovery_b.read_wal_artifacts(1, 4096).unwrap();
+    let observed = discovery_b
+        .read_wal_artifacts(std::num::NonZeroU64::MIN, 4096)
+        .unwrap();
     let range = PhysicalByteRange::new(0, bytes.len() as u64).unwrap();
     let scope = PhysicalArtifactScope::wal_frame(store, identity, range);
     let admitted = coordination_b

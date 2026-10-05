@@ -3,8 +3,8 @@
 use std::{ffi::OsStr, sync::Arc};
 
 use worth_store_physical_backend::{
-    ArtifactTreeFailure, RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact,
-    RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryFailure,
+    ArtifactTreeFailure, ExceededFilesystemObservationBound, RecoveryDiscoveryAllocationFailure,
+    RecoveryDiscoveryArtifact, RecoveryDiscoveryCount, RecoveryDiscoveryFailure,
 };
 use worth_store_physical_format::RecordArtifactFile;
 
@@ -23,7 +23,6 @@ pub struct FundedRecoveryWalReadFailure {
 #[derive(Debug, Clone)]
 pub(super) enum FailureStorage {
     Inline { requested: usize, cause: Denial },
-    SegmentLimit { observed: u64, admitted: u64 },
     Shared(Arc<WalReadDiagnosticStorage>),
 }
 
@@ -37,15 +36,9 @@ pub enum RecoveryWalArtifactView<'a> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RecoveryWalDiscoveryFailureView<'a> {
-    EntryLimitExceeded {
-        observed: u64,
-        admitted: u64,
-    },
-    ByteLimitExceeded {
-        observed: u64,
-        admitted: u64,
-        scope: RecoveryDiscoveryByteLimitScope,
-    },
+    Limit(ExceededFilesystemObservationBound),
+    /// A count past every count: no ceiling admits it, so no limit states it.
+    CountOverflow(RecoveryDiscoveryCount),
     Media {
         artifact: RecoveryWalArtifactView<'a>,
         failure: &'a ArtifactTreeFailure,
@@ -81,14 +74,6 @@ impl FundedRecoveryWalReadFailure {
                 requested: *requested,
                 cause,
             },
-            FailureStorage::SegmentLimit { observed, admitted } => {
-                RecoveryWalReadFailureView::Discovery(
-                    RecoveryWalDiscoveryFailureView::EntryLimitExceeded {
-                        observed: *observed,
-                        admitted: *admitted,
-                    },
-                )
-            }
             FailureStorage::Shared(storage) => {
                 view(storage.failure.as_ref().expect("sealed failure"))
             }
@@ -97,7 +82,7 @@ impl FundedRecoveryWalReadFailure {
 
     pub fn charged_bytes(&self) -> u64 {
         match &self.storage {
-            FailureStorage::Inline { .. } | FailureStorage::SegmentLimit { .. } => 0,
+            FailureStorage::Inline { .. } => 0,
             FailureStorage::Shared(storage) => storage.backing.bytes(),
         }
     }
@@ -105,12 +90,6 @@ impl FundedRecoveryWalReadFailure {
     pub(super) fn inline(requested: usize, cause: Denial) -> Self {
         Self {
             storage: FailureStorage::Inline { requested, cause },
-        }
-    }
-
-    pub(super) fn segment_limit(observed: u64, admitted: u64) -> Self {
-        Self {
-            storage: FailureStorage::SegmentLimit { observed, admitted },
         }
     }
 }
@@ -127,21 +106,12 @@ fn view(failure: &RawWalReadFailure) -> RecoveryWalReadFailureView<'_> {
     match failure {
         RawWalReadFailure::Discovery(failure) => {
             RecoveryWalReadFailureView::Discovery(match failure {
-                RecoveryDiscoveryFailure::EntryLimitExceeded { observed, admitted } => {
-                    RecoveryWalDiscoveryFailureView::EntryLimitExceeded {
-                        observed: *observed,
-                        admitted: *admitted,
-                    }
+                RecoveryDiscoveryFailure::Limit(past) => {
+                    RecoveryWalDiscoveryFailureView::Limit(*past)
                 }
-                RecoveryDiscoveryFailure::ByteLimitExceeded {
-                    observed,
-                    admitted,
-                    scope,
-                } => RecoveryWalDiscoveryFailureView::ByteLimitExceeded {
-                    observed: *observed,
-                    admitted: *admitted,
-                    scope: *scope,
-                },
+                RecoveryDiscoveryFailure::CountOverflow(count) => {
+                    RecoveryWalDiscoveryFailureView::CountOverflow(*count)
+                }
                 RecoveryDiscoveryFailure::Media { artifact, failure } => {
                     RecoveryWalDiscoveryFailureView::Media {
                         artifact: artifact_view(artifact),

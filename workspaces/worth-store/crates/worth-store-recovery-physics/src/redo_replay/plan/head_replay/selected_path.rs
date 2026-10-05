@@ -7,7 +7,7 @@ use worth_store_physical_format::{
     ReleaseCustodyHeadBlockReferenceV1,
 };
 
-use super::{ExceededHeadReplayBound, HeadReplayBound, SelectedReleaseHeadReplayDenial};
+use super::{HeadReplayAllowance, SelectedReleaseHeadReplayDenial};
 
 /// Deny before any read when the carried frames exceed the admitted effect
 /// bytes, or when recomputing, reading, or retaining them exceeds the heap.
@@ -17,21 +17,17 @@ pub(super) fn require_claim_bounds(
     maximum_effect_bytes: u64,
     remaining_additional_heap_bytes: u64,
 ) -> Result<(), SelectedReleaseHeadReplayDenial> {
-    ExceededHeadReplayBound::within(
-        HeadReplayBound::EffectBytes,
-        claim.framed_bytes(),
-        maximum_effect_bytes,
-    )?;
+    let framed = claim
+        .framed_bytes()
+        .ok_or(SelectedReleaseHeadReplayDenial::SizeOverflow)?;
+    HeadReplayAllowance::effect_bytes(maximum_effect_bytes).admit(framed)?;
     let read_buffer = u64::from(format.page_size().bytes());
     let held = claim
         .verification_additional_peak_bytes(format)
         .zip(claim.owned_heap_bytes())
-        .map(|(verification, clone)| verification.max(read_buffer).max(clone));
-    ExceededHeadReplayBound::within(
-        HeadReplayBound::HeapBytes,
-        held,
-        remaining_additional_heap_bytes,
-    )?;
+        .map(|(verification, clone)| verification.max(read_buffer).max(clone))
+        .ok_or(SelectedReleaseHeadReplayDenial::SizeOverflow)?;
+    HeadReplayAllowance::heap_bytes(remaining_additional_heap_bytes).admit(held)?;
     Ok(())
 }
 

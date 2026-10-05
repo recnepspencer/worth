@@ -21,6 +21,11 @@ const PAYLOAD: usize = 64;
 const FIRST: &str = "segment-1-generation-1.wal";
 const SECOND: &str = "segment-2-generation-1.wal";
 
+/// A WAL ceiling admits at least one segment.
+fn segments(count: u64) -> NonZeroU64 {
+    NonZeroU64::new(count).expect("a WAL ceiling admits at least one segment")
+}
+
 mod diagnostic_failures;
 mod path_pressure;
 mod serving_pressure;
@@ -95,7 +100,9 @@ fn second_wal_payload_denial_retains_diagnostic_across_clone_and_owner_disposal(
     drop(held);
     let read_before = discovery.counters().wal_bytes_read;
     let mut window = coordination.begin_source_read_allocation().unwrap();
-    let observations = window.read_wal_payloads(&mut discovery, 2, 4096).unwrap();
+    let observations = window
+        .read_wal_payloads(&mut discovery, segments(2), 4096)
+        .unwrap();
     assert_eq!(observations.artifacts().len(), 2);
     for artifact in observations.artifacts() {
         let expected = if artifact.name() == FIRST {
@@ -209,7 +216,9 @@ fn wal_result_roster_denies_before_allocation_or_payload_reads_then_retries() {
     assert_eq!(std::fs::read(wal.join(SECOND)).unwrap(), [29; PAYLOAD]);
     drop(held);
     let mut window = coordination.begin_source_read_allocation().unwrap();
-    let observations = window.read_wal_payloads(&mut discovery, 2, 4096).unwrap();
+    let observations = window
+        .read_wal_payloads(&mut discovery, segments(2), 4096)
+        .unwrap();
     let expected = roster_bytes as u64
         + 2 * PAYLOAD as u64
         + observations

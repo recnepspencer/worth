@@ -9,6 +9,10 @@ use worth_store_physical_format::{
     SelectedRecordRouteMetadata,
 };
 
+use worth_store_recovery_physics::{
+    test_support::root_history_limit_for_test, ReleasedInventoryView, RootHistoryBound,
+};
+
 use super::*;
 
 struct Fixture {
@@ -24,6 +28,14 @@ struct Fixture {
 
 impl Fixture {
     fn matches(&self) -> bool {
+        self.check(1 << 20).is_ok()
+    }
+
+    fn check(
+        &self,
+        maximum_scratch_bytes: u64,
+    ) -> Result<(VerifiedReleasedV3InventoryTransition, u64), Option<ExceededRootHistoryBound>>
+    {
         verified_historical_release_transition(
             &self.source_root,
             &self.source,
@@ -37,9 +49,31 @@ impl Fixture {
             None,
             PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
             16,
-            1 << 20,
+            maximum_scratch_bytes,
         )
-        .is_ok()
+    }
+
+    /// What the check holds at its peak; this fixture lays out no segments.
+    fn peak(&self) -> u64 {
+        VerifiedReleasedV3InventoryTransition::maximum_construction_heap_bytes(
+            ReleasedInventoryView::new(
+                &self.source_root,
+                &self.source.free_space,
+                &self.source_routes,
+                &[],
+                &self.source.free_entries,
+            ),
+            ReleasedInventoryView::new(
+                &self.result_root,
+                &self.result.free_space,
+                &self.result_routes,
+                &[],
+                &self.result.free_entries,
+            ),
+            &self.projected,
+            16,
+        )
+        .unwrap()
     }
 }
 
@@ -178,4 +212,26 @@ fn exact_historical_result_requires_maintenance_and_drop_filtered_root_hints() {
     let latest = IndexedThroughBlobPublication::new(2, record(2), [2; 32]).unwrap();
     wrong_hint.result_root = root(2, &wrong_hint.result.free_space, 2, 3, Some(latest), true);
     assert!(!wrong_hint.matches());
+}
+
+#[test]
+fn a_transition_the_media_does_not_hold_names_no_bound() {
+    let mut substituted = fixture();
+    substituted.result_routes[0] = route(2, 4, 1, 4096, 4096);
+    assert_eq!(substituted.check(1 << 20).map(drop), Err(None));
+}
+
+#[test]
+fn a_check_past_its_scratch_names_that_limit_with_both_counts() {
+    let honest = fixture();
+    let peak = honest.peak();
+    assert_eq!(honest.check(peak).map(|(_, held)| held), Ok(0));
+    assert_eq!(
+        honest.check(peak - 1).map(drop),
+        Err(Some(root_history_limit_for_test(
+            RootHistoryBound::ScratchBytes,
+            peak,
+            peak - 1
+        )))
+    );
 }

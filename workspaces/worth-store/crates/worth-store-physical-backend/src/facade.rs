@@ -187,6 +187,8 @@ pub use crate::recovery_durability::wal_recovery_basis::{
     WalDurabilityObservationBasis, WalDurabilityObservationDenial,
     WalDurabilityObservationDenialKind, WalFrameDigest,
 };
+#[cfg(all(feature = "recovery-runtime-owner", feature = "test-support"))]
+pub use crate::recovery_media::filesystem_observation_limit_for_test;
 #[cfg(all(feature = "recovery-runtime-owner", feature = "store-runtime-owner"))]
 pub use crate::recovery_media::{
     execute_recovery_cleanup_removal, BackendCompletedRecoveryCleanupRemoval,
@@ -203,11 +205,12 @@ pub use crate::recovery_media::{
     CompletedRecoveryStagingWrite, CompletedScheduledRecoveryReopenRead,
     CompletedScheduledRecoveryStagingSynchronization, CompletedScheduledRecoveryStagingWrite,
     DeniedScheduledRecoveryReopenRead, DeniedScheduledRecoveryStagingWrite,
+    ExceededFilesystemObservationBound, FilesystemObservationBound,
     IndeterminateRecoveryStagingWrite, IndeterminateScheduledRecoveryStagingSynchronization,
     IndeterminateScheduledRecoveryStagingWrite, ObservedRecoveryArtifact, ObservedWalArtifact,
     PhysicalRecoveryMediaGeneration, QualifiedPhysicalBackendProfile,
     QualifiedRecoveryFilesystemMedia, RecoveryDiscoveryAllocationFailure,
-    RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryCounters,
+    RecoveryDiscoveryArtifact, RecoveryDiscoveryCount, RecoveryDiscoveryCounters,
     RecoveryDiscoveryFailure, RecoveryFilesystemQualificationError, RecoveryMediaHandleObservation,
     RecoveryReopenReadOutcome, RecoveryRootProtocolPublicationDenial,
     RecoveryRootProtocolPublicationPlan, RecoverySelectedWalReadOutcome,

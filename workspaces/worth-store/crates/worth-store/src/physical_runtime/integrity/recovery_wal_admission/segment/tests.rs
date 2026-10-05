@@ -43,7 +43,7 @@ fn fixture() -> (
     let (media, coordination) =
         super::super::media_generation_tests::recovery_media_and_coordination(&root);
     let mut discovery = media.bounded_discovery(1, 4096).unwrap();
-    let observed = discovery.read_wal_artifacts(1, 4096).unwrap();
+    let observed = discovery.read_wal_artifacts(NonZeroU64::MIN, 4096).unwrap();
     (directory, discovery.finish(), coordination, observed)
 }
 

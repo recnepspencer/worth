@@ -118,13 +118,11 @@ pub(super) fn admit(
             claim.prepare_effective_heads(context.limits.manifest_entries, resident.remaining());
         let heap_bytes = match prepared {
             Ok(bytes) => bytes,
-            Err(
-                worth_store_recovery_physics::EffectiveReleaseHeadDenial::ResidentBoundExceeded {
-                    required,
-                    ..
-                },
-            ) => {
-                let _ = resident.transient(required);
+            Err(worth_store_recovery_physics::EffectiveReleaseHeadDenial::Limit(past))
+                if past.dimension()
+                    == worth_store_recovery_physics::PhysicsBound::ResidentBytes =>
+            {
+                let _ = resident.transient(past.observed());
                 let limit = resident_basis::limit_failure(&context, &resident);
                 return Err(context.redo_block(basis.planning_counters(), limit));
             }

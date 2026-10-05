@@ -677,4 +677,5 @@ pub use crate::values::{
     EntityId, Generation, InternedString, LocalSlot, PartitionId, ScalarAspectType, Symbol,
 };
 
+pub use crate::budget_limits::{BudgetRefused, ExhaustedLimit, LimitCounts, LimitDimension};
 pub use crate::responsibilities::{foundational_responsibilities, ResponsibilityArea};

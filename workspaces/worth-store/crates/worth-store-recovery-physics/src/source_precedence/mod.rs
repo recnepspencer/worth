@@ -15,6 +15,7 @@ mod page_facts;
 mod page_lsn_skip_apply;
 mod pending_wal_release_custody;
 mod physical_source;
+mod physics_budget;
 mod release_custody;
 mod released_directory_replacement;
 mod released_v3_inventory_transition;
@@ -39,6 +40,11 @@ pub use current_previous_root::{
     select_current_previous_root, PhysicalBootstrapFallbackAnchor, PhysicalRootSelectionDenial,
     SelectedPhysicalRoot, SelectedPhysicalRootRole,
 };
+#[cfg(any(test, feature = "test-support"))]
+pub use exceeded_bound::root_history_limit_for_test;
+use exceeded_bound::RootHistoryAllowance;
+#[cfg(test)]
+pub(crate) use exceeded_bound::{entries_past, scratch_past};
 pub use exceeded_bound::{ExceededRootHistoryBound, RootHistoryBound};
 pub use historical_release_root_chain::{
     HistoricalReleaseRootChainBuilder, HistoricalReleaseRootChainDenial,
@@ -71,6 +77,10 @@ pub use pending_wal_release_custody::{
     VerifiedOrderedPendingWalReleaseBatch, VerifiedPendingWalReleaseCustody,
 };
 pub use physical_source::PhysicalRecoverySource;
+#[cfg(any(test, feature = "test-support"))]
+pub use physics_budget::physics_limit_for_test;
+use physics_budget::PhysicsAllowance;
+pub use physics_budget::{ExceededPhysicsBound, PhysicsBound};
 pub use release_custody::{
     AddressedCheckpointBatchControl, AddressedReleaseHeadControlV2, SelectedCustodyDenial,
     SelectedHeadRosterAdmissionDenial, VerifiedAddressedCheckpointReleaseBase,
@@ -81,7 +91,7 @@ pub use released_directory_replacement::{
     ReleasedDirectoryReplacementDenial, VerifiedReleasedDirectoryReplacement,
 };
 pub use released_v3_inventory_transition::{
-    ReleasedInventoryView, ReleasedV3InventoryTransitionDenial,
+    ReleasedInventoryParts, ReleasedInventoryView, ReleasedV3InventoryTransitionDenial,
     VerifiedReleasedV3InventoryTransition,
 };
 pub use residue::{PhysicalRecoveryResidue, PhysicalRecoveryResidueKind};

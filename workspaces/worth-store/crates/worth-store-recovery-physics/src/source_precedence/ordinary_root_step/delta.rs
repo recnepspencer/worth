@@ -158,14 +158,14 @@ pub(super) fn free_matches(
                 .map(|candidate| next.max(candidate))
         })
         .ok_or(Denial::InvalidDelta)?;
-    let past = |count: u64| Denial::BoundExceeded(ExceededRootHistoryBound::entries(count, limit));
-    if next_arena - first > limit {
-        return Err(past(next_arena - first));
-    }
+    let entries = RootHistoryAllowance::entries(limit);
+    entries
+        .admit(next_arena - first)
+        .map_err(Denial::BoundExceeded)?;
     for id in first..next_arena {
-        if free.len() as u64 >= limit {
-            return Err(past(free.len() as u64 + 1));
-        }
+        entries
+            .admit(free.len() as u64 + 1)
+            .map_err(Denial::BoundExceeded)?;
         let range = ExtentArenaRange::new(
             ExtentArenaId::new(id).ok_or(Denial::InvalidDelta)?,
             0,
@@ -175,9 +175,9 @@ pub(super) fn free_matches(
         insert(&mut free, range, result.root.generation())?;
     }
     for range in ranges {
-        if free.len() as u64 > limit {
-            return Err(past(free.len() as u64));
-        }
+        entries
+            .admit(free.len() as u64)
+            .map_err(Denial::BoundExceeded)?;
         if range.end() > source.free.arena_capacity()
             || range.offset() % source.free.arena_alignment() != 0
             || range.length() % source.free.arena_alignment() != 0

@@ -74,12 +74,12 @@ fn a_sound_tree_of_more_blocks_than_the_bound_is_that_bound_with_its_count() {
     let tree = SparseTree::new();
     // The bound is the tree's three heads; its four blocks pass it.
     let (walked, reads) = tree.walk(3, None);
+    let Err(ReleaseCustodyHeadWalkDenial::Limit(limit)) = walked else {
+        panic!("more blocks than the bound is the node bound, not {walked:?}");
+    };
     assert_eq!(
-        walked,
-        Err(ReleaseCustodyHeadWalkDenial::NodeBound {
-            observed: 4,
-            admitted: 3,
-        })
+        (limit.dimension(), limit.observed(), limit.admitted()),
+        (ReleaseCustodyHeadWalkBound::Nodes, 4, 3)
     );
     // The branch said how many blocks it has; no leaf was read past the bound.
     assert_eq!(reads, vec![4]);

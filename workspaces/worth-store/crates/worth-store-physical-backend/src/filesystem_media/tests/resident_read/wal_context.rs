@@ -17,7 +17,7 @@ fn wal_context_copy_denial_precedes_payload_read_and_same_owner_retries() {
     let reads_before = observer.snapshot().positioned_read_attempts();
     let context_calls = Cell::new(0);
     let denied = discovery.read_wal_artifacts_with_allocators(
-        2,
+        segments(2),
         16,
         |count| Ok(Vec::with_capacity(count)),
         |_| panic!("context refusal must precede payload allocation"),
@@ -52,7 +52,7 @@ fn wal_context_copy_denial_precedes_payload_read_and_same_owner_retries() {
             (0, storage.len())
         };
         let malformed = discovery.read_wal_artifacts_with_allocators(
-            2,
+            segments(2),
             16,
             |count| Ok(Vec::with_capacity(count)),
             |_| panic!("malformed context storage must precede payload allocation"),
@@ -70,7 +70,7 @@ fn wal_context_copy_denial_precedes_payload_read_and_same_owner_retries() {
 
     let observed = discovery
         .read_wal_artifacts_with_allocators(
-            2,
+            segments(2),
             16,
             |count| Ok(Vec::with_capacity(count)),
             |length| Ok(vec![0; length]),

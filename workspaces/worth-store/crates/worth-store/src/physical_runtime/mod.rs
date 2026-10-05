@@ -334,21 +334,23 @@ pub use work::{
     PhysicalWorkTerminalObservation, PhysicalWorkTerminalStage, PhysicalWorkTimeoutJoin,
     ReadyPhysicalWork, ResourceAdmittedPhysicalWork, SettledPhysicalWork,
 };
+#[cfg(all(feature = "recovery-runtime-owner", feature = "test-support"))]
+pub use worth_store_physical_backend::filesystem_observation_limit_for_test;
 #[cfg(feature = "recovery-runtime-owner")]
 pub use worth_store_physical_backend::{
     AdmittedRecoveryFilesystemMedia, ArtifactTreeFailureKind,
     ArtifactTreeListingAllocationBoundary, ArtifactTreePathAllocationBoundary,
     BoundedRecoveryFilesystemDiscovery, CompletedRecoveryStagingWrite,
     CompletedScheduledRecoveryReopenRead, CompletedScheduledRecoveryStagingWrite,
-    DeniedScheduledRecoveryReopenRead, FilesystemAccessPosture, IndeterminateRecoveryStagingWrite,
-    MediaOwnerIdentity, ObservedRecoveryArtifact, ObservedWalArtifact,
-    PhysicalRecoveryMediaGeneration, QualifiedPhysicalBackendProfile,
-    QualifiedRecoveryFilesystemMedia, RecoveryDiscoveryAllocationFailure,
-    RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryCounters,
-    RecoveryDiscoveryFailure, RecoveryFilesystemQualificationError, RecoveryReopenReadOutcome,
-    RecoveryRootProtocolPublicationDenial, RecoveryRootProtocolPublicationPlan,
-    RecoveryStagingIndeterminatePhysical, RecoveryStagingWriteDisposition,
-    RecoveryStagingWriteOutcome, RecoveryWalObservationIdentity,
+    DeniedScheduledRecoveryReopenRead, ExceededFilesystemObservationBound, FilesystemAccessPosture,
+    FilesystemObservationBound, IndeterminateRecoveryStagingWrite, MediaOwnerIdentity,
+    ObservedRecoveryArtifact, ObservedWalArtifact, PhysicalRecoveryMediaGeneration,
+    QualifiedPhysicalBackendProfile, QualifiedRecoveryFilesystemMedia,
+    RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact, RecoveryDiscoveryCount,
+    RecoveryDiscoveryCounters, RecoveryDiscoveryFailure, RecoveryFilesystemQualificationError,
+    RecoveryReopenReadOutcome, RecoveryRootProtocolPublicationDenial,
+    RecoveryRootProtocolPublicationPlan, RecoveryStagingIndeterminatePhysical,
+    RecoveryStagingWriteDisposition, RecoveryStagingWriteOutcome, RecoveryWalObservationIdentity,
 };
 
 pub use work::PhysicalEffectRecoveryObligation;
