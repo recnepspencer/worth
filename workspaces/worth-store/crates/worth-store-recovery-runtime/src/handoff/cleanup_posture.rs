@@ -214,6 +214,23 @@ impl RecoveryCleanupPosture {
     }
 }
 
+/// Summary only: the evidence holds media bytes and nested denials.
+impl std::fmt::Debug for RecoveryCleanupPosture {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let evidence = self.evidence();
+        formatter
+            .debug_struct(if self.is_deferred() {
+                "Deferred"
+            } else {
+                "Complete"
+            })
+            .field("performed_removals", &evidence.performed.len())
+            .field("deferrals", &evidence.deferrals.len())
+            .field("counters", &evidence.counters)
+            .finish()
+    }
+}
+
 fn target_heap_bytes(target: &RecoveryCleanupTarget) -> Option<u64> {
     match target {
         RecoveryCleanupTarget::Residue { name, .. } => u64::try_from(name.len()).ok(),

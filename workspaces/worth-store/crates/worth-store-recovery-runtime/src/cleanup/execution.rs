@@ -22,6 +22,8 @@ pub(crate) fn execute(
     ) {
         return super::checkpoint_residue::failure(reopened, residue);
     }
+    #[cfg(feature = "certification-test-authority")]
+    crate::certification::before_cleanup_revalidation();
     let limits = reopened.state.authority.limits.declaration();
     let mut plan = build_plan(RecoveryCleanupPlanBasis {
         selection: &reopened.state.selection,

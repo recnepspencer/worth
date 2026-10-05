@@ -40,6 +40,9 @@ pub struct PhysicalRecoveryPublicationIndeterminate {
     reopen: Option<super::PhysicalRecoveryReopenFailure>,
     handoff: Option<RecoveredPhysicalRuntimeConstructionDenial>,
     checkpoint_residue_indeterminate: bool,
+    /// Settled before the Store rejoin that failed, so this run still names
+    /// what cleanup removed and the debt it left deferred.
+    cleanup: Option<crate::handoff::RecoveryCleanupPosture>,
     recovery_effects: u64,
     integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 }
@@ -165,6 +168,7 @@ impl PhysicalRecoveryPublicationIndeterminate {
             reopen: None,
             handoff: None,
             checkpoint_residue_indeterminate: false,
+            cleanup: None,
             recovery_effects,
             integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace::new(),
         }
@@ -255,6 +259,19 @@ impl PhysicalRecoveryPublicationIndeterminate {
 
     pub const fn checkpoint_residue_indeterminate(&self) -> bool {
         self.checkpoint_residue_indeterminate
+    }
+
+    pub(crate) fn with_cleanup_posture(
+        mut self,
+        cleanup: crate::handoff::RecoveryCleanupPosture,
+    ) -> Self {
+        self.cleanup = Some(cleanup);
+        self
+    }
+
+    /// Present exactly when cleanup settled before the handoff failed.
+    pub const fn cleanup_posture(&self) -> Option<&crate::handoff::RecoveryCleanupPosture> {
+        self.cleanup.as_ref()
     }
 }
 

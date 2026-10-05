@@ -23,6 +23,8 @@ fn production_discovery_projects_all_five_checkpoint_families_without_raw_decode
     publish_synthetic_genesis(&root, store);
     let (checkpoint, bytes) = checkpoint_with_dirty_and_bindings(store, 1);
     write_checkpoint(&root, &bytes);
+    // C.11 continuation: the cutoff needs its retained covered WAL anchor.
+    publish_synthetic_covered_wal(&root);
 
     let discovered = admitted_recovery(&root).discover().unwrap();
     assert_eq!(discovered.counters().checkpoint_candidates, 1);

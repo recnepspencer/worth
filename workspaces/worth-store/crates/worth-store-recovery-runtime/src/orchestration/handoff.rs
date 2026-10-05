@@ -244,7 +244,8 @@ pub(crate) fn finish_recovery_after_cleanup(
                 )
                 .with_integrity_trace(state.integrity_trace)
                 .with_integrity_observations(state.integrity.into_observations())
-                .with_handoff_failure(denial),
+                .with_handoff_failure(denial)
+                .with_cleanup_posture(cleanup),
             )
         }
     }

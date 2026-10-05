@@ -142,6 +142,18 @@ impl ReopenedPhysicalRecovery {
         crate::cleanup::execute(self, Some(cancellation))
     }
 
+    /// Applies `change` after Store's checkpoint residue gate and before
+    /// cleanup's first byte-exact revalidation, then finishes with the
+    /// change left in place.
+    #[cfg(feature = "certification-test-authority")]
+    pub fn certification_finish_with_change_before_cleanup_revalidation(
+        self,
+        change: impl FnOnce() + 'static,
+    ) -> crate::entry::PhysicalRecoveryOutcome {
+        let _hook = crate::certification::CleanupRevalidationHook::install(change);
+        self.finish()
+    }
+
     #[cfg(feature = "certification-test-authority")]
     pub fn certification_shift_cleanup_generation(&self) {
         self.state

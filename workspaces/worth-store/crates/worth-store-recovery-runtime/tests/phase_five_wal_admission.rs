@@ -167,28 +167,38 @@ fn empty_terminal_segment_keeps_c8_and_c9_counters_distinct() {
     let store = initialize_store(&root);
     publish_synthetic_genesis(&root, store);
     publish_synthetic_checkpoint(&root, store);
+    // C.11 continuation: segment 1 holds the cutoff's covered WAL anchor, so
+    // the empty terminal residue is the next segment.
+    publish_synthetic_covered_wal(&root);
     let path = root
         .join("families")
         .join("wal")
-        .join("segment-1-generation-1.wal");
+        .join("segment-2-generation-1.wal");
     std::fs::create_dir_all(path.parent().unwrap()).unwrap();
     std::fs::write(path, []).unwrap();
 
     let discovered = admitted_recovery(&root).discover().unwrap();
     let counters = discovered.counters();
-    assert_eq!(counters.wal_frames, 0);
+    // The covered anchor is the only frame: one C.9 admission and projection.
+    // The empty terminal segment is C.8 residue and one C.9 rejection.
+    assert_eq!(counters.wal_frames, 1);
     assert_eq!(counters.trailing_empty_wal_residue, 1);
     assert_eq!(counters.torn_suffix_frames, 0);
     assert_eq!(counters.wal_corruption_denials, 0);
-    assert_eq!(counters.wal_integrity_attempts, 1);
-    assert_eq!(counters.wal_integrity_admissions, 0);
+    assert_eq!(counters.wal_integrity_attempts, 2);
+    assert_eq!(counters.wal_integrity_admissions, 1);
     assert_eq!(counters.wal_integrity_rejections, 1);
-    assert_eq!(counters.wal_owner_projections, 0);
+    assert_eq!(counters.wal_owner_projections, 1);
     assert_eq!(counters.wal_owner_decoder_entries, 0);
     let selected = discovered.select().unwrap();
-    assert_eq!(selected.wal_integrity_observations().len(), 1);
+    let observations = selected.wal_integrity_observations();
+    assert_eq!(observations.len(), 2);
     assert!(matches!(
-        selected.wal_integrity_observations()[0].outcome(),
+        observations[0].outcome(),
+        PhysicalRecoveryWalIntegrityObservationOutcome::Admitted
+    ));
+    assert!(matches!(
+        observations[1].outcome(),
         PhysicalRecoveryWalIntegrityObservationOutcome::Rejected(_)
     ));
 }
