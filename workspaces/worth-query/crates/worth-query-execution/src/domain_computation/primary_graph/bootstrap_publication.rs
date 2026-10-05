@@ -43,12 +43,7 @@ pub(super) fn commit_bootstrap_rows(
         for (ordinal, row) in rows.into_iter().enumerate() {
             batch = append_principal_row(batch, first_principal_ordinal + ordinal, row);
         }
-        for row in entity_rows {
-            batch = append_typed_entity(batch, row);
-        }
-        for row in relation_rows {
-            batch = append_typed_relation(batch, row);
-        }
+        batch = append_typed_rows(batch, entity_rows, relation_rows);
         transaction
             .push_batch(batch)
             .map_err(map_bootstrap_staging_denial)?;
@@ -214,6 +209,20 @@ pub(super) fn map_bootstrap_commit_denial(
             error.detail()
         ),
     )
+}
+
+pub(super) fn append_typed_rows(
+    mut batch: WorkerIntentBatch,
+    entity_rows: Vec<WorthQueryTypedEntityBootstrapRow>,
+    relation_rows: Vec<WorthQueryTypedRelationBootstrapRow>,
+) -> WorkerIntentBatch {
+    for row in entity_rows {
+        batch = append_typed_entity(batch, row);
+    }
+    for row in relation_rows {
+        batch = append_typed_relation(batch, row);
+    }
+    batch
 }
 
 fn append_typed_entity(

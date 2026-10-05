@@ -239,6 +239,12 @@ impl WorthQueryPrimaryGraphLayout {
         self.entity_kinds.get(entity).copied()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn application_entity_kinds(
+        &self,
+    ) -> impl Iterator<Item = KindId> + '_ {
+        self.application_entity_kinds.iter().copied()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn entity_kind_lookup_work(
         &self,
         entity: &str,

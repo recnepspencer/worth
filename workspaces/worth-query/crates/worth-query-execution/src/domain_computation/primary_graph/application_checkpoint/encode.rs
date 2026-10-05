@@ -7,7 +7,7 @@ use super::{
 };
 
 impl WorthQueryApplicationCheckpoint {
-    pub(super) fn encode(
+    pub(in crate::domain_computation::primary_graph) fn encode(
         native: worth_relational::facade::durability::RelationalNativeCheckpoint,
         publication: &super::super::WorthQueryPrimaryGraphPublication,
         accepted_outputs: &[super::super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity],

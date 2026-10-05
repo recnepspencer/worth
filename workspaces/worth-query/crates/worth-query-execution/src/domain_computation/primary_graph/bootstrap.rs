@@ -29,6 +29,7 @@ use super::{
 
 mod binding_denial;
 mod checkpoint;
+pub(in crate::domain_computation::primary_graph) mod checkpoint_transition;
 mod preparation;
 mod program_activation_recovery;
 mod program_activation_seeding;

@@ -329,7 +329,7 @@ fn seed_document(
         .expect("the related document must seed");
 }
 
-fn host_limits() -> WorthQueryInMemoryApplicationLimits {
+pub fn host_limits() -> WorthQueryInMemoryApplicationLimits {
     // Installation admits the binding's maximum publication shape even though
     // the ordinary Document handler requests its narrow candidate at execution.
     WorthQueryInMemoryApplicationLimits::new(

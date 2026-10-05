@@ -1,4 +1,6 @@
 mod checkpoint;
+mod checkpoint_transition;
+pub use checkpoint_transition::in_memory_rostered_program_from_checkpoint_with_transition;
 mod conditional;
 mod construction;
 mod demand;

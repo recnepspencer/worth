@@ -20,6 +20,8 @@ use super::document_retention_model::{
 
 #[path = "producer_predicate_checkpoint/program.rs"]
 mod program;
+#[path = "producer_predicate_checkpoint/transition.rs"]
+mod transition;
 use program::{validated_program, AssessmentRoot};
 
 #[test]
