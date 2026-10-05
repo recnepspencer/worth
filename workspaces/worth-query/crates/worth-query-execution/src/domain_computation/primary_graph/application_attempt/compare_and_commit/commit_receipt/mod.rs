@@ -71,6 +71,9 @@ pub struct WorthQueryApplicationCommitReceipt {
     pub(super) exact_output_settlement: Option<std::sync::Arc<
         crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
     >>,
+    /// Set where the rebase of this commit failed, so it retains no fact.
+    pub(super) unrebased_own_effect:
+        Option<crate::domain_computation::primary_graph::provider::OwnEffectOnReads>,
 }
 
 impl Eq for WorthQueryApplicationCommitReceipt {}
@@ -102,6 +105,7 @@ impl Clone for WorthQueryApplicationCommitReceipt {
             performed_product_change: None,
             output_correspondence: self.output_correspondence.clone(),
             exact_output_settlement: self.exact_output_settlement.clone(),
+            unrebased_own_effect: self.unrebased_own_effect,
             committed_changes: self.committed_changes.clone(),
         }
     }
@@ -132,6 +136,25 @@ impl WorthQueryApplicationCommitReceipt {
         &self,
     ) -> &super::WorthQueryCommittedProductPublication {
         &self.committed_product_publication
+    }
+
+    /// What a commit that kept no fact answers at `observation`, and `None`
+    /// for a commit that rebased: its facts answer. The commit is current
+    /// while its own effect moved none of its reads and its own publication
+    /// is still the one selected. One whose effect moved a read is superseded
+    /// at its own publication, as it is where its rebase succeeds.
+    pub(in crate::domain_computation::primary_graph) fn currentness_without_facts_at(
+        &self,
+        observation: &worth_runtime_world::facade::ProductBranchObservation,
+    ) -> Option<bool> {
+        use crate::domain_computation::primary_graph::provider::OwnEffectOnReads;
+        let own_effect = self.unrebased_own_effect?;
+        Some(
+            own_effect == OwnEffectOnReads::Unmoved
+                && self
+                    .committed_product_publication
+                    .is_selected_at(observation),
+        )
     }
 
     pub const fn basis_descriptor(

@@ -17,10 +17,30 @@ pub(super) enum RebasedSourceFacts {
         facts: Arc<[WorthQueryApplicationObservedFact]>,
         ordinals: Arc<[usize]>,
     },
+    /// The rebase failed. It fails as a whole, so the commit retains none of
+    /// its facts: one left as its handler read it has no native revision,
+    /// and no verifier compares it. One thing is carried out instead: what
+    /// the committed effect did to the facts its source query read.
     VerificationRequired {
         reason: RebaseVerificationReason,
-        facts: Arc<[WorthQueryApplicationObservedFact]>,
+        own_effect: OwnEffectOnReads,
     },
+}
+
+/// Whether a commit's own effect moved a fact its source query read. A read
+/// the rebase could not decide counts as moved.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph) enum OwnEffectOnReads {
+    Unmoved,
+    Moved,
+}
+
+/// A rebase that failed: why, and what the commit's own effect did to its
+/// reads. No caller holds the one without the other.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph) struct FailedRebase {
+    pub(in crate::domain_computation::primary_graph) reason: RebaseVerificationReason,
+    pub(in crate::domain_computation::primary_graph) own_effect: OwnEffectOnReads,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -59,51 +79,42 @@ impl PreparedSourceFactRebase {
     }
 }
 
-impl RebasedSourceFacts {
-    /// The same sealed facts under a requirement to verify them in full: the
-    /// row a commit leaves when its facts can be compared but were not
-    /// sealed as exact.
-    #[cfg(feature = "test-primary-graph-faults")]
-    pub(super) fn held_for_verification(self) -> Self {
-        match self {
-            Self::Exact(facts) | Self::SupersededByOwnEffect { facts, .. } => {
-                Self::VerificationRequired {
-                    reason: RebaseVerificationReason::NativeRevisionUnavailable,
-                    facts,
-                }
-            }
-            required @ Self::VerificationRequired { .. } => required,
+impl OwnEffectOnReads {
+    /// The answer once the walk leaves `undecided` unread: a fact a source
+    /// query read that nothing decided counts as moved.
+    fn with_undecided(self, undecided: &[WorthQueryApplicationObservedFact]) -> Self {
+        if undecided.iter().any(resolution::reads_source) {
+            Self::Moved
+        } else {
+            self
         }
     }
-    pub(super) fn retain_exact(&self) -> Option<Arc<[WorthQueryApplicationObservedFact]>> {
+}
+
+impl RebasedSourceFacts {
+    /// The facts the commit retains, or the rebase that failed and left it
+    /// none.
+    pub(super) fn retained(
+        &self,
+    ) -> Result<Arc<[WorthQueryApplicationObservedFact]>, FailedRebase> {
         match self {
-            Self::Exact(facts) | Self::SupersededByOwnEffect { facts, .. } => {
-                Some(Arc::clone(facts))
-            }
-            Self::VerificationRequired { .. } => None,
+            Self::Exact(facts) | Self::SupersededByOwnEffect { facts, .. } => Ok(Arc::clone(facts)),
+            Self::VerificationRequired { reason, own_effect } => Err(FailedRebase {
+                reason: *reason,
+                own_effect: *own_effect,
+            }),
         }
+    }
+
+    #[cfg(test)]
+    pub(super) fn retain_exact(&self) -> Option<Arc<[WorthQueryApplicationObservedFact]>> {
+        self.retained().ok()
     }
 
     pub(super) fn superseded_by_own_effect(&self) -> &[usize] {
         match self {
             Self::SupersededByOwnEffect { ordinals, .. } => ordinals,
             Self::Exact(_) | Self::VerificationRequired { .. } => &[],
-        }
-    }
-
-    pub(super) fn retain_verification_facts(
-        &self,
-    ) -> Option<Arc<[WorthQueryApplicationObservedFact]>> {
-        match self {
-            Self::Exact(_) | Self::SupersededByOwnEffect { .. } => None,
-            Self::VerificationRequired { facts, .. } => Some(Arc::clone(facts)),
-        }
-    }
-
-    pub(super) const fn verification_requirement(&self) -> Option<RebaseVerificationReason> {
-        match self {
-            Self::Exact(_) | Self::SupersededByOwnEffect { .. } => None,
-            Self::VerificationRequired { reason, .. } => Some(*reason),
         }
     }
 }
@@ -160,12 +171,19 @@ fn rebase(
         mut superseded,
     } = prepared;
     let mut indexed_work = maximum_indexed_rebase_work;
-    for fact in &facts {
+    let mut failure = None;
+    let mut own_effect = OwnEffectOnReads::Unmoved;
+    for (ordinal, fact) in facts.iter().enumerate() {
+        // Past a failure the walk decides one thing: what the effect did to
+        // each fact a source query read.
+        if failure.is_some() && !resolution::reads_source(fact) {
+            continue;
+        }
         if let Some(meter) = admission.as_mut() {
             if let Err(stop) = meter.charge_external_work(1) {
                 return RebasedSourceFacts::VerificationRequired {
-                    reason: RebaseVerificationReason::AdmissionDenied(stop),
-                    facts: facts.into(),
+                    reason: failure.unwrap_or(RebaseVerificationReason::AdmissionDenied(stop)),
+                    own_effect: own_effect.with_undecided(&facts[ordinal..]),
                 };
             }
         }
@@ -184,7 +202,7 @@ fn rebase(
                 if let Err(stop) = meter.charge_external_work(1) {
                     return RebasedSourceFacts::VerificationRequired {
                         reason: RebaseVerificationReason::AdmissionDenied(stop),
-                        facts: facts.into(),
+                        own_effect: own_effect.with_undecided(&facts[ordinal..]),
                     };
                 }
             }
@@ -198,14 +216,22 @@ fn rebase(
             adjacency_work,
             &mut indexed_work,
         ) {
-            Ok(action) => actions.push(action),
+            Ok(action) => {
+                if matches!(action, resolution::PreparedFactRebase::KeepSuperseded) {
+                    own_effect = OwnEffectOnReads::Moved;
+                }
+                if failure.is_none() {
+                    actions.push(action);
+                }
+            }
             Err(reason) => {
-                return RebasedSourceFacts::VerificationRequired {
-                    reason,
-                    facts: facts.into(),
-                };
+                own_effect = own_effect.with_undecided(std::slice::from_ref(fact));
+                failure.get_or_insert(reason);
             }
         }
+    }
+    if let Some(reason) = failure {
+        return RebasedSourceFacts::VerificationRequired { reason, own_effect };
     }
     for (ordinal, (fact, action)) in facts.into_iter().zip(actions).enumerate() {
         if matches!(action, resolution::PreparedFactRebase::KeepSuperseded) {

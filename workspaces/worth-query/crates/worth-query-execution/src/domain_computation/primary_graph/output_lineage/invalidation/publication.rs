@@ -2,7 +2,9 @@ use std::sync::Arc;
 
 use worth_relational::facade::{runtime::RelationalRuntime, snapshots::SnapshotHandle};
 
-use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCommittedApplication;
+use crate::domain_computation::primary_graph::provider::{
+    RebaseVerificationReason, WorthQueryPrimaryGraphCommittedApplication,
+};
 
 use super::super::{RecordedSettlementIdentity, WorthQueryApplicationOutputLineage};
 use super::{
@@ -33,7 +35,8 @@ pub(in crate::domain_computation::primary_graph) fn collect_consumed_output_upst
 
 /// Successful World effect is already authoritative here. Failure to retain
 /// derived evidence records its typed full-verification requirement; it cannot
-/// turn that performed effect into a no-effect refusal or an empty fact set.
+/// turn that performed effect into a no-effect refusal. A commit whose facts
+/// could not be rebased retains none, so no settlement is registered for it.
 pub(in crate::domain_computation::primary_graph) fn register_completed(
     owner: &SourceInvalidationOwner,
     application: &WorthQueryPrimaryGraphCommittedApplication,
@@ -45,13 +48,10 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
     output_witness: Option<&super::super::SealedNativeOutputWitness>,
     admission: &mut super::InvalidationEditAdmission,
 ) -> Result<(), FullVerificationReason> {
-    let evidence = application.commit_evidence();
-    let Some(facts) = evidence
-        .retain_observed_source_facts()
-        .or_else(|| evidence.retain_verification_source_facts())
-    else {
-        return Err(FullVerificationReason::NativeRevisionUnavailable);
-    };
+    let facts = application
+        .commit_evidence()
+        .rebased_source_facts()
+        .map_err(|failed| failed.reason)?;
     let read_basis = runtime
         .read_truth()
         .positioned_snapshot(snapshot)
@@ -76,11 +76,6 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
     }
     let stale_at_read_basis = own_effect_stale_ordinals(application, admission)
         .map_err(FullVerificationReason::MarkingAdmissionDenied)?;
-    let requirement = evidence.source_fact_verification_requirement().map(|reason| match reason {
-        crate::domain_computation::primary_graph::provider::RebaseVerificationReason::NativeRevisionUnavailable => FullVerificationReason::NativeRevisionUnavailable,
-        crate::domain_computation::primary_graph::provider::RebaseVerificationReason::UnsupportedDecisionFact => FullVerificationReason::UnsupportedFact,
-        crate::domain_computation::primary_graph::provider::RebaseVerificationReason::AdmissionDenied(stop) => FullVerificationReason::MarkingAdmissionDenied(stop),
-    });
     owner
         .register_settlement(
             SettlementRegistration {
@@ -90,7 +85,7 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
                 output_facts: Some(output_facts),
                 read_basis,
                 stale_at_read_basis,
-                requirement,
+                requirement: None,
                 upstream,
             },
             admission,
@@ -151,6 +146,18 @@ pub(in crate::domain_computation::primary_graph) fn register_republished(
             admission,
         )
         .map_err(registration_reason)
+}
+
+/// Why the row of a commit that could not rebase its facts requires
+/// verification.
+impl From<RebaseVerificationReason> for FullVerificationReason {
+    fn from(reason: RebaseVerificationReason) -> Self {
+        match reason {
+            RebaseVerificationReason::NativeRevisionUnavailable => Self::NativeRevisionUnavailable,
+            RebaseVerificationReason::UnsupportedDecisionFact => Self::UnsupportedFact,
+            RebaseVerificationReason::AdmissionDenied(stop) => Self::MarkingAdmissionDenied(stop),
+        }
+    }
 }
 
 fn registration_reason(stop: SettlementRegistrationStop) -> FullVerificationReason {

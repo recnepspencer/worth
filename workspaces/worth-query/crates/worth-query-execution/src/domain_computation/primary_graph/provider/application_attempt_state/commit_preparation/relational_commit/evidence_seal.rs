@@ -2,7 +2,9 @@
 
 mod postcommit_currentness;
 pub(in crate::domain_computation::primary_graph::provider) use postcommit_currentness::PreparedSourceFactRebase;
-pub(in crate::domain_computation::primary_graph) use postcommit_currentness::RebaseVerificationReason;
+pub(in crate::domain_computation::primary_graph) use postcommit_currentness::{
+    FailedRebase, OwnEffectOnReads, RebaseVerificationReason,
+};
 
 use super::commit_execution::WorthQueryCommittedApplicationSession;
 use crate::domain_computation::primary_graph::provider::{
@@ -81,12 +83,6 @@ pub(super) fn seal(
             source_fact_admission.as_mut(),
         )
     });
-    #[cfg(feature = "test-primary-graph-faults")]
-    let observed_source_facts = if producer_output && provider.take_unsealed_producer_settlement() {
-        observed_source_facts.held_for_verification()
-    } else {
-        observed_source_facts
-    };
     let evidence = WorthQueryPrimaryGraphCommitEvidence {
         provider_session_binding: committed.attempt().affinity().provider_session().clone(),
         idempotency: committed.attempt().idempotency(),
@@ -185,12 +181,17 @@ impl WorthQueryPrimaryGraphCommitEvidence {
         &self.operation_scope
     }
 
-    pub(in crate::domain_computation::primary_graph) fn retain_observed_source_facts(
+    /// The facts this commit retains, each one a verifier can compare, or
+    /// the rebase that failed and left it none.
+    pub(in crate::domain_computation::primary_graph) fn rebased_source_facts(
         &self,
-    ) -> Option<std::sync::Arc<
-        [crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact],
-    >>{
-        self.observed_source_facts.retain_exact()
+    ) -> Result<
+        std::sync::Arc<
+            [crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact],
+        >,
+        FailedRebase,
+    >{
+        self.observed_source_facts.retained()
     }
 
     /// Ordinals of the retained source facts the committed effect itself moved.
@@ -198,19 +199,5 @@ impl WorthQueryPrimaryGraphCommitEvidence {
         &self,
     ) -> &[usize] {
         self.observed_source_facts.superseded_by_own_effect()
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn retain_verification_source_facts(
-        &self,
-    ) -> Option<std::sync::Arc<
-        [crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact],
-    >>{
-        self.observed_source_facts.retain_verification_facts()
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn source_fact_verification_requirement(
-        &self,
-    ) -> Option<RebaseVerificationReason> {
-        self.observed_source_facts.verification_requirement()
     }
 }

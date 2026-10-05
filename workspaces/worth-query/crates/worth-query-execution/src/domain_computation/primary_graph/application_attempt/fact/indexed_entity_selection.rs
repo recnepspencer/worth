@@ -16,6 +16,29 @@ pub(in crate::domain_computation::primary_graph) fn observe_indexed_entity_selec
     value: AspectValue,
     candidate_limit: usize,
 ) -> Option<WorthQueryApplicationObservedFact> {
+    observe_examined(
+        runtime,
+        snapshot,
+        index_id,
+        entity_kind,
+        locator,
+        value,
+        candidate_limit,
+    )
+    .map(|(selection, _)| selection)
+}
+
+/// The selection as the snapshot holds it, with the index entries its lookup
+/// examined.
+fn observe_examined(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    index_id: DerivedIndexId,
+    entity_kind: KindId,
+    locator: AspectFieldLocator,
+    value: AspectValue,
+    candidate_limit: usize,
+) -> Option<(WorthQueryApplicationObservedFact, usize)> {
     let outcome = bounded_entity_field_selection(
         runtime,
         snapshot,
@@ -25,8 +48,9 @@ pub(in crate::domain_computation::primary_graph) fn observe_indexed_entity_selec
         &value,
         candidate_limit,
     )?;
+    let examined = outcome.examined_entry_count();
     let definition = outcome.retain_definition();
-    Some(WorthQueryApplicationObservedFact::IndexedEntitySelection {
+    let selection = WorthQueryApplicationObservedFact::IndexedEntitySelection {
         index_id,
         definition,
         entity_kind,
@@ -34,7 +58,8 @@ pub(in crate::domain_computation::primary_graph) fn observe_indexed_entity_selec
         value,
         candidate_limit,
         candidates: outcome.into_candidate_entity_ids(),
-    })
+    };
+    Some((selection, examined))
 }
 
 pub(super) fn remains_equal(
@@ -92,7 +117,7 @@ pub(in crate::domain_computation::primary_graph) fn reobserve(
     fact: &WorthQueryApplicationObservedFact,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-) -> Option<WorthQueryApplicationObservedFact> {
+) -> Option<(WorthQueryApplicationObservedFact, usize)> {
     let WorthQueryApplicationObservedFact::IndexedEntitySelection {
         index_id,
         entity_kind,
@@ -104,7 +129,7 @@ pub(in crate::domain_computation::primary_graph) fn reobserve(
     else {
         return None;
     };
-    observe_indexed_entity_selection(
+    observe_examined(
         runtime,
         snapshot,
         *index_id,

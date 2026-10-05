@@ -131,7 +131,5 @@ const fn mask(fault: WorthQueryPrimaryGraphFault) -> u16 {
         WorthQueryPrimaryGraphFault::ReadyReadSnapshotPressure => 1 << 11,
         #[cfg(feature = "test-primary-graph-faults")]
         WorthQueryPrimaryGraphFault::ReadinessSnapshotPressure => 1 << 12,
-        #[cfg(feature = "test-primary-graph-faults")]
-        WorthQueryPrimaryGraphFault::UnsealedProducerSettlement => 1 << 3,
     }
 }

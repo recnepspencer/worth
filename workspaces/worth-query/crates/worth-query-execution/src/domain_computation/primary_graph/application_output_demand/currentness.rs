@@ -54,9 +54,13 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         remaining_work,
                     )
                 }
-                .map_err(|()| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))?
-                .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::Superseded))?;
+                .map_err(|()| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))?;
                 drop(lineage);
+                let Some(read) = read else {
+                    let receipt = settlement.application_commit_receipt();
+                    require_own_publication(receipt, self.product().observation())?;
+                    continue;
+                };
                 remaining_work -= read.work;
                 self.require_current_read(relational, &read, &mut remaining_work)?;
             }
@@ -94,8 +98,11 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         receipt,
                         remaining_work,
                     )
-                    .map_err(|()| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))?
-                    .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::Superseded))?;
+                    .map_err(|()| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))?;
+                let Some(read) = read else {
+                    require_own_publication(Some(receipt), self.product().observation())?;
+                    continue;
+                };
                 remaining_work -= read.work;
                 self.require_current_read(relational, &read, &mut remaining_work)?;
             }
@@ -154,6 +161,23 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             );
         }
         Ok(())
+    }
+}
+
+/// A settlement that retains no fact has nothing to compare. The commit of
+/// a failed rebase is current while its own publication is the one selected
+/// and its own effect moved none of its reads. It is superseded anywhere
+/// later, and at its own publication where its effect moved a read, which is
+/// what a commit that rebased answers there.
+fn require_own_publication(
+    receipt: Option<&WorthQueryApplicationCommitReceipt>,
+    observation: &worth_runtime_world::facade::ProductBranchObservation,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    let own = receipt.and_then(|receipt| receipt.currentness_without_facts_at(observation));
+    if own == Some(true) {
+        Ok(())
+    } else {
+        Err(denial(WorthQueryOutputDemandDenialKind::Superseded))
     }
 }
 

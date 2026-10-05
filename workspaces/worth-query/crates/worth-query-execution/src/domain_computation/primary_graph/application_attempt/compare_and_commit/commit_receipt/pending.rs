@@ -103,6 +103,12 @@ impl WorthQueryPendingApplicationCommitReceipt {
                 .commit_evidence()
                 .retain_output_correspondence(),
             exact_output_settlement: self.provider.exact_output_settlement().cloned(),
+            unrebased_own_effect: self
+                .provider
+                .commit_evidence()
+                .rebased_source_facts()
+                .err()
+                .map(|failed| failed.own_effect),
         })
     }
 }

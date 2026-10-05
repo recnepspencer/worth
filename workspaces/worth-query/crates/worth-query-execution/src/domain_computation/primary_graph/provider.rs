@@ -3,8 +3,10 @@ pub(in crate::domain_computation) use aftermath_causality::WorthQueryAftermathCa
 mod application_attempt_state;
 pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::publish_recovered;
 pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::ManagedUnpublishedAttempt;
-pub(in crate::domain_computation::primary_graph) use application_attempt_state::RebaseVerificationReason;
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::RetainedTouchedRecords;
+pub(in crate::domain_computation::primary_graph) use application_attempt_state::{
+    OwnEffectOnReads, RebaseVerificationReason,
+};
 mod application_attempt_work;
 mod application_decision_fact;
 mod application_touch_admission;

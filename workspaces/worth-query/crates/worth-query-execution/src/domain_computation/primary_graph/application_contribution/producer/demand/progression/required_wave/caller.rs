@@ -10,6 +10,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::{
     registry::InstalledProducerEdition, WorthQueryProducerCommitAuthority,
 };
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority as Authority;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
 
@@ -108,9 +109,19 @@ where
                 admission,
             )
         });
+        // A commit that kept no fact gives the verifier nothing to establish.
+        // Superseded where the wave stands, it refreshes here as a row whose
+        // facts read stale does.
+        let observation = wave.shared.selected().product().observation();
+        let superseded_without_facts = matches!(
+            &wave.caller_ready.completion().authority,
+            Authority::Committed(receipt)
+                if receipt.currentness_without_facts_at(observation) == Some(false)
+        );
         match pending {
             Ok(Some(_)) => {}
             Err(ConsumedOutputVerificationStop::WorkExhausted) => return Err(work_denial()),
+            Ok(None) | Err(_) if superseded_without_facts => {}
             Ok(None) | Err(_) => return Ok(None),
         }
     }

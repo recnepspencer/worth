@@ -6,7 +6,6 @@ use worth_query_host::facade::application_entry::{
     WorthQueryOutputSettlementPosture,
 };
 
-#[cfg(feature = "test-output-delivery-faults")]
 mod unrebased_settlement;
 
 #[test]

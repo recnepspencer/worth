@@ -44,8 +44,8 @@ worth_query_structured_value_binding!(pub AlternatePlanarOutputDenialBinding for
     identity: "worth.query.certification.alternate-planar-output-denial.v1"
 });
 worth_query_operation!(pub PublishAlternatePlanarOutput for Schema: TopologySchemaBinding, input AlternatePlanarOutputInputBinding);
-worth_query_operation_reads!(PublishAlternatePlanarOutput => [Body, BodyKey, PositionY]);
-worth_query_operation_writes!(PublishAlternatePlanarOutput => [PositionY]);
+worth_query_operation_reads!(PublishAlternatePlanarOutput => [Body, BodyKey, PositionY, Length]);
+worth_query_operation_writes!(PublishAlternatePlanarOutput => [PositionY, Length]);
 
 pub struct AlternatePlanarOutputBinding<Schema>(PhantomData<fn() -> Schema>);
 
@@ -75,7 +75,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
         "worth.query.certification.alternate-planar-output-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.alternate-planar-output-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 1, 1024, 4096);
+    const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 2, 1024, 4096);
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -114,6 +114,28 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for Altern
     }
 }
 
+/// A body keyed with this prefix surveys the length one above the height it
+/// read, and its commit gives its anchor that length. The anchor joins the
+/// bodies the survey read at exactly their number, so none of this commit's
+/// facts is rebased. The source query reads no length: this effect moves
+/// none of its reads.
+pub(crate) const SURVEYED_OUTPUT_KEY_PREFIX: &str = "manual-wide-";
+
+/// A body keyed with this marker is raised by its own commit: the candidate
+/// writes one more than the height its source query read, so the effect moves
+/// a read of its own.
+pub(crate) const RAISED_OUTPUT_KEY_MARKER: &str = "-raised-";
+
+/// The length one above `y`.
+fn above(
+    y: worth_query_consumer_values::PositiveLength,
+) -> worth_query_consumer_values::PositiveLength {
+    worth_query_consumer_values::PositiveLength::new(
+        worth_query_consumer_values::PositiveLength::get(&y) + 1,
+    )
+    .expect("a positive length has a positive successor")
+}
+
 pub struct AlternatePlanarOutputHandler;
 
 impl<Schema: TopologySchemaBinding> OperationHandler<Schema, AlternatePlanarOutputBinding<Schema>>
@@ -128,11 +150,23 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, AlternatePlanarOutp
             Ok(anchor) => anchor,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
-        match reader.field(&anchor, PositionY::reference()) {
-            Ok(Some(y)) => HandlerResult::Completed(y),
-            Ok(None) => HandlerResult::DomainDenied(PlanarMutationDenial::MissingCoordinate),
-            Err(error) => HandlerResult::ExecutionDenied(error),
+        let y = match reader.field(&anchor, PositionY::reference()) {
+            Ok(Some(y)) => y,
+            Ok(None) => {
+                return HandlerResult::DomainDenied(PlanarMutationDenial::MissingCoordinate)
+            }
+            Err(error) => return HandlerResult::ExecutionDenied(error),
+        };
+        if input.output_key.starts_with(SURVEYED_OUTPUT_KEY_PREFIX) {
+            // The length the commit replaces is the basis of that write.
+            let surveyed = reader
+                .field(&anchor, Length::reference())
+                .and_then(|_| super::handler::survey_standing_length(reader, above(y)));
+            if let Err(error) = surveyed {
+                return HandlerResult::ExecutionDenied(error);
+            }
         }
+        HandlerResult::Completed(y)
     }
 
     fn candidate_requirements(
@@ -154,6 +188,16 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, AlternatePlanarOutp
             Err(error) => {
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
             }
+        };
+        if input.output_key.starts_with(SURVEYED_OUTPUT_KEY_PREFIX) {
+            if let Err(error) = writer.write_field(&anchor, Length::reference(), above(y)) {
+                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
+            }
+        }
+        let y = if input.output_key.contains(RAISED_OUTPUT_KEY_MARKER) {
+            above(y)
+        } else {
+            y
         };
         if let Err(error) = writer.write_field(&anchor, PositionY::reference(), y) {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
@@ -231,7 +275,9 @@ pub(crate) fn declare_alternate_output<Schema: TopologySchemaBinding>(
         .operation_read_entity(operation, Body::reference())
         .operation_read_field(operation, BodyKey::reference())
         .operation_read_field(operation, PositionY::reference())
+        .operation_read_field(operation, Length::reference())
         .operation_write(operation, PositionY::reference())
+        .operation_write(operation, Length::reference())
         .application_mutation_binding::<AlternatePlanarOutputBinding<Schema>>()
 }
 

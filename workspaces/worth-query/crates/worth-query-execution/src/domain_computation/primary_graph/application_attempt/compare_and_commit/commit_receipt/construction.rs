@@ -109,6 +109,11 @@ impl WorthQueryApplicationCommitReceipt {
             performed_product_change: None,
             output_correspondence: provider.commit_evidence().retain_output_correspondence(),
             exact_output_settlement: provider.exact_output_settlement().cloned(),
+            unrebased_own_effect: provider
+                .commit_evidence()
+                .rebased_source_facts()
+                .err()
+                .map(|failed| failed.own_effect),
             committed_changes: provider.commit_evidence().committed_changes().clone(),
         }
     }

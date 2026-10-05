@@ -272,10 +272,7 @@ where
             )
         })?;
     let observation = selected.product().observation();
-    let original_publication_is_current = observation.lifecycle_incarnation()
-        == committed.product_incarnation()
-        && observation.reference_generation() == committed.product_generation()
-        && observation.selected_commit() == committed.composite_commit();
+    let original_publication_is_current = committed.is_selected_at(observation);
     let retained_output_is_current = runtime
         .primary_provider
         .graph

@@ -7,6 +7,16 @@ use super::{
     adjacency, retirement, RebaseVerificationReason, WorthQueryApplicationObservedFact as Fact,
 };
 
+/// A fact a source query read. It stays at the revision it was read at, so
+/// it is the one kind the committed effect can leave stale: every other fact
+/// is observed again at the committed snapshot.
+pub(super) fn reads_source(fact: &Fact) -> bool {
+    matches!(
+        fact,
+        Fact::SourceEntity { .. } | Fact::Entity { .. } | Fact::SourceFieldRevision { .. }
+    )
+}
+
 /// One selected-snapshot resolution paired by ordinal with the original fact.
 /// All resolutions are acquired before any original is consumed.
 pub(super) enum PreparedFactRebase {
@@ -111,17 +121,18 @@ impl PreparedFactRebase {
                     None => Ok(Self::Keep),
                 }
             }
-            Fact::IndexedEntitySelection {
-                candidate_limit, ..
-            } => {
+            Fact::IndexedEntitySelection { .. } => {
                 // The selection is observed again at the committed snapshot,
-                // so it names the members this commit itself published.
-                let observed = candidate_limit
-                    .checked_add(1)
-                    .and_then(|work| indexed_rebase_work.checked_sub(work))
-                    .and_then(|remaining| {
-                        *indexed_rebase_work = remaining;
-                        reobserve_indexed_entity_selection(fact, runtime, snapshot)
+                // so it names the members this commit itself published. It is
+                // charged what it examined, as the decision that read it was.
+                // Facts are walked in key order, not the order they were read
+                // in, so the width that decision admitted bounds each
+                // observation and no selection waits on the ones before it.
+                let observed = reobserve_indexed_entity_selection(fact, runtime, snapshot)
+                    .and_then(|(observed, examined)| {
+                        let charged = examined.checked_add(1)?;
+                        *indexed_rebase_work = indexed_rebase_work.checked_sub(charged)?;
+                        Some(observed)
                     });
                 match observed {
                     Some(observed) => Ok(Self::Replace(observed)),
@@ -130,22 +141,14 @@ impl PreparedFactRebase {
                 }
             }
             Fact::RetiredOutputEntity { .. } => Ok(Self::Keep),
-            Fact::SourceEntity { .. }
-            | Fact::Entity { .. }
-            | Fact::SourceFieldRevision {
-                native_revision: Some(_),
-                ..
-            } if producer_output => match fact.source_currentness_in(runtime, snapshot, 1) {
-                Ok((true, _)) => Ok(Self::Keep),
-                Ok((false, _)) => Ok(Self::KeepSuperseded),
-                Err(_) => Err(unavailable),
-            },
-            Fact::SourceEntity { .. }
-            | Fact::Entity { .. }
-            | Fact::SourceFieldRevision {
-                native_revision: Some(_),
-                ..
-            } => Ok(Self::Keep),
+            read if reads_source(read) && producer_output => {
+                match read.source_currentness_in(runtime, snapshot, 1) {
+                    Ok((true, _)) => Ok(Self::Keep),
+                    Ok((false, _)) => Ok(Self::KeepSuperseded),
+                    Err(_) => Err(unavailable),
+                }
+            }
+            read if reads_source(read) => Ok(Self::Keep),
             _ if producer_output => Err(RebaseVerificationReason::UnsupportedDecisionFact),
             _ => Ok(Self::Keep),
         }

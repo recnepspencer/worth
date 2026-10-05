@@ -9,6 +9,35 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationEntityKey, WorthQueryCurrentOutputSelection,
 };
 
+/// A planar body keyed with this prefix surveys the length its commit
+/// publishes before it decides.
+pub(crate) const SURVEYED_BODY_KEY_PREFIX: &str = "surveyed-";
+
+/// The widest set a survey reads before it reads that set again at exactly
+/// its number: one standing body and the anchor that joins it. The alternate
+/// operation declares a projection budget of 8, which pays for no wider
+/// survey beside its other reads.
+const SURVEY_WIDTH: usize = 2;
+
+/// Read the bodies standing at `length`, then read them again at exactly
+/// their number. A commit that gives one more body that length cannot
+/// observe the second selection again, so none of its facts is rebased. A
+/// commit that leaves their number alone rebases.
+pub(crate) fn survey_standing_length<Schema, Binding>(
+    reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
+    length: worth_query_consumer_values::PositiveLength,
+) -> Result<(), HandlerExecutionDenial>
+where
+    Schema: TopologySchemaBinding,
+    Binding: worth_query_decl::facade::application_operation::ApplicationMutationBinding<Schema>,
+    Length: OperationReads<Binding::Operation>,
+{
+    let standing = reader.select_entities(Length::reference(), length, SURVEY_WIDTH)?;
+    reader
+        .select_entities(Length::reference(), length, standing.len())
+        .map(drop)
+}
+
 pub struct PlanarHandler;
 trait PlanarHandlerBinding<Schema: TopologySchemaBinding>:
     worth_query_decl::facade::application_operation::ApplicationMutationBinding<
@@ -80,6 +109,10 @@ where
                     let _ = reader.reader().version();
                 } else if output.body_key == "anchor-island" {
                     let _ = reader.key_identity();
+                } else if output.body_key.starts_with(SURVEYED_BODY_KEY_PREFIX) {
+                    if let Err(error) = survey_standing_length(reader, output.value) {
+                        return HandlerResult::ExecutionDenied(error);
+                    }
                 }
                 let entity =
                     match reader.resolve_entity(BodyKey::reference(), output.body_key.clone()) {

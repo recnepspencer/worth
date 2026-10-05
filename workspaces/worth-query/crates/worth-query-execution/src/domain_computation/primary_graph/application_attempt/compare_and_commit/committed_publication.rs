@@ -4,7 +4,7 @@ use worth_relational::facade::history::RelationalCommitReceipt;
 use worth_runtime_world::facade::{
     CompositeCommitIdentity, CompositeComponentChangePosture, CompositePublicationAttemptIdentity,
     CompositeSignalPublicationIdentity, ProductBranchIdentity, ProductBranchIncarnation,
-    ProductBranchReferenceGeneration,
+    ProductBranchObservation, ProductBranchReferenceGeneration,
 };
 
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationReceipt;
@@ -142,6 +142,18 @@ impl WorthQueryCommittedProductPublication {
             PublicationCustody::Performed(receipt) => receipt.publication().commit().identity(),
             PublicationCustody::Retired(retired) => &retired.composite_commit,
         }
+    }
+
+    /// Whether `observation` still selects this publication: nothing has been
+    /// published on its branch since, so the effect it committed is current
+    /// with nothing to compare.
+    pub(in crate::domain_computation::primary_graph) fn is_selected_at(
+        &self,
+        observation: &ProductBranchObservation,
+    ) -> bool {
+        observation.lifecycle_incarnation() == self.product_incarnation()
+            && observation.reference_generation() == self.product_generation()
+            && observation.selected_commit() == self.composite_commit()
     }
 
     pub fn publication_attempt(&self) -> &CompositePublicationAttemptIdentity {

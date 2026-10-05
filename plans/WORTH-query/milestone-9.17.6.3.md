@@ -1868,13 +1868,30 @@ before machinery for another lands.
     one without a sealed witness, is not exact: its demand selects the
     Preserve posture, which runs once over the live output and is then
     reused. A settlement that requires full verification for any other
-    reason is compared in full and reused with no producer contact:
-    `checkpoint_recovery/input_cutoff/unrebased_settlement.rs`. An exact
+    reason is compared in full and reused with no producer contact: a
+    restoration on the runtime that performed the output,
+    `an_output_restored_on_the_runtime_that_performed_it_is_reused`. An exact
     producer that declares no Preserve posture reuses its live output or is
     refused `MissingApplicableProducer` before any effect: it never
     executes over a live output. A refresh in a family whose other producer
     declares Preserve switches to that producer, which runs once over the
     live output: `checkpoint_recovery/generated_restoration.rs`.
+  - A settlement retains only facts a verifier can compare. A rebase is
+    charged what it examines, as the decision that read the same facts was.
+    It fails as a whole, and a commit whose rebase failed retains none of
+    its facts: one left as its handler read it has no native revision. That
+    commit carries one answer out: whether its own effect moved a fact its
+    source query read. The comparison a successful rebase makes of those
+    facts decides it, and a read the walk could not decide counts as moved.
+    A commit that moved none is current while its own publication is the one
+    selected. A commit that moved one, and any commit without facts at a
+    later publication, is superseded: it refreshes on the required wave, as
+    a row whose facts read stale does. The row is one without facts, never
+    exact: a later demand selects the Preserve posture. Where the family
+    installs a Preserve producer that demand settles on the commit while it
+    is current and runs the producer once it is superseded; where it
+    installs none the demand is refused `MissingApplicableProducer` before
+    any effect: `checkpoint_recovery/input_cutoff/unrebased_settlement.rs`.
   - An equal republication of a root clears the marks below it. Demanding
     the last consumer first settles the chain in one advance each, with one
     source query, no producer contact and no decision.
@@ -2029,12 +2046,30 @@ before machinery for another lands.
       Preserve producer once. In a family that installs no Preserve producer
       that demand is refused `MissingApplicableProducer`, and the refusal
       persists while the output lives.
-    - A commit whose facts could not be rebased keeps them as its handler
-      read them. A field value read that way has no native revision to
-      compare, so full verification of that settlement answers
-      `RetainedBasisUnavailable`, first on the demand that committed it.
-      The fixture reaches a row verified in full through a certification
-      control that keeps the rebased facts under the requirement.
+    - A commit whose own effect grows a selection it read past the declared
+      width of that selection cannot observe it again complete, so its
+      rebase fails. A handler inside its declared budgets can therefore
+      commit facts that do not rebase, and a producer whose every commit
+      does so never leaves a row with facts: it runs again after each later
+      publication. No fixture has such a producer.
+    - A rebase observes a selection before it charges for what the
+      observation examined, so one observation past the budget runs before
+      the rebase is refused. Each observation stays capped by its own
+      declared candidate limit.
+    - Any later publication on the branch, even an unrelated one, supersedes
+      a settlement without facts: nothing is left to compare with it. A
+      publication between the commit and its certification therefore makes
+      the committing demand refresh: the Preserve producer runs, or the
+      demand is refused `MissingApplicableProducer` in a family that
+      installs none.
+    - A later demand that settles on a commit without facts is admitted
+      under the Preserve producer first: the provider is asked its demand
+      resources, and nothing runs.
+    - A workflow assessment binds the facts of the output it assesses and
+      compares them again at its transition. A settlement without facts
+      gives it none, so the assessment answers
+      `WorkflowAssessmentEvidenceMismatch` until a commit that rebases
+      refreshes the row.
     - Query's own delegation activation reads nothing about the child
       grant, so a second activation for an existing child id commits. The
       bank handler reads the child's absence. The platform fix changes a

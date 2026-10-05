@@ -322,6 +322,12 @@ impl WorthQueryApplicationOutputLineage {
         } else {
             RecordedSettlementIdentity::retain(source, coordinate, slot)
         };
+        // A commit whose rebase failed retains no fact, only the reason.
+        let (observed_source_facts, verification_requirement) =
+            match evidence.rebased_source_facts() {
+                Ok(facts) => (Some(facts), None),
+                Err(failed) => (None, Some(failed.reason.into())),
+            };
         let recorded = RecordedOutput {
             performed_origin: None,
             _retained_capacity: retained_capacity,
@@ -334,22 +340,8 @@ impl WorthQueryApplicationOutputLineage {
                 .map(std::sync::OnceLock::from)
                 .unwrap_or_default(),
             mutable: std::sync::Mutex::new(RecordedOutputMutable {
-                verification_requirement: evidence.source_fact_verification_requirement().map(
-                    |reason| match reason {
-                        super::provider::RebaseVerificationReason::NativeRevisionUnavailable => {
-                            invalidation::FullVerificationReason::NativeRevisionUnavailable
-                        }
-                        super::provider::RebaseVerificationReason::UnsupportedDecisionFact => {
-                            invalidation::FullVerificationReason::UnsupportedFact
-                        }
-                        super::provider::RebaseVerificationReason::AdmissionDenied(stop) => {
-                            invalidation::FullVerificationReason::MarkingAdmissionDenied(stop)
-                        }
-                    },
-                ),
-                observed_source_facts: evidence
-                    .retain_observed_source_facts()
-                    .or_else(|| evidence.retain_verification_source_facts()),
+                verification_requirement,
+                observed_source_facts,
                 resources: prepared.and_then(|slot| slot.actual_resources),
             }),
             settlement_identity: Arc::clone(&settlement_identity),

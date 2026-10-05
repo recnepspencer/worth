@@ -18,8 +18,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryRetainedOutput
     pub(in crate::domain_computation::primary_graph) native_output_witness:
         Option<Arc<OnceLock<crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness>>>,
     /// Why the row's settlement is verified in full, when it is: the row was
-    /// restored, its commit could not rebase its facts, or the owner could
-    /// not register it.
+    /// restored, or the owner could not register it. A commit that could not
+    /// rebase its facts states that here and retains none of them.
     pub(in crate::domain_computation::primary_graph) verification_requirement:
         Option<crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason>,
     /// The row's own settlement, as the owner knows it.
