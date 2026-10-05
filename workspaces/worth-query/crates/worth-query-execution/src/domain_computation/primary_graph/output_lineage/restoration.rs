@@ -192,6 +192,7 @@ impl WorthQueryApplicationOutputLineage {
             prepared_input_reuse_key: None,
             native_output_witness: verified_witness.map(OnceLock::from).unwrap_or_default(),
             mutable: Mutex::new(RecordedOutputMutable {
+                computation: None,
                 verification_requirement: Some(
                     super::invalidation::FullVerificationReason::CheckpointRestore,
                 ),
@@ -322,6 +323,7 @@ impl WorthQueryApplicationOutputLineage {
             prepared_input_reuse_key: None,
             native_output_witness: OnceLock::new(),
             mutable: Mutex::new(RecordedOutputMutable {
+                computation: None,
                 verification_requirement: Some(
                     super::invalidation::FullVerificationReason::CheckpointRestore,
                 ),

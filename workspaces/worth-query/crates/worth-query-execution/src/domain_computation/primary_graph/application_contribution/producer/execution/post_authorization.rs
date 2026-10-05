@@ -142,6 +142,7 @@ where
             prepared_context,
             matched_predecessors,
             resources,
+            edition,
             request_admission,
             &mut currentness,
         )? {

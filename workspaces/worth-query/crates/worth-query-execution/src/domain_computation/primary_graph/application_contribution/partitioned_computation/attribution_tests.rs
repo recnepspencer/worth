@@ -1,5 +1,5 @@
-//! What the sealed read set routes each fact to, for an owner reading through
-//! the reader of a real admitted operation.
+//! Which owner calls the sealed read set keeps for each fact, for an owner
+//! reading through the reader of a real admitted operation.
 
 use std::sync::Mutex;
 
@@ -38,17 +38,17 @@ use crate::domain_computation::primary_graph::{
     WorthQueryManagedComputationDenial,
 };
 
-struct Feature;
+pub(super) struct Feature;
 impl ApplicationFeature<Schema> for Feature {
     type Inputs = ApplicationFeatureInputLeaf;
     const IDENTITY: &'static str = "worth.query.tests.attribution-feature.v1";
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
-struct Value(u64);
+pub(super) struct Value(u64);
 worth_query_declaration::worth_query_portable_type!(
     Value => "worth.query.tests.attribution-value.v1"
 );
-struct ValueBinding;
+pub(super) struct ValueBinding;
 impl ApplicationStructuredValueBinding for ValueBinding {
     type Value = Value;
     const IDENTITY_NAME: &'static str = "worth.query.tests.attribution-value.v1";
@@ -56,17 +56,17 @@ impl ApplicationStructuredValueBinding for ValueBinding {
         Ok(())
     }
 }
-struct Output;
+pub(super) struct Output;
 impl ApplicationOutputPort<Schema, Feature> for Output {
     type Value = ValueBinding;
     const IDENTITY: &'static str = "worth.query.tests.attribution-output.v1";
 }
-struct Locality;
+pub(super) struct Locality;
 impl ApplicationLocalityScope for Locality {
     const IDENTITY: &'static str = "worth.query.tests.attribution-locality.v1";
     const GRANULE: ApplicationLocalityGranule = ApplicationLocalityGranule::Partition;
 }
-struct Artifact;
+pub(super) struct Artifact;
 impl ApplicationDerivedArtifact<Schema, Feature> for Artifact {
     type Output = Output;
     type Locality = Locality;
@@ -81,26 +81,26 @@ impl ApplicationDerivedArtifact<Schema, Feature> for Artifact {
         ApplicationArtifactResourceCeiling::new(4, 64);
     const STOPPED_OUTCOME: &'static str = "worth.query.tests.attribution-stopped.v1";
 }
-struct Input;
+pub(super) struct Input;
 impl ApplicationComputationInput for Input {
     type Value = WorthQueryInvariantEntityIdentity<Schema, Account>;
     const IDENTITY: &'static str = "worth.query.tests.attribution-input.v1";
 }
-struct Reuse;
+pub(super) struct Reuse;
 impl ApplicationComputationReuse for Reuse {
     const IDENTITY: &'static str = "worth.query.tests.attribution-evidence.v1";
 }
-struct Stopped;
+pub(super) struct Stopped;
 impl ApplicationComputationStopped for Stopped {
     const IDENTITY: &'static str = "worth.query.tests.attribution-owner-stopped.v1";
 }
 /// Odd and even items are the two partitions.
 #[derive(Serialize)]
-struct Parity(u64);
+pub(super) struct Parity(pub(super) u64);
 impl ApplicationComputationPartition for Parity {
     const IDENTITY: &'static str = "worth.query.tests.attribution-parity.v1";
 }
-struct Computation;
+pub(super) struct Computation;
 impl ApplicationManagedComputation<Schema, Feature> for Computation {
     type Input = Input;
     type Output = Artifact;
@@ -196,8 +196,8 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
     }
 }
 
-/// What the sealed read set routes the label and the status fact to, in fact
-/// order, with the partitions `gather` ran for in ascending order.
+/// The calls the sealed read set keeps for the label and the status fact, in
+/// fact order, with the partitions `gather` ran for in ascending order.
 ///
 /// `handler_reads_status` has the handler read the status itself after the
 /// computation's `runs` runs.
@@ -231,6 +231,7 @@ fn routed(
                 status,
                 gathered: Mutex::default(),
             },
+            super::ComputationRetention::Unretained,
         );
     let (_, projection, _) = world
         .invariant
@@ -258,60 +259,61 @@ fn routed(
     gathered.sort_unstable();
     gathered.dedup();
     (
-        read_set
-            .computation_routing()
-            .map(|routing| routing.readers().to_vec()),
+        read_set.computation_facts().map(|facts| {
+            facts
+                .facts()
+                .map(|(_, _, readers)| readers.clone())
+                .collect()
+        }),
         gathered,
     )
 }
 
 #[test]
-fn a_fact_two_gathers_read_is_routed_to_both_partitions() {
-    let (routing, partitions) = routed(StatusReadBy::ItemKeys, 1, false);
+fn a_fact_two_gathers_read_is_kept_for_both_partitions() {
+    let (readers, partitions) = routed(StatusReadBy::ItemKeys, 1, false);
 
     assert_eq!(partitions.len(), 2, "odd and even items are two partitions");
     // The facts are in key order: the label, then the status.
     assert_eq!(
-        routing.expect("one computation ran"),
+        readers.expect("one computation ran"),
         [
-            ComputationFactReaders::Partitions(partitions),
-            ComputationFactReaders::ItemKeys(vec![
-                PartitionItemId(1),
-                PartitionItemId(2),
-                PartitionItemId(3)
-            ]),
+            ComputationFactReaders::read_by(false, [], partitions),
+            ComputationFactReaders::read_by(false, [1, 2, 3], []),
         ]
     );
 }
 
 #[test]
 fn a_fact_the_membership_read_is_a_membership_fact() {
-    let (routing, partitions) = routed(StatusReadBy::Membership, 1, false);
+    let (readers, partitions) = routed(StatusReadBy::Membership, 1, false);
 
     assert_eq!(
-        routing.expect("one computation ran"),
+        readers.expect("one computation ran"),
         [
-            ComputationFactReaders::Partitions(partitions),
-            ComputationFactReaders::Membership,
+            ComputationFactReaders::read_by(false, [], partitions),
+            ComputationFactReaders::read_by(true, [], []),
         ]
     );
 }
 
 #[test]
-fn a_fact_the_handler_read_itself_is_the_handlers() {
-    let (routing, partitions) = routed(StatusReadBy::ItemKeys, 1, true);
+fn a_fact_the_handler_also_read_stays_the_item_keys() {
+    // The handler reads its own facts again on every attempt, so it is not a
+    // reader the computation keeps: the status is still the item keys' fact.
+    let (readers, partitions) = routed(StatusReadBy::ItemKeys, 1, true);
 
     assert_eq!(
-        routing.expect("one computation ran"),
+        readers.expect("one computation ran"),
         [
-            ComputationFactReaders::Partitions(partitions),
-            ComputationFactReaders::Handler,
+            ComputationFactReaders::read_by(false, [], partitions),
+            ComputationFactReaders::read_by(false, [1, 2, 3], []),
         ]
     );
 }
 
 #[test]
-fn an_attempt_that_ran_two_computations_has_no_routing_table() {
+fn an_attempt_that_ran_two_computations_keeps_no_computation_facts() {
     // Partition identities name the partitions of one computation only.
     assert!(routed(StatusReadBy::ItemKeys, 2, false).0.is_none());
 }

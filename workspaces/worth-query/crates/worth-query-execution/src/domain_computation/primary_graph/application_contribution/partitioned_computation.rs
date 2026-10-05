@@ -6,20 +6,39 @@
 //! the computation, so Query knows which fact each owner call read. Query
 //! derives each partition's identity from its key, runs the partitions
 //! through `worth-execution`'s map under the computation's declared work
-//! ceiling and reduces them over the canonical tree. Every run recomputes
-//! every partition.
+//! ceiling and reduces them over the canonical tree.
+//!
+//! When a producer runs the computation, the run leaves its state on the
+//! record its attempt published, and the producer's next run gathers and
+//! computes again only the partitions whose facts changed, under the same
+//! input value, membership and keys. Every other run recomputes every
+//! partition, for a cause the test observer is shown.
 
 mod compute;
 mod denial;
+mod incremental;
 mod installed;
 mod plan;
 mod reader;
+mod remaining_work;
 mod routing;
 
 pub use compute::{
     WorthQueryCompletedPartitionedComputation, WorthQueryPreparedPartitionedComputation,
 };
 pub use denial::{WorthQueryComputationPartitionStop, WorthQueryPartitionedComputationDenial};
+pub use incremental::WorthQueryPartitionedComputationFullCause;
+#[cfg(feature = "test-query-execution-observer")]
+pub use incremental::{
+    partitioned_computation_runs_on_this_thread_for_test, WorthQueryPartitionedComputationRun,
+};
+pub(in crate::domain_computation::primary_graph) use incremental::{
+    Comparator, ComputationDeposit,
+};
+pub(in crate::domain_computation) use incremental::{
+    ComputationPrior, RetainedComputation, SealedComputationRun,
+};
+pub(in crate::domain_computation::primary_graph) use installed::ComputationRetention;
 pub use installed::WorthQueryInstalledPartitionedComputation;
 pub use plan::{
     WorthQueryComputationPartitionMembers, WorthQueryComputationPartitionPlan,
@@ -74,8 +93,9 @@ where
     /// that operation declares it reads.
     type Operation;
     /// One item of the input as `partitions` hands it to `partition_key` and
-    /// `gather`: what the owner reads the item by.
-    type Item: Send + Sync + 'static;
+    /// `gather`: what the owner reads the item by. A producer's run keeps its
+    /// items for the next run, charged at their bytes.
+    type Item: Send + Sync + ChargedBytes + 'static;
     /// One partition's data, gathered on the owner thread for its kernel.
     type Gathered: Send + Sync + ChargedBytes;
     /// One partition's result, and the reduced result of them all. Its

@@ -2,22 +2,45 @@
 //! partitioned computation read in which owner call.
 
 use std::collections::BTreeSet;
+use std::sync::{Arc, Mutex};
 
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
 use crate::domain_computation::primary_graph::application_attempt::{
     ComputationFactAttribution, ComputationRead, WorthQueryApplicationFactKey,
 };
+use crate::domain_computation::primary_graph::application_contribution::{
+    ComputationDeposit, ComputationPrior,
+};
 
 /// Every decision fact key of one projection.
 ///
 /// A key read while an owner call of a partitioned computation holds the
-/// reader is recorded with that call. Every other key is the handler's.
+/// reader is recorded with that call, and one the handler read itself is
+/// recorded as the handler's. A key both read is both.
 #[derive(Default)]
 pub(in crate::domain_computation::primary_graph) struct DecisionReads {
     handler: BTreeSet<WorthQueryApplicationFactKey>,
+    /// The first read that failed. Its outcome depends on what its fact does
+    /// not hold, so a handler or owner call that swallowed the failure has an
+    /// outcome nothing retained, and the projection seals nothing.
+    failed: Option<WorthQueryApplicationFactKey>,
     computation: ComputationFactAttribution,
     reading: Option<ComputationRead>,
     runs: ComputationRuns,
+    /// What the producer that runs the projection retained, for the first
+    /// partitioned computation to take.
+    prior: Option<ComputationPrior>,
+    /// Where that computation leaves its completed run, when a producer runs
+    /// the projection.
+    deposit: Option<ComputationDeposit>,
+}
+
+/// What became of one decision read. A field, entity or relation read
+/// records an absent value as its content, so only a traversal can fail.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum DecisionReadOutcome {
+    Observed,
+    Failed,
 }
 
 /// How many partitioned computations read through the projection's reader.
@@ -30,7 +53,27 @@ enum ComputationRuns {
 }
 
 impl DecisionReads {
-    pub(super) fn insert(&mut self, key: WorthQueryApplicationFactKey) {
+    /// The reads of a projection a producer runs, handed what its selected
+    /// record retained.
+    pub(in crate::domain_computation::primary_graph) fn with_prior(
+        prior: ComputationPrior,
+    ) -> Self {
+        Self {
+            prior: Some(prior),
+            deposit: Some(Arc::new(Mutex::new(None))),
+            ..Self::default()
+        }
+    }
+
+    /// The one way a decision read is recorded, on every outcome of the read.
+    pub(super) fn record(
+        &mut self,
+        key: WorthQueryApplicationFactKey,
+        outcome: DecisionReadOutcome,
+    ) {
+        if outcome == DecisionReadOutcome::Failed && self.failed.is_none() {
+            self.failed = Some(key.clone());
+        }
         match self.reading {
             Some(read) => self.computation.record(key, read),
             None => {
@@ -42,27 +85,38 @@ impl DecisionReads {
     /// The keys the read attempt re-observes: every key read, by the handler
     /// or by an owner call. With them, what the computation read.
     ///
-    /// A key the handler read itself is the handler's. There is no attribution
-    /// unless exactly one partitioned computation ran: partition identities
-    /// name the partitions of one computation only.
+    /// A key the handler read beside an owner call stays that call's: the
+    /// handler reads its own facts again on every attempt. There is no
+    /// attribution unless exactly one partitioned computation ran: partition
+    /// identities name the partitions of one computation only.
+    /// The deposit is there only when exactly one partitioned computation
+    /// ran under a producer. A projection with a failed read has no keys to
+    /// re-observe: the key of the first failed read is returned instead.
     pub(in crate::domain_computation::primary_graph) fn into_expected(
         self,
-    ) -> (
-        BTreeSet<WorthQueryApplicationFactKey>,
-        Option<ComputationFactAttribution>,
-    ) {
+    ) -> Result<
+        (
+            BTreeSet<WorthQueryApplicationFactKey>,
+            Option<(ComputationFactAttribution, Option<ComputationDeposit>)>,
+        ),
+        WorthQueryApplicationFactKey,
+    > {
         let Self {
             mut handler,
-            mut computation,
+            failed,
+            computation,
             runs,
+            deposit,
             ..
         } = self;
-        computation.yield_to_handler(&handler);
+        if let Some(failed) = failed {
+            return Err(failed);
+        }
         handler.extend(computation.keys().cloned());
-        (
+        Ok((
             handler,
-            matches!(runs, ComputationRuns::One).then_some(computation),
-        )
+            matches!(runs, ComputationRuns::One).then_some((computation, deposit)),
+        ))
     }
 }
 
@@ -77,6 +131,22 @@ impl<Schema, Operation>
         };
     }
 
+    /// What the producer retained, taken by the first partitioned computation
+    /// to begin. `None` when no producer runs the projection.
+    pub(in crate::domain_computation::primary_graph) fn take_computation_prior(
+        &mut self,
+    ) -> Option<ComputationPrior> {
+        self.decision_facts.prior.take()
+    }
+
+    /// Where a completed run is left for seal, when a producer runs the
+    /// projection.
+    pub(in crate::domain_computation::primary_graph) fn computation_deposit(
+        &self,
+    ) -> Option<ComputationDeposit> {
+        self.decision_facts.deposit.clone()
+    }
+
     /// Runs one owner call, recording every fact key it reads as that call's.
     pub(in crate::domain_computation::primary_graph) fn attributed<Output>(
         &mut self,
@@ -87,5 +157,43 @@ impl<Schema, Operation>
         let output = call(self);
         self.decision_facts.reading = None;
         output
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use worth_relational::facade::identity::{EntityId, PartitionId};
+
+    use super::{DecisionReadOutcome, DecisionReads};
+    use crate::domain_computation::primary_graph::application_attempt::{
+        ComputationRead, WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey,
+    };
+
+    fn adjacency(slot: u64) -> WorthQueryApplicationFactKey {
+        WorthQueryApplicationFactKey::Adjacency {
+            relation: "owner".to_owned(),
+            anchor: EntityId::new(PartitionId::main(), slot, 1),
+            direction: WorthQueryApplicationAdjacencyDirection::Incoming,
+            maximum_work_units: 2,
+        }
+    }
+
+    #[test]
+    fn a_failed_read_an_owner_call_swallowed_seals_nothing() {
+        let mut reads = DecisionReads::default();
+        reads.record(adjacency(1), DecisionReadOutcome::Observed);
+        reads.reading = Some(ComputationRead::Membership);
+        reads.record(adjacency(2), DecisionReadOutcome::Failed);
+        reads.reading = None;
+        reads.record(adjacency(3), DecisionReadOutcome::Failed);
+        assert_eq!(reads.into_expected().err(), Some(adjacency(2)));
+    }
+
+    #[test]
+    fn observed_reads_seal_every_key() {
+        let mut reads = DecisionReads::default();
+        reads.record(adjacency(1), DecisionReadOutcome::Observed);
+        let (keys, _) = reads.into_expected().ok().unwrap();
+        assert_eq!(keys.into_iter().collect::<Vec<_>>(), [adjacency(1)]);
     }
 }

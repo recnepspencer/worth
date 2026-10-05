@@ -235,6 +235,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare(
         prepared_input_reuse_key: None,
         native_output_witness: None,
         actual_resources: None,
+        computation: None,
         filled: false,
     })
 }

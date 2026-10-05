@@ -3,7 +3,10 @@
 
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
+#[cfg(feature = "test-query-execution-observer")]
 use worth_foundational::facade::ExecutionReport;
+#[cfg(feature = "test-query-execution-observer")]
+use worth_query_host::facade::application_contribution::WorthQueryPartitionedComputationRun;
 use worth_query_host::facade::application_contribution::{
     WorthQueryComputationPartitionMembers, WorthQueryComputationPartitionPlan,
     WorthQueryComputationPartitionView, WorthQueryDeterministicReducer,
@@ -11,6 +14,8 @@ use worth_query_host::facade::application_contribution::{
     WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
 };
 use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
+#[cfg(feature = "test-query-execution-observer")]
+use worth_query_host::facade::primary_graph::partitioned_computation_runs_on_this_thread_for_test as runs_on_this_thread;
 
 use super::demand::{RegionTotalsDemand, RegionTotalsHandler, TotalRegions};
 use super::facts::{self, Entry, EntryData, InputDenial, Reader, RegionFault, Set, Sets};
@@ -69,18 +74,7 @@ where
         partition: WorthQueryComputationPartitionView<'_, RegionKey, Vec<EntryData>>,
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
     ) -> Result<f64, WorthQueryManagedComputationDenial<u32>> {
-        let mut total = -0.0;
-        for entry in partition.gathered() {
-            checkpoint.advance(entry.work)?;
-            match entry.fault {
-                Some(RegionFault::Refuse) => {
-                    return Err(WorthQueryManagedComputationDenial::Owner(partition.key().0))
-                }
-                Some(RegionFault::Panic) => panic!("the region kernel panics"),
-                Some(RegionFault::Probe(_)) | None => total += entry.value,
-            }
-        }
-        Ok(total)
+        total_region(partition.key().0, partition.gathered(), checkpoint)
     }
 
     fn reducer(&self) -> WorthQueryDeterministicReducer<f64> {
@@ -90,6 +84,27 @@ where
     fn complete(&self, reduced: f64) -> Result<f64, u32> {
         Ok(reduced)
     }
+}
+
+/// One region's kernel: sums its entries' values in the order it holds them,
+/// charging each entry's work before reading it.
+pub(super) fn total_region(
+    region: u32,
+    entries: &[EntryData],
+    checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
+) -> Result<f64, WorthQueryManagedComputationDenial<u32>> {
+    let mut total = -0.0;
+    for entry in entries {
+        checkpoint.advance(entry.work)?;
+        match entry.fault {
+            Some(RegionFault::Refuse) => {
+                return Err(WorthQueryManagedComputationDenial::Owner(region))
+            }
+            Some(RegionFault::Panic) => panic!("the region kernel panics"),
+            Some(RegionFault::Probe(_)) | None => total += entry.value,
+        }
+    }
+    Ok(total)
 }
 
 /// The partitioned computation bound to its partitioned owner.
@@ -119,11 +134,13 @@ pub(super) type Installed = Result<
     primary_graph::WorthQueryPrimaryGraphInstallationDenial,
 >;
 
-/// A completed run: the total's bits and what the run was charged.
+/// A completed run: the total's bits, what the run was charged, and, where
+/// the observer is built, execution's report of the run.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) struct RegionTotal {
     pub(super) bits: u64,
     pub(super) charged_work: u64,
+    #[cfg(feature = "test-query-execution-observer")]
     pub(super) report: ExecutionReport,
 }
 
@@ -184,15 +201,27 @@ where
                 .prepare(reader, set)?
                 .compute(reader.managed_computation_execution())?;
             let charged_work = computed.charged_work();
-            let report = computed.execution_report();
+            #[cfg(feature = "test-query-execution-observer")]
+            let report = observed_report();
             Ok(RegionTotal {
                 bits: computed.complete()?.to_bits(),
                 charged_work,
+                #[cfg(feature = "test-query-execution-observer")]
                 report,
             })
         })();
         room().outcomes.push(outcome);
     }))
+}
+
+/// Execution's report of the decision's one run, which ran in full. How a
+/// run ran is the observer's, never the handler's value.
+#[cfg(feature = "test-query-execution-observer")]
+fn observed_report() -> ExecutionReport {
+    match runs_on_this_thread().as_slice() {
+        [(WorthQueryPartitionedComputationRun::Full(_), Some(report))] => *report,
+        runs => panic!("one full run per decision, observed: {runs:?}"),
+    }
 }
 
 /// The region totals under their partitioned owner.

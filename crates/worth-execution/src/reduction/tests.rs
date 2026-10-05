@@ -30,6 +30,21 @@ fn sum(left: &u64, right: &u64) -> u64 {
     left + right
 }
 
+#[test]
+fn a_leaf_reads_the_value_its_partition_holds() {
+    let (mut tree, _) = from_plan(plan(&[3, 5, 9]), vec![30_u64, 50, 90], 0, sum).unwrap();
+
+    assert_eq!(tree.leaf(id(3)), Some(&30));
+    assert_eq!(tree.leaf(id(5)), Some(&50));
+    assert_eq!(tree.leaf(id(9)), Some(&90));
+    assert_eq!(tree.leaf(id(4)), None, "no partition, no leaf");
+
+    tree.update(id(5), 7).unwrap();
+    assert_eq!(tree.leaf(id(5)), Some(&7), "an edit replaces the leaf");
+    assert_eq!(tree.leaf(id(3)), Some(&30));
+    assert_eq!(*tree.result(), 127, "the result reduces the leaves read");
+}
+
 fn oracle(values: &[(PartitionIdentity, f64)]) -> f64 {
     if values.is_empty() {
         return 0.0;

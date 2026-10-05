@@ -49,6 +49,7 @@ pub use locked_reader::{
 pub use operation_projection_denial::{
     WorthQueryOperationProjectionDenial, WorthQueryOperationProjectionDenialKind,
 };
+pub(in crate::domain_computation::primary_graph) use operation_reader::ComputationCallCharge;
 pub(in crate::domain_computation::primary_graph) use operation_reader::WorthQueryPriorOutputRead;
 pub use operation_reader::{
     WorthQueryApplicationOperationInvariantProjectionReader,
@@ -353,6 +354,22 @@ impl<Schema, Entity> Ord for WorthQueryInvariantEntityIdentity<Schema, Entity> {
                 other.kind,
                 other.entity.as_ref(),
             ))
+    }
+}
+
+/// An entity identity encodes exactly what its equality compares: the
+/// installation's projection authority, the entity, its kind and its entity
+/// name. Two identities from one installation encode alike exactly when they
+/// are equal; an identity issued by another installation never matches.
+impl<Schema, Entity> serde::Serialize for WorthQueryInvariantEntityIdentity<Schema, Entity> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeStruct;
+        let mut identity = serializer.serialize_struct("WorthQueryInvariantEntityIdentity", 4)?;
+        identity.serialize_field("authority_identity", &self.authority_identity)?;
+        identity.serialize_field("entity_id", &self.entity_id)?;
+        identity.serialize_field("kind", &self.kind)?;
+        identity.serialize_field("entity", self.entity.as_ref())?;
+        identity.end()
     }
 }
 

@@ -262,7 +262,13 @@ pub(super) fn limits(
     retained_composite_commits: u64,
     invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
 ) -> WorthQueryInMemoryApplicationLimits {
-    limits_with_room(retained_composite_commits, 16, 64, invalidation)
+    let host = candidates();
+    limits_with_room(retained_composite_commits, 16, 64, invalidation, host)
+}
+
+/// The candidate resources of a host whose widest operation is the default.
+pub(super) fn candidates() -> WorthQueryApplicationCandidateResourceProfile {
+    WorthQueryApplicationCandidateResourceProfile::bounded(4_096, 8_192, 4_096).unwrap()
 }
 
 /// A world with room for a long history under open demands. Rows settled at
@@ -273,6 +279,7 @@ pub(super) fn limits_with_room(
     active_observations: u64,
     unique_exact_component_pins: u64,
     invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
+    candidates: WorthQueryApplicationCandidateResourceProfile,
 ) -> WorthQueryInMemoryApplicationLimits {
     WorthQueryInMemoryApplicationLimits::new(
         WorthQueryProductWorldResources::install(
@@ -306,7 +313,7 @@ pub(super) fn limits_with_room(
             invalidation,
         )
         .unwrap(),
-        WorthQueryApplicationCandidateResourceProfile::bounded(4_096, 8_192, 4_096).unwrap(),
+        candidates,
         WorthQueryApplicationQueryResourceProfile::bounded(4_096, 4_096, 4_096, 32).unwrap(),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     )

@@ -17,6 +17,15 @@ impl PreparedPrerequisiteClaims {
         self.context.take_completed_handler_facts()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn take_sealed_computation(
+        &mut self,
+    ) -> Option<(
+        crate::domain_computation::primary_graph::SealedComputationRun,
+        Option<crate::domain_computation::primary_graph::output_lineage::PriorComputationRecord>,
+    )> {
+        self.context.take_sealed_computation()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn take_completed_decision_reuse(
         &mut self,
     ) -> Option<CompletedDecisionReuseProof> {

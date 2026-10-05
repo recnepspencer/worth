@@ -219,6 +219,7 @@ fn declared(binding_type: TypeId) -> DeclaredProducerBinding {
         binding_type,
         source_type: TypeId::of::<()>(),
         operation_binding_type: TypeId::of::<()>(),
+        operation_type: TypeId::of::<()>(),
         provider_type: TypeId::of::<()>(),
         output_contract_type: TypeId::of::<()>(),
     }

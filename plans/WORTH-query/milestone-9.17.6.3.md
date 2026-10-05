@@ -1079,51 +1079,85 @@ handler's small parameter value. The owner's `partitions`, `partition_key` and
 computation, as decision reads of that handler's operation, checked against what
 the operation declares it reads. The kernel and `complete` are handed no reader.
 
-Query attributes each fact to the owner call that read it, recorded per call,
+Query attributes each fact to the owner calls that read it, recorded per call,
 because a set of keys hides a key that a second call reads again. The classes
 are the membership (`partitions`), one item's key (`partition_key`, called per
-item) and one partition (`gather`, called per partition). A fact two partitions
-gather is a fact of both. A fact read in more than one class belongs to the
-first of: the handler itself, the membership, an item's key, a partition.
+item) and one partition (`gather`, called per partition). A fact keeps every
+class and every call that read it: a fact two partitions gather is a fact of
+both, and a fact the membership and a partition read is a fact of both. The
+handler is not a class. It runs again on every attempt and reads its own facts
+itself, so a fact the handler and a partition both read is the partition's.
 
 Purity is a law. Unchanged facts mean an unchanged partition: `partition_key`,
 `gather` and `compute_partition` are pure in the input value, the partition's
 key and the facts read through the reader. They read no clock, no global and no
-owner state that can differ between two runs. Per-partition reuse rests on it:
-a partition whose facts did not change keeps its last result without being
+owner state that can differ between two runs. An input value means its
+canonical encoding: a field the encoding skips is not part of the run's basis,
+and two values with one encoding are one input. Per-partition reuse rests on
+it: a partition whose facts did not change keeps its last result without being
 gathered or computed again.
 
 An output keeps one settlement row, and the settlement identity is not widened.
-Marks stay per row and per fact ordinal. A routing table, built once when the
-read set is sealed and bound to the fact sequence its ordinals index, maps each
-fact ordinal to what read it: the computation partitions, the items whose key it
-is, the membership, or the handler. A touched partition fact marks exactly those
-partitions. A touched membership or key fact rebuilds the partitions; routing a
-key fact to its items is what lets a membership edit re-route only the touched
-items. *Limitation:* an attempt that runs more than one partitioned computation
-has no table, because partition identities name the partitions of one
-computation only. Retained partition results are keyed under that row by
-computation identity, implementation edition and partition identity.
+When the read set is sealed it keeps, for every fact an owner call read, the
+fact's key, the fact as the attempt observed it before its own effect, content
+included, and every call that read it. These are the computation's own facts,
+not the record's: a record's facts are rebased to source revisions at commit, so
+they cannot be compared by content and they hide the attempt's own effect. A
+partition is skipped only if every fact its owner calls read last time, observed
+again at the new attempt's lease snapshot, has the same content as then. No row
+state decides it: marks and verification requirements are not consulted. A
+changed partition fact marks exactly the partitions that read it. A changed
+membership or key fact rebuilds the partitions; keeping a key fact's items is
+what lets a membership edit re-route only the touched items. *Limitation:* an
+attempt that runs more than one partitioned computation keeps no computation
+facts, because partition identities name the partitions of one computation
+only.
+
+A producer's run leaves its state on the record its attempt published: the
+items, each partition's key and members, every owner call's charge and reach,
+each kernel's work, the reduction tree and the facts as sealed. Only a run that
+completed under an attempt that published retains. A restored or aliased record
+holds none, and a stable alias's origin is not followed. The next run of the
+same producer is handed the state of the live record at its demand's address by
+value, so no whole-output input reuse is needed. Its basis is the owner's
+installation instance, the producer edition and the input value's canonical
+digest, which is computed only for a producer whose owner can retain, decided
+statically; a reinstalled owner of the same type has another basis. The
+computation and owner types are checked by the one downcast. One comparator
+module owns the incremental run: it observes every retained fact at the
+attempt's own snapshot, and a read is recorded with its fact on every outcome,
+a failed one included, so a fact it could not observe still marks. It
+marks partitions, charges each carried call where a full run charges it and
+enters its facts as admitted reads, and builds the next tree from the prior's
+clone. Carried charges replay in a full run's order, so a ceiling names the
+partition a full run names. Seal checks the law: every fact a skipped partition
+read must be the fact seal observed, or the attempt fails.
 
 Retention belongs to Query. `worth-execution`'s persistent `ReductionTree` is
 the retained store: its nodes are shared, so a clone costs the same at any
 partition count. Query owns the retained tree value, its retained-byte charge
 and its eviction. A branch fork clones the tree, so the two branches share every
 node neither has replaced. No node store keyed by child identities is built.
-Exceeding the computation's `maximum_retained_bytes` evicts to full
-recomputation for that computation.
+The lineage retention ledger alone bounds the retained state: one reservation
+per record, and a refusal evicts to full recomputation. Publication moves the
+prior record's reservation only when that record still holds exactly the state
+the run built from. `maximum_retained_bytes` bounds one partition's result and
+nothing else.
 
 A partition whose recomputed encoding equals its previous encoding stops
 propagation, so nothing above it recombines.
 
-Full recomputation is the fallback in these cases. Each is reported as a typed
-cause, and none is counted:
+Full recomputation is the fallback in these cases. Each is a typed cause shown
+to the test observer, and none is counted:
 
-- a basis that is not continuous (see Currentness, demand and advancement);
-- the partitioner reports a rebuild;
-- eviction under the retained-byte ceiling.
+- no prior record: a first run, a restored or aliased record, another edition,
+  computation or owner, or a run no producer runs;
+- the input value's digest changed;
+- a membership or key fact changed, and the partitioner rebuilds;
+- the ledger evicted the state.
 
-An edition change is a reuse-key miss, not a fallback.
+An outcome never depends on reuse: a handler sees the same result, charged work
+and denial either way, and the execution report of a run is the observer's.
 
 ### Query: parallel advancement
 
@@ -2286,10 +2320,9 @@ The next phase may trust that the touched graph alone decides what recomputes.
   failing partition, the canonical work boundary, and a typed denial for a
   kernel panic, a reducer panic, a result over the declared bytes and a key
   that does not encode.
-  *Not completed:* no lease reaches a managed computation. Query requests none,
-  and Phase 7 carries the request lease to `compute`. Every run is the serial
-  backend with fallback `NoLease`, so the proof against the serial oracle at
-  two workers, machine width and wider than the machine is not made.
+  The lease reaching `compute`, and the proof against the serial oracle at two
+  workers, machine width and wider than the machine, land in the lease item
+  below, before membership edits.
   *Limitations:* the reducer and `prepare` are not interruptible. The declared
   bytes bound each partition's result, not their total. `prepare` holds its
   routing memory and every partition's gathered data at once, uncharged without
@@ -2298,9 +2331,72 @@ The next phase may trust that the touched graph alone decides what recomputes.
   (`certify_reduce`) needs a lease.
 - Route marks to computation partitions through the settlement row's routing
   table, with item routing so `prepare` re-gathers only marked partitions.
+  *Partly completed:* a producer's run retains its state on its record and the
+  next run with an unchanged membership and keys gathers and computes only the
+  partitions whose facts changed, compared by content rather than by row marks.
+  Unit tests through a real admitted operation prove the carried outcome and
+  charged work, the next tree under a sum and a max reducer, each full cause,
+  a retained key the next attempt cannot observe marking its partition without
+  a denial, a ceiling falling on the partition a full run names, a stale
+  attempt reserving afresh, a refused reservation running full, a restored,
+  aliased or republished record holding no prior, and a run over 10,000
+  partitions gathering and computing only the one whose fact moved, with exact
+  owner call counts and the full run's charged work. The topology entry proves
+  through the public facade a demanded producer's live output at 100 and 160
+  partitions gathering and computing one partition after a one-entry edit, and
+  a producer writing a fact its own partition gathered recomputing that
+  partition next run. Partition reuse is proven exact by the differential
+  test, and later skip paths (membership edits, branch sharing, parallel) must
+  extend that test's edit alphabet. Its alphabet today is an entry's value, a
+  set's shared weight, an entry's region, the producer's own write read first,
+  the producer's own write without reading it, the input, a no-op write and a
+  fault. A write lowers to the replacement of a fact the attempt observed
+  (`effect_lowering.rs:169`, `observed_fact_index.rs:70-80`), so a blind write
+  is admitted only when another read of the attempt, here the gather's,
+  observed the fact.
+  Re-routing only the items a membership edit touches is the next item: it
+  compares each item's key fact on its own and edits the partitions' members in
+  place.
+  *Limitations:* the topology entry does not reach 10,000 partitions; only the
+  unit test does. A set of 200 is refused at
+  seeding, because the topology's planar turn invariant pays one unit of its
+  1,024 for every entity the bootstrap touches, of any kind
+  (`planar_invariant.rs:77`, `worth-relational` `structural_views.rs:118`,
+  `planar_topology.rs:123`). An unobservable retained fact is proven by the
+  unit test only: the differential deletes nothing, and deleting an entry
+  unlinks its membership, so that run is full either way. Only a producer
+  whose operation runs a retained partitioned computation selects a prior
+  state, and the selection charges the request's invalidation-edit admission
+  for the partition index entries and the record it reads. The scratch of
+  the input digest and of each partition key, each encoding's growths summed,
+  is bounded by `maximum_retained_bytes`, not by the request's
+  read-scratch admission, because no read-scratch admission reaches a producer
+  operation's reader (`edit_admission.rs:193`, `operation_reader.rs:211-213`,
+  `application_entry/mutation/execution.rs:133-147`,
+  `authorization/operation_admission.rs:117-145`).
 - Retain the canonical tree in Query with eviction and branch sharing, and apply
-  encoding cutoff per partition.
+  encoding cutoff per partition. *Partly completed:* the tree is retained under
+  the lineage ledger and a recomputed partition with the same canonical bits
+  replaces nothing.
+- Close the decisions that are kept by convention. Factless currentness is one
+  closed answer, not an `Option<bool>` read two ways. A required settlement
+  returns its request stop separately from its reasons to verify in full, so no
+  catch-all can swallow a stop, and a foreign source is denied at every site.
+  Whether a fact moved is one closed answer that only the comparison produces,
+  shared with partition reuse, never a `None` read as moved. Every work meter is
+  a reservation charged before the read it pays for, including the post-commit
+  rebase.
+- Carry the request lease into managed computations before membership edits.
+  Resource denials are one Query-owned denial converted from the execution
+  authority's in one place, and partition identity lists are canonical and
+  unique by type. The Components partitioner's retained edits take the lease.
+  Before Phase 7 runs waves concurrently, readers, meters and registry guards
+  are bound to their owning thread by type, and apply accepts only canonical
+  order.
 - Maintain partitioner output incrementally and keep island identity stable.
+  Retained structure equals what a fresh build of the current inputs produces;
+  the differential test gains membership inserts, deletes, island merges and
+  splits.
 - A neutral application proves the isolation and reuse courtroom with operation
   counts.
 

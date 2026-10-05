@@ -5,13 +5,16 @@ use worth_query_installation::facade::{
     WritePosture,
 };
 
+use worth_relational::facade::identity::EntityId;
+
+use super::decision_reads::DecisionReadOutcome;
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
 mod indexed_selection;
 use crate::domain_computation::application_contract_admission::graph_reads_admit_target;
 use crate::domain_computation::primary_graph::{
     application_attempt::{WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey},
-    WorthQueryInvariantEntityIdentity, WorthQueryInvariantProjectionTraversalDenial,
-    WorthQueryInvariantRelation,
+    WorthQueryApplicationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
+    WorthQueryInvariantProjectionTraversalDenial, WorthQueryInvariantRelation,
 };
 
 /// Why a decision read in an operation projection was refused.
@@ -57,11 +60,13 @@ where
                 entity.name(),
             ));
         }
-        self.decision_facts
-            .insert(WorthQueryApplicationFactKey::Entity {
+        self.decision_facts.record(
+            WorthQueryApplicationFactKey::Entity {
                 entity: entity.name().to_string(),
                 entity_id: identity.entity_id,
-            });
+            },
+            DecisionReadOutcome::Observed,
+        );
         Ok(())
     }
 
@@ -94,17 +99,12 @@ where
         let target = relation_target(&relation);
         self.admit_decision_target(&target)
             .map_err(|denial| decision_traversal_denial(&denial))?;
-        let before = self.reader.work;
-        let relations = self.reader.relations_from(relation, from)?;
-        let maximum_work_units = adjacency_recomparison_limit(before, self.reader.work);
-        self.decision_facts
-            .insert(WorthQueryApplicationFactKey::Adjacency {
-                relation: target_relation_name(&target),
-                anchor: from.entity_id,
-                direction: WorthQueryApplicationAdjacencyDirection::Outgoing,
-                maximum_work_units,
-            });
-        Ok(relations)
+        self.recorded_adjacency(
+            &target,
+            from.entity_id,
+            WorthQueryApplicationAdjacencyDirection::Outgoing,
+            |reader| reader.relations_from(relation, from),
+        )
     }
 
     pub fn decision_relations_to<Relation, From, To>(
@@ -121,17 +121,44 @@ where
         let target = relation_target(&relation);
         self.admit_decision_target(&target)
             .map_err(|denial| decision_traversal_denial(&denial))?;
+        self.recorded_adjacency(
+            &target,
+            to.entity_id,
+            WorthQueryApplicationAdjacencyDirection::Incoming,
+            |reader| reader.relations_to(relation, to),
+        )
+    }
+
+    /// Runs one adjacency read and records its fact whatever the read
+    /// returned, so no early return skips the recording. A read that failed
+    /// is recorded as failed: whoever swallows the failure has an outcome its
+    /// fact does not hold, and the projection seals nothing.
+    fn recorded_adjacency<Relations>(
+        &mut self,
+        target: &ApplicationOperationDecisionReadTarget,
+        anchor: EntityId,
+        direction: WorthQueryApplicationAdjacencyDirection,
+        read: impl FnOnce(
+            &mut WorthQueryApplicationInvariantProjectionReader<'runtime, Schema>,
+        ) -> Result<Relations, WorthQueryInvariantProjectionTraversalDenial>,
+    ) -> Result<Relations, WorthQueryInvariantProjectionTraversalDenial> {
         let before = self.reader.work;
-        let relations = self.reader.relations_to(relation, to)?;
+        let relations = read(self.reader);
         let maximum_work_units = adjacency_recomparison_limit(before, self.reader.work);
-        self.decision_facts
-            .insert(WorthQueryApplicationFactKey::Adjacency {
-                relation: target_relation_name(&target),
-                anchor: to.entity_id,
-                direction: WorthQueryApplicationAdjacencyDirection::Incoming,
+        self.decision_facts.record(
+            WorthQueryApplicationFactKey::Adjacency {
+                relation: target_relation_name(target),
+                anchor,
+                direction,
                 maximum_work_units,
-            });
-        Ok(relations)
+            },
+            if relations.is_ok() {
+                DecisionReadOutcome::Observed
+            } else {
+                DecisionReadOutcome::Failed
+            },
+        );
+        relations
     }
 
     pub fn require_decision_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
@@ -168,12 +195,14 @@ where
                     field.field(),
                 )
             })?;
-        self.decision_facts
-            .insert(WorthQueryApplicationFactKey::Field {
+        self.decision_facts.record(
+            WorthQueryApplicationFactKey::Field {
                 entity: field.entity().to_string(),
                 entity_id: identity.entity_id,
                 locator,
-            });
+            },
+            DecisionReadOutcome::Observed,
+        );
         Ok(())
     }
 
@@ -200,12 +229,14 @@ where
                 relation.name(),
             ));
         }
-        self.decision_facts
-            .insert(WorthQueryApplicationFactKey::Relation {
+        self.decision_facts.record(
+            WorthQueryApplicationFactKey::Relation {
                 relation: relation.name().to_string(),
                 from: from.entity_id,
                 to: to.entity_id,
-            });
+            },
+            DecisionReadOutcome::Observed,
+        );
         Ok(())
     }
 

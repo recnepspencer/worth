@@ -56,6 +56,11 @@ pub use super::application_checkpoint::{
     WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,
     WorthQueryNativeCheckpointSectionBytes,
 };
+#[cfg(feature = "test-query-execution-observer")]
+pub use super::application_contribution::{
+    partitioned_computation_runs_on_this_thread_for_test,
+    WorthQueryPartitionedComputationFullCause, WorthQueryPartitionedComputationRun,
+};
 pub use super::application_contribution::{
     WorthQueryAdmittedOutputDemand, WorthQueryApplicationConditionalBinding,
     WorthQueryApplicationConditionalPackageContract,

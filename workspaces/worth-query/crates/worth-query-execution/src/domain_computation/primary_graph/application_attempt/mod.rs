@@ -41,8 +41,8 @@ pub(in crate::domain_computation) use read_set::CompletedHandlerFactBoundary;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use read_set::ComputationFactReaders;
 pub(in crate::domain_computation::primary_graph) use read_set::{
-    CompletedDecisionReuseProof, ComputationFactAttribution, ComputationRead,
-    PreparedDecisionReuseContext,
+    observe_fact, CompletedDecisionReuseProof, ComputationFactAttribution, ComputationRead,
+    PreparedDecisionReuseContext, SealedComputationFacts,
 };
 mod retained_commit;
 pub(super) mod snapshot_lease;

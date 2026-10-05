@@ -27,6 +27,17 @@ pub use conditional::{
 pub use contracts::{
     WorthQueryApplicationContractCatalog, WorthQueryApplicationContributionContracts,
 };
+pub use partitioned_computation::WorthQueryPartitionedComputationFullCause;
+#[cfg(feature = "test-query-execution-observer")]
+pub use partitioned_computation::{
+    partitioned_computation_runs_on_this_thread_for_test, WorthQueryPartitionedComputationRun,
+};
+pub(in crate::domain_computation::primary_graph) use partitioned_computation::{
+    Comparator, ComputationDeposit, ComputationRetention,
+};
+pub(in crate::domain_computation) use partitioned_computation::{
+    ComputationPrior, RetainedComputation, SealedComputationRun,
+};
 pub use partitioned_computation::{
     WorthQueryCompletedPartitionedComputation, WorthQueryComputationInputDenial,
     WorthQueryComputationPartitionMembers, WorthQueryComputationPartitionPlan,

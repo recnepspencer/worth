@@ -219,6 +219,7 @@ impl Stage<'_> {
             prepared_input_reuse_key: None,
             native_output_witness: OnceLock::new(),
             mutable: Mutex::new(RecordedOutputMutable {
+                computation: None,
                 verification_requirement: None,
                 observed_source_facts: Some(Arc::clone(facts)),
                 resources: None,

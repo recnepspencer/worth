@@ -12,6 +12,8 @@ use crate::domain_computation::primary_graph::{
 
 /// The installed declaration's framed semantic meaning. Rust type identities
 /// are runtime guards; the digest contains the portable declared contract.
+/// `retains_computation` is fixed at installation: the producer's operation
+/// runs a partitioned computation whose state its runs retain.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct InstalledProducerEdition {
     digest: [u8; 32],
@@ -19,6 +21,7 @@ pub(in crate::domain_computation::primary_graph) struct InstalledProducerEdition
     source_type: TypeId,
     operation_binding_type: TypeId,
     provider_type: TypeId,
+    retains_computation: bool,
 }
 
 impl InstalledProducerEdition {
@@ -41,6 +44,19 @@ impl InstalledProducerEdition {
                 >()
             && self.operation_binding_type == TypeId::of::<Binding::Operation>()
             && self.provider_type == TypeId::of::<Binding::Provider>()
+    }
+
+    pub(super) const fn retaining_computation(self, retains_computation: bool) -> Self {
+        Self {
+            retains_computation,
+            ..self
+        }
+    }
+
+    /// Whether a run of this producer looks up and retains a partitioned
+    /// computation's state.
+    pub(in crate::domain_computation::primary_graph) const fn retains_computation(self) -> bool {
+        self.retains_computation
     }
 
     pub(super) fn from_declaration(
@@ -141,6 +157,7 @@ impl InstalledProducerEdition {
             source_type: declaration.source_type,
             operation_binding_type: declaration.operation_binding_type,
             provider_type: declaration.provider_type,
+            retains_computation: false,
         })
     }
 
@@ -158,6 +175,7 @@ impl InstalledProducerEdition {
             source_type: unit,
             operation_binding_type: unit,
             provider_type: unit,
+            retains_computation: true,
         }
     }
 }

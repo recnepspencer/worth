@@ -22,6 +22,9 @@ pub struct WorthQueryInvariantProjectionWork {
 pub(super) struct WorthQueryInvariantProjectionWorkBudget {
     remaining: Option<usize>,
     exceeded: bool,
+    /// While one owner call of a partitioned computation holds the reader:
+    /// the least remaining work any of its preflights or charges left.
+    call_floor: Option<usize>,
 }
 
 impl WorthQueryInvariantProjectionWork {
@@ -81,6 +84,49 @@ impl WorthQueryInvariantProjectionWork {
             + self.output_lineage_role_lookups
     }
 
+    /// The work done since `before`, an earlier reading of this same
+    /// projection. `None` when `before` is not earlier.
+    pub(super) fn since(self, before: Self) -> Option<Self> {
+        self.each(before, usize::checked_sub)
+    }
+
+    /// This work with `carried` done again: the work a call did on an earlier
+    /// run. `None` when a count overflows.
+    pub(super) fn with_carried(self, carried: Self) -> Option<Self> {
+        self.each(carried, usize::checked_add)
+    }
+
+    fn each(self, other: Self, op: fn(usize, usize) -> Option<usize>) -> Option<Self> {
+        Some(Self {
+            equality_lookups: op(self.equality_lookups, other.equality_lookups)?,
+            index_candidates_examined: op(
+                self.index_candidates_examined,
+                other.index_candidates_examined,
+            )?,
+            adjacency_lists_read: op(self.adjacency_lists_read, other.adjacency_lists_read)?,
+            adjacency_edges_inspected: op(
+                self.adjacency_edges_inspected,
+                other.adjacency_edges_inspected,
+            )?,
+            endpoint_records_read: op(self.endpoint_records_read, other.endpoint_records_read)?,
+            field_reads: op(self.field_reads, other.field_reads)?,
+            aggregate_lookups: op(self.aggregate_lookups, other.aggregate_lookups)?,
+            aggregate_cache_hits: op(self.aggregate_cache_hits, other.aggregate_cache_hits)?,
+            aggregate_rebuild_input_rows: op(
+                self.aggregate_rebuild_input_rows,
+                other.aggregate_rebuild_input_rows,
+            )?,
+            output_lineage_source_selections: op(
+                self.output_lineage_source_selections,
+                other.output_lineage_source_selections,
+            )?,
+            output_lineage_role_lookups: op(
+                self.output_lineage_role_lookups,
+                other.output_lineage_role_lookups,
+            )?,
+        })
+    }
+
     pub(super) fn record_lookup(&mut self, examined: usize) {
         self.equality_lookups += 1;
         self.index_candidates_examined += examined;
@@ -116,6 +162,7 @@ impl WorthQueryInvariantProjectionWorkBudget {
         Self {
             remaining: None,
             exceeded: false,
+            call_floor: None,
         }
     }
 
@@ -123,6 +170,7 @@ impl WorthQueryInvariantProjectionWorkBudget {
         Self {
             remaining: Some(maximum),
             exceeded: false,
+            call_floor: None,
         }
     }
 
@@ -137,6 +185,10 @@ impl WorthQueryInvariantProjectionWorkBudget {
             self.exceeded = true;
             return false;
         }
+        // Either the remaining work covers the preflight, or nothing bounds it.
+        if let Some(left) = self.remaining().checked_sub(maximum_work) {
+            self.lower_call_floor(left);
+        }
         true
     }
 
@@ -147,6 +199,43 @@ impl WorthQueryInvariantProjectionWorkBudget {
         *remaining = remaining
             .checked_sub(actual_work)
             .expect("provider work was preflighted before execution");
+        let left = *remaining;
+        self.lower_call_floor(left);
+    }
+
+    fn lower_call_floor(&mut self, left: usize) {
+        if let Some(floor) = &mut self.call_floor {
+            *floor = (*floor).min(left);
+        }
+    }
+
+    /// Begins one owner call: from here the budget remembers how low its
+    /// preflights and charges took the remaining work.
+    pub(super) fn begin_call(&mut self) {
+        self.call_floor = Some(self.remaining());
+    }
+
+    /// Ends the call begun last, when it started with `remaining_at_start`.
+    /// Returns the work it needed remaining at its start to pass every
+    /// preflight, and the work it consumed.
+    pub(super) fn end_call(&mut self, remaining_at_start: usize) -> Option<(usize, usize)> {
+        let floor = self.call_floor.take()?;
+        Some((
+            remaining_at_start.checked_sub(floor)?,
+            remaining_at_start.checked_sub(self.remaining())?,
+        ))
+    }
+
+    /// Charges a call an earlier run made over the same facts, as if it were
+    /// made now: it passes exactly when `demand` remains, and then consumes
+    /// what it consumed through the budget's one checked spend. False,
+    /// charging nothing, when it would not pass.
+    pub(super) fn carry(&mut self, demand: usize, consumed: usize) -> bool {
+        if self.exceeded || self.remaining() < demand || consumed > demand {
+            return false;
+        }
+        self.consume(consumed);
+        true
     }
 
     pub(super) fn mark_exceeded(&mut self) {

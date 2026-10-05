@@ -25,11 +25,17 @@ use worth_query_host::facade::application_contribution::{
 use super::*;
 
 mod demand;
+mod entry_edit;
 mod execution;
 mod facts;
+#[cfg(feature = "test-query-execution-observer")]
+mod oracle;
+#[cfg(feature = "test-query-execution-observer")]
+mod output_producer;
 mod owner;
 mod probe;
 mod refusal;
+mod region_output;
 
 /// A set of entries, each tagged with the region it lies in. An owner reads
 /// the entries from the set's facts.
@@ -124,20 +130,33 @@ trait RegionTotalsBinding: 'static {
     fn install(setup: &mut owner::Setup<'_>) -> owner::Installed;
 }
 
-/// The entry facts and the demand that totals them, for the topology's schema.
+/// The entry facts, the demand that totals them, the region output's
+/// operation and the edit of one entry fact, for the topology's schema.
 pub(crate) fn declare<Schema: TopologySchemaBinding>(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    demand::declare(schema)
+    entry_edit::declare(region_output::declare(demand::declare(schema)))
 }
 
-/// The topology's own handler of the demand, which has no owner to run.
+/// The topology's own handlers: the demand and the region output have no
+/// owner to run.
 pub(crate) fn configure<Schema: TopologySchemaBinding>(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
 ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
     setup.handler::<demand::RegionTotalsDemandBinding<Schema>, _>(
         demand::RegionTotalsHandler::idle(),
-    )
+    )?;
+    idle_entry_handlers(setup)
+}
+
+/// The region output's handler with no owner to run, and the entry edit's.
+fn idle_entry_handlers<Schema: TopologySchemaBinding>(
+    setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
+) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
+    setup.handler::<region_output::RegionOutputBinding<Schema>, _>(
+        region_output::RegionOutputHandler::idle(),
+    )?;
+    setup.handler::<entry_edit::EntryEditBinding<Schema>, _>(entry_edit::EntryEditHandler)
 }
 
 /// A program that only declares the computation. Nothing installs its owner,
@@ -188,6 +207,7 @@ impl<Binding: RegionTotalsBinding> WorthQueryApplicationContribution<CheckpointS
     ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
         let demand = Binding::install(setup)?;
         setup.handler::<demand::RegionTotalsDemandBinding<CheckpointSchema>, _>(demand)?;
+        idle_entry_handlers(setup)?;
         TopologyContribution::configure_topology(configuration, setup)
     }
 }

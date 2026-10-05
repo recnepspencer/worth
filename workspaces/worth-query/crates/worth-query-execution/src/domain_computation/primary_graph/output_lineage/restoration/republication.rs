@@ -70,6 +70,7 @@ impl RepublishedOutput {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         mutable.verification_requirement = None;
         mutable.observed_source_facts = Some(self.facts);
+        mutable.computation = None;
     }
 }
 

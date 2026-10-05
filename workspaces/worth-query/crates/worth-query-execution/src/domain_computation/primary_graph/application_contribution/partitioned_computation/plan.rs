@@ -2,6 +2,7 @@
 //! gathering and kernel are handed.
 
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use worth_execution::{ChargedBytes, PartitionItemId};
 use worth_foundational::facade::PartitionIdentity;
@@ -99,7 +100,7 @@ impl<'run, Key, Gathered> WorthQueryComputationPartitionView<'run, Key, Gathered
 
     /// The typed key of the partition: the key of its least item, whatever
     /// order the input holds the items in.
-    pub const fn key(&self) -> &'run Key {
+    pub fn key(&self) -> &'run Key {
         &self.partition.key
     }
 
@@ -117,20 +118,21 @@ impl<'run, Key, Gathered> WorthQueryComputationPartitionView<'run, Key, Gathered
 /// One gathered partition: the value its kernel is dispatched with.
 pub(super) struct GatheredComputationPartition<Key, Gathered> {
     pub(super) identity: PartitionIdentity,
-    pub(super) key: Key,
-    pub(super) items: Vec<PartitionItemId>,
+    pub(super) key: Arc<Key>,
+    pub(super) items: Arc<[PartitionItemId]>,
     pub(super) gathered: Gathered,
 }
 
 /// The item list and what the owner gathered are what a partition retains
 /// beyond its inline value. A key's own heap storage is not visible here.
+/// A sum with no value is `u64::MAX`, which no declared capacity admits.
 impl<Key, Gathered: ChargedBytes> ChargedBytes for GatheredComputationPartition<Key, Gathered> {
     fn additional_charged_bytes(&self) -> u64 {
         self.items
-            .capacity()
+            .len()
             .checked_mul(std::mem::size_of::<PartitionItemId>())
             .and_then(|bytes| u64::try_from(bytes).ok())
+            .and_then(|items| items.checked_add(self.gathered.additional_charged_bytes()))
             .unwrap_or(u64::MAX)
-            .saturating_add(self.gathered.additional_charged_bytes())
     }
 }

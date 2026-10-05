@@ -63,8 +63,14 @@ impl ApplicationComputationResourceCeiling {
     }
 }
 
+/// What a computation reads its input through.
+///
+/// The input value has a canonical encoding: the prefix-free canonical
+/// encoding of its `Serialize` form that partition keys have. Its digest is
+/// what makes two input values the same input, so a partitioned computation
+/// keeps its last run's partitions only for the same input.
 pub trait ApplicationComputationInput: 'static {
-    type Value: Send + Sync + 'static;
+    type Value: Serialize + Send + Sync + 'static;
     const IDENTITY: &'static str;
 }
 

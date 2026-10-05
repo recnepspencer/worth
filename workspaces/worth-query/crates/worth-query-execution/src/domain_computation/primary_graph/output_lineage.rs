@@ -22,6 +22,8 @@ mod resolution;
 mod resources;
 mod restoration;
 mod retained_capacity;
+mod retained_computation;
+pub(in crate::domain_computation::primary_graph) use retained_computation::PriorComputationRecord;
 mod retention;
 mod settlement_identity;
 pub(in crate::domain_computation) use invalidation::InvalidationEditAdmission;
@@ -212,8 +214,10 @@ impl WorthQueryApplicationOutputLineage {
         completed_decision_reuse: Option<CompletedDecisionReuseProof>,
         prepared_input_reuse_key: Option<PreparedInputReuseKey>,
         retained_capacity: retained_capacity::RetainedLineageCapacity,
+        computation: Option<retained_computation::RecordedComputation>,
     ) -> Arc<RecordedSettlementIdentity> {
         self.record_inner(
+            computation,
             application,
             consumed_outputs,
             Some(prepared),
@@ -227,6 +231,7 @@ impl WorthQueryApplicationOutputLineage {
 
     fn record_inner(
         &mut self,
+        computation: Option<retained_computation::RecordedComputation>,
         application: &WorthQueryPrimaryGraphCommittedApplication,
         consumed_outputs: Arc<[super::invariant_projection::ConsumedOutputEvidence]>,
         prepared: Option<&PreparedOutputLineageSlot>,
@@ -343,6 +348,7 @@ impl WorthQueryApplicationOutputLineage {
                 verification_requirement,
                 observed_source_facts,
                 resources: prepared.and_then(|slot| slot.actual_resources),
+                computation,
             }),
             settlement_identity: Arc::clone(&settlement_identity),
             correspondence: evidence.retain_output_correspondence(),

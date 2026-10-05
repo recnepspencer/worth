@@ -229,6 +229,9 @@ fn prepare_lineage_slot(
                 .take_completed_handler_facts()
                 .expect("managed handler completed its sealed read before World publication"),
         );
+        if let Some((sealed, prior)) = required.take_sealed_computation() {
+            slot.retain_computation(sealed, prior);
+        }
         if let Some(proof) = required.take_completed_decision_reuse() {
             slot.retain_completed_decision_reuse(proof);
         }

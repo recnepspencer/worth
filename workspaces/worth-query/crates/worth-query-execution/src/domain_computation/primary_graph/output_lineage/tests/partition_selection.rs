@@ -128,6 +128,7 @@ fn unrelated_partition_selection(population: u64) {
         prepared_input_reuse_key: None,
         native_output_witness: OnceLock::new(),
         mutable: std::sync::Mutex::new(super::super::RecordedOutputMutable {
+            computation: None,
             verification_requirement: None,
             observed_source_facts: None,
             resources: None,

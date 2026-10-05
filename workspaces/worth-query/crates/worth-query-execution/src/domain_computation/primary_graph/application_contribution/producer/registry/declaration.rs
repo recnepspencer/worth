@@ -55,6 +55,9 @@ impl DeclaredProducerBinding {
                 <Binding::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source,
             >(),
             operation_binding_type: TypeId::of::<Binding::Operation>(),
+            operation_type: TypeId::of::<
+                <Binding::Operation as ApplicationMutationBinding<Schema>>::Operation,
+            >(),
             output_contract_type: TypeId::of::<
                 <Binding::Operation as ApplicationMutationBinding<Schema>>::Output,
             >(),
@@ -96,6 +99,7 @@ impl DeclaredProducerBinding {
             && self.binding_type == expected.binding_type
             && self.source_type == expected.source_type
             && self.operation_binding_type == expected.operation_binding_type
+            && self.operation_type == expected.operation_type
             && self.output_contract_type == expected.output_contract_type
             && self.provider_type == expected.provider_type
     }

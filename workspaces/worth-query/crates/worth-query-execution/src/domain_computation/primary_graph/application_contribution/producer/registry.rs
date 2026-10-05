@@ -57,6 +57,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution) struc
     pub(in crate::domain_computation::primary_graph::application_contribution) source_type: TypeId,
     pub(in crate::domain_computation::primary_graph::application_contribution) operation_binding_type:
         TypeId,
+    /// The operation the producer's mutation binding runs.
+    pub(in crate::domain_computation::primary_graph::application_contribution) operation_type: TypeId,
     pub(in crate::domain_computation::primary_graph::application_contribution) output_contract_type:
         TypeId,
     pub(in crate::domain_computation::primary_graph::application_contribution) provider_type:

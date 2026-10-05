@@ -112,7 +112,14 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
             .record_computation_owner::<Feature, Computation>(
                 worth_query_declaration::facade::application_program::ApplicationComputationExecution::DeterministicPartitioned,
             )?;
-        Ok(super::WorthQueryInstalledPartitionedComputation::new(owner))
+        let retention = if self.producers.retain_computation_of::<Owner::Operation>() {
+            super::ComputationRetention::ProducerOperation
+        } else {
+            super::ComputationRetention::Unretained
+        };
+        Ok(super::WorthQueryInstalledPartitionedComputation::new(
+            owner, retention,
+        ))
     }
 
     pub fn producer<Binding>(

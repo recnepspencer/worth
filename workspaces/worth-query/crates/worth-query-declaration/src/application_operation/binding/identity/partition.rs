@@ -5,8 +5,14 @@
 //! the key type's declared identity, and its partition identity is the first
 //! eight bytes of the digest, big-endian. Partitions reduce in identity order,
 //! so the encoder and the truncation are part of a canonical result's meaning.
+//!
+//! A partitioned computation's input value has the same canonical encoding,
+//! under its own domain and the input's declared identity: its digest is what
+//! makes two input values the same input.
 
 use std::fmt::Debug;
+
+use serde::Serialize;
 
 use worth_foundational::facade::PartitionIdentity;
 
@@ -14,11 +20,12 @@ use super::{
     canonical_identity_admitted, encoder::CanonicalEncodeError, rejected, ApplicationCanonicalWork,
     CanonicalEncodingCharge,
 };
-use crate::application_program::ApplicationComputationPartition;
+use crate::application_program::{ApplicationComputationInput, ApplicationComputationPartition};
 use crate::application_schema::ApplicationValueEncodeDenial;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 const PARTITION_KEY_DOMAIN: &str = "worth-query.computation-partition-key.v1";
+const INPUT_VALUE_DOMAIN: &str = "worth-query.computation-input-value.v1";
 
 /// One partition key's digest, its partition identity and the work that
 /// derived them.
@@ -53,10 +60,10 @@ impl ApplicationComputationPartitionIdentity {
     }
 }
 
-/// Why a partition key has no identity.
+/// Why a partition key or an input value has no identity.
 #[derive(Debug)]
 pub enum ApplicationComputationPartitionIdentityDenial<E: Debug> {
-    /// The key's `Serialize` form refused to encode.
+    /// The value's `Serialize` form refused to encode.
     Key(ApplicationValueEncodeDenial),
     /// The caller's admission refused a work or scratch charge.
     Admission(E),
@@ -75,14 +82,45 @@ where
     F: FnMut(CanonicalEncodingCharge) -> Result<(), E>,
     E: Debug,
 {
-    match canonical_identity_admitted(PARTITION_KEY_DOMAIN, Key::IDENTITY, key, admission) {
-        Ok(identity) => Ok(ApplicationComputationPartitionIdentity {
+    admitted(PARTITION_KEY_DOMAIN, Key::IDENTITY, key, admission).map(|identity| {
+        ApplicationComputationPartitionIdentity {
             digest: identity.identity(),
             work: identity.work(),
-        }),
+        }
+    })
+}
+
+/// Derives the digest of a partitioned computation's input value, requesting
+/// every work and scratch charge from `admission` as a partition key does.
+pub fn application_computation_input_digest<Input, F, E>(
+    value: &Input::Value,
+    admission: &mut F,
+) -> Result<[u8; 32], ApplicationComputationPartitionIdentityDenial<E>>
+where
+    Input: ApplicationComputationInput,
+    F: FnMut(CanonicalEncodingCharge) -> Result<(), E>,
+    E: Debug,
+{
+    admitted(INPUT_VALUE_DOMAIN, Input::IDENTITY, value, admission)
+        .map(|identity| identity.identity())
+}
+
+fn admitted<T, F, E>(
+    domain: &str,
+    identity: &'static str,
+    value: &T,
+    admission: &mut F,
+) -> Result<super::ApplicationCanonicalIdentity, ApplicationComputationPartitionIdentityDenial<E>>
+where
+    T: Serialize + ?Sized,
+    F: FnMut(CanonicalEncodingCharge) -> Result<(), E>,
+    E: Debug,
+{
+    match canonical_identity_admitted(domain, identity, value, admission) {
+        Ok(identity) => Ok(identity),
         Err(CanonicalEncodeError::Serialization) => {
             Err(ApplicationComputationPartitionIdentityDenial::Key(
-                rejected(WorthQueryPortableTypeIdentity::declared(Key::IDENTITY)),
+                rejected(WorthQueryPortableTypeIdentity::declared(identity)),
             ))
         }
         Err(CanonicalEncodeError::Admission(error)) => Err(

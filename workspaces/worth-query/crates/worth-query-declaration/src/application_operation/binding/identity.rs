@@ -51,8 +51,8 @@ mod work;
 pub use encoder::CanonicalEncodingCharge;
 pub use input::ApplicationEncodedInput;
 pub use partition::{
-    application_computation_partition_identity, ApplicationComputationPartitionIdentity,
-    ApplicationComputationPartitionIdentityDenial,
+    application_computation_input_digest, application_computation_partition_identity,
+    ApplicationComputationPartitionIdentity, ApplicationComputationPartitionIdentityDenial,
 };
 pub use request::{
     ApplicationMutationIdentities, ApplicationMutationIdentityAdmittedDenial,

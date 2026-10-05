@@ -110,6 +110,28 @@ impl RetainedLineageCapacity {
     }
 }
 
+impl RetainedLineageCapacity {
+    pub(super) const fn bytes(&self) -> u64 {
+        self.bytes
+    }
+
+    /// Returns `bytes` of this owner's custody to the ledger.
+    pub(super) fn release_part(&mut self, bytes: u64) {
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        self.bytes = self
+            .bytes
+            .checked_sub(bytes)
+            .expect("an owner releases only what it holds");
+        state.retained_bytes = state
+            .retained_bytes
+            .checked_sub(bytes)
+            .expect("retained lineage capacity has one owner");
+    }
+}
+
 impl Drop for RetainedLineageCapacity {
     fn drop(&mut self) {
         let mut state = self

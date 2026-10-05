@@ -5,6 +5,9 @@ pub(crate) mod application_attempt;
 mod application_branch;
 mod application_checkpoint;
 mod application_contribution;
+pub(in crate::domain_computation) use application_contribution::{
+    ComputationPrior, SealedComputationRun,
+};
 pub(crate) mod application_discovery;
 mod application_entry;
 pub(crate) mod application_installation;

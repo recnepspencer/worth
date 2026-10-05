@@ -27,6 +27,11 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryProducerOutputFamily, WorthQueryWorkflowAssessmentOutputFamily,
     WorthQueryWorkflowAssessmentPosture,
 };
+/// How a partitioned computation's run ran, for the test observer only.
+#[cfg(feature = "test-query-execution-observer")]
+pub use crate::domain_computation::primary_graph::{
+    WorthQueryPartitionedComputationFullCause, WorthQueryPartitionedComputationRun,
+};
 /// What a partitioned owner's results and denials declare to execution, the
 /// identity of a planned item, and execution's refusal before dispatch.
 pub use worth_execution::{CanonicalBits, ChargedBytes, LeaseDenial, PartitionItemId};

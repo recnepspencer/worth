@@ -28,12 +28,14 @@ mod computation_routing;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use computation_routing::ComputationFactReaders;
 pub(in crate::domain_computation::primary_graph) use computation_routing::{
-    ComputationFactAttribution, ComputationFactRouting, ComputationRead,
+    ComputationFactAttribution, ComputationRead, SealedComputationFacts,
 };
 mod decision_reuse;
+mod fact_observation;
 pub(in crate::domain_computation::primary_graph) use decision_reuse::{
     CompletedDecisionReuseProof, PreparedDecisionReuseContext,
 };
+pub(in crate::domain_computation::primary_graph) use fact_observation::observe_fact;
 mod handler_fact_boundary;
 pub(in crate::domain_computation) use handler_fact_boundary::CompletedHandlerFactBoundary;
 mod observation_admission;
@@ -67,8 +69,14 @@ pub struct WorthQueryApplicationReadAttempt<
     entity_resolution: WorthQueryInstalledEntityResolutionContext,
     read_scope: WorthQueryApplicationReadScope,
     expected_facts: Option<BTreeSet<WorthQueryApplicationFactKey>>,
-    /// What a partitioned computation read of the expected facts.
-    computation_reads: Option<ComputationFactAttribution>,
+    /// What a partitioned computation read of the expected facts, and where
+    /// it left its completed run when a producer ran it.
+    computation_reads: Option<(
+        ComputationFactAttribution,
+        Option<
+            crate::domain_computation::primary_graph::application_contribution::ComputationDeposit,
+        >,
+    )>,
     installed_read_scopes:
         BTreeMap<WorthQueryApplicationFactKey, WorthQueryOperationGraphReadScope>,
     facts: BTreeMap<WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact>,
@@ -96,9 +104,9 @@ pub struct WorthQueryCompleteApplicationReadSet<
     pub(super) installed_read_scopes: Vec<WorthQueryOperationGraphReadScope>,
     pub(super) facts: Vec<WorthQueryApplicationObservedFact>,
     pub(super) consumed_outputs: Vec<super::super::invariant_projection::ConsumedOutputEvidence>,
-    /// What read each handler fact, when the handler ran one partitioned
+    /// The facts the owner calls read, when the handler ran one partitioned
     /// computation.
-    pub(super) computation_routing: Option<ComputationFactRouting>,
+    pub(super) computation_facts: Option<SealedComputationFacts>,
     pub(super) workflow_authority_binding: Option<WorkflowOperationBindingProof>,
     pub(super) mutation_handler_binding: Option<MutationHandlerBindingProof>,
     /// The Unix-epoch millisecond the workflow instance this attempt steps
@@ -238,7 +246,15 @@ where
         let root = admission.scope_entity_id();
         let (lease, projected_scope, decision_reads, dependent_source_facts, consumed_outputs) =
             projection.into_lease_and_realized_scope();
-        let (expected_facts, computation_reads) = decision_reads.into_expected();
+        // A read whose failure the decision swallowed left an outcome its fact
+        // does not hold, so no fact can stand for it.
+        let (expected_facts, computation_reads) =
+            decision_reads.into_expected().map_err(|failed| {
+                denial(
+                    WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
+                    format!("{failed:?}"),
+                )
+            })?;
         let mut admission = admission;
         let source_facts = merge_source_facts(
             validate_source_facts(&mut admission, &lease)?,

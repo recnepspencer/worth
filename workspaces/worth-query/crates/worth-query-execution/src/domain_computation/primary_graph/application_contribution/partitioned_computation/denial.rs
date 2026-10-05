@@ -2,7 +2,7 @@
 
 use worth_execution::{
     LeaseDenial, MapDenial, MapKernelFailure, MapKernelStop, MapStop, PartitionItemId,
-    ReduceInputDenial, ReductionDenial, ReductionRunStop, WorkCeilingDenial,
+    ReduceInputDenial, ReductionDenial, ReductionRunFailure, ReductionRunStop, WorkCeilingDenial,
 };
 use worth_foundational::facade::PartitionIdentity;
 use worth_query_declaration::facade::application_schema::ApplicationValueEncodeDenial;
@@ -50,6 +50,8 @@ pub enum WorthQueryPartitionedComputationDenial<Stopped> {
     PartitionIdentityCollision { partition: PartitionIdentity },
     /// The plan named one item identity twice.
     DuplicateItem { item: PartitionItemId },
+    /// The input value refused to encode, so it has no digest to name it.
+    InputNotEncodable(ApplicationValueEncodeDenial),
     /// This item's partition key refused to encode. When several do, this is
     /// the one with the least item identity.
     KeyNotEncodable {
@@ -158,42 +160,53 @@ impl<Stopped> WorthQueryPartitionedComputationDenial<Stopped> {
     pub(super) fn from_reduce(denial: ReduceInputDenial<Stopped>) -> Self {
         match denial {
             ReduceInputDenial::ScopeAdmission { denial, .. } => Self::DeniedBeforeDispatch(denial),
-            ReduceInputDenial::MapStopped { reason, .. } => match reason {
-                MapStop::WorkExhausted { identity } => Self::Partition {
-                    partition: identity,
-                    cause: WorthQueryComputationPartitionStop::Resource(
-                        WorthQueryManagedComputationResourceDenial::WorkExhausted,
-                    ),
-                },
-                MapStop::Failure { identity, cause } => Self::Partition {
-                    partition: identity,
-                    cause: WorthQueryComputationPartitionStop::from_kernel_failure(cause),
-                },
-                MapStop::Admission(denial) => Self::DeniedBeforeDispatch(denial),
+            ReduceInputDenial::MapStopped { reason, .. } => Self::from_map_stop(reason),
+            ReduceInputDenial::ReductionStopped { failure, .. } => Self::from_reduction(failure),
+        }
+    }
+
+    /// Why a map stopped, as the partition it stopped at.
+    pub(super) fn from_map_stop(reason: MapStop<Stopped>) -> Self {
+        match reason {
+            MapStop::WorkExhausted { identity } => Self::Partition {
+                partition: identity,
+                cause: WorthQueryComputationPartitionStop::Resource(
+                    WorthQueryManagedComputationResourceDenial::WorkExhausted,
+                ),
             },
-            ReduceInputDenial::ReductionStopped { failure, .. } => match failure.reason {
-                ReductionRunStop::Hook(stop) => Self::from_kernel_stop(stop),
-                ReductionRunStop::Panic
-                | ReductionRunStop::Denial(ReductionDenial::ReducerPanic) => Self::ReducerPanicked,
-                ReductionRunStop::ResultCapacityExceeded
-                | ReductionRunStop::Denial(ReductionDenial::ResultCapacityExceeded) => {
-                    Self::BYTES_EXHAUSTED
-                }
-                ReductionRunStop::WorkCounterOverflow
-                | ReductionRunStop::Denial(ReductionDenial::WorkCounterOverflow) => {
-                    Self::WORK_EXHAUSTED
-                }
-                ReductionRunStop::Denial(ReductionDenial::InvalidCanonicalEncoding) => {
-                    Self::ReducedEncodingInvalid
-                }
-                ReductionRunStop::Denial(
-                    ReductionDenial::IdentitiesNotCanonical
-                    | ReductionDenial::ValueCountMismatch
-                    | ReductionDenial::CoverageMismatch
-                    | ReductionDenial::UnknownIdentity(_)
-                    | ReductionDenial::IdentityAlreadyPresent(_),
-                ) => unreachable!("the map reduces exactly the identities it admitted"),
+            MapStop::Failure { identity, cause } => Self::Partition {
+                partition: identity,
+                cause: WorthQueryComputationPartitionStop::from_kernel_failure(cause),
             },
+            MapStop::Admission(denial) => Self::DeniedBeforeDispatch(denial),
+        }
+    }
+
+    /// Why the reduction over the canonical tree stopped.
+    pub(super) fn from_reduction(failure: ReductionRunFailure<MapKernelStop>) -> Self {
+        match failure.reason {
+            ReductionRunStop::Hook(stop) => Self::from_kernel_stop(stop),
+            ReductionRunStop::Panic | ReductionRunStop::Denial(ReductionDenial::ReducerPanic) => {
+                Self::ReducerPanicked
+            }
+            ReductionRunStop::ResultCapacityExceeded
+            | ReductionRunStop::Denial(ReductionDenial::ResultCapacityExceeded) => {
+                Self::BYTES_EXHAUSTED
+            }
+            ReductionRunStop::WorkCounterOverflow
+            | ReductionRunStop::Denial(ReductionDenial::WorkCounterOverflow) => {
+                Self::WORK_EXHAUSTED
+            }
+            ReductionRunStop::Denial(ReductionDenial::InvalidCanonicalEncoding) => {
+                Self::ReducedEncodingInvalid
+            }
+            ReductionRunStop::Denial(
+                ReductionDenial::IdentitiesNotCanonical
+                | ReductionDenial::ValueCountMismatch
+                | ReductionDenial::CoverageMismatch
+                | ReductionDenial::UnknownIdentity(_)
+                | ReductionDenial::IdentityAlreadyPresent(_),
+            ) => unreachable!("the map reduces exactly the identities it admitted"),
         }
     }
 }

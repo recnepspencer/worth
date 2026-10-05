@@ -17,15 +17,19 @@ pub(super) struct Updated<T> {
 }
 
 pub(super) fn contains<T>(root: &Link<T>, partition: PartitionIdentity) -> bool {
+    leaf(root, partition).is_some()
+}
+
+pub(super) fn leaf<T>(root: &Link<T>, partition: PartitionIdentity) -> Option<&T> {
     let mut current = root.as_deref();
     while let Some(node) = current {
         match partition.cmp(&node.identity) {
             Ordering::Less => current = node.left.as_deref(),
             Ordering::Greater => current = node.right.as_deref(),
-            Ordering::Equal => return true,
+            Ordering::Equal => return Some(&node.value),
         }
     }
-    false
+    None
 }
 
 pub(super) fn search_depth<T>(root: &Link<T>, partition: PartitionIdentity) -> (usize, bool) {

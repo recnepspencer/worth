@@ -104,6 +104,7 @@ fn producer(
         source_type: TypeId::of::<()>(),
         provider_type: TypeId::of::<()>(),
         operation_binding_type: TypeId::of::<()>(),
+        operation_type: TypeId::of::<()>(),
         output_contract_type: TypeId::of::<()>(),
     }
 }

@@ -9,11 +9,13 @@ use worth_query_installation::facade::{
     WorthQueryOperationGraphReadContract, WritePosture,
 };
 
+mod computation_calls;
 mod current_output;
 mod decision_plan;
 mod decision_reads;
 mod prior_output;
 
+pub(in crate::domain_computation::primary_graph) use computation_calls::ComputationCallCharge;
 pub use current_output::{
     WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind,
     WorthQueryCurrentOutputSelection,
@@ -217,7 +219,9 @@ where
                         Some(product.observation().reference_generation().get());
                     reader.selected_source_partition_identity =
                         admission.source_partition_identity();
-                    let mut decision_facts = DecisionReads::default();
+                    let mut decision_facts = admission
+                        .computation_prior()
+                        .map_or_else(DecisionReads::default, DecisionReads::with_prior);
                     let mut operation_reader =
                         WorthQueryApplicationOperationInvariantProjectionReader {
                             reader,

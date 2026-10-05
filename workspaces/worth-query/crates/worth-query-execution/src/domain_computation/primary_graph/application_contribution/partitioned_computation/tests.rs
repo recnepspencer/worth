@@ -1,6 +1,13 @@
 use worth_execution::PartitionItemId;
 use worth_foundational::facade::PartitionIdentity;
+use worth_query_declaration::facade::application_operation::{
+    application_computation_input_digest, CanonicalEncodingCharge,
+};
+use worth_query_declaration::facade::application_program::ApplicationComputationInput;
 
+use super::super::WorthQueryManagedComputationResourceDenial;
+use super::installed::input_digest;
+use super::remaining_work::RemainingWork;
 use super::routing::{ComputationPartitionRouting, ComputationPartitionRoutingDenial};
 use super::WorthQueryPartitionedComputationDenial;
 
@@ -60,4 +67,44 @@ fn an_item_identity_named_twice_is_denied() {
             item: PartitionItemId(7)
         }
     );
+}
+
+struct Words;
+impl ApplicationComputationInput for Words {
+    type Value = std::collections::BTreeMap<String, u64>;
+    const IDENTITY: &'static str = "worth.query.tests.encoding-meter-words.v1";
+}
+
+/// The input digest sums its scratch growths as a partition key does: a
+/// ceiling every single growth fits but their sum passes refuses the input.
+/// A map buffers its entries, so its encoding grows scratch repeatedly.
+#[test]
+fn an_input_whose_scratch_growths_each_fit_but_whose_sum_does_not_is_refused() {
+    let input = (0..64)
+        .map(|word| (format!("word-{word:04}"), word))
+        .collect();
+    let mut growths = Vec::new();
+    application_computation_input_digest::<Words, _, _>(&input, &mut |charge| {
+        if let CanonicalEncodingCharge::Scratch(bytes) = charge {
+            growths.push(bytes);
+        }
+        Ok::<_, ()>(())
+    })
+    .unwrap();
+    let largest = *growths.iter().max().unwrap();
+    let total = growths.iter().sum::<u64>();
+    assert!(
+        largest < total,
+        "the encoding grows more than once: {growths:?}"
+    );
+
+    let mut work = RemainingWork::declared(u64::MAX);
+    assert_eq!(
+        input_digest::<Words, ()>(&input, &mut work, total - 1),
+        Err(WorthQueryPartitionedComputationDenial::Resource(
+            WorthQueryManagedComputationResourceDenial::RetainedBytesExhausted
+        ))
+    );
+    let mut work = RemainingWork::declared(u64::MAX);
+    assert!(input_digest::<Words, ()>(&input, &mut work, total).is_ok());
 }

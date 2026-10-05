@@ -767,6 +767,7 @@ exports = [
     "inexact_native_deliveries_on_this_thread_for_test",
     "inspect_recovery_handle",
     "map_ordinary_commit_conflict",
+    "partitioned_computation_runs_on_this_thread_for_test",
     "query_read_kernel_entries_on_this_thread_for_test",
     "reconcile_recovery_handle",
     "required_ready_custody_bytes_for_test",

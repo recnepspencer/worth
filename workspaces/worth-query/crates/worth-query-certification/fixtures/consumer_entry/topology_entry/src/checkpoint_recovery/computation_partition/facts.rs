@@ -4,7 +4,7 @@
 
 use worth_query_decl::facade::application_schema::{
     ApplicationRelationIntegrity, ApplicationRelationRef, ApplicationSchemaDeclarationBuilder,
-    StringApplicationValueBinding, U64ApplicationValueBinding,
+    OperationReads, StringApplicationValueBinding, U64ApplicationValueBinding,
 };
 use worth_query_decl::facade::{worth_query_aspect, worth_query_entity, worth_query_field};
 use worth_query_host::facade::application_contribution::{
@@ -38,24 +38,25 @@ worth_query_field!(
     pub(super) EntrySetKey for Schema: TopologySchemaBinding, EntrySet, EntrySetFacts:
     String => StringApplicationValueBinding, read_only, equality
 );
+// A float's bits a set lends some of its regions.
+worth_query_field!(
+    pub(super) EntrySetWeight for Schema: TopologySchemaBinding, EntrySet, EntrySetFacts:
+    u64 => U64ApplicationValueBinding, read_write, equality
+);
 
 // Every fact of an entry is one unsigned value. The number is the entry's own
 // identity, the value is a float's bits and the fault is `RegionFault`'s code.
+// The region, value and fault are edited after seeding.
 macro_rules! entry_facts {
-    ($($field:ident),+) => {$(
+    ($posture:ident: $($field:ident),+) => {$(
         worth_query_field!(
             pub(super) $field for Schema: TopologySchemaBinding, SetEntry, SetEntryFacts:
-            u64 => U64ApplicationValueBinding, read_only, equality
+            u64 => U64ApplicationValueBinding, $posture, equality
         );
     )+};
 }
-entry_facts!(
-    EntryNumber,
-    EntryRegion,
-    EntryValueBits,
-    EntryWork,
-    EntryFault
-);
+entry_facts!(read_only: EntryNumber, EntryWork);
+entry_facts!(read_write: EntryRegion, EntryValueBits, EntryFault);
 
 /// A set holds its entries.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -79,6 +80,7 @@ pub(super) fn declare<Schema: TopologySchemaBinding>(
         .entity(EntrySet::reference::<Schema>())
         .aspect(EntrySet::reference(), EntrySetFacts::reference())
         .field(EntrySet::reference(), EntrySetKey::reference())
+        .field(EntrySet::reference(), EntrySetWeight::reference())
         .entity(SetEntry::reference::<Schema>())
         .aspect(SetEntry::reference(), SetEntryFacts::reference())
         .field(SetEntry::reference(), EntryNumber::reference())
@@ -120,7 +122,7 @@ const HOLD: u64 = 5;
 
 impl RegionFault {
     /// The fact an entry's fault is: zero is no fault.
-    fn code(fault: Option<Self>) -> u64 {
+    pub(super) fn code(fault: Option<Self>) -> u64 {
         match fault {
             None => 0,
             Some(Self::Refuse) => 1,
@@ -149,52 +151,70 @@ pub(super) type Sets<'sets> = &'sets [(&'sets str, &'sets [RegionEntry])];
 /// Seeds every set and its entries. An entry's entity is named by its place,
 /// so a set holds its entries in the order the test wrote them, whatever
 /// their numbers.
-pub(super) fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>, sets: Sets<'_>) {
+pub(super) fn seed(graph: &mut Graph, sets: Sets<'_>) {
     for (set, entries) in sets {
-        let set_key = format!("entries-{set}");
-        graph
-            .bind_entity(
-                WorthQueryApplicationEntitySeed::new(
-                    EntrySet::reference::<CheckpointSchema>(),
-                    key(&set_key),
-                )
-                .field(EntrySetKey::reference(), (*set).to_owned()),
-            )
-            .unwrap();
+        seed_set(graph, set, -0.0);
         for (place, entry) in entries.iter().enumerate() {
-            let entry_key = format!("{set_key}-{place}");
-            graph
-                .bind_entity(
-                    WorthQueryApplicationEntitySeed::new(
-                        SetEntry::reference::<CheckpointSchema>(),
-                        key(&entry_key),
-                    )
-                    .field(EntryNumber::reference(), entry.id)
-                    .field(EntryRegion::reference(), u64::from(entry.region))
-                    .field(EntryValueBits::reference(), entry.value.to_bits())
-                    .field(EntryWork::reference(), entry.work as u64)
-                    .field(EntryFault::reference(), RegionFault::code(entry.fault)),
-                )
-                .unwrap();
-            graph
-                .bind_relation(WorthQueryApplicationRelationSeed::new(
-                    EntrySetMember::reference::<CheckpointSchema>(),
-                    format!("{entry_key}-member"),
-                    key(&set_key),
-                    key(&entry_key),
-                ))
-                .unwrap();
+            let entry_key = format!("entries-{set}-{place}");
+            seed_entry(graph, &entry_key, entry);
+            seed_member(graph, set, &entry_key);
         }
     }
 }
 
-fn key<Entity>(key: &str) -> WorthQueryApplicationEntityKey<CheckpointSchema, Entity> {
+pub(super) type Graph = WorthQueryPrimaryGraphBootstrap<CheckpointSchema>;
+
+/// Seeds the set named `set`, lending `weight`.
+pub(super) fn seed_set(graph: &mut Graph, set: &str, weight: f64) {
+    graph
+        .bind_entity(
+            WorthQueryApplicationEntitySeed::new(
+                EntrySet::reference::<CheckpointSchema>(),
+                key(&format!("entries-{set}")),
+            )
+            .field(EntrySetKey::reference(), set.to_owned())
+            .field(EntrySetWeight::reference(), weight.to_bits()),
+        )
+        .unwrap();
+}
+
+/// Seeds one entry under its entity's own name.
+pub(super) fn seed_entry(graph: &mut Graph, entry_key: &str, entry: &RegionEntry) {
+    graph
+        .bind_entity(
+            WorthQueryApplicationEntitySeed::new(
+                SetEntry::reference::<CheckpointSchema>(),
+                key(entry_key),
+            )
+            .field(EntryNumber::reference(), entry.id)
+            .field(EntryRegion::reference(), u64::from(entry.region))
+            .field(EntryValueBits::reference(), entry.value.to_bits())
+            .field(EntryWork::reference(), entry.work as u64)
+            .field(EntryFault::reference(), RegionFault::code(entry.fault)),
+        )
+        .unwrap();
+}
+
+/// Makes the seeded entry a member of the seeded set.
+pub(super) fn seed_member(graph: &mut Graph, set: &str, entry_key: &str) {
+    graph
+        .bind_relation(WorthQueryApplicationRelationSeed::new(
+            EntrySetMember::reference::<CheckpointSchema>(),
+            format!("{entry_key}-in-{set}"),
+            key(&format!("entries-{set}")),
+            key(entry_key),
+        ))
+        .unwrap();
+}
+
+pub(super) fn key<Entity>(key: &str) -> WorthQueryApplicationEntityKey<CheckpointSchema, Entity> {
     WorthQueryApplicationEntityKey::new(key).unwrap()
 }
 
-/// The reader an owner of the region totals is lent.
-pub(super) type Reader<'call, 'reader, 'runtime> =
-    WorthQueryComputationReader<'call, 'reader, 'runtime, CheckpointSchema, TotalRegions>;
+/// The reader an owner of the region totals is lent, under the operation
+/// whose decision runs it.
+pub(super) type Reader<'call, 'reader, 'runtime, Operation = TotalRegions> =
+    WorthQueryComputationReader<'call, 'reader, 'runtime, CheckpointSchema, Operation>;
 /// The computation's input: the set whose entries it totals.
 pub(super) type Set = WorthQueryInvariantEntityIdentity<CheckpointSchema, EntrySet>;
 pub(super) type InputDenial = WorthQueryComputationInputDenial<u32>;
@@ -207,6 +227,14 @@ pub(super) struct Entry {
     entity: WorthQueryInvariantEntityIdentity<CheckpointSchema, SetEntry>,
 }
 
+/// An entry is held inline; its identity shares its entity's name and owns
+/// no allocation.
+impl ChargedBytes for Entry {
+    fn additional_charged_bytes(&self) -> u64 {
+        0
+    }
+}
+
 // A seeded entry holds every fact, so a missing one is a broken fixture.
 macro_rules! fact {
     ($reader:expr, $entity:expr, $field:ident) => {
@@ -216,16 +244,22 @@ macro_rules! fact {
     };
 }
 
-/// The set's entries, each named by its number.
-pub(super) fn entries(
-    reader: &mut Reader<'_, '_, '_>,
+/// The set's entries, each named by its number. A member whose entry was
+/// deleted holds no number and is no entry of the set.
+pub(super) fn entries<Operation>(
+    reader: &mut Reader<'_, '_, '_, Operation>,
     set: &Set,
-) -> Read<WorthQueryComputationPartitionPlan<Entry>> {
+) -> Read<WorthQueryComputationPartitionPlan<Entry>>
+where
+    EntrySetMember: OperationReads<Operation>,
+    EntryNumber: OperationReads<Operation>,
+{
     let mut entries = Vec::new();
     for member in reader.relations_from(EntrySetMember::reference(), set)? {
         let entity = member.into_to();
-        let number = fact!(reader, &entity, EntryNumber);
-        entries.push(Entry { number, entity });
+        if let Some(number) = reader.field(&entity, EntryNumber::reference())? {
+            entries.push(Entry { number, entity });
+        }
     }
     Ok(WorthQueryComputationPartitionPlan::keyed(
         entries,
@@ -233,12 +267,33 @@ pub(super) fn entries(
     ))
 }
 
-pub(super) fn region(reader: &mut Reader<'_, '_, '_>, entry: &Entry) -> Read<u32> {
+/// The float the set lends some of its regions.
+#[cfg(feature = "test-query-execution-observer")]
+pub(super) fn weight<Operation>(reader: &mut Reader<'_, '_, '_, Operation>, set: &Set) -> Read<f64>
+where
+    EntrySetWeight: OperationReads<Operation>,
+{
+    Ok(f64::from_bits(fact!(reader, set, EntrySetWeight)))
+}
+
+pub(super) fn region<Operation>(
+    reader: &mut Reader<'_, '_, '_, Operation>,
+    entry: &Entry,
+) -> Read<u32>
+where
+    EntryRegion: OperationReads<Operation>,
+{
     let region = fact!(reader, &entry.entity, EntryRegion);
     Ok(u32::try_from(region).expect("a seeded region is 32 bits"))
 }
 
-pub(super) fn fault(reader: &mut Reader<'_, '_, '_>, entry: &Entry) -> Read<Option<RegionFault>> {
+pub(super) fn fault<Operation>(
+    reader: &mut Reader<'_, '_, '_, Operation>,
+    entry: &Entry,
+) -> Read<Option<RegionFault>>
+where
+    EntryFault: OperationReads<Operation>,
+{
     Ok(RegionFault::of_code(fact!(
         reader,
         &entry.entity,
@@ -261,10 +316,15 @@ impl ChargedBytes for EntryData {
 }
 
 /// The data of a partition's entries, in the order it holds them.
-pub(super) fn gathered<'gather>(
-    reader: &mut Reader<'_, '_, '_>,
+pub(super) fn gathered<'gather, Operation>(
+    reader: &mut Reader<'_, '_, '_, Operation>,
     entries: impl Iterator<Item = (PartitionItemId, &'gather Entry)>,
-) -> Read<Vec<EntryData>> {
+) -> Read<Vec<EntryData>>
+where
+    EntryValueBits: OperationReads<Operation>,
+    EntryWork: OperationReads<Operation>,
+    EntryFault: OperationReads<Operation>,
+{
     entries
         .map(|(_, entry)| -> Read<EntryData> {
             Ok(EntryData {

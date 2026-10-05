@@ -149,6 +149,7 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
             producer_dependency_identity: origin.producer_dependency_identity,
             idempotency_key_identity: origin.idempotency_key_identity,
             mutable: std::sync::Mutex::new(RecordedOutputMutable {
+                computation: None,
                 verification_requirement: None,
                 observed_source_facts: Some(Arc::clone(&facts)),
                 resources: Some(resources),

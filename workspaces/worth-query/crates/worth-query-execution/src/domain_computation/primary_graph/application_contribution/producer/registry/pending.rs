@@ -3,6 +3,8 @@ use super::*;
 
 pub(in crate::domain_computation::primary_graph) struct PendingProducerRegistry<Schema> {
     declared: BTreeMap<String, DeclaredProducerBinding>,
+    /// The operations whose partitioned computation a producer's runs retain.
+    retaining: std::collections::BTreeSet<std::any::TypeId>,
     providers: BTreeMap<
         String,
         (
@@ -22,9 +24,30 @@ where
     ) -> Self {
         Self {
             declared,
+            retaining: std::collections::BTreeSet::new(),
             providers: BTreeMap::new(),
             marker: PhantomData,
         }
+    }
+
+    /// Whether a declared producer runs `Operation`, whose partitioned
+    /// computation is being installed; when one does, that producer's runs
+    /// retain the computation's state. Every producer is declared before any
+    /// contribution installs, so the answer is final.
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn retain_computation_of<
+        Operation: 'static,
+    >(
+        &mut self,
+    ) -> bool {
+        let operation = std::any::TypeId::of::<Operation>();
+        let runs = self
+            .declared
+            .values()
+            .any(|declared| declared.operation_type == operation);
+        if runs {
+            self.retaining.insert(operation);
+        }
+        runs
     }
 
     pub(in crate::domain_computation::primary_graph::application_contribution) fn register<
@@ -112,7 +135,8 @@ where
             .declared
             .into_iter()
             .map(|(identity, declaration)| {
-                let edition = InstalledProducerEdition::from_declaration(&declaration)?;
+                let edition = InstalledProducerEdition::from_declaration(&declaration)?
+                    .retaining_computation(self.retaining.contains(&declaration.operation_type));
                 let (value, executor) = self
                     .providers
                     .remove(&identity)

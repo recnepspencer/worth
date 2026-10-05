@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use super::{
-    denial, observation_admission, CompletedHandlerFactBoundary, ComputationFactRouting,
+    denial, observation_admission, CompletedHandlerFactBoundary, SealedComputationFacts,
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryApplicationReadAttempt, WorthQueryCompleteApplicationReadSet,
 };
@@ -80,19 +80,41 @@ impl<Schema, Operation, Input, Scope, Phase>
                     self.admission.operation(),
                 )
             })?;
+        let (computation_facts, retained) = match self.computation_reads {
+            Some((reads, deposit)) => {
+                let facts = SealedComputationFacts::at_seal(reads, &self.facts);
+                let completed = deposit.and_then(|deposit| {
+                    deposit
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner)
+                        .take()
+                });
+                // A partition carried from the last run is that run's result
+                // only if every fact it read is the fact this attempt sealed.
+                let retained = match completed {
+                    Some(completed) => completed.seal(facts.clone()).map_err(|()| {
+                        denial(
+                            WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch,
+                            self.admission.operation(),
+                        )
+                    })?,
+                    None => None,
+                };
+                (Some(facts), retained)
+            }
+            None => (None, None),
+        };
         self.admission.record_completed_handler_facts(
             CompletedHandlerFactBoundary::from_completed_read(self.facts.len()),
+            retained,
         );
-        let computation_routing = self
-            .computation_reads
-            .map(|reads| ComputationFactRouting::at_seal(reads, self.facts.keys()));
         Ok(WorthQueryCompleteApplicationReadSet {
             admission: self.admission,
             lease: self.lease,
             installed_read_scopes: self.installed_read_scopes.into_values().collect(),
             facts: self.facts.into_values().chain(self.source_facts).collect(),
             consumed_outputs: self.consumed_outputs,
-            computation_routing,
+            computation_facts,
             workflow_authority_binding: None,
             mutation_handler_binding: None,
             workflow_deadline: None,
@@ -105,13 +127,13 @@ impl<Schema, Operation, Input, Scope, Phase>
 impl<Schema, Operation, Input, Scope, Phase>
     WorthQueryCompleteApplicationReadSet<Schema, Operation, Input, Scope, Phase>
 {
-    /// What read each handler fact, when the handler ran one partitioned
-    /// computation.
-    // Nothing routes a mark yet: tests read the table until retention does.
+    /// The facts the owner calls read and which calls read each, when the
+    /// handler ran one partitioned computation.
+    // Retention takes its own copy at seal; tests read this one.
     #[cfg_attr(not(test), allow(dead_code))]
-    pub(in crate::domain_computation::primary_graph) fn computation_routing(
+    pub(in crate::domain_computation::primary_graph) fn computation_facts(
         &self,
-    ) -> Option<&ComputationFactRouting> {
-        self.computation_routing.as_ref()
+    ) -> Option<&SealedComputationFacts> {
+        self.computation_facts.as_ref()
     }
 }

@@ -37,6 +37,9 @@ pub(super) struct RecordedOutputMutable {
     pub(super) verification_requirement: Option<FullVerificationReason>,
     pub(super) observed_source_facts: Option<Arc<[WorthQueryApplicationObservedFact]>>,
     pub(super) resources: Option<WorthQueryProducerDemandResources>,
+    /// What the partitioned computation of the attempt that published this
+    /// record retained for the producer's next run.
+    pub(super) computation: Option<super::retained_computation::RecordedComputation>,
 }
 
 impl RecordedOutput {
@@ -101,6 +104,8 @@ impl RecordedOutput {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         row.observed_source_facts = Some(facts);
         row.verification_requirement = Some(FullVerificationReason::CheckpointRestore);
+        // A restored row's computation state is not the one its facts carry.
+        row.computation = None;
         row.resources = resources;
         if let Some(witness) = verified_witness {
             // An initialized original witness is immutable. Repeated exact

@@ -252,6 +252,13 @@ impl<T: Clone + ChargedBytes + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<
         self.len
     }
 
+    /// The value `partition` holds, or `None` when the tree has no such
+    /// partition. A caller that compares it with a recomputed value can leave
+    /// the tree alone when the two are the same bits.
+    pub fn leaf(&self, partition: PartitionIdentity) -> Option<&T> {
+        edit::leaf(&self.root, partition)
+    }
+
     /// The value ceiling includes inline storage, owned allocations, and
     /// canonical encoding length. The caller reserves that ceiling.
     pub fn update_checked<E>(

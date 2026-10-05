@@ -36,6 +36,12 @@ pub(in crate::domain_computation::primary_graph) struct PreparedOutputLineageSlo
     pub(super) prepared_input_reuse_key: Option<super::PreparedInputReuseKey>,
     pub(super) native_output_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     pub(super) actual_resources: Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>,
+    /// A sealed partitioned computation run and the record its prior state
+    /// came from. A recovered slot has none.
+    pub(super) computation: Option<(
+        crate::domain_computation::primary_graph::application_contribution::SealedComputationRun,
+        Option<super::PriorComputationRecord>,
+    )>,
     filled: bool,
 }
 
@@ -110,6 +116,14 @@ impl PreparedOutputLineageSlot {
         self.completed_handler_facts = Some(boundary);
     }
 
+    pub(in crate::domain_computation::primary_graph) fn retain_computation(
+        &mut self,
+        sealed: crate::domain_computation::primary_graph::application_contribution::SealedComputationRun,
+        prior: Option<super::PriorComputationRecord>,
+    ) {
+        assert!(self.computation.replace((sealed, prior)).is_none());
+    }
+
     pub(in crate::domain_computation::primary_graph) fn retain_completed_decision_reuse(
         &mut self,
         proof: super::CompletedDecisionReuseProof,
@@ -160,6 +174,9 @@ impl PreparedOutputLineageSlot {
             let displaced = self.partition.and_then(|partition| {
                 lineage.displaced_settlement(&self.source, self.coordinate, partition)
             });
+            let computation = self.computation.take().map(|(sealed, prior)| {
+                lineage.retain_computation(sealed, prior.as_ref(), displaced.as_ref())
+            });
             let identity = lineage.record_prepared(
                 application,
                 consumed_outputs,
@@ -168,6 +185,7 @@ impl PreparedOutputLineageSlot {
                 completed_decision_reuse,
                 prepared_input_reuse_key,
                 retained_capacity,
+                computation,
             );
             (identity, displaced)
         };
