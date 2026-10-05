@@ -6,6 +6,7 @@ use std::time::{Duration, Instant, SystemTime};
 
 use worth_query_consumer_values::PositiveLength;
 use worth_query_host::facade::{
+    application_contribution::WorthQueryApplicationContributionTuple,
     declaration::authentication::{
         WorthQueryExternalPrincipalIdentity, WorthQueryPrincipalMappingStatus,
     },
@@ -48,9 +49,10 @@ pub(super) fn install_program<Program>(
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
 ) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>
 where
-    Program: ApplicationProgramDefinition<
+    Program: ApplicationProgramDefinition<CheckpointSchema>,
+    Program::Contributions: WorthQueryApplicationContributionTuple<
         CheckpointSchema,
-        Contributions = <CheckpointSchema as ApplicationSchemaComposition>::Contributions,
+        Configuration = (TopologyConfiguration,),
     >,
     Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
 {
@@ -64,9 +66,10 @@ pub(super) fn install_program_with_history<Program>(
     retained_invalidation_bytes: u64,
 ) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>
 where
-    Program: ApplicationProgramDefinition<
+    Program: ApplicationProgramDefinition<CheckpointSchema>,
+    Program::Contributions: WorthQueryApplicationContributionTuple<
         CheckpointSchema,
-        Contributions = <CheckpointSchema as ApplicationSchemaComposition>::Contributions,
+        Configuration = (TopologyConfiguration,),
     >,
     Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
 {
@@ -89,9 +92,10 @@ pub(super) fn install_program_with_seed<Program>(
     seed: fn(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
 ) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>
 where
-    Program: ApplicationProgramDefinition<
+    Program: ApplicationProgramDefinition<CheckpointSchema>,
+    Program::Contributions: WorthQueryApplicationContributionTuple<
         CheckpointSchema,
-        Contributions = <CheckpointSchema as ApplicationSchemaComposition>::Contributions,
+        Configuration = (TopologyConfiguration,),
     >,
     Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
 {
@@ -111,9 +115,10 @@ pub(super) fn install_program_with_limits<Program>(
     seed: fn(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
 ) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>
 where
-    Program: ApplicationProgramDefinition<
+    Program: ApplicationProgramDefinition<CheckpointSchema>,
+    Program::Contributions: WorthQueryApplicationContributionTuple<
         CheckpointSchema,
-        Contributions = <CheckpointSchema as ApplicationSchemaComposition>::Contributions,
+        Configuration = (TopologyConfiguration,),
     >,
     Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
 {

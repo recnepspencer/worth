@@ -8,7 +8,8 @@ use crate::application_program::{
     ApplicationComputationResourceCeiling, ApplicationComputationReuse,
     ApplicationComputationStopped, ApplicationDerivedArtifact, ApplicationDerivedCollection,
     ApplicationLocalityGranule, ApplicationLocalityScope, ApplicationManagedComputation,
-    ApplicationProgramValidationDenialKind,
+    ApplicationProgramValidationDenialKind, ApplicationSingleComputationPartition,
+    DeterminismContract,
 };
 
 struct Locality;
@@ -39,6 +40,7 @@ impl ApplicationComputationInput for InputMeaning {
     type Value = u64;
     const IDENTITY: &'static str = "worth.query.tests.computation-input.v1";
 }
+#[derive(Eq, Ord, PartialEq, PartialOrd, serde::Serialize)]
 struct Partition;
 impl ApplicationComputationPartition for Partition {
     const IDENTITY: &'static str = "worth.query.tests.computation-partition.v1";
@@ -51,20 +53,35 @@ struct Stopped;
 impl ApplicationComputationStopped for Stopped {
     const IDENTITY: &'static str = "worth.query.tests.computation-stopped.v1";
 }
-struct Computation;
-impl ApplicationManagedComputation<TestSchema, FlatFeature> for Computation {
-    type Input = InputMeaning;
-    type Output = Artifact;
-    type Partition = Partition;
-    type Reuse = Reuse;
-    type Stopped = Stopped;
-    const IDENTITY: &'static str = "worth.query.tests.managed-computation.v1";
-    const EXECUTION: ApplicationComputationExecution =
-        ApplicationComputationExecution::DeterministicPartitioned;
-    const ORDERING: &'static str = "worth.query.tests.partition-order.v1";
-    const RESOURCES: ApplicationComputationResourceCeiling =
-        ApplicationComputationResourceCeiling::new(16, 8_192);
+macro_rules! computation {
+    ($computation:ident, $partition:ty, $execution:ident) => {
+        struct $computation;
+        impl ApplicationManagedComputation<TestSchema, FlatFeature> for $computation {
+            type Input = InputMeaning;
+            type Output = Artifact;
+            type Partition = $partition;
+            type Reuse = Reuse;
+            type Stopped = Stopped;
+            const IDENTITY: &'static str = "worth.query.tests.managed-computation.v1";
+            const EXECUTION: ApplicationComputationExecution =
+                ApplicationComputationExecution::$execution;
+            const RESOURCES: ApplicationComputationResourceCeiling =
+                ApplicationComputationResourceCeiling::new(16, 8_192);
+        }
+    };
 }
+computation!(Computation, Partition, DeterministicPartitioned);
+computation!(
+    SerialComputation,
+    ApplicationSingleComputationPartition,
+    Deterministic
+);
+computation!(KeyedSerialComputation, Partition, Deterministic);
+computation!(
+    SinglePartitionedComputation,
+    ApplicationSingleComputationPartition,
+    DeterministicPartitioned
+);
 
 struct Contributor;
 impl ApplicationCollectionContributor for Contributor {
@@ -141,6 +158,61 @@ fn computation_references_its_attached_artifact_without_copying_lifecycle_policy
         computation.execution(),
         ApplicationComputationExecution::DeterministicPartitioned
     );
+    assert_eq!(
+        computation.determinism(),
+        DeterminismContract::CanonicalBitwise,
+        "a computation that names no determinism contract is canonical bitwise"
+    );
+}
+
+struct ProgramOf<Computation>(std::marker::PhantomData<fn() -> Computation>);
+impl<Computation> ApplicationProgramDefinition<TestSchema> for ProgramOf<Computation>
+where
+    Computation: ApplicationManagedComputation<TestSchema, FlatFeature>,
+{
+    type Contributions = ();
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Rules = ApplicationRuleLeaf;
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("worth.query.tests.computation-partition-program.v1");
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        vec![ApplicationFeatureSpec::root::<TestSchema, FlatFeature>()
+            .derived_artifact::<Artifact>()
+            .managed_computation::<Computation>()
+            .finish()]
+    }
+}
+
+fn denial_of<Computation>() -> Option<ApplicationProgramValidationDenialKind>
+where
+    Computation: ApplicationManagedComputation<TestSchema, FlatFeature>,
+{
+    ApplicationProgramAuthoring::<TestSchema, ProgramOf<Computation>>::begin()
+        .validated_program()
+        .err()
+        .map(|denial| denial.kind())
+}
+
+#[test]
+fn execution_posture_decides_which_computation_partition_may_be_declared() {
+    assert_eq!(denial_of::<Computation>(), None);
+    assert_eq!(denial_of::<SerialComputation>(), None);
+    for (case, denial) in [
+        (
+            "a deterministic computation with its own key",
+            denial_of::<KeyedSerialComputation>(),
+        ),
+        (
+            "a partitioned computation with the single partition",
+            denial_of::<SinglePartitionedComputation>(),
+        ),
+    ] {
+        assert_eq!(
+            denial,
+            Some(ApplicationProgramValidationDenialKind::MismatchedManagedComputationPartition),
+            "{case}"
+        );
+    }
 }
 
 #[test]

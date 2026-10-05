@@ -287,7 +287,7 @@ Required:
 - A changed encoding always propagates; an identical encoding always stops.
 - Sibling-disjoint scope subtrees contribute zero candidate and zero ready work.
 - A branch switch reuses the retained nodes both branches share.
-- Every fallback to full recomputation is counted and reported with its cause.
+- Every fallback to full recomputation is reported with its typed cause.
 
 ### Decomposition with an interface
 
@@ -1029,37 +1029,46 @@ above Signal. Bridge adds no scheduling.
 Public Developer Experience). The declaration changes with it:
 
 - `ApplicationComputationPartition` becomes the partition key contract:
-  `Ord`, a canonical encoding, `Send + Sync`, and its identity.
+  `Ord`, a canonical encoding, `Send + Sync`, and its identity. The canonical
+  encoding is the declaration's prefix-free encoding of the key's `Serialize`
+  form, the one that identifies structured operation inputs.
 - Order is partition identity order. `ORDERING` is deleted from
   `ApplicationManagedComputation`, and a `Deterministic` computation declares the
-  platform's single-partition key.
+  platform's single-partition key, `ApplicationSingleComputationPartition`.
+  Program validation denies a `Deterministic` computation that declares any
+  other key and a `DeterministicPartitioned` one that declares the single key.
+- Lineage already uses "partition" for its source-selection digest, so every
+  type of this concept spells it "computation partition".
 - `DeterministicPartitioned` implies per-partition reuse. `Reuse` keeps its
   meaning: disposable warm-start evidence.
 - The declaration names its `DeterminismContract`, defaulting to
-  `CanonicalBitwise`.
+  `CanonicalBitwise`. It is part of the manifest record and of the program
+  revision.
 - These changes alter program revision identity, and existing digests are
   re-baselined in Phase 6.
 
-Each partition's result settles with its own consumed facts, keyed by
-computation identity, implementation edition, partition identity and read basis.
-The reverse index holds those facts at partition granularity, so a touched fact
-marks exactly the partitions that read it.
+An output keeps one settlement row, and the settlement identity is not widened.
+Marks stay per row and per fact ordinal. A routing table on the row maps each
+fact ordinal to the computation partitions that read it, so a touched fact marks
+exactly those partitions. Retained partition results are keyed under that row by
+computation identity, implementation edition and partition identity.
 
-Retention belongs to Query. `worth-execution` provides the canonical tree
-algorithm over a caller-owned node store. Query owns retention, eviction, branch
-sharing and retained-byte charging. Nodes are keyed by their children's
-identities, so a branch switch reuses the nodes both branches share. Exceeding
-the computation's `maximum_retained_bytes` evicts to full recomputation for that
-computation.
+Retention belongs to Query. `worth-execution`'s persistent `ReductionTree` is
+the retained store: its nodes are shared, so a clone costs the same at any
+partition count. Query owns the retained tree value, its retained-byte charge
+and its eviction. A branch fork clones the tree, so the two branches share every
+node neither has replaced. No node store keyed by child identities is built.
+Exceeding the computation's `maximum_retained_bytes` evicts to full
+recomputation for that computation.
 
 A partition whose recomputed encoding equals its previous encoding stops
 propagation, so nothing above it recombines.
 
-Full recomputation is the fallback in these cases, each counted and reported with
-its cause:
+Full recomputation is the fallback in these cases. Each is reported as a typed
+cause, and none is counted:
 
 - a basis that is not continuous (see Currentness, demand and advancement);
-- a partitioner output change beyond the declared bound;
+- the partitioner reports a rebuild;
 - eviction under the retained-byte ceiling.
 
 An edition change is a reuse-key miss, not a fallback.
@@ -1302,7 +1311,7 @@ crates/worth-execution/                                  N  execution runtime
   src/backend/{port,serial,native,perturbation}.rs       N
   src/pattern/{map,reduce,scan,fork_join,rounds,decompose}.rs  N
   src/partition/{identity,access,keyed,components,bisection}.rs N
-  src/reduction/canonical_tree.rs                        N  treap shape over a caller-owned node store
+  src/reduction/{plan,tree}.rs                           N  persistent treap; a clone shares every node
   src/report/                                            N  work, span, partition and epoch reports
   src/oracle/                                            N  serial oracle
 crates/worth-foundational/src/execution/                 N  portable vocabulary and reports
@@ -2144,10 +2153,13 @@ The next phase may trust that the touched graph alone decides what recomputes.
 ### Phase 6: Partitioned managed computations
 
 - Change the partitioned declaration as described, and re-baseline revision
-  digests.
+  digests. *Completed:* the key contract, the single computation partition,
+  the determinism contract and the validation denial are declared, and the
+  topology entry proves them through the public facade. No stored digest
+  existed to re-baseline.
 - Make `DeterministicPartitioned` execute through the partitioned owner binding.
-- Settle per-partition results with their consumed facts in the reverse index,
-  with item routing so `prepare` re-gathers only marked partitions.
+- Route marks to computation partitions through the settlement row's routing
+  table, with item routing so `prepare` re-gathers only marked partitions.
 - Retain the canonical tree in Query with eviction and branch sharing, and apply
   encoding cutoff per partition.
 - Maintain partitioner output incrementally and keep island identity stable.

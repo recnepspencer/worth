@@ -127,10 +127,15 @@ fn validate_feature(
         require_identity(computation.partition())?;
         require_identity(computation.reuse())?;
         require_identity(computation.stopped())?;
-        require_identity(computation.ordering())?;
         if !computation_ids.insert(computation.identity()) {
             return Err(denial(
                 ApplicationProgramValidationDenialKind::DuplicateManagedComputation,
+                format!("{}.{}", feature.identity(), computation.identity()),
+            ));
+        }
+        if !computation.partition_matches_execution() {
+            return Err(denial(
+                ApplicationProgramValidationDenialKind::MismatchedManagedComputationPartition,
                 format!("{}.{}", feature.identity(), computation.identity()),
             ));
         }

@@ -97,8 +97,18 @@ code still owns artifact payloads and numerical algorithms.
 
 `managed_computation(Computation)` associates a typed computation declaration
 with the feature that owns its result. The declaration identifies its input
-basis, output artifact, partition, ordering, reuse, stopped outcome, execution
-posture, and ceilings. Installation then requires the matching runtime owner.
+basis, output artifact, computation partition key, reuse, stopped outcome,
+execution posture, determinism contract, and ceilings. Installation then
+requires the matching runtime owner.
+
+A computation partition key is `Ord + Send + Sync` and serializable; its
+canonical encoding is the one that identifies structured operation inputs, and
+partitions are ordered by partition identity. A `Deterministic` computation
+declares `ApplicationSingleComputationPartition`, and a
+`DeterministicPartitioned` one declares its own key. Program validation denies
+either mismatch. The determinism contract defaults to
+`DeterminismContract::CanonicalBitwise`, and like every other declared member
+it is part of the program revision.
 
 Branch and preview work uses the same validated program and typed bindings as
 ordinary work. Speculative execution does not create alternate feature meaning

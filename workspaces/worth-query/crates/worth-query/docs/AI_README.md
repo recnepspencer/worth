@@ -335,8 +335,11 @@ reproducing identifiers. Once a program selects `Required`, do not switch back
 to `Compatible` to admit a new path.
 
 **Managed computations and derived collections.** A contribution declares each
-computation's input, output artifact, partition, ordering, reuse, stopped
-outcome, and ceilings, then installs one owner for that declaration.
+computation's input, output artifact, computation partition key, reuse, stopped
+outcome, execution posture, determinism contract, and ceilings, then installs
+one owner for that declaration. A `Deterministic` computation declares
+`ApplicationSingleComputationPartition`; a `DeterministicPartitioned` one
+declares its own key, and program validation denies either mismatch.
 Installation rejects missing, foreign, duplicate, or mismatched owners.
 Execution evidence is minted only by the active `DecisionReader`, which borrows
 the real request scope and checks deadline, cancellation, retained bytes, and

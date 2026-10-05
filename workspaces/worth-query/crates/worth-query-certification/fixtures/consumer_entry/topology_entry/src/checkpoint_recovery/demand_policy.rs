@@ -2,7 +2,8 @@ use super::*;
 use worth_query_decl::facade::application_program::{
     ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
     ApplicationArtifactRetention, ApplicationArtifactSuccession, ApplicationDerivedArtifact,
-    ApplicationFeature, ApplicationLocalityGranule, ApplicationLocalityScope,
+    ApplicationFeature, ApplicationFeatureSpecBuilder, ApplicationLocalityGranule,
+    ApplicationLocalityScope, ApplicationRootComposition,
 };
 use worth_query_host::facade::application_contribution::WorthQueryProducerOutputFamily;
 use worth_query_host::facade::application_entry::{
@@ -141,17 +142,36 @@ pub(super) fn feature_specs_with_output<Artifact>(
 where
     Artifact: ApplicationDerivedArtifact<CheckpointSchema, PlanarFinalOutputFeature>,
 {
+    feature_specs_with_final_output(output, final_output_feature::<Artifact>().finish())
+}
+
+/// The final output feature before it is finished, so a program can attach
+/// more members to it.
+pub(super) fn final_output_feature<Artifact>() -> ApplicationFeatureSpecBuilder<
+    CheckpointSchema,
+    ApplicationRootComposition,
+    PlanarFinalOutputFeature,
+>
+where
+    Artifact: ApplicationDerivedArtifact<CheckpointSchema, PlanarFinalOutputFeature>,
+{
+    ApplicationFeatureSpec::root::<CheckpointSchema, PlanarFinalOutputFeature>()
+        .derived_artifact::<Artifact>()
+        .conditional_operation::<PublishFinalPlanarOutput>()
+        .conditional_operation::<PreserveFinalPlanarOutput>()
+}
+
+pub(super) fn feature_specs_with_final_output(
+    output: ApplicationFeatureSpec,
+    final_output: ApplicationFeatureSpec,
+) -> Vec<ApplicationFeatureSpec> {
     vec![
         ApplicationFeatureSpec::root::<CheckpointSchema, PlanarSourceFeature>()
             .provides::<PlanarBodyOutput>()
             .mutation::<PlanarEditBinding<CheckpointSchema>>()
             .finish(),
         output,
-        ApplicationFeatureSpec::root::<CheckpointSchema, PlanarFinalOutputFeature>()
-            .derived_artifact::<Artifact>()
-            .conditional_operation::<PublishFinalPlanarOutput>()
-            .conditional_operation::<PreserveFinalPlanarOutput>()
-            .finish(),
+        final_output,
         ApplicationFeatureSpec::root::<CheckpointSchema, PlanarAlternateFinalOutputFeature>()
             .provides::<PlanarAlternateFinalBodyOutput>()
             .conditional_operation::<PublishAlternatePlanarOutput>()

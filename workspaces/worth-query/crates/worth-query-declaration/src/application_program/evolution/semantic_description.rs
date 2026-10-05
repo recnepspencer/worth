@@ -240,7 +240,12 @@ fn append_feature_outputs(
                     "execution",
                     computation.execution().canonical_token().to_owned(),
                 ),
-                ("ordering", computation.ordering().to_owned()),
+                (
+                    "determinism",
+                    super::super::managed_computation::determinism_canonical_token(
+                        computation.determinism(),
+                    ),
+                ),
             ]),
         ));
         let resources = computation.resources();

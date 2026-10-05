@@ -101,6 +101,7 @@ pub enum ApplicationProgramValidationDenialKind {
     UngovernedDerivedOutput,
     DuplicateManagedComputation,
     MissingManagedComputationArtifact,
+    MismatchedManagedComputationPartition,
     InvalidManagedComputationResources,
     DuplicateDerivedCollection,
     CanonicalRevisionBudgetExceeded,

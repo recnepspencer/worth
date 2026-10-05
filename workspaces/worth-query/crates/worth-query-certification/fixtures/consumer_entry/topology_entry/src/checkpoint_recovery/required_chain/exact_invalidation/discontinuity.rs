@@ -5,7 +5,7 @@ use super::*;
 
 /// Three rings settle, and the world is captured.
 fn settled_checkpoint(
-    rings: &mut Vec<Ring>,
+    rings: &mut [Ring],
 ) -> application_installation::WorthQueryApplicationCheckpoint {
     let application = install(None, ring_world::seed::<3>, Retained::AMPLE);
     let (scope, principal) = authenticate(&application);
@@ -14,7 +14,6 @@ fn settled_checkpoint(
     for index in 0..rings.len() {
         court.demand_ring(rings, index, "before the checkpoint");
     }
-    drop(request);
     drop((principal, scope));
     application.capture_application_checkpoint().unwrap()
 }

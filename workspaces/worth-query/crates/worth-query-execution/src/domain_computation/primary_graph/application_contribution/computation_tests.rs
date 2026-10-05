@@ -7,10 +7,11 @@ use worth_query_declaration::facade::{
         ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
         ApplicationArtifactRetention, ApplicationArtifactSuccession,
         ApplicationComputationExecution, ApplicationComputationInput,
-        ApplicationComputationPartition, ApplicationComputationResourceCeiling,
-        ApplicationComputationReuse, ApplicationComputationStopped, ApplicationDerivedArtifact,
-        ApplicationFeature, ApplicationFeatureInputLeaf, ApplicationLocalityGranule,
-        ApplicationLocalityScope, ApplicationManagedComputation, ApplicationOutputPort,
+        ApplicationComputationResourceCeiling, ApplicationComputationReuse,
+        ApplicationComputationStopped, ApplicationDerivedArtifact, ApplicationFeature,
+        ApplicationFeatureInputLeaf, ApplicationLocalityGranule, ApplicationLocalityScope,
+        ApplicationManagedComputation, ApplicationOutputPort,
+        ApplicationSingleComputationPartition,
     },
     application_schema::{
         ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationDenial,
@@ -84,10 +85,6 @@ impl ApplicationComputationInput for Input {
     type Value = u64;
     const IDENTITY: &'static str = "worth.query.tests.computation-input.v1";
 }
-struct Partition;
-impl ApplicationComputationPartition for Partition {
-    const IDENTITY: &'static str = "worth.query.tests.computation-partition.v1";
-}
 struct Reuse;
 impl ApplicationComputationReuse for Reuse {
     const IDENTITY: &'static str = "worth.query.tests.computation-evidence.v1";
@@ -100,13 +97,12 @@ struct Computation;
 impl ApplicationManagedComputation<Schema, Feature> for Computation {
     type Input = Input;
     type Output = Artifact;
-    type Partition = Partition;
+    type Partition = ApplicationSingleComputationPartition;
     type Reuse = Reuse;
     type Stopped = Stopped;
     const IDENTITY: &'static str = "worth.query.tests.managed-computation.v1";
     const EXECUTION: ApplicationComputationExecution =
         ApplicationComputationExecution::Deterministic;
-    const ORDERING: &'static str = "worth.query.tests.computation-order.v1";
     const RESOURCES: ApplicationComputationResourceCeiling =
         ApplicationComputationResourceCeiling::new(4, 64);
 }

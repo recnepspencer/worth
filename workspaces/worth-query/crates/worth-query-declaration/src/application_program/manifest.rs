@@ -164,7 +164,12 @@ impl ApplicationProgramManifest {
                             "execution",
                             computation.execution().canonical_token().to_owned(),
                         ),
-                        ("ordering", computation.ordering().to_owned()),
+                        (
+                            "determinism",
+                            super::managed_computation::determinism_canonical_token(
+                                computation.determinism(),
+                            ),
+                        ),
                         ("work", resources.maximum_work().to_string()),
                         ("bytes", resources.maximum_retained_bytes().to_string()),
                     ],

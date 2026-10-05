@@ -1,5 +1,8 @@
 use std::any::TypeId;
 
+use serde::{Serialize, Serializer};
+use worth_foundational::facade::DeterminismContract;
+
 use crate::application_schema::ApplicationSchema;
 
 use super::{ApplicationDerivedArtifact, ApplicationFeature};
@@ -21,6 +24,18 @@ impl ApplicationComputationExecution {
         match self {
             Self::Deterministic => "Deterministic",
             Self::DeterministicPartitioned => "DeterministicPartitioned",
+        }
+    }
+}
+
+/// Names a determinism contract in the durable canonical manifest record that
+/// the program revision digests. The token is decided here for the same reason
+/// as [`ApplicationComputationExecution::canonical_token`].
+pub(super) fn determinism_canonical_token(determinism: DeterminismContract) -> String {
+    match determinism {
+        DeterminismContract::CanonicalBitwise => "CanonicalBitwise".to_owned(),
+        DeterminismContract::ContractEquivalent(equivalence) => {
+            format!("ContractEquivalent({})", equivalence.value())
         }
     }
 }
@@ -53,8 +68,28 @@ pub trait ApplicationComputationInput: 'static {
     const IDENTITY: &'static str;
 }
 
-pub trait ApplicationComputationPartition: 'static {
+/// A computation partition key.
+///
+/// Computation partitions are ordered by partition identity. A key's canonical
+/// encoding is the declaration's prefix-free canonical encoding of its
+/// `Serialize` form, the encoding that already identifies structured operation
+/// inputs.
+pub trait ApplicationComputationPartition: Ord + Serialize + Send + Sync + 'static {
     const IDENTITY: &'static str;
+}
+
+/// The one computation partition of every `Deterministic` computation.
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct ApplicationSingleComputationPartition;
+
+impl Serialize for ApplicationSingleComputationPartition {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_unit_struct("ApplicationSingleComputationPartition")
+    }
+}
+
+impl ApplicationComputationPartition for ApplicationSingleComputationPartition {
+    const IDENTITY: &'static str = "worth.query.single-computation-partition.v1";
 }
 
 pub trait ApplicationComputationReuse: 'static {
@@ -78,7 +113,7 @@ where
 
     const IDENTITY: &'static str;
     const EXECUTION: ApplicationComputationExecution;
-    const ORDERING: &'static str;
+    const DETERMINISM: DeterminismContract = DeterminismContract::CanonicalBitwise;
     const RESOURCES: ApplicationComputationResourceCeiling;
 }
 
@@ -91,10 +126,11 @@ pub struct ApplicationManagedComputationDeclaration {
     output_artifact: &'static str,
     output_artifact_type: TypeId,
     partition: &'static str,
+    partition_type: TypeId,
     reuse: &'static str,
     stopped: &'static str,
     execution: ApplicationComputationExecution,
-    ordering: &'static str,
+    determinism: DeterminismContract,
     resources: ApplicationComputationResourceCeiling,
 }
 
@@ -113,10 +149,11 @@ impl ApplicationManagedComputationDeclaration {
             output_artifact: Computation::Output::IDENTITY,
             output_artifact_type: TypeId::of::<Computation::Output>(),
             partition: Computation::Partition::IDENTITY,
+            partition_type: TypeId::of::<Computation::Partition>(),
             reuse: Computation::Reuse::IDENTITY,
             stopped: Computation::Stopped::IDENTITY,
             execution: Computation::EXECUTION,
-            ordering: Computation::ORDERING,
+            determinism: Computation::DETERMINISM,
             resources: Computation::RESOURCES,
         }
     }
@@ -151,8 +188,17 @@ impl ApplicationManagedComputationDeclaration {
     pub const fn execution(&self) -> ApplicationComputationExecution {
         self.execution
     }
-    pub const fn ordering(&self) -> &'static str {
-        self.ordering
+    pub const fn determinism(&self) -> DeterminismContract {
+        self.determinism
+    }
+    /// A `Deterministic` computation declares exactly the platform's single
+    /// computation partition, and a `DeterministicPartitioned` one never does.
+    pub(super) fn partition_matches_execution(&self) -> bool {
+        let single = self.partition_type == TypeId::of::<ApplicationSingleComputationPartition>();
+        match self.execution {
+            ApplicationComputationExecution::Deterministic => single,
+            ApplicationComputationExecution::DeterministicPartitioned => !single,
+        }
     }
     pub const fn resources(&self) -> ApplicationComputationResourceCeiling {
         self.resources

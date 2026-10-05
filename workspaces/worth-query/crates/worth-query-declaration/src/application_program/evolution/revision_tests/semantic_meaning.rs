@@ -8,7 +8,7 @@ use crate::application_program::{
     ApplicationFeatureSpec, ApplicationLocalityGranule, ApplicationLocalityScope,
     ApplicationManagedComputation, ApplicationNoOutputGraph, ApplicationProgramDefinition,
     ApplicationProgramOutputs, ApplicationRuleLeaf, ApplicationSemanticChangeKind,
-    ApplicationSemanticDiff, ApplicationSemanticFamily,
+    ApplicationSemanticDiff, ApplicationSemanticFamily, DeterminismContract, EquivalenceContractId,
 };
 
 struct MeaningLocality;
@@ -43,8 +43,10 @@ impl ApplicationComputationInput for MeaningInput {
     const IDENTITY: &'static str = "worth.query.tests.semantic-meaning-input.v1";
 }
 
+#[derive(Eq, Ord, PartialEq, PartialOrd, serde::Serialize)]
 struct SourcePartition;
 struct SourceReuse;
+#[derive(Eq, Ord, PartialEq, PartialOrd, serde::Serialize)]
 struct TargetPartition;
 struct TargetReuse;
 struct MeaningStopped;
@@ -67,9 +69,11 @@ impl ApplicationComputationStopped for MeaningStopped {
 
 struct SourceComputation;
 struct TargetComputation;
+struct EquivalentComputation;
+struct OtherEquivalentComputation;
 
 macro_rules! computation {
-    ($computation:ty, $partition:ty, $reuse:ty) => {
+    ($computation:ty, $partition:ty, $reuse:ty $(, $determinism:expr)?) => {
         impl ApplicationManagedComputation<RevisionSchema, BoundedFeature> for $computation {
             type Input = MeaningInput;
             type Output = MeaningArtifact;
@@ -79,7 +83,7 @@ macro_rules! computation {
             const IDENTITY: &'static str = "worth.query.tests.semantic-meaning-computation.v1";
             const EXECUTION: ApplicationComputationExecution =
                 ApplicationComputationExecution::DeterministicPartitioned;
-            const ORDERING: &'static str = "worth.query.tests.semantic-meaning-order.v1";
+            $(const DETERMINISM: DeterminismContract = $determinism;)?
             const RESOURCES: ApplicationComputationResourceCeiling =
                 ApplicationComputationResourceCeiling::new(16, 8_192);
         }
@@ -88,9 +92,23 @@ macro_rules! computation {
 
 computation!(SourceComputation, SourcePartition, SourceReuse);
 computation!(TargetComputation, TargetPartition, TargetReuse);
+computation!(
+    EquivalentComputation,
+    SourcePartition,
+    SourceReuse,
+    DeterminismContract::ContractEquivalent(EquivalenceContractId::new(7))
+);
+computation!(
+    OtherEquivalentComputation,
+    SourcePartition,
+    SourceReuse,
+    DeterminismContract::ContractEquivalent(EquivalenceContractId::new(8))
+);
 
 struct SourceMeaningProgram;
 struct TargetMeaningProgram;
+struct EquivalentMeaningProgram;
+struct OtherEquivalentMeaningProgram;
 
 macro_rules! program {
     ($program:ty, $computation:ty) => {
@@ -115,6 +133,41 @@ macro_rules! program {
 
 program!(SourceMeaningProgram, SourceComputation);
 program!(TargetMeaningProgram, TargetComputation);
+program!(EquivalentMeaningProgram, EquivalentComputation);
+program!(OtherEquivalentMeaningProgram, OtherEquivalentComputation);
+
+#[test]
+fn determinism_contract_is_authored_output_meaning() {
+    let bitwise = description_of::<SourceMeaningProgram>();
+    let equivalent = description_of::<EquivalentMeaningProgram>();
+    let other_equivalent = description_of::<OtherEquivalentMeaningProgram>();
+
+    for (case, source, target) in [
+        ("bitwise to an equivalence contract", &bitwise, &equivalent),
+        (
+            "one equivalence contract to another",
+            &equivalent,
+            &other_equivalent,
+        ),
+    ] {
+        assert_ne!(source.revision(), target.revision(), "{case}");
+        let diff = ApplicationSemanticDiff::compare(source, target, 1_024)
+            .expect("the determinism meanings fit the comparison budget");
+        let changes = diff
+            .changes()
+            .iter()
+            .map(|change| (change.family(), change.kind()))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            changes,
+            [(
+                ApplicationSemanticFamily::Outputs,
+                ApplicationSemanticChangeKind::Changed
+            )],
+            "{case}"
+        );
+    }
+}
 
 #[test]
 fn delimiter_bearing_meaning_cannot_alias_the_next_named_field() {

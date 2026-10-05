@@ -211,7 +211,6 @@ fn run(seed: u64, observations: u64, driven: &mut Driven) {
         }
         drop((a, b, c));
         idempotency = court.idempotency.get();
-        drop(request);
         drop((principal, scope));
         if step < STEPS {
             // Whatever the last step left marked and unsettled is captured so.
