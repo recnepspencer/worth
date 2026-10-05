@@ -1073,10 +1073,36 @@ Public Developer Experience). The declaration changes with it:
 - These changes alter program revision identity, and existing digests are
   re-baselined in Phase 6.
 
+The owner reads its input through the framework. `Input::Value` is the
+handler's small parameter value. The owner's `partitions`, `partition_key` and
+`gather` read the data through the reader of the handler that runs the
+computation, as decision reads of that handler's operation, checked against what
+the operation declares it reads. The kernel and `complete` are handed no reader.
+
+Query attributes each fact to the owner call that read it, recorded per call,
+because a set of keys hides a key that a second call reads again. The classes
+are the membership (`partitions`), one item's key (`partition_key`, called per
+item) and one partition (`gather`, called per partition). A fact two partitions
+gather is a fact of both. A fact read in more than one class belongs to the
+first of: the handler itself, the membership, an item's key, a partition.
+
+Purity is a law. Unchanged facts mean an unchanged partition: `partition_key`,
+`gather` and `compute_partition` are pure in the input value, the partition's
+key and the facts read through the reader. They read no clock, no global and no
+owner state that can differ between two runs. Per-partition reuse rests on it:
+a partition whose facts did not change keeps its last result without being
+gathered or computed again.
+
 An output keeps one settlement row, and the settlement identity is not widened.
-Marks stay per row and per fact ordinal. A routing table on the row maps each
-fact ordinal to the computation partitions that read it, so a touched fact marks
-exactly those partitions. Retained partition results are keyed under that row by
+Marks stay per row and per fact ordinal. A routing table, built once when the
+read set is sealed and bound to the fact sequence its ordinals index, maps each
+fact ordinal to what read it: the computation partitions, the items whose key it
+is, the membership, or the handler. A touched partition fact marks exactly those
+partitions. A touched membership or key fact rebuilds the partitions; routing a
+key fact to its items is what lets a membership edit re-route only the touched
+items. *Limitation:* an attempt that runs more than one partitioned computation
+has no table, because partition identities name the partitions of one
+computation only. Retained partition results are keyed under that row by
 computation identity, implementation edition and partition identity.
 
 Retention belongs to Query. `worth-execution`'s persistent `ReductionTree` is
@@ -1255,12 +1281,13 @@ Outcomes are typed:
 
 ## Public Developer Experience
 
-A domain partitions a managed computation by declaring a partition key, a
-partitioner, a per-partition kernel and a reducer. It writes no threading code.
+A domain partitions a managed computation by declaring a partition key, the
+items of its input, each item's key, what one partition gathers, a per-partition
+kernel and a reducer. It writes no threading code.
 
 ```rust
 impl ApplicationManagedComputation<Ledger, Balances> for RegionBalances {
-    type Input = PostedEntriesInput; // Value = PostedEntries
+    type Input = JournalInput; // Value = Journal: the handler's small parameter
     type Output = RegionBalanceSheet;
     type Partition = RegionKey; // Serialize (canonical encoding), Send + Sync
     type Reuse = NoWarmStart;
@@ -1273,32 +1300,72 @@ impl ApplicationManagedComputation<Ledger, Balances> for RegionBalances {
         ApplicationComputationResourceCeiling::new(1 << 20, 1 << 24);
 }
 
+type Reader<'call, 'reader, 'runtime> =
+    WorthQueryComputationReader<'call, 'reader, 'runtime, Ledger, PostEntries>;
+type Denied = WorthQueryComputationInputDenial<BalanceDenial>;
+
 impl WorthQueryPartitionedComputationOwner<Ledger, Balances, RegionBalances>
     for RegionBalancesOwner
 {
+    type Operation = PostEntries; // its handler runs the computation
+    type Item = PostedEntry; // Send + Sync: what the owner reads one item by
+    type Gathered = RegionEntries; // Send + Sync + ChargedBytes
     // Clone + Send + Sync + ChargedBytes + CanonicalBits
     type PartitionResult = RegionTotals;
     type Output = RegionBalanceSheet;
     type Stopped = BalanceDenial; // Send + ChargedBytes
 
+    // Membership: the items the input holds, each named by its own identity.
     fn partitions(
         &self,
-        entries: &PostedEntries,
-    ) -> WorthQueryComputationPartitionPlan<RegionKey> {
-        WorthQueryComputationPartitionPlan::keyed(
-            entries.items(),
-            |entry| PartitionItemId(entry.id()),
-            |entry| entry.region(),
-        )
+        reader: &mut Reader<'_, '_, '_>,
+        journal: &Journal,
+    ) -> Result<WorthQueryComputationPartitionPlan<PostedEntry>, Denied> {
+        let mut entries = Vec::new();
+        for posting in reader.relations_from(JournalPosting::reference(), journal)? {
+            let entity = posting.into_to();
+            let number = reader
+                .field(&entity, EntryNumber::reference())?
+                .ok_or(Denied::Owner(BalanceDenial::Unnumbered))?;
+            entries.push(PostedEntry { number, entity });
+        }
+        Ok(WorthQueryComputationPartitionPlan::keyed(
+            entries,
+            |entry| PartitionItemId(entry.number),
+        ))
     }
 
+    // One item's key. Called per item.
+    fn partition_key(
+        &self,
+        reader: &mut Reader<'_, '_, '_>,
+        _: &Journal,
+        entry: &PostedEntry,
+    ) -> Result<RegionKey, Denied> {
+        reader
+            .field(&entry.entity, EntryRegion::reference())?
+            .map(RegionKey)
+            .ok_or(Denied::Owner(BalanceDenial::NoRegion))
+    }
+
+    // One partition's data, reads across its boundary included. Called once
+    // per partition, with its items in ascending item identity order.
+    fn gather(
+        &self,
+        reader: &mut Reader<'_, '_, '_>,
+        _: &Journal,
+        partition: WorthQueryComputationPartitionMembers<'_, RegionKey, PostedEntry>,
+    ) -> Result<RegionEntries, Denied> {
+        RegionEntries::read(reader, partition.items())
+    }
+
+    // No reader: the kernel is handed what `gather` returned.
     fn compute_partition(
         &self,
-        partition: WorthQueryComputationPartitionView<'_, RegionKey, PostedEntries>,
+        partition: WorthQueryComputationPartitionView<'_, RegionKey, RegionEntries>,
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
     ) -> Result<RegionTotals, WorthQueryManagedComputationDenial<BalanceDenial>> {
-        // Each item is its identity and its position in the planned input.
-        RegionTotals::sum(partition.input(), partition.items(), checkpoint)
+        RegionTotals::sum(partition.gathered(), checkpoint)
     }
 
     fn reducer(&self) -> WorthQueryDeterministicReducer<RegionTotals> {
@@ -1311,15 +1378,22 @@ impl WorthQueryPartitionedComputationOwner<Ledger, Balances, RegionBalances>
 }
 ```
 
-The framework runs `partitions` and gathering in `prepare` on the owner thread,
-`compute_partition` on the lease, the reducer over the canonical tree, and
-`complete` on the owner thread.
+The handler runs the computation with `prepare(reader, &input)`, lending its
+own reader. The framework runs `partitions`, then `partition_key` per item, then
+`gather` per partition in `prepare` on the owner thread, `compute_partition` on
+the lease, the reducer over the canonical tree, and `complete` on the owner
+thread. Every read is a decision read of the handler's operation and is
+recorded with the call that made it. `partition_key`, `gather` and
+`compute_partition` are pure in the input value, the partition's key and the
+facts read: unchanged facts mean an unchanged partition.
 
 The plan names each item by a stable identity of the item itself, never its
 position, so a reordered input plans the same partitions with the same members.
-A partition's view lists its items in ascending item identity order, and
-`combine` sees partitions in partition identity order; the canonical tree fixes
-how they associate. Naming two items alike is denied. The owner is installed
+Items are keyed in ascending item identity order and partitions gathered in
+partition identity order. A partition lists its items in ascending item identity
+order, and `combine` sees partitions in partition identity order; the canonical
+tree fixes how they associate. Naming two items alike is denied. The owner is
+installed
 with `partitioned_computation`: installation refuses a `DeterministicPartitioned`
 computation bound to the single-partition owner and a `Deterministic` one bound
 to a partitioned owner.
@@ -2217,8 +2291,9 @@ The next phase may trust that the touched graph alone decides what recomputes.
   backend with fallback `NoLease`, so the proof against the serial oracle at
   two workers, machine width and wider than the machine is not made.
   *Limitations:* the reducer and `prepare` are not interruptible. The declared
-  bytes bound each partition's result, not their total. `prepare`'s routing
-  memory is uncharged without a lease. The floating-point sum proof compares
+  bytes bound each partition's result, not their total. `prepare` holds its
+  routing memory and every partition's gathered data at once, uncharged without
+  a lease. The floating-point sum proof compares
   runs with each other; the comparison against the serial oracle
   (`certify_reduce`) needs a lease.
 - Route marks to computation partitions through the settlement row's routing

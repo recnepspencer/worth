@@ -153,6 +153,19 @@ where
         })
     }
 
+    /// The operation's reader, for a partitioned computation this handler
+    /// runs to read its input through.
+    pub(in crate::domain_computation::primary_graph) fn operation_reader(
+        &mut self,
+    ) -> &mut WorthQueryApplicationOperationInvariantProjectionReader<
+        'reader,
+        'runtime,
+        Schema,
+        Binding::Operation,
+    > {
+        self.reader
+    }
+
     pub fn managed_computation_execution(
         &self,
     ) -> crate::domain_computation::primary_graph::WorthQueryManagedComputationExecution<'_> {

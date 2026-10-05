@@ -14,7 +14,7 @@ use worth_query_host::facade::{
         WorthQueryApplicationContribution, WorthQueryApplicationContributionContracts,
         WorthQueryApplicationContributionSetup,
     },
-    primary_graph::{OperationHandler, WorthQueryPrimaryGraphInstallationDenial},
+    primary_graph::WorthQueryPrimaryGraphInstallationDenial,
 };
 
 pub struct TopologyConfiguration {
@@ -49,26 +49,19 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
         configuration: Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        Self::configure_with_source_adjustment(
-            configuration,
-            setup,
-            super::PlanarSourceAdjustmentHandler,
-        )
+        #[cfg(test)]
+        super::checkpoint_recovery::computation_partition::configure(setup)?;
+        Self::configure_topology(configuration, setup)
     }
 }
 
 impl TopologyContribution {
-    /// Configures the topology with the caller's handler for the planar source
-    /// adjustment, so a program can decide that one operation its own way.
-    pub(crate) fn configure_with_source_adjustment<Schema, Handler>(
+    /// Configures the topology apart from the region totals demand, so a
+    /// program can decide that one operation its own way.
+    pub(crate) fn configure_topology<Schema: TopologySchemaBinding>(
         configuration: TopologyConfiguration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
-        source_adjustment: Handler,
-    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
-    where
-        Schema: TopologySchemaBinding,
-        Handler: OperationHandler<Schema, super::PlanarSourceAdjustmentBinding<Schema>>,
-    {
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         configuration.setup_calls.fetch_add(1, Ordering::SeqCst);
         #[cfg(test)]
         super::checkpoint_recovery::required_chain::configure(setup)?;
@@ -97,7 +90,9 @@ impl TopologyContribution {
         setup.handler::<super::PriorCycleAdjustmentBinding<Schema>, _>(
             super::PriorCycleAdjustmentHandler,
         )?;
-        setup.handler::<super::PlanarSourceAdjustmentBinding<Schema>, _>(source_adjustment)?;
+        setup.handler::<super::PlanarSourceAdjustmentBinding<Schema>, _>(
+            super::PlanarSourceAdjustmentHandler,
+        )?;
         setup.producer::<InitialPlanarProducer<Schema>>(super::InitialPlanarProvider::new(
             configuration.producer_authorization_denials,
         ))?;

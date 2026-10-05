@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use super::{
-    denial, observation_admission, CompletedHandlerFactBoundary,
+    denial, observation_admission, CompletedHandlerFactBoundary, ComputationFactRouting,
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryApplicationReadAttempt, WorthQueryCompleteApplicationReadSet,
 };
@@ -83,17 +83,35 @@ impl<Schema, Operation, Input, Scope, Phase>
         self.admission.record_completed_handler_facts(
             CompletedHandlerFactBoundary::from_completed_read(self.facts.len()),
         );
+        let computation_routing = self
+            .computation_reads
+            .map(|reads| ComputationFactRouting::at_seal(reads, self.facts.keys()));
         Ok(WorthQueryCompleteApplicationReadSet {
             admission: self.admission,
             lease: self.lease,
             installed_read_scopes: self.installed_read_scopes.into_values().collect(),
             facts: self.facts.into_values().chain(self.source_facts).collect(),
             consumed_outputs: self.consumed_outputs,
+            computation_routing,
             workflow_authority_binding: None,
             mutation_handler_binding: None,
             workflow_deadline: None,
             new_commit_refusal: None,
             _phase: PhantomData,
         })
+    }
+}
+
+impl<Schema, Operation, Input, Scope, Phase>
+    WorthQueryCompleteApplicationReadSet<Schema, Operation, Input, Scope, Phase>
+{
+    /// What read each handler fact, when the handler ran one partitioned
+    /// computation.
+    // Nothing routes a mark yet: tests read the table until retention does.
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub(in crate::domain_computation::primary_graph) fn computation_routing(
+        &self,
+    ) -> Option<&ComputationFactRouting> {
+        self.computation_routing.as_ref()
     }
 }

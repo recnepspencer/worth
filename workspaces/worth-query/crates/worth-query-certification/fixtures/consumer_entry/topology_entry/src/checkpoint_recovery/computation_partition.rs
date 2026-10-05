@@ -24,15 +24,18 @@ use worth_query_host::facade::application_contribution::{
 
 use super::*;
 
+mod demand;
 mod execution;
+mod facts;
 mod owner;
 mod probe;
 mod refusal;
 
-/// Values tagged with the region each lies in.
+/// A set of entries, each tagged with the region it lies in. An owner reads
+/// the entries from the set's facts.
 struct RegionEntries;
 impl ApplicationComputationInput for RegionEntries {
-    type Value = Vec<owner::RegionEntry>;
+    type Value = facts::Set;
     const IDENTITY: &'static str = "checkpoint-region-entries";
 }
 
@@ -116,11 +119,25 @@ region_totals!(ProbedTotals, probe::ProbeKey, DeterministicPartitioned);
 trait RegionTotalsBinding: 'static {
     type Computation: ApplicationManagedComputation<CheckpointSchema, PlanarFinalOutputFeature>;
 
-    /// Installs the computation's owner and returns the handler of the planar
-    /// source adjustment, which runs the computation when its owner can.
-    fn install(
-        setup: &mut WorthQueryApplicationContributionSetup<'_, CheckpointSchema>,
-    ) -> Result<owner::RegionTotalsHandler, primary_graph::WorthQueryPrimaryGraphInstallationDenial>;
+    /// Installs the computation's owner and returns the handler of the region
+    /// totals demand, which runs the computation when its owner can.
+    fn install(setup: &mut owner::Setup<'_>) -> owner::Installed;
+}
+
+/// The entry facts and the demand that totals them, for the topology's schema.
+pub(crate) fn declare<Schema: TopologySchemaBinding>(
+    schema: ApplicationSchemaDeclarationBuilder<Schema>,
+) -> ApplicationSchemaDeclarationBuilder<Schema> {
+    demand::declare(schema)
+}
+
+/// The topology's own handler of the demand, which has no owner to run.
+pub(crate) fn configure<Schema: TopologySchemaBinding>(
+    setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
+) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
+    setup.handler::<demand::RegionTotalsDemandBinding<Schema>, _>(
+        demand::RegionTotalsHandler::idle(),
+    )
 }
 
 /// A program that only declares the computation. Nothing installs its owner,
@@ -132,11 +149,8 @@ where
 {
     type Computation = Computation;
 
-    fn install(
-        _: &mut WorthQueryApplicationContributionSetup<'_, CheckpointSchema>,
-    ) -> Result<owner::RegionTotalsHandler, primary_graph::WorthQueryPrimaryGraphInstallationDenial>
-    {
-        Ok(owner::RegionTotalsHandler::idle())
+    fn install(_: &mut owner::Setup<'_>) -> owner::Installed {
+        Ok(demand::RegionTotalsHandler::idle())
     }
 }
 
@@ -172,12 +186,9 @@ impl<Binding: RegionTotalsBinding> WorthQueryApplicationContribution<CheckpointS
         configuration: Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, CheckpointSchema>,
     ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
-        let source_adjustment = Binding::install(setup)?;
-        TopologyContribution::configure_with_source_adjustment(
-            configuration,
-            setup,
-            source_adjustment,
-        )
+        let demand = Binding::install(setup)?;
+        setup.handler::<demand::RegionTotalsDemandBinding<CheckpointSchema>, _>(demand)?;
+        TopologyContribution::configure_topology(configuration, setup)
     }
 }
 
@@ -195,6 +206,7 @@ impl<Binding: RegionTotalsBinding> ApplicationProgramDefinition<CheckpointSchema
             required_chain::output_feature_spec(),
             demand_policy::final_output_feature::<demand_policy::FinalArtifact>()
                 .managed_computation::<Binding::Computation>()
+                .mutation::<demand::RegionTotalsDemandBinding<CheckpointSchema>>()
                 .finish(),
         )
     }

@@ -28,9 +28,10 @@ pub use contracts::{
     WorthQueryApplicationContractCatalog, WorthQueryApplicationContributionContracts,
 };
 pub use partitioned_computation::{
-    WorthQueryCompletedPartitionedComputation, WorthQueryComputationPartitionItem,
-    WorthQueryComputationPartitionPlan, WorthQueryComputationPartitionStop,
-    WorthQueryComputationPartitionView, WorthQueryDeterministicReducer,
+    WorthQueryCompletedPartitionedComputation, WorthQueryComputationInputDenial,
+    WorthQueryComputationPartitionMembers, WorthQueryComputationPartitionPlan,
+    WorthQueryComputationPartitionStop, WorthQueryComputationPartitionView,
+    WorthQueryComputationReadDenial, WorthQueryComputationReader, WorthQueryDeterministicReducer,
     WorthQueryInstalledPartitionedComputation, WorthQueryPartitionedComputationDenial,
     WorthQueryPartitionedComputationOwner, WorthQueryPreparedPartitionedComputation,
 };

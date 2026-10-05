@@ -2,23 +2,28 @@
 //! declared execution, and a determinism contract it cannot honor.
 
 use worth_query_host::facade::application_contribution::{
-    PartitionItemId, WorthQueryComputationPartitionPlan, WorthQueryComputationPartitionView,
-    WorthQueryDeterministicReducer, WorthQueryManagedComputationCheckpoint,
-    WorthQueryManagedComputationDenial, WorthQueryManagedComputationOwner,
-    WorthQueryManagedComputationPrepared, WorthQueryPartitionedComputationOwner,
+    WorthQueryComputationPartitionMembers, WorthQueryComputationPartitionPlan,
+    WorthQueryComputationPartitionView, WorthQueryDeterministicReducer,
+    WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationDenial,
+    WorthQueryManagedComputationOwner, WorthQueryManagedComputationPrepared,
+    WorthQueryPartitionedComputationOwner,
 };
 use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial;
 use worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind;
 
-use super::owner::{Entries, Installed, RegionTotalsHandler, RegionTotalsOwner, Setup};
+use super::demand::{RegionTotalsHandler, TotalRegions};
+use super::facts::{self, Entry, EntryData, InputDenial, Reader, Set};
+use super::owner::{Installed, RegionTotalsOwner, Setup};
 use super::*;
 
-/// The single-partition owner: it totals the whole input in one computation.
+/// The single-partition owner. The serial binding lends its owner no reader,
+/// so this owner cannot read the set's entries: it is installed, to show which
+/// binding a declaration admits, and never run.
 struct WholeInputOwner;
-struct WholeInput(Vec<f64>);
+struct WholeInput;
 impl WorthQueryManagedComputationPrepared for WholeInput {
     fn retained_bytes(&self) -> usize {
-        self.0.len() * std::mem::size_of::<f64>()
+        0
     }
 }
 impl<Computation>
@@ -36,19 +41,17 @@ where
     type Output = f64;
     type Stopped = ();
 
-    fn prepare(&self, entries: &Entries) -> Result<WholeInput, ()> {
-        Ok(WholeInput(
-            entries.iter().map(|entry| entry.value).collect(),
-        ))
+    fn prepare(&self, _: &Set) -> Result<WholeInput, ()> {
+        Ok(WholeInput)
     }
 
     fn compute(
         &self,
-        prepared: &WholeInput,
+        _: &WholeInput,
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
     ) -> Result<f64, WorthQueryManagedComputationDenial<()>> {
-        checkpoint.advance(prepared.0.len())?;
-        Ok(prepared.0.iter().sum())
+        checkpoint.advance(1)?;
+        Ok(-0.0)
     }
 
     fn complete(&self, _: WholeInput, total: f64) -> Result<f64, ()> {
@@ -62,19 +65,41 @@ struct OnePartitionOwner;
 impl WorthQueryPartitionedComputationOwner<CheckpointSchema, PlanarFinalOutputFeature, SerialTotals>
     for OnePartitionOwner
 {
+    type Operation = TotalRegions;
+    type Item = Entry;
+    type Gathered = Vec<EntryData>;
     type PartitionResult = f64;
     type Output = f64;
     type Stopped = u32;
 
     fn partitions(
         &self,
-        entries: &Entries,
-    ) -> WorthQueryComputationPartitionPlan<ApplicationSingleComputationPartition> {
-        WorthQueryComputationPartitionPlan::keyed(
-            entries,
-            |entry| PartitionItemId(entry.id),
-            |_| ApplicationSingleComputationPartition,
-        )
+        reader: &mut Reader<'_, '_, '_>,
+        set: &Set,
+    ) -> Result<WorthQueryComputationPartitionPlan<Entry>, InputDenial> {
+        Ok(facts::entries(reader, set)?)
+    }
+
+    fn partition_key(
+        &self,
+        _: &mut Reader<'_, '_, '_>,
+        _: &Set,
+        _: &Entry,
+    ) -> Result<ApplicationSingleComputationPartition, InputDenial> {
+        Ok(ApplicationSingleComputationPartition)
+    }
+
+    fn gather(
+        &self,
+        reader: &mut Reader<'_, '_, '_>,
+        _: &Set,
+        partition: WorthQueryComputationPartitionMembers<
+            '_,
+            ApplicationSingleComputationPartition,
+            Entry,
+        >,
+    ) -> Result<Vec<EntryData>, InputDenial> {
+        Ok(facts::gathered(reader, partition.items())?)
     }
 
     fn compute_partition(
@@ -82,16 +107,12 @@ impl WorthQueryPartitionedComputationOwner<CheckpointSchema, PlanarFinalOutputFe
         partition: WorthQueryComputationPartitionView<
             '_,
             ApplicationSingleComputationPartition,
-            Entries,
+            Vec<EntryData>,
         >,
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
     ) -> Result<f64, WorthQueryManagedComputationDenial<u32>> {
         checkpoint.advance(partition.items().len())?;
-        Ok(partition
-            .items()
-            .iter()
-            .map(|item| partition.input()[item.position()].value)
-            .sum())
+        Ok(partition.gathered().iter().map(|entry| entry.value).sum())
     }
 
     fn reducer(&self) -> WorthQueryDeterministicReducer<f64> {

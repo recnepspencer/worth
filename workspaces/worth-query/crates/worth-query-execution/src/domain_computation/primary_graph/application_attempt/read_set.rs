@@ -24,6 +24,12 @@ use crate::domain_computation::primary_graph::{
 
 mod binding_proof;
 mod completion;
+mod computation_routing;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use computation_routing::ComputationFactReaders;
+pub(in crate::domain_computation::primary_graph) use computation_routing::{
+    ComputationFactAttribution, ComputationFactRouting, ComputationRead,
+};
 mod decision_reuse;
 pub(in crate::domain_computation::primary_graph) use decision_reuse::{
     CompletedDecisionReuseProof, PreparedDecisionReuseContext,
@@ -61,6 +67,8 @@ pub struct WorthQueryApplicationReadAttempt<
     entity_resolution: WorthQueryInstalledEntityResolutionContext,
     read_scope: WorthQueryApplicationReadScope,
     expected_facts: Option<BTreeSet<WorthQueryApplicationFactKey>>,
+    /// What a partitioned computation read of the expected facts.
+    computation_reads: Option<ComputationFactAttribution>,
     installed_read_scopes:
         BTreeMap<WorthQueryApplicationFactKey, WorthQueryOperationGraphReadScope>,
     facts: BTreeMap<WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact>,
@@ -88,6 +96,9 @@ pub struct WorthQueryCompleteApplicationReadSet<
     pub(super) installed_read_scopes: Vec<WorthQueryOperationGraphReadScope>,
     pub(super) facts: Vec<WorthQueryApplicationObservedFact>,
     pub(super) consumed_outputs: Vec<super::super::invariant_projection::ConsumedOutputEvidence>,
+    /// What read each handler fact, when the handler ran one partitioned
+    /// computation.
+    pub(super) computation_routing: Option<ComputationFactRouting>,
     pub(super) workflow_authority_binding: Option<WorkflowOperationBindingProof>,
     pub(super) mutation_handler_binding: Option<MutationHandlerBindingProof>,
     /// The Unix-epoch millisecond the workflow instance this attempt steps
@@ -145,6 +156,7 @@ where
             entity_resolution: graph.retain_entity_resolution_context(),
             read_scope,
             expected_facts: None,
+            computation_reads: None,
             installed_read_scopes: BTreeMap::new(),
             facts: BTreeMap::new(),
             source_facts,
@@ -224,8 +236,9 @@ where
             )
         })?;
         let root = admission.scope_entity_id();
-        let (lease, projected_scope, expected_facts, dependent_source_facts, consumed_outputs) =
+        let (lease, projected_scope, decision_reads, dependent_source_facts, consumed_outputs) =
             projection.into_lease_and_realized_scope();
+        let (expected_facts, computation_reads) = decision_reads.into_expected();
         let mut admission = admission;
         let source_facts = merge_source_facts(
             validate_source_facts(&mut admission, &lease)?,
@@ -240,6 +253,7 @@ where
             entity_resolution: graph.retain_entity_resolution_context(),
             read_scope: WorthQueryApplicationReadScope::projected(root, projected_scope),
             expected_facts: Some(expected_facts),
+            computation_reads,
             installed_read_scopes: BTreeMap::new(),
             facts: BTreeMap::new(),
             source_facts,

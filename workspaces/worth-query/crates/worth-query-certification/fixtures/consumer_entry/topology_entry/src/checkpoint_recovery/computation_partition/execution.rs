@@ -8,9 +8,9 @@ use worth_query_host::facade::application_contribution::{
     WorthQueryPartitionedComputationDenial,
 };
 
+use super::facts::{RegionEntry, RegionFault};
 use super::owner::{
-    with_region_totals, with_totals, RegionEntry, RegionFault, RegionOutcome, RegionTotal,
-    UnboundedBytesOwner,
+    with_region_totals, with_totals, RegionOutcome, RegionTotal, UnboundedBytesOwner,
 };
 use super::*;
 
@@ -91,8 +91,14 @@ fn keyed_floating_point_sum_keeps_its_bits_and_its_charged_work_on_every_run() {
         sum(region_sums.iter().rev().copied()).to_bits()
     );
 
-    with_region_totals(|demand| {
-        let first = total(demand(&entries));
+    // Exactly representable values total exactly under any association, so
+    // every entry is counted once.
+    let exact = (1..=40_u32)
+        .map(|id| entry(u64::from(id), id % 7, f64::from(id)))
+        .collect::<Vec<_>>();
+
+    with_region_totals(&[("sensitive", &entries), ("exact", &exact)], |demand| {
+        let first = total(demand("sensitive"));
         assert!(f64::from_bits(first.bits).is_finite());
         // No lease reaches a managed computation, so the serial backend ran.
         assert_eq!(
@@ -101,40 +107,34 @@ fn keyed_floating_point_sum_keeps_its_bits_and_its_charged_work_on_every_run() {
         );
         assert!(first.charged_work > first.report.charged_work());
         for _ in 0..3 {
-            assert_eq!(total(demand(&entries)), first);
+            assert_eq!(total(demand("sensitive")), first);
         }
-
-        // Exactly representable values total exactly under any association,
-        // so every entry is counted once.
-        let exact = (1..=40_u32)
-            .map(|id| entry(u64::from(id), id % 7, f64::from(id)))
-            .collect::<Vec<_>>();
-        assert_eq!(total(demand(&exact)).bits, 820.0_f64.to_bits());
+        assert_eq!(total(demand("exact")).bits, 820.0_f64.to_bits());
     });
 }
 
 #[test]
 fn empty_input_totals_to_the_reducer_identity_and_one_region_to_its_own_sum() {
-    with_region_totals(|demand| {
-        let empty = total(demand(&[]));
+    // One region's values, met out of identity order. The kernel sums them in
+    // entry identity order, which here loses the small values.
+    let one_region = [
+        entry(4, 9, -1.0e16),
+        entry(1, 9, 1.0e16),
+        entry(3, 9, 1.0),
+        entry(2, 9, 1.0),
+    ];
+    with_region_totals(&[("empty", &[]), ("one-region", &one_region)], |demand| {
+        let empty = total(demand("empty"));
         assert_eq!(empty.bits, NEGATIVE_ZERO);
-        assert_eq!(total(demand(&[])), empty);
+        assert_eq!(total(demand("empty")), empty);
 
-        // One region's values, met out of identity order. The kernel sums them
-        // in entry identity order, which here loses the small values.
-        let one_region = [
-            entry(4, 9, -1.0e16),
-            entry(1, 9, 1.0e16),
-            entry(3, 9, 1.0),
-            entry(2, 9, 1.0),
-        ];
-        let single = total(demand(&one_region));
+        let single = total(demand("one-region"));
         assert_eq!(single.bits, sum([1.0e16, 1.0, 1.0, -1.0e16]).to_bits());
         assert_ne!(
             single.bits,
             sum(one_region.iter().map(|entry| entry.value)).to_bits()
         );
-        assert_eq!(total(demand(&one_region)), single);
+        assert_eq!(total(demand("one-region")), single);
     });
 }
 
@@ -159,10 +159,15 @@ fn reordering_the_input_changes_neither_the_total_nor_the_charged_work() {
     assert_ne!(as_met(&entries, None), as_met(&reversed, None));
     assert_ne!(as_met(&entries, Some(1)), as_met(&reversed, Some(1)));
 
-    with_region_totals(|demand| {
-        let planned = total(demand(&entries));
-        assert_eq!(total(demand(&reversed)), planned);
-        assert_eq!(total(demand(&interleaved)), planned);
+    let sets: facts::Sets<'_> = &[
+        ("planned", &entries),
+        ("reversed", &reversed),
+        ("interleaved", &interleaved),
+    ];
+    with_region_totals(sets, |demand| {
+        let planned = total(demand("planned"));
+        assert_eq!(total(demand("reversed")), planned);
+        assert_eq!(total(demand("interleaved")), planned);
     });
 }
 
@@ -170,26 +175,27 @@ fn reordering_the_input_changes_neither_the_total_nor_the_charged_work() {
 fn partitions_whose_declared_bytes_do_not_sum_are_denied_and_the_next_demand_is_answered() {
     // The computation declares the largest byte count there is. Every
     // partition may hold that much, and two such capacities have no sum.
-    with_totals::<UnboundedBytesOwner>(|demand| {
-        let two_regions = [entry(1, 1, 2.0), entry(2, 2, 3.0)];
+    let two_regions = [entry(1, 1, 2.0), entry(2, 2, 3.0)];
+    let one_region = [entry(1, 1, 2.0), entry(2, 1, 3.0)];
+    let sets: facts::Sets<'_> = &[("two-regions", &two_regions), ("one-region", &one_region)];
+    with_totals::<UnboundedBytesOwner>(sets, |demand| {
         let unsummable = || -> RegionOutcome {
             Err(WorthQueryPartitionedComputationDenial::Resource(
                 WorthQueryManagedComputationResourceDenial::RetainedBytesExhausted,
             ))
         };
-        assert_eq!(demand(&two_regions), unsummable());
+        assert_eq!(demand("two-regions"), unsummable());
         // One partition's capacity is a sum of its own, and the reduction's
         // bound over that many bytes is not: execution refuses the run.
-        let one_region = [entry(1, 1, 2.0), entry(2, 1, 3.0)];
         assert_eq!(
-            demand(&one_region),
+            demand("one-region"),
             Err(
                 WorthQueryPartitionedComputationDenial::DeniedBeforeDispatch(
                     LeaseDenial::ResourceExhausted
                 )
             )
         );
-        assert_eq!(demand(&two_regions), unsummable());
+        assert_eq!(demand("two-regions"), unsummable());
     });
 }
 
@@ -222,27 +228,28 @@ fn refusals_in_several_regions_report_the_least_partition_identity() {
     let mut ascending = entries.clone();
     ascending.reverse();
 
-    with_region_totals(|demand| {
+    let sets: facts::Sets<'_> = &[("descending", &entries), ("ascending", &ascending)];
+    with_region_totals(sets, |demand| {
         let least = refused(partition_of(regions[1]), regions[1]);
-        assert_eq!(demand(&entries), least);
-        assert_eq!(demand(&ascending), least);
+        assert_eq!(demand("descending"), least);
+        assert_eq!(demand("ascending"), least);
     });
 }
 
 #[test]
 fn kernel_panic_is_a_typed_stop_and_the_next_demand_runs() {
-    with_region_totals(|demand| {
-        let clean = [entry(1, 1, 2.0), entry(2, 2, 3.0)];
-        let mut panicking = clean;
-        panicking[1].fault = Some(RegionFault::Panic);
+    let clean = [entry(1, 1, 2.0), entry(2, 2, 3.0)];
+    let mut panicking = clean;
+    panicking[1].fault = Some(RegionFault::Panic);
+    with_region_totals(&[("panicking", &panicking), ("clean", &clean)], |demand| {
         assert_eq!(
-            demand(&panicking),
+            demand("panicking"),
             Err(WorthQueryPartitionedComputationDenial::Partition {
                 partition: partition_of(2),
                 cause: WorthQueryComputationPartitionStop::Panicked,
             })
         );
-        assert_eq!(total(demand(&clean)).bits, 5.0_f64.to_bits());
+        assert_eq!(total(demand("clean")).bits, 5.0_f64.to_bits());
     });
 }
 
@@ -269,15 +276,20 @@ fn work_ceiling_stops_at_the_same_partition_with_the_same_outcome_on_every_run()
         })
     };
 
-    with_region_totals(|demand| {
-        assert_eq!(demand(&heavy), exhausted());
-        assert_eq!(demand(&reversed), exhausted());
-        assert_eq!(demand(&heavy), exhausted());
-        // The same regions inside the ceiling complete.
-        let light = heavy
-            .iter()
-            .map(|entry| RegionEntry { work: 1, ..*entry })
-            .collect::<Vec<_>>();
-        assert_eq!(total(demand(&light)).bits, 3.0_f64.to_bits());
+    // The same regions inside the ceiling complete.
+    let light = heavy
+        .iter()
+        .map(|entry| RegionEntry { work: 1, ..*entry })
+        .collect::<Vec<_>>();
+    let sets: facts::Sets<'_> = &[
+        ("heavy", &heavy),
+        ("reversed", &reversed),
+        ("light", &light),
+    ];
+    with_region_totals(sets, |demand| {
+        assert_eq!(demand("heavy"), exhausted());
+        assert_eq!(demand("reversed"), exhausted());
+        assert_eq!(demand("heavy"), exhausted());
+        assert_eq!(total(demand("light")).bits, 3.0_f64.to_bits());
     });
 }

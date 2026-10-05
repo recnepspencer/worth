@@ -89,7 +89,7 @@ pub(super) fn install_program_with_seed<Program>(
     retained_composite_commits: u64,
     retained_invalidation_bytes: u64,
     maximum_invalidation_work: u64,
-    seed: fn(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
+    seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
 ) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>
 where
     Program: ApplicationProgramDefinition<CheckpointSchema>,
@@ -112,7 +112,7 @@ pub(super) fn install_program_with_limits<Program>(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
     limits: WorthQueryInMemoryApplicationLimits,
-    seed: fn(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
+    seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
 ) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>
 where
     Program: ApplicationProgramDefinition<CheckpointSchema>,
@@ -135,7 +135,7 @@ pub(super) fn try_install_program_with_limits<Program>(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
     limits: WorthQueryInMemoryApplicationLimits,
-    seed: fn(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
+    seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
 ) -> Result<
     application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>,
     Box<application_installation::WorthQueryInMemoryApplicationDenial>,

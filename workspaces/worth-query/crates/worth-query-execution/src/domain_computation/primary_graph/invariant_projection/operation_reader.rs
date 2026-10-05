@@ -1,4 +1,3 @@
-use std::collections::BTreeSet;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -12,6 +11,7 @@ use worth_query_installation::facade::{
 
 mod current_output;
 mod decision_plan;
+mod decision_reads;
 mod prior_output;
 
 pub use current_output::{
@@ -21,6 +21,7 @@ pub use current_output::{
 pub use decision_plan::{
     WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantDecisionPlanDenialKind,
 };
+pub(in crate::domain_computation::primary_graph) use decision_reads::DecisionReads;
 pub use prior_output::WorthQueryPriorOutputFamilyMember;
 pub(in crate::domain_computation::primary_graph) use prior_output::WorthQueryPriorOutputRead;
 
@@ -35,8 +36,7 @@ use super::{
 };
 use crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity;
 use crate::domain_computation::primary_graph::{
-    application_attempt::WorthQueryApplicationFactKey, WorthQueryAdmittedApplicationOperation,
-    WorthQueryEntityResolutionDenial,
+    WorthQueryAdmittedApplicationOperation, WorthQueryEntityResolutionDenial,
 };
 
 /// An invariant projection reader restricted to one operation's declared reads.
@@ -57,7 +57,7 @@ pub struct WorthQueryApplicationOperationInvariantProjectionReader<
     admission_identity: Option<WorthQueryOperationAdmissionIdentity>,
     operation_scope:
         Option<crate::domain_computation::authorization::WorthQueryOperationScopeBinding>,
-    decision_facts: &'reader mut BTreeSet<WorthQueryApplicationFactKey>,
+    decision_facts: &'reader mut DecisionReads,
     _operation: PhantomData<fn() -> Operation>,
 }
 
@@ -67,10 +67,7 @@ pub struct WorthQueryApplicationOperationInvariantProjectionReader<
 /// Pass the snapshot from `into_parts` to
 /// `begin_projected_application_read_attempt`.
 pub struct WorthQueryCompletedOperationInvariantProjection<Schema, Operation, Output> {
-    completed: WorthQueryCompletedInvariantProjection<
-        Schema,
-        (Output, BTreeSet<WorthQueryApplicationFactKey>),
-    >,
+    completed: WorthQueryCompletedInvariantProjection<Schema, (Output, DecisionReads)>,
     admission_identity: WorthQueryOperationAdmissionIdentity,
     product: crate::basis::WorthQueryProductBranchLease,
     _operation: PhantomData<fn() -> Operation>,
@@ -93,7 +90,7 @@ pub struct WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, Ope
     snapshot: WorthQueryApplicationInvariantProjectionSnapshot<Schema>,
     admission_identity: WorthQueryOperationAdmissionIdentity,
     product: crate::basis::WorthQueryProductBranchLease,
-    decision_facts: BTreeSet<WorthQueryApplicationFactKey>,
+    decision_facts: DecisionReads,
     _operation: PhantomData<fn() -> Operation>,
 }
 
@@ -129,7 +126,7 @@ where
         WorthQueryInvariantProjectionDenial,
     > {
         let completed = self.project(|reader| {
-            let mut decision_facts = BTreeSet::new();
+            let mut decision_facts = DecisionReads::default();
             let mut operation_reader = WorthQueryApplicationOperationInvariantProjectionReader {
                 reader,
                 admitted_graph_reads: None,
@@ -167,7 +164,7 @@ where
     > {
         let completed =
             self.project_bounded(usize::MAX, product.relational_basis().clone(), |reader| {
-                let mut decision_facts = BTreeSet::new();
+                let mut decision_facts = DecisionReads::default();
                 let mut operation_reader =
                     WorthQueryApplicationOperationInvariantProjectionReader {
                         reader,
@@ -220,7 +217,7 @@ where
                         Some(product.observation().reference_generation().get());
                     reader.selected_source_partition_identity =
                         admission.source_partition_identity();
-                    let mut decision_facts = BTreeSet::new();
+                    let mut decision_facts = DecisionReads::default();
                     let mut operation_reader =
                         WorthQueryApplicationOperationInvariantProjectionReader {
                             reader,
@@ -335,7 +332,7 @@ where
     ) -> (
         super::super::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease,
         super::WorthQueryRealizedProjectionScope,
-        BTreeSet<WorthQueryApplicationFactKey>,
+        DecisionReads,
         Vec<super::super::application_attempt::WorthQueryApplicationObservedFact>,
         Vec<super::ConsumedOutputEvidence>,
     ) {

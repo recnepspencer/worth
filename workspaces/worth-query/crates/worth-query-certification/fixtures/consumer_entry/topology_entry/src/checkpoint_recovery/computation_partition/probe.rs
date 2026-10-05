@@ -6,17 +6,16 @@ use serde::{Serialize, Serializer};
 use worth_foundational::facade::PartitionIdentity;
 use worth_query_decl::facade::application_operation::application_computation_partition_identity;
 use worth_query_host::facade::application_contribution::{
-    PartitionItemId, WorthQueryComputationPartitionPlan, WorthQueryComputationPartitionStop,
-    WorthQueryComputationPartitionView, WorthQueryDeterministicReducer,
-    WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationDenial,
-    WorthQueryManagedComputationResourceDenial, WorthQueryPartitionedComputationDenial,
-    WorthQueryPartitionedComputationOwner,
+    PartitionItemId, WorthQueryComputationPartitionMembers, WorthQueryComputationPartitionPlan,
+    WorthQueryComputationPartitionStop, WorthQueryComputationPartitionView,
+    WorthQueryDeterministicReducer, WorthQueryManagedComputationCheckpoint,
+    WorthQueryManagedComputationDenial, WorthQueryManagedComputationResourceDenial,
+    WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
 };
 
-use super::owner::{
-    enter_kernel, kernels_entered, with_totals, Entries, Installed, RegionEntry, RegionFault,
-    RegionTotalsHandler, Setup,
-};
+use super::demand::TotalRegions;
+use super::facts::{self, Entry, EntryData, InputDenial, Reader, RegionEntry, RegionFault, Set};
+use super::owner::{enter_kernel, kernels_entered, running, with_totals, Installed, Setup};
 use super::*;
 
 /// What the probing owner does with an entry.
@@ -60,32 +59,54 @@ struct ProbingOwner;
 impl WorthQueryPartitionedComputationOwner<CheckpointSchema, PlanarFinalOutputFeature, ProbedTotals>
     for ProbingOwner
 {
+    type Operation = TotalRegions;
+    type Item = Entry;
+    type Gathered = Vec<EntryData>;
     type PartitionResult = Vec<u64>;
     type Output = f64;
     type Stopped = u32;
 
-    fn partitions(&self, entries: &Entries) -> WorthQueryComputationPartitionPlan<ProbeKey> {
-        WorthQueryComputationPartitionPlan::keyed(
-            entries,
-            |entry| PartitionItemId(entry.id),
-            |entry| ProbeKey {
-                region: entry.region,
-                entry: entry.id,
-                encodable: !matches!(entry.fault, Some(RegionFault::Probe(ProbeFault::NoKey))),
-            },
-        )
+    fn partitions(
+        &self,
+        reader: &mut Reader<'_, '_, '_>,
+        set: &Set,
+    ) -> Result<WorthQueryComputationPartitionPlan<Entry>, InputDenial> {
+        Ok(facts::entries(reader, set)?)
+    }
+
+    fn partition_key(
+        &self,
+        reader: &mut Reader<'_, '_, '_>,
+        _: &Set,
+        entry: &Entry,
+    ) -> Result<ProbeKey, InputDenial> {
+        let fault = facts::fault(reader, entry)?;
+        Ok(ProbeKey {
+            region: facts::region(reader, entry)?,
+            entry: entry.number,
+            encodable: !matches!(fault, Some(RegionFault::Probe(ProbeFault::NoKey))),
+        })
+    }
+
+    fn gather(
+        &self,
+        reader: &mut Reader<'_, '_, '_>,
+        _: &Set,
+        partition: WorthQueryComputationPartitionMembers<'_, ProbeKey, Entry>,
+    ) -> Result<Vec<EntryData>, InputDenial> {
+        Ok(facts::gathered(reader, partition.items())?)
     }
 
     fn compute_partition(
         &self,
-        partition: WorthQueryComputationPartitionView<'_, ProbeKey, Entries>,
+        partition: WorthQueryComputationPartitionView<'_, ProbeKey, Vec<EntryData>>,
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
     ) -> Result<Vec<u64>, WorthQueryManagedComputationDenial<u32>> {
         enter_kernel();
         let mut seen = vec![partition.key().entry];
-        for item in partition.items() {
+        for entry in partition.gathered() {
             checkpoint.advance(1)?;
-            match partition.input()[item.position()].fault {
+            match entry.fault {
                 Some(RegionFault::Probe(ProbeFault::Hold(values))) => {
                     seen.resize(seen.len() + values, 0);
                 }
@@ -116,7 +137,7 @@ impl RegionTotalsBinding for Probed {
     type Computation = ProbedTotals;
 
     fn install(setup: &mut Setup<'_>) -> Installed {
-        RegionTotalsHandler::running::<ProbedTotals, _>(setup, ProbingOwner)
+        running::<ProbedTotals, _>(setup, ProbingOwner)
     }
 }
 
@@ -164,53 +185,62 @@ fn partition_key_is_its_least_items_key_whatever_order_the_input_holds() {
     ];
     let mut reversed = entries;
     reversed.reverse();
-    with_totals::<Probed>(|demand| {
-        let planned = demand(&entries).expect("the probed totals complete");
-        assert_eq!(planned.bits, 7.0_f64.to_bits());
-        assert_eq!(demand(&reversed), Ok(planned));
-    });
+    with_totals::<Probed>(
+        &[("planned", &entries), ("reversed", &reversed)],
+        |demand| {
+            let planned = demand("planned").expect("the probed totals complete");
+            assert_eq!(planned.bits, 7.0_f64.to_bits());
+            assert_eq!(demand("reversed"), Ok(planned));
+        },
+    );
 }
 
 #[test]
 fn result_larger_than_the_declared_bytes_is_a_typed_denial() {
     // The computation declares 8,192 bytes. A result fits them in memory and
     // once more as its canonical bits, which take 24 bytes a value.
-    with_totals::<Probed>(|demand| {
-        // One region's result is too large on its own.
-        let oversized = [
-            entry(1, 1),
-            faulted(2, 2, ProbeFault::Hold(2_000)),
-            entry(3, 3),
-        ];
+    // One region's result is too large on its own.
+    let oversized = [
+        entry(1, 1),
+        faulted(2, 2, ProbeFault::Hold(2_000)),
+        entry(3, 3),
+    ];
+    // A result fits alone, and what the reducer makes of two does not.
+    let alone = [faulted(1, 1, ProbeFault::Hold(250))];
+    let together = [
+        faulted(1, 1, ProbeFault::Hold(250)),
+        faulted(2, 2, ProbeFault::Hold(250)),
+    ];
+    let fitting = [
+        faulted(1, 1, ProbeFault::Hold(100)),
+        faulted(2, 2, ProbeFault::Hold(100)),
+    ];
+    let sets: facts::Sets<'_> = &[
+        ("oversized", &oversized),
+        ("alone", &alone),
+        ("together", &together),
+        ("fitting", &fitting),
+    ];
+    with_totals::<Probed>(sets, |demand| {
         assert_eq!(
-            demand(&oversized).map(|total| total.bits),
+            demand("oversized").map(|total| total.bits),
             Err(WorthQueryPartitionedComputationDenial::Partition {
                 partition: partition_of(2),
                 cause: WorthQueryComputationPartitionStop::Resource(BYTES_EXHAUSTED),
             })
         );
-        // A result fits alone, and what the reducer makes of two does not.
-        let alone = [faulted(1, 1, ProbeFault::Hold(250))];
         assert_eq!(
-            demand(&alone).map(|total| total.bits),
+            demand("alone").map(|total| total.bits),
             Ok(1.0_f64.to_bits())
         );
-        let together = [
-            faulted(1, 1, ProbeFault::Hold(250)),
-            faulted(2, 2, ProbeFault::Hold(250)),
-        ];
         assert_eq!(
-            demand(&together).map(|total| total.bits),
+            demand("together").map(|total| total.bits),
             Err(WorthQueryPartitionedComputationDenial::Resource(
                 BYTES_EXHAUSTED
             ))
         );
-        let fitting = [
-            faulted(1, 1, ProbeFault::Hold(100)),
-            faulted(2, 2, ProbeFault::Hold(100)),
-        ];
         assert_eq!(
-            demand(&fitting).map(|total| total.bits),
+            demand("fitting").map(|total| total.bits),
             Ok(3.0_f64.to_bits())
         );
     });
@@ -218,14 +248,15 @@ fn result_larger_than_the_declared_bytes_is_a_typed_denial() {
 
 #[test]
 fn reducer_panic_is_a_typed_failure_and_the_next_demand_runs() {
-    with_totals::<Probed>(|demand| {
-        let poisoned = [
-            entry(1, 1),
-            faulted(2, 2, ProbeFault::PoisonReducer),
-            entry(3, 3),
-        ];
+    let poisoned = [
+        entry(1, 1),
+        faulted(2, 2, ProbeFault::PoisonReducer),
+        entry(3, 3),
+    ];
+    let clean = [entry(1, 1), entry(2, 2), entry(3, 3)];
+    with_totals::<Probed>(&[("poisoned", &poisoned), ("clean", &clean)], |demand| {
         assert_eq!(
-            demand(&poisoned).map(|total| total.bits),
+            demand("poisoned").map(|total| total.bits),
             Err(WorthQueryPartitionedComputationDenial::ReducerPanicked)
         );
         assert_eq!(
@@ -233,9 +264,8 @@ fn reducer_panic_is_a_typed_failure_and_the_next_demand_runs() {
             3,
             "every partition ran before the reducer"
         );
-        let clean = [entry(1, 1), entry(2, 2), entry(3, 3)];
         assert_eq!(
-            demand(&clean).map(|total| total.bits),
+            demand("clean").map(|total| total.bits),
             Ok(6.0_f64.to_bits())
         );
     });
@@ -254,8 +284,14 @@ fn key_that_cannot_be_encoded_is_denied_naming_its_item_and_nothing_runs() {
     ];
     let mut reversed = entries;
     reversed.reverse();
-    with_totals::<Probed>(|demand| {
-        for input in [&entries, &reversed] {
+    let encodable = [entry(1, 1), entry(2, 3), entry(9, 1)];
+    let sets: facts::Sets<'_> = &[
+        ("unkeyed", &entries),
+        ("reversed", &reversed),
+        ("encodable", &encodable),
+    ];
+    with_totals::<Probed>(sets, |demand| {
+        for input in ["unkeyed", "reversed"] {
             match demand(input) {
                 Err(WorthQueryPartitionedComputationDenial::KeyNotEncodable { item, .. }) => {
                     assert_eq!(item, PartitionItemId(6));
@@ -264,9 +300,8 @@ fn key_that_cannot_be_encoded_is_denied_naming_its_item_and_nothing_runs() {
             }
             assert_eq!(kernels_entered(), 0, "no partition runs");
         }
-        let encodable = [entry(1, 1), entry(2, 3), entry(9, 1)];
         assert_eq!(
-            demand(&encodable).map(|total| total.bits),
+            demand("encodable").map(|total| total.bits),
             Ok(3.0_f64.to_bits())
         );
         assert_eq!(kernels_entered(), 2);

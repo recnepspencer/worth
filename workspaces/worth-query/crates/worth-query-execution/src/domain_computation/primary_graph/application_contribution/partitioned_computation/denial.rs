@@ -11,13 +11,16 @@ use super::super::{
     WorthQueryManagedComputationCheckpointDenial, WorthQueryManagedComputationInterruption,
     WorthQueryManagedComputationResourceDenial,
 };
+use super::reader::{WorthQueryComputationInputDenial, WorthQueryComputationReadDenial};
 use super::routing::ComputationPartitionRoutingDenial;
 
 /// Why one partition stopped.
 #[derive(Debug, Eq, PartialEq)]
 pub enum WorthQueryComputationPartitionStop<Stopped> {
-    /// The owner's kernel refused the partition.
+    /// The owner refused the partition, gathering it or computing it.
     Owner(Stopped),
+    /// A read was refused while the owner gathered the partition.
+    Read(WorthQueryComputationReadDenial),
     /// The owner's kernel panicked.
     Panicked,
     /// The partition did not fit the computation's declared work or bytes.
@@ -30,10 +33,14 @@ pub enum WorthQueryComputationPartitionStop<Stopped> {
 /// Why a partitioned computation has no result.
 #[derive(Debug, Eq, PartialEq)]
 pub enum WorthQueryPartitionedComputationDenial<Stopped> {
-    /// The owner refused to complete the reduced result.
+    /// The owner refused to name the input's items, to key one, or to
+    /// complete the reduced result.
     Owner(Stopped),
+    /// A read was refused while the owner named the input's items or keyed
+    /// one.
+    Read(WorthQueryComputationReadDenial),
     /// A partition stopped. When several did, this is the one with the least
-    /// partition identity.
+    /// partition identity. No partition is computed unless every one gathers.
     Partition {
         partition: PartitionIdentity,
         cause: WorthQueryComputationPartitionStop<Stopped>,
@@ -75,7 +82,36 @@ impl<Stopped> From<ComputationPartitionRoutingDenial>
     }
 }
 
+impl<Stopped> From<WorthQueryComputationInputDenial<Stopped>>
+    for WorthQueryPartitionedComputationDenial<Stopped>
+{
+    fn from(denial: WorthQueryComputationInputDenial<Stopped>) -> Self {
+        match denial {
+            WorthQueryComputationInputDenial::Owner(stopped) => Self::Owner(stopped),
+            WorthQueryComputationInputDenial::Read(denial) => Self::Read(denial),
+        }
+    }
+}
+
 impl<Stopped> WorthQueryPartitionedComputationDenial<Stopped> {
+    /// A partition whose gathering has no answer.
+    pub(super) fn gathering(
+        partition: PartitionIdentity,
+        denial: WorthQueryComputationInputDenial<Stopped>,
+    ) -> Self {
+        Self::Partition {
+            partition,
+            cause: match denial {
+                WorthQueryComputationInputDenial::Owner(stopped) => {
+                    WorthQueryComputationPartitionStop::Owner(stopped)
+                }
+                WorthQueryComputationInputDenial::Read(denial) => {
+                    WorthQueryComputationPartitionStop::Read(denial)
+                }
+            },
+        }
+    }
+
     const WORK_EXHAUSTED: Self =
         Self::Resource(WorthQueryManagedComputationResourceDenial::WorkExhausted);
     const BYTES_EXHAUSTED: Self =

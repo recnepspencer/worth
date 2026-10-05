@@ -78,6 +78,8 @@ worth_query_application_contribution! {
         members: |schema| {
             #[cfg(test)]
             let schema = checkpoint_recovery::required_chain::declare(schema);
+            #[cfg(test)]
+            let schema = checkpoint_recovery::computation_partition::declare(schema);
             let schema = alternate_output::declare_alternate_output(schema);
             let schema = vertex_replacement::declare_vertex_replacement(schema);
             let schema = prior_cycle_adjustment::declare_prior_cycle_adjustment(schema);

@@ -1,24 +1,32 @@
 //! The partitioned owner binding of a `DeterministicPartitioned` computation.
 //!
-//! The owner names the partitions of an input, computes one partition at a
-//! time and reduces the results. Query derives each partition's identity from
-//! its key, runs the partitions through `worth-execution`'s map under the
-//! computation's declared work ceiling and reduces them over the canonical
-//! tree. Every run recomputes every partition.
+//! The owner names the items of an input, keys each one, gathers one
+//! partition's data and computes one partition at a time, then reduces the
+//! results. It reads the input through the reader of the handler that runs
+//! the computation, so Query knows which fact each owner call read. Query
+//! derives each partition's identity from its key, runs the partitions
+//! through `worth-execution`'s map under the computation's declared work
+//! ceiling and reduces them over the canonical tree. Every run recomputes
+//! every partition.
 
+mod compute;
 mod denial;
 mod installed;
 mod plan;
+mod reader;
 mod routing;
 
-pub use denial::{WorthQueryComputationPartitionStop, WorthQueryPartitionedComputationDenial};
-pub use installed::{
-    WorthQueryCompletedPartitionedComputation, WorthQueryInstalledPartitionedComputation,
-    WorthQueryPreparedPartitionedComputation,
+pub use compute::{
+    WorthQueryCompletedPartitionedComputation, WorthQueryPreparedPartitionedComputation,
 };
+pub use denial::{WorthQueryComputationPartitionStop, WorthQueryPartitionedComputationDenial};
+pub use installed::WorthQueryInstalledPartitionedComputation;
 pub use plan::{
-    WorthQueryComputationPartitionItem, WorthQueryComputationPartitionPlan,
+    WorthQueryComputationPartitionMembers, WorthQueryComputationPartitionPlan,
     WorthQueryComputationPartitionView,
+};
+pub use reader::{
+    WorthQueryComputationInputDenial, WorthQueryComputationReadDenial, WorthQueryComputationReader,
 };
 
 use worth_execution::{CanonicalBits, ChargedBytes};
@@ -37,11 +45,24 @@ type InputValue<Schema, Feature, Computation> = <<Computation as ApplicationMana
 
 /// Owns a `DeterministicPartitioned` computation.
 ///
-/// `partitions` and `complete` run on the owner thread. `compute_partition`
-/// runs once per partition and may run on any worker, so it reads only its
-/// view. The reducer's `combine` sees partitions in partition identity order,
-/// which is the order of their keys' digests: deterministic, and not chosen by
-/// the author.
+/// `partitions`, `partition_key`, `gather` and `complete` run on the owner
+/// thread. `partitions` names the input's items, `partition_key` runs once per
+/// item and `gather` once per partition, in ascending item and partition
+/// identity order. Each is lent the handler's reader, and the facts it reads
+/// are recorded as the membership's, that item's key's or that partition's.
+/// `compute_partition` runs once per partition and may run on any worker, so
+/// it is handed what `gather` returned and no reader. The reducer's `combine`
+/// sees partitions in partition identity order, which is the order of their
+/// keys' digests: deterministic, and not chosen by the author.
+///
+/// # Purity
+///
+/// Unchanged facts mean an unchanged partition. `partition_key`, `gather` and
+/// `compute_partition` are pure in the input value, the partition's key and
+/// the facts read through the reader: they read no clock, no global and no
+/// state of the owner that can differ between two runs. A partition whose
+/// facts did not change is entitled to keep its last result without being
+/// gathered or computed again.
 pub trait WorthQueryPartitionedComputationOwner<Schema, Feature, Computation>:
     Send + Sync + 'static
 where
@@ -49,24 +70,53 @@ where
     Feature: ApplicationFeature<Schema>,
     Computation: ApplicationManagedComputation<Schema, Feature>,
 {
+    /// The operation whose handler runs the computation. The owner reads what
+    /// that operation declares it reads.
+    type Operation;
+    /// One item of the input as `partitions` hands it to `partition_key` and
+    /// `gather`: what the owner reads the item by.
+    type Item: Send + Sync + 'static;
+    /// One partition's data, gathered on the owner thread for its kernel.
+    type Gathered: Send + Sync + ChargedBytes;
     /// One partition's result, and the reduced result of them all. Its
     /// canonical bits are what "the same result" means.
     type PartitionResult: Clone + Send + Sync + ChargedBytes + CanonicalBits + 'static;
     type Output;
     type Stopped: Send + ChargedBytes + 'static;
 
+    /// Names the items the input holds. What it reads is a membership fact:
+    /// a change to it changes which items there are.
     fn partitions(
         &self,
+        reader: &mut WorthQueryComputationReader<'_, '_, '_, Schema, Self::Operation>,
         input: &InputValue<Schema, Feature, Computation>,
-    ) -> WorthQueryComputationPartitionPlan<Computation::Partition>;
+    ) -> Result<
+        WorthQueryComputationPartitionPlan<Self::Item>,
+        WorthQueryComputationInputDenial<Self::Stopped>,
+    >;
+
+    /// The key of the partition `item` belongs to. What it reads is that
+    /// item's key fact: a change to it can move the item to another partition.
+    fn partition_key(
+        &self,
+        reader: &mut WorthQueryComputationReader<'_, '_, '_, Schema, Self::Operation>,
+        input: &InputValue<Schema, Feature, Computation>,
+        item: &Self::Item,
+    ) -> Result<Computation::Partition, WorthQueryComputationInputDenial<Self::Stopped>>;
+
+    /// Gathers one partition's data, reads across its boundary included. What
+    /// it reads is that partition's fact, and a fact two partitions read is
+    /// a fact of both.
+    fn gather(
+        &self,
+        reader: &mut WorthQueryComputationReader<'_, '_, '_, Schema, Self::Operation>,
+        input: &InputValue<Schema, Feature, Computation>,
+        partition: WorthQueryComputationPartitionMembers<'_, Computation::Partition, Self::Item>,
+    ) -> Result<Self::Gathered, WorthQueryComputationInputDenial<Self::Stopped>>;
 
     fn compute_partition(
         &self,
-        partition: WorthQueryComputationPartitionView<
-            '_,
-            Computation::Partition,
-            InputValue<Schema, Feature, Computation>,
-        >,
+        partition: WorthQueryComputationPartitionView<'_, Computation::Partition, Self::Gathered>,
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
     ) -> Result<Self::PartitionResult, WorthQueryManagedComputationDenial<Self::Stopped>>;
 
@@ -96,5 +146,7 @@ impl<Reduced> WorthQueryDeterministicReducer<Reduced> {
     }
 }
 
+#[cfg(test)]
+mod attribution_tests;
 #[cfg(test)]
 mod tests;

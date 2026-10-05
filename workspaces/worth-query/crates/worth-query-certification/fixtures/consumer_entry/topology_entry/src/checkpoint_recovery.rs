@@ -21,7 +21,7 @@ use worth_query_host::facade::{
 use super::*;
 #[cfg(feature = "test-query-execution-observer")]
 mod clean_reuse;
-mod computation_partition;
+pub(crate) mod computation_partition;
 mod current_output;
 mod demand_contact;
 mod demand_policy;
