@@ -150,7 +150,9 @@ mod tests {
                         runtime,
                         snapshot,
                         super::super::PreparedSourceFactRebase::admit(vec![fact]).unwrap(),
+                        &std::collections::BTreeSet::new(),
                         true,
+                        0,
                         Some(&mut zero_work)
                     ),
                     super::super::RebasedSourceFacts::VerificationRequired { .. }
@@ -172,7 +174,9 @@ mod tests {
                     snapshot,
                     super::super::PreparedSourceFactRebase::admit(vec![stale_revision.clone()])
                         .unwrap(),
+                    &std::collections::BTreeSet::new(),
                     true,
+                    64,
                     Some(&mut producer_work),
                 ),
                 super::super::RebasedSourceFacts::VerificationRequired { .. }
@@ -183,7 +187,9 @@ mod tests {
                 snapshot,
                 super::super::PreparedSourceFactRebase::admit(vec![stale_revision.clone()])
                     .unwrap(),
+                &std::collections::BTreeSet::new(),
                 false,
+                64,
                 Some(&mut ordinary_work),
             ) {
                 super::super::RebasedSourceFacts::Exact(facts) => {

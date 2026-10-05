@@ -27,6 +27,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAtt
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
     validator_work_admission:
         super::super::effect_program::WorthQueryCandidateValidatorWorkAdmission,
+    indexed_rebase_work_budget: usize,
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
     producer_required_invariants:
@@ -125,6 +126,10 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             aftermath_causality: context.aftermath_causality(&inspection).cloned(),
             conditional_definition,
             validator_work_admission,
+            indexed_rebase_work_budget: context
+                .admission(&inspection)
+                .allowed_graph_contract()
+                .projection_work_budget(),
             retain_output_demand_observation,
             retain_client_observation,
             producer_required_invariants,

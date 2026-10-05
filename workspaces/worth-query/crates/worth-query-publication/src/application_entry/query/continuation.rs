@@ -65,7 +65,7 @@ where
             .map_err(WorthQueryApplicationRequestQueryDenial::BindingInstallation)?;
         self.application
             .resolve_application_query_limits(binding.limits())
-            .narrow(binding.limits().maximum_results(), maximum_work)
+            .narrow(page_width, maximum_work)
             .map_err(WorthQueryApplicationRequestQueryDenial::Limit)?;
         let selected = self
             .application
@@ -119,7 +119,7 @@ where
             .map_err(WorthQueryApplicationRequestQueryDenial::BindingInstallation)?;
         self.application
             .resolve_application_query_limits(binding.limits())
-            .narrow(binding.limits().maximum_results(), maximum_work)
+            .narrow(page_width, maximum_work)
             .map_err(WorthQueryApplicationRequestQueryDenial::Limit)?;
         let selected = self
             .application

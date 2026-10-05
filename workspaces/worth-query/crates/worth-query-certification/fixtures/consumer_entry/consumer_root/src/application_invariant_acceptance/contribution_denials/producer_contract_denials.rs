@@ -22,9 +22,9 @@ use worth_query_host::facade::{
 };
 use worth_query_parameter_entry::{ParameterContribution, ParameterSchemaBinding};
 use worth_query_topology_entry::{
-    PlanarMutation, PlanarMutationBinding, PlanarReadBinding, PlanarReadResult,
-    TopologyConfiguration, TopologyContribution, TopologySchemaBinding, VertexReplacement,
-    VertexReplacementBinding,
+    Body, PlanarAnchorOutput, PlanarMutation, PlanarMutationBinding, PlanarReadBinding,
+    PlanarReadResult, TopologyConfiguration, TopologyContribution, TopologySchemaBinding,
+    VertexReplacement, VertexReplacementAnchorOutput, VertexReplacementBinding,
 };
 
 use super::{assert_contribution_denial, limits, validated_denial_program};
@@ -33,40 +33,11 @@ const INITIAL: WorthQueryProducerApplicability =
     WorthQueryProducerApplicability::new("planar", WorthQueryProducerLifecyclePosture::Initial);
 
 pub(super) fn run() {
-    undeclared_output_role_is_denied_before_configuration();
     missing_required_invariant_is_denied_before_initial_state();
     foreign_source_selector_is_denied_before_initial_state();
 }
 
 struct ContractProvider;
-
-struct InvalidRoleFamily;
-
-impl<Schema: TopologySchemaBinding> WorthQueryProducerOutputFamily<Schema> for InvalidRoleFamily {
-    type Source = PlanarReadBinding<Schema>;
-    const IDENTITY: &'static str = "worth.query.certification.invalid-role-output.v1";
-    const SUPPORTED: &'static [WorthQueryProducerApplicability] = &[INITIAL];
-    fn profile_kind(_: &PlanarReadResult) -> &'static str {
-        "planar"
-    }
-}
-
-struct InvalidRoleProducer<Schema>(PhantomData<fn() -> Schema>);
-
-impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
-    for InvalidRoleProducer<Schema>
-{
-    type Operation = PlanarMutationBinding<Schema>;
-    type OutputFamily = InvalidRoleFamily;
-    type Provider = ContractProvider;
-
-    const IDENTITY: &'static str = "worth.query.certification.invalid-role-producer.v1";
-    const OUTPUT_ROLE: &'static str = "undeclared";
-    const APPLICABILITY: &'static [WorthQueryProducerApplicability] = &[INITIAL];
-    const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
-    const RESOURCE_POLICY: &'static str = "bounded-synchronous";
-    const REUSE_POLICY: &'static str = "exact-source";
-}
 
 struct MissingInvariantFamily;
 
@@ -74,6 +45,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryProducerOutputFamily<Schema>
     for MissingInvariantFamily
 {
     type Source = PlanarReadBinding<Schema>;
+    type Entity = Body;
     const IDENTITY: &'static str = "worth.query.certification.missing-invariant-output.v1";
     const SUPPORTED: &'static [WorthQueryProducerApplicability] = &[INITIAL];
     fn profile_kind(_: &PlanarReadResult) -> &'static str {
@@ -90,8 +62,9 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     type OutputFamily = MissingInvariantFamily;
     type Provider = ContractProvider;
 
+    type OutputRole = PlanarAnchorOutput<Schema>;
+
     const IDENTITY: &'static str = "worth.query.certification.missing-invariant-producer.v1";
-    const OUTPUT_ROLE: &'static str = "anchor";
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = &[INITIAL];
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] =
         &[WorthQueryProducerInvariantRequirement::new(
@@ -110,6 +83,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryProducerOutputFamily<Schema>
     for ForeignOperationFamily
 {
     type Source = PlanarReadBinding<Schema>;
+    type Entity = Body;
     const IDENTITY: &'static str = "worth.query.certification.foreign-operation-output.v1";
     const SUPPORTED: &'static [WorthQueryProducerApplicability] = &[INITIAL];
     fn profile_kind(_: &PlanarReadResult) -> &'static str {
@@ -126,39 +100,33 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     type OutputFamily = ForeignOperationFamily;
     type Provider = ContractProvider;
 
+    type OutputRole = VertexReplacementAnchorOutput<Schema>;
+
     const IDENTITY: &'static str = "worth.query.certification.foreign-operation-producer.v1";
-    const OUTPUT_ROLE: &'static str = "anchor";
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = &[INITIAL];
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
     const RESOURCE_POLICY: &'static str = "bounded-synchronous";
     const REUSE_POLICY: &'static str = "exact-source";
 }
 
-macro_rules! planar_contract_provider {
-    ($producer:ident) => {
-        impl<Schema: TopologySchemaBinding>
-            WorthQueryApplicationProducerProvider<Schema, $producer<Schema>> for ContractProvider
-        {
-            const SEMANTIC_IDENTITY: &'static str =
-                "worth.query.certification.contract-provider.v1";
+impl<Schema: TopologySchemaBinding>
+    WorthQueryApplicationProducerProvider<Schema, MissingInvariantProducer<Schema>>
+    for ContractProvider
+{
+    const SEMANTIC_IDENTITY: &'static str = "worth.query.certification.contract-provider.v1";
 
-            fn operation_input(&self, source: &PlanarReadResult) -> PlanarMutation {
-                worth_query_topology_entry::planar_producer_input(source)
-            }
+    fn operation_input(&self, source: &PlanarReadResult) -> PlanarMutation {
+        worth_query_topology_entry::planar_producer_input(source)
+    }
 
-            fn idempotency_key(&self, _: &PlanarReadResult, source_identity: &[u8; 32]) -> u64 {
-                worth_query_topology_entry::planar_source_key(source_identity)
-            }
+    fn idempotency_key(&self, _: &PlanarReadResult, source_identity: &[u8; 32]) -> u64 {
+        worth_query_topology_entry::planar_source_key(source_identity)
+    }
 
-            fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {
-                worth_query_topology_entry::planar_producer_resources()
-            }
-        }
-    };
+    fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {
+        worth_query_topology_entry::planar_producer_resources()
+    }
 }
-
-planar_contract_provider!(InvalidRoleProducer);
-planar_contract_provider!(MissingInvariantProducer);
 
 impl<Schema: TopologySchemaBinding>
     WorthQueryApplicationProducerProvider<Schema, ForeignOperationProducer<Schema>>
@@ -191,80 +159,63 @@ impl<Schema: TopologySchemaBinding>
     }
 }
 
-macro_rules! topology_wrapper {
-    ($Contribution:ident, $Producer:ident) => {
-        struct $Contribution;
+struct MissingInvariantContribution;
 
-        impl<Schema: TopologySchemaBinding> ApplicationSchemaContribution<Schema>
-            for $Contribution
-        {
-            const IDENTITY: ApplicationSchemaContributionIdentity =
-                <TopologyContribution as ApplicationSchemaContribution<Schema>>::IDENTITY;
+impl<Schema: TopologySchemaBinding> ApplicationSchemaContribution<Schema>
+    for MissingInvariantContribution
+{
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        <TopologyContribution as ApplicationSchemaContribution<Schema>>::IDENTITY;
 
-            fn register_members(
-                builder: ApplicationSchemaDeclarationBuilder<Schema>,
-            ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-                <TopologyContribution as ApplicationSchemaContribution<Schema>>::register_members(
-                    builder,
-                )
-            }
-        }
-
-        impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
-            for $Contribution
-        {
-            type Configuration = ();
-
-            fn contracts(
-                contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
-            ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-                contracts.producer::<$Producer<Schema>>()?;
-                Ok(())
-            }
-
-            fn configure(
-                _: (),
-                setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
-            ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-                setup.producer::<$Producer<Schema>>(ContractProvider)
-            }
-        }
-    };
+    fn register_members(
+        builder: ApplicationSchemaDeclarationBuilder<Schema>,
+    ) -> ApplicationSchemaDeclarationBuilder<Schema> {
+        <TopologyContribution as ApplicationSchemaContribution<Schema>>::register_members(builder)
+    }
 }
 
-topology_wrapper!(InvalidRoleContribution, InvalidRoleProducer);
-topology_wrapper!(MissingInvariantContribution, MissingInvariantProducer);
+impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
+    for MissingInvariantContribution
+{
+    type Configuration = ();
 
-macro_rules! wrapper_schema {
-    ($Schema:ident, $Contribution:ty) => {
-        struct $Schema;
-        impl TopologySchemaBinding for $Schema {}
-        impl ParameterSchemaBinding for $Schema {}
-        impl ApplicationSchema for $Schema {
-            const OWNER: &'static str = "worth.query.certification.producer-contract-denials";
-            const NAME: &'static str = stringify!($Schema);
-            const MAJOR: u32 = 1;
-            const MINOR: u32 = 0;
+    fn contracts(
+        contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        contracts.producer::<MissingInvariantProducer<Schema>>()?;
+        Ok(())
+    }
 
-            fn declaration(
-            ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial>
-            {
-                ApplicationSchemaContributionAuthoring::contributions(
-                    ApplicationSchemaDeclarationBuilder::<Self>::for_schema(),
-                )
-                .register::<$Contribution>()?
-                .register::<ParameterContribution>()?
-                .build()
-            }
-        }
-        impl ApplicationSchemaComposition for $Schema {
-            type Contributions = ($Contribution, ParameterContribution);
-        }
-    };
+    fn configure(
+        _: (),
+        setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        setup.producer::<MissingInvariantProducer<Schema>>(ContractProvider)
+    }
 }
 
-wrapper_schema!(InvalidRoleSchema, InvalidRoleContribution);
-wrapper_schema!(MissingInvariantSchema, MissingInvariantContribution);
+struct MissingInvariantSchema;
+impl TopologySchemaBinding for MissingInvariantSchema {}
+impl ParameterSchemaBinding for MissingInvariantSchema {}
+impl ApplicationSchema for MissingInvariantSchema {
+    const OWNER: &'static str = "worth.query.certification.producer-contract-denials";
+    const NAME: &'static str = "MissingInvariantSchema";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        ApplicationSchemaContributionAuthoring::contributions(
+            ApplicationSchemaDeclarationBuilder::<Self>::for_schema(),
+        )
+        .register::<MissingInvariantContribution>()?
+        .register::<ParameterContribution>()?
+        .build()
+    }
+}
+impl ApplicationSchemaComposition for MissingInvariantSchema {
+    type Contributions = (MissingInvariantContribution, ParameterContribution);
+}
 
 struct ForeignOperationContribution;
 
@@ -323,20 +274,6 @@ impl ApplicationSchema for ForeignOperationSchema {
 }
 impl ApplicationSchemaComposition for ForeignOperationSchema {
     type Contributions = (TopologyContribution, ForeignOperationContribution);
-}
-
-fn undeclared_output_role_is_denied_before_configuration() {
-    let result = application_installation::in_memory_program(
-        validated_denial_program::<InvalidRoleSchema>(),
-        InvalidRoleSchema::declaration().unwrap(),
-        ((), Arc::new(AtomicUsize::new(0))),
-        limits(),
-        |_, _| panic!("invalid output role must deny before initial state"),
-    );
-    assert_contribution_denial(
-        result,
-        WorthQueryPrimaryGraphInstallationDenialKind::ProducerBindingMeaningMismatch,
-    );
 }
 
 fn missing_required_invariant_is_denied_before_initial_state() {

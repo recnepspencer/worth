@@ -88,30 +88,75 @@ fn bounded_entity_field_selection(
     (!outcome.overflowed()).then_some(outcome)
 }
 
-pub(super) fn remains_equal_with_work(
+pub(in crate::domain_computation::primary_graph) fn reobserve(
+    fact: &WorthQueryApplicationObservedFact,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    index_id: DerivedIndexId,
-    definition: &std::sync::Arc<DerivedIndexDefinition>,
-    entity_kind: KindId,
-    locator: &AspectFieldLocator,
-    value: &AspectValue,
-    candidate_limit: usize,
-    expected: &[EntityId],
-) -> Option<(bool, usize)> {
-    let current = bounded_entity_field_selection(
-        runtime,
-        snapshot,
+) -> Option<WorthQueryApplicationObservedFact> {
+    let WorthQueryApplicationObservedFact::IndexedEntitySelection {
         index_id,
         entity_kind,
         locator,
         value,
         candidate_limit,
-    )?;
-    let work = current.examined_entry_count().checked_add(1)?;
-    Some((
-        current.retain_definition().as_ref() == definition.as_ref()
-            && current.candidate_entity_ids() == expected,
-        work,
+        ..
+    } = fact
+    else {
+        return None;
+    };
+    observe_indexed_entity_selection(
+        runtime,
+        snapshot,
+        *index_id,
+        *entity_kind,
+        locator.clone(),
+        value.clone(),
+        *candidate_limit,
+    )
+}
+
+pub(super) fn currentness(
+    fact: &WorthQueryApplicationObservedFact,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    maximum_work: usize,
+) -> Result<(bool, usize), super::WorthQuerySourceCurrentnessFailure> {
+    use super::WorthQuerySourceCurrentnessFailure as Failure;
+    let WorthQueryApplicationObservedFact::IndexedEntitySelection {
+        index_id,
+        definition,
+        entity_kind,
+        locator,
+        value,
+        candidate_limit,
+        candidates,
+    } = fact
+    else {
+        return Err(Failure::Unavailable);
+    };
+    if candidate_limit
+        .checked_add(1)
+        .is_none_or(|work| work > maximum_work)
+    {
+        return Err(Failure::WorkBudgetExceeded);
+    }
+    let request = BoundedEntityFieldLookupRequest::new(
+        snapshot.clone(),
+        *index_id,
+        *entity_kind,
+        locator.clone(),
+        value.clone(),
+        *candidate_limit,
+    )
+    .map_err(|_| Failure::Unavailable)?;
+    let outcome = runtime
+        .index_access()
+        .execute_bounded_entity_field_lookup(request, BoundedIndexParityMode::Production)
+        .map_err(|_| Failure::Unavailable)?;
+    Ok((
+        !outcome.overflowed()
+            && outcome.retain_definition().as_ref() == definition.as_ref()
+            && outcome.candidate_entity_ids() == candidates,
+        1 + outcome.examined_entry_count(),
     ))
 }

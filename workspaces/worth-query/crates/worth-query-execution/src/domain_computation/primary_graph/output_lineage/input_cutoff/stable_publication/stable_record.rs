@@ -173,7 +173,7 @@ fn origin_cell(
         .unwrap_or_else(|| Arc::clone(&candidate.cell))
 }
 
-fn charge_initialized_clone(
+pub(super) fn charge_initialized_clone(
     fact: &Fact,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<(), CompanionPreflightStop> {
@@ -182,6 +182,7 @@ fn charge_initialized_clone(
         | Fact::Entity { .. }
         | Fact::WorkflowDefinitionPredecessor { .. }
         | Fact::WorkflowDefinitionCurrent { .. } => 0,
+        Fact::RetiredOutputEntity { read_locator, .. } => initialized(read_locator.len())?,
         Fact::SourceAspectRevision { aspect, .. } => initialized(aspect.as_str().len())?,
         Fact::SourceFieldRevision { locator, .. } | Fact::AbsentField { locator, .. } => {
             return charge_locator(locator, admission);

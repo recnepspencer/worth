@@ -1,7 +1,8 @@
 use worth_query_decl::facade::{
     application_operation::{
-        ApplicationMutationOutputContract, ApplicationMutationOutputPosture,
-        ApplicationMutationOutputRoleDescriptor,
+        ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
+        WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
+        WorthQueryCreateOutput, WorthQueryExactlyOneOutput,
     },
     application_schema::{NoApplicationUnit, ReadOnly},
     worth_query_mutation_binding, worth_query_structured_value_binding,
@@ -36,17 +37,21 @@ worth_query_structured_value_binding!(
 
 pub struct CreateBusinessAccountOutputs;
 
-pub const CREATE_BUSINESS_ACCOUNT_OUTPUT_ACCOUNT: &str = "account";
+/// The business account the operation creates.
+pub struct CreatedBusinessAccountOutput;
+
+impl WorthQueryApplicationOutputRole for CreatedBusinessAccountOutput {
+    type Schema = BankSchema;
+    type Contract = CreateBusinessAccountOutputs;
+    type Entity = Account;
+    type Action = WorthQueryCreateOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "account";
+}
 
 impl ApplicationMutationOutputContract<BankSchema> for CreateBusinessAccountOutputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[ApplicationMutationOutputRoleDescriptor::for_entity::<
-            BankSchema,
-            Account,
-        >(
-            CREATE_BUSINESS_ACCOUNT_OUTPUT_ACCOUNT,
-            ApplicationMutationOutputPosture::Create,
-        )];
+        &[<CreatedBusinessAccountOutput as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
 }
 
 fn institution_scope(input: &CreateBusinessAccount) -> InstitutionId {

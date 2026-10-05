@@ -8,8 +8,7 @@ use worth_query_decl::facade::{
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-    WorthQueryApplicationOutputRole, WorthQueryCurrentOutputRole, WorthQueryCurrentOutputSelection,
-    WorthQueryPreserveOutput,
+    WorthQueryCurrentOutputSelection,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
@@ -33,6 +32,7 @@ static DECISIONS: std::sync::Mutex<Vec<(String, Vec<u64>)>> = std::sync::Mutex::
 
 /// The upstream Lengths each decision for `scope_key` read since the last
 /// take, in order. Other scopes' decisions are discarded.
+#[cfg(feature = "test-query-execution-observer")]
 pub(super) fn take_decisions(scope_key: &str) -> Vec<Vec<u64>> {
     take_all_decisions()
         .into_iter()
@@ -42,6 +42,7 @@ pub(super) fn take_decisions(scope_key: &str) -> Vec<Vec<u64>> {
 
 /// Every decision since the last take, in order: its scope and the upstream
 /// Lengths it read.
+#[cfg(feature = "test-query-execution-observer")]
 pub(super) fn take_all_decisions() -> Vec<(String, Vec<u64>)> {
     std::mem::take(
         &mut *DECISIONS
@@ -57,6 +58,7 @@ static CANCEL_DURING_DECISION: std::sync::Mutex<
 > = std::sync::Mutex::new(None);
 
 /// Cancels `cancellation` while `scope_key`'s next decision runs.
+#[cfg(feature = "test-query-execution-observer")]
 pub(super) fn cancel_during_next_decision(
     scope_key: &str,
     cancellation: authentication::WorthQueryCancellationSource,
@@ -131,11 +133,6 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema> for Chain
     }
 }
 
-pub(super) fn anchor_role<Schema: TopologySchemaBinding>(
-) -> WorthQueryApplicationOutputRole<ChainBinding<Schema>, Body, WorthQueryPreserveOutput> {
-    WorthQueryApplicationOutputRole::from_static("anchor")
-}
-
 pub(super) struct ChainHandler;
 impl<Schema: TopologySchemaBinding> OperationHandler<Schema, ChainBinding<Schema>>
     for ChainHandler
@@ -198,7 +195,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, ChainBinding<Schema
                 .resolve_entity(BodyKey::reference(), input.scope_key.clone())
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .preserve_output(anchor_role(), &entity)
+                .preserve_output::<PlanarAnchorOutput<Schema>>(&entity)
                 .map_err(HandlerExecutionDenial::new)?;
             writer
                 .write_field(&entity, Length::reference(), input.value)
@@ -225,15 +222,9 @@ fn consumed_length<Schema: TopologySchemaBinding>(
         Err(error) => return HandlerResult::ExecutionDenied(error),
     };
     let selected = if upstream.root {
-        reader.current_output::<PlanarOutputFamily, Body, Body>(
-            &entity,
-            WorthQueryCurrentOutputRole::new("anchor"),
-        )
+        reader.current_output::<PlanarOutputFamily, Body>(&entity)
     } else {
-        reader.current_output::<ChainFamily, Body, Body>(
-            &entity,
-            WorthQueryCurrentOutputRole::new("anchor"),
-        )
+        reader.current_output::<ChainFamily, Body>(&entity)
     };
     let output = match selected {
         Ok(WorthQueryCurrentOutputSelection::Unique(output)) => output,

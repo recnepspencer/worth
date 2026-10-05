@@ -27,6 +27,22 @@ pub(crate) struct SharedCandidateInputs {
 }
 
 impl CandidateInputBasis {
+    pub(crate) fn custom_enforcement(observation: &InvariantObservation<'_>) -> Self {
+        if observation.custom_uses_suspension_source() {
+            Self::before_image(observation)
+        } else {
+            Self::enforcement(observation)
+        }
+    }
+
+    pub(crate) fn custom_committed(observation: &InvariantObservation<'_>) -> Self {
+        if observation.custom_uses_suspension_source() {
+            Self::before_image(observation)
+        } else {
+            Self::Committed
+        }
+    }
+
     pub(crate) fn enforcement(observation: &InvariantObservation<'_>) -> Self {
         if observation.enforcement_uses_committed_state() {
             Self::Committed

@@ -7,6 +7,7 @@ use super::{
 
 mod input_cutoff_selection;
 mod partition_selection;
+mod republication;
 mod restoration_identity;
 
 struct RestoredOutputBinding;
@@ -114,6 +115,34 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
     assert!(Arc::ptr_eq(&matching_sibling.correspondence, &sibling));
     assert_eq!(history[&maximum_generation].len(), 2);
 
+    lineage.install_output_families(std::collections::BTreeMap::from([(
+        "partitioned-family".to_owned(),
+        vec![(
+            std::any::TypeId::of::<RestoredOutputBinding>(),
+            "output".to_owned(),
+        )],
+    )]));
+    let resolve = |budget| {
+        lineage.resolve_current_family(
+            runtime_authority,
+            &source.schema,
+            scope,
+            "partitioned-family",
+            observation.lifecycle_incarnation(),
+            maximum_generation,
+            budget,
+        )
+    };
+    let family = resolve(3).expect("one binding lookup and two indexed partition heads");
+    assert_eq!(family.source_lookups, 3);
+    assert_eq!(family.candidates.len(), 2);
+    assert!(Arc::ptr_eq(&family.candidates[0].correspondence, &first));
+    assert!(Arc::ptr_eq(&family.candidates[1].correspondence, &sibling));
+    assert!(
+        resolve(2).is_err(),
+        "partition selection must obey its work budget"
+    );
+
     let current_checkpoint =
         crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new([0x31; 32]);
     let current_runtime =
@@ -180,6 +209,8 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
     let correspondence = Arc::new(
         WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
             std::any::TypeId::of::<RestoredOutputBinding>(),
+            std::any::TypeId::of::<()>(),
+            std::collections::BTreeSet::new(),
             Vec::new(),
             |_| None,
         )

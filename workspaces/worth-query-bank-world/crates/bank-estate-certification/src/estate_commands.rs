@@ -140,7 +140,8 @@ fn committed_command(
 ) -> Result<(), EstateCommandCertificationDenial> {
     match outcome {
         BankMutationCommitOutcome::Committed(_)
-        | BankMutationCommitOutcome::AlreadyCommitted(_) => Ok(()),
+        | BankMutationCommitOutcome::AlreadyCommitted(_)
+        | BankMutationCommitOutcome::PreviouslyCommitted(_) => Ok(()),
         stopped => Err(EstateCommandCertificationDenial::Stopped(Box::new(
             EstateCommandStoppedOutcome::Mutation(stopped),
         ))),

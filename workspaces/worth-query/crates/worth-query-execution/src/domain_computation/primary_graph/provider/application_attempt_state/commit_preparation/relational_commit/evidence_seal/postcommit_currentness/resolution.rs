@@ -1,7 +1,11 @@
 use worth_foundational::facade::{AspectFieldLocator, LocatorAuthority};
 use worth_relational::facade::{identity::VersionId, runtime::RelationalFieldRevision};
 
-use super::{adjacency, RebaseVerificationReason, WorthQueryApplicationObservedFact as Fact};
+use crate::domain_computation::primary_graph::application_attempt::reobserve_indexed_entity_selection;
+
+use super::{
+    adjacency, retirement, RebaseVerificationReason, WorthQueryApplicationObservedFact as Fact,
+};
 
 /// One selected-snapshot resolution paired by ordinal with the original fact.
 /// All resolutions are acquired before any original is consumed.
@@ -24,10 +28,16 @@ impl PreparedFactRebase {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         fact: &Fact,
+        retired: &std::collections::BTreeSet<worth_relational::facade::identity::EntityId>,
         producer_output: bool,
         maximum_pair_rebase_work: usize,
+        indexed_rebase_work: &mut usize,
     ) -> Result<Self, RebaseVerificationReason> {
         let unavailable = RebaseVerificationReason::NativeRevisionUnavailable;
+        if let Some(retirement) = retirement::resolve(runtime, snapshot, fact, retired) {
+            // No other fact may stand in for a retirement the snapshot lacks.
+            return retirement.map(Self::Replace).ok_or(unavailable);
+        }
         match fact {
             Fact::Field {
                 entity_id, locator, ..
@@ -101,6 +111,25 @@ impl PreparedFactRebase {
                     None => Ok(Self::Keep),
                 }
             }
+            Fact::IndexedEntitySelection {
+                candidate_limit, ..
+            } => {
+                // The selection is observed again at the committed snapshot,
+                // so it names the members this commit itself published.
+                let observed = candidate_limit
+                    .checked_add(1)
+                    .and_then(|work| indexed_rebase_work.checked_sub(work))
+                    .and_then(|remaining| {
+                        *indexed_rebase_work = remaining;
+                        reobserve_indexed_entity_selection(fact, runtime, snapshot)
+                    });
+                match observed {
+                    Some(observed) => Ok(Self::Replace(observed)),
+                    None if producer_output => Err(unavailable),
+                    None => Ok(Self::Keep),
+                }
+            }
+            Fact::RetiredOutputEntity { .. } => Ok(Self::Keep),
             Fact::SourceEntity { .. }
             | Fact::Entity { .. }
             | Fact::SourceFieldRevision {

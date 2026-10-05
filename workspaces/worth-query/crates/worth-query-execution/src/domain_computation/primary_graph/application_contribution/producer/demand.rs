@@ -208,6 +208,9 @@ pub struct WorthQuerySelectedApplicationProducer {
     pub(super) retained_resources: Option<super::WorthQueryProducerDemandResources>,
     pub(super) retained_idempotency_key: Option<[u8; 32]>,
     pub(super) retained_output_binding: Option<std::any::TypeId>,
+    // An exact selection whose producer declares no Preserve posture reuses
+    // the live output it was selected for and never executes over it.
+    pub(super) reuses_live_output_only: bool,
 }
 
 /// Runtime-affine admission for one exact source occurrence and installed producer.
@@ -369,6 +372,7 @@ where
                 retained_resources: None,
                 retained_idempotency_key: None,
                 retained_output_binding: None,
+                reuses_live_output_only: false,
             },
             selected,
         ))

@@ -98,6 +98,61 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
         .map_err(registration_reason)
 }
 
+/// A republication re-creates a retained performed output at a later commit.
+/// Nothing delivered between the performed read and that commit marked the
+/// new row, so it registers as a retained delivery gap and its first reader
+/// compares it in full. A requirement the predecessor's row already carries
+/// continues unchanged, and a predecessor with no row to continue leaves the
+/// republication without one.
+#[allow(clippy::too_many_arguments)]
+pub(in crate::domain_computation::primary_graph) fn register_republished(
+    owner: &SourceInvalidationOwner,
+    predecessor: &RecordedSettlementIdentity,
+    identity: Arc<RecordedSettlementIdentity>,
+    facts: Arc<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>,
+    consumed_outputs: &[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence],
+    output_witness: &super::super::SealedNativeOutputWitness,
+    read_basis: worth_relational::facade::runtime::PositionedRelationalSnapshot,
+    admission: &mut super::InvalidationEditAdmission,
+) -> Result<(), FullVerificationReason> {
+    use FullVerificationReason as Reason;
+    let requirement = match owner
+        .currentness(&read_basis, predecessor, admission)
+        .map_err(Reason::MarkingAdmissionDenied)?
+    {
+        super::SourceSettlementCurrentness::FullVerificationRequired(
+            reason @ (Reason::MissingSettlement
+            | Reason::CheckpointRestore
+            | Reason::ForeignSource
+            | Reason::DifferentBranch
+            | Reason::BeforeReadBasis),
+        ) => return Err(reason),
+        super::SourceSettlementCurrentness::FullVerificationRequired(reason) => reason,
+        _ => Reason::RetainedDeliveryGap,
+    };
+    let output_facts = owner
+        .prepare_performed_output_facts(output_witness, admission)
+        .map_err(Reason::MarkingAdmissionDenied)?
+        .ok_or(Reason::NativeRevisionUnavailable)?;
+    let upstream = collect_consumed_output_upstream(consumed_outputs, admission)
+        .map_err(Reason::MarkingAdmissionDenied)?;
+    owner
+        .register_settlement(
+            SettlementRegistration {
+                work_membership: None,
+                identity,
+                facts,
+                output_facts: Some(output_facts),
+                read_basis,
+                stale_at_read_basis: im::OrdSet::new(),
+                requirement: Some(requirement),
+                upstream,
+            },
+            admission,
+        )
+        .map_err(registration_reason)
+}
+
 fn registration_reason(stop: SettlementRegistrationStop) -> FullVerificationReason {
     match stop {
         SettlementRegistrationStop::Alignment(reason) => reason,

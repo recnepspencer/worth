@@ -11,7 +11,6 @@ use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use super::{
     ProductCoordinate, RecordedOutput, RecordedSourceIdentity, SemanticSource,
     WorthQueryApplicationOutputLineage, WorthQueryProducerLineageHead,
-    WorthQueryRetainedOutputCandidate,
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 

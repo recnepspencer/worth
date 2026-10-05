@@ -1,24 +1,18 @@
 use super::*;
-use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPostureSet;
+use worth_query_declaration::facade::application_operation::{
+    WorthQueryCreateOutput, WorthQueryPreserveOutput, WorthQueryRetireOutput,
+};
 
 #[test]
 fn role_family_accepts_variable_semantic_members_and_enforces_its_contract() {
     let program = Arc::new(());
-    let mut candidate = WorthQueryApplicationOutputCorrespondenceCandidate::default();
-    candidate.prepare_test_family::<Binding>(
-        "face.",
-        ApplicationMutationOutputPostureSet::CREATE,
-        "entity",
-        2,
-    );
+    let mut candidate = prepared::<FaceOutputs>();
     let negative = created_handle("face-negative", 20, &program);
     let positive = created_handle("face-positive", 21, &program);
-    let negative_role = WorthQueryApplicationOutputRole::<Binding, Entity, Create>::from_static(
-        "face.negative.inherited.wall",
-    );
-    let positive_role = WorthQueryApplicationOutputRole::<Binding, Entity, Create>::from_static(
-        "face.positive.cap",
-    );
+    let negative_role =
+        OutputRoleUse::member::<Face, WorthQueryCreateOutput>("negative.inherited.wall").unwrap();
+    let positive_role =
+        OutputRoleUse::member::<Face, WorthQueryCreateOutput>("positive.cap").unwrap();
     candidate.bind(negative_role, &negative, &program).unwrap();
     assert_eq!(
         candidate.validate_effects(&[]).unwrap_err().kind(),
@@ -31,30 +25,33 @@ fn role_family_accepts_variable_semantic_members_and_enforces_its_contract() {
             create_effect("face-positive", 21),
         ])
         .unwrap();
-    let undeclared =
-        WorthQueryApplicationOutputRole::<Binding, Entity, Create>::from_static("edge.0");
-    let extra = created_handle("edge", 22, &program);
-    assert_eq!(
-        candidate
-            .bind(undeclared, &extra, &program)
-            .unwrap_err()
-            .kind(),
-        WorthQueryApplicationAttemptDenialKind::UndeclaredOutputRole
+    // Erased uses no marker can write: a fixed role outside the contract, one
+    // named exactly the family prefix, which no member can be, and a member
+    // with a posture the family does not admit.
+    let create = |name: &str| {
+        stray::<FaceOutputs, Entity>(
+            name,
+            WorthQueryApplicationOutputPosture::Create,
+            Cardinality::ExactlyOne,
+        )
+    };
+    for (role, key, kind) in [
+        (create("edge.0"), "edge", 22),
+        (create("face."), "empty-member", 24),
+    ] {
+        assert_eq!(
+            candidate
+                .bind(role, &created_handle(key, kind, &program), &program)
+                .unwrap_err()
+                .kind(),
+            WorthQueryApplicationAttemptDenialKind::UndeclaredOutputRole
+        );
+    }
+    let wrong_posture = stray::<FaceOutputs, Entity>(
+        "face.retained",
+        WorthQueryApplicationOutputPosture::Preserve,
+        Cardinality::ExactlyOne,
     );
-    let empty_member = created_handle("empty-member", 24, &program);
-    assert_eq!(
-        candidate
-            .bind(
-                WorthQueryApplicationOutputRole::<Binding, Entity, Create>::from_static("face."),
-                &empty_member,
-                &program,
-            )
-            .unwrap_err()
-            .kind(),
-        WorthQueryApplicationAttemptDenialKind::UndeclaredOutputRole
-    );
-    let wrong_posture =
-        WorthQueryApplicationOutputRole::<Binding, Entity, Preserve>::from_static("face.retained");
     let existing = existing_handle(EntityId::new(PartitionId::main(), 23, 0), &program);
     assert_eq!(
         candidate
@@ -70,11 +67,8 @@ fn role_family_accepts_variable_semantic_members_and_enforces_its_contract() {
             key => panic!("unexpected created output: {key:?}"),
         })
     });
-    let family = committed
-        .family_entries(
-            WorthQueryApplicationOutputRoleFamily::<Binding, Entity>::from_static("face."),
-        )
-        .unwrap();
+    let outputs = committed.outputs_of::<FaceOutputs>().unwrap();
+    let family = outputs.family_entries::<Face>().unwrap();
     assert_eq!(
         family
             .iter()
@@ -92,36 +86,31 @@ fn role_family_accepts_variable_semantic_members_and_enforces_its_contract() {
         ]
     );
     assert_eq!(
-        committed
-            .family_entries(
-                WorthQueryApplicationOutputRoleFamily::<Binding, WrongEntity>::from_static("face.",)
-            )
-            .unwrap_err(),
-        WorthQueryApplicationOutputProjectionDenial::EntityMismatch
+        outputs
+            .member::<Face, WorthQueryCreateOutput>("positive.cap")
+            .unwrap()
+            .entity_id(),
+        EntityId::new(PartitionId::main(), 31, 1)
     );
+    assert!(matches!(
+        outputs.member::<Face, WorthQueryCreateOutput>(""),
+        Err(WorthQueryApplicationOutputProjectionDenial::InvalidMemberSuffix(_))
+    ));
+    // Another contract's family cannot be named on this view; its erased
+    // read is still refused.
+    assert!(matches!(
+        committed.family_members::<Mixed>(),
+        Err(WorthQueryApplicationOutputProjectionDenial::ForeignContract)
+    ));
 }
 
 #[test]
 fn family_range_is_deterministic_and_exposes_mixed_postures_only_within_prefix() {
     let program = Arc::new(());
-    let preserve = WorthQueryApplicationOutputRole::<Binding, Entity, Preserve>::from_static(
-        "family.preserve",
-    );
-    let create =
-        WorthQueryApplicationOutputRole::<Binding, Entity, Create>::from_static("family.create");
-    let retire =
-        WorthQueryApplicationOutputRole::<Binding, Entity, Retire>::from_static("family.retire");
-    let mut candidate = WorthQueryApplicationOutputCorrespondenceCandidate::default();
-    candidate.prepare_test_family::<Binding>(
-        "family.",
-        ApplicationMutationOutputPostureSet::ALL,
-        "entity",
-        0,
-    );
-    candidate.prepare_test_role(
-        WorthQueryApplicationOutputRole::<Binding, Entity, Preserve>::from_static("unrelated"),
-        "entity",
-    );
+    let preserve = OutputRoleUse::member::<Mixed, WorthQueryPreserveOutput>("preserve").unwrap();
+    let create = OutputRoleUse::member::<Mixed, WorthQueryCreateOutput>("create").unwrap();
+    let retire = OutputRoleUse::member::<Mixed, WorthQueryRetireOutput>("retire").unwrap();
+    let mut candidate = prepared::<MixedOutputs>();
     candidate
         .bind(
             preserve,
@@ -145,18 +134,15 @@ fn family_range_is_deterministic_and_exposes_mixed_postures_only_within_prefix()
         .unwrap();
     candidate
         .bind(
-            WorthQueryApplicationOutputRole::<Binding, Entity, Preserve>::from_static("unrelated"),
+            OutputRoleUse::fixed::<Unrelated>(),
             &existing_handle(EntityId::new(PartitionId::main(), 43, 1), &program),
             &program,
         )
         .unwrap();
     let committed = candidate.seal_with(|_| Some(EntityId::new(PartitionId::main(), 41, 1)));
 
-    let entries = committed
-        .family_entries(
-            WorthQueryApplicationOutputRoleFamily::<Binding, Entity>::from_static("family."),
-        )
-        .unwrap();
+    let outputs = committed.outputs_of::<MixedOutputs>().unwrap();
+    let entries = outputs.family_entries::<Mixed>().unwrap();
     assert_eq!(
         entries
             .iter()

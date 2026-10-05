@@ -461,16 +461,48 @@ Application usage:
 (output roles and committed changes) and
 [host README, Output Demand, Exact Observation, And Live Reads](../../worth-query-host/README.md#output-demand-exact-observation-and-live-reads).
 
-- `WorthQueryApplicationOutputRole<Binding, Entity, Action>` names one declared
-  semantic output. The role name supplies no persistent identity; Relational
-  resolves created identities and co-commits their structural changes and
-  lineage. `output_correspondence().entity(role)` checks binding, role name,
-  action, and entity marker, so a caller cannot relabel a committed identity by
-  changing a generic argument. The projected identity still needs fresh
-  admission for later use.
-- `WorthQueryApplicationOutputRoleFamily<Binding, Entity>` names a family
-  already declared by `Binding::Output::ROLE_FAMILIES`. It creates no second
-  lineage store.
+- An output role is a marker type; its `WorthQueryApplicationOutputRole` impl
+  declares the schema, contract, entity marker, action, cardinality and name.
+  The contract lists the derived
+  `<Role as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR` in `ROLES`,
+  and one marker serves every binding sharing that contract. Handlers and
+  readers name the marker: `create_output::<Role>(&entity)`,
+  `outputs_of::<Contract>()?.entity::<Role>()`, `prior_output::<Binding, Role>()`.
+  The role name supplies no persistent identity; Relational resolves created
+  identities and co-commits their structural changes and lineage. The projected
+  identity still needs fresh admission for later use.
+- A role use that disagrees with its contract fails to compile. Writer and
+  prior-read bounds fix the contract and the action; every use evaluates
+  `DECLARED`, which requires the contract to list the role with the same name,
+  entity, posture and cardinality. `DECLARED` is a post-monomorphization
+  constant: `cargo build` and `cargo test` report it, `cargo check` does not.
+- Commit receipts and output-demand settlements store outputs erased. `outputs_of::<Contract>()` checks the commit's contract once at run
+  time (`ForeignContract` otherwise) and returns
+  `WorthQueryApplicationTypedOutputCorrespondence<'_, Contract>`; its `entity`,
+  `member` and `family_entries` bound every marker's contract to `Contract`, so
+  a read of another contract's role fails `cargo check`.
+- The cardinality is `WorthQueryExactlyOneOutput` or `WorthQueryAtMostOneOutput`.
+  Leaving an exactly-one role unbound fails the candidate with
+  `MissingOutputRole`, and its reads are total. An at-most-one role may be
+  omitted, and the same reads return `Option`, `None` meaning the commit left
+  the role unbound. A second binding of either is `DuplicateOutputRole`. The
+  cardinality is part of the canonical schema identity and the portable and
+  archived descriptions. Declare an optional single output this way, never as a
+  family with minimum zero. A producer's `type OutputRole` must be an
+  exactly-one role of its operation's contract, for its output family's entity.
+- A family is a marker type implementing `WorthQueryApplicationOutputRoleFamily`
+  with `PREFIX`, `POSTURES` and `MINIMUM`, listed in `ROLE_FAMILIES` by its
+  derived descriptor. Handlers bind members with
+  `create_member::<Family>(suffix, &entity)` (and `preserve_member`,
+  `retire_member`); readers use `member::<Family, Action>(suffix)` and
+  `family_entries::<Family>()`. An undeclared family or an action outside its
+  postures fails to compile; the suffix is validated at run time. It creates no
+  second lineage store.
+- Run-time checks remain where the types cannot carry the contract: a stored
+  receipt has no contract type (`outputs_of` refuses another contract with
+  `ForeignContract`), a family member's committed action is data
+  (`ActionMismatch`), and portable and readmitted forms are validated on
+  admission.
 - `committed_changes()` returns `WorthQueryApplicationCommittedChanges`, an
   immutable view with no field payloads or mutation authority. Its constructor
   and canonical artifact stay private. Event order and numeric identity do not

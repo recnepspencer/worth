@@ -21,9 +21,6 @@ pub(super) fn append_scope_slot(
         encoded.push('-');
         return;
     };
-    append_bytes(encoded, &identity.runtime_authority.to_be_bytes());
-    append_bytes(encoded, &identity.binding_runtime.to_be_bytes());
-    append_bytes(encoded, &identity.binding_generation.to_be_bytes());
     append_bytes(encoded, &identity.package_identity);
     append_bytes(encoded, &identity.schema_identity);
     append_entity_identity(encoded, identity.principal);

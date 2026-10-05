@@ -33,6 +33,7 @@ pub(in crate::domain_computation) struct RequiredOutputDemandContext {
     prepared_input_reuse_key:
         Option<crate::domain_computation::primary_graph::output_lineage::PreparedInputReuseKey>,
     actual_resources: Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>,
+    reuses_live_output_only: bool,
 }
 
 /// Both parts are issued together before an installed producer can execute.
@@ -50,6 +51,16 @@ impl RequiredOutputExecution {
 }
 
 impl RequiredOutputDemandContext {
+    /// The selection this context executes reuses the live output it was
+    /// selected for, or stops before any effect.
+    pub(in crate::domain_computation::primary_graph) fn reuse_live_output_only(&mut self) {
+        self.reuses_live_output_only = true;
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn reuses_live_output_only(&self) -> bool {
+        self.reuses_live_output_only
+    }
+
     /// Fills the slot whose bytes the context reserved when it was issued.
     pub(in crate::domain_computation::primary_graph) fn retain_actual_resources(
         &mut self,
@@ -251,6 +262,7 @@ impl WorthQueryOutputDemandInterest {
             completed_decision_reuse: None,
             prepared_input_reuse_key: None,
             actual_resources: None,
+            reuses_live_output_only: false,
         })
     }
 }

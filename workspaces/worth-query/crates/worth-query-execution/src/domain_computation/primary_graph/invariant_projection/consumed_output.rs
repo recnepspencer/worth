@@ -3,6 +3,7 @@ use std::sync::{Arc, OnceLock};
 
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
+use crate::domain_computation::execution_runtime::product_world::WorthQueryRelationalSourceOwner;
 use crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity;
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryApplicationObservedFact,
@@ -128,5 +129,26 @@ impl ConsumedOutputEvidence {
             witness,
             admission,
         )
+    }
+
+    /// Record a consumed restored output's mark row before the commit that
+    /// consumed it is checked. Its reader compared it in full at the basis it
+    /// read; on a branch nothing has published to, that basis is the head and
+    /// the branch gets its mark cell there, as a demand's readmission mints
+    /// one. A stop leaves the output without a row, compared in full again.
+    pub(in crate::domain_computation::primary_graph) fn establish_restored_before_commit(
+        &self,
+        source_owner: &WorthQueryRelationalSourceOwner,
+        admission: &mut InvalidationEditAdmission,
+    ) {
+        if self.verification_requirement != Some(FullVerificationReason::CheckpointRestore) {
+            return;
+        }
+        if source_owner
+            .mint_mark_cell_at_head(&self.selected_native_root, admission)
+            .is_ok()
+        {
+            let _ = self.establish_restored(&source_owner.invalidation_owner, admission);
+        }
     }
 }

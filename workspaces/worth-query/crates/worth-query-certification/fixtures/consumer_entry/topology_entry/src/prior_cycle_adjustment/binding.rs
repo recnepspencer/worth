@@ -26,9 +26,9 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     type SourceExpectation = ApplicationQueryMutationSource<crate::PlanarQuery>;
 
-    const IDENTITY: &'static str = "worth.query.certification.prior-cycle-adjustment.v1";
+    const IDENTITY: &'static str = "worth.query.certification.prior-cycle-adjustment.v2";
     const HANDLER_IDENTITY: &'static str =
-        "worth.query.certification.prior-cycle-adjustment-handler.v1";
+        "worth.query.certification.prior-cycle-adjustment-handler.v2";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.prior-cycle-adjustment-command.v1";
     const CANDIDATES: ApplicationCandidateRequirements = requirements(16);

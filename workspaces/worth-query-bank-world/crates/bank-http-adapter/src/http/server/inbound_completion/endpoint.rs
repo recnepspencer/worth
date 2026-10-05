@@ -9,7 +9,9 @@ use axum::http::StatusCode;
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
-use worth_query_host::facade::primary_graph::WorthQueryInboundAdmissionDenial;
+use worth_query_host::facade::primary_graph::{
+    WorthQueryCommittedDispatchOutboxReadDenial, WorthQueryInboundAdmissionDenial,
+};
 
 use crate::http::protocol::inbound_completion::MAXIMUM_COMPLETION_BYTES;
 use crate::http::server::routes::BankHttpRouteState;
@@ -108,8 +110,8 @@ fn status(denial: WorthQueryInboundAdmissionDenial) -> StatusCode {
         | Denial::PublicationRetryRequired
         | Denial::RecoveryStaleProduct
         | Denial::RecoveryUnavailable
-        | Denial::SourceRevoked
-        | Denial::OwnerReadDenied(_) => StatusCode::SERVICE_UNAVAILABLE,
+        | Denial::SourceRevoked => StatusCode::SERVICE_UNAVAILABLE,
+        Denial::OwnerReadDenied(read) => owner_read_status(read),
         Denial::ForeignVerifier
         | Denial::ForeignOwner
         | Denial::AuthenticatedPermanent(_)
@@ -122,3 +124,29 @@ fn status(denial: WorthQueryInboundAdmissionDenial) -> StatusCode {
         | Denial::CorrelationAlreadyOwned => StatusCode::CONFLICT,
     }
 }
+
+/// The sender retries only a read that can later succeed. The exact committed
+/// basis of an owner is gone for good, so that callback is refused as gone;
+/// spent identities and owner faults are the server's to fix.
+fn owner_read_status(read: WorthQueryCommittedDispatchOutboxReadDenial) -> StatusCode {
+    use WorthQueryCommittedDispatchOutboxReadDenial as Read;
+    match read {
+        Read::ExactCommitUnavailable => StatusCode::GONE,
+        Read::PendingPublication
+        | Read::CommittedIndexUnavailable
+        | Read::ActiveSnapshotCapacityExhausted { .. } => StatusCode::SERVICE_UNAVAILABLE,
+        Read::Missing => StatusCode::CONFLICT,
+        Read::SnapshotIdentityExhausted
+        | Read::ForeignRuntime
+        | Read::AmbiguousCorrelation
+        | Read::WrongRecordKind
+        | Read::NotAuthoritative
+        | Read::Malformed
+        | Read::CommitMismatch
+        | Read::RecordMismatch => StatusCode::INTERNAL_SERVER_ERROR,
+    }
+}
+
+#[cfg(test)]
+#[path = "endpoint/owner_read_status_tests.rs"]
+mod owner_read_status_tests;

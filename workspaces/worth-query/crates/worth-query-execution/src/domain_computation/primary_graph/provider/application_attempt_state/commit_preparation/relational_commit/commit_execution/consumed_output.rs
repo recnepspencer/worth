@@ -38,6 +38,12 @@ pub(super) fn verify(
         || owner.edit_admission(),
         |context| context.take_request_admission(),
     );
+    // Recording a restored output's row is the owner's edit, so the answer
+    // below never depends on the caller's allowance for it.
+    let mut edit = owner.edit_admission();
+    for consumed in attempt.consumed_outputs() {
+        consumed.establish_restored_before_commit(&provider.graph.source_owner, &mut edit);
+    }
     if !attempt.consumed_outputs().is_empty() {
         provider
         .graph

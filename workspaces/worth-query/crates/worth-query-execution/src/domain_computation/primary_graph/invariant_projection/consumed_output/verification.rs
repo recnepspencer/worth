@@ -9,6 +9,7 @@ use super::ConsumedOutputEvidence;
 
 mod at_observation;
 mod replaced;
+mod restored_root;
 mod work_budget;
 use crate::domain_computation::primary_graph::{
     application_attempt::{WorthQueryApplicationObservedFact, WorthQuerySourceCurrentnessFailure},

@@ -187,6 +187,12 @@ before questioning canonical basis law.
 
 ## Current Limits
 
+- `CanonicalDigestWorkBudget::for_encoded_byte_ceiling(bytes)` derives a finite
+  entry ceiling from the encoder's guaranteed minimum of 30 bytes per entry.
+  Owners can reject impossible entry breadth before sorting or retaining a
+  basis without rejecting a sequence that fits that byte ceiling. Digest
+  admission still checks exact encoded bytes. This bounds entry cardinality;
+  it does not claim that basis heap allocation equals encoded material size.
 - `CanonicalDigestAlgorithmId::sha256()` is the only admitted digest algorithm.
   Unsupported algorithm identifiers fail before derivation.
 - This layer standardizes derivation from ready canonical inputs. Owning

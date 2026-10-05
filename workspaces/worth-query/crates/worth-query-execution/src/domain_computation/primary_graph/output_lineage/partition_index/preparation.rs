@@ -17,9 +17,6 @@ impl OutputPartitionIndex {
         partition: Option<[u8; 32]>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let Some(partition) = partition else {
-            return Ok(());
-        };
         let mut work = tree_work::<SemanticSource>(self.slots.len())
             .ok_or_else(|| denial(Kind::WorkBudgetExceeded))?;
         admission
@@ -37,7 +34,7 @@ impl OutputPartitionIndex {
         let partitions = occurrences
             .get(&coordinate.occurrence)
             .expect("cancelled partition occurrence");
-        let next = tree_work::<[u8; 32]>(partitions.len())
+        let next = tree_work::<Option<[u8; 32]>>(partitions.len())
             .ok_or_else(|| denial(Kind::WorkBudgetExceeded))?;
         admission
             .charge_external_work(next)
@@ -63,7 +60,6 @@ impl OutputPartitionIndex {
         coordinate: ProductCoordinate,
         partition: Option<[u8; 32]>,
     ) -> Option<u64> {
-        let partition = partition?;
         let occurrences = self.slots.get(source);
         let partitions = occurrences.and_then(|rows| rows.get(&coordinate.occurrence));
         let generations = partitions.and_then(|rows| rows.get(&partition));
@@ -71,7 +67,7 @@ impl OutputPartitionIndex {
             .checked_add(tree_insert_bytes::<ProductBranchIncarnation, Partitions>(
                 occurrences.map_or(0, |rows| rows.len()),
             )?)?
-            .checked_add(tree_insert_bytes::<[u8; 32], Generations>(
+            .checked_add(tree_insert_bytes::<Option<[u8; 32]>, Generations>(
                 partitions.map_or(0, |rows| rows.len()),
             )?)?
             .checked_add(tree_insert_bytes::<u64, Arc<OnceLock<usize>>>(
@@ -86,9 +82,6 @@ impl OutputPartitionIndex {
         partition: Option<[u8; 32]>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<u64, WorthQueryOutputDemandDenial> {
-        let Some(partition) = partition else {
-            return Ok(0);
-        };
         admission
             .charge_external_work(
                 tree_work::<SemanticSource>(self.slots.len())
@@ -105,7 +98,7 @@ impl OutputPartitionIndex {
         let partitions = occurrences.and_then(|value| value.get(&coordinate.occurrence));
         admission
             .charge_external_work(
-                tree_work::<[u8; 32]>(partitions.map_or(0, |value| value.len()))
+                tree_work::<Option<[u8; 32]>>(partitions.map_or(0, |value| value.len()))
                     .ok_or_else(|| denial(Kind::WorkBudgetExceeded))?,
             )
             .map_err(|_| denial(Kind::WorkBudgetExceeded))?;
@@ -126,7 +119,7 @@ impl OutputPartitionIndex {
                 )?)
             })
             .and_then(|work| {
-                work.checked_add(tree_work::<[u8; 32]>(
+                work.checked_add(tree_work::<Option<[u8; 32]>>(
                     partitions.map_or(0, |value| value.len()),
                 )?)
             })
@@ -170,7 +163,7 @@ impl OutputPartitionIndex {
         if generations.is_none() {
             bytes = bytes
                 .checked_add(
-                    tree_insert_bytes::<[u8; 32], Generations>(
+                    tree_insert_bytes::<Option<[u8; 32]>, Generations>(
                         partitions.map_or(0, |value| value.len()),
                     )
                     .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?,

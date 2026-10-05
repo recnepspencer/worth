@@ -28,6 +28,19 @@ pub(in crate::domain_computation::primary_graph) struct CompletedDecisionReusePr
     scope: Option<WorthQueryDecisionScopeWitness>,
 }
 
+impl CompletedDecisionReuseProof {
+    /// The completed decision a republished output continues. Restoring the
+    /// exact retained output makes no new decision, so its recorded context
+    /// is still the one that produced this output.
+    pub(in crate::domain_computation::primary_graph) fn continued_by_republication(&self) -> Self {
+        Self {
+            key: self.key,
+            principal: self.principal,
+            scope: self.scope.clone(),
+        }
+    }
+}
+
 impl PreparedDecisionReuseContext {
     pub(in crate::domain_computation::primary_graph) fn new(
         contract: WorthQueryProducerInputReuseContract,

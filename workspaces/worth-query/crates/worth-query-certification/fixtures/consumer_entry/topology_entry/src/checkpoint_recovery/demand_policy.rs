@@ -144,6 +144,7 @@ where
     vec![
         ApplicationFeatureSpec::root::<CheckpointSchema, PlanarSourceFeature>()
             .provides::<PlanarBodyOutput>()
+            .mutation::<PlanarEditBinding<CheckpointSchema>>()
             .finish(),
         output,
         ApplicationFeatureSpec::root::<CheckpointSchema, PlanarFinalOutputFeature>()

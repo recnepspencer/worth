@@ -198,12 +198,14 @@ impl WorthQueryPortableDomainPackage {
         maximum_canonical_work_bytes: u64,
     ) -> Result<WorthQueryValidatedPortableDomainPackage, WorthQueryPortablePackageValidationDenial>
     {
+        let maximum_canonical_work_bytes =
+            usize::try_from(maximum_canonical_work_bytes).unwrap_or(usize::MAX);
+        identity::preflight_canonical_entries(&self, maximum_canonical_work_bytes)
+            .map_err(map_package_canonical_denial)?;
         validate_package_members(&mut self)?;
         let validated_domain_operations = admit_domain_operations(&self.domain_operations)?;
         let application_contract_spine =
             compile_application_contract_spine(&self.application_schemas)?;
-        let maximum_canonical_work_bytes =
-            usize::try_from(maximum_canonical_work_bytes).unwrap_or(usize::MAX);
         let (identity, canonical_work) =
             canonical_identity_with_maximum_bytes(&self, maximum_canonical_work_bytes)
                 .map_err(map_package_canonical_denial)?;
@@ -373,8 +375,10 @@ fn map_package_canonical_denial(
     denial: CanonicalDigestDerivationDenial,
 ) -> WorthQueryPortablePackageValidationDenial {
     match denial {
-        CanonicalDigestDerivationDenial::EntryLimitExceeded { .. } => {
-            WorthQueryPortablePackageValidationDenial::canonical_entry_budget_exceeded()
+        CanonicalDigestDerivationDenial::EntryLimitExceeded { maximum, actual } => {
+            WorthQueryPortablePackageValidationDenial::canonical_entry_budget_exceeded(
+                maximum, actual,
+            )
         }
         CanonicalDigestDerivationDenial::EncodedByteLimitExceeded { maximum, attempted } => {
             WorthQueryPortablePackageValidationDenial::canonical_encoded_byte_budget_exceeded(

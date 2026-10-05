@@ -2,18 +2,17 @@ use bank_domain::proposals::{BankProposalDenial, BankProposalEngine};
 use bank_domain::schema::{
     initiate_business_payment_application_idempotency, AccountIdentity, BankSchema,
     BusinessIdentityField, InitiateBusinessPayment, InitiateBusinessPaymentDecision,
-    InitiateBusinessPaymentMutationBinding, InitiateBusinessPaymentResult, PaymentAmount,
-    PaymentBusiness, PaymentDestination, PaymentIdentityField, PaymentInitiator, PaymentIntent,
-    PaymentSource, PaymentStatusField, PrincipalIdentityField,
-    INITIATE_BUSINESS_PAYMENT_OUTPUT_PAYMENT,
+    InitiateBusinessPaymentMutationBinding, InitiateBusinessPaymentResult,
+    InitiatedBusinessPaymentOutput, PaymentAmount, PaymentBusiness, PaymentDestination,
+    PaymentIdentityField, PaymentInitiator, PaymentIntent, PaymentSource, PaymentStatusField,
+    PrincipalIdentityField,
 };
 use worth_query_host::facade::declaration::application_operation::{
     ApplicationCandidateRequirements, ApplicationMutationBinding,
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
-    OperationHandler, WorthQueryApplicationEntityKey, WorthQueryApplicationOutputRole,
-    WorthQueryCreateOutput,
+    OperationHandler, WorthQueryApplicationEntityKey,
 };
 
 use super::payment_approval_grant::author_approval_grant;
@@ -152,14 +151,7 @@ fn author_candidate(
         )?;
     }
     candidate
-        .create_output(
-            WorthQueryApplicationOutputRole::<
-                InitiateBusinessPaymentMutationBinding,
-                PaymentIntent,
-                WorthQueryCreateOutput,
-            >::from_static(INITIATE_BUSINESS_PAYMENT_OUTPUT_PAYMENT),
-            &created,
-        )
+        .create_output::<InitiatedBusinessPaymentOutput>(&created)
         .map_err(HandlerExecutionDenial::new)?;
     Ok(InitiateBusinessPaymentResult {
         payment: payment.id(),

@@ -234,6 +234,7 @@ where
         operation: operation.operation().to_owned(),
         operation_authority_identity: Arc::from(operation.authority_identity()),
         operation_authority_identity_bytes: operation.authority_identity_bytes(),
+        operation_definition_identity: operation.definition_identity_bytes(),
         admission_identity,
         resource_binding_identity,
         operation_scope_binding: WorthQueryOperationScopeBinding::mint(

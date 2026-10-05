@@ -46,7 +46,8 @@ fn public_delegation_creates_the_exact_narrowed_child_and_retries_idempotently()
     let BankMutationCommitOutcome::Committed(receipt) = &first else {
         panic!("unexpected delegation outcome: {first:?}");
     };
-    assert_eq!(receipt.decision_fact_count(), Some(5));
+    // The child id naming no grant is one of the facts decided on.
+    assert_eq!(receipt.decision_fact_count(), Some(6));
     let canonical = receipt.canonical_work();
     assert_admission_derives_the_request_identities_once(canonical.admission());
 

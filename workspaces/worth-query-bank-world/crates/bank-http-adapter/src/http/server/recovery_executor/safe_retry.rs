@@ -43,6 +43,12 @@ where
                 fresh_attempt: result.fresh_attempt,
             }
         }
+        BankHttpRecoveryRetry::AlreadyCompleted { commit } => {
+            BankHttpRecoverySafeRetryOutcome::AlreadyCompleted {
+                request_id: request.request_id,
+                commit,
+            }
+        }
         BankHttpRecoveryRetry::Denied(denial) => {
             safe_retry_denied(Some(request.request_id), estate_denial(denial))
         }

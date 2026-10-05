@@ -182,7 +182,8 @@ fn safe_retry_response(
     outcome: BankHttpRecoverySafeRetryOutcome,
 ) -> (StatusCode, Json<BankHttpRecoverySafeRetryOutcome>) {
     let status = match &outcome {
-        BankHttpRecoverySafeRetryOutcome::Applied { .. } => StatusCode::OK,
+        BankHttpRecoverySafeRetryOutcome::Applied { .. }
+        | BankHttpRecoverySafeRetryOutcome::AlreadyCompleted { .. } => StatusCode::OK,
         BankHttpRecoverySafeRetryOutcome::Denied { denial, .. } => response_status(denial.kind),
     };
     (status, Json(outcome))

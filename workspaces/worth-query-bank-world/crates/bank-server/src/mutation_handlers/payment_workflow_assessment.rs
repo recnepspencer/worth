@@ -1,7 +1,8 @@
 use bank_domain::schema::{
     ApprovedPaymentAssessmentBinding, ApprovedPaymentAssessmentDenial,
-    ApprovedPaymentAssessmentInput, ApprovedPaymentAssessmentPublished, BankSchema,
-    PaymentIdentityField, PaymentIntent, PaymentStatusField,
+    ApprovedPaymentAssessmentInput, ApprovedPaymentAssessmentOutput,
+    ApprovedPaymentAssessmentPublished, BankSchema, PaymentIdentityField, PaymentIntent,
+    PaymentStatusField,
 };
 use worth_query_host::facade::{
     declaration::application_operation::{
@@ -9,7 +10,7 @@ use worth_query_host::facade::{
     },
     primary_graph::{
         CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-        WorthQueryApplicationOutputRole, WorthQueryInvariantMutationTarget,
+        WorthQueryInvariantMutationTarget,
     },
 };
 
@@ -64,10 +65,7 @@ impl OperationHandler<BankSchema, ApprovedPaymentAssessmentBinding>
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
             }
         };
-        if let Err(error) = writer.preserve_output(
-            WorthQueryApplicationOutputRole::from_static("assessment"),
-            &payment,
-        ) {
+        if let Err(error) = writer.preserve_output::<ApprovedPaymentAssessmentOutput>(&payment) {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
         }
         HandlerResult::Completed(ApprovedPaymentAssessmentPublished {

@@ -57,7 +57,14 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
             std::any::TypeId,
             worth_relational::facade::identity::EntityId,
         ),
-        Vec<Arc<super::super::WorthQueryApplicationOutputCorrespondence>>,
+        Vec<(
+            Arc<super::super::WorthQueryApplicationOutputCorrespondence>,
+            String,
+        )>,
+    >,
+    pub(super) dependent_source_facts: BTreeMap<
+        super::super::application_attempt::WorthQueryApplicationFactStorageKey,
+        super::super::application_attempt::WorthQueryApplicationObservedFact,
     >,
     pub(super) consumed_outputs: BTreeMap<
         Arc<super::super::output_lineage::RecordedSettlementIdentity>,
@@ -158,6 +165,7 @@ where
                     prior_output_bindings: HashMap::new(),
                     current_output_families: HashMap::new(),
                     consumed_outputs: BTreeMap::new(),
+                    dependent_source_facts: BTreeMap::new(),
                     _schema: PhantomData,
                 };
                 let output = projection(&mut reader);
@@ -166,19 +174,23 @@ where
                     reader.work,
                     reader.realized_scope,
                     reader.consumed_outputs,
+                    reader.dependent_source_facts,
                     reader.work_budget.exceeded(),
                 )
             }))
         });
-        let (output, work, realized_scope, consumed_outputs, exceeded) = match projected {
-            Ok(completed) => completed,
-            Err(payload) => {
-                self.graph.with_runtime_mut(|runtime| {
-                    crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-                });
-                resume_unwind(payload)
-            }
-        };
+        let (output, work, realized_scope, consumed_outputs, dependent_source_facts, exceeded) =
+            match projected {
+                Ok(completed) => completed,
+                Err(payload) => {
+                    self.graph.with_runtime_mut(|runtime| {
+                        crate::relational_snapshot_release::release_query_snapshot(
+                            runtime, &snapshot,
+                        );
+                    });
+                    resume_unwind(payload)
+                }
+            };
         if exceeded {
             self.graph.with_runtime_mut(|runtime| {
                 crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
@@ -197,6 +209,7 @@ where
                 authority_identity: self.authority_identity,
                 realized_scope,
                 consumed_outputs,
+                dependent_source_facts,
                 _schema: PhantomData,
             },
             work,

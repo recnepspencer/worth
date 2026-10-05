@@ -90,7 +90,6 @@ impl InstalledProducerEdition {
             declaration.identity.as_str(),
             declaration.source_selector.as_str(),
             declaration.output_family.as_str(),
-            declaration.output_roles.as_slice(),
             roles,
             families,
             declaration.output_role.as_str(),
@@ -148,6 +147,18 @@ impl InstalledProducerEdition {
     #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) const fn digest(self) -> [u8; 32] {
         self.digest
+    }
+
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) fn for_test(digest: [u8; 32]) -> Self {
+        let unit = TypeId::of::<()>();
+        Self {
+            digest,
+            binding_type: unit,
+            source_type: unit,
+            operation_binding_type: unit,
+            provider_type: unit,
+        }
     }
 }
 

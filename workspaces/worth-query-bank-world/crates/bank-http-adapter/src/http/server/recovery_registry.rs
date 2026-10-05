@@ -3,8 +3,9 @@ use std::time::{Duration, Instant};
 
 use bank_domain::estate::EstateAction;
 use bank_server::{
-    BankCommitRecoveryHandle, BankIdentityRuntime, BankRecoveryExpiryEvaluation,
-    BankRecoverySafeRetryDenial, BankRecoverySafeRetryReceipt,
+    BankCommitRecoveryHandle, BankEstateProgressionDenial, BankIdentityRuntime,
+    BankRecoveryDenialKind, BankRecoveryExpiryEvaluation, BankRecoverySafeRetryDenial,
+    BankRecoverySafeRetryReceipt,
 };
 use rand::distributions::{Alphanumeric, DistString};
 use rand::rngs::OsRng;
@@ -15,7 +16,7 @@ mod commit;
 mod state;
 
 pub(super) use state::{BankHttpCommitReplay, BankHttpRecoveryRegistration, BankHttpRecoveryRetry};
-use state::{CommitReplayKey, RecoveryRecord, RecoveryRetryResult};
+use state::{CommitReplayKey, RecoveryRecord, RecoveryRetryResult, RecoverySettlement};
 
 const TOKEN_PREFIX: &str = "bank-recovery-v1_";
 
@@ -87,11 +88,19 @@ impl BankHttpRecoveryRegistry {
         else {
             return BankHttpRecoveryRetry::Missing;
         };
-        if let Some(retried) = record.retried {
-            return BankHttpRecoveryRetry::Applied {
-                result: retried,
-                replay: true,
-            };
+        match record.settled {
+            Some(RecoverySettlement::Retried(retried)) => {
+                return BankHttpRecoveryRetry::Applied {
+                    result: retried,
+                    replay: true,
+                };
+            }
+            Some(RecoverySettlement::AlreadyCompleted) => {
+                return BankHttpRecoveryRetry::AlreadyCompleted {
+                    commit: record.commit,
+                };
+            }
+            None => {}
         }
         let Some(handle) = record.handle.take() else {
             return BankHttpRecoveryRetry::Missing;
@@ -102,7 +111,7 @@ impl BankHttpRecoveryRegistry {
                     external_completion: receipt.is_external_completion(),
                     fresh_attempt: receipt.has_fresh_attempt(),
                 };
-                record.retried = Some(retried);
+                record.settled = Some(RecoverySettlement::Retried(retried));
                 BankHttpRecoveryRetry::Applied {
                     result: retried,
                     replay: false,
@@ -111,7 +120,17 @@ impl BankHttpRecoveryRegistry {
             Err(denied) => {
                 let (denial, handle) = denied.into_parts();
                 record.handle = handle;
-                BankHttpRecoveryRetry::Denied(denial)
+                match denial {
+                    BankEstateProgressionDenial::Recovery(recovery)
+                        if recovery.kind() == BankRecoveryDenialKind::AlreadyCompleted =>
+                    {
+                        record.settled = Some(RecoverySettlement::AlreadyCompleted);
+                        BankHttpRecoveryRetry::AlreadyCompleted {
+                            commit: record.commit,
+                        }
+                    }
+                    denial => BankHttpRecoveryRetry::Denied(denial),
+                }
             }
         }
     }

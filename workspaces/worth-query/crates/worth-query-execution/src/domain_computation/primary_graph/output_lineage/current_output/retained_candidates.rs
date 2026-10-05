@@ -2,6 +2,35 @@
 
 use super::*;
 
+/// The latest output one binding recorded for a source, with everything
+/// selection compares before it reuses that output.
+pub(in crate::domain_computation::primary_graph) struct WorthQueryRetainedOutputCandidate {
+    pub(in crate::domain_computation::primary_graph) binding: TypeId,
+    pub(in crate::domain_computation::primary_graph) correspondence:
+        Arc<crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence>,
+    pub(in crate::domain_computation::primary_graph) source_identity:
+        Option<RecordedSourceIdentity>,
+    pub(in crate::domain_computation::primary_graph) observed_source_facts: Option<
+        Arc<[crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact]>,
+    >,
+    /// The performed output's sealed witness: its origin's for a stable
+    /// alias. A restored row has none until a full verification builds it.
+    pub(in crate::domain_computation::primary_graph) native_output_witness:
+        Option<Arc<OnceLock<crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness>>>,
+    /// Why the row's settlement is verified in full, when it is: the row was
+    /// restored, its commit could not rebase its facts, or the owner could
+    /// not register it.
+    pub(in crate::domain_computation::primary_graph) verification_requirement:
+        Option<crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason>,
+    /// The row's own settlement, as the owner knows it.
+    pub(in crate::domain_computation::primary_graph) settlement_identity:
+        Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
+    pub(in crate::domain_computation::primary_graph) resources: Option<
+        crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources,
+    >,
+    pub(in crate::domain_computation::primary_graph) idempotency_key_identity: [u8; 32],
+}
+
 impl WorthQueryApplicationOutputLineage {
     #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn retained_output_candidates(
@@ -79,6 +108,17 @@ impl WorthQueryApplicationOutputLineage {
                         correspondence: Arc::clone(&recorded.correspondence),
                         source_identity: recorded.source_identity,
                         observed_source_facts: recorded.observed_source_facts(),
+                        // A stable alias seals no witness: its output is
+                        // its origin's, compared by the origin's witness.
+                        native_output_witness: recorded
+                            .performed_origin
+                            .as_ref()
+                            .and_then(|origin| origin.get())
+                            .unwrap_or(recorded)
+                            .native_output_witness_cell()
+                            .map(Arc::clone),
+                        verification_requirement: recorded.verification_requirement(),
+                        settlement_identity: Arc::clone(&recorded.settlement_identity),
                         resources: recorded.resources(),
                         idempotency_key_identity: recorded.idempotency_key_identity,
                     });

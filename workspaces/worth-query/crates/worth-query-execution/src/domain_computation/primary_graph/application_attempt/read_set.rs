@@ -38,7 +38,7 @@ mod source_facts;
 
 pub(super) use binding_proof::{MutationHandlerBindingProof, WorkflowOperationBindingProof};
 pub use relation_observation::WorthQueryObservedApplicationRelation;
-use source_facts::validate_source_facts;
+use source_facts::{merge_source_facts, validate_source_facts};
 
 /// An in-progress decision read for one admitted operation, begun on a leased
 /// snapshot of the branch.
@@ -224,10 +224,14 @@ where
             )
         })?;
         let root = admission.scope_entity_id();
-        let (lease, projected_scope, expected_facts, consumed_outputs) =
+        let (lease, projected_scope, expected_facts, dependent_source_facts, consumed_outputs) =
             projection.into_lease_and_realized_scope();
         let mut admission = admission;
-        let source_facts = validate_source_facts(&mut admission, &lease)?;
+        let source_facts = merge_source_facts(
+            validate_source_facts(&mut admission, &lease)?,
+            dependent_source_facts,
+            admission.operation(),
+        )?;
         let layout = Arc::clone(&lease.layout);
         Ok(WorthQueryApplicationReadAttempt {
             admission,

@@ -21,11 +21,10 @@ fn source_entity() -> Fact {
 fn body_with_facts(format: u16, fact_version: u16, bytes: &[u8]) -> Vec<u8> {
     let mut accepted = accepted_without_roles(b"producer", 0);
     accepted.truncate(accepted.len() - 10);
-    if format < 7 {
-        // No accepted-output posture before format 7.
+    if format < 8 {
+        // No accepted-output posture before format 8.
         accepted.remove(8 + b"producer".len());
-    }
-    if format >= 6 {
+    } else {
         accepted.extend_from_slice(&fact_version.to_be_bytes());
     }
     accepted.extend_from_slice(&(bytes.len() as u64).to_be_bytes());
@@ -39,7 +38,7 @@ fn body_with_facts(format: u16, fact_version: u16, bytes: &[u8]) -> Vec<u8> {
 fn current_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
     let fact = source_entity();
     let bytes = facts::encode(std::slice::from_ref(&fact)).unwrap();
-    let body = body_with_facts(7, WIRE_VERSION, &bytes);
+    let body = body_with_facts(8, WIRE_VERSION, &bytes);
     let decoded = checkpoint_from_body(body.clone()).decode().unwrap();
     assert_eq!(
         decoded.accepted_outputs[0].producer_facts.as_deref(),
@@ -60,7 +59,7 @@ fn current_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
 }
 
 #[test]
-fn v7_stable_posture_roundtrips_and_unknown_posture_is_rejected() {
+fn v8_stable_posture_roundtrips_and_unknown_posture_is_rejected() {
     use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture;
 
     let mut stable = accepted_without_roles(b"producer", 0);
@@ -68,7 +67,7 @@ fn v7_stable_posture_roundtrips_and_unknown_posture_is_rejected() {
     stable[posture_at] = 1;
     let decoded = checkpoint_from_body(checkpoint_body(1, stable.clone()))
         .decode()
-        .expect("v7 stable posture is descriptive and readable");
+        .expect("v8 stable posture is descriptive and readable");
     assert_eq!(
         decoded.accepted_outputs[0].posture,
         WorthQueryAcceptedOutputCheckpointPosture::StableReused,
@@ -89,7 +88,7 @@ fn v7_stable_posture_roundtrips_and_unknown_posture_is_rejected() {
 #[test]
 fn facts_of_an_older_wire_version_are_never_read() {
     let bytes = facts::encode(&[source_entity()]).unwrap();
-    for (format, fact_version) in [(5, 5), (6, 5), (6, 6), (7, 5), (7, 6)] {
+    for (format, fact_version) in [(5, 5), (6, 6), (7, 7), (8, 5), (8, 6), (8, 7)] {
         for payload in [bytes.as_slice(), &[0xff; 9]] {
             let decoded = checkpoint_from_body(body_with_facts(format, fact_version, payload))
                 .decode()
@@ -103,7 +102,7 @@ fn facts_of_an_older_wire_version_are_never_read() {
         }
     }
     assert_denied(
-        body_with_facts(7, WIRE_VERSION + 1, &bytes),
+        body_with_facts(8, WIRE_VERSION + 1, &bytes),
         "producer fact wire version is unsupported",
     );
 }

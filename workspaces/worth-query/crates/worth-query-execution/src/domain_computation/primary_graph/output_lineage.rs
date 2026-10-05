@@ -3,6 +3,7 @@
 mod current_output;
 pub(in crate::domain_computation::primary_graph) use current_output::RetainedOutputCurrentnessRead;
 mod denial;
+mod family_selection;
 mod input_cutoff;
 mod input_reuse_key;
 pub(in crate::domain_computation::primary_graph) mod invalidation;
@@ -41,7 +42,7 @@ pub(in crate::domain_computation::primary_graph) use super::application_attempt:
 };
 pub use denial::{WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind};
 pub(in crate::domain_computation::primary_graph) use input_cutoff::{
-    prepare_stable_address, InputCutoffDecision, InputCutoffVerificationStop,
+    cutoff_declines, prepare_stable_address, InputCutoffDecision, InputCutoffVerificationStop,
     PreparedInputCutoffBasis, PublishedStableLineage, StablePublicationStop,
 };
 pub(in crate::domain_computation::primary_graph) use input_reuse_key::PreparedInputReuseKey;
@@ -104,7 +105,7 @@ pub(crate) struct WorthQueryApplicationOutputLineage {
     origins: BTreeMap<worth_runtime_world::facade::ProductBranchIncarnation, ProductCoordinate>,
     live_occurrences: BTreeSet<worth_runtime_world::facade::ProductBranchIncarnation>,
     cancelled_slots: Option<Box<prepared_slot::CancelledLineageSlot>>,
-    output_families: HashMap<String, Vec<TypeId>>,
+    output_families: HashMap<String, Vec<(TypeId, String)>>,
     retention: retained_capacity::LineageRetentionLedger,
 }
 
@@ -153,20 +154,11 @@ pub(super) struct WorthQueryCurrentOutputCandidate {
     pub(super) verification_requirement: Option<invalidation::FullVerificationReason>,
     pub(super) settlement_identity: Arc<RecordedSettlementIdentity>,
     pub(super) correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+    /// The role the producer of this correspondence outputs to its family.
+    pub(super) output_role: String,
     pub(super) observed_source_facts:
         Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>,
     pub(super) native_output_witness: Option<Arc<OnceLock<SealedNativeOutputWitness>>>,
-}
-
-pub(super) struct WorthQueryRetainedOutputCandidate {
-    pub(super) binding: TypeId,
-    pub(super) correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
-    pub(super) source_identity: Option<RecordedSourceIdentity>,
-    pub(super) observed_source_facts:
-        Option<Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>>,
-    pub(super) resources:
-        Option<super::application_contribution::WorthQueryProducerDemandResources>,
-    pub(super) idempotency_key_identity: [u8; 32],
 }
 
 pub(super) struct WorthQueryCurrentOutputFamilyResolution {
@@ -176,7 +168,10 @@ pub(super) struct WorthQueryCurrentOutputFamilyResolution {
 }
 
 impl WorthQueryApplicationOutputLineage {
-    pub(super) fn install_output_families(&mut self, families: BTreeMap<String, Vec<TypeId>>) {
+    pub(super) fn install_output_families(
+        &mut self,
+        families: BTreeMap<String, Vec<(TypeId, String)>>,
+    ) {
         assert!(self.output_families.is_empty());
         self.output_families.extend(families);
     }
@@ -373,10 +368,11 @@ impl WorthQueryApplicationOutputLineage {
                 prepared.record_cell.set(recorded).is_ok(),
                 "prepared output fills once"
             );
-            if let Some(locator) = prepared.partition_cell.as_ref() {
-                assert!(locator.set(slot).is_ok(), "prepared partition fills once");
-            }
-        } else if let Some(partition) = partition {
+            assert!(
+                prepared.partition_cell.set(slot).is_ok(),
+                "prepared partition fills once"
+            );
+        } else {
             let cell = Arc::new(OnceLock::new());
             assert!(cell.set(recorded).is_ok());
             generation.unwrap().push(cell);
@@ -387,10 +383,6 @@ impl WorthQueryApplicationOutputLineage {
                 partition,
                 slot,
             );
-        } else {
-            let cell = Arc::new(OnceLock::new());
-            assert!(cell.set(recorded).is_ok());
-            generation.unwrap().push(cell);
         }
         Some(settlement_identity)
     }

@@ -59,7 +59,7 @@ fn canonical_schema_current_identity_contains_all_description_axes() {
     let sequence = declaration.identity().canonical_basis().payload();
     assert_eq!(
         sequence.version().as_str(),
-        "worth-query-application-schema-v13"
+        "worth-query-application-schema-v14"
     );
     assert_eq!(
         canonical_entries_golden(sequence.entries()),

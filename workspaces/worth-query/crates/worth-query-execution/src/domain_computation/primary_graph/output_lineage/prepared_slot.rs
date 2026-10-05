@@ -26,7 +26,7 @@ pub(in crate::domain_computation::primary_graph) struct PreparedOutputLineageSlo
     pub(super) partition: Option<[u8; 32]>,
     pub(super) identity: Arc<RecordedSettlementIdentity>,
     pub(super) record_cell: Arc<OnceLock<RecordedOutput>>,
-    pub(super) partition_cell: Option<Arc<OnceLock<usize>>>,
+    pub(super) partition_cell: Arc<OnceLock<usize>>,
     retained_capacity: Option<super::retained_capacity::RetainedLineageCapacity>,
     cancellation: Option<Box<CancelledLineageSlot>>,
     pub(super) completed_handler_facts: Option<

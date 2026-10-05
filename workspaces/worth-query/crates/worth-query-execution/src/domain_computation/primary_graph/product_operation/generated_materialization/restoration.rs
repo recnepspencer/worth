@@ -9,6 +9,7 @@ pub(in crate::domain_computation::primary_graph) use invariant_admission::admit_
 mod no_effect;
 mod receipt;
 mod recovery;
+mod republication;
 mod settlement;
 
 pub use failure::WorthQueryGeneratedOutputRestorationFailureCause;
@@ -286,26 +287,7 @@ where
                 let restored = completion
                     .complete(commit)
                     .expect("World returns the exact prepared relational restoration result");
-                self.primary_provider
-                    .graph
-                    .output_lineage
-                    .lock()
-                    .expect("application output lineage lock is available")
-                    .record_restoration(
-                        producer.output_binding_type,
-                        producer.runtime_authority,
-                        producer.schema.clone(),
-                        producer.scope,
-                        &observation,
-                        correspondence,
-                        producer.recorded_source_identity,
-                        producer.source_partition_identity,
-                        producer.producer_dependency_identity,
-                        producer.idempotency_key_identity,
-                        producer.observed_source_facts,
-                        producer.resources,
-                        None,
-                    );
+                self.record_restored_generated_output(&observation, correspondence, producer);
                 Ok(WorthQueryRestoredGeneratedOutput {
                     branch,
                     commit: WorthQueryGeneratedOutputRestorationReceipt::new(

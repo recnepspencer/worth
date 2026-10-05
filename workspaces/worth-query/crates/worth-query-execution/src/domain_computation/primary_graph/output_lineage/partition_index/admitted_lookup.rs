@@ -37,8 +37,8 @@ impl OutputPartitionIndex {
         let Some(partitions) = occurrences.get(&coordinate.occurrence) else {
             return Ok(None);
         };
-        charge_tree::<[u8; 32]>(admission, partitions.len())?;
-        let Some(generations) = partitions.get(&partition) else {
+        charge_tree::<Option<[u8; 32]>>(admission, partitions.len())?;
+        let Some(generations) = partitions.get(&Some(partition)) else {
             return Ok(None);
         };
         charge_tree::<u64>(admission, generations.len())?;

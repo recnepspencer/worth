@@ -54,6 +54,7 @@ pub(super) fn fact_payload_bytes(
         | Fact::Entity { .. }
         | Fact::WorkflowDefinitionPredecessor { .. }
         | Fact::WorkflowDefinitionCurrent { .. } => Ok(0),
+        Fact::RetiredOutputEntity { read_locator, .. } => charge_usize(read_locator.capacity()),
         Fact::SourceAspectRevision { aspect, .. } => {
             charge_usize(aspect.owned_allocation_capacity_bytes())
         }

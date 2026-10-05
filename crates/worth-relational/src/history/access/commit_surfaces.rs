@@ -154,7 +154,13 @@ impl<'runtime> HistoryAccess<'runtime> {
             })
     }
 
-    pub(crate) fn latest_patch_stream_position(&self) -> Option<PatchStreamPosition> {
+    /// The durable ledger's latest patch-stream position.
+    ///
+    /// Recorded commits and recovered canonical routes both count, so a
+    /// runtime restored from a checkpoint or replayed from its log reports the
+    /// same position it held before. Patch-stream reads resolve against this
+    /// position; a reader that resumes the stream starts after it.
+    pub fn latest_patch_stream_position(&self) -> Option<PatchStreamPosition> {
         let projected = self.runtime.history.latest_recorded_patch_position();
         projected.max(
             self.runtime

@@ -96,6 +96,8 @@ fn scope_posture(kind: ScopeKind) -> WorthQueryRequiredOutputRecoveryPosture {
         | ScopeKind::UnknownEntity
         | ScopeKind::AmbiguousEntity
         | ScopeKind::CorruptIdentityIndex
+        | ScopeKind::InvalidCandidateLimit
+        | ScopeKind::CandidateLimitExceeded { .. }
         | ScopeKind::ProjectionWorkBudgetExceeded
         | ScopeKind::ProjectionPreparationMemoryExhausted
         | ScopeKind::SnapshotIdentityExhausted

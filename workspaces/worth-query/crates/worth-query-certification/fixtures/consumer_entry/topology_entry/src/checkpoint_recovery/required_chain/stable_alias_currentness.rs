@@ -102,9 +102,27 @@ fn installed_alias_full_oracle_preserves_output_and_rejects_later_output_change(
             request.retain_read().unwrap().selected_commit(),
             after.selected_commit()
         );
+        // The planar contract declares one fixed role and one family; the
+        // alias carries both exactly as the performed commit bound them.
+        let alias_outputs = alias.outputs_of::<PlanarOutputs>().unwrap();
+        let performed_outputs = performed_receipt.outputs_of::<PlanarOutputs>().unwrap();
         assert_eq!(
-            alias.output_correspondence(),
-            performed_receipt.output_correspondence()
+            alias_outputs
+                .entity::<PlanarAnchorOutput<CheckpointSchema>>()
+                .unwrap()
+                .entity_id(),
+            performed_outputs
+                .entity::<PlanarAnchorOutput<CheckpointSchema>>()
+                .unwrap()
+                .entity_id()
+        );
+        assert_eq!(
+            alias_outputs
+                .family_entries::<PlanarCreatedOutputs<CheckpointSchema>>()
+                .unwrap(),
+            performed_outputs
+                .family_entries::<PlanarCreatedOutputs<CheckpointSchema>>()
+                .unwrap()
         );
         assert!(
             matches!(

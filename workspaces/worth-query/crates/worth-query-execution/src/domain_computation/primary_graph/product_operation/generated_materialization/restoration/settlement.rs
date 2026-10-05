@@ -27,27 +27,11 @@ impl PublishedRestorationSettlement {
             .completion
             .complete(commit)
             .expect("World returns the exact prepared relational restoration result");
-        runtime
-            .primary_provider
-            .graph
-            .output_lineage
-            .lock()
-            .expect("application output lineage lock is available")
-            .record_restoration(
-                retry.producer.output_binding_type,
-                retry.producer.runtime_authority,
-                retry.producer.schema,
-                retry.producer.scope,
-                &observation,
-                retry.correspondence,
-                retry.producer.recorded_source_identity,
-                retry.producer.source_partition_identity,
-                retry.producer.producer_dependency_identity,
-                retry.producer.idempotency_key_identity,
-                retry.producer.observed_source_facts,
-                retry.producer.resources,
-                None,
-            );
+        runtime.record_restored_generated_output(
+            &observation,
+            retry.correspondence,
+            retry.producer,
+        );
         super::WorthQueryRestoredGeneratedOutput {
             branch: retry.branch,
             commit: super::WorthQueryGeneratedOutputRestorationReceipt::new(

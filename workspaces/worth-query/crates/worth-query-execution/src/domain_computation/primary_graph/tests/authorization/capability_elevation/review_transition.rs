@@ -2,8 +2,7 @@ use super::super::super::application_attempt::idempotency;
 use super::super::super::fixture::{CapabilityReviewStatus, CompleteElevationReviewInput};
 use super::super::capability_progression::time;
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitDenialKind,
-    WorthQueryApplicationCommitDenialStage, WorthQueryMandatoryReviewOutcome,
+    WorthQueryApplicationAttemptDenialKind, WorthQueryMandatoryReviewOutcome,
     WorthQueryOperationAuthorizationDenialKind,
 };
 
@@ -85,17 +84,10 @@ fn denied_concurrent_review() -> (
     let outcome = world
         .application
         .compare_and_commit_mandatory_review(program, idempotency(177, 177));
-    let WorthQueryMandatoryReviewOutcome::Denied(denial, mandatory) = outcome else {
-        panic!("the review bound to the prior product must deny before effects: {outcome:?}");
+    let WorthQueryMandatoryReviewOutcome::Stale(stale, mandatory) = outcome else {
+        panic!("the changed review facts must stale before effects: {outcome:?}");
     };
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationCommitDenialKind::ProductBasisStale
-    );
-    assert_eq!(
-        denial.stage(),
-        WorthQueryApplicationCommitDenialStage::InvariantExecution
-    );
+    assert!(stale.stale_fact_count() > 0);
     (world, request, mandatory)
 }
 

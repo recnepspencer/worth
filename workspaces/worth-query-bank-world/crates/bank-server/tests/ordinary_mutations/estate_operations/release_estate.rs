@@ -29,7 +29,7 @@ fn public_progression_releases_the_exact_ready_estate_and_recovers_retry() {
     };
     assert_eq!(receipt.changed_record_count(), 2);
     assert_eq!(receipt.emitted_effect_count(), 0);
-    assert_eq!(receipt.decision_fact_count(), Some(17));
+    assert_eq!(receipt.decision_fact_count(), Some(18));
     assert_admission_derives_the_request_identities_once(receipt.canonical_work());
     assert_release_posture(&fixture, EstateCaseStatus::Released);
     assert_equivalent_retry(&fixture, &specialist, binding, &receipt);
@@ -60,7 +60,7 @@ fn four_lawful_executors_and_many_unrelated_reviews_preserve_bounded_readiness()
     let BankMutationCommitOutcome::Committed(receipt) = outcome else {
         panic!("the additional-truth release must commit: {outcome:?}");
     };
-    assert_eq!(receipt.decision_fact_count(), Some(17));
+    assert_eq!(receipt.decision_fact_count(), Some(18));
     assert_release_posture(&fixture, EstateCaseStatus::Released);
 }
 
@@ -207,8 +207,10 @@ fn beneficiary_and_executor_callers_deny_at_capability_composition() {
         assert!(matches!(
             denial,
             BankEstateProgressionDenial::ApplicationEntry(ref denial)
-                if denial.kind()
-                    == worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::Authorization
+                if matches!(
+                denial.kind(),
+                worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::Authorization(_)
+            )
         ));
         assert_release_posture(&fixture, EstateCaseStatus::Open);
     }

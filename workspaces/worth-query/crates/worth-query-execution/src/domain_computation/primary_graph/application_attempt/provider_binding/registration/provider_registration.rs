@@ -15,6 +15,8 @@ use crate::domain_computation::primary_graph::provider::{
 mod consumed_capacity;
 #[path = "provider_registration/output_contract.rs"]
 mod output_contract;
+#[path = "provider_registration/published_causality.rs"]
+mod published_causality;
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphApplicationAttempt {
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
@@ -33,6 +35,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
     validator_work_admission:
         super::super::super::effect_program::WorthQueryCandidateValidatorWorkAdmission,
+    indexed_rebase_work_budget: usize,
     live_delivery_reservation: Option<
         crate::domain_computation::primary_graph::live_delivery::WorthQueryLivePublicationReservation,
     >,
@@ -50,23 +53,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
         std::sync::Arc<[super::super::super::WorthQueryApplicationObservedFact]>,
     >,
     consumed_outputs: std::sync::Arc<[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence]>,
-}
-
-pub(in crate::domain_computation::primary_graph) struct WorthQueryPublishedApplicationCausality {
-    outcome_identity: WorthQueryApplicationCommitOutcomeIdentity,
-    emitted_effect_count: usize,
-}
-
-impl WorthQueryPublishedApplicationCausality {
-    pub(in crate::domain_computation::primary_graph) const fn outcome_identity(
-        &self,
-    ) -> WorthQueryApplicationCommitOutcomeIdentity {
-        self.outcome_identity
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn emitted_effect_count(&self) -> usize {
-        self.emitted_effect_count
-    }
 }
 
 impl WorthQueryPrimaryGraphApplicationAttempt {
@@ -167,6 +153,12 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         self.validator_work_admission
     }
 
+    pub(in crate::domain_computation::primary_graph) const fn indexed_rebase_work_budget(
+        &self,
+    ) -> usize {
+        self.indexed_rebase_work_budget
+    }
+
     pub(in crate::domain_computation::primary_graph) const fn producer_required_invariants(
         &self,
     ) -> &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement]
@@ -238,23 +230,6 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         self.publication_recovery_reservation
             .take()
             .expect("World publication reserved bounded recovery custody before owner effects")
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn publish_causality(
-        self,
-        provider: &WorthQueryPrimaryGraphProvider,
-        publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
-    ) -> WorthQueryPublishedApplicationCausality {
-        let emitted_effect_count = provider.publish_application_commit_causality(
-            self.live_delivery_reservation
-                .expect("World publication reserved live causality before owner effects"),
-            publication,
-            self.effects.into_emissions(),
-        );
-        WorthQueryPublishedApplicationCausality {
-            outcome_identity: self.outcome_identity,
-            emitted_effect_count,
-        }
     }
 
     pub(in crate::domain_computation::primary_graph) fn take_outstanding_dispatch_reservation(
@@ -332,6 +307,7 @@ impl WorthQueryPrimaryGraphProvider {
             aftermath_causality,
             conditional_definition,
             validator_work_admission,
+            indexed_rebase_work_budget,
             retain_output_demand_observation,
             retain_client_observation,
             producer_required_invariants,
@@ -377,6 +353,7 @@ impl WorthQueryPrimaryGraphProvider {
                 dispatch_outbox,
                 conditional_definition,
                 validator_work_admission,
+                indexed_rebase_work_budget,
                 live_delivery_reservation: None,
                 publication_recovery_reservation: None,
                 outstanding_dispatch_reservation: None,

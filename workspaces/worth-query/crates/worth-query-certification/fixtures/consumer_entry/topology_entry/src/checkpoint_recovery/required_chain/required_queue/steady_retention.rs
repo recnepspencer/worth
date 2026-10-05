@@ -138,16 +138,15 @@ fn cycle_chain_at_small_retention(
 ) {
     let retained_positions = 8;
     let (application, invalidation) =
-        limited_application(4 * 1_024 * 1_024, 8 * 1_024 * 1_024, retained_positions);
+        limited_application(4 * 1_024 * 1_024, 10 * 1_024 * 1_024, retained_positions);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let (mut a, mut b, mut c, mut d) = chain_with_unrelated!(application, request);
     let mut queries = None;
     for cycle in 0..cycles {
         change_root_input!(request, application, 2 + cycle % 2, 0x9176_3c00_u64 + cycle);
-        // The retained versions share the rows they hold, so this small
-        // index keeps every row of the chain: no registration is refused,
-        // and each cycle refreshes each row once, from the first.
+        // This small index keeps every row of the chain: no registration
+        // is refused, and each cycle refreshes each row once, from the first.
         unrelated_settles_unverified!(queries, cycle, d, request);
         settled_in_one_advance!(c, request, "the last consumer");
         settled_in_one_advance!(b, request, "the middle consumer");
@@ -211,4 +210,61 @@ fn the_required_chain_stays_live_for_a_hundred_cycles_at_small_retention() {
             );
         }
     });
+}
+
+/// What the index retains once every retained version holds the same rows.
+/// The chain cycles, and a field no source of the chain reads is then written
+/// until every position of the window holds such a write: no edit separates
+/// one retained version from the next.
+fn retained_by_versions_no_edit_separates(retained_positions: usize) -> u64 {
+    let (application, invalidation) =
+        limited_application(4 * 1_024 * 1_024, 10 * 1_024 * 1_024, retained_positions);
+    let (scope, principal) = authenticate(&application);
+    let request = application.request(&principal, &scope);
+    let (mut a, mut b, mut c, mut d) = chain_with_unrelated!(application, request);
+    for cycle in 0..4_u64 {
+        change_root_input!(request, application, 2 + cycle % 2, 0x9176_3f00_u64 + cycle);
+        settled_in_one_advance!(d, request, "the unrelated required demand");
+        settled_in_one_advance!(c, request, "the last consumer");
+        settled_in_one_advance!(b, request, "the middle consumer");
+        settled_in_one_advance!(a, request, "the open root demand");
+    }
+    let mut unread_write = |position: u64| {
+        assert!(
+            writes_y!(
+                request,
+                application,
+                "anchor-c",
+                20 + position % 2,
+                0x9176_3f80_u64 + position
+            ),
+            "{retained_positions} retained positions: the index has room for a write no row reads"
+        );
+        invalidation.retained_capacity_bytes()
+    };
+    let window = retained_positions as u64;
+    let retained = (0..=window).map(&mut unread_write).last().unwrap();
+    assert_eq!(
+        unread_write(window + 1),
+        retained,
+        "{retained_positions} retained positions: a window of writes no row reads is steady"
+    );
+    drop((a, b, c, d));
+    retained
+}
+
+#[test]
+fn retained_versions_no_edit_separates_share_one_index() {
+    let _guard = checkpoint_recovery_test_guard();
+    // One world retains a single version of the index and the other eight,
+    // over the same rows. Versions that share hold one whole index between
+    // them, so the seven further positions add only their own bookkeeping:
+    // less than a second single version. Versions that shared nothing would
+    // each hold the whole index.
+    let single = retained_by_versions_no_edit_separates(1);
+    let eight = retained_by_versions_no_edit_separates(8);
+    assert!(
+        single <= eight && eight - single < single,
+        "eight versions over the same rows retain {eight} bytes and a single version {single}"
+    );
 }

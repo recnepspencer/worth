@@ -120,7 +120,7 @@ where
             .ok_or(Denial::ForeignAdmission)?
             .publication_binding();
         let bound = idempotency
-            .bind_operation(admission.operation_authority_identity_bytes())
+            .bind_operation(admission.operation_definition_identity())
             .bind_operation_scope(admission.operation_scope_binding())
             .bind_preconditions(admission.mutation_preconditions().identity())
             .bind_governed_input(admission.governed_input_identity())

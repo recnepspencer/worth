@@ -1,9 +1,8 @@
-use std::any::TypeId;
 use std::collections::BTreeMap;
 
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationBinding, ApplicationMutationOutputContract,
-    ApplicationMutationOutputPostureSet, ApplicationMutationOutputRoleFamilyDescriptor,
+    ApplicationMutationOutputContract, ApplicationMutationOutputPostureSet,
+    ApplicationMutationOutputRoleCardinality, ApplicationMutationOutputRoleFamilyDescriptor,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -17,6 +16,7 @@ use crate::domain_computation::primary_graph::{
 pub(super) struct ExpectedOutputBinding {
     pub(super) posture: WorthQueryApplicationOutputPosture,
     pub(super) entity_name: &'static str,
+    pub(super) cardinality: ApplicationMutationOutputRoleCardinality,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -28,11 +28,10 @@ pub(super) struct ExpectedOutputFamily {
 }
 
 impl WorthQueryApplicationOutputCorrespondenceCandidate {
-    pub(super) fn prepare_contract<Schema, Binding>(
+    pub(super) fn prepare_contract<Schema, Contract>(
         &self,
     ) -> Result<
         (
-            TypeId,
             BTreeMap<String, ExpectedOutputBinding>,
             Vec<ExpectedOutputFamily>,
             usize,
@@ -41,12 +40,12 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
     >
     where
         Schema: ApplicationSchema,
-        Binding: ApplicationMutationBinding<Schema>,
+        Contract: ApplicationMutationOutputContract<Schema>,
     {
         let mut prepared = BTreeMap::new();
         let mut families = Vec::new();
         let mut retained_representation_bytes = 0_usize;
-        for descriptor in <Binding::Output as ApplicationMutationOutputContract<Schema>>::ROLES {
+        for descriptor in Contract::ROLES {
             super::validate_role_name(descriptor.name())?;
             if self.expected_roles.contains_key(descriptor.name())
                 || prepared
@@ -55,6 +54,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
                         ExpectedOutputBinding {
                             posture: descriptor.posture(),
                             entity_name: descriptor.entity(),
+                            cardinality: descriptor.cardinality(),
                         },
                     )
                     .is_some()
@@ -73,8 +73,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
                     )
                 })?;
         }
-        for family in <Binding::Output as ApplicationMutationOutputContract<Schema>>::ROLE_FAMILIES
-        {
+        for family in Contract::ROLE_FAMILIES {
             validate_family(family, prepared.keys(), &families)?;
             retained_representation_bytes = retained_representation_bytes
                 .checked_add(family.prefix().len())
@@ -91,12 +90,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
                 minimum: family.minimum(),
             });
         }
-        Ok((
-            TypeId::of::<Binding>(),
-            prepared,
-            families,
-            retained_representation_bytes,
-        ))
+        Ok((prepared, families, retained_representation_bytes))
     }
 }
 

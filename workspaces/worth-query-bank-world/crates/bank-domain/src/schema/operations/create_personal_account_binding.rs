@@ -5,8 +5,9 @@ use worth_foundational::facade::{
 };
 use worth_query_decl::facade::{
     application_operation::{
-        ApplicationMutationOutputContract, ApplicationMutationOutputPosture,
-        ApplicationMutationOutputRoleDescriptor,
+        ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
+        WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
+        WorthQueryCreateOutput, WorthQueryExactlyOneOutput,
     },
     application_schema::{NoApplicationUnit, ReadOnly},
     worth_query_mutation_binding, worth_query_structured_value_binding,
@@ -50,7 +51,17 @@ pub struct CreatePersonalAccountDecision {
 
 pub struct CreatePersonalAccountOutputs;
 
-pub const CREATE_PERSONAL_ACCOUNT_OUTPUT_ACCOUNT: &str = "account";
+/// The personal account the operation creates.
+pub struct CreatedPersonalAccountOutput;
+
+impl WorthQueryApplicationOutputRole for CreatedPersonalAccountOutput {
+    type Schema = BankSchema;
+    type Contract = CreatePersonalAccountOutputs;
+    type Entity = Account;
+    type Action = WorthQueryCreateOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "account";
+}
 
 // The decision creates ordinal zero: `operation:` + 64 hex digits + `:0`.
 // Candidate keys have exact-length allocations; the ID codec retains capacity 83.
@@ -83,18 +94,12 @@ pub const CREATE_PERSONAL_ACCOUNT_RETAINED_BYTES: usize =
     + CREATED_ACCOUNT_FIELD_LOCATOR_BYTES + 83 + AccountName::MAX_BYTES
     + "personal".len() + "open".len()
     // Expected role plus bound role/entity/created reference.
-    + 2 * CREATE_PERSONAL_ACCOUNT_OUTPUT_ACCOUNT.len() + "Account".len()
+    + 2 * <CreatedPersonalAccountOutput as WorthQueryApplicationOutputRole>::NAME.len() + "Account".len()
     + CREATED_ACCOUNT_KEY_BYTES;
 
 impl ApplicationMutationOutputContract<BankSchema> for CreatePersonalAccountOutputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[ApplicationMutationOutputRoleDescriptor::for_entity::<
-            BankSchema,
-            Account,
-        >(
-            CREATE_PERSONAL_ACCOUNT_OUTPUT_ACCOUNT,
-            ApplicationMutationOutputPosture::Create,
-        )];
+        &[<CreatedPersonalAccountOutput as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
 }
 
 impl CreatePersonalAccountDecision {

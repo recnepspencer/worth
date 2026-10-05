@@ -1,10 +1,17 @@
 use super::super::WorthQueryApplicationOutputProjectionDenial;
 
+/// Owning refusal reason for reading a prior binding's admitted output.
+/// Absence of the binding is distinct from a missing member in present output.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPriorOutputDenialKind {
     Unavailable,
-    UndeclaredFamily,
+    /// The selected correspondence was committed under a different output
+    /// contract than the role's.
+    ForeignContract,
     MissingRole,
+    /// The role's cardinality differs from the one the prior binding's
+    /// installed contract records for it.
+    CardinalityMismatch,
     ActionMismatch,
     EntityMismatch,
     OutputUnavailable,
@@ -12,6 +19,9 @@ pub enum WorthQueryPriorOutputDenialKind {
     WorkBudgetExceeded,
 }
 
+/// Query's sealed refusal to resolve one prior role or family member.
+/// A handler may inspect this error through `HandlerExecutionDenial::downcast`;
+/// it is neither a prior entity identity nor permission to publish a candidate.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryPriorOutputDenial {
     kind: WorthQueryPriorOutputDenialKind,
@@ -42,11 +52,19 @@ impl WorthQueryPriorOutputDenial {
         denial: WorthQueryApplicationOutputProjectionDenial,
     ) -> Self {
         let kind = match denial {
-            WorthQueryApplicationOutputProjectionDenial::MissingRole => {
+            // A member name that fails validation cannot have been bound.
+            WorthQueryApplicationOutputProjectionDenial::MissingRole
+            | WorthQueryApplicationOutputProjectionDenial::InvalidMemberSuffix(_) => {
                 WorthQueryPriorOutputDenialKind::MissingRole
+            }
+            WorthQueryApplicationOutputProjectionDenial::CardinalityMismatch => {
+                WorthQueryPriorOutputDenialKind::CardinalityMismatch
             }
             WorthQueryApplicationOutputProjectionDenial::ForeignBinding => {
                 WorthQueryPriorOutputDenialKind::Unavailable
+            }
+            WorthQueryApplicationOutputProjectionDenial::ForeignContract => {
+                WorthQueryPriorOutputDenialKind::ForeignContract
             }
             WorthQueryApplicationOutputProjectionDenial::ActionMismatch => {
                 WorthQueryPriorOutputDenialKind::ActionMismatch

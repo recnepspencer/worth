@@ -6,8 +6,7 @@ use worth_query_decl::facade::application_schema::{
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-    WorthQueryApplicationEntityKey, WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
-    WorthQueryCurrentOutputRole, WorthQueryCurrentOutputSelection,
+    WorthQueryApplicationEntityKey, WorthQueryCurrentOutputSelection,
 };
 
 pub struct PlanarHandler;
@@ -146,10 +145,8 @@ where
                         Ok(entity) => entity,
                         Err(error) => return HandlerResult::ExecutionDenied(error),
                     };
-                    let output = match reader.current_output::<PlanarOutputFamily, Body, Body>(
-                        &producer,
-                        WorthQueryCurrentOutputRole::new("anchor"),
-                    ) {
+                    let output = match reader.current_output::<PlanarOutputFamily, Body>(&producer)
+                    {
                         Ok(WorthQueryCurrentOutputSelection::Unique(output)) => output,
                         Ok(WorthQueryCurrentOutputSelection::Missing) => {
                             return HandlerResult::DomainDenied(
@@ -233,12 +230,7 @@ where
         .resolve_entity(BodyKey::reference(), input.scope_key.clone())
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .preserve_output(
-            worth_query_host::facade::primary_graph::WorthQueryApplicationOutputRole::from_static(
-                "anchor",
-            ),
-            &anchor,
-        )
+        .preserve_output::<PlanarAnchorOutput<Schema>>(&anchor)
         .map_err(HandlerExecutionDenial::new)?;
     match &input.operation {
         PlanarOperation::CreateCycle(vertices) => {
@@ -265,14 +257,8 @@ where
                         worth_query_consumer_values::PositiveLength::new(1).unwrap(),
                     )
                     .map_err(HandlerExecutionDenial::new)?;
-                let role = WorthQueryApplicationOutputRole::<
-                    Binding,
-                    Body,
-                    WorthQueryCreateOutput,
-                >::try_new(format!("created.{}", vertex.body_key))
-                .map_err(HandlerExecutionDenial::new)?;
                 writer
-                    .create_output(role, &entity)
+                    .create_member::<PlanarCreatedOutputs<Schema>>(&vertex.body_key, &entity)
                     .map_err(HandlerExecutionDenial::new)?;
                 allocated.push(entity);
             }

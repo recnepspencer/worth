@@ -1,9 +1,18 @@
 use worth_query_installation::facade::ApplicationSchema;
 
-#[path = "idempotency_resolution/denial_format.rs"]
-mod denial_format;
+#[path = "idempotency_resolution/denial.rs"]
+mod denial;
 #[path = "idempotency_resolution/external_settlement.rs"]
 mod external_settlement;
+#[path = "idempotency_resolution/historical_commit.rs"]
+mod historical_commit;
+
+pub use historical_commit::WorthQueryHistoricalApplicationCommit;
+
+pub use denial::{
+    WorthQueryApplicationIdempotencyResolutionDenial,
+    WorthQueryApplicationIdempotencyResolutionDenialKind,
+};
 
 use super::{
     provider_recomparison::recover_equivalent_commit_evidence,
@@ -23,8 +32,7 @@ impl WorthQueryIdempotencyReadCommitReceiptPermit {
 use crate::domain_computation::application_aftermath::WorthQueryAdmittedIdempotencyRead;
 use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolution;
 use crate::domain_computation::primary_graph::{
-    WorthQueryAdmittedApplicationOperation, WorthQueryOperationAuthorizationDenial,
-    WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryAdmittedApplicationOperation, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 /// What an idempotency key already means on the current product branch, read
@@ -55,102 +63,6 @@ pub enum WorthQueryGuardedWorkflowOperationCustody {
     PublicationPending,
     ProductUnpublished(worth_runtime_world::facade::ProductUnpublishedRecoveryHandle),
     Indeterminate(WorthQueryApplicationIdempotencyResolutionDenial),
-}
-
-/// Why an idempotency key could not be resolved. The resolution is a read, so
-/// nothing took effect.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryApplicationIdempotencyResolutionDenialKind {
-    /// The admission's current authority no longer holds, or inspecting the key was
-    /// not authorized. The authorization denial has the detail.
-    Authorization,
-    /// The admission belongs to another runtime or schema binding, or has no product
-    /// to resolve against.
-    ForeignAdmission,
-    /// The provider holds its maximum number of active snapshots.
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
-    /// The provider has no retention capacity for the read.
-    RetentionCapacityExhausted,
-    /// The provider has run out of retention identities.
-    RetentionIdentityExhausted,
-    /// The provider has run out of snapshot identities.
-    SnapshotIdentityExhausted,
-    /// The provider could not answer, the product was unpublished, or the recorded
-    /// receipt could not be read back.
-    ProviderUnavailable,
-    /// The key's commit left the declared idempotency window.
-    IdempotencyWindowExpired,
-}
-
-/// A refusal to resolve an idempotency key. Nothing took effect.
-///
-/// Match on [`kind`](Self::kind); [`authorization`](Self::authorization) is set
-/// only for an authorization refusal.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryApplicationIdempotencyResolutionDenial {
-    kind: WorthQueryApplicationIdempotencyResolutionDenialKind,
-    authorization: Option<WorthQueryOperationAuthorizationDenial>,
-}
-
-impl WorthQueryApplicationIdempotencyResolutionDenial {
-    pub const fn kind(&self) -> WorthQueryApplicationIdempotencyResolutionDenialKind {
-        self.kind
-    }
-
-    pub const fn authorization(&self) -> Option<&WorthQueryOperationAuthorizationDenial> {
-        self.authorization.as_ref()
-    }
-
-    fn from_authorization(denial: WorthQueryOperationAuthorizationDenial) -> Self {
-        Self {
-            kind: WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization,
-            authorization: Some(denial),
-        }
-    }
-
-    pub(super) const fn foreign_admission() -> Self {
-        Self {
-            kind: WorthQueryApplicationIdempotencyResolutionDenialKind::ForeignAdmission,
-            authorization: None,
-        }
-    }
-
-    pub(super) const fn provider_unavailable() -> Self {
-        Self {
-            kind: WorthQueryApplicationIdempotencyResolutionDenialKind::ProviderUnavailable,
-            authorization: None,
-        }
-    }
-
-    const fn branch_coordination_capacity_exhausted() -> Self {
-        Self {
-            kind: WorthQueryApplicationIdempotencyResolutionDenialKind::RetentionCapacityExhausted,
-            authorization: None,
-        }
-    }
-
-    pub(super) fn from_provider(
-        denial: crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial,
-    ) -> Self {
-        use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial as Provider;
-        use WorthQueryApplicationIdempotencyResolutionDenialKind as Kind;
-        let kind = match denial {
-            Provider::ActiveSnapshotCapacityExhausted {
-                maximum_active_snapshots,
-            } => Kind::ActiveSnapshotCapacityExhausted {
-                maximum_active_snapshots,
-            },
-            Provider::RetentionCapacityExhausted => Kind::RetentionCapacityExhausted,
-            Provider::RetentionIdentityExhausted => Kind::RetentionIdentityExhausted,
-            Provider::SnapshotIdentityExhausted => Kind::SnapshotIdentityExhausted,
-            Provider::Unavailable => Kind::ProviderUnavailable,
-            Provider::WindowExpired => Kind::IdempotencyWindowExpired,
-        };
-        Self {
-            kind,
-            authorization: None,
-        }
-    }
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -186,7 +98,7 @@ where
             return Err(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission());
         }
         let bound = binding
-            .bind_operation(admission.operation_authority_identity_bytes())
+            .bind_operation(admission.operation_definition_identity())
             .bind_operation_scope(admission.operation_scope_binding())
             .bind_preconditions(admission.mutation_preconditions().identity())
             .bind_governed_input(admission.governed_input_identity())
@@ -312,7 +224,7 @@ where
             .into_iter()
             .map(|read_for| {
                 let binding = read_for
-                    .bind_operation(admission.operation_authority_identity_bytes())
+                    .bind_operation(admission.operation_definition_identity())
                     .bind_operation_scope(admission.operation_scope_binding())
                     .bind_preconditions(admission.mutation_preconditions().identity())
                     .bind_governed_input(admission.governed_input_identity())

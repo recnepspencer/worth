@@ -97,7 +97,8 @@ impl WorthQueryApplicationOutputLineage {
             let Some(partition) = recorded.source_partition_identity else {
                 return Ok(true);
             };
-            let Some(generations) = partitions.and_then(|partitions| partitions.get(&partition))
+            let Some(generations) =
+                partitions.and_then(|partitions| partitions.get(&Some(partition)))
             else {
                 return Ok(true);
             };
@@ -167,7 +168,7 @@ impl WorthQueryApplicationOutputLineage {
                 .and_then(|recorded| recorded.source_partition_identity)
                 .expect("a retired record is a published partition record");
             let generations = partitions
-                .get_mut(&partition)
+                .get_mut(&Some(partition))
                 .expect("a retired record's partition is indexed");
             assert!(generations.remove(&generation).is_some());
             assert!(

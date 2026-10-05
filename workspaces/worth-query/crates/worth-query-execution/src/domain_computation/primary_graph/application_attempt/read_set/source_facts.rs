@@ -1,8 +1,13 @@
+use std::collections::BTreeMap;
+
 use super::{denial, WorthQueryApplicationSnapshotLease};
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationObservedFact,
 };
+
+#[cfg(test)]
+mod indexed_selection;
 
 pub(super) fn validate_source_facts<Schema, Operation, Input, Scope>(
     admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -23,4 +28,25 @@ pub(super) fn validate_source_facts<Schema, Operation, Input, Scope>(
         }
     }
     Ok(facts)
+}
+
+pub(super) fn merge_source_facts(
+    admitted: Vec<WorthQueryApplicationObservedFact>,
+    dependent: Vec<WorthQueryApplicationObservedFact>,
+    operation: &str,
+) -> Result<Vec<WorthQueryApplicationObservedFact>, WorthQueryApplicationAttemptDenial> {
+    let mut merged = BTreeMap::new();
+    for fact in admitted.into_iter().chain(dependent) {
+        let locator = fact.dependency_key();
+        if merged
+            .insert(locator, fact.clone())
+            .is_some_and(|existing| existing != fact)
+        {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch,
+                operation,
+            ));
+        }
+    }
+    Ok(merged.into_values().collect())
 }

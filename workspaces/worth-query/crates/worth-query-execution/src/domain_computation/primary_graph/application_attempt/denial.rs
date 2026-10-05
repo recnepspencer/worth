@@ -37,6 +37,10 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     DuplicateOutputRole,
     OutputRoleEntityMismatch,
     OutputRoleActionMismatch,
+    /// The role's cardinality differs from the one the installed contract
+    /// records for it. A typed use cannot disagree with its contract, so this
+    /// guards the installed form as defense in depth.
+    OutputRoleCardinalityMismatch,
     DuplicateEffectKey,
     ConflictingEffectStep,
     CandidateCapacityExceeded,
@@ -142,13 +146,14 @@ pub struct WorthQueryApplicationAttemptDenial {
     cause: AttemptDenialCause,
 }
 
-/// The typed denial a kind carries, when it has one.
+/// The typed denial a kind carries, when it has one. The request's stop is
+/// held apart: every refusal that carries an attempt denial stays small.
 #[derive(Debug)]
 enum AttemptDenialCause {
     None,
     Expression(worth_foundational::expression_api::ExpressionDenial),
     RequestAuthority(
-        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+        Box<crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>,
     ),
 }
 
@@ -183,7 +188,7 @@ impl WorthQueryApplicationAttemptDenial {
         Self {
             kind: WorthQueryApplicationAttemptDenialKind::CurrentAuthorityDenied,
             subject: denial.subject().to_owned(),
-            cause: AttemptDenialCause::RequestAuthority(denial),
+            cause: AttemptDenialCause::RequestAuthority(Box::new(denial)),
         }
     }
 

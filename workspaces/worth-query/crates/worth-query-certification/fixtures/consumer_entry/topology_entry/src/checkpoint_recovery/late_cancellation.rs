@@ -6,9 +6,6 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationOutputDemandDenial, WorthQueryApplicationOutputDemandProgress,
     WorthQueryOutputSettlementPosture,
 };
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationOutputRole, WorthQueryPreserveOutput,
-};
 
 #[test]
 fn cancellation_during_final_product_guard_wait_refuses_stable_publication() {
@@ -104,21 +101,15 @@ fn cancellation_during_final_product_guard_wait_refuses_stable_publication() {
     assert_eq!(retried.producer_contacts_in_this_demand(), 0);
     assert!(retried.application_commit_receipt().is_none());
     let original = original_receipt
-        .output_correspondence()
-        .entity(WorthQueryApplicationOutputRole::<
-            PlanarMutationBinding<CheckpointSchema>,
-            Body,
-            WorthQueryPreserveOutput,
-        >::from_static("anchor"))
+        .outputs_of::<PlanarOutputs>()
+        .unwrap()
+        .entity::<PlanarAnchorOutput<CheckpointSchema>>()
         .unwrap()
         .entity_id();
     let current = retried
-        .output_correspondence()
-        .entity(WorthQueryApplicationOutputRole::<
-            PlanarMutationBinding<CheckpointSchema>,
-            Body,
-            WorthQueryPreserveOutput,
-        >::from_static("anchor"))
+        .outputs_of::<PlanarOutputs>()
+        .unwrap()
+        .entity::<PlanarAnchorOutput<CheckpointSchema>>()
         .unwrap()
         .entity_id();
     assert_eq!(original, current);

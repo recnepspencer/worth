@@ -112,7 +112,31 @@ impl PreparedNativeOutputWitness {
         owner: &SourceInvalidationOwner,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<Self>, CompanionPreflightStop> {
-        let roles = attempt.native_witness_roles();
+        Self::prepare_roles(attempt.native_witness_roles(), layout, owner, admission)
+    }
+
+    /// A restoration re-creates an output its producer already performed. The
+    /// committed correspondence names the roles that producer's attempt
+    /// declared, so the same preparation serves the re-created entities.
+    pub(in crate::domain_computation::primary_graph) fn prepare_republication(
+        correspondence: &WorthQueryApplicationOutputCorrespondence,
+        layout: &WorthQueryPrimaryGraphLayout,
+        owner: &SourceInvalidationOwner,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<Option<Self>, CompanionPreflightStop> {
+        let roles = correspondence
+            .native_witness_roles()
+            .map(|(role, posture, entity_name, _)| (role, posture, entity_name));
+        Self::prepare_roles(roles, layout, owner, admission)
+    }
+
+    fn prepare_roles<'role>(
+        roles: impl ExactSizeIterator<Item = (&'role str, WorthQueryApplicationOutputPosture, &'role str)>
+            + Clone,
+        layout: &WorthQueryPrimaryGraphLayout,
+        owner: &SourceInvalidationOwner,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<Option<Self>, CompanionPreflightStop> {
         let role_count = roles.len();
         if role_count == 0 {
             return Ok(None);

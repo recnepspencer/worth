@@ -35,9 +35,23 @@ fn complete_comparable_fact_kinds_round_trip_without_losing_absence_or_sets() {
             entity_id: entity,
             kind: KindId(14),
         },
+        Fact::RetiredOutputEntity {
+            entity_id: entity,
+            kind: KindId(14),
+            created_at: VersionId(5),
+            deleted_at: VersionId(15),
+            read_locator: "original-read-locator".into(),
+        },
     ];
     let encoded = encode(&facts).expect("all facts have native comparison meaning");
     assert_eq!(decode(&encoded).unwrap().as_ref(), facts.as_slice());
+    assert!(
+        decode_for_wire_version(&encoded, 5).is_err(),
+        "v5 cannot admit a v6 retirement fact"
+    );
+    // One decode path: facts at an older wire version are never read, with
+    // or without the newer fact kinds.
+    assert!(decode_for_wire_version(&encode(&facts[..5]).unwrap(), 5).is_err());
 }
 
 #[test]

@@ -2,6 +2,7 @@
 
 mod capacity;
 mod program_binding;
+mod recorded_idempotency;
 mod request_authority;
 mod workflow;
 
@@ -57,6 +58,18 @@ pub enum WorthQueryApplicationCommitDenialKind {
     /// committed can no longer be answered. The original commit stands and
     /// nothing was re-executed; resubmitting under a new key repeats it.
     IdempotencyWindowExpired,
+    /// The key records `commit` for this intent, but this runtime does not
+    /// retain its receipt: the commit was performed before a restore or
+    /// reopen, or by a product occurrence that has since retired. The commit
+    /// stands and nothing commits again; read current state to observe it.
+    IdempotencyReceiptNotRetained {
+        commit: worth_relational::facade::history::CommitId,
+    },
+    /// The key's record predates the durable intent encoding. Its durable
+    /// parts match, but it names its operation only by the admitting
+    /// installation's seal, which no later runtime can confirm. Nothing is
+    /// committed; a new request needs a new key.
+    IdempotencyIntentUnverifiable,
     /// The idempotency binding does not name the mutation binding whose handler
     /// produced this program. That is a programming error in the caller, not
     /// intent drift: build the binding with `for_mutation_identities` from

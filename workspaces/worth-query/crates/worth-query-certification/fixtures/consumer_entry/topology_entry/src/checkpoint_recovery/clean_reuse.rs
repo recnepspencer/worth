@@ -24,16 +24,10 @@ fn clean_ready_advancement_skips_source_query_but_changed_input_reenters_it() {
         WorthQueryOutputSettlementPosture::Performed
     );
     assert_eq!(first.producer_contacts_in_this_demand(), 1);
-    let role = || {
-        primary_graph::WorthQueryApplicationOutputRole::<
-            PlanarMutationBinding<CheckpointSchema>,
-            Body,
-            primary_graph::WorthQueryPreserveOutput,
-        >::from_static("anchor")
-    };
     let original_entity = first
-        .output_correspondence()
-        .entity(role())
+        .outputs_of::<PlanarOutputs>()
+        .unwrap()
+        .entity::<PlanarAnchorOutput<CheckpointSchema>>()
         .unwrap()
         .entity_id();
 
@@ -57,8 +51,9 @@ fn clean_ready_advancement_skips_source_query_but_changed_input_reenters_it() {
         assert_eq!(settled.producer_contacts_in_this_demand(), 0);
         assert_eq!(
             settled
-                .output_correspondence()
-                .entity(role())
+                .outputs_of::<PlanarOutputs>()
+                .unwrap()
+                .entity::<PlanarAnchorOutput<CheckpointSchema>>()
                 .unwrap()
                 .entity_id(),
             original_entity
@@ -99,8 +94,9 @@ fn clean_ready_advancement_skips_source_query_but_changed_input_reenters_it() {
     assert_eq!(changed.producer_contacts_in_this_demand(), 1);
     assert_eq!(
         changed
-            .output_correspondence()
-            .entity(role())
+            .outputs_of::<PlanarOutputs>()
+            .unwrap()
+            .entity::<PlanarAnchorOutput<CheckpointSchema>>()
             .unwrap()
             .entity_id(),
         original_entity

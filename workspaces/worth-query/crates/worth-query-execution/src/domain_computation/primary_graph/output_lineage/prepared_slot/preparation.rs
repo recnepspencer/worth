@@ -177,18 +177,14 @@ pub(in crate::domain_computation::primary_graph) fn prepare(
             >(occurrence_count)?)
         })
         .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?;
-    let retained_bytes = if partition.is_some() {
-        retained_bytes
-            .checked_add(
-                lineage
-                    .partition_index
-                    .retained_path_guard_bytes(&source, coordinate, partition)
-                    .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?,
-            )
-            .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?
-    } else {
-        retained_bytes
-    };
+    let retained_bytes = retained_bytes
+        .checked_add(
+            lineage
+                .partition_index
+                .retained_path_guard_bytes(&source, coordinate, partition)
+                .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?,
+        )
+        .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?;
     let retained_capacity = lineage.retention.reserve(retained_bytes)?;
     admission
         .admit_read_scratch(bytes)

@@ -25,7 +25,7 @@ async fn multi_actor_elevation_retains_exact_phase_across_wrong_actor_and_replay
     let requested = client
         .post(format!("{origin}/v1/estate/elevation/request"))
         .json(&serde_json::json!({
-            "protocol": "v1",
+            "protocol": "v3",
             "request_id": "elevation-request-1",
             "credential": credential("test-only"),
             "controls": { "deadline_milliseconds": 5_000 },
@@ -63,7 +63,7 @@ async fn multi_actor_elevation_retains_exact_phase_across_wrong_actor_and_replay
     let raw_axis = client
         .post(format!("{origin}/v1/estate/elevation/approve"))
         .json(&serde_json::json!({
-            "protocol": "v1",
+            "protocol": "v3",
             "request_id": "raw-axis-approval",
             "credential": credential("approver"),
             "controls": { "deadline_milliseconds": 5_000 },
@@ -86,7 +86,7 @@ async fn multi_actor_elevation_retains_exact_phase_across_wrong_actor_and_replay
     let wrong_phase = client
         .post(format!("{origin}/v1/estate/elevation/revoke"))
         .json(&serde_json::json!({
-            "protocol": "v1",
+            "protocol": "v3",
             "request_id": "revoke-requested-phase",
             "credential": credential("approver"),
             "controls": { "deadline_milliseconds": 5_000 },
@@ -125,7 +125,7 @@ async fn multi_actor_elevation_retains_exact_phase_across_wrong_actor_and_replay
     let closed = client
         .post(format!("{origin}/v1/estate/elevation/revoke"))
         .json(&serde_json::json!({
-            "protocol": "v1",
+            "protocol": "v3",
             "request_id": "elevation-revoke-1",
             "credential": credential("approver"),
             "controls": { "deadline_milliseconds": 5_000 },
@@ -186,7 +186,7 @@ async fn expired_elevation_token_opens_no_approval_phase() {
     let requested = client
         .post(format!("{origin}/v1/estate/elevation/request"))
         .json(&serde_json::json!({
-            "protocol": "v1",
+            "protocol": "v3",
             "request_id": "expiring-elevation",
             "credential": credential("test-only"),
             "controls": { "deadline_milliseconds": 5_000 },
@@ -234,7 +234,7 @@ async fn lost_approval_response_replays_the_committed_transition() {
     let requested = client
         .post(format!("{origin}/v1/estate/elevation/request"))
         .json(&serde_json::json!({
-            "protocol": "v1",
+            "protocol": "v3",
             "request_id": "approval-response-loss-request",
             "credential": credential("test-only"),
             "controls": { "deadline_milliseconds": 5_000 },
@@ -258,7 +258,7 @@ async fn lost_approval_response_replays_the_committed_transition() {
     };
 
     let body = serde_json::json!({
-        "protocol": "v1",
+        "protocol": "v3",
         "request_id": "approval-response-loss",
         "credential": credential("approver"),
         "controls": { "deadline_milliseconds": 5_000 },
@@ -329,7 +329,7 @@ async fn approve(
     client
         .post(format!("{origin}/v1/estate/elevation/approve"))
         .json(&serde_json::json!({
-            "protocol": "v1",
+            "protocol": "v3",
             "request_id": format!("approve-{key}"),
             "credential": credential(actor),
             "controls": { "deadline_milliseconds": 5_000 },
@@ -354,7 +354,7 @@ async fn complete_review(
     client
         .post(format!("{origin}/v1/estate/elevation/review"))
         .json(&serde_json::json!({
-            "protocol": "v1",
+            "protocol": "v3",
             "request_id": format!("review-{key}"),
             "credential": credential(actor),
             "controls": { "deadline_milliseconds": 5_000 },

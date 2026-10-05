@@ -1,5 +1,8 @@
 use std::any::TypeId;
 
+mod output_cardinality;
+mod output_role;
+
 use crate::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationPrincipalScope,
     ApplicationMutationScopeResolution,
@@ -60,20 +63,44 @@ crate::worth_query_field!(
     read_only, equality
 );
 
+struct RenamedAccount;
+impl super::WorthQueryApplicationOutputRole for RenamedAccount {
+    type Schema = MutationSchema;
+    type Contract = RenameOutputs;
+    type Entity = Account;
+    type Action = super::WorthQueryPreserveOutput;
+    type Cardinality = super::WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "renamed-account";
+}
+
+struct RetiredMapping;
+impl super::WorthQueryApplicationOutputRole for RetiredMapping {
+    type Schema = MutationSchema;
+    type Contract = RenameOutputs;
+    type Entity = ExternalMapping;
+    type Action = super::WorthQueryRetireOutput;
+    type Cardinality = super::WorthQueryAtMostOneOutput;
+    const NAME: &'static str = "retired-mapping";
+}
+
+struct Changed;
+impl super::WorthQueryApplicationOutputRoleFamily for Changed {
+    type Schema = MutationSchema;
+    type Contract = RenameOutputs;
+    type Entity = Account;
+    const PREFIX: &'static str = "changed.";
+    const POSTURES: super::ApplicationMutationOutputPostureSet =
+        super::ApplicationMutationOutputPostureSet::ALL;
+    const MINIMUM: usize = 1;
+}
+
 impl super::ApplicationMutationOutputContract<MutationSchema> for RenameOutputs {
     const ROLES: &'static [super::ApplicationMutationOutputRoleDescriptor] = &[
-        super::ApplicationMutationOutputRoleDescriptor::for_entity::<MutationSchema, Account>(
-            "renamed-account",
-            super::ApplicationMutationOutputPosture::Preserve,
-        ),
+        <RenamedAccount as super::WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
+        <RetiredMapping as super::WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
     ];
-    const ROLE_FAMILIES: &'static [super::ApplicationMutationOutputRoleFamilyDescriptor] = &[
-        super::ApplicationMutationOutputRoleFamilyDescriptor::for_entity::<MutationSchema, Account>(
-            "changed.",
-            super::ApplicationMutationOutputPostureSet::ALL,
-            1,
-        ),
-    ];
+    const ROLE_FAMILIES: &'static [super::ApplicationMutationOutputRoleFamilyDescriptor] =
+        &[<Changed as super::WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR];
 }
 crate::worth_query_field!(
     MappingStatusField for MutationSchema, ExternalMapping, ExternalIdentity:

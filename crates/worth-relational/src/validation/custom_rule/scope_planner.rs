@@ -238,16 +238,18 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
         use crate::validation::engine::input_preparation::CandidateInputBasis;
         let inputs = runtime.shared_candidate_inputs();
         let state_view = InvariantStateView::new(
-            observation.enforcement_partition_access(),
-            observation.enforcement_version_id(version_id),
+            observation.custom_enforcement_partition_access(),
+            observation.custom_enforcement_version_id(version_id),
         )
         .with_candidate_inputs(
             inputs.clone(),
-            CandidateInputBasis::enforcement(observation),
+            CandidateInputBasis::custom_enforcement(observation),
         );
-        let committed_state_view =
-            InvariantStateView::new(observation.committed_partition_access(), current_version_id)
-                .with_candidate_inputs(inputs, CandidateInputBasis::Committed);
+        let committed_state_view = InvariantStateView::new(
+            observation.custom_committed_partition_access(),
+            current_version_id,
+        )
+        .with_candidate_inputs(inputs, CandidateInputBasis::custom_committed(observation));
         work.try_charge(1);
         let touched =
             prepared_scope.retain_restricted(&state_view, &committed_state_view, &access, &work);

@@ -1848,6 +1848,33 @@ before machinery for another lands.
   - A restored output takes its producer mode from the first advance whose
     chain reaches it: its own demand's or a dependent's. Demanding only the
     last consumer of a restored chain settles the chain.
+  - Checkpoint format 8 has one decoder. Outputs of a format 5 to 7
+    checkpoint restore as descriptive rows: their facts are never read, no
+    tracked read precedes a demand, and the first demand executes once under
+    Preserve.
+  - Republication. A checkpoint restore stays Fresh until verified. A
+    restoration on the runtime that performed the output continues the
+    suspended performed record and seals a new witness; its first reader
+    verifies in full, and a row left without a sealed witness requires full
+    verification. A head without facts yields no candidate. A stable alias
+    is compared by its origin's witness.
+  - An exact selection is over a live output whose row carries a sealed
+    witness and a settlement the input cutoff verifies. The cutoff declines
+    a row still in its checkpoint posture and a settlement the owner cannot
+    place under the selected source: no row, another runtime or branch, or
+    a read before its basis. Selection asks the cutoff's own predicate,
+    `cutoff_declines` in `output_lineage/input_cutoff/verification.rs`, so
+    the two hold one list. A row of this runtime the cutoff declines, or
+    one without a sealed witness, is not exact: its demand selects the
+    Preserve posture, which runs once over the live output and is then
+    reused. A settlement that requires full verification for any other
+    reason is compared in full and reused with no producer contact:
+    `checkpoint_recovery/input_cutoff/unrebased_settlement.rs`. An exact
+    producer that declares no Preserve posture reuses its live output or is
+    refused `MissingApplicableProducer` before any effect: it never
+    executes over a live output. A refresh in a family whose other producer
+    declares Preserve switches to that producer, which runs once over the
+    live output: `checkpoint_recovery/generated_restoration.rs`.
   - An equal republication of a root clears the marks below it. Demanding
     the last consumer first settles the chain in one advance each, with one
     source query, no producer contact and no decision.
@@ -1994,6 +2021,29 @@ before machinery for another lands.
       reserves the new amount before the old one frees, so a delivery
       transiently needs up to one index of free room. A refusal there
       defers the writer.
+    - `RetiredOutputEntity` is not an exact fact key: a row that decided on
+      one verifies in full under exact invalidation.
+    - Republication does not retire the displaced generation's mark row.
+    - A same-runtime restoration whose settlement could not be registered
+      is not verified in full and reused: its demand runs the family's
+      Preserve producer once. In a family that installs no Preserve producer
+      that demand is refused `MissingApplicableProducer`, and the refusal
+      persists while the output lives.
+    - A commit whose facts could not be rebased keeps them as its handler
+      read them. A field value read that way has no native revision to
+      compare, so full verification of that settlement answers
+      `RetainedBasisUnavailable`, first on the demand that committed it.
+      The fixture reaches a row verified in full through a certification
+      control that keeps the rebased facts under the requirement.
+    - Query's own delegation activation reads nothing about the child
+      grant, so a second activation for an existing child id commits. The
+      bank handler reads the child's absence. The platform fix changes a
+      declared contract and is tracked as its own task.
+    - An exact selection reports its producer's first declared posture, also
+      for a producer that declares Preserve and then runs over the live
+      output. The reported posture selects no behavior.
+    - A checkpoint-restored output that is suspended and restored executes
+      once under Preserve, where a full verification would reuse it.
 - Checkpoint readmission rebuilds the original complete Native output-aspect
   witness from captured facts. *Completed:*
   - It verifies those original revisions and supported producer facts against

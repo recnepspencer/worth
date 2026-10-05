@@ -180,7 +180,7 @@ where
                 Admission::Execute { successor_of } => break successor_of,
             }
         };
-        let required_output = match interest.required_context(
+        let mut required_output = match interest.required_context(
             &self.primary_provider.graph.source_owner.invalidation_owner,
             request_admission,
         ) {
@@ -218,6 +218,9 @@ where
                 request_admission,
             )?
         };
+        if demand.selected.reuses_live_output_only {
+            required_output.reuse_live_output_only();
+        }
         let required_execution = required_output.prepare_execution(published_mode);
         let result = disclosure.with_erased(|input| match &mut schedule_progression {
             ScheduleProgression::Ordinary => entry.executor.execute(
@@ -290,6 +293,16 @@ where
                     self.output_demands.relinquish_execution(interest);
                 }
                 return Err(denial.into_denial());
+            }
+            Err(super::super::super::execution::ProducerExecutionStop::LiveOutputNotReused) => {
+                if let Some(finish) = selected_execution_finish.take() {
+                    finish.relinquish();
+                } else {
+                    self.output_demands.relinquish_execution(interest);
+                }
+                return Err(
+                    super::super::super::execution::ProducerExecutionStop::live_output_not_reused(),
+                );
             }
             Err(super::super::super::execution::ProducerExecutionStop::ExecutionStopped(
                 mut denial,

@@ -94,24 +94,116 @@ denial identities, scope/effects, units/frames, and installed request-binding
 availability. Availability describes installation; every execution still performs
 fresh authorization and currentness checks.
 
-Committed mutation receipts expose `output_correspondence()` and
-`committed_changes()`. Output roles carry the binding, entity marker and
-preserve/create/retire action. `output_correspondence().entity(role)` checks
-those exact types and the role name against the committed association. It
-returns `WorthQueryApplicationOutputProjectionDenial::EntityMismatch` for a
-different entity marker even when the binding, name and action match; foreign
-bindings, missing roles and action mismatches have their own typed denials.
-Role names describe correspondence; the platform resolves persistent identity.
+Committed mutation receipts expose `outputs_of::<Contract>()` and
+`committed_changes()`.
 
-Bindings with a finite result shape declare exact roles in `ROLES`. Bindings
-whose result cardinality follows the authored topology declare typed namespaces
-in `ROLE_FAMILIES`, including the entity marker, allowed action postures and
-minimum member count. A handler constructs each source-derived member with
-`WorthQueryApplicationOutputRole::try_new(format!(...))` and passes that token
-directly to `create_output`, `preserve_output` or `retire_output`. Query rejects
-empty, ambiguous and oversized runtime names, validates each member against the
-installed family, and seals the resolved identity in the same correspondence.
-`from_static` remains the constructor for exact compile-time role names.
+An output role is a marker type, and its `WorthQueryApplicationOutputRole` impl
+is the declaration. The impl names the schema, the output contract, the entity
+marker, the action (`WorthQueryPreserveOutput`, `WorthQueryCreateOutput` or
+`WorthQueryRetireOutput`), the cardinality (`WorthQueryExactlyOneOutput` or
+`WorthQueryAtMostOneOutput`) and the role name. The sealed
+`WorthQueryApplicationDeclaredOutputRole` derives the role's `DESCRIPTOR`, which
+the contract lists in `ROLES`. A role belongs to its contract, so one marker
+serves every binding whose `Output` is that contract:
+
+```rust,ignore
+pub struct CreatedAccountOutput;
+
+impl WorthQueryApplicationOutputRole for CreatedAccountOutput {
+    type Schema = BankSchema;
+    type Contract = CreateAccountOutputs;
+    type Entity = Account;
+    type Action = WorthQueryCreateOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "account";
+}
+
+impl ApplicationMutationOutputContract<BankSchema> for CreateAccountOutputs {
+    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
+        &[<CreatedAccountOutput as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
+}
+
+candidate.create_output::<CreatedAccountOutput>(&created)?;
+let account = receipt
+    .outputs_of::<CreateAccountOutputs>()?
+    .entity::<CreatedAccountOutput>()?;
+```
+
+A generic schema declares a generic marker,
+`struct AnchorOutput<Schema>(PhantomData<fn() -> Schema>)`, with one impl that
+covers every schema.
+
+Every use names the marker, and a use that disagrees with the contract fails to
+compile. `create_output`, `preserve_output` and `retire_output` bound the role's
+contract to the handler's binding and its action to the writer.
+`DecisionReader::prior_output::<PriorBinding, Role>` bounds the contract to
+`PriorBinding`. A producer's `type OutputRole` must be an exactly-one role of its
+operation's contract, for the entity its output family names. Each use also
+evaluates the derived `DECLARED` constant, which fails unless the contract's
+`ROLES` lists the role with the same name, entity, posture and cardinality.
+`DECLARED` is evaluated when the use is compiled to code, so that error appears
+in `cargo build` and `cargo test` but not in `cargo check`, and not in a generic
+function nothing instantiates.
+
+A commit receipt and an output-demand settlement store their outputs erased, so
+they can be cloned, archived, recovered and readmitted without a type
+parameter. `outputs_of::<Contract>()` is the one typed read: it checks once, at
+run time, that the commit was made under `Contract`, and refuses any other
+contract with `ForeignContract`. It returns
+`WorthQueryApplicationTypedOutputCorrespondence<'_, Contract>`, whose `entity`,
+`member` and `family_entries` bound each marker's contract to `Contract`, so a
+read of another contract's role or family fails `cargo check`.
+
+The cardinality decides the shape of every read. An exactly-one role must be
+bound: a completed candidate that leaves it unbound is refused with
+`MissingOutputRole`, and its reads return the output itself. The reads are
+`outputs_of::<Contract>()?.entity::<Role>()`, `DecisionReader::prior_output` and
+generated-output reconstruction's `entity::<Role>()`. An at-most-one role may be
+left unbound, and the same reads return an `Option`, `None` when the commit left
+the role unbound. Absence is a value, never a denial. Binding any fixed role a
+second time is refused with `DuplicateOutputRole`. The cardinality is part of
+the schema's canonical identity and of its portable and archived descriptions,
+so changing it changes the installed schema. An optional single output is always
+an at-most-one role, never a family with a minimum of zero. A producer names an
+exactly-one role because a commit may omit an at-most-one role.
+
+Generated-output reconstruction can contain newly generated children and preserved
+roots. `output::<Role>()` and `output_member::<Family>(suffix)` return
+`WorthQueryReconstructedOutputEntity::Generated` or `Retained` from the installed
+correspondence. Generated handles claim the exact suspension manifest and admit
+field reconstruction. Retained handles carry only the exact live identity and
+kind outside that custody and admit relation endpoints. Reconstruction entry
+validates preserved identities against the owner-admitted suspension basis;
+restoration still requires the complete generated manifest and fresh publication
+admission. Retired roles are refused. The narrower `entity` and `member` methods
+remain available when a consumer requires created payload. An all-retained current
+output has nothing to suspend: `NoGeneratedPayload` is a typed no-effect
+qualification, and its current read surface remains available.
+
+Bindings whose result cardinality follows the authored topology declare
+families. A family is a marker type whose
+`WorthQueryApplicationOutputRoleFamily` impl names the schema, the contract, the
+entity marker, the member-name `PREFIX`, the allowed `POSTURES` and the
+`MINIMUM` member count. The contract lists its derived `DESCRIPTOR` in
+`ROLE_FAMILIES`. A handler binds each source-derived member by its suffix, as in
+`candidate.create_member::<CreatedVertices>(&key, &created)?`; `preserve_member`
+and `retire_member` work the same way. Readers name the family and the action,
+as in `outputs.member::<CreatedVertices, WorthQueryCreateOutput>(&key)` on the
+view `outputs_of` returns, or read the whole family with
+`outputs.family_entries::<CreatedVertices>()`. Members are
+exactly-one. A family the contract does not declare exactly as used, or an
+action outside the family's postures, fails to compile. The suffix is run-time
+data, so an empty, ambiguous or oversized member name is refused when it is
+named.
+
+Query keeps run-time checks only where the types cannot carry the contract.
+A stored receipt carries no contract type, so `outputs_of::<Contract>()` refuses
+a commit made under another contract with `ForeignContract`; reads on the view
+it returns are checked at compile time. A family member's committed action
+is data, so reading it with another allowed action is `ActionMismatch`. Portable
+and readmitted forms are validated when admitted. Typed uses are checked again at
+run time as defense in depth. Role names describe correspondence; the platform
+resolves persistent identity.
 
 `committed_changes()` provides the exact `commit_reference()`, an
 `entity_changes()` iterator of `(EntityId, RecordStructuralChange)`, and native

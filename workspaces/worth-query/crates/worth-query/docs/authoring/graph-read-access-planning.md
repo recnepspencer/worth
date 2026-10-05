@@ -96,6 +96,23 @@ returns a successful prefix. `mutation_target` can carry an entity observed by
 that completed decision read set into the candidate phase without adding a
 duplicate scalar identity field.
 
+`select_entities(field, value, candidate_limit)` reads the complete installed
+equality-index result, including an empty result. The limit must be finite and
+nonzero; the operation's projection budget must admit one lookup plus that
+many candidate examinations before the read. Overflow denies rather than
+returning a prefix. Distinct values on the same index retain distinct predicate
+facts, so changing one selection does not invalidate an unrelated selection.
+There is no fixed 64-member ceiling for this entity selection lane.
+
+`resolve_entity` and `resolve_optional_entity` use a two-candidate selection
+to detect ambiguity. A present identity retains both the predicate and its
+field, requiring two decision facts; absence retains one predicate fact.
+Declare those facts alongside any other handler reads. Reusable producer
+outputs reobserve predicate membership after their own candidate publishes
+under the installed projection-work ceiling, separately from mutation validation.
+Missing index evidence or
+exhausted rebase work leaves the output nonreusable.
+
 ## Small Example
 
 Application code declares the read shape and executes the installed query:

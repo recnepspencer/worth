@@ -33,30 +33,6 @@ macro_rules! advance_recording {
     };
 }
 
-/// Writes the Y of `$key`, and answers whether the index had room for it.
-macro_rules! writes_y {
-    ($request:expr, $application:expr, $key:expr, $y:expr, $idempotency:expr) => {{
-        let selected = $request
-            .query(PlanarRead {
-                body_key: $key.to_owned(),
-            })
-            .execute()
-            .unwrap();
-        let changed = $request
-            .mutate(PlanarSourceAdjustment {
-                scope_key: $key.to_owned(),
-                replacement_y: length($y),
-            })
-            .expect_source(selected.observed_sources()[0].clone())
-            .idempotency(&$idempotency)
-            .execute_performed::<program::ChainProgram, program::ChainRoot>(&$application);
-        matches!(
-            changed,
-            Ok(WorthQueryApplicationPerformedMutationOutcome::Performed(_))
-        )
-    }};
-}
-
 /// The chain's journey with `invalidation_bytes` of retained index: it first
 /// settles, then the root input changes a few times, each change followed by
 /// one advance of every demand. An input change the index refuses ends the

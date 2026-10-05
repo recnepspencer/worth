@@ -180,13 +180,15 @@ fn one_advance_discharge_follows_real_consumed_output_edges_after_upstream_stabl
     );
     assert_eq!(
         settled
-            .output_correspondence()
-            .entity(binding::anchor_role::<CheckpointSchema>())
+            .outputs_of::<PlanarOutputs>()
+            .unwrap()
+            .entity::<PlanarAnchorOutput<CheckpointSchema>>()
             .unwrap()
             .entity_id(),
         original
-            .output_correspondence()
-            .entity(binding::anchor_role::<CheckpointSchema>())
+            .outputs_of::<PlanarOutputs>()
+            .unwrap()
+            .entity::<PlanarAnchorOutput<CheckpointSchema>>()
             .unwrap()
             .entity_id()
     );

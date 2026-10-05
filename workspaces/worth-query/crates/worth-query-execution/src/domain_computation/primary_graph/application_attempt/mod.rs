@@ -82,18 +82,16 @@ pub(in crate::domain_computation::primary_graph) use compare_and_commit::{
 pub use delegation_activation_program::WorthQueryDelegationActivationProgram;
 pub use denial::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
 pub(in crate::domain_computation::primary_graph) use effect_program::{
-    WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationCreationPartition,
-    WorthQueryApplicationEmission, WorthQueryApplicationRealizedEffect,
+    OutputRoleUse, WorthQueryAdmittedApplicationEmissionBatch,
+    WorthQueryApplicationCreationPartition, WorthQueryApplicationEmission,
+    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationRealizedEffect,
     WorthQueryCandidateValidatorWorkAdmission, WorthQueryCheckpointOutputRole,
 };
 pub use effect_program::{
     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationOutputAction,
-    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputEntity,
+    WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationOutputEntity,
     WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputPosture,
-    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationOutputRole,
-    WorthQueryApplicationOutputRoleFamily, WorthQueryApplicationOutputRoleNameDenial,
-    WorthQueryCreateOutput, WorthQueryPreserveOutput, WorthQueryRetireOutput,
+    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationTypedOutputCorrespondence,
 };
 pub(super) use elevation_approval_outcome::approved_outcome;
 pub use elevation_approval_outcome::{
@@ -115,9 +113,11 @@ pub(super) use elevation_request_program::validate_elevation_request_program;
 pub use elevation_request_program::WorthQueryElevationRequestProgram;
 pub(in crate::domain_computation) use fact::WorthQueryApplicationObservedFact;
 pub(in crate::domain_computation::primary_graph) use fact::{
-    observe_adjacency, observe_indexed_entity_selection, WorthQueryApplicationAdjacencyDirection,
-    WorthQueryApplicationFactKey, WorthQuerySourceCurrentnessFailure,
+    observe_adjacency, observe_indexed_entity_selection, reobserve_indexed_entity_selection,
+    WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey,
+    WorthQueryApplicationFactStorageKey, WorthQuerySourceCurrentnessFailure,
 };
+pub(in crate::domain_computation::primary_graph) use idempotency::WorthQueryRecordedIntentMatch;
 pub use idempotency::{
     WorthQueryApplicationIdempotencyBinding, WorthQueryCapabilityWorkflowIdempotency,
 };
@@ -125,7 +125,7 @@ pub use idempotency::{
 pub use idempotency_resolution::WorthQueryGuardedWorkflowOperationCustody;
 pub use idempotency_resolution::{
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
-    WorthQueryApplicationIdempotencyResolutionDenialKind,
+    WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryHistoricalApplicationCommit,
 };
 pub(super) use mandatory_review_outcome::reviewed_outcome;
 pub use mandatory_review_outcome::{WorthQueryMandatoryReviewOutcome, WorthQueryReviewedElevation};
@@ -143,8 +143,8 @@ pub(in crate::domain_computation) use provider_execution::{
     WorthQueryRegisteredProviderAttempt,
 };
 pub use provider_execution::{
-    WorthQueryExternalDispatchPreparationDenial, WorthQueryExternalRedispatchDenial,
-    WorthQueryExternalTransportInstallationDenial,
+    WorthQueryExternalDispatchAttemptDenial, WorthQueryExternalDispatchPreparationDenial,
+    WorthQueryExternalRedispatchDenial, WorthQueryExternalTransportInstallationDenial,
 };
 pub use provider_recomparison::WorthQueryMutationPreconditionComparisonEvidence;
 pub use read_phase::{WorthQueryOrdinaryApplicationRead, WorthQueryProjectedApplicationMutation};

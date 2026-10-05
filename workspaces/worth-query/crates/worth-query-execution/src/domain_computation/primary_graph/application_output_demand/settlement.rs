@@ -1,7 +1,5 @@
 mod current_accepted;
-mod readiness;
 mod receipt_custody;
-pub use readiness::WorthQueryOutputReadinessDeliveryEvidence;
 use receipt_custody::SettlementReceiptCustody;
 use std::sync::Arc;
 
@@ -13,10 +11,14 @@ use crate::domain_computation::primary_graph::output_lineage::{
     invalidation::InvalidationEditAdmission, BoundCurrentAcceptedOutput,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationReadObservation,
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQuerySelectedProductOperation,
+    WorthQueryApplicationCommitReceipt, WorthQueryApplicationOutputCorrespondence,
+    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationReadObservation,
+    WorthQueryApplicationTypedOutputCorrespondence, WorthQueryOutputDemandDenial,
+    WorthQueryOutputDemandDenialKind, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQuerySelectedProductOperation,
 };
+
+use super::WorthQueryOutputReadinessDeliveryEvidence;
 
 /// Owner-retained result of one settled output demand.
 ///
@@ -33,7 +35,7 @@ pub struct WorthQueryOutputDemandSettlement {
     pub(in crate::domain_computation::primary_graph) stable:
         Option<super::super::output_lineage::PublishedStableLineage>,
     pub(in crate::domain_computation::primary_graph) output_correspondence:
-        Arc<crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence>,
+        Arc<WorthQueryApplicationOutputCorrespondence>,
     pub(in crate::domain_computation::primary_graph) restored_source:
         Option<WorthQueryRestoredOutputSource>,
     readiness_delivery: Option<WorthQueryOutputReadinessDeliveryEvidence>,
@@ -140,10 +142,14 @@ impl WorthQueryOutputDemandSettlement {
         self.posture
     }
 
-    pub fn output_correspondence(
+    /// The settled output roles, read as the output contract `Contract`.
+    pub fn outputs_of<Contract: 'static>(
         &self,
-    ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence {
-        self.output_correspondence.as_ref()
+    ) -> Result<
+        WorthQueryApplicationTypedOutputCorrespondence<'_, Contract>,
+        WorthQueryApplicationOutputProjectionDenial,
+    > {
+        self.output_correspondence.outputs_of()
     }
 
     pub fn producer_identity(&self) -> &str {

@@ -156,7 +156,9 @@ fn idempotency_inspection_denies_before_receipt_after_grant_revocation() {
     };
     assert_eq!(
         denial.kind(),
-        WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization
+        WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization(
+            WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+        )
     );
     assert_eq!(
         denial.authorization().map(|denial| denial.kind()),

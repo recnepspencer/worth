@@ -1,7 +1,11 @@
+use worth_foundational::facade::CanonicalDigestId;
+use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
+
 use super::{
     WorthQueryApplicationIdempotencyBinding, WorthQueryIdempotencyEntityIdentity,
     WorthQueryIdempotencyScopeIdentity,
 };
+use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 
 #[test]
 fn governed_proposal_is_a_private_part_of_idempotency_intent() {
@@ -60,9 +64,6 @@ fn admitted_principal_and_scope_are_distinct_idempotency_components() {
 
 fn scope_identity(principal_slot: u64, scope_slot: u64) -> WorthQueryIdempotencyScopeIdentity {
     WorthQueryIdempotencyScopeIdentity {
-        runtime_authority: 3,
-        binding_runtime: 4,
-        binding_generation: 5,
         package_identity: [6; 32],
         schema_identity: [7; 32],
         principal: WorthQueryIdempotencyEntityIdentity {
@@ -76,4 +77,43 @@ fn scope_identity(principal_slot: u64, scope_slot: u64) -> WorthQueryIdempotency
             generation: 9,
         },
     }
+}
+
+/// A reinstall mints a new runtime authority and installation runtime, and a
+/// successor installation advances the generation. None of them survives a
+/// restore, so none of them may change the intent a request records.
+#[test]
+fn a_reinstall_at_another_runtime_or_generation_records_the_same_intent() {
+    let intent = |runtime_authority, runtime_ordinal, generation, package| {
+        let binding = WorthQueryOperationScopeBinding::axis_probe_scope(
+            runtime_authority,
+            ApplicationSchemaBindingIdentity::from_installed_parts(
+                runtime_ordinal,
+                generation,
+                CanonicalDigestId::new(package),
+                CanonicalDigestId::new([7; 32]),
+            ),
+            "operation-seal-of-this-installation",
+            8,
+            10,
+            9,
+            8,
+            20,
+            9,
+        );
+        WorthQueryApplicationIdempotencyBinding::new([1; 32], [2; 32])
+            .bind_operation_scope(&binding)
+            .intent_text()
+    };
+    let installed = intent(1, 1, 1, [6; 32]);
+
+    assert_eq!(installed, intent(2, 1, 1, [6; 32]), "runtime authority");
+    assert_eq!(installed, intent(1, 3, 1, [6; 32]), "installation runtime");
+    assert_eq!(
+        installed,
+        intent(1, 1, 4, [6; 32]),
+        "installation generation"
+    );
+    assert_eq!(installed, intent(9, 9, 9, [6; 32]), "a whole reinstall");
+    assert_ne!(installed, intent(1, 1, 1, [5; 32]), "another package");
 }

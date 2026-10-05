@@ -14,6 +14,7 @@ use worth_query_declaration::facade::{
     application_operation::{
         ApplicationMutationDescription, ApplicationMutationDescriptionParts,
         ApplicationMutationOutputPosture as Posture, ApplicationMutationOutputPostureSet,
+        ApplicationMutationOutputRoleCardinality as Cardinality,
         ApplicationMutationOutputRoleDescription, ApplicationMutationOutputRoleFamilyDescription,
         ApplicationMutationScopeDescription, ApplicationMutationScopeResolutionMode as Resolution,
     },
@@ -44,6 +45,10 @@ pub(super) fn write(
             Posture::Preserve => 1,
             Posture::Create => 2,
             Posture::Retire => 3,
+        })?;
+        output.u16(match role.cardinality {
+            Cardinality::ExactlyOne => 1,
+            Cardinality::AtMostOne => 2,
         })
     })?;
     write_sequence(
@@ -89,6 +94,11 @@ pub(super) fn decode(
                 1 => Posture::Preserve,
                 2 => Posture::Create,
                 3 => Posture::Retire,
+                _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
+            },
+            cardinality: match input.u16()? {
+                1 => Cardinality::ExactlyOne,
+                2 => Cardinality::AtMostOne,
                 _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
             },
         })

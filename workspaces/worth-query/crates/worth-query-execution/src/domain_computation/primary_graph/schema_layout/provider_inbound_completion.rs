@@ -2,7 +2,6 @@
 
 use worth_foundational::facade::{aspects, AspectFieldLocator, AspectIdentity, ScalarAspectType};
 use worth_relational::facade::identity::KindId;
-use worth_relational::facade::indexes::DerivedIndexId;
 use worth_relational::facade::schema::{
     AspectBinding, DeclaredAspectContractBinding, RelationalSchemaRegistry, SchemaId,
     SchemaVersionId,
@@ -19,7 +18,6 @@ const ASPECT: &str = "inbound-completion";
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryInboundCompletionLayout {
     pub kind: KindId,
-    pub correlation_index_id: DerivedIndexId,
     pub correlation: AspectFieldLocator,
     pub family: AspectFieldLocator,
     pub operation: AspectFieldLocator,
@@ -98,7 +96,6 @@ pub(super) fn lower_provider_inbound_completion(
         registry,
         WorthQueryInboundCompletionLayout {
             kind,
-            correlation_index_id: DerivedIndexId(0),
             correlation: locator("correlation")?,
             family: locator("family")?,
             operation: locator("operation")?,

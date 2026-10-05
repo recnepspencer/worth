@@ -164,7 +164,7 @@ fn absent_field_decision_facts_stale_after_a_competing_presence_change() {
             .compare_and_commit_application(winner, super::idempotency(73, 73)),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
-    super::assert_product_basis_stale(
+    super::assert_changed_decision(
         world
             .application
             .compare_and_commit_application(loser, super::idempotency(74, 74)),

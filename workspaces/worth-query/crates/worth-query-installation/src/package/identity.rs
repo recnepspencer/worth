@@ -8,12 +8,6 @@ use crate::canonical_work::{
     WorthQueryCanonicalWorkEvidence, INSTALLATION_MAXIMUM_CANONICAL_BYTES,
 };
 
-const PACKAGE_BUDGET: CanonicalDigestWorkBudget =
-    match CanonicalDigestWorkBudget::new(32_768, INSTALLATION_MAXIMUM_CANONICAL_BYTES) {
-        Some(budget) => budget,
-        None => panic!("fixed package canonical-work budget is valid"),
-    };
-
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct WorthQueryPortableDomainIdentity {
     owner: String,
@@ -78,14 +72,7 @@ pub(super) fn canonical_identity_with_maximum_bytes(
     ),
     CanonicalDigestDerivationDenial,
 > {
-    let budget = CanonicalDigestWorkBudget::new(
-        PACKAGE_BUDGET.maximum_entry_count(),
-        maximum_canonical_bytes.min(INSTALLATION_MAXIMUM_CANONICAL_BYTES),
-    )
-    .ok_or(CanonicalDigestDerivationDenial::EncodedByteLimitExceeded {
-        maximum: 0,
-        attempted: 0,
-    })?;
+    let budget = preflight_canonical_entries(package, maximum_canonical_bytes)?;
     let mut basis = InstallationCanonicalIdentityBasis::new(
         "worth-query.portable-domain-package",
         "worth-query-portable-domain-package-v3",
@@ -102,6 +89,61 @@ pub(super) fn canonical_identity_with_maximum_bytes(
     }
     let (digest, work) = basis.derive()?;
     Ok((WorthQueryPortableDomainPackageIdentity(digest), work))
+}
+
+/// Reject impossible entry breadth before member sorting or basis allocation.
+pub(super) fn preflight_canonical_entries(
+    package: &WorthQueryPortableDomainPackage,
+    maximum_canonical_bytes: usize,
+) -> Result<CanonicalDigestWorkBudget, CanonicalDigestDerivationDenial> {
+    // Storage admission follows the installation's finite ceiling. A caller's
+    // narrower byte policy continues to report exact encoded-byte exhaustion
+    // rather than being reinterpreted as an independent cardinality policy.
+    let storage =
+        CanonicalDigestWorkBudget::for_encoded_byte_ceiling(INSTALLATION_MAXIMUM_CANONICAL_BYTES)
+            .expect("fixed installation byte ceiling is nonzero");
+    let budget = CanonicalDigestWorkBudget::new(
+        storage.maximum_entry_count(),
+        maximum_canonical_bytes.min(INSTALLATION_MAXIMUM_CANONICAL_BYTES),
+    )
+    .ok_or(CanonicalDigestDerivationDenial::EncodedByteLimitExceeded {
+        maximum: 0,
+        attempted: 0,
+    })?;
+    let mut entries = 3usize;
+    for count in [
+        package.capabilities.len(),
+        package.configuration.len(),
+        package.operating.len(),
+        package.definitions.len().saturating_mul(3),
+        package.domain_operations.len().saturating_mul(2),
+        package.artifact_contracts.len(),
+        package
+            .conditional_application_operations
+            .len()
+            .saturating_mul(6),
+        package.contributions.len(),
+    ] {
+        entries = entries.saturating_add(count);
+    }
+    for schema in &package.application_schemas {
+        entries = entries.saturating_add(2).saturating_add(
+            schema
+                .identity()
+                .canonical_basis()
+                .payload()
+                .entries()
+                .len(),
+        );
+    }
+    let actual = u32::try_from(entries).unwrap_or(u32::MAX);
+    if actual > budget.maximum_entry_count() {
+        return Err(CanonicalDigestDerivationDenial::EntryLimitExceeded {
+            maximum: budget.maximum_entry_count(),
+            actual,
+        });
+    }
+    Ok(budget)
 }
 
 fn append_conditional_application_operations(
@@ -279,5 +321,41 @@ mod tests {
             canonical_identity_with_maximum_bytes(&fixture, INSTALLATION_MAXIMUM_CANONICAL_BYTES)
                 .unwrap();
         assert_eq!(old_identity, new_identity);
+    }
+
+    #[test]
+    fn package_identity_admits_more_than_the_former_entry_ceiling() {
+        let mut fixture = WorthQueryPortableDomainPackage::new(
+            WorthQueryPortableDomainIdentity::new("worth.entry-budget", 1, 0),
+        );
+        for index in 0..33_000 {
+            fixture = fixture.permits_contribution(format!("category-{index}"));
+        }
+        let validated = fixture.validate().unwrap();
+        let work = validated.canonical_work();
+        assert_eq!(work.canonical_entries(), 33_003);
+        assert!(work.canonical_encoded_bytes() <= INSTALLATION_MAXIMUM_CANONICAL_BYTES);
+    }
+
+    #[test]
+    fn package_entry_breadth_is_denied_before_canonical_construction() {
+        let mut fixture = WorthQueryPortableDomainPackage::new(
+            WorthQueryPortableDomainIdentity::new("worth.entry-budget", 1, 0),
+        );
+        let maximum = CanonicalDigestWorkBudget::for_encoded_byte_ceiling(
+            INSTALLATION_MAXIMUM_CANONICAL_BYTES,
+        )
+        .unwrap()
+        .maximum_entry_count();
+        for index in 0..=maximum {
+            fixture = fixture.permits_contribution(format!("category-{index}"));
+        }
+        let denial = fixture.validate().unwrap_err();
+        assert_eq!(
+            denial.kind(),
+            super::super::WorthQueryPortablePackageValidationDenialKind::CanonicalEntryBudgetExceeded,
+        );
+        assert_eq!(denial.maximum_canonical_entries(), Some(maximum));
+        assert_eq!(denial.attempted_canonical_entries(), Some(maximum + 4));
     }
 }

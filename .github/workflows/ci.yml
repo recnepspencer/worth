@@ -65,7 +65,9 @@ jobs:
           --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml
           -p worth-query-topology-entry
           -- --test-threads=1
-      - name: Prove the public consumer journey end to end
+      # The external consumer journey: publication, reconstruction, output
+      # preservation and optional output roles through the public facades.
+      - name: Run the public consumer journey
         run: >-
           cargo run
           --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml

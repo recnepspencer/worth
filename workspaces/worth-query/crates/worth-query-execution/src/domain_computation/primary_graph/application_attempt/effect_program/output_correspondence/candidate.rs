@@ -1,24 +1,21 @@
 mod authoring;
+mod completion;
 mod contract;
 
 use std::any::TypeId;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
-#[cfg(test)]
-use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPostureSet;
+use worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleCardinality;
 use worth_relational::facade::identity::EntityId;
-use worth_relational::facade::transactions::{CommitResult, CreatedEntityRef, EntityReference};
+use worth_relational::facade::transactions::{CommitResult, EntityReference};
 
 use contract::{ExpectedOutputBinding, ExpectedOutputFamily};
 
 use super::{
-    CommittedOutputBinding, WorthQueryApplicationOutputAction,
-    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputPosture,
-    WorthQueryApplicationOutputRole,
+    CommittedOutputBinding, OutputRoleUse, WorthQueryApplicationOutputCorrespondence,
+    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputRoleNameDenial,
 };
-use crate::domain_computation::primary_graph::application_attempt::effect_program::{
-    WorthQueryApplicationEffectEntity, WorthQueryApplicationRealizedEffect,
-};
+use crate::domain_computation::primary_graph::application_attempt::effect_program::WorthQueryApplicationEffectEntity;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
@@ -34,6 +31,7 @@ struct CandidateOutputBinding {
 pub(in crate::domain_computation::primary_graph::application_attempt) struct WorthQueryApplicationOutputCorrespondenceCandidate
 {
     binding_type: Option<TypeId>,
+    contract_type: Option<TypeId>,
     expected_roles: BTreeMap<String, ExpectedOutputBinding>,
     expected_families: Vec<ExpectedOutputFamily>,
     roles: BTreeMap<String, CandidateOutputBinding>,
@@ -73,239 +71,125 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
         self
     }
 
+    /// Expect the roles and families `Contract` declares, as a binding with
+    /// that output contract would. The contract stands in for the binding's
+    /// own type, so the program's publication is recorded like any output.
     #[cfg(test)]
-    pub(super) fn prepare_test_role<Binding, Entity, Action>(
-        &mut self,
-        role: WorthQueryApplicationOutputRole<Binding, Entity, Action>,
-        entity_name: &'static str,
-    ) where
-        Binding: 'static,
-        Entity: 'static,
-        Action: WorthQueryApplicationOutputAction,
+    pub(super) fn prepare_test_contract<Schema, Contract>(&mut self)
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema,
+        Contract: worth_query_declaration::facade::application_operation::ApplicationMutationOutputContract<Schema>,
     {
-        self.binding_type = Some(TypeId::of::<Binding>());
-        self.expected_roles.insert(
-            role.name().to_owned(),
-            ExpectedOutputBinding {
-                posture: Action::POSTURE,
-                entity_name,
-            },
-        );
+        let (roles, families, _) = self
+            .prepare_contract::<Schema, Contract>()
+            .expect("the test contract is well formed");
+        self.binding_type = Some(TypeId::of::<Contract>());
+        self.contract_type = Some(TypeId::of::<Contract>());
+        self.expected_roles.extend(roles);
+        self.expected_families.extend(families);
     }
 
-    #[cfg(test)]
-    pub(super) fn prepare_test_family<Binding>(
-        &mut self,
-        prefix: &str,
-        postures: ApplicationMutationOutputPostureSet,
-        entity_name: &'static str,
-        minimum: usize,
-    ) where
-        Binding: 'static,
-    {
-        self.binding_type = Some(TypeId::of::<Binding>());
-        self.expected_families.push(ExpectedOutputFamily {
-            prefix: prefix.to_owned(),
-            postures,
-            entity_name,
-            minimum,
-        });
-    }
-
-    fn validate_binding<Schema, Binding, Entity, Action>(
+    fn validate_binding<Schema, Entity>(
         &self,
-        role: &WorthQueryApplicationOutputRole<Binding, Entity, Action>,
+        role: &OutputRoleUse,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
         program: &std::sync::Arc<()>,
-    ) -> Result<(), WorthQueryApplicationAttemptDenial>
-    where
-        Binding: 'static,
-        Entity: 'static,
-        Action: WorthQueryApplicationOutputAction,
-    {
-        validate_role_name(role.name())?;
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        let posture = role.posture;
+        let name = role.name.as_str();
+        validate_role_name(name)?;
         if !std::sync::Arc::ptr_eq(program, &target.program) {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
-                role.name(),
+                name,
             ));
         }
-        validate_reference_posture(Action::POSTURE, &target.reference, role.name())?;
-        let binding_type = TypeId::of::<Binding>();
+        validate_reference_posture(posture, &target.reference, name)?;
         if self
-            .binding_type
-            .is_some_and(|existing| existing != binding_type)
+            .contract_type
+            .is_some_and(|existing| existing != role.contract_type)
         {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::ForeignOutputRole,
-                role.name(),
+                name,
             ));
         }
-        let exact = self.expected_roles.get(role.name());
+        let exact = self.expected_roles.get(name);
         let family = self
             .expected_families
             .iter()
-            .find(|family| family_matches(role.name(), &family.prefix));
-        let (posture_allowed, expected_entity) = match (exact, family) {
-            (Some(expected), None) => (expected.posture == Action::POSTURE, expected.entity_name),
-            (None, Some(expected)) => (
-                expected.postures.allows(Action::POSTURE),
+            .find(|family| family_matches(name, &family.prefix));
+        let (posture_allowed, expected_entity, cardinality) = match (exact, family) {
+            (Some(expected), None) => (
+                expected.posture == posture,
                 expected.entity_name,
+                expected.cardinality,
+            ),
+            (None, Some(expected)) => (
+                expected.postures.allows(posture),
+                expected.entity_name,
+                ApplicationMutationOutputRoleCardinality::ExactlyOne,
             ),
             _ => {
                 return Err(denial(
                     WorthQueryApplicationAttemptDenialKind::UndeclaredOutputRole,
-                    role.name(),
+                    name,
                 ))
             }
         };
-        if expected_entity != target.entity {
+        if expected_entity != target.entity || expected_entity != role.entity_name {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::OutputRoleEntityMismatch,
-                role.name(),
+                name,
             ));
         }
         if !posture_allowed {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::OutputRoleActionMismatch,
-                role.name(),
+                name,
             ));
         }
-        if self.roles.contains_key(role.name()) {
+        if cardinality != role.cardinality {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::OutputRoleCardinalityMismatch,
+                name,
+            ));
+        }
+        if self.roles.contains_key(name) {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::DuplicateOutputRole,
-                role.name(),
+                name,
             ));
         }
         Ok(())
     }
 
-    fn insert_binding<Schema, Binding, Entity, Action>(
+    fn insert_binding<Schema, Entity>(
         &mut self,
-        role: WorthQueryApplicationOutputRole<Binding, Entity, Action>,
+        role: OutputRoleUse,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
-    ) where
-        Binding: 'static,
-        Entity: 'static,
-        Action: WorthQueryApplicationOutputAction,
-    {
-        self.binding_type = Some(TypeId::of::<Binding>());
+    ) {
+        self.contract_type = Some(role.contract_type);
         self.roles.insert(
-            role.name().to_owned(),
+            role.name,
             CandidateOutputBinding {
-                posture: Action::POSTURE,
+                posture: role.posture,
                 entity_name: target.entity.clone(),
-                entity_type: TypeId::of::<Entity>(),
+                entity_type: role.entity_type,
                 entity: target.reference.clone(),
             },
         );
     }
 
     #[cfg(test)]
-    pub(super) fn bind<Schema, Binding, Entity, Action>(
+    pub(super) fn bind<Schema, Entity>(
         &mut self,
-        role: WorthQueryApplicationOutputRole<Binding, Entity, Action>,
+        role: OutputRoleUse,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
         program: &std::sync::Arc<()>,
-    ) -> Result<(), WorthQueryApplicationAttemptDenial>
-    where
-        Binding: 'static,
-        Entity: 'static,
-        Action: WorthQueryApplicationOutputAction,
-    {
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         self.validate_binding(&role, target, program)?;
         self.insert_binding(role, target);
-        Ok(())
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn validate_effects(
-        &self,
-        effects: &[WorthQueryApplicationRealizedEffect],
-    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-        if let Some(missing) = self
-            .expected_roles
-            .keys()
-            .find(|role| !self.roles.contains_key(*role))
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::MissingOutputRole,
-                missing,
-            ));
-        }
-        if let Some(missing) = self.expected_families.iter().find(|family| {
-            self.roles
-                .keys()
-                .filter(|role| family_matches(role, &family.prefix))
-                .count()
-                < family.minimum
-        }) {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::MissingOutputRole,
-                &missing.prefix,
-            ));
-        }
-        if self.roles.is_empty() {
-            return Ok(());
-        }
-        let mut deleted_entities = BTreeSet::new();
-        let mut created_entities = BTreeSet::new();
-        for effect in effects {
-            match effect {
-                WorthQueryApplicationRealizedEffect::DeleteEntity { entity_id } => {
-                    deleted_entities.insert(*entity_id);
-                }
-                WorthQueryApplicationRealizedEffect::CreateEntity {
-                    kind,
-                    key,
-                    partition,
-                    ..
-                } => {
-                    created_entities.insert(CreatedEntityRef {
-                        partition_id: partition
-                            .resolve(worth_relational::facade::identity::PartitionId::main()),
-                        kind_id: *kind,
-                        client_key: worth_relational::facade::symbols::ClientKey::raw(key.clone()),
-                    });
-                }
-                _ => {}
-            }
-        }
-        for (role, binding) in &self.roles {
-            let meaning_matches = self.expected_roles.get(role).is_some_and(|expected| {
-                expected.posture == binding.posture && expected.entity_name == binding.entity_name
-            }) || self.expected_families.iter().any(|family| {
-                family_matches(role, &family.prefix)
-                    && family.postures.allows(binding.posture)
-                    && family.entity_name == binding.entity_name
-            });
-            if !meaning_matches {
-                return Err(denial(
-                    WorthQueryApplicationAttemptDenialKind::OutputRoleEntityMismatch,
-                    role,
-                ));
-            }
-            let is_deleted = match binding.entity {
-                EntityReference::Existing(entity_id) => deleted_entities.contains(&entity_id),
-                EntityReference::Created(_) => false,
-            };
-            let action_matches = match binding.posture {
-                WorthQueryApplicationOutputPosture::Preserve => !is_deleted,
-                WorthQueryApplicationOutputPosture::Create => {
-                    matches!(
-                        &binding.entity,
-                        EntityReference::Created(created)
-                            if created_entities.contains(created)
-                    )
-                }
-                WorthQueryApplicationOutputPosture::Retire => is_deleted,
-            };
-            if !action_matches {
-                return Err(denial(
-                    WorthQueryApplicationAttemptDenialKind::OutputRoleActionMismatch,
-                    role,
-                ));
-            }
-        }
         Ok(())
     }
 
@@ -343,8 +227,16 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
                 )
             })
             .collect();
+        let optional_roles = self
+            .expected_roles
+            .into_iter()
+            .filter(|(_, expected)| expected.cardinality.admits_absence())
+            .map(|(role, _)| role)
+            .collect();
         WorthQueryApplicationOutputCorrespondence {
             binding_type: self.binding_type,
+            contract_type: self.contract_type,
+            optional_roles,
             roles,
         }
     }
@@ -377,7 +269,7 @@ fn validate_reference_posture(
 }
 
 fn validate_role_name(role: &str) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    if super::role::validate_output_role_name(role).is_err() {
+    if WorthQueryApplicationOutputRoleNameDenial::validate(role).is_err() {
         Err(denial(
             WorthQueryApplicationAttemptDenialKind::InvalidOutputRole,
             role,

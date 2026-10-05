@@ -4,9 +4,7 @@ use std::net::SocketAddr;
 use std::time::Duration;
 
 use bank_external_rail::inquire_dispatch_contact_count;
-use bank_http_adapter::{
-    BankHttpDenialKind, BankHttpRecoveryRetryDisposition, BankHttpRecoverySafeRetryOutcome,
-};
+use bank_http_adapter::{BankHttpRecoveryRetryDisposition, BankHttpRecoverySafeRetryOutcome};
 use bank_user_node::BankUserNodeRecoverySafeRetryOutcome;
 
 use super::super::post_node;
@@ -40,13 +38,7 @@ pub(super) fn assert_racing_retry_result(result: &BankUserNodeRecoverySafeRetryO
             result,
             BankUserNodeRecoverySafeRetryOutcome::Forwarded {
                 response: BankHttpRecoverySafeRetryOutcome::Applied { .. }
-                    | BankHttpRecoverySafeRetryOutcome::Denied {
-                        denial: bank_http_adapter::BankHttpDenial {
-                            kind: BankHttpDenialKind::Stale,
-                            ..
-                        },
-                        ..
-                    }
+                    | BankHttpRecoverySafeRetryOutcome::AlreadyCompleted { .. }
             }
         ),
         "racing retry must execute or find callback-owned terminal: {result:?}"
@@ -75,16 +67,11 @@ pub(super) async fn assert_post_terminal_retry(
         matches!(
             &result,
             BankUserNodeRecoverySafeRetryOutcome::Forwarded {
-                response: BankHttpRecoverySafeRetryOutcome::Denied {
-                    denial: bank_http_adapter::BankHttpDenial {
-                        kind: BankHttpDenialKind::Stale,
+                response: BankHttpRecoverySafeRetryOutcome::AlreadyCompleted { .. }
+                    | BankHttpRecoverySafeRetryOutcome::Applied {
+                        disposition: BankHttpRecoveryRetryDisposition::AlreadyRetried,
                         ..
-                    },
-                    ..
-                } | BankHttpRecoverySafeRetryOutcome::Applied {
-                    disposition: BankHttpRecoveryRetryDisposition::AlreadyRetried,
-                    ..
-                }
+                    }
             }
         ),
         "terminal callback prevents another fresh safe retry: {result:?}"

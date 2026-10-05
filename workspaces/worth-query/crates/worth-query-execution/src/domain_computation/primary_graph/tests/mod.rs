@@ -17,5 +17,7 @@ mod product_managed_admission_affinity;
 mod product_publication_cancellation;
 mod program_support_admission;
 pub(in crate::domain_computation) mod recoverable_commit_support;
+mod restored_first_commit;
+mod retired_index_checkpoint;
 mod successful_resolution;
 mod typed_bootstrap;

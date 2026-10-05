@@ -155,6 +155,11 @@ where
             .correspondence
             .created_entity_ids()
             .collect::<Vec<_>>();
+        if generated_entities.is_empty() {
+            return Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
+                WorthQueryGeneratedOutputSuspensionDenial::NoGeneratedPayload,
+            ));
+        }
         let prepared = application.primary_provider.graph.with_runtime(|runtime| {
             runtime
                 .owner_component_services()
@@ -164,8 +169,7 @@ where
                     &generated_entities,
                 )
         });
-        let prepared =
-            prepared.map_err(|_| WorthQueryGeneratedOutputSuspensionFailure::Preparation)?;
+        let prepared = prepared.map_err(WorthQueryGeneratedOutputSuspensionFailure::Preparation)?;
         let (candidate, completion) = prepared.into_parts();
         let prepared = product
             .publication_binding()

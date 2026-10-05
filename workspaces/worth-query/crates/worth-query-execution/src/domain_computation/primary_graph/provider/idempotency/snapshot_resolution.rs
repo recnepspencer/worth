@@ -10,6 +10,7 @@ use super::{
 };
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationCommitOutcomeIdentity, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryRecordedIntentMatch,
 };
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryProviderIdempotencyLayout;
@@ -180,9 +181,17 @@ fn resolve_projected_idempotency(
     record: WorthQueryProjectedIdempotencyRecord,
 ) -> Result<WorthQueryProviderIdempotencyResolution, WorthQueryProviderIdempotencyResolutionDenial>
 {
-    let expected_intent = AspectValue::String(InternedString::from(binding.intent_text()));
-    if record.intent.as_ref() != Some(&expected_intent) {
-        return Ok(WorthQueryProviderIdempotencyResolution::Drift);
+    let Some(AspectValue::String(InternedString::Raw(recorded_intent))) = &record.intent else {
+        return Err("provider idempotency intent is unavailable".into());
+    };
+    match binding.match_recorded_intent(recorded_intent)? {
+        WorthQueryRecordedIntentMatch::Same => {}
+        WorthQueryRecordedIntentMatch::Drift => {
+            return Ok(WorthQueryProviderIdempotencyResolution::Drift);
+        }
+        WorthQueryRecordedIntentMatch::Unverifiable => {
+            return Err(WorthQueryProviderIdempotencyResolutionDenial::RecordedIntentUnverifiable);
+        }
     }
     let committed = context
         .runtime
@@ -200,8 +209,11 @@ fn resolve_projected_idempotency(
     let emitted = usize::try_from(emitted)
         .map_err(|_| "provider idempotency emitted-effect count exceeds host representation")?;
     let commit = committed.commit().clone();
-    // Evidence that left the declared window can no longer say what the key
-    // committed: the replay is told so, never drift and never re-execution.
+    // The receipt's evidence is process memory, retained from the publication
+    // that performed the commit. The declared idempotency window evicts the
+    // oldest evidence; a restore or reopen, or the retirement of the performing
+    // product occurrence, releases it. The durable record still names the
+    // commit, so the replay is told which, never drift and never re-execution.
     let Some(committed) = context.provider.observe_completed_application(&commit) else {
         return Err(
             if context
@@ -210,7 +222,9 @@ fn resolve_projected_idempotency(
             {
                 WorthQueryProviderIdempotencyResolutionDenial::WindowExpired
             } else {
-                "provider idempotency commit evidence is unavailable".into()
+                WorthQueryProviderIdempotencyResolutionDenial::CommittedReceiptNotRetained {
+                    commit: commit.commit_id,
+                }
             },
         );
     };

@@ -56,6 +56,7 @@ pub(super) fn commit_denial(outcome: BankMutationCommitOutcome) -> BankHttpDenia
         ),
         BankMutationCommitOutcome::NoEffect(_) => unavailable(),
         BankMutationCommitOutcome::Stale { .. } => stale(),
+        BankMutationCommitOutcome::PreviouslyCommitted(_) => stale(),
         BankMutationCommitOutcome::Cancelled => {
             BankHttpDenial::new(BankHttpDenialKind::Cancelled, BankHttpNextAction::Retry)
         }

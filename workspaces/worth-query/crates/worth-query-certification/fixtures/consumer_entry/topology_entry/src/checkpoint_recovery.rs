@@ -21,8 +21,10 @@ use worth_query_host::facade::{
 use super::*;
 #[cfg(feature = "test-query-execution-observer")]
 mod clean_reuse;
+mod current_output;
 mod demand_contact;
 mod demand_policy;
+mod generated_restoration;
 mod input_cutoff;
 #[cfg(all(feature = "test-world-operation-control", not(target_arch = "wasm32")))]
 mod late_cancellation;

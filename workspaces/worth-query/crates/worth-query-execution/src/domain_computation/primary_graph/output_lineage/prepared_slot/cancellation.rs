@@ -56,14 +56,12 @@ impl WorthQueryApplicationOutputLineage {
             )?;
             let mut cue = self.cancelled_slots.take().unwrap();
             self.cancelled_slots = cue.next.take();
-            if let Some(partition) = cue.partition {
-                self.partition_index.remove_vacancy(
-                    cue.identity.source(),
-                    coordinate.occurrence,
-                    coordinate.generation,
-                    partition,
-                );
-            }
+            self.partition_index.remove_vacancy(
+                cue.identity.source(),
+                coordinate.occurrence,
+                coordinate.generation,
+                cue.partition,
+            );
             let occurrences = self.by_source.get_mut(cue.identity.source()).unwrap();
             let history = occurrences.get_mut(&coordinate.occurrence).unwrap();
             let removed: RecordedGeneration = history

@@ -2,7 +2,6 @@ use super::*;
 use crate::domain_computation::primary_graph::application_attempt::effect_program::{
     retained_representation, WorthQueryApplicationEffectProgramBuilder,
 };
-use crate::domain_computation::primary_graph::WorthQueryApplicationOutputAction;
 use worth_query_declaration::facade::{
     application_operation::ApplicationMutationBinding, application_schema::ApplicationSchema,
 };
@@ -10,22 +9,17 @@ use worth_query_declaration::facade::{
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>
 {
+    /// Expect the roles and families `Contract` declares, in place of the
+    /// operation's own output contract.
     #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn prepare_output_role_for_test<
-        Binding,
-        Entity,
-        Action,
-    >(
+    pub(in crate::domain_computation::primary_graph) fn prepare_output_contract_for_test<Contract>(
         &mut self,
-        role: WorthQueryApplicationOutputRole<Binding, Entity, Action>,
-        entity_name: &'static str,
     ) where
-        Binding: 'static,
-        Entity: 'static,
-        Action: WorthQueryApplicationOutputAction,
+        Schema: ApplicationSchema,
+        Contract: worth_query_declaration::facade::application_operation::ApplicationMutationOutputContract<Schema>,
     {
         self.output_correspondence
-            .prepare_test_role(role, entity_name);
+            .prepare_test_contract::<Schema, Contract>();
     }
 
     pub(in crate::domain_computation::primary_graph) fn prepare_output_contract<Binding>(
@@ -35,11 +29,12 @@ impl<Schema, Operation, Input, Scope>
         Schema: ApplicationSchema,
         Binding: ApplicationMutationBinding<Schema>,
     {
-        let (binding_type, prepared, families, retained_representation_bytes) = self
-            .output_correspondence
-            .prepare_contract::<Schema, Binding>()?;
+        let (prepared, families, retained_representation_bytes) =
+            self.output_correspondence
+                .prepare_contract::<Schema, Binding::Output>()?;
         self.charge_candidate_representation_only(retained_representation_bytes)?;
-        self.output_correspondence.binding_type = Some(binding_type);
+        self.output_correspondence.binding_type = Some(TypeId::of::<Binding>());
+        self.output_correspondence.contract_type = Some(TypeId::of::<Binding::Output>());
         self.output_correspondence.expected_roles.extend(prepared);
         self.output_correspondence
             .expected_families
@@ -47,23 +42,21 @@ impl<Schema, Operation, Input, Scope>
         Ok(())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn bind_output<Binding, Entity, Action>(
+    /// Bind `target` under `role`. Public writers build `role` from a
+    /// declaration marker, which checks it against the contract at compile
+    /// time; the runtime checks here guard the erased use.
+    pub(in crate::domain_computation::primary_graph) fn bind_output<Entity>(
         &mut self,
-        role: WorthQueryApplicationOutputRole<Binding, Entity, Action>,
+        role: OutputRoleUse,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
-    ) -> Result<(), WorthQueryApplicationAttemptDenial>
-    where
-        Binding: 'static,
-        Entity: 'static,
-        Action: WorthQueryApplicationOutputAction,
-    {
-        validate_role_name(role.name())?;
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        validate_role_name(&role.name)?;
         let retained_representation_bytes =
-            retained_representation::output_binding(role.name(), &target.entity, &target.reference)
+            retained_representation::output_binding(&role.name, &target.entity, &target.reference)
                 .ok_or_else(|| {
                     denial(
                         WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded,
-                        role.name(),
+                        role.name.as_str(),
                     )
                 })?;
         self.output_correspondence

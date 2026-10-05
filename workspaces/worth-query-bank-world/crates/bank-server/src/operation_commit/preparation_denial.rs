@@ -31,6 +31,7 @@ pub enum BankApplicationAttemptDenialKind {
     DuplicateOutputRole,
     OutputRoleEntityMismatch,
     OutputRoleActionMismatch,
+    OutputRoleCardinalityMismatch,
     DuplicateEffectKey,
     CandidateCapacityExceeded,
     CandidateReservationExceeded,
@@ -161,6 +162,9 @@ const fn application_attempt_kind(
         }
         Query::OutputRoleActionMismatch => {
             BankApplicationAttemptDenialKind::OutputRoleActionMismatch
+        }
+        Query::OutputRoleCardinalityMismatch => {
+            BankApplicationAttemptDenialKind::OutputRoleCardinalityMismatch
         }
         Query::DuplicateEffectKey => BankApplicationAttemptDenialKind::DuplicateEffectKey,
         Query::CandidateCapacityExceeded => {

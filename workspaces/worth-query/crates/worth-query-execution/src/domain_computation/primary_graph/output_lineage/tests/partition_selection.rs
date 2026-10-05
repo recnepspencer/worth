@@ -153,7 +153,7 @@ fn unrelated_partition_selection(population: u64) {
         source.clone(),
         occurrence,
         revised_generation,
-        partition(0),
+        Some(partition(0)),
         slot,
     );
     let revised_coordinate = ProductCoordinate {

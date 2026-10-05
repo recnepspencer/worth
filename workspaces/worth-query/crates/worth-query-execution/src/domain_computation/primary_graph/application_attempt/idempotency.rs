@@ -4,6 +4,9 @@ mod capability_workflow;
 mod encoding;
 mod host_commit;
 mod mutation_binding;
+mod recorded_intent;
+#[cfg(test)]
+mod recorded_intent_tests;
 #[cfg(test)]
 mod tests;
 mod workflow_definition;
@@ -13,6 +16,7 @@ mod workflow_transition;
 
 pub use capability_workflow::WorthQueryCapabilityWorkflowIdempotency;
 use encoding::{append_identity_slot, append_scope_slot, encode_identity};
+pub(in crate::domain_computation::primary_graph) use recorded_intent::WorthQueryRecordedIntentMatch;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct WorthQueryIdempotencyEntityIdentity {
@@ -21,11 +25,13 @@ struct WorthQueryIdempotencyEntityIdentity {
     generation: u32,
 }
 
+/// The admitted principal and scope under one installed package and schema.
+/// It names no runtime and no installation generation, since both are counted
+/// per process and neither survives a restore, so the same request matches its
+/// durable intent in every runtime that installs the same package, at any
+/// generation, before and after a restore or reopen.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct WorthQueryIdempotencyScopeIdentity {
-    runtime_authority: u64,
-    binding_runtime: u64,
-    binding_generation: u64,
     package_identity: [u8; 32],
     schema_identity: [u8; 32],
     principal: WorthQueryIdempotencyEntityIdentity,
@@ -45,10 +51,11 @@ struct WorthQueryIdempotencyScopeIdentity {
 /// behind the publication boundary.
 ///
 /// An accepted source expectation can add its source with `bind_idempotency`, and
-/// at commit and at resolution the runtime also binds the admitted operation, its
-/// scope, its preconditions, and its governed input into the intent. Reusing a key
-/// with the same intent finds the earlier commit; reusing it with a different
-/// intent is intent drift.
+/// at commit and at resolution the runtime also binds the admitted operation's
+/// definition, its scope, its preconditions, and its governed input into the
+/// intent. The intent is durable, so none of these names the runtime that
+/// admitted the request. Reusing a key with the same intent finds the earlier
+/// commit; reusing it with a different intent is intent drift.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationIdempotencyBinding {
     key_identity: [u8; 32],
@@ -127,7 +134,9 @@ impl WorthQueryApplicationIdempotencyBinding {
         encode_identity(self.key_identity)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn intent_text(self) -> String {
+    /// Every intent slot, without the encoding's version; `intent_text` is
+    /// what a key records.
+    fn intent_slots(self) -> String {
         let mut encoded = encode_identity(self.intent_identity);
         append_identity_slot(&mut encoded, "source", self.source_identity);
         append_identity_slot(&mut encoded, "operation", self.operation_identity);
@@ -231,9 +240,6 @@ impl WorthQueryApplicationIdempotencyBinding {
             producer_dependency_identity: self.producer_dependency_identity,
             operation_identity: self.operation_identity,
             operation_scope_identity: Some(WorthQueryIdempotencyScopeIdentity {
-                runtime_authority: binding.runtime_authority(),
-                binding_runtime: binding.binding_identity().runtime_ordinal(),
-                binding_generation: binding.binding_identity().generation(),
                 package_identity: *binding.binding_identity().package_identity().bytes(),
                 schema_identity: *binding.binding_identity().schema_identity().bytes(),
                 principal: WorthQueryIdempotencyEntityIdentity {

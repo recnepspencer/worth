@@ -17,6 +17,8 @@ use worth_query_decl::facade::{
 pub struct PriorCycleAdjustment {
     pub scope_key: String,
     pub offset_y: PositiveLength,
+    /// Select one created member; absence adjusts the complete prior family.
+    pub member_suffix: Option<String>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -31,7 +33,7 @@ pub enum PriorCycleAdjustmentDenial {
 }
 
 worth_query_structured_value_binding!(pub PriorCycleAdjustmentInputBinding for PriorCycleAdjustment {
-    identity: "worth.query.certification.prior-cycle-adjustment-input.v1"
+    identity: "worth.query.certification.prior-cycle-adjustment-input.v2"
 });
 worth_query_structured_value_binding!(pub PriorCycleAdjustmentResultBinding for PriorCycleAdjustmentResult {
     identity: "worth.query.certification.prior-cycle-adjustment-result.v1"

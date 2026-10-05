@@ -21,6 +21,7 @@ const CHILD: CapabilityGrantId = CapabilityGrantId::new(401).unwrap();
 const GRANDCHILD: CapabilityGrantId = CapabilityGrantId::new(402).unwrap();
 
 mod expiry;
+mod prepared_currentness;
 
 #[test]
 fn raw_specialized_commit_cannot_bypass_the_installed_program() {
@@ -198,56 +199,6 @@ fn activation_program_cannot_cross_runtime_session_authority() {
     assert_child_absent(&foreign);
 }
 
-#[test]
-fn unrelated_revocation_invalidates_the_old_product_basis_and_fresh_delegation_commits() {
-    let fixture = delegation_world("delegation-provider-unrelated-currentness");
-    let specialist = fixture.authenticate();
-    let action = delegated_action();
-    let command = delegation_command(action).unwrap();
-    let admission = fixture
-        .runtime
-        .admit_delegation(&specialist, action, command.child, &request_scope())
-        .unwrap();
-    let program = fixture
-        .runtime
-        .materialize_delegation(admission, command.child)
-        .expect("the exact activation program must retain only relevant support");
-
-    let revoked = fixture
-        .runtime
-        .revoke_estate_capability_with_key(
-            &specialist,
-            EstateAction::RevokeCapability {
-                estate: ESTATE,
-                grant: UNRELATED_GOVERNANCE_GRANT,
-            },
-            &idempotency(139),
-            &request_scope(),
-        )
-        .expect("an unrelated authority should revoke independently");
-    assert!(matches!(revoked, BankMutationCommitOutcome::Committed(_)));
-    let outcome = fixture
-        .runtime
-        .application_program()
-        .admit_program_operation::<DelegateEstateCapabilityOperation>()
-        .unwrap()
-        .compare_and_commit_capability_delegation(program, query_idempotency(141));
-    assert_product_basis_stale(outcome);
-    assert!(!grant_is_visible(&fixture, &specialist, CHILD));
-
-    let fresh = fixture
-        .runtime
-        .delegate_estate_capability_with_key(
-            &specialist,
-            action,
-            &idempotency(141),
-            &request_scope(),
-        )
-        .expect("fresh admission must preserve progress unrelated to the delegation");
-    assert!(matches!(fresh, BankMutationCommitOutcome::Committed(_)));
-    assert!(grant_is_visible(&fixture, &specialist, CHILD));
-}
-
 fn delegated_action() -> EstateAction {
     EstateAction::DelegateCapability {
         estate: ESTATE,
@@ -339,20 +290,6 @@ fn assert_provider_currentness_denial(outcome: WorthQueryApplicationCommitOutcom
     assert_eq!(
         denial.stage(),
         WorthQueryApplicationCommitDenialStage::DecisionReadSet
-    );
-}
-
-fn assert_product_basis_stale(outcome: WorthQueryApplicationCommitOutcome) {
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
-        panic!("an old materialized program must retain its exact product basis: {outcome:?}");
-    };
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationCommitDenialKind::ProductBasisStale
-    );
-    assert_eq!(
-        denial.stage(),
-        WorthQueryApplicationCommitDenialStage::InvariantExecution
     );
 }
 

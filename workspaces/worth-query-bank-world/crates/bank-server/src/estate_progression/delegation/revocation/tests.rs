@@ -63,21 +63,12 @@ fn target_status_drift_after_materialization_stales_provider_commit() {
         .admit_program_operation::<RevokeEstateCapabilityOperation>()
         .unwrap()
         .compare_and_commit_capability_revocation(program, query_idempotency(155));
-    assert_product_basis_stale(outcome);
-}
-
-fn assert_product_basis_stale(outcome: WorthQueryApplicationCommitOutcome) {
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
-        panic!("an old materialized program must retain its exact product basis: {outcome:?}");
+    // The prepared decision read the target Active. That fact changed, so
+    // the program stales before effects on the current product.
+    let WorthQueryApplicationCommitOutcome::Stale(stale) = outcome else {
+        panic!("the revoked target must stale the prepared revocation: {outcome:?}");
     };
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationCommitDenialKind::ProductBasisStale
-    );
-    assert_eq!(
-        denial.stage(),
-        WorthQueryApplicationCommitDenialStage::InvariantExecution
-    );
+    assert!(stale.stale_fact_count() > 0);
 }
 
 #[test]

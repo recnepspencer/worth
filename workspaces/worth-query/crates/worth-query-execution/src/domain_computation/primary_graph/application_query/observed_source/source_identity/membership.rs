@@ -256,6 +256,34 @@ mod tests {
         }
     }
 
+    impl WorthQueryObservedSourceSelection {
+        /// A complete retained selection for lineage tests outside this
+        /// module, which cannot observe a source of their own.
+        pub(in crate::domain_computation::primary_graph) fn selecting_for_test(
+            endpoint: u64,
+        ) -> Self {
+            let authority = crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity::mint_for_test();
+            let meaning = super::super::WorthQueryObservedSourceMeaningRegistry::new(authority)
+                .intern(
+                    &[7; 32],
+                    &[8; 32],
+                    footprint(vec![entity(endpoint)], 4),
+                    &super::super::WorthQueryApplicationBasisSelectionIdentity::Relational,
+                )
+                .unwrap();
+            Self {
+                runtime_authority: authority.as_u64(),
+                schema_binding: ApplicationSchemaBindingIdentity::from_installed_parts(
+                    1,
+                    2,
+                    CanonicalDigestId::new([3; 32]),
+                    CanonicalDigestId::new([4; 32]),
+                ),
+                meaning,
+            }
+        }
+    }
+
     #[test]
     fn selected_membership_ignores_revisions_but_not_selected_endpoints() {
         let before = footprint(vec![entity(2)], 4);

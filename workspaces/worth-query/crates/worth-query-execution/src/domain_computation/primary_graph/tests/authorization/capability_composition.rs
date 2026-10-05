@@ -179,7 +179,7 @@ fn new_prior_actor_denies_final_commit_before_effect_authority() {
 }
 
 #[test]
-fn unrelated_published_actor_drift_stales_the_selected_product_mutation() {
+fn unrelated_published_actor_drift_preserves_the_prepared_product_mutation() {
     let world = installed_composed_capability_world(CapabilityCompositionScenario::Lawful);
     world.authorization_time.script(vec![time(100); 16]);
     let request = live_scope();
@@ -199,11 +199,12 @@ fn unrelated_published_actor_drift_stales_the_selected_product_mutation() {
         "other-prior",
     );
 
-    super::super::application_attempt::assert_product_basis_stale(
-        world
-            .application
-            .compare_and_commit_application(program, idempotency(76, 76)),
-        "the mutation bound to the older selected product",
+    let outcome = world
+        .application
+        .compare_and_commit_application(program, idempotency(76, 76));
+    assert!(
+        matches!(outcome, WorthQueryApplicationCommitOutcome::Committed(_)),
+        "unrelated actor edges must preserve current authorization and decision: {outcome:?}"
     );
 }
 

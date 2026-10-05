@@ -81,10 +81,7 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
                 .observe_branch(&runtime.main_branch_identity())
                 .ok()
                 .and_then(|(_, basis)| runtime.snapshots().snapshot_for_observation(&basis.observation()).ok());
-            let started_after = runtime
-                .publication()
-                .observation_snapshot()
-                .latest_patch_position;
+            let started_after = runtime.history().latest_patch_stream_position();
             let previous = started_after.and_then(|position| {
                 runtime
                     .history()

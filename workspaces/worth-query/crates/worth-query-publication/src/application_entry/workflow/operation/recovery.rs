@@ -181,7 +181,7 @@ where
         if self.workflow_transition_identity() != Some(*required.transition_identity_bytes()) {
             return Err(WorthQueryWorkflowOperationRecoveryPreparationDenial::NotWorkflowBound);
         }
-        let staged = self.stage();
+        let staged = self.stage().map_err(WorthQueryWorkflowOperationRecoveryPreparationDenial::Request)?;
         let identities = self
             .identities()
             .map_err(WorthQueryWorkflowOperationRecoveryPreparationDenial::Request)?;

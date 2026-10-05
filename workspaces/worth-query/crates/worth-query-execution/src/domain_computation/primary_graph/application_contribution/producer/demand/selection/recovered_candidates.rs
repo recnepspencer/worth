@@ -12,8 +12,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
         output_bindings: &[std::any::TypeId],
         lineage: &mut crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage,
-    ) -> Result<(), WorthQueryOutputDemandDenial>
-    where
+    ) where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
         for recovered in self
@@ -27,7 +26,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             if !output_bindings.contains(&binding) {
                 continue;
             }
-            if let (Some(authority), Some(fact_bytes)) = (
+            if let (Some(authority), Some(_)) = (
                 self.product_runtime.recovered_root_authority.as_ref(),
                 checkpoint.producer_facts.as_deref(),
             ) {
@@ -36,31 +35,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     && recovered_observation.lifecycle_incarnation()
                         == observation.lifecycle_incarnation()
                 {
-                    let facts = crate::domain_computation::primary_graph::application_checkpoint::decode_producer_facts_for_wire_version(
-                        fact_bytes,
-                        checkpoint.producer_fact_wire_version,
-                    )
-                        .map_err(|error| WorthQueryOutputDemandDenial::new(
-                            WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
-                            error,
-                        ))?;
-                    lineage.record_restoration(
-                        binding,
-                        self.runtime.authority_identity().as_u64(),
-                        self.installed_schema.binding_identity(),
-                        scope,
-                        recovered_observation,
-                        std::sync::Arc::clone(&recovered.correspondence),
-                        crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Checkpoint(
-                            crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new(checkpoint.source),
-                        ),
-                        checkpoint.source_partition,
-                        checkpoint.producer_dependency,
-                        checkpoint.idempotency_key,
-                        facts,
-                        checkpoint.resources,
-                        None,
-                    );
+                    // Installation recorded this fact-bearing row.
                     continue;
                 }
             }
@@ -81,6 +56,5 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 checkpoint.resources,
             );
         }
-        Ok(())
     }
 }

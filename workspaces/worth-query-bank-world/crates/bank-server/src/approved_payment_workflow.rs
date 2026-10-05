@@ -57,6 +57,9 @@ pub struct BankApprovedPaymentPerformedOperation {
 #[derive(Debug)]
 pub enum BankApprovedPaymentApplyOutcome {
     Performed(BankApprovedPaymentPerformedOperation),
+    PreviouslyCommitted(
+        worth_query_host::facade::primary_graph::WorthQueryHistoricalApplicationCommit,
+    ),
     IdempotencyIntentDrift,
     DomainDenied(BankProposalDenial),
     Cancelled,
@@ -251,6 +254,9 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
                     receipt,
                     newly_committed: false,
                 })
+            }
+            WorthQueryApplicationMutationOutcome::PreviouslyCommitted(observation) => {
+                BankApprovedPaymentApplyOutcome::PreviouslyCommitted(observation)
             }
             WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift => {
                 BankApprovedPaymentApplyOutcome::IdempotencyIntentDrift

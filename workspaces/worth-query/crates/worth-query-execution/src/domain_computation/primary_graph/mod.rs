@@ -89,6 +89,7 @@ pub(in crate::domain_computation) use application_attempt::{
     WorthQueryProviderProgressionOutcome, WorthQueryRegisteredProviderAttempt,
 };
 pub(crate) use application_attempt::WorthQueryRetainedGovernedInput;
+pub(in crate::domain_computation::primary_graph) use application_attempt::WorthQueryApplicationOutputCorrespondence;
 pub(crate) use application_attempt::WorthQueryPerformedExternalRedispatchSeal;
 pub(crate) use provider::WorthQueryRetainedPreImageSeal;
 pub(crate) use provider::WorthQueryPrimaryGraphProvider;
@@ -105,10 +106,9 @@ pub(in crate::domain_computation) use application_runtime::WorthQueryExternalDis
 pub(in crate::domain_computation) use application_runtime::WorthQueryPerformedInboundCompletion;
 pub(in crate::domain_computation) use application_runtime::WorthQueryUnpublishedInboundCompletion;
 pub(in crate::domain_computation::primary_graph) use application_runtime::{
-    InstalledTransportCompletion, InstalledTransportResumeOutcome, PerformedInstalledTransportCompletion,
+    InstalledTransportCompletion, InstalledTransportResumeOutcome,
+    PerformedInstalledTransportCompletion,
 };
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use application_runtime::InstalledTransportPendingReason;
 pub(in crate::domain_computation) use application_runtime::{
     WorthQueryInstalledTransportCompletionBinding,
 };

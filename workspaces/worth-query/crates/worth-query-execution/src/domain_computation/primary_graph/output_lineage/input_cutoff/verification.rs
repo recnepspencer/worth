@@ -27,6 +27,27 @@ use crate::domain_computation::primary_graph::{
     SourceInvalidationOwner,
 };
 
+/// What the cutoff does not verify: a row still in its checkpoint posture,
+/// and a settlement the owner holds no row for under the selected source.
+/// Selection asks this before it calls a live output exact, so the two
+/// cannot disagree about one row.
+pub(in crate::domain_computation::primary_graph) fn cutoff_declines(
+    requirement: Option<FullVerificationReason>,
+    settlement: Option<&SourceSettlementCurrentness>,
+) -> bool {
+    requirement == Some(FullVerificationReason::CheckpointRestore)
+        || matches!(
+            settlement,
+            Some(SourceSettlementCurrentness::FullVerificationRequired(
+                FullVerificationReason::CheckpointRestore
+                    | FullVerificationReason::MissingSettlement
+                    | FullVerificationReason::ForeignSource
+                    | FullVerificationReason::DifferentBranch
+                    | FullVerificationReason::BeforeReadBasis
+            ))
+        )
+}
+
 /// A prior performed record and the exact native read basis checked for reuse.
 /// Only the output-lineage owner can consume this at publication.
 pub(in crate::domain_computation::primary_graph) struct VerifiedInputCutoff<'selected> {
@@ -138,7 +159,7 @@ impl RetainedInputCutoffCandidate {
             return Ok(None);
         }
         let requirement = self.verification_requirement(admission)?;
-        if requirement == Some(FullVerificationReason::CheckpointRestore) {
+        if cutoff_declines(requirement, None) {
             return Ok(None);
         }
         let Some(facts) = self.observed_source_facts(admission)? else {
@@ -148,6 +169,9 @@ impl RetainedInputCutoffCandidate {
             return Ok(None);
         }
         let settlement = owner.currentness(selected, self.settlement_identity(), admission)?;
+        if cutoff_declines(requirement, Some(&settlement)) {
+            return Ok(None);
+        }
         let mut verify_full_prefix = requirement.is_some();
         let mut dirty_prefix = None;
         match settlement {
@@ -170,19 +194,7 @@ impl RetainedInputCutoffCandidate {
                 }
                 return Err(InputCutoffVerificationStop::PendingUpstream);
             }
-            SourceSettlementCurrentness::FullVerificationRequired(reason) => {
-                if matches!(
-                    reason,
-                    FullVerificationReason::CheckpointRestore
-                        | FullVerificationReason::MissingSettlement
-                        | FullVerificationReason::ForeignSource
-                        | FullVerificationReason::DifferentBranch
-                        | FullVerificationReason::BeforeReadBasis
-                ) {
-                    return Ok(None);
-                }
-                verify_full_prefix = true;
-            }
+            SourceSettlementCurrentness::FullVerificationRequired(_) => verify_full_prefix = true,
         }
         let current = if verify_full_prefix {
             marked_facts_permit_reuse(facts.iter().take(count), runtime, snapshot, currentness)?

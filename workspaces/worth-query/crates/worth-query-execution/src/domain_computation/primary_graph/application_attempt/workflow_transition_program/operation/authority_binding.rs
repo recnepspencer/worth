@@ -45,13 +45,13 @@ impl<Schema, Operation, Input, Scope>
         }
         let mut locators = std::collections::BTreeMap::new();
         for (index, fact) in self.read_set.facts.iter().enumerate() {
-            let locator = fact.locator_identity();
+            let locator = fact.dependency_key();
             if locators.insert(locator, index).is_some() {
                 return Err(mismatch("workflow operation authority"));
             }
         }
         for fact in authority.facts() {
-            let locator = fact.locator_identity();
+            let locator = fact.dependency_key();
             match locators.entry(locator) {
                 std::collections::btree_map::Entry::Vacant(entry) => {
                     entry.insert(self.read_set.facts.len());

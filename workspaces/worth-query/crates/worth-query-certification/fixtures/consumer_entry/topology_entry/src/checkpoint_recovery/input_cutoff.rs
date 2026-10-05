@@ -5,9 +5,9 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationOutputDemandProgress, WorthQueryApplicationOutputDemandSettlement,
     WorthQueryOutputSettlementPosture,
 };
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationOutputRole, WorthQueryPreserveOutput,
-};
+
+#[cfg(feature = "test-output-delivery-faults")]
+mod unrebased_settlement;
 
 #[test]
 fn fresh_source_suffix_with_equal_declared_input_reuses_without_a_handler_or_world_commit() {
@@ -55,12 +55,9 @@ fn exercise(
     assert_eq!(first.producer_contacts_in_this_demand(), 1);
     let original_receipt = first.application_commit_receipt().unwrap().clone();
     let original_entity = first
-        .output_correspondence()
-        .entity(WorthQueryApplicationOutputRole::<
-            PlanarMutationBinding<CheckpointSchema>,
-            Body,
-            WorthQueryPreserveOutput,
-        >::from_static("anchor"))
+        .outputs_of::<PlanarOutputs>()
+        .unwrap()
+        .entity::<PlanarAnchorOutput<CheckpointSchema>>()
         .unwrap()
         .entity_id();
     let before_input = request
@@ -134,24 +131,18 @@ fn exercise(
         assert_eq!(evidence.semantic_observation_reads(), 0);
         assert_eq!(
             settled
-                .output_correspondence()
-                .entity(WorthQueryApplicationOutputRole::<
-                    PlanarMutationBinding<CheckpointSchema>,
-                    Body,
-                    WorthQueryPreserveOutput,
-                >::from_static("anchor"),)
+                .outputs_of::<PlanarOutputs>()
+                .unwrap()
+                .entity::<PlanarAnchorOutput<CheckpointSchema>>()
                 .unwrap()
                 .entity_id(),
             original_entity
         );
         assert_eq!(
             original_receipt
-                .output_correspondence()
-                .entity(WorthQueryApplicationOutputRole::<
-                    PlanarMutationBinding<CheckpointSchema>,
-                    Body,
-                    WorthQueryPreserveOutput,
-                >::from_static("anchor"),)
+                .outputs_of::<PlanarOutputs>()
+                .unwrap()
+                .entity::<PlanarAnchorOutput<CheckpointSchema>>()
                 .unwrap()
                 .entity_id(),
             original_entity
@@ -194,12 +185,9 @@ fn exercise(
         );
         assert_eq!(
             repeated
-                .output_correspondence()
-                .entity(WorthQueryApplicationOutputRole::<
-                    PlanarMutationBinding<CheckpointSchema>,
-                    Body,
-                    WorthQueryPreserveOutput,
-                >::from_static("anchor"))
+                .outputs_of::<PlanarOutputs>()
+                .unwrap()
+                .entity::<PlanarAnchorOutput<CheckpointSchema>>()
                 .unwrap()
                 .entity_id(),
             original_entity,

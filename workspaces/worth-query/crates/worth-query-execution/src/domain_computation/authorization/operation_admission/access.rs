@@ -11,9 +11,9 @@ use worth_relational::facade::authorization::RelationalAuthorizationObservationC
 
 use super::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::authorization::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-    WorthQueryOperationScopeBinding, WorthQueryRetainedAuthorizationDecisionFacts,
-    WorthQueryRetainedCapabilityAuthorization,
+    WorthQueryAdmissionLapse, WorthQueryOperationAuthorizationDenial,
+    WorthQueryOperationAuthorizationDenialKind, WorthQueryOperationScopeBinding,
+    WorthQueryRetainedAuthorizationDecisionFacts, WorthQueryRetainedCapabilityAuthorization,
 };
 use crate::domain_computation::primary_graph::WorthQueryBoundMutationPreconditions;
 
@@ -275,35 +275,30 @@ impl<Schema, Operation, Input, Scope>
     /// Later governed phases must call this rather than accepting a detached
     /// timestamp or caller assertion.
     pub fn validate_current_authority(&self) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-        match self.current_authority_stop_kind() {
-            Some(kind) => Err(WorthQueryOperationAuthorizationDenial::new(
-                kind,
+        match self.current_authority_lapse() {
+            Some(lapse) => Err(WorthQueryOperationAuthorizationDenial::new(
+                lapse.denial_kind(),
                 &self.operation,
             )),
             None => Ok(()),
         }
     }
 
-    /// Samples this admission's request authority without allocating a denial.
-    /// Effect owners use this at safe points while retaining prepared custody.
-    pub(in crate::domain_computation) fn current_authority_stop_kind(
+    /// The exact cause when the request authority that minted this admission
+    /// has lapsed, or `None` while it is still current.
+    pub(in crate::domain_computation) fn current_authority_lapse(
         &self,
-    ) -> Option<WorthQueryOperationAuthorizationDenialKind> {
+    ) -> Option<WorthQueryAdmissionLapse> {
         if let Some(interruption) = self.request_scope.interruption() {
-            let kind = match interruption {
-                WorthQueryRequestInterruption::Cancelled => {
-                    WorthQueryOperationAuthorizationDenialKind::Cancelled
-                }
+            return Some(match interruption {
+                WorthQueryRequestInterruption::Cancelled => WorthQueryAdmissionLapse::Cancelled,
                 WorthQueryRequestInterruption::DeadlineExceeded => {
-                    WorthQueryOperationAuthorizationDenialKind::DeadlineExceeded
+                    WorthQueryAdmissionLapse::DeadlineExceeded
                 }
-            };
-            return Some(kind);
+            });
         }
-        if Instant::now() >= self.authentication_valid_until {
-            return Some(WorthQueryOperationAuthorizationDenialKind::ExpiredAuthentication);
-        }
-        None
+        (Instant::now() >= self.authentication_valid_until)
+            .then_some(WorthQueryAdmissionLapse::AuthenticationExpired)
     }
 
     pub(in crate::domain_computation) fn publication_request(

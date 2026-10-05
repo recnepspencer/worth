@@ -8,6 +8,8 @@ use super::{
     WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputLineage,
 };
 
+mod republication;
+
 /// A recorded checkpoint output and the source facts its verification covers.
 pub(in crate::domain_computation::primary_graph) struct RestoredRecord {
     pub(in crate::domain_computation::primary_graph) identity:
@@ -73,6 +75,49 @@ impl WorthQueryApplicationOutputLineage {
         >,
         verified_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     ) -> Option<RestoredRecord> {
+        self.record_restored_row(
+            output_binding,
+            runtime_authority,
+            schema,
+            scope,
+            observation,
+            correspondence,
+            source_identity,
+            source_partition_identity,
+            producer_dependency_identity,
+            idempotency_key_identity,
+            observed_source_facts,
+            resources,
+            verified_witness,
+            &mut None,
+        )
+    }
+
+    /// One recorder for every restored row. A checkpoint row claims nothing
+    /// upstream and is Fresh until verified. A prepared republication is taken
+    /// only by a new row, which then continues the performed record instead.
+    #[allow(clippy::too_many_arguments)]
+    fn record_restored_row(
+        &mut self,
+        output_binding: TypeId,
+        runtime_authority: u64,
+        schema: ApplicationSchemaBindingIdentity,
+        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        observation: &worth_runtime_world::facade::ProductBranchObservation,
+        correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+        source_identity: RecordedSourceIdentity,
+        source_partition_identity: [u8; 32],
+        producer_dependency_identity: Option<[u8; 32]>,
+        idempotency_key_identity: [u8; 32],
+        observed_source_facts: Arc<
+            [super::super::application_attempt::WorthQueryApplicationObservedFact],
+        >,
+        resources: Option<
+            super::super::application_contribution::WorthQueryProducerDemandResources,
+        >,
+        verified_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
+        republished: &mut Option<republication::RepublishedOutput>,
+    ) -> Option<RestoredRecord> {
         let source = SemanticSource {
             runtime_authority,
             schema,
@@ -133,8 +178,12 @@ impl WorthQueryApplicationOutputLineage {
             return Some(restored);
         }
         let slot = generation.len();
-        let facts = Arc::clone(&observed_source_facts);
-        let recorded = RecordedOutput {
+        let republished = republished.take();
+        let facts = republished.as_ref().map_or_else(
+            || Arc::clone(&observed_source_facts),
+            |output| output.facts(),
+        );
+        let mut recorded = RecordedOutput {
             performed_origin: None,
             _retained_capacity: None,
             consumed_outputs: Arc::from([]),
@@ -163,6 +212,9 @@ impl WorthQueryApplicationOutputLineage {
             producer_dependency_identity,
             idempotency_key_identity,
         };
+        if let Some(republished) = republished {
+            republished.continue_in(&mut recorded);
+        }
         let identity = Arc::clone(&recorded.settlement_identity);
         let cell = Arc::new(OnceLock::new());
         assert!(cell.set(recorded).is_ok());
@@ -171,12 +223,33 @@ impl WorthQueryApplicationOutputLineage {
             source,
             occurrence,
             generation_number,
-            source_partition_identity,
+            Some(source_partition_identity),
             slot,
         );
         self.live_occurrences
             .insert(observation.lifecycle_incarnation());
         Some(RestoredRecord { identity, facts })
+    }
+
+    /// Keep the witness a reader built for a restored row and compared in
+    /// full. The row keeps its first proof, which is the one returned.
+    pub(in crate::domain_computation::primary_graph) fn retain_restored_witness(
+        &self,
+        identity: &super::RecordedSettlementIdentity,
+        witness: Arc<OnceLock<super::SealedNativeOutputWitness>>,
+    ) -> Arc<OnceLock<super::SealedNativeOutputWitness>> {
+        let coordinate = identity.coordinate();
+        let Some(recorded) = self
+            .by_source
+            .get(identity.source())
+            .and_then(|occurrences| occurrences.get(&coordinate.occurrence))
+            .and_then(|history| history.get(&coordinate.generation))
+            .and_then(|records| records.get(identity.slot()))
+            .and_then(|cell| cell.get())
+        else {
+            return witness;
+        };
+        Arc::clone(recorded.native_output_witness.get_or_init(|| witness))
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -276,7 +349,7 @@ impl WorthQueryApplicationOutputLineage {
             source,
             occurrence,
             generation,
-            source_partition_identity,
+            Some(source_partition_identity),
             slot,
         );
         self.live_occurrences.insert(occurrence);

@@ -20,6 +20,14 @@ where
         validate_checkpoint_output_meaning(&installed.declaration, checkpoint)?;
         crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
             installed.declaration.operation_binding_type,
+            installed.declaration.output_contract_type,
+            installed
+                .declaration
+                .output_role_descriptors
+                .iter()
+                .filter(|descriptor| descriptor.cardinality().admits_absence())
+                .map(|descriptor| descriptor.name().to_owned())
+                .collect(),
             checkpoint.roles.clone(),
             |entity| installed_schema.installed_entity_marker_type(entity),
         )
@@ -71,10 +79,11 @@ pub(super) fn validate_checkpoint_output_meaning(
         }
     }
     if let Some(missing) = installed.output_role_descriptors.iter().find(|expected| {
-        !checkpoint
-            .roles
-            .iter()
-            .any(|role| role.role == expected.name())
+        !expected.cardinality().admits_absence()
+            && !checkpoint
+                .roles
+                .iter()
+                .any(|role| role.role == expected.name())
     }) {
         return Err(format!(
             "checkpoint output omits installed role {}",

@@ -42,6 +42,8 @@ mod mutation_terminal_lifecycle;
 mod mutation_work_scale;
 #[path = "application_attempt/optional_field_mutation.rs"]
 mod optional_field_mutation;
+#[path = "application_attempt/optional_output_role.rs"]
+mod optional_output_role;
 #[path = "application_attempt/post_commit_recovery.rs"]
 mod post_commit_recovery;
 #[path = "application_attempt/preimage_evidence.rs"]
@@ -76,22 +78,11 @@ use program_fixture::{
     admitted_program_with_emit, admitted_program_with_expected_status,
 };
 
-pub(in crate::domain_computation::primary_graph) fn assert_product_basis_stale(
-    outcome: WorthQueryApplicationCommitOutcome,
-    cause: &str,
-) {
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
-        panic!("{cause} must deny before effects: {outcome:?}");
-    };
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationCommitDenialKind::ProductBasisStale
-    );
-    assert_eq!(
-        denial.stage(),
-        WorthQueryApplicationCommitDenialStage::InvariantExecution
-    );
-}
+#[path = "application_attempt/decision_currentness.rs"]
+mod decision_currentness;
+pub(in crate::domain_computation::primary_graph) use decision_currentness::{
+    assert_changed_decision, assert_product_basis_stale,
+};
 
 #[test]
 fn concurrent_equivalent_attempts_publish_one_transaction() {

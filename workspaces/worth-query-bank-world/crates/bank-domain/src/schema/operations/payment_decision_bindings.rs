@@ -1,7 +1,8 @@
 use worth_query_decl::facade::{
     application_operation::{
-        ApplicationMutationOutputContract, ApplicationMutationOutputPosture,
-        ApplicationMutationOutputRoleDescriptor,
+        ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
+        WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
+        WorthQueryExactlyOneOutput, WorthQueryPreserveOutput,
     },
     application_schema::{NoApplicationUnit, ReadOnly},
     worth_query_mutation_binding, worth_query_structured_value_binding,
@@ -36,17 +37,22 @@ worth_query_structured_value_binding!(
 
 pub struct PaymentDecisionOutputs;
 
-pub const PAYMENT_DECISION_OUTPUT_PAYMENT: &str = "payment";
+/// The payment intent an approval or a rejection preserves. Both decisions
+/// share [`PaymentDecisionOutputs`], so one role serves both handlers.
+pub struct DecidedPaymentOutput;
+
+impl WorthQueryApplicationOutputRole for DecidedPaymentOutput {
+    type Schema = BankSchema;
+    type Contract = PaymentDecisionOutputs;
+    type Entity = PaymentIntent;
+    type Action = WorthQueryPreserveOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "payment";
+}
 
 impl ApplicationMutationOutputContract<BankSchema> for PaymentDecisionOutputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[ApplicationMutationOutputRoleDescriptor::for_entity::<
-            BankSchema,
-            PaymentIntent,
-        >(
-            PAYMENT_DECISION_OUTPUT_PAYMENT,
-            ApplicationMutationOutputPosture::Preserve,
-        )];
+        &[<DecidedPaymentOutput as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
 }
 
 fn payment_scope_from_approval(input: &ApprovePayment) -> PaymentId {

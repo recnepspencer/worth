@@ -1,27 +1,7 @@
 use worth_query_consumer_values::PlanarVertex;
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
-};
-use worth_query_topology_entry::{Body, FinalPlanarMutationBinding, PlanarRead};
+use worth_query_topology_entry::PlanarRead;
 
 use super::super::{length, Request};
-use crate::ConsumerSchema;
-
-pub(super) fn role(
-    vertex: &PlanarVertex,
-    index: usize,
-) -> WorthQueryApplicationOutputRole<
-    FinalPlanarMutationBinding<ConsumerSchema>,
-    Body,
-    WorthQueryCreateOutput,
-> {
-    WorthQueryApplicationOutputRole::try_new(if index == 0 {
-        "anchor".to_owned()
-    } else {
-        format!("created.{}", vertex.body_key)
-    })
-    .expect("fixture keys form valid source-derived output roles")
-}
 
 pub(super) fn read(
     request: &Request<'_>,

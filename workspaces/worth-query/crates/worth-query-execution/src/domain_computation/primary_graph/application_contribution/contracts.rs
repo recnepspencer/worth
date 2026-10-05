@@ -147,7 +147,8 @@ where
             validate_identity(&binding.reuse_policy)?;
             if binding.applicability.is_empty()
                 || binding.supported.is_empty()
-                || (binding.output_roles.is_empty() && binding.output_role_families.is_empty())
+                || (binding.output_role_descriptors.is_empty()
+                    && binding.output_role_families.is_empty())
                 || !producer_output_role_is_declared(binding)
             {
                 return Err(denial(
@@ -156,9 +157,9 @@ where
                 ));
             }
             let mut roles = BTreeSet::new();
-            for role in &binding.output_roles {
-                validate_identity(role)?;
-                if !roles.insert(role) {
+            for role in &binding.output_role_descriptors {
+                validate_identity(role.name())?;
+                if !roles.insert(role.name()) {
                     return Err(denial(
                         DenialKind::ProducerBindingMeaningMismatch,
                         &binding.output_family,
@@ -262,17 +263,14 @@ where
     }
 }
 
+/// A producer's readiness output is a fixed role every commit binds. The
+/// output-role type makes any other producer fail to compile; this check
+/// guards the erased declaration.
 fn producer_output_role_is_declared(binding: &DeclaredProducerBinding) -> bool {
     binding
-        .output_roles
+        .output_role_descriptors
         .iter()
-        .any(|role| role == &binding.output_role)
-        || binding.output_role_families.iter().any(|family| {
-            binding
-                .output_role
-                .strip_prefix(family.prefix())
-                .is_some_and(|member| !member.is_empty())
-        })
+        .any(|role| role.name() == binding.output_role && !role.cardinality().admits_absence())
 }
 
 fn validate_identity(identity: &str) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {

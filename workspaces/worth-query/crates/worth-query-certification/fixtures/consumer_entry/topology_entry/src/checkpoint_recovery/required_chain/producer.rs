@@ -18,6 +18,7 @@ const APPLICABILITY: &[WorthQueryProducerApplicability] = &[
 
 impl<Schema: TopologySchemaBinding> WorthQueryProducerOutputFamily<Schema> for ChainFamily {
     type Source = PlanarOutputReadBinding<Schema>;
+    type Entity = Body;
     const IDENTITY: &'static str = "worth.query.certification.consumed-chain-family.v1";
     const SUPPORTED: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
     fn profile_kind(_: &PlanarOutputReadResult) -> &'static str {
@@ -46,7 +47,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     type OutputFamily = ChainFamily;
     type Provider = ChainProvider;
     const IDENTITY: &'static str = "worth.query.certification.consumed-chain-producer.v1";
-    const OUTPUT_ROLE: &'static str = "anchor";
+    type OutputRole = PlanarAnchorOutput<Schema>;
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
     const RESOURCE_POLICY: &'static str = "bounded-synchronous";

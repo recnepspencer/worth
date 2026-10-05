@@ -32,8 +32,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution) struc
         String,
     pub(in crate::domain_computation::primary_graph::application_contribution) output_family_type:
         TypeId,
-    pub(in crate::domain_computation::primary_graph::application_contribution) output_roles:
-        Vec<String>,
     pub(in crate::domain_computation::primary_graph::application_contribution) output_role_descriptors:
         Vec<worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleDescriptor>,
     pub(in crate::domain_computation::primary_graph::application_contribution) output_role_families:
@@ -58,6 +56,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution) struc
     pub(in crate::domain_computation::primary_graph::application_contribution) binding_type: TypeId,
     pub(in crate::domain_computation::primary_graph::application_contribution) source_type: TypeId,
     pub(in crate::domain_computation::primary_graph::application_contribution) operation_binding_type:
+        TypeId,
+    pub(in crate::domain_computation::primary_graph::application_contribution) output_contract_type:
         TypeId,
     pub(in crate::domain_computation::primary_graph::application_contribution) provider_type:
         TypeId,
@@ -298,6 +298,12 @@ where
                 retained_resources: None,
                 retained_idempotency_key: None,
                 retained_output_binding: None,
+                reuses_live_output_only: !selected.declaration.applicability.iter().any(
+                    |applicability| {
+                        applicability.lifecycle()
+                            == super::WorthQueryProducerLifecyclePosture::Preserve
+                    },
+                ),
             },
             selected,
         ))

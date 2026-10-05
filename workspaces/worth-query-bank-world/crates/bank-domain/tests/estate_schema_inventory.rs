@@ -124,6 +124,8 @@ fn delegation_activation_keeps_bank_reads_without_an_application_effect_program(
         [
             ("field", "AccountIdentity"),
             ("field", "BranchIdentityField"),
+            // The child id naming no grant is decided on.
+            ("field", "CapabilityGrantIdentityField"),
             ("field", "InstitutionIdentityField"),
             ("relation", "BranchInstitution"),
             ("relation", "EstateAccount"),

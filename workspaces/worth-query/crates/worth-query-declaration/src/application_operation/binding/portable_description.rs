@@ -2,7 +2,7 @@ use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 use super::{
     ApplicationMutationOutputPosture, ApplicationMutationOutputPostureSet,
-    ApplicationMutationScopeResolutionMode,
+    ApplicationMutationOutputRoleCardinality, ApplicationMutationScopeResolutionMode,
 };
 
 /// Portable descriptive meaning. It carries no native binding or execution authority.
@@ -37,6 +37,7 @@ pub struct ApplicationMutationOutputRoleDescription {
     pub name: String,
     pub entity: String,
     pub posture: ApplicationMutationOutputPosture,
+    pub cardinality: ApplicationMutationOutputRoleCardinality,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]

@@ -3,8 +3,8 @@ use worth_query_declaration::facade::application_operation::ApplicationCanonical
 
 // Complete application installation includes package and schema meaning. Keep
 // this finite while admitting the measured House composition that first
-// crossed the former 4 MiB ceiling through ordinary typed declarations.
-pub(crate) const INSTALLATION_MAXIMUM_CANONICAL_BYTES: usize = 8 * 1_024 * 1_024;
+// crossed the former 8 MiB ceiling through ordinary typed catalog pages.
+pub(crate) const INSTALLATION_MAXIMUM_CANONICAL_BYTES: usize = 16 * 1_024 * 1_024;
 
 /// Deterministic counts of the canonical work Query performed for one phase.
 ///

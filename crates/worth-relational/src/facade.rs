@@ -210,7 +210,7 @@ pub mod runtime {
         QueryLeasedReadOutcome, QueryReadExecutionStop, QueryReadPacketDenial,
         RelationProjectionRecord, RelationRecordProjection, RelationalAdjacencyDirection,
         RelationalAdjacencyVisit, RelationalBorrowedRecordReadDenial,
-        RelationalCandidateInputCounters, RelationalEntityMetadata,
+        RelationalCandidateInputCounters, RelationalEntityMetadata, RelationalEntityRetirement,
         RelationalInitialSchemaInstallation, RelationalInitialSchemaInstallationDenial,
         RelationalInitialSchemaInstallationDenialKind, RelationalInitialSchemaInstallationReceipt,
         RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,

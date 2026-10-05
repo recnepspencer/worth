@@ -1,8 +1,10 @@
 mod currentness;
+mod readiness_delivery;
 mod recovered_outputs;
 mod registry;
 mod settlement;
 
+pub use readiness_delivery::WorthQueryOutputReadinessDeliveryEvidence;
 pub(super) use recovered_outputs::WorthQueryRecoveredOutputs;
 #[cfg(feature = "test-query-execution-observer")]
 pub use registry::required_ready_custody_bytes_for_test;
@@ -33,7 +35,4 @@ pub(super) use registry::{
 pub(in crate::domain_computation) use registry::{
     RequiredOutputDemandContext, RequiredOutputExecution,
 };
-pub use settlement::{
-    WorthQueryOutputDemandSettlement, WorthQueryOutputReadinessDeliveryEvidence,
-    WorthQueryOutputSettlementPosture,
-};
+pub use settlement::{WorthQueryOutputDemandSettlement, WorthQueryOutputSettlementPosture};

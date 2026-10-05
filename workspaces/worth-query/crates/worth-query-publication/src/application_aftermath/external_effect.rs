@@ -27,8 +27,12 @@ pub enum WorthQueryPublishedExternalEffectFailure {
     LostResponse,
     DuplicatedAcknowledgement,
     PayloadRejected,
-    InitialDispatchOwnerReadDenied,
-    InitialDispatchAttemptAdmissionDenied,
+    InitialDispatchOwnerReadDenied(
+        worth_query_execution::facade::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial,
+    ),
+    InitialDispatchAttemptAdmissionDenied(
+        worth_query_execution::facade::primary_graph::WorthQueryExternalDispatchAttemptDenial,
+    ),
     InitialDispatchAlreadyCompleted,
     CompletionPublicationPending,
     InitialDispatchTerminalIndexUnavailable,
@@ -108,11 +112,11 @@ const fn publish_preparation_failure(
     use worth_query_execution::facade::primary_graph::WorthQueryExternalDispatchPreparationDenial as Execution;
 
     match denial {
-        Execution::OwnerReadDenied(_) => {
-            WorthQueryPublishedExternalEffectFailure::InitialDispatchOwnerReadDenied
+        Execution::OwnerReadDenied(read) => {
+            WorthQueryPublishedExternalEffectFailure::InitialDispatchOwnerReadDenied(read)
         }
-        Execution::AttemptAdmissionDenied => {
-            WorthQueryPublishedExternalEffectFailure::InitialDispatchAttemptAdmissionDenied
+        Execution::AttemptAdmissionDenied(attempt) => {
+            WorthQueryPublishedExternalEffectFailure::InitialDispatchAttemptAdmissionDenied(attempt)
         }
         Execution::AlreadyCompleted => {
             WorthQueryPublishedExternalEffectFailure::InitialDispatchAlreadyCompleted
@@ -177,7 +181,8 @@ mod tests {
     };
     use worth_query_execution::facade::primary_graph::ExternalRailTransportFault;
     use worth_query_execution::facade::primary_graph::{
-        WorthQueryCommittedDispatchOutboxReadDenial, WorthQueryExternalDispatchPreparationDenial,
+        WorthQueryCommittedDispatchOutboxReadDenial, WorthQueryExternalDispatchAttemptDenial,
+        WorthQueryExternalDispatchPreparationDenial,
     };
 
     use super::{
@@ -230,11 +235,17 @@ mod tests {
                 WorthQueryExternalDispatchPreparationDenial::OwnerReadDenied(
                     WorthQueryCommittedDispatchOutboxReadDenial::RecordMismatch,
                 ),
-                WorthQueryPublishedExternalEffectFailure::InitialDispatchOwnerReadDenied,
+                WorthQueryPublishedExternalEffectFailure::InitialDispatchOwnerReadDenied(
+                    WorthQueryCommittedDispatchOutboxReadDenial::RecordMismatch,
+                ),
             ),
             (
-                WorthQueryExternalDispatchPreparationDenial::AttemptAdmissionDenied,
-                WorthQueryPublishedExternalEffectFailure::InitialDispatchAttemptAdmissionDenied,
+                WorthQueryExternalDispatchPreparationDenial::AttemptAdmissionDenied(
+                    WorthQueryExternalDispatchAttemptDenial::InFlightCapacityExhausted,
+                ),
+                WorthQueryPublishedExternalEffectFailure::InitialDispatchAttemptAdmissionDenied(
+                    WorthQueryExternalDispatchAttemptDenial::InFlightCapacityExhausted,
+                ),
             ),
             (
                 WorthQueryExternalDispatchPreparationDenial::AlreadyCompleted,

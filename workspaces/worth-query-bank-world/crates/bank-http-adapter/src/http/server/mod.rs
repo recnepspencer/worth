@@ -2,6 +2,7 @@ mod aftermath_routes;
 mod application;
 mod authenticated_owner;
 mod authentication;
+mod authorization_denial;
 mod closure;
 mod configuration;
 mod continuation_executor;

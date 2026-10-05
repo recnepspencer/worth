@@ -16,6 +16,7 @@ mod arc_str_layout;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLease;
 
+mod mutation_readmission;
 mod query_preparation;
 mod query_read;
 pub(in crate::domain_computation) use admitted_mutation::WorthQueryAdmittedMutationSessionStartStop;

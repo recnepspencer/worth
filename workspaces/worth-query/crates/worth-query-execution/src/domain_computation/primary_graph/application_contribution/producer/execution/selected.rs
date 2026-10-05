@@ -103,7 +103,10 @@ where
         admission.charge_external_work(1).map_err(denied)?;
         receipt
             .output_correspondence()
-            .admit_selected_role_lookup(Binding::OUTPUT_ROLE, admission)
+            .admit_selected_role_lookup(
+                <Binding::OutputRole as WorthQueryApplicationOutputRole>::NAME,
+                admission,
+            )
             .map_err(denied)?;
         Ok(self.preserved_readiness_output(receipt))
     }

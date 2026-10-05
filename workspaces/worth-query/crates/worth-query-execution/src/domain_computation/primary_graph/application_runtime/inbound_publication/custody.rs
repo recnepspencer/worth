@@ -44,6 +44,7 @@ pub(in crate::domain_computation::primary_graph) enum InstalledTransportResumeOu
 
 enum RetainedCompletion {
     Ready(Arc<InstalledTransportCompletion>),
+    /// The continuing caller holds the evidence until it returns an outcome.
     Publishing,
     PerformedPending(
         PerformedInstalledTransportCompletion,
@@ -54,6 +55,7 @@ enum RetainedCompletion {
         WorthQueryProductUnpublishedRecovery,
         Option<RecoveryRelease>,
     ),
+    /// The continuing caller holds the evidence and recovery until it returns.
     Recovering,
     StaleRelease(Arc<InstalledTransportCompletion>, RecoveryRelease),
 }
@@ -254,7 +256,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         );
                         return Resume::Pending(Pending::ProductRecoveryRequired);
                     }
-                    InstalledTransportPublicationOutcome::Denied(evidence, super::installed_transport::InstalledTransportPublicationDenial::PublicationPermit) => {
+                    InstalledTransportPublicationOutcome::Denied(
+                        evidence,
+                        super::installed_transport::InstalledTransportPublicationDenial::PublicationPermit,
+                    ) => {
                         entry.state = RetainedCompletion::Ready(evidence);
                         return Resume::Pending(Pending::PublicationAtCapacity);
                     }

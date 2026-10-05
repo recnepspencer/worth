@@ -129,6 +129,35 @@ pub enum WorthQueryOperationAuthorizationDenialKind {
     PermissionDenied,
 }
 
+/// Why an admitted operation's own request authority lapsed after admission.
+///
+/// These are the only causes current-authority revalidation can report, so a
+/// later phase that must answer with its own refusal matches every cause
+/// exactly rather than folding an open authorization kind.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation) enum WorthQueryAdmissionLapse {
+    /// The admitted request was cancelled.
+    Cancelled,
+    /// The admitted request reached its deadline.
+    DeadlineExceeded,
+    /// The admitted principal's authentication expired.
+    AuthenticationExpired,
+}
+
+impl WorthQueryAdmissionLapse {
+    pub(in crate::domain_computation) const fn denial_kind(
+        self,
+    ) -> WorthQueryOperationAuthorizationDenialKind {
+        match self {
+            Self::Cancelled => WorthQueryOperationAuthorizationDenialKind::Cancelled,
+            Self::DeadlineExceeded => WorthQueryOperationAuthorizationDenialKind::DeadlineExceeded,
+            Self::AuthenticationExpired => {
+                WorthQueryOperationAuthorizationDenialKind::ExpiredAuthentication
+            }
+        }
+    }
+}
+
 /// Coarse, explainable cause of an authorization denial, fit to show a user.
 ///
 /// Only policy-level denials have one; operational causes such as deadlines or

@@ -192,6 +192,7 @@ where
         operation: operation.operation().to_string(),
         operation_authority_identity: operation.authority_identity().into(),
         operation_authority_identity_bytes: operation.authority_identity_bytes(),
+        operation_definition_identity: operation.definition_identity_bytes(),
         admission_identity: operation_admission_identity,
         resource_binding_identity,
         operation_scope_binding,

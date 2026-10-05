@@ -1,7 +1,9 @@
 //! Prospective stable lineage addresses held by the existing occurrence lane.
 
+mod performed_sequence;
 mod source_registration;
 mod stable_record;
+pub(in crate::domain_computation::primary_graph::output_lineage) use performed_sequence::performed_fact_sequence;
 pub(in crate::domain_computation::primary_graph) use source_registration::StableEqualityConsequence;
 
 use std::sync::{Arc, Mutex, OnceLock};

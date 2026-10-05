@@ -43,6 +43,14 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderIdempote
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
+    /// The key records `commit` for this intent, but this provider does not
+    /// retain its receipt.
+    CommittedReceiptNotRetained {
+        commit: worth_relational::facade::history::CommitId,
+    },
+    /// The key's first-encoding record matches every durable part of this
+    /// intent but names its operation by a seal no later runtime can confirm.
+    RecordedIntentUnverifiable,
     Unavailable,
     /// The commit's evidence left the declared idempotency window.
     WindowExpired,

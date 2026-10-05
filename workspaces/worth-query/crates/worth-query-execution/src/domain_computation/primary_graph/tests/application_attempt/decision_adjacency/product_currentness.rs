@@ -5,7 +5,7 @@ use super::{
 use crate::domain_computation::primary_graph::tests::fixture::installed_two_principal_authorization_world;
 
 #[test]
-fn unrelated_adjacency_growth_requires_fresh_product_admission_for_unchanged_facts() {
+fn unrelated_adjacency_growth_preserves_prepared_decision_facts() {
     let world = installed_two_principal_authorization_world(false);
     let request = live_scope();
     let alice = authenticated(&world, "alice", &request);
@@ -62,27 +62,17 @@ fn unrelated_adjacency_growth_requires_fresh_product_admission_for_unchanged_fac
     let outcome = world
         .application
         .compare_and_commit_application(alice_program, idempotency(34, 34));
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
-        panic!("unrelated adjacency growth changes product currentness only: {outcome:?}");
-    };
-    assert_eq!(
-        denial.kind(),
-        crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind::ProductBasisStale
+    assert!(
+        matches!(outcome, WorthQueryApplicationCommitOutcome::Committed(_)),
+        "unchanged facts must commit on the newly admitted product basis: {outcome:?}"
     );
-    assert_eq!(
-        denial.stage(),
-        crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::InvariantExecution
-    );
-    assert_eq!(commit_count(), baseline + 1);
-    assert_eq!(
-        world
-            .application
-            .product_runtime()
-            .admit_product_branch(world.application.product_runtime().default_branch())
-            .unwrap()
-            .selected_commit(),
-        current.selected_commit()
-    );
+    assert_eq!(commit_count(), baseline + 2);
+    let successor = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .unwrap();
+    assert_ne!(successor.selected_commit(), current.selected_commit());
 
     let readmitted = link_program(
         &world,
@@ -97,7 +87,7 @@ fn unrelated_adjacency_growth_requires_fresh_product_admission_for_unchanged_fac
         world
             .application
             .compare_and_commit_application(readmitted, idempotency(34, 34)),
-        WorthQueryApplicationCommitOutcome::Committed(_)
+        WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
     ));
     assert_eq!(commit_count(), baseline + 2);
 }

@@ -25,10 +25,11 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod currentness;
-use currentness::{
-    validate_elevation_currentness, validate_operation_currentness, validate_workflow_deadline,
-};
 mod local_workflow_settlement;
+use currentness::{
+    readmit_current_basis, select_current_product, validate_elevation_currentness,
+    validate_operation_currentness, validate_workflow_deadline,
+};
 pub(super) mod running;
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) use local_workflow_settlement::LocalWorkflowSettlementPublication;
 
@@ -196,9 +197,14 @@ where
     if let Err(outcome) = validate_operation_currentness(&admission) {
         return terminal(outcome);
     }
+    let current_product = match select_current_product(application, read_set.lease.product()) {
+        Ok(product) => product,
+        Err(outcome) => return terminal(outcome),
+    };
     if let Some(outcome) = resolve_retained_idempotency(
         application,
         &mut admission,
+        &current_product,
         idempotency,
         aftermath_causality.as_ref(),
     ) {
@@ -209,17 +215,30 @@ where
             WorthQueryApplicationCommitDenial::workflow_settlement_denied(&denial),
         ));
     }
+    let ordinary_basis = conditional_definition.is_none()
+        && aftermath_causality.is_none()
+        && elevation_currentness.is_none();
     if let Err(outcome) = validate_elevation_currentness(application, elevation_currentness) {
         return terminal(outcome);
     }
     if let Err(outcome) = validate_workflow_deadline(application, workflow_deadline) {
         return terminal(outcome);
     }
+    let lease = match readmit_current_basis(
+        application,
+        &mut admission,
+        read_set.lease,
+        current_product,
+        ordinary_basis,
+    ) {
+        Ok(lease) => lease,
+        Err(outcome) => return terminal(outcome),
+    };
     prepare_authorized_application_commit(
         application,
         WorthQueryCurrentApplicationCommit {
             admission,
-            lease: read_set.lease,
+            lease,
             provider: WorthQueryProviderAttemptPreparation {
                 required_output_demand,
                 installed_read_scopes: read_set.installed_read_scopes,
@@ -343,7 +362,7 @@ fn bind_commit_idempotency<Schema, Operation, Input, Scope>(
     idempotency: WorthQueryApplicationIdempotencyBinding,
 ) -> WorthQueryApplicationIdempotencyBinding {
     idempotency
-        .bind_operation(admission.operation_authority_identity_bytes())
+        .bind_operation(admission.operation_definition_identity())
         .bind_operation_scope(admission.operation_scope_binding())
         .bind_preconditions(admission.mutation_preconditions().identity())
         .bind_governed_input(admission.governed_input_identity())

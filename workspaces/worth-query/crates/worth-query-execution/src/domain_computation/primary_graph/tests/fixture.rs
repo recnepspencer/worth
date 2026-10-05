@@ -131,13 +131,19 @@ pub(super) use invalid_disclosure_queries::{
 };
 #[path = "fixture/capability_touch_binding.rs"]
 mod capability_touch_binding;
+#[path = "fixture/handler_installation.rs"]
+mod handler_installation;
 #[path = "fixture/operation_contracts.rs"]
 mod operation_contracts;
+#[path = "fixture/optional_output_binding.rs"]
+mod optional_output_binding;
+pub(super) use optional_output_binding::{
+    OptionalCompanion, OptionalOutputInput, OptionalOutputMutationBinding, OptionalOutputOperation,
+    OptionalOutputPlan, OptionalOutputs, OptionalSubject,
+};
 #[path = "fixture/program_required_binding.rs"]
 mod program_required_binding;
-use capability_touch_binding::CapabilityTouchHandler;
 pub(super) use capability_touch_binding::CapabilityTouchMutationBinding;
-use program_required_binding::ProgramRequiredHandler;
 pub(in crate::domain_computation::primary_graph) use program_required_binding::{
     ProgramRequiredInput, ProgramRequiredMutationBinding,
 };
@@ -173,7 +179,9 @@ pub(in crate::domain_computation::primary_graph) use world_installation::{
     installed_authorization_world_with_resource_profile, installed_blocked_authorization_world,
     installed_two_principal_authorization_world,
 };
-pub(super) use world_installation::{installed_world, installed_world_with_policy_fact};
+pub(super) use world_installation::{
+    installed_world, installed_world_with_policy_fact, restored_world,
+};
 
 use worth_query_admission::facade::authenticated_principal::*;
 use worth_query_declaration::facade::authentication::{
@@ -276,7 +284,7 @@ worth_query_application_schema! {
                 .effect(RetainedStatusEffect::reference())
                 .effect(MutationFreeExternalEffect::reference())
                 .effect(LiveActivityEffect::reference());
-            let schema = operation_contracts::install(schema)
+            let schema = optional_output_binding::declare(operation_contracts::install(schema))
                 .application_mutation_binding::<
                     program_required_binding::ProgramRequiredMutationBinding,
                 >()

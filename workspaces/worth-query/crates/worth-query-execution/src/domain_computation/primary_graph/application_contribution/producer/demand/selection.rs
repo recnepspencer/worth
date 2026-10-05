@@ -1,7 +1,8 @@
 use super::*;
 use crate::domain_computation::primary_graph::{
     output_reuse::{
-        compare_retained_output_dependencies, require_installed_output_dependencies,
+        compare_retained_output_dependencies, compare_retained_output_witness,
+        require_installed_output_dependencies, retained_output_settlement_is_verified,
         OutputDependencySelection,
     },
     WorthQueryApplicationBasisSelectionIdentity, WorthQueryPrimaryGraphApplicationRuntime,
@@ -193,7 +194,7 @@ where
             scope,
             &output_bindings,
             &mut lineage,
-        )?;
+        );
         let candidates = lineage
             .retained_output_candidates_with_remaining(
                 self.runtime.authority_identity().as_u64(),
@@ -279,6 +280,7 @@ where
                         )
                     })?;
                 let mut current = Vec::with_capacity(live_candidates.len());
+                use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity;
                 for (candidate, entity) in &live_candidates {
                     let live = view.entity_record_with_projection_scope(
                         *entity,
@@ -287,17 +289,55 @@ where
                     ) == Some(RecordLifecycleState::Live);
                     let identity_current = candidate.source_identity.is_some_and(|identity| {
                         match identity {
-                            crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Runtime(runtime) => runtime == source.idempotency_identity(),
-                            crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Checkpoint(checkpoint) => checkpoint == source.checkpoint_identity(),
+                            RecordedSourceIdentity::Runtime(runtime) => runtime == source.idempotency_identity(),
+                            RecordedSourceIdentity::Checkpoint(checkpoint) => checkpoint == source.checkpoint_identity(),
                         }
                     });
-                    let facts_current = live
+                    // The source facts and the performed output witness are
+                    // one fact set: either half moving ends exact reuse, and a
+                    // live output then selects the Preserve posture below.
+                    // A checkpoint row states the output half among its
+                    // facts. A row of this runtime proves it by a sealed
+                    // witness and a settlement the cutoff verifies: one the
+                    // cutoff declines is not exact. A settlement it verifies
+                    // in full is compared below like any other.
+                    let witness = candidate
+                        .native_output_witness
+                        .as_ref()
+                        .and_then(|witness| witness.get());
+                    let owner = &self.primary_provider.graph.source_owner.invalidation_owner;
+                    let proven = live
+                        && match candidate.source_identity {
+                            Some(RecordedSourceIdentity::Checkpoint(_)) => true,
+                            _ => {
+                                witness.is_some()
+                                    && retained_output_settlement_is_verified(
+                                        runtime,
+                                        selected.application_basis().snapshot_handle(),
+                                        candidate.verification_requirement,
+                                        &candidate.settlement_identity,
+                                        owner,
+                                        remaining_work,
+                                    )?
+                            }
+                        };
+                    let facts_current = proven
                         && matches!(
                             compare_retained_output_dependencies(
                                 runtime,
                                 selected.application_basis().snapshot_handle(),
                                 identity_current,
                                 candidate.observed_source_facts.as_deref(),
+                                remaining_work,
+                            )?,
+                            OutputDependencySelection::Reuse
+                        )
+                        && matches!(
+                            compare_retained_output_witness(
+                                runtime,
+                                selected.application_basis().snapshot_handle(),
+                                witness,
+                                owner,
                                 remaining_work,
                             )?,
                             OutputDependencySelection::Reuse

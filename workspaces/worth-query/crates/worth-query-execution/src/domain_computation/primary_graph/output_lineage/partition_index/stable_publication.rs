@@ -43,12 +43,12 @@ impl OutputPartitionIndex {
             .charge_external_work(middle)
             .map_err(|_| work_denial())?;
         let partitions = occurrences.and_then(|rows| rows.get(&coordinate.occurrence));
-        let inner = tree_work::<[u8; 32]>(partitions.map_or(0, |rows| rows.len()))
+        let inner = tree_work::<Option<[u8; 32]>>(partitions.map_or(0, |rows| rows.len()))
             .ok_or_else(work_denial)?;
         admission
             .charge_external_work(inner)
             .map_err(|_| work_denial())?;
-        let generations = partitions.and_then(|rows| rows.get(&partition));
+        let generations = partitions.and_then(|rows| rows.get(&Some(partition)));
         let leaf =
             tree_work::<u64>(generations.map_or(0, |rows| rows.len())).ok_or_else(work_denial)?;
         admission
@@ -81,7 +81,7 @@ impl OutputPartitionIndex {
                 .ok_or_else(work_denial)?,
         )
         .ok_or_else(work_denial)?;
-        let future_inner = tree_work::<[u8; 32]>(
+        let future_inner = tree_work::<Option<[u8; 32]>>(
             partitions
                 .map_or(0, |rows| rows.len())
                 .checked_add(usize::from(generations.is_none()))
@@ -125,7 +125,7 @@ impl OutputPartitionIndex {
                 .or_default()
                 .entry(coordinate.occurrence)
                 .or_default()
-                .entry(partition)
+                .entry(Some(partition))
                 .or_default()
                 .insert(coordinate.generation, Arc::clone(&cell))
                 .is_none());
@@ -154,7 +154,7 @@ impl OutputPartitionIndex {
             .unwrap()
             .get_mut(&coordinate.occurrence)
             .unwrap()
-            .get_mut(&partition)
+            .get_mut(&Some(partition))
             .unwrap()
             .get_mut(&coordinate.generation)
             .unwrap();
@@ -173,7 +173,7 @@ impl OutputPartitionIndex {
                 source,
                 coordinate.occurrence,
                 coordinate.generation,
-                partition,
+                Some(partition),
             );
         }
     }

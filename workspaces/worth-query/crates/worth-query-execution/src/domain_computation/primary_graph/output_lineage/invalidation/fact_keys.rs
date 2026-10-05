@@ -176,6 +176,14 @@ pub(super) fn visit<E>(
                 projection.key(1, 0, || Key::EntityLifecycle(*candidate))?;
             }
         }
+        // A retirement stops holding when its entity slot is reused, and the
+        // commit that reuses it names only the new generation. No posting
+        // marks that, so the output verifies in full.
+        Fact::RetiredOutputEntity { .. } => {
+            return Err(FactKeyProjectionStop::FullVerificationRequired(
+                FullVerificationReason::UnsupportedFact,
+            ));
+        }
         // No output's decision reads workflow definition or capacity truth:
         // workflow attempts publish without an output binding. One that did
         // would have no posting to mark it, so it verifies in full.

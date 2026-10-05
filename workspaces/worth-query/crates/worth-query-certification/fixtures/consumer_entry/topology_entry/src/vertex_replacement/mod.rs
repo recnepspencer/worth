@@ -2,7 +2,10 @@ mod binding;
 mod declaration;
 mod handler;
 
-pub use binding::{VertexReplacementBinding, VertexReplacementOutputs};
+pub use binding::{
+    VertexReplacementAnchorOutput, VertexReplacementBinding, VertexReplacementCreatedOutput,
+    VertexReplacementOutputs, VertexReplacementRetiredOutput,
+};
 pub(crate) use declaration::declare_vertex_replacement;
 pub use handler::VertexReplacementHandler;
 

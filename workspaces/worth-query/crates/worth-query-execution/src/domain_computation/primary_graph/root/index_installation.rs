@@ -102,16 +102,6 @@ pub(super) fn register_primary_graph_indexes(
         branch_scoped: false,
     })?;
     provider_idempotency.key_index_id = installed.index_id;
-    let inbound_completion = layout.provider_inbound_completion_mut();
-    let installed = installation.install(DerivedIndexDefinition {
-        index_id: worth_relational::facade::indexes::DerivedIndexId(0),
-        name: "worth-query-provider.inbound-completion-correlation".to_owned(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: inbound_completion.correlation.clone(),
-        },
-        branch_scoped: false,
-    })?;
-    inbound_completion.correlation_index_id = installed.index_id;
     let aftermath_causality = layout.provider_aftermath_causality_mut();
     let installed = installation.install(DerivedIndexDefinition {
         index_id: worth_relational::facade::indexes::DerivedIndexId(0),

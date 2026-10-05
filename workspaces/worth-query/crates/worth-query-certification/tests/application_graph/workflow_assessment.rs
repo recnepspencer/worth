@@ -7,17 +7,16 @@ use worth_query_host::facade::application_entry::{
     WorthQueryWorkflowAssessmentAcceptanceDenial,
 };
 use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationOutputRole,
-    WorthQueryApplicationUncommitted, WorthQueryOutputDemandDenialKind, WorthQueryPreserveOutput,
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationUncommitted,
+    WorthQueryOutputDemandDenialKind,
 };
 use worth_query_replay::facade::WorthQueryCertificationCostRuntimeExt;
 
 use super::document_retention_model::{
-    assessment_output::RetentionAssessmentBinding,
+    assessment_output::{AssessmentOutput, RetentionAssessmentOutputs},
     host::{publish_workflow_on_first_program, SEED_RETENTION},
     presented_request::set_retention,
     retention_entry::{DOCUMENT_IDENTITY, RELATED_DOCUMENT_IDENTITY},
-    schema::Document,
     settled_verdict::{settle, RetentionVerdict},
     workflow::{
         accept_assessment, accept_early_assessment, advance_instance,
@@ -148,12 +147,8 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
                 .settlement()
                 .application_commit_receipt()
                 .expect("fresh assessment has a commit receipt")
-                .output_correspondence()
-                .entity(WorthQueryApplicationOutputRole::<
-                    RetentionAssessmentBinding,
-                    Document,
-                    WorthQueryPreserveOutput,
-                >::from_static("assessment"))
+                .outputs_of::<RetentionAssessmentOutputs>()
+                .and_then(|outputs| outputs.entity::<AssessmentOutput>())
                 .expect("the assessment output role must project from its performed receipt");
             assert_eq!(evidence.subject(), output.entity_id());
             assert!(evidence.passing());

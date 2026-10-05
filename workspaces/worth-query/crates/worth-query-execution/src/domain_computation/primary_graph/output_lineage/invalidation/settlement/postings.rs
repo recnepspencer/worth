@@ -52,7 +52,8 @@ fn maximum_keys(fact: &WorthQueryApplicationObservedFact) -> Option<usize> {
         Fact::Relation { .. } => Some(3),
         Fact::Adjacency { relations, .. } => relations.len().checked_mul(2)?.checked_add(2),
         Fact::IndexedEntitySelection { candidates, .. } => candidates.len().checked_add(2),
-        Fact::WorkflowDefinitionPredecessor { .. }
+        Fact::RetiredOutputEntity { .. }
+        | Fact::WorkflowDefinitionPredecessor { .. }
         | Fact::WorkflowDefinitionCurrent { .. }
         | Fact::WorkflowInstanceCapacity { .. }
         | Fact::WorkflowHistoryBasis { .. } => Some(0),

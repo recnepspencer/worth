@@ -240,6 +240,12 @@ Outcomes retain typed denial, invariant, stale, abort, cancellation, deadline,
 partial-effect, indeterminate, committed, and recovered meaning. Use
 `explanation()` for presentation; do not parse diagnostic text.
 
+A mutation retried under its idempotency key after the server restores or
+reopens is still recognized. A changed request under the key is refused as
+stale with `correct_request`. The unchanged retry commits nothing; when the
+server no longer holds the original receipt it answers `stale` with `refresh`,
+because the original commit already took effect.
+
 ## Process transport
 
 `bank-http-adapter` now provides the authoritative Axum HTTP/SSE process and
@@ -265,6 +271,14 @@ notification and disbursement paths, recovery inspection, and the four
 available at a user node without a credential field; that process supplies its
 own authenticated session. Linear undo/redo routes remain provisional
 Milestone 9.18 experiments rather than a Bank Phase 5 product contract.
+
+Every Bank server request body declares `"protocol": "v3"`. The server admits
+that one version and refuses any other as `unsupported_protocol`. Version 3
+adds the mutation `previously_committed` outcome. It names the original commit
+and asks the caller to refresh current state, carrying no live receipt or
+invented commit counters. Version 1 and 2 decoders cannot read this outcome,
+so those requests are refused before effects. Route paths keep their `/v1/`
+prefix; the body field is the negotiated version.
 
 The estate `notify-death` and approved-payment responses establish authorized
 dispatch commits. The rail can report `Completed` synchronously, or send the

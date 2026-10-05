@@ -13,7 +13,7 @@ use worth_query_host::facade::{
     },
 };
 use worth_query_topology_entry::{
-    AlternatePlanarOutputProducer, Body, PlanarFinalOutputFamily, PlanarFinalOutputProducer,
+    AlternatePlanarOutputProducer, PlanarFinalOutputFamily, PlanarFinalOutputProducer,
     PlanarOutputToFinalConnection, PlanarRead, PlanarSourceAdjustment, PlanarSuccessor, PositionY,
 };
 
@@ -22,10 +22,11 @@ use crate::ConsumerSchema;
 
 mod expected;
 mod manifest;
+mod retained;
 mod successor;
 
-use expected::{read, role, vertices};
-use manifest::{claim_entity, write_fields};
+use expected::{read, vertices};
+use manifest::{claim_entity, require_optional_role_reads, write_fields};
 
 pub(super) fn typed_reconstruction_preserves_query_authority(
     application: &ProgramApplication,
@@ -72,6 +73,7 @@ pub(super) fn typed_reconstruction_preserves_query_authority(
         "the program must publish its generated final output"
     );
     drop(performed);
+    let retained_source = retained::initial_source_identity(request, application);
     let vertices = vertices();
     for vertex in &vertices {
         assert_eq!(read(request, &vertex.body_key).y, vertex.y);
@@ -227,8 +229,9 @@ pub(super) fn typed_reconstruction_preserves_query_authority(
         });
     assert_eq!(
         selected.identity(),
-        "worth.query.certification.planar-final-output-producer.v1"
+        "worth.query.certification.planar-final-output-producer.v2"
     );
+    retained::preserved_outputs_remain_read_only(application, request, scope, retained_source);
 }
 
 fn foreign_runtime_rejection(
@@ -317,7 +320,9 @@ fn claim_denials_preserve_session(
             .expect_err("a denied duplicate field must not replace the admitted value"),
         WorthQueryGeneratedOutputReconstructionDenial::DuplicateField
     );
-    let duplicate = match reconstruction.entity(role(&vertices[0], 0), Body::reference()) {
+    let duplicate = match reconstruction
+        .entity::<worth_query_topology_entry::FinalAnchorOutput<ConsumerSchema>>()
+    {
         Ok(_) => panic!("one output identity may be claimed only once"),
         Err(denial) => denial,
     };
@@ -354,6 +359,7 @@ fn complete(
     let mut reconstruction = application
         .reconstruct_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(suspended)
         .unwrap_or_else(|_| panic!("the owning producer completes reconstruction"));
+    require_optional_role_reads(&mut reconstruction);
     let entities = vertices
         .iter()
         .enumerate()

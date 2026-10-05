@@ -49,9 +49,9 @@ pub use generated_materialization::{
     WorthQueryGeneratedOutputRestorationRecoveryStage, WorthQueryGeneratedOutputSuspensionDenial,
     WorthQueryGeneratedOutputSuspensionFailure, WorthQueryGeneratedOutputSuspensionRecovery,
     WorthQueryGeneratedOutputSuspensionRecoveryFailure,
-    WorthQueryGeneratedOutputSuspensionRecoveryStage, WorthQueryRestoredGeneratedOutput,
-    WorthQueryRetainedGeneratedOutputEntity, WorthQuerySuspendedGeneratedOutput,
-    WorthQueryUnpublishedGeneratedOutputRestoration,
+    WorthQueryGeneratedOutputSuspensionRecoveryStage, WorthQueryReconstructedOutputEntity,
+    WorthQueryRestoredGeneratedOutput, WorthQueryRetainedGeneratedOutputEntity,
+    WorthQuerySuspendedGeneratedOutput, WorthQueryUnpublishedGeneratedOutputRestoration,
 };
 pub use history::{WorthQueryProductHistory, WorthQueryProductHistoryEntry};
 pub use program_adoption::{

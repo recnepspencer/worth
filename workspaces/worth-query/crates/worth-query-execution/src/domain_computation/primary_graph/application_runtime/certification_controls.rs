@@ -35,6 +35,15 @@ where
             .fail_next_post_commit_snapshot_for_test();
     }
 
+    /// Holds the next producer commit's rebased facts under a requirement
+    /// to verify them in full, where the commit would seal them as exact.
+    #[doc(hidden)]
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub fn leave_next_producer_settlement_unsealed_for_test(&self) {
+        self.primary_provider
+            .leave_next_producer_settlement_unsealed_for_test();
+    }
+
     /// Drops only rebuildable workflow-instance progress projections.
     #[doc(hidden)]
     #[cfg(feature = "test-primary-graph-faults")]

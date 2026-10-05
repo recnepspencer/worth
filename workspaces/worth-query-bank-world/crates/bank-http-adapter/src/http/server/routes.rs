@@ -99,7 +99,7 @@ pub(super) fn router(state: BankHttpRouteState, maximum_body_bytes: usize) -> Ro
 }
 
 async fn readiness() -> Json<serde_json::Value> {
-    Json(serde_json::json!({ "status": "ready", "protocol": "v1" }))
+    Json(serde_json::json!({ "status": "ready", "protocol": "v3" }))
 }
 
 async fn account_summary(

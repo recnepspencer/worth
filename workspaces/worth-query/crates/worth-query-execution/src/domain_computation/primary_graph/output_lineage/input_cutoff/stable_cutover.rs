@@ -225,7 +225,10 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
                 // Product lock acquisition may have waited past cancellation
                 // or expiry. Sample the same owner before the source CAS; carry
                 // its Copy stop out before constructing the allocating denial.
-                if let Some(kind) = operation.current_authority_stop_kind() {
+                if let Some(kind) = operation
+                    .current_authority_lapse()
+                    .map(|lapse| lapse.denial_kind())
+                {
                     return StableInstallation::Stopped {
                         prepared: argument,
                         reason: StableInstallationStop::RequestAuthority(kind),

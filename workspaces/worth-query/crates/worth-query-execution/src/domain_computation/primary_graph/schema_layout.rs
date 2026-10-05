@@ -343,12 +343,6 @@ impl WorthQueryPrimaryGraphLayout {
         &self.provider_inbound_completion
     }
 
-    pub(super) fn provider_inbound_completion_mut(
-        &mut self,
-    ) -> &mut WorthQueryInboundCompletionLayout {
-        &mut self.provider_inbound_completion
-    }
-
     pub(super) const fn provider_aftermath_causality(&self) -> &WorthQueryAftermathCausalityLayout {
         &self.provider_aftermath_causality
     }

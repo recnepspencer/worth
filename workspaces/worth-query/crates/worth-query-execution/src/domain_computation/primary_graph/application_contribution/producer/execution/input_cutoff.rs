@@ -21,6 +21,26 @@ pub(super) enum ProducerInputProgression {
     StablePublished(PublishedStableLineage),
 }
 
+/// An exact selection whose producer declares no Preserve posture reuses the
+/// live output it was selected for or stops here, before any effect: that
+/// producer never executes over a live output.
+fn fresh(
+    required_output: RequiredOutputDemandContext,
+    source: PreparedObservedSourceExpectation,
+    key: Option<PreparedInputReuseKey>,
+    context: Option<PreparedDecisionReuseContext>,
+) -> Result<ProducerInputProgression, ProducerExecutionStop> {
+    if required_output.reuses_live_output_only() {
+        return Err(ProducerExecutionStop::LiveOutputNotReused);
+    }
+    Ok(ProducerInputProgression::FreshPrepared {
+        required_output,
+        source,
+        key,
+        context,
+    })
+}
+
 /// Eligibility precedes lineage storage, registry claims, and source-image
 /// construction. The Fresh branch returns the original preparation custody;
 /// no input/context proof or source fact set is reconstructed on fallback.
@@ -44,12 +64,7 @@ where
     let (key, context) = match (key, context) {
         (Some(key), Some(context)) => (key, context),
         (key, context) => {
-            return Ok(ProducerInputProgression::FreshPrepared {
-                required_output,
-                source,
-                key,
-                context,
-            });
+            return fresh(required_output, source, key, context);
         }
     };
     let scope = operation.operation_scope_binding();
@@ -71,12 +86,7 @@ where
         )
         .map_err(cutoff_admission_denial)?;
     let Some(candidate) = candidate else {
-        return Ok(ProducerInputProgression::FreshPrepared {
-            required_output,
-            source,
-            key: Some(key),
-            context: Some(context),
-        });
+        return fresh(required_output, source, Some(key), Some(context));
     };
     // Eviction degrades to Fresh. Only a row holds the claims on what its
     // record consumed and answers its pending edges. A candidate of this
@@ -90,12 +100,7 @@ where
             .registry()
             .posts_settlement(settlement, admission)?
     {
-        return Ok(ProducerInputProgression::FreshPrepared {
-            required_output,
-            source,
-            key: Some(key),
-            context: Some(context),
-        });
+        return fresh(required_output, source, Some(key), Some(context));
     }
     // The Native owner authenticates and funds the exact issued handle once.
     // Verification consumes this paired proof instead of resolving it again.
@@ -124,12 +129,7 @@ where
         .map_err(cutoff_denial)?;
     let verified = match decision {
         InputCutoffDecision::Fresh { key, context } => {
-            return Ok(ProducerInputProgression::FreshPrepared {
-                required_output,
-                source,
-                key: Some(key),
-                context: Some(context),
-            });
+            return fresh(required_output, source, Some(key), Some(context));
         }
         InputCutoffDecision::Reuse(verified) => verified,
     };

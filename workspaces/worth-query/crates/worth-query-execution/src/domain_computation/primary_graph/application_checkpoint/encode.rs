@@ -3,7 +3,7 @@ use sha2::{Digest, Sha256};
 use super::{
     resources, WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,
     BODY_PREFIX_BYTES, CHECKSUM_BYTES, FORMAT_VERSION, HEADER_BYTES, MAGIC,
-    MINIMUM_V7_ACCEPTED_OUTPUT_BYTES,
+    MINIMUM_V8_ACCEPTED_OUTPUT_BYTES,
 };
 
 impl WorthQueryApplicationCheckpoint {
@@ -19,7 +19,7 @@ impl WorthQueryApplicationCheckpoint {
                 role_total.saturating_add(8 + role.role.len() + 1 + 8 + role.entity_name.len() + 16)
             });
             total.saturating_add(
-                MINIMUM_V7_ACCEPTED_OUTPUT_BYTES - 1
+                MINIMUM_V8_ACCEPTED_OUTPUT_BYTES - 1
                     + accepted.producer.len()
                     + role_bytes
                     + accepted.producer_facts.as_ref().map_or(0, Vec::len),

@@ -13,14 +13,13 @@ use worth_relational::facade::{
 
 use super::CheckpointCursor;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
-
 mod indexed_selection;
 
 /// The wire version of producer facts. A checkpoint carries them at this
 /// version only for an output that consumed no other output: the restored
 /// row is verified against its own source facts and claims nothing upstream.
 /// Earlier versions made no such promise, and their payload is never read.
-pub(in crate::domain_computation::primary_graph) const WIRE_VERSION: u16 = 7;
+pub(in crate::domain_computation::primary_graph) const WIRE_VERSION: u16 = 8;
 pub(super) const MAXIMUM_FACT_BYTES: usize = 1024 * 1024;
 pub(super) const MAXIMUM_FACTS: usize = 4096;
 const MAXIMUM_TEXT: usize = 4096;
@@ -38,6 +37,20 @@ pub(super) fn encode_with_capacity(facts: &[Fact], capacity: usize) -> Option<Ve
     put_u32(&mut bytes, u32::try_from(facts.len()).ok()?);
     for fact in facts {
         match fact {
+            Fact::RetiredOutputEntity {
+                entity_id,
+                kind,
+                created_at,
+                deleted_at,
+                read_locator,
+            } => {
+                bytes.push(6);
+                put_entity(&mut bytes, *entity_id);
+                put_u32(&mut bytes, kind.as_u32());
+                put_u64(&mut bytes, created_at.as_u64());
+                put_u64(&mut bytes, deleted_at.as_u64());
+                put_text(&mut bytes, read_locator)?;
+            }
             Fact::SourceEntity { entity_id } => {
                 bytes.push(1);
                 put_entity(&mut bytes, *entity_id);
@@ -98,7 +111,7 @@ pub(super) fn encode_with_capacity(facts: &[Fact], capacity: usize) -> Option<Ve
                 put_u32(&mut bytes, kind.as_u32());
             }
             Fact::IndexedEntitySelection { .. } => {
-                bytes.push(6);
+                bytes.push(7);
                 indexed_selection::encode(&mut bytes, fact)?;
             }
             _ => return None,
@@ -136,6 +149,14 @@ pub(in crate::domain_computation::primary_graph) fn decode_for_wire_version(
     let mut facts = Vec::with_capacity(count);
     for _ in 0..count {
         let fact = match cursor.next_byte()? {
+            6 => Fact::RetiredOutputEntity {
+                entity_id: cursor.next_entity()?,
+                kind: KindId(cursor.next_u32()?),
+                created_at: VersionId(cursor.next_u64()?),
+                deleted_at: VersionId(cursor.next_u64()?),
+                read_locator: cursor
+                    .next_bounded_text(MAXIMUM_TEXT, "checkpoint retirement read locator")?,
+            },
             1 => Fact::SourceEntity {
                 entity_id: cursor.next_entity()?,
             },
@@ -200,7 +221,7 @@ pub(in crate::domain_computation::primary_graph) fn decode_for_wire_version(
                 entity_id: cursor.next_entity()?,
                 kind: KindId(cursor.next_u32()?),
             },
-            6 => indexed_selection::decode(&mut cursor)?,
+            7 => indexed_selection::decode(&mut cursor)?,
             _ => return Err("checkpoint producer fact kind is unsupported".to_owned()),
         };
         facts.push(fact);

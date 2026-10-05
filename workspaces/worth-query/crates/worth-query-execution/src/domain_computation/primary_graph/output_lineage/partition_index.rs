@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, OnceLock};
 
 mod admitted_lookup;
+mod family_heads;
 mod history_retirement;
 mod preparation;
 mod stable_publication;
@@ -17,7 +18,7 @@ use super::{
 };
 
 type Generations = BTreeMap<u64, Arc<OnceLock<usize>>>;
-type Partitions = BTreeMap<[u8; 32], Generations>;
+type Partitions = BTreeMap<Option<[u8; 32]>, Generations>;
 type Occurrences = BTreeMap<ProductBranchIncarnation, Partitions>;
 
 #[derive(Default)]
@@ -35,7 +36,7 @@ impl OutputPartitionIndex {
         self.slots
             .get(source)
             .and_then(|occurrences| occurrences.get(&coordinate.occurrence))
-            .and_then(|partitions| partitions.get(&partition))
+            .and_then(|partitions| partitions.get(&Some(partition)))
             .is_some_and(|generations| generations.contains_key(&coordinate.generation))
     }
 
@@ -44,8 +45,7 @@ impl OutputPartitionIndex {
         source: SemanticSource,
         coordinate: ProductCoordinate,
         partition: Option<[u8; 32]>,
-    ) -> Option<Arc<OnceLock<usize>>> {
-        let partition = partition?;
+    ) -> Arc<OnceLock<usize>> {
         let cell = Arc::new(OnceLock::new());
         assert!(self
             .slots
@@ -57,7 +57,7 @@ impl OutputPartitionIndex {
             .or_default()
             .insert(coordinate.generation, Arc::clone(&cell))
             .is_none());
-        Some(cell)
+        cell
     }
 
     pub(super) fn remove_vacancy(
@@ -65,7 +65,7 @@ impl OutputPartitionIndex {
         source: &SemanticSource,
         occurrence: ProductBranchIncarnation,
         generation: u64,
-        partition: [u8; 32],
+        partition: Option<[u8; 32]>,
     ) {
         let occurrences = self
             .slots
@@ -96,7 +96,7 @@ impl OutputPartitionIndex {
         source: SemanticSource,
         occurrence: ProductBranchIncarnation,
         generation: u64,
-        partition: [u8; 32],
+        partition: Option<[u8; 32]>,
         slot: usize,
     ) {
         assert!(
@@ -127,7 +127,7 @@ impl OutputPartitionIndex {
         self.slots
             .get(source)?
             .get(&occurrence)?
-            .get(&partition)?
+            .get(&Some(partition))?
             .get(&generation)
             .and_then(|cell| cell.get().copied())
     }
@@ -143,7 +143,7 @@ impl OutputPartitionIndex {
             .slots
             .get(source)
             .and_then(|occurrences| occurrences.get(&coordinate.occurrence))
-            .and_then(|partitions| partitions.get(&partition))
+            .and_then(|partitions| partitions.get(&Some(partition)))
         else {
             return (maximum_work != 0).then_some((None, 1)).ok_or(());
         };
@@ -182,7 +182,7 @@ impl OutputPartitionIndex {
                                 occurrence: *occurrence,
                                 generation: *generation,
                             },
-                            Some(*partition),
+                            *partition,
                         )
                     });
                     !generations.is_empty()
@@ -217,7 +217,7 @@ impl WorthQueryApplicationOutputLineage {
             source,
             coordinate.occurrence,
             generation,
-            partition,
+            Some(partition),
             slot,
         );
         Some(Arc::clone(&displaced.settlement_identity))
@@ -228,7 +228,7 @@ impl WorthQueryApplicationOutputLineage {
         source: &SemanticSource,
         occurrence: ProductBranchIncarnation,
         generation: u64,
-        partition: [u8; 32],
+        partition: Option<[u8; 32]>,
         slot: usize,
     ) -> &RecordedOutput {
         self.cell_at_partition_slot(source, occurrence, generation, partition, slot)
@@ -241,7 +241,7 @@ impl WorthQueryApplicationOutputLineage {
         source: &SemanticSource,
         occurrence: ProductBranchIncarnation,
         generation: u64,
-        partition: [u8; 32],
+        partition: Option<[u8; 32]>,
         slot: usize,
     ) -> &Arc<OnceLock<RecordedOutput>> {
         let cell = self
@@ -255,7 +255,7 @@ impl WorthQueryApplicationOutputLineage {
         assert_eq!(
             cell.get()
                 .and_then(|recorded| recorded.source_partition_identity),
-            Some(partition),
+            partition,
             "a partition locator must reference the same semantic partition"
         );
         cell
@@ -277,7 +277,13 @@ impl WorthQueryApplicationOutputLineage {
             self.partition_index
                 .latest(source, coordinate, partition, maximum_work)?;
         let cell = location.map(|(generation, slot)| {
-            self.cell_at_partition_slot(source, coordinate.occurrence, generation, partition, slot)
+            self.cell_at_partition_slot(
+                source,
+                coordinate.occurrence,
+                generation,
+                Some(partition),
+                slot,
+            )
         });
         Ok((cell, work))
     }
@@ -300,7 +306,7 @@ impl WorthQueryApplicationOutputLineage {
                 source,
                 coordinate.occurrence,
                 generation,
-                partition,
+                Some(partition),
                 slot,
             )
         });
@@ -321,7 +327,7 @@ impl WorthQueryApplicationOutputLineage {
             .slots
             .get(source)
             .and_then(|occurrences| occurrences.get(&coordinate.occurrence))
-            .and_then(|partitions| partitions.get(&partition))
+            .and_then(|partitions| partitions.get(&Some(partition)))
         {
             for (generation, slot) in generations.range(..=coordinate.generation).rev() {
                 work = work.checked_add(1).ok_or(())?;
@@ -333,7 +339,7 @@ impl WorthQueryApplicationOutputLineage {
                     source,
                     coordinate.occurrence,
                     *generation,
-                    partition,
+                    Some(partition),
                     *slot,
                 );
                 if matches(recorded) {

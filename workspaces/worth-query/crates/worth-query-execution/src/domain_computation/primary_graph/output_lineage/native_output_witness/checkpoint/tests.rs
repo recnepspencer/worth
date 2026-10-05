@@ -3,6 +3,10 @@
 use super::*;
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryCheckpointOutputRole,
+    output_reuse::{
+        compare_retained_output_dependencies, compare_retained_output_witness,
+        OutputDependencySelection,
+    },
     tests::fixture::{
         installed_authorization_world, live_scope, release_test_commit_snapshot, AccountLabel,
         AccountStatus,
@@ -40,6 +44,8 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
     let owner = &handle.source_owner.invalidation_owner;
     let correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
         TypeId::of::<()>(),
+        TypeId::of::<()>(),
+        std::collections::BTreeSet::new(),
         vec![WorthQueryCheckpointOutputRole {
             role: "account".to_owned(),
             posture: WorthQueryApplicationOutputPosture::Preserve,
@@ -116,6 +122,22 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
                 &mut owner.edit_admission(),
             )
             .unwrap());
+        // Producer selection reads both halves of the retained fact set.
+        let mut selection_work = 4_096;
+        assert!(matches!(
+            compare_retained_output_witness(
+                runtime,
+                &before,
+                restored.get(),
+                owner,
+                &mut selection_work,
+            ),
+            Ok(OutputDependencySelection::Reuse)
+        ));
+        assert!(
+            selection_work < 4_096,
+            "the witness comparison draws from the selection allowance"
+        );
         let missing = &facts[..facts.len() - 1];
         assert!(SealedNativeOutputWitness::from_checkpoint_facts(
             &correspondence,
@@ -193,6 +215,47 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
                 &mut owner.edit_admission(),
             )
             .unwrap());
+        // The source facts alone would reuse this output. Its performed
+        // output moved, so selection may not: a producer has to run again.
+        let mut selection_work = 4_096;
+        assert!(matches!(
+            compare_retained_output_dependencies(
+                runtime,
+                &after,
+                true,
+                Some(&producer_facts),
+                &mut selection_work,
+            ),
+            Ok(OutputDependencySelection::Reuse)
+        ));
+        assert!(matches!(
+            compare_retained_output_witness(
+                runtime,
+                &after,
+                after_restore.get(),
+                owner,
+                &mut selection_work,
+            ),
+            Ok(OutputDependencySelection::FreshRequired)
+        ));
+        // A row no sealed witness covers is decided by its source facts.
+        assert!(matches!(
+            compare_retained_output_witness(runtime, &after, None, owner, &mut selection_work),
+            Ok(OutputDependencySelection::Reuse)
+        ));
+        let exhausted = compare_retained_output_witness(
+            runtime,
+            &before,
+            restored.get(),
+            owner,
+            &mut 0,
+        )
+        .err()
+        .expect("a witness comparison beyond the selection allowance is denied");
+        assert_eq!(
+            exhausted.kind(),
+            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
+        );
         runtime.snapshots().release_snapshot(&before).unwrap();
         runtime.snapshots().release_snapshot(&after).unwrap();
     });

@@ -36,10 +36,7 @@ impl PreparedOutputLineageSlot {
             .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))?;
         Ok(!self.filled
             && self.record_cell.get().is_none()
-            && self
-                .partition_cell
-                .as_ref()
-                .is_none_or(|cell| cell.get().is_none())
+            && self.partition_cell.get().is_none()
             && self.source.runtime_authority == scope.runtime_authority()
             && &self.source.schema == scope.binding_identity()
             && self.source.scope == scope.scope()

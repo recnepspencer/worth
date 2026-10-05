@@ -108,8 +108,12 @@ fn equivalent_binding_does_not_bypass_fresh_authorization_currentness() {
     assert!(matches!(
         denied,
         BankEstateProgressionDenial::ApplicationEntry(ref denial)
-            if denial.kind()
-                == worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::Authorization
+            if matches!(
+                denial.kind(),
+                worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::Authorization(
+                    worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
+                )
+            )
     ));
     assert_eq!(world.transport.attempts().len(), 1);
     assert_eq!(

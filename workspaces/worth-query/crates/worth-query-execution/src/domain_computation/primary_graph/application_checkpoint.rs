@@ -19,15 +19,17 @@ pub use section_bytes::{
 };
 
 const MAGIC: &[u8; 8] = b"WQAPCP01";
-const FORMAT_VERSION: u16 = 7;
+const FORMAT_VERSION: u16 = 8;
 const CHECKSUM_BYTES: usize = 32;
 const BODY_PREFIX_BYTES: usize = 2 + 8 + 8 + 8;
 const HEADER_BYTES: usize = MAGIC.len() + CHECKSUM_BYTES + BODY_PREFIX_BYTES;
 const LEGACY_MINIMUM_ACCEPTED_OUTPUT_BYTES: usize = 8 + 1 + 32 + 16 + 32 + 33 + 32 + 8;
 const MINIMUM_ACCEPTED_OUTPUT_BYTES: usize = LEGACY_MINIMUM_ACCEPTED_OUTPUT_BYTES + 17;
+/// Formats 5, 6 and 7 share one row layout; they differ in the fact kinds
+/// their payload may hold, and that payload is never read.
 const MINIMUM_V5_ACCEPTED_OUTPUT_BYTES: usize = MINIMUM_ACCEPTED_OUTPUT_BYTES + 8;
-const MINIMUM_V6_ACCEPTED_OUTPUT_BYTES: usize = MINIMUM_V5_ACCEPTED_OUTPUT_BYTES + 2;
-const MINIMUM_V7_ACCEPTED_OUTPUT_BYTES: usize = MINIMUM_V6_ACCEPTED_OUTPUT_BYTES + 1;
+/// Format 8 adds the accepted-output posture and the fact wire version.
+const MINIMUM_V8_ACCEPTED_OUTPUT_BYTES: usize = MINIMUM_V5_ACCEPTED_OUTPUT_BYTES + 1 + 2;
 const MAXIMUM_PRODUCER_IDENTITY_BYTES: usize = 4 * 1024;
 const MAXIMUM_ROLE_IDENTITY_BYTES: usize = 4 * 1024;
 const MAXIMUM_ENTITY_NAME_BYTES: usize = 4 * 1024;
@@ -85,8 +87,7 @@ impl WorthQueryApplicationCheckpoint {
             return Err("Query application checkpoint checksum differs".to_owned());
         }
         let version = u16::from_be_bytes([body[0], body[1]]);
-        if version != FORMAT_VERSION && version != 6 && version != 5 && version != 4 && version != 3
-        {
+        if !(3..=FORMAT_VERSION).contains(&version) {
             return Err(format!(
                 "Query application checkpoint format {version} is unsupported"
             ));
@@ -101,9 +102,8 @@ impl WorthQueryApplicationCheckpoint {
         let minimum = match version {
             3 => LEGACY_MINIMUM_ACCEPTED_OUTPUT_BYTES,
             4 => MINIMUM_ACCEPTED_OUTPUT_BYTES,
-            5 => MINIMUM_V5_ACCEPTED_OUTPUT_BYTES,
-            6 => MINIMUM_V6_ACCEPTED_OUTPUT_BYTES,
-            _ => MINIMUM_V7_ACCEPTED_OUTPUT_BYTES,
+            5..=7 => MINIMUM_V5_ACCEPTED_OUTPUT_BYTES,
+            _ => MINIMUM_V8_ACCEPTED_OUTPUT_BYTES,
         };
         if accepted_count > cursor.remaining.len() / minimum {
             return Err("checkpoint accepted-output count exceeds its payload".to_owned());
@@ -118,7 +118,7 @@ impl WorthQueryApplicationCheckpoint {
             let producer = std::str::from_utf8(cursor.next_bytes(producer_len)?)
                 .map_err(|_| "checkpoint producer identity is not UTF-8".to_owned())?
                 .to_owned();
-            let posture = if version >= 7 {
+            let posture = if version >= FORMAT_VERSION {
                 match cursor.next_byte()? {
                     0 => super::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::Performed,
                     1 => super::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::StableReused,
@@ -191,14 +191,19 @@ impl WorthQueryApplicationCheckpoint {
                 return Err("checkpoint output roles are duplicated or non-canonical".to_owned());
             }
             let (producer_facts, producer_fact_wire_version) = if version >= 5 {
-                let fact_version = if version >= 6 { cursor.next_u16()? } else { 5 };
+                // Before format 8 a row's facts are at its format's version.
+                let fact_version = if version >= FORMAT_VERSION {
+                    cursor.next_u16()?
+                } else {
+                    version
+                };
                 let fact_len = usize::try_from(cursor.next_u64()?)
                     .map_err(|_| "checkpoint producer fact length exceeds this host".to_owned())?;
                 if fact_len > facts::MAXIMUM_FACT_BYTES {
                     return Err("checkpoint producer fact payload length is invalid".to_owned());
                 }
                 if fact_len == 0 {
-                    if version >= 6 && fact_version != 0 {
+                    if version >= FORMAT_VERSION && fact_version != 0 {
                         return Err(
                             "checkpoint empty producer facts carry a wire version".to_owned()
                         );
@@ -214,7 +219,7 @@ impl WorthQueryApplicationCheckpoint {
                         // Captured before facts were kept for roots alone:
                         // the row may have consumed other outputs. Its facts
                         // are not read, and the row starts Fresh.
-                        5 | 6 => (None, 0),
+                        5..=7 => (None, 0),
                         _ => {
                             return Err(
                                 "checkpoint producer fact wire version is unsupported".to_owned()

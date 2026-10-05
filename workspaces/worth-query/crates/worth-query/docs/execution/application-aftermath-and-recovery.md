@@ -423,8 +423,41 @@ not on Query guessing what happened.
 Once Query's terminal effect owner holds the completion, safe retry makes no new
 physical attempt. It is refused with `WorthQueryRecoveryHandleDenialKind::AlreadyCompleted`
 and the live handle is returned.
+While a completion is still settling, safe retry also makes no attempt and
+returns the live handle, naming why the owner cannot answer yet:
+
+- `CompletionPublicationPending`: the completion is held but its publication is
+  in flight or awaits retry.
+- `TerminalIndexUnavailable`: the terminal index cannot answer until a pending
+  publication resolves or the index is repaired.
+
+Retry later; once the completion settles, retry answers `AlreadyCompleted`.
+Every other re-dispatch refusal also keeps its own kind: `DispatchOutboxMissing`,
+`TransportNotInstalled`, `DispatchOwnerReadDenied`, `AttemptAdmissionDenied`,
+`CanonicalDerivationDenied` and `TimeObservationDenied`. `DispatchOwnerReadDenied`
+carries the exact owner-read cause, and `AttemptAdmissionDenied` carries the exact
+`WorthQueryExternalDispatchAttemptDenial`: a foreign runtime or world, a
+publication commit mismatch, a missing inbound operation slot, spent attempt
+identities, a missing or mismatched outstanding dispatch, an original still
+publishing, or a full in-flight window. A World terminal reached between
+admission and the send answers `AlreadyCompleted`.
 
 ## Publication Settlement Recovery
+
+An ordinary request retry after checkpoint restore or reopening still compares
+the durable intent under fresh authorization. When its original live receipt
+is absent, `WorthQueryApplicationMutationOutcome::PreviouslyCommitted` carries
+the sealed `WorthQueryHistoricalApplicationCommit` and its `commit_id()`. This
+is a landed historical fact: the request commits nothing again. It carries no
+handler result, publication authority, workflow settlement authority, or live
+receipt. Query current state through a freshly admitted request before further
+work. In-process retries whose original receipt remains retained continue to
+return `AlreadyCommitted(receipt)`.
+
+Lower APIs that require a live receipt retain the typed
+`CommittedReceiptNotRetained { commit }` denial. Its `historical_commit()`
+accessor exposes the same descriptive fact; it cannot grant the missing
+authority or fabricate receipt evidence from durable identifiers.
 
 Split the application commit outcome with `landed()` before entering aftermath
 handling. A landed commit returns its receipt; every other terminal arrives as a
@@ -509,6 +542,12 @@ Inspection borrows the live handle and returns descriptive, publishable state.
 Resolution consumes the handle after a fresh owner-issued effect authority and
 an admitted idempotency read agree with its exact binding. A domain host should
 normally wrap this generic sequence in domain-named methods, as Bank does.
+
+When the admitted request lapses before resolution takes effect, resolution
+names the lapse: `AdmissionCancelled`, `AdmissionDeadlineExceeded` or
+`AdmissionAuthenticationExpired`. A fresh request clears it.
+`FreshAuthorityDenied` means the presented effect authority is not this
+handle's, which a fresh request does not clear.
 
 ## Program Adoption Recovery And Support Retirement
 

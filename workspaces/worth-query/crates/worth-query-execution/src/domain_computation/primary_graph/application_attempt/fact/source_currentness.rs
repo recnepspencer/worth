@@ -35,6 +35,7 @@ impl WorthQueryApplicationObservedFact {
             return Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded);
         }
         match self {
+            Self::RetiredOutputEntity { .. } => Ok((self.remains_equal_in(runtime, snapshot), 1)),
             Self::SourceEntity { entity_id } => {
                 let view = runtime
                     .read_truth()
@@ -65,10 +66,12 @@ impl WorthQueryApplicationObservedFact {
                 if work > maximum_work {
                     return Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded);
                 }
-                let current = runtime
+                let Some(current) = runtime
                     .read_truth()
                     .exact_snapshot_entity_aspect_version(snapshot, *entity_id, aspect)
-                    .ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
+                else {
+                    return unanswered_probe(runtime, snapshot, *entity_id, work, maximum_work);
+                };
                 Ok((current == *native_revision, work))
             }
             Self::SourceFieldRevision {
@@ -78,11 +81,13 @@ impl WorthQueryApplicationObservedFact {
             } => {
                 let expected =
                     native_revision.ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
-                let current = runtime
+                let Some(current) = runtime
                     .read_truth()
                     .project_snapshot(snapshot)
                     .and_then(|view| view.entity_field_revision(*entity_id, locator))
-                    .ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
+                else {
+                    return unanswered_probe(runtime, snapshot, *entity_id, 1, maximum_work);
+                };
                 Ok((current == expected, 1))
             }
             Self::SourceAdjacencyRevision {
@@ -97,14 +102,14 @@ impl WorthQueryApplicationObservedFact {
                     .read_truth()
                     .project_snapshot(snapshot)
                     .ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
-                let comparison = view
-                    .bounded_adjacency_structural_revision(
-                        *anchor,
-                        *relation_kind,
-                        *direction,
-                        (*comparison_work_limit).min(maximum_work),
-                    )
-                    .map_err(|_| WorthQuerySourceCurrentnessFailure::Unavailable)?;
+                let Ok(comparison) = view.bounded_adjacency_structural_revision(
+                    *anchor,
+                    *relation_kind,
+                    *direction,
+                    (*comparison_work_limit).min(maximum_work),
+                ) else {
+                    return unanswered_probe(runtime, snapshot, *anchor, 1, maximum_work);
+                };
                 Ok((
                     comparison.revision() == *native_revision,
                     comparison.work_units(),
@@ -157,33 +162,8 @@ impl WorthQueryApplicationObservedFact {
                 .map_err(map_adjacency_denial)?;
                 Ok((current == *relations, work))
             }
-            Self::IndexedEntitySelection {
-                index_id,
-                definition,
-                entity_kind,
-                locator,
-                value,
-                candidate_limit,
-                candidates,
-            } => {
-                if candidate_limit
-                    .checked_add(1)
-                    .is_none_or(|needed| needed > maximum_work)
-                {
-                    return Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded);
-                }
-                super::indexed_entity_selection::remains_equal_with_work(
-                    runtime,
-                    snapshot,
-                    *index_id,
-                    definition,
-                    *entity_kind,
-                    locator,
-                    value,
-                    *candidate_limit,
-                    candidates,
-                )
-                .ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)
+            Self::IndexedEntitySelection { .. } => {
+                super::indexed_entity_selection::currentness(self, runtime, snapshot, maximum_work)
             }
             Self::WorkflowDefinitionPredecessor {
                 relation_kind,
@@ -276,6 +256,30 @@ impl WorthQueryApplicationObservedFact {
                 Err(WorthQuerySourceCurrentnessFailure::Unavailable)
             }
         }
+    }
+}
+
+/// A native probe that found nothing still answers when its entity is no
+/// longer live at this snapshot: the fact changed. So no fact's answer
+/// depends on the entity fact beside it being read first. Any other silence
+/// is a snapshot that could not be read.
+fn unanswered_probe(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    entity: worth_relational::facade::identity::EntityId,
+    probe_work: usize,
+    maximum_work: usize,
+) -> Result<(bool, usize), WorthQuerySourceCurrentnessFailure> {
+    let work = probe_work
+        .checked_add(1)
+        .filter(|work| *work <= maximum_work)
+        .ok_or(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)?;
+    match runtime
+        .read_truth()
+        .exact_snapshot_live_entity_kind_status(snapshot, entity)
+    {
+        Some(None) => Ok((false, work)),
+        _ => Err(WorthQuerySourceCurrentnessFailure::Unavailable),
     }
 }
 

@@ -86,7 +86,11 @@ fn foreign_owner_observation_denies_before_transport_and_preserves_cause() {
         world
             .application
             .perform_committed_external_dispatch(&transport, foreign, &live_scope()),
-        Err(WorthQueryExternalDispatchPreparationDenial::AttemptAdmissionDenied)
+        Err(
+            WorthQueryExternalDispatchPreparationDenial::AttemptAdmissionDenied(
+                super::WorthQueryExternalDispatchAttemptDenial::ForeignProductWorld
+            )
+        )
     );
     assert_eq!(transport.0.load(Ordering::Acquire), 0);
 }

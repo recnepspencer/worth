@@ -13,7 +13,7 @@ pub(crate) fn declare_vertex_replacement<Schema: TopologySchemaBinding>(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(operation, 24)
+        .operation_decision_fact_budget(operation, 32)
         .operation_projection_work_budget(operation, 128)
         .operation_read_entity(operation, Body::reference())
         .operation_read_field(operation, BodyKey::reference())

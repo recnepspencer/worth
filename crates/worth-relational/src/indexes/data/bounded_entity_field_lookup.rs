@@ -5,6 +5,8 @@ use crate::snapshots::data::SnapshotHandle;
 
 use super::{DerivedIndexDefinition, DerivedIndexGenerationId, DerivedIndexId};
 
+/// Fixed width of the bounded relation-join lane. Complete entity-field
+/// selections instead use their caller's explicit finite candidate budget.
 pub const MAX_BOUNDED_INDEX_CANDIDATES: usize = 64;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -32,7 +34,7 @@ impl BoundedEntityFieldLookupRequest {
         value: AspectValue,
         candidate_limit: usize,
     ) -> Result<Self, BoundedEntityFieldLookupDenial> {
-        if candidate_limit == 0 || candidate_limit > MAX_BOUNDED_INDEX_CANDIDATES {
+        if candidate_limit == 0 || candidate_limit == usize::MAX {
             return Err(BoundedEntityFieldLookupDenial::new(
                 BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit,
                 index_id,

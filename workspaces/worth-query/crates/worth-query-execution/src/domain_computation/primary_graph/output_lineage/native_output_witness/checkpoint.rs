@@ -30,6 +30,10 @@ impl SealedNativeOutputWitness {
                     admission.charge_external_work(1)?;
                     aspect.as_str().len().checked_add(1).ok_or_else(overflow)?
                 }
+                // The lookup examines at most its recorded candidate limit.
+                Fact::IndexedEntitySelection {
+                    candidate_limit, ..
+                } => candidate_limit.checked_add(1).ok_or_else(overflow)?,
                 _ => return Ok(false),
             };
             admission.charge_external_work(u64::try_from(work).map_err(|_| overflow())?)?;

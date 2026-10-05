@@ -63,7 +63,7 @@ impl WorthQueryProviderAuthorizationDecisionFacts {
             return Err("application decision facts contain duplicate structural locators");
         }
         for source in source_facts {
-            let locator = source.locator_identity();
+            let locator = source.dependency_locator_identity();
             if let Some(index) = fact_indices.get(&locator).copied() {
                 facts[index] = facts[index].clone().retain_observed_source_role(source)?;
             } else {

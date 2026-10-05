@@ -1,5 +1,6 @@
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationBinding, ApplicationMutationOutputContract,
+    ApplicationMutationBinding, WorthQueryApplicationOutputCardinality,
+    WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleFamily,
 };
 use worth_query_installation::facade::{
     ApplicationEntityRef, ApplicationOperationDecisionReadTarget,
@@ -8,12 +9,20 @@ use worth_relational::facade::runtime::ProjectionAspectScope;
 use worth_relational::facade::storage::RecordLifecycleState;
 
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::OutputRoleUse;
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationOutputAction, WorthQueryApplicationOutputCorrespondence,
-    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputRole,
-    WorthQueryApplicationOutputRoleFamily, WorthQueryPriorOutputDenial,
-    WorthQueryPriorOutputDenialKind,
+    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputPosture,
+    WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind,
 };
+
+mod prior_member;
+
+/// The read of a prior fixed role: the identity for an exactly-one role, an
+/// `Option` of it for an at-most-one role.
+pub(in crate::domain_computation::primary_graph) type WorthQueryPriorOutputRead<Schema, Role> =
+    <<Role as WorthQueryApplicationOutputRole>::Cardinality as WorthQueryApplicationOutputCardinality>::Read<
+        WorthQueryInvariantEntityIdentity<Schema, <Role as WorthQueryApplicationOutputRole>::Entity>,
+    >;
 
 /// One currently visible member of a prior generated-output family.
 pub struct WorthQueryPriorOutputFamilyMember<Schema, Binding, Entity> {
@@ -46,144 +55,137 @@ impl<'reader, 'runtime, Schema, Operation>
 where
     Schema: ApplicationSchema,
 {
-    pub fn prior_output<Binding, Entity, Action>(
+    /// Read the fixed role `Role` that `PriorBinding` last committed. `Role`
+    /// must belong to the output contract of `PriorBinding`, and the contract
+    /// must declare it; otherwise the read fails to compile.
+    pub fn prior_output<PriorBinding, Role>(
         &mut self,
-        role: WorthQueryApplicationOutputRole<Binding, Entity, Action>,
-    ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, WorthQueryPriorOutputDenial>
+    ) -> Result<WorthQueryPriorOutputRead<Schema, Role>, WorthQueryPriorOutputDenial>
     where
-        Binding: 'static,
-        Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
-        Action: WorthQueryApplicationOutputAction,
+        PriorBinding: ApplicationMutationBinding<Schema>,
+        Role: WorthQueryApplicationOutputRole<Schema = Schema, Contract = PriorBinding::Output>,
+        Role::Entity: OperationReads<Operation>,
     {
-        let role_name = role.name().to_owned();
-        self.prior_output_if_present(role)?.ok_or_else(|| {
-            WorthQueryPriorOutputDenial::new(
-                WorthQueryPriorOutputDenialKind::Unavailable,
-                role_name,
-            )
-        })
+        self.prior_output_if_present::<PriorBinding, Role>()?
+            .ok_or_else(|| {
+                WorthQueryPriorOutputDenial::new(
+                    WorthQueryPriorOutputDenialKind::Unavailable,
+                    Role::NAME,
+                )
+            })
     }
 
     /// A missing correspondence for this exact binding is absence, not a denial.
-    /// Missing scope or product context and invalid or stale correspondence remain denials.
-    pub fn prior_output_if_present<Binding, Entity, Action>(
+    /// Within a present correspondence, an unbound at-most-one role reads as
+    /// `None` and an unbound exactly-one role is refused. Missing scope or
+    /// product context and invalid or stale correspondence remain denials.
+    pub fn prior_output_if_present<PriorBinding, Role>(
         &mut self,
-        role: WorthQueryApplicationOutputRole<Binding, Entity, Action>,
-    ) -> Result<
-        Option<WorthQueryInvariantEntityIdentity<Schema, Entity>>,
-        WorthQueryPriorOutputDenial,
-    >
+    ) -> Result<Option<WorthQueryPriorOutputRead<Schema, Role>>, WorthQueryPriorOutputDenial>
     where
-        Binding: 'static,
-        Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
-        Action: WorthQueryApplicationOutputAction,
+        PriorBinding: ApplicationMutationBinding<Schema>,
+        Role: WorthQueryApplicationOutputRole<Schema = Schema, Contract = PriorBinding::Output>,
+        Role::Entity: OperationReads<Operation>,
     {
-        self.admit_prior_entity::<Entity>(role.name())?;
-        let Some(correspondence) = self.select_prior_correspondence::<Binding>(role.name())? else {
-            return Ok(None);
-        };
-        self.require_role_budget(1, role.name())?;
-        self.reader.work_budget.consume(1);
-        self.reader.work.record_output_lineage_role_lookup();
-        let role_name = role.name().to_owned();
-        let output = correspondence
-            .entity(role)
-            .map_err(|denial| WorthQueryPriorOutputDenial::projection(&role_name, denial))?;
-        self.live_prior_identity::<Entity>(&role_name, output.entity_id())
-            .map(Some)
-    }
-
-    /// Read every currently visible member of one declared generated-role family.
-    ///
-    /// Results are ordered by semantic role name. Retired correspondence is
-    /// excluded; a create/preserve member that is not visible is an integrity
-    /// denial rather than an incomplete inventory.
-    pub fn prior_output_family<Binding, Entity>(
-        &mut self,
-        family: WorthQueryApplicationOutputRoleFamily<Binding, Entity>,
-    ) -> Result<
-        Vec<WorthQueryPriorOutputFamilyMember<Schema, Binding, Entity>>,
-        WorthQueryPriorOutputDenial,
-    >
-    where
-        Binding: ApplicationMutationBinding<Schema>,
-        Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
-    {
-        let subject = family.prefix();
-        self.prior_output_family_if_present(family)?.ok_or_else(|| {
-            WorthQueryPriorOutputDenial::new(WorthQueryPriorOutputDenialKind::Unavailable, subject)
-        })
-    }
-
-    /// Read a generated-role family when this exact prior binding has correspondence.
-    ///
-    /// `None` means no correspondence exists for `Binding` at the selected product
-    /// occurrence and generation. Declaration, entity, work, and live-identity
-    /// failures remain denials.
-    pub fn prior_output_family_if_present<Binding, Entity>(
-        &mut self,
-        family: WorthQueryApplicationOutputRoleFamily<Binding, Entity>,
-    ) -> Result<
-        Option<Vec<WorthQueryPriorOutputFamilyMember<Schema, Binding, Entity>>>,
-        WorthQueryPriorOutputDenial,
-    >
-    where
-        Binding: ApplicationMutationBinding<Schema>,
-        Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
-    {
-        self.admit_prior_entity::<Entity>(family.prefix())?;
-        let declaration =
-            <Binding::Output as ApplicationMutationOutputContract<Schema>>::ROLE_FAMILIES
-                .iter()
-                .find(|candidate| candidate.prefix() == family.prefix())
-                .ok_or_else(|| {
-                    WorthQueryPriorOutputDenial::new(
-                        WorthQueryPriorOutputDenialKind::UndeclaredFamily,
-                        family.prefix(),
-                    )
-                })?;
-        if declaration.entity() != Entity::IDENTIFIER {
-            return Err(WorthQueryPriorOutputDenial::new(
-                WorthQueryPriorOutputDenialKind::EntityMismatch,
-                family.prefix(),
-            ));
-        }
-        let Some(correspondence) = self.select_prior_correspondence::<Binding>(family.prefix())?
+        let role = OutputRoleUse::fixed::<Role>();
+        self.admit_prior_entity::<Role::Entity>(Role::NAME)?;
+        let Some(correspondence) = self.select_prior_correspondence::<PriorBinding>(Role::NAME)?
         else {
             return Ok(None);
         };
+        self.charge_role_work(Role::NAME)?;
+        let bound = correspondence
+            .bound_entity(&role)
+            .map_err(|denial| WorthQueryPriorOutputDenial::projection(Role::NAME, denial))?;
+        let identity = bound
+            .map(|entity_id| self.live_prior_identity::<Role::Entity>(Role::NAME, entity_id))
+            .transpose()?;
+        <Role::Cardinality as WorthQueryApplicationOutputCardinality>::read(identity)
+            .map(Some)
+            .ok_or_else(|| {
+                WorthQueryPriorOutputDenial::new(
+                    WorthQueryPriorOutputDenialKind::MissingRole,
+                    Role::NAME,
+                )
+            })
+    }
+
+    /// Read every currently visible member of the family `Family` that
+    /// `PriorBinding` last committed.
+    ///
+    /// Results are ordered by semantic role name. Retired correspondence is
+    /// excluded; a create/preserve member that is not visible is an integrity
+    /// denial rather than an incomplete inventory. A family that the prior
+    /// contract does not declare fails to compile.
+    #[allow(clippy::type_complexity)]
+    pub fn prior_output_family<PriorBinding, Family>(
+        &mut self,
+    ) -> Result<
+        Vec<WorthQueryPriorOutputFamilyMember<Schema, PriorBinding, Family::Entity>>,
+        WorthQueryPriorOutputDenial,
+    >
+    where
+        PriorBinding: ApplicationMutationBinding<Schema>,
+        Family:
+            WorthQueryApplicationOutputRoleFamily<Schema = Schema, Contract = PriorBinding::Output>,
+        Family::Entity: OperationReads<Operation>,
+    {
+        self.prior_output_family_if_present::<PriorBinding, Family>()?
+            .ok_or_else(|| {
+                WorthQueryPriorOutputDenial::new(
+                    WorthQueryPriorOutputDenialKind::Unavailable,
+                    Family::PREFIX,
+                )
+            })
+    }
+
+    /// Read a generated-role family when this exact prior binding has
+    /// correspondence.
+    ///
+    /// `None` means no correspondence exists for `PriorBinding` at the
+    /// selected product occurrence and generation. Entity, work, and
+    /// live-identity failures remain denials.
+    #[allow(clippy::type_complexity)]
+    pub fn prior_output_family_if_present<PriorBinding, Family>(
+        &mut self,
+    ) -> Result<
+        Option<Vec<WorthQueryPriorOutputFamilyMember<Schema, PriorBinding, Family::Entity>>>,
+        WorthQueryPriorOutputDenial,
+    >
+    where
+        PriorBinding: ApplicationMutationBinding<Schema>,
+        Family:
+            WorthQueryApplicationOutputRoleFamily<Schema = Schema, Contract = PriorBinding::Output>,
+        Family::Entity: OperationReads<Operation>,
+    {
+        let prefix = Family::PREFIX;
+        self.admit_prior_entity::<Family::Entity>(prefix)?;
+        let Some(correspondence) = self.select_prior_correspondence::<PriorBinding>(prefix)? else {
+            return Ok(None);
+        };
+        let project = |denial| WorthQueryPriorOutputDenial::projection(prefix, denial);
         let mut examined = 0_usize;
         let mut live = 0_usize;
-        for entry in correspondence
-            .binding_family_entries::<Binding, Entity>(family.prefix())
-            .map_err(|denial| WorthQueryPriorOutputDenial::projection(family.prefix(), denial))?
-        {
-            self.charge_role_work(family.prefix())?;
-            let (_, posture, _) = entry.map_err(|denial| {
-                WorthQueryPriorOutputDenial::projection(family.prefix(), denial)
-            })?;
+        for entry in correspondence.family_members::<Family>().map_err(project)? {
+            self.charge_role_work(prefix)?;
+            let (_, posture, _) = entry.map_err(project)?;
             examined += 1;
             if posture == WorthQueryApplicationOutputPosture::Retire {
                 continue;
             }
             live += 1;
         }
-        self.require_role_budget(examined.saturating_add(live), family.prefix())?;
+        self.require_role_budget(examined.saturating_add(live), prefix)?;
         let mut members = Vec::with_capacity(live);
-        for entry in correspondence
-            .binding_family_entries::<Binding, Entity>(family.prefix())
-            .map_err(|denial| WorthQueryPriorOutputDenial::projection(family.prefix(), denial))?
-        {
+        for entry in correspondence.family_members::<Family>().map_err(project)? {
             self.consume_admitted_role_work();
-            let (role, posture, entity) = entry.map_err(|denial| {
-                WorthQueryPriorOutputDenial::projection(family.prefix(), denial)
-            })?;
+            let (role, posture, entity) = entry.map_err(project)?;
             if posture == WorthQueryApplicationOutputPosture::Retire {
                 continue;
             }
             self.consume_admitted_role_work();
             members.push(WorthQueryPriorOutputFamilyMember {
-                identity: self.live_prior_identity::<Entity>(role, entity)?,
+                identity: self.live_prior_identity::<Family::Entity>(role, entity)?,
                 role: role.to_owned(),
                 published_posture: posture,
                 _binding: PhantomData,

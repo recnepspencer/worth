@@ -1,3 +1,5 @@
+mod compatibility;
+
 use sha2::{Digest, Sha256};
 
 #[path = "tests/fact_versions.rs"]
@@ -67,7 +69,7 @@ fn decoded_native_payload_uses_the_verified_query_buffer() {
 #[test]
 fn producer_identity_length_and_utf8_are_guarded() {
     let mut zero = 0_u64.to_be_bytes().to_vec();
-    zero.resize(super::MINIMUM_V7_ACCEPTED_OUTPUT_BYTES, 0);
+    zero.resize(super::MINIMUM_V8_ACCEPTED_OUTPUT_BYTES, 0);
     assert_denied(
         checkpoint_body(1, zero),
         "producer identity length is invalid",
@@ -76,7 +78,7 @@ fn producer_identity_length_and_utf8_are_guarded() {
     let mut oversized = ((MAXIMUM_PRODUCER_IDENTITY_BYTES + 1) as u64)
         .to_be_bytes()
         .to_vec();
-    oversized.resize(super::MINIMUM_V7_ACCEPTED_OUTPUT_BYTES, 0);
+    oversized.resize(super::MINIMUM_V8_ACCEPTED_OUTPUT_BYTES, 0);
     assert_denied(
         checkpoint_body(1, oversized),
         "producer identity length is invalid",
@@ -345,7 +347,7 @@ fn entity_bytes() -> [u8; 16] {
 }
 
 fn padded(mut accepted: Vec<u8>) -> Vec<u8> {
-    accepted.resize(super::MINIMUM_V7_ACCEPTED_OUTPUT_BYTES, 0);
+    accepted.resize(super::MINIMUM_V8_ACCEPTED_OUTPUT_BYTES, 0);
     accepted
 }
 

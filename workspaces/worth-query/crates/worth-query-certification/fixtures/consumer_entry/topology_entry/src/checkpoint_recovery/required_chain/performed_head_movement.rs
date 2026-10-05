@@ -91,13 +91,15 @@ fn one_caller_advance_rebinds_chain_after_actual_upstream_publication() {
     );
     assert_eq!(
         settled
-            .output_correspondence()
-            .entity(binding::anchor_role::<CheckpointSchema>())
+            .outputs_of::<PlanarOutputs>()
+            .unwrap()
+            .entity::<PlanarAnchorOutput<CheckpointSchema>>()
             .unwrap()
             .entity_id(),
         initial_c
-            .output_correspondence()
-            .entity(binding::anchor_role::<CheckpointSchema>())
+            .outputs_of::<PlanarOutputs>()
+            .unwrap()
+            .entity::<PlanarAnchorOutput<CheckpointSchema>>()
             .unwrap()
             .entity_id(),
     );

@@ -3,6 +3,7 @@ use worth_relational::facade::identity::{EntityId, KindId, RelationId};
 use worth_relational::facade::indexes::{DerivedIndexDefinition, DerivedIndexId};
 
 mod adjacency;
+mod dependency_key;
 mod entity_touch;
 mod indexed_entity_selection;
 mod locator_identity;
@@ -14,7 +15,9 @@ pub(in crate::domain_computation::primary_graph) use adjacency::observe_adjacenc
 pub(in crate::domain_computation::primary_graph) use adjacency::{
     observe_adjacency_checked, AdjacencyObservationDenial,
 };
+pub(in crate::domain_computation::primary_graph) use dependency_key::WorthQueryApplicationFactStorageKey;
 pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::observe_indexed_entity_selection;
+pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::reobserve as reobserve_indexed_entity_selection;
 pub(in crate::domain_computation::primary_graph) use source_currentness::WorthQuerySourceCurrentnessFailure;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -56,6 +59,15 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFactK
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum WorthQueryApplicationObservedFact {
+    /// Postcondition of a committed, declared output retirement. The original
+    /// read locator remains covered; the exact entity generation must stay retired.
+    RetiredOutputEntity {
+        entity_id: EntityId,
+        kind: KindId,
+        created_at: worth_relational::facade::identity::VersionId,
+        deleted_at: worth_relational::facade::identity::VersionId,
+        read_locator: String,
+    },
     SourceEntity {
         entity_id: EntityId,
     },
@@ -185,6 +197,12 @@ impl WorthQueryApplicationObservedFact {
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> bool {
         match self {
+            Self::RetiredOutputEntity { entity_id, kind, created_at, deleted_at, .. } => runtime
+                .read_truth().project_snapshot(snapshot)
+                .and_then(|view| view.entity_retirement(*entity_id))
+                .is_some_and(|record| record.kind_id() == *kind
+                    && record.created_at_version() == *created_at
+                    && record.deleted_at_version() == *deleted_at),
             Self::SourceEntity { entity_id } => runtime
                 .read_truth()
                 .project_snapshot(snapshot)

@@ -45,25 +45,15 @@ fn open_stable_interest_refreshes_twice_without_new_producer_or_world_commit() {
     assert_eq!(before.selected_commit(), after.selected_commit());
     assert_eq!(
         original_receipt
-            .output_correspondence()
-            .entity(
-                worth_query_host::facade::primary_graph::WorthQueryApplicationOutputRole::<
-                    PlanarMutationBinding<CheckpointSchema>,
-                    Body,
-                    worth_query_host::facade::primary_graph::WorthQueryPreserveOutput,
-                >::from_static("anchor")
-            )
+            .outputs_of::<PlanarOutputs>()
+            .unwrap()
+            .entity::<PlanarAnchorOutput<CheckpointSchema>>()
             .unwrap()
             .entity_id(),
         second
-            .output_correspondence()
-            .entity(
-                worth_query_host::facade::primary_graph::WorthQueryApplicationOutputRole::<
-                    PlanarMutationBinding<CheckpointSchema>,
-                    Body,
-                    worth_query_host::facade::primary_graph::WorthQueryPreserveOutput,
-                >::from_static("anchor")
-            )
+            .outputs_of::<PlanarOutputs>()
+            .unwrap()
+            .entity::<PlanarAnchorOutput<CheckpointSchema>>()
             .unwrap()
             .entity_id(),
     );

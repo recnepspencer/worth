@@ -247,7 +247,9 @@ fn rebase_result_at_current(
                 runtime,
                 selected.application_basis().snapshot_handle(),
                 PreparedSourceFactRebase::admit(facts).unwrap(),
+                &BTreeSet::new(),
                 true,
+                64,
                 Some(&mut admission),
             )
         })

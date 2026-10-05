@@ -1,5 +1,7 @@
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationBinding, ApplicationMutationScopeBinding,
+    ApplicationMutationBinding, ApplicationMutationScopeBinding, WorthQueryApplicationOutputAction,
+    WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleFamily, WorthQueryCreateOutput,
+    WorthQueryPreserveOutput, WorthQueryRetireOutput,
 };
 use worth_query_installation::facade::ApplicationSchema;
 use worth_query_installation::facade::{
@@ -8,10 +10,11 @@ use worth_query_installation::facade::{
     WritePosture,
 };
 
+use super::super::application_attempt::OutputRoleUse;
 use super::super::{
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgramBuilder,
-    WorthQueryApplicationOutputRole, WorthQueryCreateOutput, WorthQueryInvariantMutationTarget,
-    WorthQueryPreserveOutput, WorthQueryRetireOutput,
+    WorthQueryInvariantMutationTarget,
 };
 use super::invariant::HandlerInterruption;
 
@@ -67,10 +70,7 @@ where
             Unit,
         >,
         value: Value,
-    ) -> Result<
-        WorthQueryApplicationEffectEntity<Schema, Entity>,
-        super::super::WorthQueryApplicationAttemptDenial,
-    >
+    ) -> Result<WorthQueryApplicationEffectEntity<Schema, Entity>, WorthQueryApplicationAttemptDenial>
     where
         Field: OperationReads<Binding::Operation> + DeclaredApplicationFieldValue<Value = Value>,
         Write: WritePosture,
@@ -84,10 +84,8 @@ where
     pub fn projected_entity<Entity>(
         &self,
         target: &WorthQueryInvariantMutationTarget<Schema, Entity>,
-    ) -> Result<
-        WorthQueryApplicationEffectEntity<Schema, Entity>,
-        super::super::WorthQueryApplicationAttemptDenial,
-    > {
+    ) -> Result<WorthQueryApplicationEffectEntity<Schema, Entity>, WorthQueryApplicationAttemptDenial>
+    {
         self.candidate.projected_entity(target)
     }
 
@@ -98,43 +96,116 @@ where
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
         from: &WorthQueryApplicationEffectEntity<Schema, From>,
         to: &WorthQueryApplicationEffectEntity<Schema, To>,
-    ) -> Result<(), super::super::WorthQueryApplicationAttemptDenial>
+    ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
         Relation: OperationReads<Binding::Operation> + OperationUnlinks<Binding::Operation>,
     {
         self.candidate.unlink_observed(relation, from, to)
     }
 
-    pub fn preserve_output<Entity>(
+    /// Bind `target` under the fixed role `Role` of this binding's output
+    /// contract, keeping it. A role the contract does not declare with this
+    /// entity, posture and cardinality fails to compile.
+    pub fn preserve_output<Role>(
         &mut self,
-        role: WorthQueryApplicationOutputRole<Binding, Entity, WorthQueryPreserveOutput>,
-        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
-    ) -> Result<(), super::super::WorthQueryApplicationAttemptDenial>
+        target: &WorthQueryApplicationEffectEntity<Schema, Role::Entity>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
-        Entity: 'static,
+        Role: WorthQueryApplicationOutputRole<
+            Schema = Schema,
+            Contract = Binding::Output,
+            Action = WorthQueryPreserveOutput,
+        >,
     {
-        self.candidate.bind_output(role, target)
+        self.candidate
+            .bind_output(OutputRoleUse::fixed::<Role>(), target)
     }
 
-    pub fn create_output<Entity>(
+    /// Bind the created `target` under the fixed role `Role`.
+    pub fn create_output<Role>(
         &mut self,
-        role: WorthQueryApplicationOutputRole<Binding, Entity, WorthQueryCreateOutput>,
-        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
-    ) -> Result<(), super::super::WorthQueryApplicationAttemptDenial>
+        target: &WorthQueryApplicationEffectEntity<Schema, Role::Entity>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
-        Entity: 'static,
+        Role: WorthQueryApplicationOutputRole<
+            Schema = Schema,
+            Contract = Binding::Output,
+            Action = WorthQueryCreateOutput,
+        >,
     {
-        self.candidate.bind_output(role, target)
+        self.candidate
+            .bind_output(OutputRoleUse::fixed::<Role>(), target)
     }
 
-    pub fn retire_output<Entity>(
+    /// Bind the retired `target` under the fixed role `Role`.
+    pub fn retire_output<Role>(
         &mut self,
-        role: WorthQueryApplicationOutputRole<Binding, Entity, WorthQueryRetireOutput>,
-        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
-    ) -> Result<(), super::super::WorthQueryApplicationAttemptDenial>
+        target: &WorthQueryApplicationEffectEntity<Schema, Role::Entity>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
-        Entity: 'static,
+        Role: WorthQueryApplicationOutputRole<
+            Schema = Schema,
+            Contract = Binding::Output,
+            Action = WorthQueryRetireOutput,
+        >,
     {
+        self.candidate
+            .bind_output(OutputRoleUse::fixed::<Role>(), target)
+    }
+
+    /// Bind the kept `target` as the member of `Family` named by `suffix`. A
+    /// family the contract does not declare, or one whose postures exclude
+    /// preserve, fails to compile.
+    pub fn preserve_member<Family>(
+        &mut self,
+        suffix: &str,
+        target: &WorthQueryApplicationEffectEntity<Schema, Family::Entity>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial>
+    where
+        Family: WorthQueryApplicationOutputRoleFamily<Schema = Schema, Contract = Binding::Output>,
+    {
+        self.bind_member::<Family, WorthQueryPreserveOutput>(suffix, target)
+    }
+
+    /// Bind the created `target` as the member of `Family` named by `suffix`.
+    pub fn create_member<Family>(
+        &mut self,
+        suffix: &str,
+        target: &WorthQueryApplicationEffectEntity<Schema, Family::Entity>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial>
+    where
+        Family: WorthQueryApplicationOutputRoleFamily<Schema = Schema, Contract = Binding::Output>,
+    {
+        self.bind_member::<Family, WorthQueryCreateOutput>(suffix, target)
+    }
+
+    /// Bind the retired `target` as the member of `Family` named by `suffix`.
+    pub fn retire_member<Family>(
+        &mut self,
+        suffix: &str,
+        target: &WorthQueryApplicationEffectEntity<Schema, Family::Entity>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial>
+    where
+        Family: WorthQueryApplicationOutputRoleFamily<Schema = Schema, Contract = Binding::Output>,
+    {
+        self.bind_member::<Family, WorthQueryRetireOutput>(suffix, target)
+    }
+
+    fn bind_member<Family, Action>(
+        &mut self,
+        suffix: &str,
+        target: &WorthQueryApplicationEffectEntity<Schema, Family::Entity>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial>
+    where
+        Family: WorthQueryApplicationOutputRoleFamily<Schema = Schema, Contract = Binding::Output>,
+        Action: WorthQueryApplicationOutputAction,
+    {
+        let role = OutputRoleUse::member::<Family, Action>(suffix).map_err(|_| {
+            WorthQueryApplicationAttemptDenial::new(
+                WorthQueryApplicationAttemptDenialKind::InvalidOutputRole,
+                format!("{}{suffix}", Family::PREFIX),
+            )
+        })?;
         self.candidate.bind_output(role, target)
     }
 }

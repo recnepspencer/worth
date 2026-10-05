@@ -13,6 +13,22 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 {
     RequestAdmissionDenied(ProducerRequestAdmissionRejection),
     ExecutionStopped(WorthQueryOutputDemandDenial),
+    /// An exact selection whose producer declares no Preserve posture could
+    /// not reuse its live output. Nothing ran and the shared row is not
+    /// failed: the stop is this caller's.
+    LiveOutputNotReused,
+}
+
+impl ProducerExecutionStop {
+    /// The typed refusal of a caller whose exact producer is not applicable
+    /// to the live output it was selected for.
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn live_output_not_reused(
+    ) -> WorthQueryOutputDemandDenial {
+        WorthQueryOutputDemandDenial::new(
+            WorthQueryOutputDemandDenialKind::MissingApplicableProducer,
+            "the exact producer declares no Preserve posture and cannot reuse its live output",
+        )
+    }
 }
 
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct ProducerRequestAdmissionRejection

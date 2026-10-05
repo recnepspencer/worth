@@ -14,7 +14,6 @@ use worth_query_host::facade::application_contribution::{
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-    WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
 };
 use worth_query_host::facade::{application_contribution, domain};
 
@@ -43,24 +42,8 @@ worth_query_operation_links!(PublishFinalPlanarOutput => [PlanarSuccessor]);
 
 pub struct FinalPlanarMutationBinding<Schema>(PhantomData<fn() -> Schema>);
 
-pub struct FinalPlanarOutputs;
-
-impl<Schema: TopologySchemaBinding> ApplicationMutationOutputContract<Schema>
-    for FinalPlanarOutputs
-{
-    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[ApplicationMutationOutputRoleDescriptor::for_entity::<
-            Schema,
-            Body,
-        >("anchor", ApplicationMutationOutputPosture::Create)];
-    const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] =
-        &[ApplicationMutationOutputRoleFamilyDescriptor::for_entity::<
-            Schema,
-            Body,
-        >(
-            "created.", ApplicationMutationOutputPostureSet::CREATE, 0
-        )];
-}
+mod output_roles;
+pub use output_roles::*;
 
 impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     for FinalPlanarMutationBinding<Schema>
@@ -71,7 +54,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     type ResultBinding = PlanarMutationResultBinding;
     type IdempotencyKey = u64;
     type Operation = PublishFinalPlanarOutput;
-    type Decision = ();
+    type Decision =
+        worth_query_host::facade::primary_graph::WorthQueryInvariantMutationTarget<Schema, Body>;
     type Denial = worth_query_consumer_values::PlanarMutationDenial;
     type DenialBinding = PlanarMutationDenialBinding;
     type Output = FinalPlanarOutputs;
@@ -83,8 +67,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     type SourceExpectation = ApplicationQueryMutationSource<PlanarQuery>;
 
-    const IDENTITY: &'static str = "worth.query.certification.final-planar-mutation.v1";
-    const HANDLER_IDENTITY: &'static str = "worth.query.certification.final-planar-handler.v1";
+    const IDENTITY: &'static str = "worth.query.certification.final-planar-mutation.v2";
+    const HANDLER_IDENTITY: &'static str = "worth.query.certification.final-planar-handler.v2";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.final-planar-command.v1";
     const CANDIDATES: ApplicationCandidateRequirements =
         super::requirements(3, 3, 0, 12, 4096, 4096);
@@ -135,9 +119,15 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarMutation
         &self,
         input: &FinalPlanarMutation,
         reader: &mut DecisionReader<'_, '_, '_, Schema, FinalPlanarMutationBinding<Schema>>,
-    ) -> HandlerResult<(), worth_query_consumer_values::PlanarMutationDenial> {
+    ) -> HandlerResult<
+        worth_query_host::facade::primary_graph::WorthQueryInvariantMutationTarget<Schema, Body>,
+        worth_query_consumer_values::PlanarMutationDenial,
+    > {
         match reader.resolve_entity(BodyKey::reference(), input.scope_key.clone()) {
-            Ok(_) => HandlerResult::Completed(()),
+            Ok(source) => match reader.mutation_target(&source) {
+                Ok(target) => HandlerResult::Completed(target),
+                Err(error) => HandlerResult::ExecutionDenied(error),
+            },
             Err(error) => HandlerResult::ExecutionDenied(error),
         }
     }
@@ -145,7 +135,10 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarMutation
     fn candidate_requirements(
         &self,
         _: &FinalPlanarMutation,
-        _: &(),
+        _: &worth_query_host::facade::primary_graph::WorthQueryInvariantMutationTarget<
+            Schema,
+            Body,
+        >,
     ) -> ApplicationCandidateRequirements {
         FinalPlanarMutationBinding::<Schema>::CANDIDATES
     }
@@ -153,12 +146,29 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarMutation
     fn build_candidate(
         &self,
         input: &FinalPlanarMutation,
-        _: (),
+        source: worth_query_host::facade::primary_graph::WorthQueryInvariantMutationTarget<
+            Schema,
+            Body,
+        >,
         writer: &mut CandidateWriter<'_, Schema, FinalPlanarMutationBinding<Schema>>,
     ) -> HandlerResult<
         worth_query_consumer_values::PlanarAdjustmentResult,
         worth_query_consumer_values::PlanarMutationDenial,
     > {
+        let retained = match writer.projected_entity(&source) {
+            Ok(entity) => entity,
+            Err(error) => {
+                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
+            }
+        };
+        for bound in [
+            writer.preserve_output::<FinalRetainedSourceOutput<Schema>>(&retained),
+            writer.preserve_member::<FinalRetainedSources<Schema>>(&input.scope_key, &retained),
+        ] {
+            if let Err(error) = bound {
+                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
+            }
+        }
         let keys = [
             input.output_key.clone(),
             format!("{}:b", input.output_key),
@@ -219,23 +229,12 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarMutation
             }
         }
         let entity = &entities[0];
-        let role = WorthQueryApplicationOutputRole::<
-            FinalPlanarMutationBinding<Schema>,
-            Body,
-            WorthQueryCreateOutput,
-        >::try_new("anchor")
-        .expect("the final output role is declared");
-        if let Err(error) = writer.create_output(role, entity) {
-            return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
-        }
-        for (key, entity) in keys.iter().zip(entities.iter()).skip(1) {
-            let role = WorthQueryApplicationOutputRole::<
-                FinalPlanarMutationBinding<Schema>,
-                Body,
-                WorthQueryCreateOutput,
-            >::try_new(format!("created.{key}"))
-            .expect("the created role family is declared");
-            if let Err(error) = writer.create_output(role, entity) {
+        for bound in [
+            writer.create_output::<FinalAnchorOutput<Schema>>(entity),
+            writer.create_member::<FinalCreatedOutputs<Schema>>(&keys[1], &entities[1]),
+            writer.create_output::<FinalClosingOutput<Schema>>(&entities[2]),
+        ] {
+            if let Err(error) = bound {
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
             }
         }
@@ -261,6 +260,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryProducerOutputFamily<Schema>
     for PlanarFinalOutputFamily
 {
     type Source = PlanarReadBinding<Schema>;
+    type Entity = Body;
 
     const IDENTITY: &'static str = "worth.query.certification.planar-final-output.v1";
     const SUPPORTED: &'static [WorthQueryProducerApplicability] = SUPPORTED;
@@ -306,7 +306,7 @@ impl<Schema: TopologySchemaBinding>
     for PlanarFinalOutputProvider
 {
     const SEMANTIC_IDENTITY: &'static str =
-        "worth.query.certification.planar-final-output-provider.v1";
+        "worth.query.certification.planar-final-output-provider.v2";
 
     fn operation_input(&self, source: &PlanarReadResult) -> FinalPlanarMutation {
         FinalPlanarMutation {
@@ -337,8 +337,9 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     type OutputFamily = PlanarFinalOutputFamily;
     type Provider = PlanarFinalOutputProvider;
 
-    const IDENTITY: &'static str = "worth.query.certification.planar-final-output-producer.v1";
-    const OUTPUT_ROLE: &'static str = "anchor";
+    type OutputRole = FinalAnchorOutput<Schema>;
+
+    const IDENTITY: &'static str = "worth.query.certification.planar-final-output-producer.v2";
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = &[INITIAL];
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] =
         &[WorthQueryProducerInvariantRequirement::new(

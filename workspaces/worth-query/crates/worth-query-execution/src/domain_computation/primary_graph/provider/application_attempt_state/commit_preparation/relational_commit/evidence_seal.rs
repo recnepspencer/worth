@@ -64,19 +64,29 @@ pub(super) fn seal(
         .seal_output_correspondence(committed.committed());
     let prepared_rebase = committed.take_source_fact_rebase();
     let mut source_fact_admission = committed.take_source_fact_admission();
+    let producer_output = committed
+        .attempt()
+        .idempotency()
+        .producer_dependency_identity()
+        .is_some();
     let observed_source_facts = provider.graph.with_runtime(|runtime| {
-        postcommit_currentness::rebase(
+        postcommit_currentness::rebase_output(
             runtime,
             &committed.committed().snapshot,
             prepared_rebase,
-            committed
-                .attempt()
-                .idempotency()
-                .producer_dependency_identity()
-                .is_some(),
+            &output_correspondence,
+            &committed.committed().changed_records,
+            producer_output,
+            committed.attempt().indexed_rebase_work_budget(),
             source_fact_admission.as_mut(),
         )
     });
+    #[cfg(feature = "test-primary-graph-faults")]
+    let observed_source_facts = if producer_output && provider.take_unsealed_producer_settlement() {
+        observed_source_facts.held_for_verification()
+    } else {
+        observed_source_facts
+    };
     let evidence = WorthQueryPrimaryGraphCommitEvidence {
         provider_session_binding: committed.attempt().affinity().provider_session().clone(),
         idempotency: committed.attempt().idempotency(),

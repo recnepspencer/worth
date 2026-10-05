@@ -11,6 +11,8 @@ use worth_query_installation::facade::{
 use worth_relational::facade::runtime::ProjectionAspectScope;
 use worth_relational::facade::storage::RecordLifecycleState;
 
+#[path = "resolution/candidate_verification.rs"]
+mod candidate_verification;
 #[path = "resolution/cardinality.rs"]
 mod cardinality;
 #[path = "resolution/decision_plan_denial.rs"]
@@ -23,7 +25,7 @@ use cardinality::{classify_current_entities, CurrentOutputCardinality};
 use decision_plan_denial::decision_plan_denial;
 
 use super::{
-    WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputRole,
+    WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind,
     WorthQueryCurrentOutputSelection,
 };
 use crate::domain_computation::primary_graph::{
@@ -41,31 +43,40 @@ impl<'reader, 'runtime, Schema, Operation>
 where
     Schema: ApplicationSchema,
 {
-    pub fn current_output<Family, Producer, Entity>(
+    /// Select the entity `Family` currently outputs for `producer`. Each
+    /// recorded correspondence is read under the output role its producer
+    /// binding declares, so the read cannot name a role no producer of the
+    /// family outputs.
+    #[allow(clippy::type_complexity)]
+    pub fn current_output<Family, Producer>(
         &mut self,
         producer: &WorthQueryInvariantEntityIdentity<Schema, Producer>,
-        role: WorthQueryCurrentOutputRole<Family, Entity>,
-    ) -> Result<WorthQueryCurrentOutputSelection<Schema, Entity>, WorthQueryCurrentOutputDenial>
+    ) -> Result<
+        WorthQueryCurrentOutputSelection<Schema, Family::Entity>,
+        WorthQueryCurrentOutputDenial,
+    >
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
         Family::Source: ApplicationQueryBinding<Schema>,
         <Family::Source as ApplicationQueryBinding<Schema>>::ScopeBinding:
             ApplicationQueryScopeBinding<Schema, Scope = Producer>,
         Producer: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
-        Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
+        Family::Entity: OperationReads<Operation>,
     {
+        let subject = Family::IDENTITY;
         self.require_decision_entity(
             producer,
             ApplicationEntityRef::from_schema_identifier(Producer::IDENTIFIER),
         )
         .map_err(|denial| decision_plan_denial(denial.kind(), Family::IDENTITY))?;
         self.admit_decision_target(&ApplicationOperationDecisionReadTarget::Entity {
-            entity: Entity::IDENTIFIER.to_owned(),
+            entity: <Family::Entity as ApplicationEntityMarkerIdentity<Schema>>::IDENTIFIER
+                .to_owned(),
         })
         .map_err(|_| {
             WorthQueryCurrentOutputDenial::new(
                 WorthQueryCurrentOutputDenialKind::UndeclaredDecisionTarget,
-                role.name(),
+                subject,
             )
         })?;
         if !self.current_source_is_live(producer)? {
@@ -73,16 +84,16 @@ where
         }
         let correspondences = self.current_correspondences::<Family, Producer>(producer)?;
         let mut entities = Vec::new();
-        for correspondence in correspondences {
-            self.require_current_output_budget(1, role.name())?;
+        for (correspondence, output_role) in correspondences {
+            self.require_current_output_budget(1, &output_role)?;
             self.reader.work_budget.consume(1);
             self.reader.work.record_output_lineage_role_lookup();
             let entity = correspondence
-                .current_entity_for_role::<Entity>(role.name())
+                .current_entity_for_role::<Family::Entity>(&output_role)
                 .map_err(|_| {
                     WorthQueryCurrentOutputDenial::new(
                         WorthQueryCurrentOutputDenialKind::EntityMismatch,
-                        role.name(),
+                        output_role.as_str(),
                     )
                 })?;
             if let Some(entity) = entity {
@@ -92,13 +103,13 @@ where
         Ok(match classify_current_entities(entities) {
             CurrentOutputCardinality::Missing => WorthQueryCurrentOutputSelection::Missing,
             CurrentOutputCardinality::Unique(entity) => WorthQueryCurrentOutputSelection::Unique(
-                self.live_current_identity::<Entity>(role.name(), entity)?,
+                self.live_current_identity::<Family::Entity>(subject, entity)?,
             ),
             CurrentOutputCardinality::Ambiguous(entities) => {
                 WorthQueryCurrentOutputSelection::Ambiguous(
                     entities
                         .into_iter()
-                        .map(|entity| self.live_current_identity::<Entity>(role.name(), entity))
+                        .map(|entity| self.live_current_identity::<Family::Entity>(subject, entity))
                         .collect::<Result<Vec<_>, _>>()?,
                 )
             }
@@ -109,7 +120,10 @@ where
         &mut self,
         producer: &WorthQueryInvariantEntityIdentity<Schema, Producer>,
     ) -> Result<
-        Vec<std::sync::Arc<WorthQueryApplicationOutputCorrespondence>>,
+        Vec<(
+            std::sync::Arc<WorthQueryApplicationOutputCorrespondence>,
+            String,
+        )>,
         WorthQueryCurrentOutputDenial,
     >
     where
@@ -191,54 +205,13 @@ where
         for candidate in resolution.candidates {
             self.require_current_output_budget(1, Family::IDENTITY)?;
             self.reader.work_budget.consume(1);
-            let Some(witness) = candidate
-                .native_output_witness
-                .as_ref()
-                .filter(|witness| witness.get().is_some())
+            let Some((witness, verification)) =
+                self.verify_current_candidate(&candidate, &selected_native_root, Family::IDENTITY)?
             else {
                 stale = true;
                 continue;
             };
-            let before = self.reader.work_budget.remaining();
-            let mut remaining = before;
-            let verification = ConsumedOutputEvidence::verify_candidate_at(
-                &candidate.settlement_identity,
-                &candidate.observed_source_facts,
-                &candidate.consumed_outputs,
-                candidate.verification_requirement,
-                witness,
-                &selected_native_root,
-                &self.reader.invalidation_owner,
-                self.reader.runtime,
-                self.reader.snapshot,
-                &selected_native_root,
-                &mut remaining,
-            );
-            let charged = before - remaining;
-            self.reader.work_budget.consume(charged);
-            self.reader.work.record_output_lineage_selection(charged);
-            match verification.map_err(|stop| {
-                if stop == ConsumedOutputVerificationStop::WorkExhausted {
-                    self.reader.work_budget.mark_exceeded();
-                }
-                WorthQueryCurrentOutputDenial::new(
-                    match stop {
-                        ConsumedOutputVerificationStop::WorkExhausted => {
-                            WorthQueryCurrentOutputDenialKind::WorkBudgetExceeded
-                        }
-                        ConsumedOutputVerificationStop::PendingUpstream => {
-                            WorthQueryCurrentOutputDenialKind::PendingUpstream
-                        }
-                        ConsumedOutputVerificationStop::RetryCurrentness(stop) => {
-                            WorthQueryCurrentOutputDenialKind::CurrentnessRaced(stop)
-                        }
-                        ConsumedOutputVerificationStop::Unavailable => {
-                            WorthQueryCurrentOutputDenialKind::OutputUnavailable
-                        }
-                    },
-                    Family::IDENTITY,
-                )
-            })? {
+            match verification {
                 ConsumedOutputVerification::Current => {
                     let before = self.reader.work_budget.remaining();
                     let mut admission = self.reader.invalidation_owner.read_admission(before);
@@ -281,7 +254,7 @@ where
                         std::sync::Arc::clone(&candidate.observed_source_facts),
                         std::sync::Arc::clone(&candidate.consumed_outputs),
                         candidate.verification_requirement,
-                        std::sync::Arc::clone(witness),
+                        witness,
                         std::sync::Arc::clone(retained_selected_native_root.get_or_insert_with(
                             || std::sync::Arc::new(selected_native_root.clone()),
                         )),
@@ -291,7 +264,7 @@ where
                         .consumed_outputs
                         .entry(std::sync::Arc::clone(&candidate.settlement_identity))
                         .or_insert(evidence);
-                    current.push(candidate.correspondence);
+                    current.push((candidate.correspondence, candidate.output_role));
                 }
                 ConsumedOutputVerification::ChangedDirectFact(ordinal) => {
                     if matches!(candidate.observed_source_facts.get(ordinal), Some(WorthQueryApplicationObservedFact::SourceEntity { entity_id }) if *entity_id == producer.entity_id())

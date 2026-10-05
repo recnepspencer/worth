@@ -1,9 +1,12 @@
-use std::sync::Arc;
+use std::{collections::BTreeSet, sync::Arc};
+
+use worth_relational::facade::identity::EntityId;
 
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 
 mod adjacency;
 mod resolution;
+mod retirement;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) enum RebasedSourceFacts {
@@ -57,6 +60,21 @@ impl PreparedSourceFactRebase {
 }
 
 impl RebasedSourceFacts {
+    /// The same sealed facts under a requirement to verify them in full: the
+    /// row a commit leaves when its facts can be compared but were not
+    /// sealed as exact.
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub(super) fn held_for_verification(self) -> Self {
+        match self {
+            Self::Exact(facts) | Self::SupersededByOwnEffect { facts, .. } => {
+                Self::VerificationRequired {
+                    reason: RebaseVerificationReason::NativeRevisionUnavailable,
+                    facts,
+                }
+            }
+            required @ Self::VerificationRequired { .. } => required,
+        }
+    }
     pub(super) fn retain_exact(&self) -> Option<Arc<[WorthQueryApplicationObservedFact]>> {
         match self {
             Self::Exact(facts) | Self::SupersededByOwnEffect { facts, .. } => {
@@ -90,11 +108,49 @@ impl RebasedSourceFacts {
     }
 }
 
-pub(super) fn rebase(
+/// Rebase the candidate's facts onto the snapshot its own commit selected.
+/// An output entity this commit retired is read as that retirement; it is not
+/// a source the effect moved.
+#[allow(clippy::too_many_arguments)]
+pub(super) fn rebase_output(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     prepared: PreparedSourceFactRebase,
+    correspondence: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+    changed_records: &[worth_relational::facade::transactions::RecordRef],
     producer_output: bool,
+    maximum_indexed_rebase_work: usize,
+    admission: Option<&mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
+) -> RebasedSourceFacts {
+    let changed_entities = changed_records
+        .iter()
+        .filter_map(|record| match record {
+            worth_relational::facade::transactions::RecordRef::Entity(entity) => Some(*entity),
+            _ => None,
+        })
+        .collect::<BTreeSet<_>>();
+    let retired = correspondence
+        .retired_entity_ids()
+        .filter(|entity| changed_entities.contains(entity))
+        .collect();
+    rebase(
+        runtime,
+        snapshot,
+        prepared,
+        &retired,
+        producer_output,
+        maximum_indexed_rebase_work,
+        admission,
+    )
+}
+
+fn rebase(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    prepared: PreparedSourceFactRebase,
+    retired: &BTreeSet<EntityId>,
+    producer_output: bool,
+    maximum_indexed_rebase_work: usize,
     mut admission: Option<&mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
 ) -> RebasedSourceFacts {
     let PreparedSourceFactRebase {
@@ -103,6 +159,7 @@ pub(super) fn rebase(
         mut rebased,
         mut superseded,
     } = prepared;
+    let mut indexed_work = maximum_indexed_rebase_work;
     for fact in &facts {
         if let Some(meter) = admission.as_mut() {
             if let Err(stop) = meter.charge_external_work(1) {
@@ -118,10 +175,12 @@ pub(super) fn rebase(
             WorthQueryApplicationObservedFact::Relation { .. }
                 | WorthQueryApplicationObservedFact::Adjacency { .. }
                 | WorthQueryApplicationObservedFact::SourceAdjacencyRevision { .. }
+                | WorthQueryApplicationObservedFact::IndexedEntitySelection { .. }
         ) {
             if let Some(meter) = admission.as_mut() {
-                // The selected native adjacency revision performs one indexed
-                // probe. Its per-call cap alone does not spend request work.
+                // The selected native adjacency revision and the indexed
+                // selection each perform one indexed probe. A probe's
+                // per-call cap alone does not spend request work.
                 if let Err(stop) = meter.charge_external_work(1) {
                     return RebasedSourceFacts::VerificationRequired {
                         reason: RebaseVerificationReason::AdmissionDenied(stop),
@@ -134,8 +193,10 @@ pub(super) fn rebase(
             runtime,
             snapshot,
             fact,
+            retired,
             producer_output,
             adjacency_work,
+            &mut indexed_work,
         ) {
             Ok(action) => actions.push(action),
             Err(reason) => {

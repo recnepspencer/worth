@@ -4,7 +4,7 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationIntent, ApplicationMutationScopeResolution,
+    ApplicationMutationIntent, ApplicationMutationScopeResolution, WorthQueryApplicationOutputRole,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, TypedMutationPreconditions,
@@ -110,7 +110,9 @@ where
     fn preserved_readiness_output(&self, receipt: &WorthQueryApplicationCommitReceipt) -> bool {
         receipt
             .output_correspondence()
-            .posture_for_binding_role::<Binding::Operation>(Binding::OUTPUT_ROLE)
+            .posture_for_binding_role::<Binding::Operation>(
+                <Binding::OutputRole as WorthQueryApplicationOutputRole>::NAME,
+            )
             == Ok(
                 worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture::Preserve,
             )
@@ -126,11 +128,17 @@ where
     > {
         let admitted = admission.is_some();
         if let Some(admission) = admission {
-            readiness::admit_readiness_record(Binding::OUTPUT_ROLE, receipt, admission)?;
+            readiness::admit_readiness_record(
+                <Binding::OutputRole as WorthQueryApplicationOutputRole>::NAME,
+                receipt,
+                admission,
+            )?;
         }
         let entity = receipt
             .output_correspondence()
-            .entity_for_binding_role::<Binding::Operation>(Binding::OUTPUT_ROLE)
+            .entity_for_binding_role::<Binding::Operation>(
+                <Binding::OutputRole as WorthQueryApplicationOutputRole>::NAME,
+            )
             .map_err(|error| {
                 if admitted {
                     denial(WorthQueryOutputDemandDenialKind::ProducerUnavailable, "")

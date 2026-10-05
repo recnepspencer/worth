@@ -44,12 +44,19 @@ pub struct PlanarOutputFamily;
 
 impl<Schema: TopologySchemaBinding> WorthQueryProducerOutputFamily<Schema> for PlanarOutputFamily {
     type Source = super::PlanarReadBinding<Schema>;
+    type Entity = super::Body;
 
     const IDENTITY: &'static str = "worth.query.certification.planar-output.v1";
     const SUPPORTED: &'static [WorthQueryProducerApplicability] = SUPPORTED;
 
-    fn profile_kind(_: &super::PlanarReadResult) -> &'static str {
-        "planar"
+    /// A body keyed `manual-` is certified by hand: its kind is served by
+    /// the alternate producer alone, which declares no Preserve posture.
+    fn profile_kind(source: &super::PlanarReadResult) -> &'static str {
+        if source.body_key.starts_with("manual-") {
+            "manual-certification"
+        } else {
+            "planar"
+        }
     }
 }
 
@@ -110,7 +117,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     type Provider = InitialPlanarProvider;
 
     const IDENTITY: &'static str = "worth.query.certification.planar-initial.v1";
-    const OUTPUT_ROLE: &'static str = "anchor";
+    type OutputRole = super::PlanarAnchorOutput<Schema>;
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = PRIMARY;
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] =
         &[WorthQueryProducerInvariantRequirement::new(

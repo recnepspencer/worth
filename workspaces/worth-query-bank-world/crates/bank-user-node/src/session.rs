@@ -207,7 +207,7 @@ impl BankUserSession {
             }
         };
         let upstream = BankHttpAccountSummaryRequest {
-            protocol: BankHttpProtocolVersion::V1,
+            protocol: BankHttpProtocolVersion::V3,
             request_id: request.request_id,
             credential: BankHttpCredential::from_authentik(&credential),
             controls: request.controls,
@@ -240,7 +240,7 @@ impl BankUserSession {
             (credential, self.session_revision.subscribe())
         };
         let upstream = BankHttpAccountActivityStreamRequest {
-            protocol: BankHttpProtocolVersion::V1,
+            protocol: BankHttpProtocolVersion::V3,
             request_id: request.request_id,
             credential: BankHttpCredential::from_authentik(&credential),
             controls: request.controls,
@@ -276,7 +276,7 @@ impl BankUserSession {
             None => return activity_denied(BankUserNodeDenialKind::NoAuthenticatedSession),
         };
         let upstream = BankHttpAccountActivityPageRequest {
-            protocol: BankHttpProtocolVersion::V1,
+            protocol: BankHttpProtocolVersion::V3,
             request_id: request.request_id,
             credential: BankHttpCredential::from_authentik(&credential),
             controls: request.controls,
@@ -299,7 +299,7 @@ impl BankUserSession {
             None => return activity_denied(BankUserNodeDenialKind::NoAuthenticatedSession),
         };
         let upstream = BankHttpAccountActivityResumeRequest {
-            protocol: BankHttpProtocolVersion::V1,
+            protocol: BankHttpProtocolVersion::V3,
             request_id: request.request_id,
             credential: BankHttpCredential::from_authentik(&credential),
             controls: request.controls,
@@ -342,7 +342,7 @@ impl BankUserSession {
             None => return mutation_denied(BankUserNodeDenialKind::NoAuthenticatedSession),
         };
         let upstream = BankHttpMutationRequest {
-            protocol: BankHttpProtocolVersion::V1,
+            protocol: BankHttpProtocolVersion::V3,
             request_id: request.request_id,
             credential: BankHttpCredential::from_authentik(&credential),
             controls: request.controls,

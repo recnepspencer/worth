@@ -7,6 +7,7 @@ mod borrowed_records;
 mod contracts;
 mod entity_adjacency;
 mod entity_projection;
+mod entity_retirement;
 mod exact_basis_reads;
 mod field_revisions;
 mod frontier_adjacency;
@@ -30,6 +31,7 @@ pub use contracts::{
     ProjectionAspectFilter, ProjectionAspectFilterMode, ProjectionAspectRequirement,
     ProjectionAspectScope,
 };
+pub use entity_retirement::RelationalEntityRetirement;
 pub use projection_records::{
     EntityProjectionRecord, EntityRecordProjection, RelationProjectionRecord,
     RelationRecordProjection,

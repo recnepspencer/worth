@@ -1,4 +1,4 @@
-//! Exact-basis indexed read of Query's canonical Relational completion row.
+//! Decoding of Query's canonical Relational completion row.
 
 use worth_foundational::facade::{
     AspectFieldLocator, AspectValue, BoundaryProtocolIdentity, BoundaryProtocolVersion,
@@ -11,18 +11,9 @@ use worth_relational::facade::{
 
 use crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity;
 
-#[cfg(test)]
-mod lookup;
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryInboundCompletionReadDenial {
-    #[cfg(test)]
-    SnapshotUnavailable,
-    #[cfg(test)]
-    IndexUnavailable,
     AmbiguousCorrelation,
-    #[cfg(test)]
-    RowUnavailable,
     Malformed,
     CommitUnavailable,
     ReconstructionWorkExhausted,
@@ -224,7 +215,7 @@ fn decode_hex(value: &str) -> Result<Vec<u8>, WorthQueryInboundCompletionReadDen
 
 #[cfg(test)]
 mod provenance_tests {
-    use super::lookup::hex;
+    use super::super::hex;
     use super::*;
 
     fn text(value: &str) -> AspectValue {
