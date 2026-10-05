@@ -100,6 +100,9 @@ pub use rule::{
     ApplicationSharedRuleRef, ApplicationSnapshotPublication,
 };
 pub use workflow::*;
-/// The determinism contract a managed computation declares, and the identity
-/// of the installed equivalence predicate such a contract may name.
-pub use worth_foundational::facade::{DeterminismContract, EquivalenceContractId};
+/// The determinism contract a managed computation declares, the identity of
+/// the installed equivalence predicate such a contract may name, and the
+/// identity a computation partition key derives.
+pub use worth_foundational::facade::{
+    DeterminismContract, EquivalenceContractId, PartitionIdentity,
+};

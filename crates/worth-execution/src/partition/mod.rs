@@ -56,13 +56,18 @@ impl PartitionWork {
     /// Charge a bounded pure candidate edit before publication. Checked mutators
     /// already checkpoint internally; charging their result again is an error.
     pub fn charge(self, context: &mut KernelContext<'_, '_>) -> Result<Self, KernelStop> {
-        let units = self
-            .items_rerouted
+        let units = self.units().ok_or(KernelStop::WorkCounterOverflow)?;
+        context.checkpoint(units)?;
+        Ok(self)
+    }
+
+    /// The work units this update is charged, or `None` when they overflow.
+    /// A caller that partitions before any pattern is admitted charges them
+    /// against its own declared ceiling.
+    pub fn units(self) -> Option<u64> {
+        self.items_rerouted
             .checked_add(self.members_visited)
             .and_then(|value| value.checked_add(self.edges_visited))
             .and_then(|value| value.checked_add(self.subtrees_recut))
-            .ok_or(KernelStop::WorkCounterOverflow)?;
-        context.checkpoint(units)?;
-        Ok(self)
     }
 }

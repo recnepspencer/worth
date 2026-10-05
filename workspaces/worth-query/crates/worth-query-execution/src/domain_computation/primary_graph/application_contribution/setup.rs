@@ -85,7 +85,34 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
         Owner: super::WorthQueryManagedComputationOwner<Schema, Feature, Computation>,
     {
         self.handlers
-            .install_computation::<Feature, Computation, Owner>(owner)
+            .record_computation_owner::<Feature, Computation>(
+                worth_query_declaration::facade::application_program::ApplicationComputationExecution::Deterministic,
+            )?;
+        Ok(super::WorthQueryInstalledManagedComputation::new(owner))
+    }
+
+    /// Installs the owner of a `DeterministicPartitioned` computation.
+    pub fn partitioned_computation<Feature, Computation, Owner>(
+        &mut self,
+        owner: Owner,
+    ) -> Result<
+        super::WorthQueryInstalledPartitionedComputation<Schema, Feature, Computation, Owner>,
+        WorthQueryPrimaryGraphInstallationDenial,
+    >
+    where
+        Feature: worth_query_declaration::facade::application_program::ApplicationFeature<Schema>,
+        Computation:
+            worth_query_declaration::facade::application_program::ApplicationManagedComputation<
+                Schema,
+                Feature,
+            >,
+        Owner: super::WorthQueryPartitionedComputationOwner<Schema, Feature, Computation>,
+    {
+        self.handlers
+            .record_computation_owner::<Feature, Computation>(
+                worth_query_declaration::facade::application_program::ApplicationComputationExecution::DeterministicPartitioned,
+            )?;
+        Ok(super::WorthQueryInstalledPartitionedComputation::new(owner))
     }
 
     pub fn producer<Binding>(

@@ -70,11 +70,13 @@ pub trait ApplicationComputationInput: 'static {
 
 /// A computation partition key.
 ///
-/// Computation partitions are ordered by partition identity. A key's canonical
-/// encoding is the declaration's prefix-free canonical encoding of its
+/// Two keys are the same key exactly when their canonical encodings are the
+/// same bytes: the declaration's prefix-free canonical encoding of the key's
 /// `Serialize` form, the encoding that already identifies structured operation
-/// inputs.
-pub trait ApplicationComputationPartition: Ord + Serialize + Send + Sync + 'static {
+/// inputs. A key carries no ordering of its own. Computation partitions are
+/// ordered by partition identity, which
+/// `application_computation_partition_identity` derives from that encoding.
+pub trait ApplicationComputationPartition: Serialize + Send + Sync + 'static {
     const IDENTITY: &'static str;
 }
 

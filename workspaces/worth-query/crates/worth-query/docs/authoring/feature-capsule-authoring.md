@@ -101,14 +101,27 @@ basis, output artifact, computation partition key, reuse, stopped outcome,
 execution posture, determinism contract, and ceilings. Installation then
 requires the matching runtime owner.
 
-A computation partition key is `Ord + Send + Sync` and serializable; its
-canonical encoding is the one that identifies structured operation inputs, and
-partitions are ordered by partition identity. A `Deterministic` computation
-declares `ApplicationSingleComputationPartition`, and a
-`DeterministicPartitioned` one declares its own key. Program validation denies
-either mismatch. The determinism contract defaults to
-`DeterminismContract::CanonicalBitwise`, and like every other declared member
-it is part of the program revision.
+A computation partition key is `Send + Sync` and serializable. Two keys are the
+same key exactly when their canonical encodings are equal: the encoding is the
+one that identifies structured operation inputs, and a key needs no ordering or
+equality of its own. A partition's identity is derived from that encoding, and
+partitions are ordered by partition identity, so their order is deterministic
+and not chosen by the author. A `Deterministic` computation declares
+`ApplicationSingleComputationPartition`, and a `DeterministicPartitioned` one
+declares its own key. Program validation denies either mismatch. The
+determinism contract defaults to `DeterminismContract::CanonicalBitwise`, and
+like every other declared member it is part of the program revision.
+
+A `Deterministic` computation installs a `WorthQueryManagedComputationOwner`
+with `computation`. A `DeterministicPartitioned` one installs a
+`WorthQueryPartitionedComputationOwner` with `partitioned_computation`: the
+owner names each input item by a stable identity and a key, computes one
+partition, declares its reducer, and completes the reduced result. Query
+derives the partition identities, gathers each partition's items in item
+identity order, runs every partition, and reduces the results over the
+canonical tree, so the result and its charged work do not depend on the order
+of the input. Installation refuses an owner binding that does not serve the
+declared execution, and refuses a `ContractEquivalent` declaration.
 
 Branch and preview work uses the same validated program and typed bindings as
 ordinary work. Speculative execution does not create alternate feature meaning

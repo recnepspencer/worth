@@ -29,10 +29,11 @@ pub use pattern::{
     BackInput, DecomposeCertificationFailure, DecomposeComplete, DecomposeFailure,
     DecomposeInputDenial, DecomposeKernelEditions, DecomposeReuse, DecomposeRunFailure,
     DecomposeStage, ExecutionDecompose, ExecutionForkJoin, ExecutionMap, ExecutionReduce,
-    ExecutionRounds, ExecutionScan, ForkChild, ForkJoinDenial, ForkJoinOutcome, InterfaceSolution,
-    InteriorResult, MapDenial, MapKernelContext, MapKernelFailure, MapKernelStop, MapOutcome,
-    MapPartition, MapStop, OracleMismatch, PreparedExecutionMap, ReduceCertificationFailure,
-    ReduceInputDenial, RoundsDenial, RoundsOutcome, ScanDenial, ScanOutcome,
+    ExecutionRounds, ExecutionScan, ExecutionWorkCeiling, ForkChild, ForkJoinDenial,
+    ForkJoinOutcome, InterfaceSolution, InteriorResult, MapDenial, MapKernelContext,
+    MapKernelFailure, MapKernelStop, MapOutcome, MapPartition, MapStop, OracleMismatch,
+    PreparedExecutionMap, ReduceCertificationFailure, ReduceInputDenial, RoundsDenial,
+    RoundsOutcome, ScanDenial, ScanOutcome, WorkCeilingDenial,
 };
 pub use reduction::{
     ReductionDenial, ReductionMetrics, ReductionPlan, ReductionRunFailure, ReductionRunStop,

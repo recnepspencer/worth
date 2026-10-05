@@ -856,6 +856,12 @@ Raw spawn, raw threads, worker indices, backend queues and shared mutable
 callbacks are not public computation APIs. Asynchronous fixed-point iteration is
 deleted rather than deferred.
 
+A caller that owns a declared work ceiling states it with
+`ExecutionWorkCeiling`. The patterns it runs inside meter against the narrower
+of that ceiling and the lease's, so a run without a lease exhausts at the same
+canonical boundary as a leased one. The scope hands its closure no kernel
+context: patterns stay the only way to charge work.
+
 ### Partitions and partitioners
 
 A partition has a stable identity derived from data, with explicit read and write
@@ -885,7 +891,8 @@ its own:
 
 A partitioner is itself a charged computation. Its output is retained and
 maintained incrementally, so an edit that leaves the coupling relation unchanged
-does no re-partitioning.
+does no re-partitioning. Routing reports its work units, so a caller that
+partitions before any pattern is admitted charges them against its own ceiling.
 
 A partition may bind to a scope-path subtree for locality. The binding improves
 placement and nothing else. Read and write validation stays authoritative.
@@ -1028,11 +1035,26 @@ above Signal. Bridge adds no scheduling.
 `DeterministicPartitioned` executes through a partitioned owner binding (see
 Public Developer Experience). The declaration changes with it:
 
-- `ApplicationComputationPartition` becomes the partition key contract:
-  `Ord`, a canonical encoding, `Send + Sync`, and its identity. The canonical
-  encoding is the declaration's prefix-free encoding of the key's `Serialize`
-  form, the one that identifies structured operation inputs.
-- Order is partition identity order. `ORDERING` is deleted from
+- `ApplicationComputationPartition` becomes the partition key contract: a
+  canonical encoding, `Send + Sync`, and its identity. The canonical encoding is
+  the declaration's prefix-free encoding of the key's `Serialize` form, the one
+  that identifies structured operation inputs. Two keys are the same key exactly
+  when their encodings are equal. A key carries no `Ord` or `Eq` of its own: a
+  second notion of sameness could disagree with the encoding.
+- The declaration crate owns the one derivation: the SHA-256 of a key's
+  canonical encoding under its declared identity, through the encoder's own sink
+  and admission. The 32-byte digest is the keyed partitioner's key, and the
+  `PartitionIdentity` is its first eight bytes, big-endian. The encoding is
+  one-way, so Query keeps the typed key of each partition and hands it to the
+  kernel in the partition view.
+- Two different digests that share a `PartitionIdentity` are the partitioner's
+  identity collision, surfaced as a typed denial that names the partition.
+  *Limitation:* whoever controls key values can craft such a pair, and it denies
+  every run while both keys are in the input.
+- Order is partition identity order, which is digest order: deterministic and
+  not chosen by the author. Under `CanonicalBitwise` it is the reduction order,
+  so the encoder and the truncation are frozen parts of a result's meaning.
+  `ORDERING` is deleted from
   `ApplicationManagedComputation`, and a `Deterministic` computation declares the
   platform's single-partition key, `ApplicationSingleComputationPartition`.
   Program validation denies a `Deterministic` computation that declares any
@@ -1043,7 +1065,11 @@ Public Developer Experience). The declaration changes with it:
   meaning: disposable warm-start evidence.
 - The declaration names its `DeterminismContract`, defaulting to
   `CanonicalBitwise`. It is part of the manifest record and of the program
-  revision.
+  revision. *Limitation:* installation refuses every `ContractEquivalent`
+  declaration. Predicates are installed only when the execution authority is
+  constructed and are observed only by requesting a lease; Query holds no
+  authority at installation, and a declaration names only the contract id, so a
+  predicate's 32-byte identity cannot enter the revision digest.
 - These changes alter program revision identity, and existing digests are
   re-baselined in Phase 6.
 
@@ -1236,7 +1262,7 @@ partitioner, a per-partition kernel and a reducer. It writes no threading code.
 impl ApplicationManagedComputation<Ledger, Balances> for RegionBalances {
     type Input = PostedEntriesInput; // Value = PostedEntries
     type Output = RegionBalanceSheet;
-    type Partition = RegionKey; // Ord, canonical encoding, Send + Sync
+    type Partition = RegionKey; // Serialize (canonical encoding), Send + Sync
     type Reuse = NoWarmStart;
     type Stopped = BalanceStopped;
     const IDENTITY: &'static str = "ledger.region-balances";
@@ -1250,24 +1276,33 @@ impl ApplicationManagedComputation<Ledger, Balances> for RegionBalances {
 impl WorthQueryPartitionedComputationOwner<Ledger, Balances, RegionBalances>
     for RegionBalancesOwner
 {
+    // Clone + Send + Sync + ChargedBytes + CanonicalBits
     type PartitionResult = RegionTotals;
     type Output = RegionBalanceSheet;
-    type Stopped = BalanceDenial;
+    type Stopped = BalanceDenial; // Send + ChargedBytes
 
-    fn partitions(&self, entries: &PostedEntries) -> PartitionPlan<RegionKey> {
-        PartitionPlan::keyed(entries.items(), |entry| entry.region())
+    fn partitions(
+        &self,
+        entries: &PostedEntries,
+    ) -> WorthQueryComputationPartitionPlan<RegionKey> {
+        WorthQueryComputationPartitionPlan::keyed(
+            entries.items(),
+            |entry| PartitionItemId(entry.id()),
+            |entry| entry.region(),
+        )
     }
 
     fn compute_partition(
         &self,
-        partition: PartitionView<'_, RegionKey, PostedEntries>,
+        partition: WorthQueryComputationPartitionView<'_, RegionKey, PostedEntries>,
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
     ) -> Result<RegionTotals, WorthQueryManagedComputationDenial<BalanceDenial>> {
-        RegionTotals::sum(partition.items(), checkpoint)
+        // Each item is its identity and its position in the planned input.
+        RegionTotals::sum(partition.input(), partition.items(), checkpoint)
     }
 
-    fn reducer(&self) -> DeterministicReducer<RegionTotals> {
-        DeterministicReducer::canonical(RegionTotals::zero, RegionTotals::combine)
+    fn reducer(&self) -> WorthQueryDeterministicReducer<RegionTotals> {
+        WorthQueryDeterministicReducer::canonical(RegionTotals::zero, RegionTotals::combine)
     }
 
     fn complete(&self, totals: RegionTotals) -> Result<RegionBalanceSheet, BalanceDenial> {
@@ -1279,6 +1314,15 @@ impl WorthQueryPartitionedComputationOwner<Ledger, Balances, RegionBalances>
 The framework runs `partitions` and gathering in `prepare` on the owner thread,
 `compute_partition` on the lease, the reducer over the canonical tree, and
 `complete` on the owner thread.
+
+The plan names each item by a stable identity of the item itself, never its
+position, so a reordered input plans the same partitions with the same members.
+A partition's view lists its items in ascending item identity order, and
+`combine` sees partitions in partition identity order; the canonical tree fixes
+how they associate. Naming two items alike is denied. The owner is installed
+with `partitioned_computation`: installation refuses a `DeterministicPartitioned`
+computation bound to the single-partition owner and a `Deterministic` one bound
+to a partitioned owner.
 
 Code outside Query uses the same patterns directly:
 
@@ -2158,6 +2202,25 @@ The next phase may trust that the touched graph alone decides what recomputes.
   topology entry proves them through the public facade. No stored digest
   existed to re-baseline.
 - Make `DeterministicPartitioned` execute through the partitioned owner binding.
+  *Partly completed:* a partitioned owner installs and runs: key derivation,
+  routing and gathering in `prepare`, every partition's kernel through the
+  execution map, the reducer over the canonical tree, and `complete`. Every run
+  recomputes every partition, inside the computation's declared work.
+  Installation refuses a mismatched owner binding and every `ContractEquivalent`
+  declaration. The topology entry proves through the public facade the same
+  bits and charged work on every run and in every input order, the least
+  failing partition, the canonical work boundary, and a typed denial for a
+  kernel panic, a reducer panic, a result over the declared bytes and a key
+  that does not encode.
+  *Not completed:* no lease reaches a managed computation. Query requests none,
+  and Phase 7 carries the request lease to `compute`. Every run is the serial
+  backend with fallback `NoLease`, so the proof against the serial oracle at
+  two workers, machine width and wider than the machine is not made.
+  *Limitations:* the reducer and `prepare` are not interruptible. The declared
+  bytes bound each partition's result, not their total. `prepare`'s routing
+  memory is uncharged without a lease. The floating-point sum proof compares
+  runs with each other; the comparison against the serial oracle
+  (`certify_reduce`) needs a lease.
 - Route marks to computation partitions through the settlement row's routing
   table, with item routing so `prepare` re-gathers only marked partitions.
 - Retain the canonical tree in Query with eviction and branch sharing, and apply

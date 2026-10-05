@@ -338,9 +338,14 @@ to `Compatible` to admit a new path.
 computation's input, output artifact, computation partition key, reuse, stopped
 outcome, execution posture, determinism contract, and ceilings, then installs
 one owner for that declaration. A `Deterministic` computation declares
-`ApplicationSingleComputationPartition`; a `DeterministicPartitioned` one
-declares its own key, and program validation denies either mismatch.
-Installation rejects missing, foreign, duplicate, or mismatched owners.
+`ApplicationSingleComputationPartition` and installs its owner with
+`computation`; a `DeterministicPartitioned` one declares its own key and
+installs a `WorthQueryPartitionedComputationOwner` with
+`partitioned_computation`. A key is the same key when its canonical encoding
+is, and partitions reduce in partition identity order over the canonical tree.
+Program validation denies either key mismatch. Installation rejects missing,
+foreign, duplicate, or mismatched owners, an owner binding that does not serve
+the declared execution, and a `ContractEquivalent` declaration.
 Execution evidence is minted only by the active `DecisionReader`, which borrows
 the real request scope and checks deadline, cancellation, retained bytes, and
 work. There is no unscoped or test-only execution path. A derived collection

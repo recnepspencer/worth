@@ -15,7 +15,9 @@ pub use descriptor::{
     ApplicationMutationIdempotencyMetadata,
 };
 pub use identity::{
-    application_value_identity, ApplicationCanonicalIdentity, ApplicationCanonicalWork,
+    application_computation_partition_identity, application_value_identity,
+    ApplicationCanonicalIdentity, ApplicationCanonicalWork,
+    ApplicationComputationPartitionIdentity, ApplicationComputationPartitionIdentityDenial,
     ApplicationEncodedInput, ApplicationMutationIdentities,
     ApplicationMutationIdentityAdmittedDenial, ApplicationMutationIdentityDenial,
     ApplicationValueIdentityDomain, CanonicalEncodingCharge,

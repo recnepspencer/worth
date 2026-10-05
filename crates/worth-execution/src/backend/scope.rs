@@ -53,10 +53,35 @@ where
     E: ChargedBytes,
     F: FnOnce(&mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>>,
 {
+    run_scope_within(
+        lease,
+        retained_bytes,
+        max_result_bytes,
+        charge_parent,
+        u64::MAX,
+        kernel,
+    )
+}
+
+/// A scope whose work, and every descendant's, is also bounded by
+/// `work_ceiling`: the narrower of it and the inherited or leased ceiling.
+pub(crate) fn run_scope_within<R, E, F>(
+    lease: Option<&ExecutionResourceLease<'_>>,
+    retained_bytes: u64,
+    max_result_bytes: u64,
+    charge_parent: bool,
+    work_ceiling: u64,
+    kernel: F,
+) -> ScopeOutcome<R, E>
+where
+    R: ChargedBytes,
+    E: ChargedBytes,
+    F: FnOnce(&mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>>,
+{
     if lease.is_none() && RunLimits::has_leased_parent() {
         return denied(LeaseDenial::UnrelatedNestedLease, charge_parent);
     }
-    let limits = RunLimits::for_run(lease, false);
+    let limits = RunLimits::for_run(lease, false).within_work_ceiling(work_ceiling);
     let memory_bytes = u64::try_from(size_of::<R>())
         .ok()
         .and_then(|bytes| bytes.checked_add(u64::try_from(size_of::<E>()).ok()?))

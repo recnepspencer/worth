@@ -19,6 +19,7 @@ im = "=15.1.0"
 sha2 = "0.10"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+worth-execution = { path = "../../../../crates/worth-execution" }
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-proof = { path = "../../../../crates/worth-proof" }
 worth-relational = { path = "../../../../crates/worth-relational" }

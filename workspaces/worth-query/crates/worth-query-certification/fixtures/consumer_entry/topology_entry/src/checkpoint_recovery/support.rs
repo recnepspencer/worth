@@ -122,6 +122,32 @@ where
     >,
     Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
 {
+    let expectation = match checkpoint {
+        Some(_) => "the checkpoint restores",
+        None => "the checkpoint source installs",
+    };
+    try_install_program_with_limits::<Program>(checkpoint, profile, limits, seed)
+        .expect(expectation)
+}
+
+/// Installs or restores, returning the denial when the installation is refused.
+pub(super) fn try_install_program_with_limits<Program>(
+    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
+    limits: WorthQueryInMemoryApplicationLimits,
+    seed: fn(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
+) -> Result<
+    application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>,
+    Box<application_installation::WorthQueryInMemoryApplicationDenial>,
+>
+where
+    Program: ApplicationProgramDefinition<CheckpointSchema>,
+    Program::Contributions: WorthQueryApplicationContributionTuple<
+        CheckpointSchema,
+        Configuration = (TopologyConfiguration,),
+    >,
+    Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
+{
     let configuration = (TopologyConfiguration {
         setup_calls: Arc::new(AtomicUsize::new(0)),
         invariant_calls: Arc::new(AtomicUsize::new(0)),
@@ -139,8 +165,7 @@ where
             configuration,
             limits.with_output_demand_resources(profile),
             checkpoint,
-        )
-        .expect("the checkpoint restores"),
+        ),
         None => application_installation::in_memory_program(
             program,
             declaration,
@@ -160,9 +185,9 @@ where
                 seed(graph);
                 Ok(())
             },
-        )
-        .expect("the checkpoint source installs"),
+        ),
     }
+    .map_err(Box::new)
 }
 
 pub(super) fn seed_cycle(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>) {

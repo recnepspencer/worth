@@ -85,4 +85,10 @@ impl RunLimits {
         }
         limits
     }
+
+    /// Narrows the ceiling to a computation's declared work, never widening it.
+    pub(crate) fn within_work_ceiling(mut self, work_ceiling: u64) -> Self {
+        self.ceiling = self.ceiling.min(work_ceiling);
+        self
+    }
 }

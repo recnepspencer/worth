@@ -2,6 +2,7 @@ mod composition;
 mod computation;
 mod conditional;
 mod contracts;
+mod partitioned_computation;
 mod producer;
 mod setup;
 
@@ -25,6 +26,13 @@ pub use conditional::{
 };
 pub use contracts::{
     WorthQueryApplicationContractCatalog, WorthQueryApplicationContributionContracts,
+};
+pub use partitioned_computation::{
+    WorthQueryCompletedPartitionedComputation, WorthQueryComputationPartitionItem,
+    WorthQueryComputationPartitionPlan, WorthQueryComputationPartitionStop,
+    WorthQueryComputationPartitionView, WorthQueryDeterministicReducer,
+    WorthQueryInstalledPartitionedComputation, WorthQueryPartitionedComputationDenial,
+    WorthQueryPartitionedComputationOwner, WorthQueryPreparedPartitionedComputation,
 };
 pub(in crate::domain_computation::primary_graph) use producer::{
     install_output_readiness_routes, InstalledProducerEdition, MatchedRequiredPredecessors,

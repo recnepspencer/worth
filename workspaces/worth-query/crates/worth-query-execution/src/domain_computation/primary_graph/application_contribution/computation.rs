@@ -89,38 +89,117 @@ impl<'request> WorthQueryManagedComputationExecution<'request> {
     ) -> Self {
         Self { request }
     }
+
+    /// The request's cancellation or elapsed deadline, if either has happened.
+    pub(super) fn interruption(&self) -> Option<WorthQueryManagedComputationInterruption> {
+        self.request.interruption().map(|interruption| match interruption {
+            worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::Cancelled => {
+                WorthQueryManagedComputationInterruption::Cancelled
+            }
+            worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::DeadlineExceeded => {
+                WorthQueryManagedComputationInterruption::DeadlineExceeded
+            }
+        })
+    }
+}
+
+/// Where a checkpoint's work is charged.
+enum CheckpointWork<'request> {
+    /// The single partition of a `Deterministic` computation spends the
+    /// declared ceiling directly.
+    Declared { remaining: usize },
+    /// One partition of a `DeterministicPartitioned` computation charges the
+    /// execution kernel it runs in, which owns the remaining ceiling. A
+    /// refused charge is final: it is kept, and the partition reports it
+    /// whatever the owner returns afterwards.
+    Partition {
+        charge: &'request mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+        refused: Option<WorthQueryManagedComputationCheckpointDenial>,
+    },
 }
 
 pub struct WorthQueryManagedComputationCheckpoint<'request> {
-    remaining_work: usize,
-    request:
-        &'request worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    work: CheckpointWork<'request>,
+    execution: &'request WorthQueryManagedComputationExecution<'request>,
 }
 
-impl WorthQueryManagedComputationCheckpoint<'_> {
+impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
+    pub(super) fn for_partition(
+        charge: &'request mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+        execution: &'request WorthQueryManagedComputationExecution<'request>,
+    ) -> Self {
+        Self {
+            work: CheckpointWork::Partition {
+                charge,
+                refused: None,
+            },
+            execution,
+        }
+    }
+
+    /// The refusal a partition checkpoint kept, if any charge was refused.
+    pub(super) const fn refused(&self) -> Option<WorthQueryManagedComputationCheckpointDenial> {
+        match &self.work {
+            CheckpointWork::Declared { .. } => None,
+            CheckpointWork::Partition { refused, .. } => *refused,
+        }
+    }
+
     pub fn advance(
         &mut self,
         work: usize,
     ) -> Result<(), WorthQueryManagedComputationCheckpointDenial> {
-        if let Some(interruption) = self.request.interruption() {
-            let interruption = match interruption {
-                worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::Cancelled => {
-                    WorthQueryManagedComputationInterruption::Cancelled
+        let interruption = self
+            .execution
+            .interruption()
+            .map(WorthQueryManagedComputationCheckpointDenial::Interrupted);
+        match &mut self.work {
+            CheckpointWork::Declared { remaining } => {
+                if let Some(interruption) = interruption {
+                    return Err(interruption);
                 }
-                worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::DeadlineExceeded => {
-                    WorthQueryManagedComputationInterruption::DeadlineExceeded
+                *remaining = remaining.checked_sub(work).ok_or(
+                    WorthQueryManagedComputationCheckpointDenial::Resource(
+                        WorthQueryManagedComputationResourceDenial::WorkExhausted,
+                    ),
+                )?;
+                Ok(())
+            }
+            CheckpointWork::Partition { charge, refused } => {
+                if let Some(denial) = *refused {
+                    return Err(denial);
                 }
-            };
-            return Err(WorthQueryManagedComputationCheckpointDenial::Interrupted(
-                interruption,
-            ));
+                let outcome = match interruption {
+                    Some(interruption) => Err(interruption),
+                    None => charge(u64::try_from(work).unwrap_or(u64::MAX)).map_err(|stop| {
+                        WorthQueryManagedComputationCheckpointDenial::from_kernel_stop(stop)
+                    }),
+                };
+                *refused = outcome.err();
+                outcome
+            }
         }
-        self.remaining_work = self.remaining_work.checked_sub(work).ok_or(
-            WorthQueryManagedComputationCheckpointDenial::Resource(
-                WorthQueryManagedComputationResourceDenial::WorkExhausted,
-            ),
-        )?;
-        Ok(())
+    }
+}
+
+impl WorthQueryManagedComputationCheckpointDenial {
+    /// What an owner learns from a kernel stop. The kernel keeps the exact
+    /// stop and reports it; a stopped nested pattern reads here as exhausted
+    /// work because the partition may charge nothing further.
+    pub(super) const fn from_kernel_stop(stop: worth_execution::MapKernelStop) -> Self {
+        match stop {
+            worth_execution::MapKernelStop::Cancelled => {
+                Self::Interrupted(WorthQueryManagedComputationInterruption::Cancelled)
+            }
+            worth_execution::MapKernelStop::DeadlineElapsed => {
+                Self::Interrupted(WorthQueryManagedComputationInterruption::DeadlineExceeded)
+            }
+            worth_execution::MapKernelStop::WorkCeiling
+            | worth_execution::MapKernelStop::WorkCounterOverflow
+            | worth_execution::MapKernelStop::NestedStopped => {
+                Self::Resource(WorthQueryManagedComputationResourceDenial::WorkExhausted)
+            }
+        }
     }
 }
 
@@ -209,8 +288,10 @@ where
         WorthQueryManagedComputationDenial<Owner::Stopped>,
     > {
         let mut checkpoint = WorthQueryManagedComputationCheckpoint {
-            remaining_work: Computation::RESOURCES.maximum_work(),
-            request: execution.request,
+            work: CheckpointWork::Declared {
+                remaining: Computation::RESOURCES.maximum_work(),
+            },
+            execution: &execution,
         };
         let computed = self
             .installed

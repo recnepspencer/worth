@@ -4,6 +4,7 @@ mod map;
 mod reduce;
 mod rounds;
 mod scan;
+mod work_ceiling;
 
 pub use decompose::{
     BackInput, DecomposeCertificationFailure, DecomposeComplete, DecomposeFailure,
@@ -18,3 +19,4 @@ pub use map::{
 pub use reduce::{ExecutionReduce, ReduceCertificationFailure, ReduceInputDenial};
 pub use rounds::{ExecutionRounds, RoundsDenial, RoundsOutcome};
 pub use scan::{ExecutionScan, ScanDenial, ScanOutcome};
+pub use work_ceiling::{ExecutionWorkCeiling, WorkCeilingDenial};

@@ -152,6 +152,13 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     ForeignManagedComputationOwner,
     /// A managed computation owner does not match its declared meaning.
     ManagedComputationOwnerMeaningMismatch,
+    /// A managed computation's owner binding does not serve its declared
+    /// execution: a partitioned computation takes a partitioned owner, and a
+    /// single-partition computation a single-partition owner.
+    ManagedComputationOwnerBindingMismatch,
+    /// A managed computation declares an equivalence predicate, and no
+    /// installed predicate is visible at installation.
+    ManagedComputationEquivalenceUnavailable,
 }
 
 /// Refusal to install or publish an application's primary graph runtime.

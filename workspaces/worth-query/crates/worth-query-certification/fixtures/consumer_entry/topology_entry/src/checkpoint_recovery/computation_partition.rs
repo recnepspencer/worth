@@ -1,8 +1,8 @@
-//! A partitioned managed computation declared and installed through the public
-//! facade: its computation partition key and determinism contract are program
-//! meaning, and its execution posture decides which key it may declare.
+//! A partitioned managed computation declared, installed and run through the
+//! public facade: its computation partition key and determinism contract are
+//! program meaning, and its execution posture decides which key it may declare
+//! and which owner binding serves it.
 
-use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
 use serde::Serialize;
@@ -19,29 +19,29 @@ use worth_query_decl::facade::application_schema::{
 };
 use worth_query_host::facade::application_contribution::{
     WorthQueryApplicationContribution, WorthQueryApplicationContributionContracts,
-    WorthQueryApplicationContributionSetup, WorthQueryManagedComputationCheckpoint,
-    WorthQueryManagedComputationDenial, WorthQueryManagedComputationOwner,
-    WorthQueryManagedComputationPrepared,
+    WorthQueryApplicationContributionSetup,
 };
 
 use super::*;
 
-/// Body lengths tagged with the region each body lies in.
-struct RegionLengths;
-impl ApplicationComputationInput for RegionLengths {
-    type Value = Vec<(u32, u64)>;
-    const IDENTITY: &'static str = "checkpoint-region-lengths";
+mod execution;
+mod owner;
+mod probe;
+mod refusal;
+
+/// Values tagged with the region each lies in.
+struct RegionEntries;
+impl ApplicationComputationInput for RegionEntries {
+    type Value = Vec<owner::RegionEntry>;
+    const IDENTITY: &'static str = "checkpoint-region-entries";
 }
 
+// A key is the same key when its canonical encoding is: it needs no ordering
+// or equality of its own.
 macro_rules! region_key {
     ($key:ident, $identity:literal) => {
-        #[derive(Clone, Copy, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+        #[derive(Clone, Copy, Serialize)]
         struct $key(u32);
-        impl From<u32> for $key {
-            fn from(region: u32) -> Self {
-                Self(region)
-            }
-        }
         impl ApplicationComputationPartition for $key {
             const IDENTITY: &'static str = $identity;
         }
@@ -62,12 +62,12 @@ impl ApplicationComputationStopped for RegionStopped {
 // Every variant keeps one computation identity, so two programs differ only
 // in the declared member under test.
 macro_rules! region_totals {
-    ($computation:ident, $partition:ty, $execution:ident $(, $determinism:expr)?) => {
+    ($computation:ident, $partition:ty, $execution:ident, bytes $bytes:expr $(, $determinism:expr)?) => {
         struct $computation;
         impl ApplicationManagedComputation<CheckpointSchema, PlanarFinalOutputFeature>
             for $computation
         {
-            type Input = RegionLengths;
+            type Input = RegionEntries;
             type Output = demand_policy::FinalArtifact;
             type Partition = $partition;
             type Reuse = NoWarmStart;
@@ -77,8 +77,11 @@ macro_rules! region_totals {
                 ApplicationComputationExecution::$execution;
             $(const DETERMINISM: DeterminismContract = $determinism;)?
             const RESOURCES: ApplicationComputationResourceCeiling =
-                ApplicationComputationResourceCeiling::new(4_096, 8_192);
+                ApplicationComputationResourceCeiling::new(4_096, $bytes);
         }
+    };
+    ($computation:ident, $partition:ty, $execution:ident $(, $determinism:expr)?) => {
+        region_totals!($computation, $partition, $execution, bytes 8_192 $(, $determinism)?);
     };
 }
 region_totals!(RegionTotals, RegionKey, DeterministicPartitioned);
@@ -95,63 +98,53 @@ region_totals!(
     DeterministicPartitioned
 );
 region_totals!(KeyedSerialTotals, RegionKey, Deterministic);
+region_totals!(
+    SerialTotals,
+    ApplicationSingleComputationPartition,
+    Deterministic
+);
+region_totals!(
+    UnboundedBytesTotals,
+    RegionKey,
+    DeterministicPartitioned,
+    bytes usize::MAX
+);
+region_totals!(ProbedTotals, probe::ProbeKey, DeterministicPartitioned);
 
-struct LengthsByRegion<Key>(BTreeMap<Key, Vec<u64>>);
-impl<Key: Send + 'static> WorthQueryManagedComputationPrepared for LengthsByRegion<Key> {
-    fn retained_bytes(&self) -> usize {
-        self.0.values().map(Vec::len).sum::<usize>() * std::mem::size_of::<u64>()
-    }
+/// Which computation a region totals program declares, and which owner binding
+/// its contribution installs for it.
+trait RegionTotalsBinding: 'static {
+    type Computation: ApplicationManagedComputation<CheckpointSchema, PlanarFinalOutputFeature>;
+
+    /// Installs the computation's owner and returns the handler of the planar
+    /// source adjustment, which runs the computation when its owner can.
+    fn install(
+        setup: &mut WorthQueryApplicationContributionSetup<'_, CheckpointSchema>,
+    ) -> Result<owner::RegionTotalsHandler, primary_graph::WorthQueryPrimaryGraphInstallationDenial>;
 }
 
-struct RegionTotalsOwner;
-impl<Computation>
-    WorthQueryManagedComputationOwner<CheckpointSchema, PlanarFinalOutputFeature, Computation>
-    for RegionTotalsOwner
+/// A program that only declares the computation. Nothing installs its owner,
+/// so the program is authored and validated and never installed.
+struct DeclaredOnly<Computation>(PhantomData<fn() -> Computation>);
+impl<Computation> RegionTotalsBinding for DeclaredOnly<Computation>
 where
-    Computation: ApplicationManagedComputation<
-        CheckpointSchema,
-        PlanarFinalOutputFeature,
-        Input = RegionLengths,
-    >,
-    Computation::Partition: From<u32>,
+    Computation: ApplicationManagedComputation<CheckpointSchema, PlanarFinalOutputFeature>,
 {
-    type Prepared = LengthsByRegion<Computation::Partition>;
-    type Computed = Vec<u64>;
-    type Output = Vec<u64>;
-    type Stopped = ();
+    type Computation = Computation;
 
-    fn prepare(
-        &self,
-        lengths: &<RegionLengths as ApplicationComputationInput>::Value,
-    ) -> Result<Self::Prepared, ()> {
-        let mut regions = BTreeMap::<Computation::Partition, Vec<u64>>::new();
-        for (region, length) in lengths {
-            regions.entry((*region).into()).or_default().push(*length);
-        }
-        Ok(LengthsByRegion(regions))
-    }
-
-    fn compute(
-        &self,
-        prepared: &Self::Prepared,
-        checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
-    ) -> Result<Vec<u64>, WorthQueryManagedComputationDenial<()>> {
-        let mut totals = Vec::with_capacity(prepared.0.len());
-        for lengths in prepared.0.values() {
-            checkpoint.advance(lengths.len())?;
-            totals.push(lengths.iter().sum());
-        }
-        Ok(totals)
-    }
-
-    fn complete(&self, _: Self::Prepared, totals: Vec<u64>) -> Result<Vec<u64>, ()> {
-        Ok(totals)
+    fn install(
+        _: &mut WorthQueryApplicationContributionSetup<'_, CheckpointSchema>,
+    ) -> Result<owner::RegionTotalsHandler, primary_graph::WorthQueryPrimaryGraphInstallationDenial>
+    {
+        Ok(owner::RegionTotalsHandler::idle())
     }
 }
 
 /// The topology contribution plus the owner of the region totals computation.
-struct RegionTotalsContribution;
-impl ApplicationSchemaContribution<CheckpointSchema> for RegionTotalsContribution {
+struct RegionTotalsContribution<Binding>(PhantomData<fn() -> Binding>);
+impl<Binding: RegionTotalsBinding> ApplicationSchemaContribution<CheckpointSchema>
+    for RegionTotalsContribution<Binding>
+{
     const IDENTITY: ApplicationSchemaContributionIdentity =
         <TopologyContribution as ApplicationSchemaContribution<CheckpointSchema>>::IDENTITY;
     fn register_members(
@@ -162,7 +155,9 @@ impl ApplicationSchemaContribution<CheckpointSchema> for RegionTotalsContributio
         )
     }
 }
-impl WorthQueryApplicationContribution<CheckpointSchema> for RegionTotalsContribution {
+impl<Binding: RegionTotalsBinding> WorthQueryApplicationContribution<CheckpointSchema>
+    for RegionTotalsContribution<Binding>
+{
     type Configuration = TopologyConfiguration;
 
     fn contracts(
@@ -177,23 +172,20 @@ impl WorthQueryApplicationContribution<CheckpointSchema> for RegionTotalsContrib
         configuration: Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, CheckpointSchema>,
     ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
-        <TopologyContribution as WorthQueryApplicationContribution<CheckpointSchema>>::configure(
+        let source_adjustment = Binding::install(setup)?;
+        TopologyContribution::configure_with_source_adjustment(
             configuration,
             setup,
-        )?;
-        setup
-            .computation::<PlanarFinalOutputFeature, RegionTotals, _>(RegionTotalsOwner)
-            .map(drop)
+            source_adjustment,
+        )
     }
 }
 
-struct RegionTotalsProgram<Computation>(PhantomData<fn() -> Computation>);
-impl<Computation> ApplicationProgramDefinition<CheckpointSchema>
-    for RegionTotalsProgram<Computation>
-where
-    Computation: ApplicationManagedComputation<CheckpointSchema, PlanarFinalOutputFeature>,
+struct RegionTotalsProgram<Binding>(PhantomData<fn() -> Binding>);
+impl<Binding: RegionTotalsBinding> ApplicationProgramDefinition<CheckpointSchema>
+    for RegionTotalsProgram<Binding>
 {
-    type Contributions = (RegionTotalsContribution,);
+    type Contributions = (RegionTotalsContribution<Binding>,);
     type Outputs = ApplicationProgramOutputs<CheckpointRoot>;
     type Rules = CheckpointRules;
     const IDENTITY: ApplicationProgramIdentity =
@@ -202,7 +194,7 @@ where
         demand_policy::feature_specs_with_final_output(
             required_chain::output_feature_spec(),
             demand_policy::final_output_feature::<demand_policy::FinalArtifact>()
-                .managed_computation::<Computation>()
+                .managed_computation::<Binding::Computation>()
                 .finish(),
         )
     }
@@ -212,29 +204,37 @@ fn revision_of<Computation>() -> ApplicationProgramRevision
 where
     Computation: ApplicationManagedComputation<CheckpointSchema, PlanarFinalOutputFeature>,
 {
-    *ApplicationProgramAuthoring::<CheckpointSchema, RegionTotalsProgram<Computation>>::begin()
-        .validated_program()
-        .expect("the region totals program is complete")
-        .revision()
+    *ApplicationProgramAuthoring::<
+        CheckpointSchema,
+        RegionTotalsProgram<DeclaredOnly<Computation>>,
+    >::begin()
+    .validated_program()
+    .expect("the region totals program is complete")
+    .revision()
 }
 
 fn denial_of<Computation>() -> Option<ApplicationProgramValidationDenialKind>
 where
     Computation: ApplicationManagedComputation<CheckpointSchema, PlanarFinalOutputFeature>,
 {
-    ApplicationProgramAuthoring::<CheckpointSchema, RegionTotalsProgram<Computation>>::begin()
-        .validated_program()
-        .err()
-        .map(|denial| denial.kind())
+    ApplicationProgramAuthoring::<
+        CheckpointSchema,
+        RegionTotalsProgram<DeclaredOnly<Computation>>,
+    >::begin()
+    .validated_program()
+    .err()
+    .map(|denial| denial.kind())
 }
 
 #[test]
 fn program_with_one_partitioned_computation_installs_with_its_owner() {
     let _guard = checkpoint_recovery_test_guard();
-    let program =
-        ApplicationProgramAuthoring::<CheckpointSchema, RegionTotalsProgram<RegionTotals>>::begin()
-            .validated_program()
-            .expect("the region totals program is complete");
+    let program = ApplicationProgramAuthoring::<
+        CheckpointSchema,
+        RegionTotalsProgram<owner::PartitionedOwner>,
+    >::begin()
+    .validated_program()
+    .expect("the region totals program is complete");
     let computations = program
         .features()
         .iter()
@@ -251,8 +251,10 @@ fn program_with_one_partitioned_computation_installs_with_its_owner() {
         DeterminismContract::CanonicalBitwise
     );
 
-    let application =
-        support::install_program::<RegionTotalsProgram<RegionTotals>>(None, Default::default());
+    let application = support::install_program::<RegionTotalsProgram<owner::PartitionedOwner>>(
+        None,
+        Default::default(),
+    );
     let (scope, principal) = authenticate(&application);
     application
         .request(&principal, &scope)

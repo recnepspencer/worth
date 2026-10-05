@@ -5,6 +5,9 @@ use std::sync::Arc;
 
 use worth_query_declaration::facade::application_operation::ApplicationCandidateRequirements;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
+use worth_query_declaration::facade::application_program::{
+    ApplicationComputationExecution, DeterminismContract,
+};
 use worth_query_installation::facade::{
     ApplicationSchema, ApplicationSchemaBindingIdentity,
     WorthQueryInstalledApplicationMutationBinding, WorthQueryInstalledApplicationSchema,
@@ -94,22 +97,17 @@ impl<Schema> PendingMutationHandlerRegistry<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(in crate::domain_computation::primary_graph) fn install_computation<
+    /// Records the one owner of a managed computation. `binding` is the
+    /// execution posture the owner's binding serves: the declared posture must
+    /// be that one. A declared equivalence predicate is refused because no
+    /// installed predicate is visible here.
+    pub(in crate::domain_computation::primary_graph) fn record_computation_owner<
         Feature,
         Computation,
-        Owner,
     >(
         &mut self,
-        owner: Owner,
-    ) -> Result<
-        super::super::application_contribution::WorthQueryInstalledManagedComputation<
-            Schema,
-            Feature,
-            Computation,
-            Owner,
-        >,
-        WorthQueryPrimaryGraphInstallationDenial,
-    >
+        binding: ApplicationComputationExecution,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
     where
         Feature: worth_query_declaration::facade::application_program::ApplicationFeature<Schema>,
         Computation:
@@ -117,12 +115,19 @@ where
                 Schema,
                 Feature,
             >,
-        Owner: super::super::application_contribution::WorthQueryManagedComputationOwner<
-            Schema,
-            Feature,
-            Computation,
-        >,
     {
+        if Computation::EXECUTION != binding {
+            return Err(denial(
+                DenialKind::ManagedComputationOwnerBindingMismatch,
+                Computation::IDENTITY,
+            ));
+        }
+        if let DeterminismContract::ContractEquivalent(_) = Computation::DETERMINISM {
+            return Err(denial(
+                DenialKind::ManagedComputationEquivalenceUnavailable,
+                Computation::IDENTITY,
+            ));
+        }
         let computation_type = TypeId::of::<Computation>();
         if self.computations.contains_key(&computation_type) {
             return Err(denial(
@@ -138,11 +143,7 @@ where
                 output_artifact_type: TypeId::of::<Computation::Output>(),
             },
         );
-        Ok(
-            super::super::application_contribution::WorthQueryInstalledManagedComputation::new(
-                owner,
-            ),
-        )
+        Ok(())
     }
 
     pub(in crate::domain_computation::primary_graph) fn register<Binding, Handler>(
