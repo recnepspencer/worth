@@ -30,6 +30,7 @@ mod input_cutoff;
 mod late_cancellation;
 mod producer_domain_denial;
 pub(crate) mod required_chain;
+mod reuse_opt_out;
 mod stable_refresh;
 mod support;
 use support::{authenticate, install, length};

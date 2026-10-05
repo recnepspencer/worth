@@ -256,8 +256,8 @@ where
         .map_err(|stop| match stop {
             ProducerExecutionStop::RequestAdmissionDenied(rejection) => rejection.into_denial(),
             ProducerExecutionStop::ExecutionStopped(denial) => denial,
-            ProducerExecutionStop::LiveOutputNotReused => {
-                ProducerExecutionStop::live_output_not_reused()
+            ProducerExecutionStop::LiveOutputNotReused { producer, reason } => {
+                ProducerExecutionStop::live_output_not_reused(producer, reason)
             }
         })?;
     match result {

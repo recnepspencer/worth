@@ -141,7 +141,9 @@ where
     )
 }
 
-pub(super) fn seed_cycle(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>) {
+pub(super) fn seed_cycle<Schema: TopologySchemaBinding>(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+) {
     for (name, x, y) in [
         ("a", 1, 1),
         ("b", 10, 1),
@@ -153,16 +155,13 @@ pub(super) fn seed_cycle(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointS
         let key = format!("anchor-{name}");
         graph
             .bind_entity(
-                WorthQueryApplicationEntitySeed::new(
-                    Body::reference::<CheckpointSchema>(),
-                    entity_key(&key),
-                )
-                .field(BodyKey::reference::<CheckpointSchema>(), key)
-                // The initial performed publication writes an equal derived
-                // value; native revisions still decide whether it can reuse.
-                .field(Length::reference::<CheckpointSchema>(), length(y + 1))
-                .field(PositionX::reference::<CheckpointSchema>(), length(x))
-                .field(PositionY::reference::<CheckpointSchema>(), length(y)),
+                WorthQueryApplicationEntitySeed::new(Body::reference::<Schema>(), entity_key(&key))
+                    .field(BodyKey::reference::<Schema>(), key)
+                    // The initial performed publication writes an equal derived
+                    // value; native revisions still decide whether it can reuse.
+                    .field(Length::reference::<Schema>(), length(y + 1))
+                    .field(PositionX::reference::<Schema>(), length(x))
+                    .field(PositionY::reference::<Schema>(), length(y)),
             )
             .unwrap();
     }
@@ -176,7 +175,7 @@ pub(super) fn seed_cycle(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointS
     ] {
         graph
             .bind_relation(WorthQueryApplicationRelationSeed::new(
-                PlanarSuccessor::reference::<CheckpointSchema>(),
+                PlanarSuccessor::reference::<Schema>(),
                 format!("anchor-{from}-to-{to}"),
                 entity_key(&format!("anchor-{from}")),
                 entity_key(&format!("anchor-{to}")),
@@ -185,7 +184,9 @@ pub(super) fn seed_cycle(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointS
     }
 }
 
-fn entity_key(key: &str) -> WorthQueryApplicationEntityKey<CheckpointSchema, Body> {
+fn entity_key<Schema: TopologySchemaBinding>(
+    key: &str,
+) -> WorthQueryApplicationEntityKey<Schema, Body> {
     WorthQueryApplicationEntityKey::new(key.to_owned()).unwrap()
 }
 
@@ -297,23 +298,17 @@ impl authentication::WorthQueryAuthenticationAdapter for LocalIdentityAdapter {
     }
 }
 
-fn external_identity() -> WorthQueryExternalPrincipalIdentity {
+pub(super) fn external_identity() -> WorthQueryExternalPrincipalIdentity {
     WorthQueryExternalPrincipalIdentity::new("https://checkpoint.invalid/local", "model-owner")
         .unwrap()
 }
 
-pub(super) fn authenticate<Program>(
-    application: &application_installation::WorthQueryProgramApplicationRuntime<
-        CheckpointSchema,
-        Program,
-    >,
+pub(super) fn authenticate<Schema: ApplicationSchema + 'static>(
+    application: &primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
 ) -> (
     authentication::WorthQueryRequestScope,
-    authentication::WorthQueryAuthenticatedExternalPrincipal<CheckpointSchema>,
-)
-where
-    Program: ApplicationProgramDefinition<CheckpointSchema>,
-{
+    authentication::WorthQueryAuthenticatedExternalPrincipal<Schema>,
+) {
     let cancellation = authentication::WorthQueryCancellationSource::new();
     let scope = authentication::WorthQueryRequestScope::new(
         Instant::now() + Duration::from_secs(120),

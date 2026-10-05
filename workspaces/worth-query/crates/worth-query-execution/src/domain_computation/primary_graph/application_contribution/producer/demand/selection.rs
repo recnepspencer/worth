@@ -14,6 +14,7 @@ type SelectedWithEntry<'a, Schema> = (
     &'a std::sync::Arc<super::super::registry::InstalledProducerProvider<Schema>>,
 );
 
+mod ordinary;
 mod recovered_candidates;
 mod selected_basis;
 use selected_basis::{selection_budget_denial, source_basis_is_admitted};
@@ -26,77 +27,6 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
-    pub fn select_output_producer<Family>(
-        &self,
-        source: &WorthQueryObservedSource<
-            <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
-        >,
-        profile_kind: &'static str,
-        maximum_work: usize,
-    ) -> Result<WorthQuerySelectedApplicationProducer, WorthQueryOutputDemandDenial>
-    where
-        Family: WorthQueryProducerOutputFamily<Schema>,
-    {
-        self.select_output_producer_with_retained_basis::<Family>(
-            source,
-            profile_kind,
-            maximum_work.min(
-                self.output_demand_resource_profile()
-                    .limits()
-                    .source_currentness_work(),
-            ),
-            None,
-        )
-    }
-
-    pub(super) fn select_output_producer_with_retained_basis<Family>(
-        &self,
-        source: &WorthQueryObservedSource<
-            <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
-        >,
-        profile_kind: &'static str,
-        maximum_work: usize,
-        retained_program_basis: Option<
-            &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
-        >,
-    ) -> Result<WorthQuerySelectedApplicationProducer, WorthQueryOutputDemandDenial>
-    where
-        Family: WorthQueryProducerOutputFamily<Schema>,
-    {
-        let mut remaining_work = maximum_work;
-        self.select_output_producer_with_remaining::<Family>(
-            source,
-            profile_kind,
-            &mut remaining_work,
-            retained_program_basis,
-        )
-        .map(|(selected, _)| selected)
-    }
-
-    /// The admitted demand continues with this exact remaining allowance.
-    pub(super) fn select_output_producer_with_remaining<Family>(
-        &self,
-        source: &WorthQueryObservedSource<
-            <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
-        >,
-        profile_kind: &'static str,
-        remaining_work: &mut usize,
-        retained_program_basis: Option<
-            &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
-        >,
-    ) -> Result<SelectedWithEntry<'_, Schema>, WorthQueryOutputDemandDenial>
-    where
-        Family: WorthQueryProducerOutputFamily<Schema>,
-    {
-        self.select_output_producer_with_remaining_core::<Family>(
-            source,
-            profile_kind,
-            remaining_work,
-            retained_program_basis,
-            None,
-        )
-    }
-
     fn select_output_producer_with_remaining_core<Family>(
         &self,
         source: &WorthQueryObservedSource<
@@ -353,20 +283,34 @@ where
                     continue;
                 }
                 if facts_current {
-                    let resources = candidate.resources.ok_or_else(|| {
-                        WorthQueryOutputDemandDenial::new(
-                            WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
-                            "retained output lacks its producer resource profile",
-                        )
-                    })?;
                     let (mut selected, entry) = self.installed_producers.select_exact::<Family>(
                         candidate.binding,
                         selected_override.map(|_| &mut *remaining_work),
                     )?;
-                    selected.retained_resources = Some(resources);
-                    selected.retained_idempotency_key = Some(candidate.idempotency_key_identity);
-                    selected.retained_output_binding = Some(candidate.binding);
-                    return Ok((selected, entry));
+                    // A runtime record reaches the input cutoff and needs its
+                    // declared decision proof. A current checkpoint record is
+                    // readmitted through its complete recovered facts instead.
+                    let recovered = matches!(candidate.source_identity, Some(
+                        crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Checkpoint(_)
+                    ));
+                    if recovered
+                        || entry.declaration.input_reuse.is_some_and(|contract| {
+                            contract.determinism()
+                                == worth_foundational::facade::DeterminismContract::CanonicalBitwise
+                        })
+                    {
+                        let resources = candidate.resources.ok_or_else(|| {
+                            WorthQueryOutputDemandDenial::new(
+                                WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
+                                "retained output lacks its producer resource profile",
+                            )
+                        })?;
+                        selected.retained_resources = Some(resources);
+                        selected.retained_idempotency_key =
+                            Some(candidate.idempotency_key_identity);
+                        selected.retained_output_binding = Some(candidate.binding);
+                        return Ok((selected, entry));
+                    }
                 }
                 retained_output = true;
             }

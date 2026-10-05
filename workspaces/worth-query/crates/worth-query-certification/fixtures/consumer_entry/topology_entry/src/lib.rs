@@ -6,6 +6,9 @@ use worth_query_decl::facade::{
     worth_query_aspect, worth_query_entity, worth_query_field, worth_query_unit,
     worth_query_value_binding,
 };
+use worth_query_host::facade::application_contribution::{
+    WorthQueryDecisionContextDependencies, WorthQueryProducerInputReuseContract,
+};
 
 mod alternate_output;
 mod application_program;
@@ -47,7 +50,14 @@ pub use producer::*;
 pub use readiness::InitialPlanarReadiness;
 pub use source_adjustment::*;
 
-pub trait TopologySchemaBinding: ApplicationSchema {}
+pub trait TopologySchemaBinding: ApplicationSchema {
+    /// The final producer's decision-reuse declaration is part of each installed
+    /// fixture schema, so opt-out journeys use the ordinary production installer.
+    const FINAL_INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
+        Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
+            WorthQueryDecisionContextDependencies::NONE,
+        ));
+}
 
 worth_query_value_binding! {
     pub TopologyLengthBinding for PositiveLength {
