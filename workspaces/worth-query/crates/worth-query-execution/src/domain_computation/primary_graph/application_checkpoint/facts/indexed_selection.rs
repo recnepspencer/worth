@@ -1,6 +1,6 @@
 use super::{
     next_locator, put_entity, put_locator, put_u32, put_u64, CheckpointCursor, Fact, KindId,
-    MAXIMUM_FACTS,
+    MAXIMUM_SET_ENTITIES,
 };
 use std::io::Write;
 use worth_foundational::facade::AspectValue;
@@ -23,7 +23,7 @@ pub(super) fn encode(bytes: &mut Vec<u8>, fact: &Fact) -> Option<()> {
     if *candidate_limit == 0
         || *candidate_limit == usize::MAX
         || candidates.len() > *candidate_limit
-        || candidates.len() > MAXIMUM_FACTS
+        || candidates.len() > MAXIMUM_SET_ENTITIES
         || !candidates.windows(2).all(|pair| pair[0] < pair[1])
     {
         return None;
@@ -62,7 +62,7 @@ pub(super) fn decode(cursor: &mut CheckpointCursor<'_>) -> Result<Fact, String> 
     if candidate_limit == 0
         || candidate_limit == usize::MAX
         || count > candidate_limit
-        || count > MAXIMUM_FACTS
+        || count > MAXIMUM_SET_ENTITIES
         || count > cursor.remaining.len() / 16
     {
         return Err("checkpoint predicate candidate count is invalid".to_owned());
@@ -161,5 +161,22 @@ mod tests {
         let mut writer = ValueWriter(Vec::new());
         assert!(serde_json::to_writer(&mut writer, &"x".repeat(MAXIMUM_VALUE_BYTES + 1)).is_err());
         assert!(writer.0.len() <= MAXIMUM_VALUE_BYTES);
+    }
+
+    #[test]
+    fn total_fact_capacity_does_not_widen_indexed_membership() {
+        let mut fact = selection(
+            (1..=MAXIMUM_SET_ENTITIES + 1)
+                .map(|slot| EntityId::new(PartitionId(0), slot as u64, 1))
+                .collect(),
+        );
+        let Fact::IndexedEntitySelection {
+            candidate_limit, ..
+        } = &mut fact
+        else {
+            unreachable!();
+        };
+        *candidate_limit = MAXIMUM_SET_ENTITIES + 1;
+        assert!(super::super::encode(&[fact]).is_none());
     }
 }

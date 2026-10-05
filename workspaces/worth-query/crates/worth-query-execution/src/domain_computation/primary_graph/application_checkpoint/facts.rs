@@ -15,8 +15,12 @@ use super::CheckpointCursor;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 mod indexed_selection;
 
-pub(super) const MAXIMUM_FACT_BYTES: usize = 1024 * 1024;
-const MAXIMUM_FACTS: usize = 4096;
+// A complete producer decision may span many individually bounded sets. Keep
+// total checkpoint capacity separate from each adjacency or indexed selection;
+// the former 4,096-fact cap discarded otherwise reusable large-model decisions.
+pub(super) const MAXIMUM_FACT_BYTES: usize = 16 * 1024 * 1024;
+const MAXIMUM_FACTS: usize = 65_536;
+const MAXIMUM_SET_ENTITIES: usize = 4096;
 const MAXIMUM_TEXT: usize = 4096;
 const MAXIMUM_FIELD_DEPTH: usize = 32;
 
@@ -79,7 +83,7 @@ pub(in crate::domain_computation::primary_graph) fn encode(facts: &[Fact]) -> Op
                 comparison_work_limit,
                 endpoints,
             } => {
-                if endpoints.len() > MAXIMUM_FACTS {
+                if endpoints.len() > MAXIMUM_SET_ENTITIES {
                     return None;
                 }
                 bytes.push(4);
@@ -177,7 +181,9 @@ pub(super) fn decode_version(bytes: &[u8], version: u16) -> Result<Arc<[Fact]>, 
                     .map_err(|_| "checkpoint adjacency work limit exceeds host".to_owned())?;
                 let endpoint_count = usize::try_from(cursor.next_u32()?)
                     .map_err(|_| "checkpoint endpoint count exceeds host".to_owned())?;
-                if endpoint_count > MAXIMUM_FACTS || endpoint_count > cursor.remaining.len() / 16 {
+                if endpoint_count > MAXIMUM_SET_ENTITIES
+                    || endpoint_count > cursor.remaining.len() / 16
+                {
                     return Err("checkpoint endpoint count is invalid".to_owned());
                 }
                 let mut endpoints = Vec::with_capacity(endpoint_count);
