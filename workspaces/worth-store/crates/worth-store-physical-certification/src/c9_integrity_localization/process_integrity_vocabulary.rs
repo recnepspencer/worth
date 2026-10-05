@@ -112,5 +112,6 @@ pub(super) fn project_artifact_family(
         Source::BlobGenerationPublication => Target::BlobGenerationPublication,
         Source::BlobDropSetManifest => Target::BlobDropSetManifest,
         Source::BlobReclaimDescriptor => Target::BlobReclaimDescriptor,
+        Source::BTreeNode => Target::BTreeNode,
     }
 }

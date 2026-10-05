@@ -10,6 +10,7 @@ import subprocess
 import sys
 import shutil
 import tempfile
+import tomllib
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -53,8 +54,25 @@ def build_executable(package: str, target_name: str, target_args: list[str]) -> 
     return executable.resolve()
 
 
-def run_courtroom(observer: pathlib.Path, certification: pathlib.Path) -> int:
+def cargo_configured_environment() -> dict[str, str]:
+    """The environment `cargo test` gives a test binary, from `.cargo/config.toml` `[env]`.
+
+    The courtroom runs copied binaries directly, so it must apply that table
+    itself; without it, test threads get the platform default stack instead of
+    the configured `RUST_MIN_STACK`, and process subjects inherit the same.
+    """
     environment = os.environ.copy()
+    with open(ROOT / ".cargo" / "config.toml", "rb") as config:
+        table = tomllib.load(config).get("env", {})
+    for name, entry in table.items():
+        value, force = (entry["value"], entry.get("force", False)) if isinstance(entry, dict) else (entry, False)
+        if force or name not in environment:
+            environment[name] = str(value)
+    return environment
+
+
+def run_courtroom(observer: pathlib.Path, certification: pathlib.Path) -> int:
+    environment = cargo_configured_environment()
     environment[OBSERVER_ENV] = str(observer)
     owner_tests = [
         str(certification),

@@ -53,6 +53,7 @@ pub(crate) enum ProcessRecoveryRefusalCause {
     EntryBindingDrift,
     PersistedStoreAdmission,
     CoordinationUnavailable,
+    CoordinationAdmission,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -69,6 +70,7 @@ pub(crate) enum ProcessRecoveryBlockCause {
     RedoPlanning,
     Staging,
     Publication,
+    SelectedCustody,
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -170,6 +172,7 @@ pub(crate) enum ProcessIntegrityVersionAxis {
     WalFrame,
     CheckpointRecordSchema,
     BlobRecord,
+    BTreeNode,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -288,4 +291,5 @@ pub(crate) enum ProcessIntegrityArtifactFamily {
     BlobGenerationPublication,
     BlobDropSetManifest,
     BlobReclaimDescriptor,
+    BTreeNode,
 }

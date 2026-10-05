@@ -45,7 +45,7 @@ impl StoreRejoinResidentLedger {
         Self::new(allocation, 0, maximum_resident_bytes)
     }
 
-    #[cfg(test)]
+    #[cfg(all(test, feature = "recovery-runtime-owner"))]
     pub(super) fn for_test(
         allocation: PhysicalRecoveryAllocationAdmission,
         already_live: u64,

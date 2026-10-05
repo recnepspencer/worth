@@ -40,6 +40,9 @@ pub(super) fn project_integrity_rejection(
                     PhysicalIntegrityVersionAxis::BlobRecord => {
                         ProcessIntegrityVersionAxis::BlobRecord
                     }
+                    PhysicalIntegrityVersionAxis::BTreeNode => {
+                        ProcessIntegrityVersionAxis::BTreeNode
+                    }
                 },
                 observed: posture.observed(),
             }

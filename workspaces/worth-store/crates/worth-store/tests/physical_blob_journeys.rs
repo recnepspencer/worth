@@ -8,14 +8,12 @@ mod blob_abort_crash;
 mod blob_admission;
 #[path = "physical_blob_journeys/blob_claim.rs"]
 mod blob_claim;
-#[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/blob_copy_observer.rs"]
 mod blob_copy_observer;
 #[path = "physical_blob_journeys/blob_corruption_localization.rs"]
 mod blob_corruption_localization;
 #[path = "physical_blob_journeys/blob_crash.rs"]
 mod blob_crash;
-#[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/blob_digest_corruption.rs"]
 mod blob_digest_corruption;
 #[path = "physical_blob_journeys/blob_expiry.rs"]
@@ -44,20 +42,16 @@ mod blob_rebuild_denial;
 mod blob_reclaim;
 #[path = "physical_blob_journeys/blob_reclaim_batch_boundary.rs"]
 mod blob_reclaim_batch_boundary;
-#[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/blob_reclaim_cleanup_crash.rs"]
 mod blob_reclaim_cleanup_crash;
 #[path = "physical_blob_journeys/blob_reclaim_contention.rs"]
 mod blob_reclaim_contention;
 #[path = "physical_blob_journeys/blob_reclaim_crash.rs"]
 mod blob_reclaim_crash;
-#[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/blob_reclaim_multiple_orphans.rs"]
 mod blob_reclaim_multiple_orphans;
-#[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/blob_reclaim_released.rs"]
 mod blob_reclaim_released;
-#[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/blob_reclaim_released_crash.rs"]
 mod blob_reclaim_released_crash;
 #[path = "physical_blob_journeys/blob_relocation.rs"]
@@ -76,23 +70,18 @@ mod blob_resume_tree;
 mod blob_scheduler_interference;
 #[path = "physical_blob_journeys/blob_scrub_issuers.rs"]
 mod blob_scrub_issuers;
-#[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/blob_tier_epoch_wal.rs"]
 mod blob_tier_epoch_wal;
-#[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/blob_tier_movement.rs"]
 mod blob_tier_movement;
 #[path = "physical_blob_journeys/blob_unread_record_observation.rs"]
 mod blob_unread_record_observation;
 #[path = "physical_blob_journeys/cache_retention.rs"]
 mod cache_retention;
-#[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/checkpoint_capture_envelope.rs"]
 mod checkpoint_capture_envelope;
-#[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/checkpoint_liveness.rs"]
 mod checkpoint_liveness;
-#[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/clean_reopen_custody.rs"]
 mod clean_reopen_custody;
 #[path = "physical_blob_journeys/facade_status.rs"]
@@ -101,37 +90,28 @@ mod facade_status;
 mod fixture;
 #[path = "physical_blob_journeys/layout_catalog.rs"]
 mod layout_catalog;
-#[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/layout_corruption_rebuild.rs"]
 mod layout_corruption_rebuild;
 #[path = "physical_blob_journeys/layout_dedupe.rs"]
 mod layout_dedupe;
-#[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/layout_dedupe_collision.rs"]
 mod layout_dedupe_collision;
-#[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/layout_dedupe_routed.rs"]
 mod layout_dedupe_routed;
-#[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/layout_node_fixture.rs"]
 mod layout_node_fixture;
-#[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/layout_production_split.rs"]
 mod layout_production_split;
 #[path = "physical_blob_journeys/layout_range.rs"]
 mod layout_range;
 #[path = "physical_blob_journeys/layout_rebuild.rs"]
 mod layout_rebuild;
-#[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/layout_reuse_claim_admission.rs"]
 mod layout_reuse_claim_admission;
-#[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/layout_shape_corruption.rs"]
 mod layout_shape_corruption;
-#[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/reopened_drop_retirement.rs"]
 mod reopened_drop_retirement;
-#[cfg(feature = "certification-test-authority")]
 #[path = "physical_blob_journeys/terminal_head_retirement.rs"]
 mod terminal_head_retirement;
 
@@ -152,13 +132,10 @@ fn c11_blob_child_role() {
         | "crash-reclaim-reservation"
         | "crash-reclaim-reservation-aged"
         | "crash-reclaim-wal" => blob_reclaim_crash::child(&root, &role),
-        #[cfg(feature = "certification-test-authority")]
         "crash-reclaim-cleanup-selector" => blob_reclaim_cleanup_crash::child(&root),
-        #[cfg(feature = "certification-test-authority")]
         "crash-released-first-wal" | "crash-released-tier-first-wal" => {
             blob_reclaim_released_crash::child(&root, &role)
         }
-        #[cfg(feature = "certification-test-authority")]
         "checkpoint-envelope" => checkpoint_capture_envelope::child(&root),
         "crash-expiry-wal" | "crash-expiry-root" => blob_expiry_crash::child(&root, &role),
         "crash-declaration"

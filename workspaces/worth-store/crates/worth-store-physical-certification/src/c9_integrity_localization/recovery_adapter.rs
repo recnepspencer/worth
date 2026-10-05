@@ -108,6 +108,9 @@ fn project_refusal_cause(kind: PhysicalRecoveryRefusalKind) -> ProcessRecoveryRe
         PhysicalRecoveryRefusalKind::CoordinationUnavailable => {
             ProcessRecoveryRefusalCause::CoordinationUnavailable
         }
+        PhysicalRecoveryRefusalKind::CoordinationAdmission(_) => {
+            ProcessRecoveryRefusalCause::CoordinationAdmission
+        }
     }
 }
 
@@ -127,6 +130,7 @@ fn project_block_cause(kind: PhysicalRecoveryBlockKind) -> ProcessRecoveryBlockC
         PhysicalRecoveryBlockKind::RedoPlanning => ProcessRecoveryBlockCause::RedoPlanning,
         PhysicalRecoveryBlockKind::Staging => ProcessRecoveryBlockCause::Staging,
         PhysicalRecoveryBlockKind::Publication => ProcessRecoveryBlockCause::Publication,
+        PhysicalRecoveryBlockKind::SelectedCustody => ProcessRecoveryBlockCause::SelectedCustody,
     }
 }
 

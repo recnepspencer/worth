@@ -104,7 +104,7 @@ pub use evidence_projection::{
     PhysicalQueuePerformanceExpectation, PhysicalTrafficPerformanceExpectation,
     ProvenNoEffectPhysicalMutationEvidence, StorePhysicalDurabilityPerformanceReceiptEvidence,
 };
-#[cfg(all(test, feature = "recovery-runtime-owner"))]
+#[cfg(test)]
 pub(in crate::physical_runtime) use grouping::reopened_membership_digest;
 pub(in crate::physical_runtime) use grouping::reopened_membership_digest_fields;
 pub use grouping::{

@@ -41,6 +41,7 @@ impl ArenaTierEpochFence {
         self.state = FenceState::EffectMayExist;
     }
 
+    #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime::record_serving) fn prove_no_effect(&mut self) {
         self.state = FenceState::PreEffect;
     }

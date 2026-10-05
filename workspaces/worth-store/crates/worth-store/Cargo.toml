@@ -98,3 +98,8 @@ path = "tests/physical_adapter_authority_ui.rs"
 name = "physical_record_journeys"
 path = "tests/physical_record_journeys.rs"
 required-features = ["certification-test-authority"]
+
+[[test]]
+name = "physical_blob_journeys"
+path = "tests/physical_blob_journeys.rs"
+required-features = ["certification-test-authority"]
