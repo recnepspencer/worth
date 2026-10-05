@@ -26,8 +26,6 @@ pub(super) fn run(workspace: &Path, target_root: Option<&Path>) -> Result<(), St
     let mut command = cargo(workspace);
     command.args([
         "test",
-        "-j",
-        "1",
         "-p",
         "worth-store-recovery-runtime",
         "--test",
@@ -35,7 +33,6 @@ pub(super) fn run(workspace: &Path, target_root: Option<&Path>) -> Result<(), St
         "--features",
         "certification-test-authority",
     ]);
-    command.args(["--", "--test-threads=1"]);
     command
         .env("CARGO_TARGET_DIR", &binaries.target)
         .env(WRITER_ENV, &binaries.writer)
@@ -105,8 +102,6 @@ fn build(
     command.env("CARGO_TARGET_DIR", target).args([
         "build",
         "--locked",
-        "-j",
-        "1",
         "--no-default-features",
         "-p",
         package,
