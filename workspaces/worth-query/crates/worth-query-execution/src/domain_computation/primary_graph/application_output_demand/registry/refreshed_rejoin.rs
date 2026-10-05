@@ -51,14 +51,7 @@ impl WorthQueryOutputDemandRegistry {
         admission
             .charge_external_work(u64::try_from(state.records.len()).map_err(|_| work_denial())?)
             .map_err(|_| work_denial())?;
-        let newest = state
-            .records
-            .iter()
-            .filter(|(key, _)| key.same_occurrence(&stale.key))
-            .max_by_key(|(key, _)| key.source.observation_generation())
-            .map(|(key, _)| key.clone());
-        let Some(newest) =
-            newest.filter(|key| refresh_order(key, &stale.key) == Some(Ordering::Greater))
+        let Some(newest) = newest_lawful_successor(state.records.keys(), &stale.key).cloned()
         else {
             return Ok(None);
         };
@@ -161,11 +154,29 @@ pub(super) fn newest_of_occurrence(
     records: &BTreeMap<WorthQueryOutputDemandKey, DemandRecord>,
     key: &WorthQueryOutputDemandKey,
 ) -> Option<WorthQueryOutputDemandKey> {
-    occurrence_rows(records, key)
-        .map(|(other, _)| other)
-        .filter(|other| refresh_order(other, key) == Some(Ordering::Greater))
-        .max_by_key(|other| other.source.observation_generation())
-        .cloned()
+    newest_lawful_successor(occurrence_rows(records, key).map(|(other, _)| other), key).cloned()
+}
+
+/// Incomparable bindings never become a successor through iteration order.
+pub(super) fn newest_lawful_successor<'keys>(
+    keys: impl Iterator<Item = &'keys WorthQueryOutputDemandKey>,
+    predecessor: &WorthQueryOutputDemandKey,
+) -> Option<&'keys WorthQueryOutputDemandKey> {
+    let mut newest = None;
+    for candidate in
+        keys.filter(|candidate| refresh_order(candidate, predecessor) == Some(Ordering::Greater))
+    {
+        match newest {
+            None => newest = Some(candidate),
+            Some(current) => match refresh_order(candidate, current) {
+                Some(Ordering::Greater) => newest = Some(candidate),
+                Some(Ordering::Less) => {}
+                Some(Ordering::Equal) if candidate == current => {}
+                _ => return None,
+            },
+        }
+    }
+    newest
 }
 
 /// How `row` orders against `other` among the rows of one occurrence. A
@@ -184,7 +195,7 @@ pub(super) fn refresh_order(
     })
 }
 
-/// The rows of `key`'s occurrence. Keys order by producer and occurrence
+/// The rows of `key`'s occurrence. Keys order by family and source occurrence
 /// before generation, so they are the contiguous run of rows around `key`.
 pub(super) fn occurrence_rows<'records>(
     records: &'records BTreeMap<WorthQueryOutputDemandKey, DemandRecord>,

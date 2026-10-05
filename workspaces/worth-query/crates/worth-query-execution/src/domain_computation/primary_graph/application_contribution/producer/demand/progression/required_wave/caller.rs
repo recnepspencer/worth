@@ -7,9 +7,7 @@ use super::super::{
 use super::drive::drive_required_wave;
 use super::queued::RequiredQueueFrames;
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::producer::{
-    registry::InstalledProducerEdition, WorthQueryProducerCommitAuthority,
-};
+use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
 
@@ -26,7 +24,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     request_scope: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
     commit_authority: &WorthQueryProducerCommitAuthority,
-    installed_edition: &InstalledProducerEdition,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
 where
@@ -124,7 +121,6 @@ where
         principal,
         request_scope,
         commit_authority,
-        installed_edition,
         wave,
         &mut queue,
         &mut frame_custody,

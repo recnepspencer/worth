@@ -51,6 +51,10 @@ pub use readiness::InitialPlanarReadiness;
 pub use source_adjustment::*;
 
 pub trait TopologySchemaBinding: ApplicationSchema {
+    const ROOT_INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
+        Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
+            WorthQueryDecisionContextDependencies::NONE,
+        ));
     /// The final producer's decision-reuse declaration is part of each installed
     /// fixture schema, so opt-out journeys use the ordinary production installer.
     const FINAL_INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =

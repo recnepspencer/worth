@@ -262,10 +262,12 @@ where
         .map_err(|_| work_denial())?;
     if !std::ptr::eq(pending.selected_root(), positioned)
         || current.producer_identity() != progress_name
-        || progress.predecessor().producer_identity() != progress_name
     {
         return Ok(None);
     }
+    // Required admission sealed the typed predecessor→successor relation.
+    // Initial and Preserve may have different bindings; this match authenticates
+    // the live successor cell and the exact consumed predecessor below.
     let Some(live_successor) = runtime
         .output_demands
         .interest_ready_readmission(progress.interest(), admission)?

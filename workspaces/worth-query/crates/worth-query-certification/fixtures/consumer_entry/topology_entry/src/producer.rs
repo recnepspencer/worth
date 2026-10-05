@@ -10,10 +10,9 @@ use worth_query_consumer_values::{
 use worth_query_decl::facade::application_schema::ApplicationInvariantExecutionPoint;
 use worth_query_host::facade::application_contribution::{
     WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
-    WorthQueryDecisionContextDependencies, WorthQueryProducerApplicability,
-    WorthQueryProducerDemandResources, WorthQueryProducerInputReuseContract,
-    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputFamily,
+    WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
+    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
+    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
 };
 
 use super::{PlanarMutationBinding, TopologySchemaBinding};
@@ -148,10 +147,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
         )];
     const RESOURCE_POLICY: &'static str = "bounded-synchronous";
     const REUSE_POLICY: &'static str = "exact-source";
-    const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
-        Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
-            WorthQueryDecisionContextDependencies::NONE,
-        ));
+    const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = Schema::ROOT_INPUT_REUSE;
 }
 
 pub fn planar_producer_input(source: &super::PlanarReadResult) -> super::PlanarMutation {

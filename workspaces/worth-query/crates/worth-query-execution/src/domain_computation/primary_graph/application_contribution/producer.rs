@@ -43,13 +43,13 @@ pub(in crate::domain_computation::primary_graph) use scheduling::{
     WorthQueryInstalledOutputProducerRoutes,
 };
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum WorthQueryProducerLifecyclePosture {
     Initial,
     Preserve,
 }
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct WorthQueryProducerApplicability {
     profile_kind: &'static str,
     lifecycle: WorthQueryProducerLifecyclePosture,

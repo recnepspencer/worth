@@ -295,7 +295,7 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
     let levels = usize::BITS as usize - count.max(1).leading_zeros() as usize;
     let comparisons = count.min(11).checked_mul(levels).ok_or_else(work_denial)?;
     let work = comparisons
-        .checked_mul(key.producer.len().checked_add(7).ok_or_else(work_denial)?)
+        .checked_mul(key.comparison_work().ok_or_else(work_denial)?)
         .and_then(|work| work.checked_add(1))
         .ok_or_else(work_denial)?;
     admission

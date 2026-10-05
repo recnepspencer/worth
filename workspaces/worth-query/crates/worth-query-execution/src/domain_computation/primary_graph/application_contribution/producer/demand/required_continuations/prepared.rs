@@ -62,12 +62,13 @@ where
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
     ) {
         assert!(demand.progression_provenance.required().is_none());
-        demand.progression_provenance = DemandProgressionProvenance::RequiredSuccessor(
-            self.successor
-                .pending_provenance
-                .take()
-                .expect("prepared required successor carries one authentic mode"),
-        );
+        let mut provenance = self
+            .successor
+            .pending_provenance
+            .take()
+            .expect("prepared required successor carries one authentic mode");
+        provenance.bind_successor(demand.installed_entry.edition);
+        demand.progression_provenance = DemandProgressionProvenance::RequiredSuccessor(provenance);
     }
 
     pub(in crate::domain_computation::primary_graph) fn finish(

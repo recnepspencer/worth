@@ -29,7 +29,11 @@ use binding::*;
 use producer::*;
 
 pub(super) fn output_feature_spec() -> ApplicationFeatureSpec {
-    ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
+    output_feature_spec_for::<CheckpointSchema>()
+}
+
+pub(super) fn output_feature_spec_for<Schema: TopologySchemaBinding>() -> ApplicationFeatureSpec {
+    ApplicationFeatureSpec::root::<Schema, PlanarOutputFeature>()
         .provides::<PlanarDerivedBodyOutput>()
         .conditional_operation::<MutatePlanar>()
         .conditional_operation::<PublishChain>()

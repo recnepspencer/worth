@@ -142,7 +142,6 @@ where
             request_scope,
             delivery_branch,
             &commit_authority,
-            &entry.edition,
             request_admission,
         )? {
             return Ok(CallerPass::Answer(advance));

@@ -10,9 +10,7 @@ use super::super::{
 };
 use super::queued::RequiredQueueFrames;
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::producer::{
-    registry::InstalledProducerEdition, WorthQueryProducerCommitAuthority,
-};
+use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
 
 /// The caller's own chain runs first; its errors end the call as before.
 /// Dirty required records popped from the shared queue then run as frames
@@ -26,7 +24,6 @@ pub(super) fn drive_required_wave<'runtime, Schema, Family>(
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request_scope: &WorthQueryRequestScope,
     commit_authority: &WorthQueryProducerCommitAuthority,
-    installed_edition: &InstalledProducerEdition,
     mut wave: RequiredWaveSelection<'runtime, Schema>,
     queue: &mut RequiredQueueFrames,
     frame_custody: &mut RequiredContinuations<Schema>,
@@ -167,9 +164,7 @@ where
                             &wave.caller_ready,
                             selected,
                             current_role == FrameRole::CallerSuccessor,
-                            &demand.selected.identity,
                             commit_authority,
-                            installed_edition,
                             admission,
                         )?
                     {

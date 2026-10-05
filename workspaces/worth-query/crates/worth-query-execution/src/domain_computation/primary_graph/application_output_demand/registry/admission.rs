@@ -13,13 +13,15 @@ use crate::domain_computation::primary_graph::{
 
 mod obligation_capacity;
 mod performed;
+mod selected_output;
 pub(super) use obligation_capacity::performed_obligation_capacity_denial;
+pub(in crate::domain_computation::primary_graph) use selected_output::SelectedOutputAdmission;
 
 impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn admit(
         &self,
         requested_key: WorthQueryOutputDemandKey,
-        selected_commit: Option<&worth_runtime_world::facade::CompositeCommitIdentity>,
+        selected_output: Option<SelectedOutputAdmission<'_>>,
         source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
         product_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         admission_kind: DemandAdmissionKind,
@@ -32,6 +34,24 @@ impl WorthQueryOutputDemandRegistry {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let stable_refresh = matches!(successor_of, Some(OutputRefreshPredecessor::Stable { .. }));
+        let selected_commit = selected_output.as_ref().map(|selected| selected.commit);
+        let exact_retained_row = selected_output
+            .as_ref()
+            .filter(|_| !stable_refresh)
+            .and_then(|selected| {
+                selected.newest_retained_row(
+                    &requested_key,
+                    state.records.iter().filter(|(_, record)| {
+                        record.product_occurrence == product_occurrence
+                            && record.source_scope == Some(source_scope)
+                            && (admission_kind != DemandAdmissionKind::Recovery
+                                || expected_source_commit.is_some_and(|expected| {
+                                    record.source_commits.contains(expected)
+                                }))
+                    }),
+                )
+            })
+            .cloned();
         let matching_delivery = if stable_refresh {
             None
         } else {
@@ -43,7 +63,9 @@ impl WorthQueryOutputDemandRegistry {
                         DemandState::Output(output) => output.published_commit.as_ref(),
                         _ => None,
                     };
-                    key.same_occurrence(&requested_key)
+                    key.producer == requested_key.producer
+                        && key.applicability == requested_key.applicability
+                        && key.same_occurrence(&requested_key)
                         && selected_commit.is_some_and(|selected| pending_commit == Some(selected))
                 })
                 .map(|(key, _)| key.clone())
@@ -116,6 +138,8 @@ impl WorthQueryOutputDemandRegistry {
                 .then(|| requested_key.clone())
         } else if retained_key.is_some() {
             retained_key
+        } else if let Some(key) = exact_retained_row {
+            Some(key)
         } else if state.records.contains_key(&requested_key) {
             Some(requested_key.clone())
         } else if let Some(key) = matching_semantic_source {

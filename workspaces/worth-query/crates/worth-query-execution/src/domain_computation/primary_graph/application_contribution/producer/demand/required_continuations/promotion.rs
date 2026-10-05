@@ -2,9 +2,7 @@
 
 use super::super::WorthQueryOutputDemandDenialKind;
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::producer::{
-    registry::InstalledProducerEdition, WorthQueryProducerCommitAuthority,
-};
+use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
 
 const FAMILY_SUBJECT: &str = "required successor family differs from caller demand";
 
@@ -68,9 +66,7 @@ where
         caller_ready: &SelectedReadyReadmission,
         selected_ready: &SelectedReadyReadmission,
         continues_caller: bool,
-        producer: &str,
         supplied_mode: &WorthQueryProducerCommitAuthority,
-        installed_edition: &InstalledProducerEdition,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<WorthQueryAdmittedOutputDemand<Schema, Family>>, WorthQueryOutputDemandDenial>
     where
@@ -83,15 +79,7 @@ where
         let Some(progress) = self.entries.last() else {
             return Ok(None);
         };
-        let producer_work = producer
-            .len()
-            .checked_add(progress.producer_identity().len())
-            .and_then(|work| work.checked_add(2))
-            .ok_or_else(empty_work)?;
-        admission
-            .charge_external_work(u64::try_from(producer_work).map_err(|_| empty_work())?)
-            .map_err(|_| empty_work())?;
-        if !progress.is_family::<Family>() || progress.producer_identity() != producer {
+        if !progress.is_family::<Family>() {
             return Ok(None);
         }
         // A caller successor that cannot be certified is refreshed again on
@@ -111,11 +99,9 @@ where
         if !selected_ready.matches_interest(progress.interest(), admission)? {
             return Ok(None);
         }
-        progress.successor.progression().validate_for_execution(
-            supplied_mode,
-            installed_edition,
-            admission,
-        )?;
+        progress
+            .successor
+            .validate_for_promotion(supplied_mode, admission)?;
         admission
             .charge_external_work(1)
             .map_err(|_| empty_work())?;

@@ -41,8 +41,8 @@ impl DemandRegistryState {
         let levels = ordered_levels(count)?;
         let comparisons = levels.checked_mul(count.min(11)).ok_or_else(work_denial)?;
         // The producer text is the sole variable-width Ord member. The epoch
-        // compares six fixed coordinates; each costs one structural visit.
-        let comparison_work = key.producer.len().checked_add(7).ok_or_else(work_denial)?;
+        // also compares the compiled family, source and lifecycle profile.
+        let comparison_work = key.comparison_work().ok_or_else(work_denial)?;
         let work = comparisons
             .checked_mul(comparison_work)
             .ok_or_else(work_denial)?;

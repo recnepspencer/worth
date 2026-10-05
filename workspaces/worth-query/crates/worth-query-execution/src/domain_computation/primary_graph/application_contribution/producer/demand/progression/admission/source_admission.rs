@@ -1,6 +1,7 @@
 //! Source selection and registry admission share one request meter.
 
 use super::*;
+use crate::domain_computation::primary_graph::application_output_demand::SelectedOutputAdmission;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -93,9 +94,9 @@ where
                     Family::IDENTITY,
                 )
             })?;
-        let (selected, entry) = selection?;
+        let (mut selected, entry) = selection?;
         if selected_product.is_some() {
-            source_selection.admit_selected_producer(&selected.identity, registry_admission)?;
+            source_selection.admit_selected_producer::<Family>(&selected, registry_admission)?;
         }
         // Selection already returned the exact immutable entry from its sole
         // matching iterator. Retain that entry for this demand's Interest.
@@ -125,7 +126,9 @@ where
             )?;
         }
         let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(
+            std::any::TypeId::of::<Family>(),
             selected.identity.clone(),
+            selected.applicability,
             source_epoch.clone(),
         );
         let product_occurrence =
@@ -193,7 +196,7 @@ where
             if newly_adopted {
                 self.record_restored_output(source_scope, &readmitted, registry_admission)?;
             }
-            let observed_source = observed_source.install(&interest)?;
+            let observed_source = observed_source.install(&interest, installed_entry.clone())?;
             return Ok(WorthQueryAdmittedOutputDemand {
                 runtime_authority: self.runtime.authority_identity().as_u64(),
                 schema_binding: self.installed_schema.binding_identity(),
@@ -249,12 +252,18 @@ where
             )?,
             None => self.output_demands.admit(
                 key,
-                Some(observed_source.selected_product_commit().ok_or_else(|| {
-                    denial(
-                        WorthQueryOutputDemandDenialKind::ForeignSource,
-                        Family::IDENTITY,
-                    )
-                })?),
+                Some(SelectedOutputAdmission::new(
+                    observed_source.selected_product_commit().ok_or_else(|| {
+                        denial(
+                            WorthQueryOutputDemandDenialKind::ForeignSource,
+                            Family::IDENTITY,
+                        )
+                    })?,
+                    selected
+                        .exact_retained_output
+                        .then_some(selected.retained_idempotency_key)
+                        .flatten(),
+                )),
                 source_scope,
                 product_occurrence,
                 admission_kind,
@@ -263,7 +272,12 @@ where
                 registry_admission,
             )?,
         };
-        let observed_source = observed_source.install(&interest)?;
+        // Exact selection authenticates this accepted output, whose executor
+        // may serve both postures. Rejoin its actual row, never the declaration's
+        // first applicability slot. Same-executor semantic joins likewise
+        // retain the exact row's posture; a non-reusing Fresh selection stays distinct.
+        selected.applicability = interest.key().applicability();
+        let observed_source = observed_source.install(&interest, installed_entry.clone())?;
         let resources_validated = !selected.exact_retained_output;
         Ok(WorthQueryAdmittedOutputDemand {
             runtime_authority: self.runtime.authority_identity().as_u64(),

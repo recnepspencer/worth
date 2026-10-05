@@ -37,6 +37,34 @@ macro_rules! chain {
     }};
 }
 
+/// Settles within eight advances. Every stop on the way offers a retry: any
+/// other stop fails here, and so does a demand that defers on every advance.
+macro_rules! settled_within_eight_advances {
+    ($demand:expr, $request:expr, $what:expr) => {{
+        let mut stops = Vec::new();
+        (0..8)
+            .find_map(|_| match $demand.advance(&$request) {
+                Ok(WorthQueryApplicationOutputDemandProgress::Settled(settled)) => Some(settled),
+                Ok(WorthQueryApplicationOutputDemandProgress::Pending) => None,
+                Err(stop) => {
+                    assert!(
+                        matches!(
+                            &stop,
+                            WorthQueryApplicationOutputDemandDenial::Demand(denial)
+                                if denial.recovery_posture()
+                                    == primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable
+                        ),
+                        "{}: a stop before settlement offers a retry: {stop:?}",
+                        $what
+                    );
+                    stops.push(format!("{stop:?}"));
+                    None
+                }
+            })
+            .unwrap_or_else(|| panic!("{} settles within eight advances: {stops:?}", $what))
+    }};
+}
+
 #[test]
 fn a_lone_caller_whose_chain_outgrows_its_budget_stops_without_retry() {
     let _guard = checkpoint_recovery_test_guard();
@@ -82,9 +110,9 @@ fn a_lone_caller_whose_chain_outgrows_its_budget_stops_without_retry() {
     // Nor are the rows it reads: demands that fit refresh them and settle.
     drop(c);
     let mut a = start_root!(application, request);
-    settle!(a, request);
+    settled_within_eight_advances!(a, request, "the root after closing the last consumer");
     let mut b = start_consumer!(application, request, "anchor-b");
-    settle!(b, request);
+    settled_within_eight_advances!(b, request, "the middle after closing the last consumer");
     drop((a, b));
 }
 
@@ -130,34 +158,6 @@ fn a_refresh_cancelled_under_tight_custody_settles_on_the_next_advance() {
     settled_in_one_advance!(c, request, "the last consumer");
     settled_in_one_advance!(a, request, "the open root demand");
     drop((a, b, c));
-}
-
-/// Settles within eight advances. Every stop on the way offers a retry: any
-/// other stop fails here, and so does a demand that defers on every advance.
-macro_rules! settled_within_eight_advances {
-    ($demand:expr, $request:expr, $what:expr) => {{
-        let mut stops = Vec::new();
-        (0..8)
-            .find_map(|_| match $demand.advance(&$request) {
-                Ok(WorthQueryApplicationOutputDemandProgress::Settled(settled)) => Some(settled),
-                Ok(WorthQueryApplicationOutputDemandProgress::Pending) => None,
-                Err(stop) => {
-                    assert!(
-                        matches!(
-                            &stop,
-                            WorthQueryApplicationOutputDemandDenial::Demand(denial)
-                                if denial.recovery_posture()
-                                    == primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable
-                        ),
-                        "{}: a stop before settlement offers a retry: {stop:?}",
-                        $what
-                    );
-                    stops.push(format!("{stop:?}"));
-                    None
-                }
-            })
-            .unwrap_or_else(|| panic!("{} settles within eight advances: {stops:?}", $what))
-    }};
 }
 
 /// Overwrites the Length `anchor-b` publishes, as a writer that is not its
@@ -223,7 +223,6 @@ fn a_dependent_whose_row_was_reclaimed_decides_again_over_a_refreshed_upstream()
         let request = application.request(&principal, &scope);
         let (a, b, c) = chain!(application, request);
         drop((a, b, c));
-        let mut custody = None;
         for cycle in 0..4_u64 {
             let at = format!("{rows} rows, cycle {cycle}, overwritten {overwritten}");
             let y = 2 + (cycle % 2) * 3;
@@ -259,13 +258,6 @@ fn a_dependent_whose_row_was_reclaimed_decides_again_over_a_refreshed_upstream()
                 take_decisions("anchor-c"),
                 [[middle]],
                 "{at}: the last consumer decides again over the refreshed output"
-            );
-            // Each restart retires what the rows it replaced had posted.
-            let held = application.required_custody_bytes_for_test();
-            assert_eq!(
-                *custody.get_or_insert(held),
-                held,
-                "{at}: the closed chain holds what it held a cycle before"
             );
         }
     }

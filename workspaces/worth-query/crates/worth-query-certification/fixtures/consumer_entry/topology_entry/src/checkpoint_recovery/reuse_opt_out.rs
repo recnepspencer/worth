@@ -10,6 +10,10 @@ use worth_query_host::facade::application_contribution::{
 };
 use worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandProgress;
 
+mod program;
+mod required_refresh;
+use program::{FinalConnection, NoReuseProgram};
+
 worth_query_application! {
     NoReuseSchema {
         owner: "worth.query.certification.no-input-reuse",
@@ -19,22 +23,46 @@ worth_query_application! {
 }
 
 impl TopologySchemaBinding for NoReuseSchema {
+    const ROOT_INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = None;
     const FINAL_INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = None;
 }
 
 #[test]
 fn live_output_without_initial_input_reuse_selects_preserve_and_keeps_its_entity() {
     let _guard = checkpoint_recovery_test_guard();
-    let application = application_installation::in_memory(
+    let application = install_no_reuse(None);
+    check_live_output(&application);
+}
+
+fn install_no_reuse(
+    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+) -> application_installation::WorthQueryProgramApplicationRuntime<NoReuseSchema, NoReuseProgram> {
+    let program = ApplicationProgramAuthoring::<NoReuseSchema, NoReuseProgram>::begin()
+        .validated_program()
+        .unwrap();
+    let configuration = (TopologyConfiguration {
+        setup_calls: Arc::new(AtomicUsize::new(0)),
+        invariant_calls: Arc::new(AtomicUsize::new(0)),
+        invariant_probe: Arc::new(AtomicUsize::new(0)),
+        producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
+        producer_domain_denial: Arc::new(AtomicBool::new(false)),
+    },);
+    let limits = support::limits(32, support::invalidation(128 * 1024 * 1024, 1_000_000, 128));
+    if let Some(checkpoint) = checkpoint {
+        return application_installation::in_memory_program_from_checkpoint(
+            program,
+            NoReuseSchema::declaration().unwrap(),
+            configuration,
+            limits,
+            checkpoint,
+        )
+        .unwrap();
+    }
+    application_installation::in_memory_program(
+        program,
         NoReuseSchema::declaration().unwrap(),
-        (TopologyConfiguration {
-            setup_calls: Arc::new(AtomicUsize::new(0)),
-            invariant_calls: Arc::new(AtomicUsize::new(0)),
-            invariant_probe: Arc::new(AtomicUsize::new(0)),
-            producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
-            producer_domain_denial: Arc::new(AtomicBool::new(false)),
-        },),
-        support::limits(32, support::invalidation(128 * 1024 * 1024, 1_000_000, 128)),
+        configuration,
+        limits,
         |graph, installed| {
             let principal = installed.principal_binding(
                 ConsumerPrincipalBinding::reference::<NoReuseSchema>(),
@@ -49,8 +77,16 @@ fn live_output_without_initial_input_reuse_selects_preserve_and_keeps_its_entity
             support::seed_cycle(graph);
             Ok(())
         },
-    ).unwrap();
-    let (scope, principal) = support::authenticate(&application);
+    ).unwrap()
+}
+
+fn check_live_output(
+    application: &application_installation::WorthQueryProgramApplicationRuntime<
+        NoReuseSchema,
+        NoReuseProgram,
+    >,
+) {
+    let (scope, principal) = support::authenticate(application);
     let request = application.request(&principal, &scope);
     let source = request
         .query(PlanarRead {
@@ -74,7 +110,7 @@ fn live_output_without_initial_input_reuse_selects_preserve_and_keeps_its_entity
 
     let mut initial = request
         .demand(PlanarFinalOutputDemand::new("anchor-a"))
-        .start()
+        .start_dependent_in_program::<NoReuseProgram, FinalConnection>(application)
         .unwrap();
     let first = (0..64)
         .find_map(|_| match initial.advance(&request).unwrap() {
@@ -111,7 +147,7 @@ fn live_output_without_initial_input_reuse_selects_preserve_and_keeps_its_entity
 
     let mut preserving = request
         .demand(PlanarFinalOutputDemand::new("anchor-a"))
-        .start()
+        .start_dependent_in_program::<NoReuseProgram, FinalConnection>(application)
         .unwrap();
     let second = (0..64)
         .find_map(|_| match preserving.advance(&request).unwrap() {

@@ -83,18 +83,28 @@ where
                 {
                     Some(()) => {
                         let mode = slot.claim().commit_authority().clone();
-                        self.advance_validated_required_fresh_on_selected(
-                            &mut successor,
-                            principal,
-                            request_scope,
-                            delivery_branch,
-                            ValidatedOutputDisclosure::Fresh(fresh),
+                        let successor_entry = std::sync::Arc::clone(&successor.installed_entry);
+                        super::super::disclosure::bind_required_successor::<Schema, Family>(
+                            fresh,
+                            slot.claim(),
                             installed,
-                            mode,
-                            shared,
-                            matched_predecessors,
+                            &successor,
                             admission,
                         )
+                        .and_then(|fresh| {
+                            self.advance_validated_required_fresh_on_selected(
+                                &mut successor,
+                                principal,
+                                request_scope,
+                                delivery_branch,
+                                ValidatedOutputDisclosure::Fresh(fresh),
+                                successor_entry.as_ref(),
+                                mode,
+                                shared,
+                                matched_predecessors,
+                                admission,
+                            )
+                        })
                     }
                     None => Err(work_denial()),
                 }
