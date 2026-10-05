@@ -10,7 +10,7 @@ use worth_store_recovery_runtime::{
     PhysicalRecoveryOutcome, RecoveredPhysicalRuntimeHandoff, WorthStoreRecovery,
 };
 
-fn recover(world: &PendingWalWorld, stage: &str) -> RecoveredPhysicalRuntimeHandoff {
+pub(super) fn recover(world: &PendingWalWorld, stage: &str) -> RecoveredPhysicalRuntimeHandoff {
     match WorthStoreRecovery::recover(world.recovery_request()) {
         PhysicalRecoveryOutcome::Recovered(handoff) => handoff,
         PhysicalRecoveryOutcome::Blocked(block) => panic!(

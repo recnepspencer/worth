@@ -243,14 +243,19 @@ pub(super) fn resolve(
             successor_root_interpretations: 0,
             inline_truth: observed.inline_truth,
             selected_source: observed.selected_source,
-            manifest_budget: observed.manifest_budget,
+            manifest_budget: attempt.manifest_budget,
             tier_custody: observed.tier_custody,
             historical_drops: observed.historical_drops,
             ordered_releases: observed.ordered_releases,
             integrity: attempt.integrity,
         },
         Err(denial) => {
-            let limit = observation_limit(&context, &denial, remaining_observation_bytes);
+            let limit = observation_limit(
+                &context,
+                &denial,
+                remaining_observation_bytes,
+                &attempt.manifest_budget,
+            );
             return Err(context.block_with_planning_attempt_denial(
                 PhysicalRecoveryBlockKind::PageAdmission,
                 planning_counters,
@@ -309,10 +314,14 @@ pub(super) fn resolve(
     ))
 }
 
+/// The limit an exhausted observation ran out of. The manifest-entry budget
+/// names the count its refused charge would have reached; a byte reader stops
+/// at the limit without learning how far the artifact runs beyond it.
 fn observation_limit(
     context: &PlanningContext,
     denial: &PageObservationFailure,
     remaining_observation_bytes: u64,
+    manifest_budget: &super::manifest_entry_budget::ManifestEntryBudget,
 ) -> Option<PhysicalRecoveryLimitFailure> {
     match denial {
         PageObservationFailure::ByteLimit => Some(PhysicalRecoveryLimitFailure {
@@ -326,7 +335,9 @@ fn observation_limit(
         }),
         PageObservationFailure::ManifestEntryLimit => Some(PhysicalRecoveryLimitFailure {
             dimension: PhysicalRecoveryLimitDimension::ManifestEntries,
-            observed: context.limits.manifest_entries.saturating_add(1),
+            observed: manifest_budget
+                .refused_at()
+                .unwrap_or_else(|| context.limits.manifest_entries.saturating_add(1)),
             admitted: context.limits.manifest_entries,
         }),
         _ => None,

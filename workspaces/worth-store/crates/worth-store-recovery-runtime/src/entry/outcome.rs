@@ -99,6 +99,10 @@ pub enum PhysicalRecoveryLimitDimension {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PhysicalRecoveryLimitFailure {
     pub dimension: PhysicalRecoveryLimitDimension,
+    /// At least what the refused step needed, never the whole need: recovery
+    /// stops at the first step that crosses `admitted`. Where the consumer
+    /// counted the crossing this is the count that step would have reached;
+    /// otherwise it is one more than `admitted`.
     pub observed: u64,
     pub admitted: u64,
 }

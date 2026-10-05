@@ -83,6 +83,7 @@ pub use head_replay::{
     VerifiedSelectedReleaseHeadReplayV14, VerifiedSelectedTerminalHeadRetirementReplay,
 };
 pub use historical_consumed::HistoricalConsumedOperationSet;
+pub use historical_retired::HistoricalRetirements;
 
 fn checked(value: u64) -> Result<u64, PhysicalRedoPlanningDenial> {
     value
@@ -237,7 +238,12 @@ fn decide(
         }
         RecoveryOperationFate::Indeterminate => {
             let observation = page_cursor.observe_record(target.identity(), record_lsn)?;
-            if let Some(kind) = historical_skip(observation, operation, target)? {
+            let historical = if page_cursor.is_observed_predecessor(target.identity(), record_lsn) {
+                retired_predecessor(observation)
+            } else {
+                historical_skip(observation, operation, target)?
+            };
+            if let Some(kind) = historical {
                 let counter = match kind {
                     PhysicalRedoDecisionKind::SkipHistoricallyReleasedTarget => {
                         &mut counters.skip_historical_drop
@@ -279,6 +285,17 @@ fn decide(
             }
         }
     }
+}
+
+/// An older image of a page whose last image is historically retired was
+/// superseded by that image and is skipped with it. Any other anchored
+/// predecessor falls through to ordinary page-LSN comparison.
+fn retired_predecessor(observation: RecoveryPageObservation) -> Option<PhysicalRedoDecisionKind> {
+    matches!(
+        observation.source(),
+        RecoveryPageSource::HistoricalRetiredTarget { .. }
+    )
+    .then_some(PhysicalRedoDecisionKind::SkipHistoricallyRetiredTarget)
 }
 
 /// A historical classification must name this exact older WAL image; any

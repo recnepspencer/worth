@@ -186,12 +186,22 @@ impl RecoveryPageCursor {
         self.observed_predecessors = predecessors;
     }
 
+    /// Whether this exact older image belongs to a chain that the observation
+    /// of its page already anchors.
+    pub(super) fn is_observed_predecessor(
+        &self,
+        target: PhysicalRedoTargetIdentity,
+        lsn: u64,
+    ) -> bool {
+        self.observed_predecessors.contains(&(lsn, target))
+    }
+
     pub(super) fn observe_record(
         &self,
         target: PhysicalRedoTargetIdentity,
         lsn: u64,
     ) -> Result<RecoveryPageObservation, PhysicalRedoPlanningDenial> {
-        if self.observed_predecessors.contains(&(lsn, target)) {
+        if self.is_observed_predecessor(target, lsn) {
             return self
                 .pages
                 .get(&location(target))

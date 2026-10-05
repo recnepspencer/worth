@@ -1,28 +1,63 @@
-//! First real killed V3 producer, optionally using a bounded WAL segment size.
+//! First real killed producer, optionally using a bounded WAL segment size.
 
 use super::*;
 use worth_store::physical_runtime::{BlobReclaimDisposition, BlobTerminalLimits};
 
-/// What the first child leaves selected under the release it parks.
+#[path = "first/launch.rs"]
+mod launch;
+#[path = "first/producer.rs"]
+mod producer;
+pub(crate) use launch::{
+    first, first_with_failed_ingest_control, first_with_resume_frontier,
+    first_with_wal_segment_bytes, published_above_checkpoint,
+};
+pub(super) use producer::child;
+
+/// What the first child leaves selected when it is killed. Every object is
+/// published above the baseline checkpoint and no later checkpoint covers it.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum World {
-    /// One two-chunk object, published above the baseline checkpoint.
+    /// One two-chunk object under a parked release.
     TwoChunks,
     /// The two-chunk object, after a failed ingest left its drop controls.
     FailedIngestControl,
-    /// One object with two resume frontiers: the ingest checkpoints one at
-    /// its first chunk and another by itself 64 chunks later, one chunk
-    /// before its end. A checkpoint covers the ingest: above a checkpoint,
-    /// recovery blocks on the inline pages an ingest this long allocated and
-    /// retired (`PageAdmission`), which is not what this world is about.
+    /// One object with two resume frontiers, under a parked release: the
+    /// ingest checkpoints one at its first chunk and another by itself 64
+    /// chunks later, one chunk before its end.
     ResumeFrontier,
+    /// Objects whose index maintenance filled and retired whole inline
+    /// pages, killed idle or under a parked release of the first object.
+    Published(Workload, Tail),
+}
+
+/// The objects a `World::Published` child publishes.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Workload {
+    TwentyFourChunks,
+    ThreeSmallObjects,
+    SixtySixChunks,
+}
+
+/// What the child is doing when it is killed.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Tail {
+    /// Nothing: every publication completed.
+    Idle,
+    /// A release of the first object, parked at its durable descriptor WAL.
+    PendingRelease,
 }
 
 impl World {
-    const ALL: [Self; 3] = [
+    const ALL: [Self; 9] = [
         Self::TwoChunks,
         Self::FailedIngestControl,
         Self::ResumeFrontier,
+        Self::Published(Workload::TwentyFourChunks, Tail::Idle),
+        Self::Published(Workload::TwentyFourChunks, Tail::PendingRelease),
+        Self::Published(Workload::ThreeSmallObjects, Tail::Idle),
+        Self::Published(Workload::ThreeSmallObjects, Tail::PendingRelease),
+        Self::Published(Workload::SixtySixChunks, Tail::Idle),
+        Self::Published(Workload::SixtySixChunks, Tail::PendingRelease),
     ];
 
     /// The child role that builds this world.
@@ -31,6 +66,18 @@ impl World {
             Self::TwoChunks => "first",
             Self::FailedIngestControl => "mixed-first",
             Self::ResumeFrontier => "frontier-first",
+            Self::Published(Workload::TwentyFourChunks, Tail::Idle) => "published-24",
+            Self::Published(Workload::TwentyFourChunks, Tail::PendingRelease) => {
+                "published-24-release"
+            }
+            Self::Published(Workload::ThreeSmallObjects, Tail::Idle) => "published-3x2",
+            Self::Published(Workload::ThreeSmallObjects, Tail::PendingRelease) => {
+                "published-3x2-release"
+            }
+            Self::Published(Workload::SixtySixChunks, Tail::Idle) => "published-66",
+            Self::Published(Workload::SixtySixChunks, Tail::PendingRelease) => {
+                "published-66-release"
+            }
         }
     }
 
@@ -46,11 +93,32 @@ impl World {
             .expect("first world of the child root")
     }
 
-    const fn chunks(self) -> usize {
+    /// The chunk count of each object, in publication order.
+    const fn objects(self) -> &'static [usize] {
         match self {
-            Self::TwoChunks | Self::FailedIngestControl => 2,
-            Self::ResumeFrontier => 66,
+            Self::TwoChunks | Self::FailedIngestControl => &[2],
+            Self::Published(Workload::TwentyFourChunks, _) => &[24],
+            Self::Published(Workload::ThreeSmallObjects, _) => &[2, 2, 2],
+            Self::ResumeFrontier | Self::Published(Workload::SixtySixChunks, _) => &[66],
         }
+    }
+
+    /// Whether the killed child had parked a release of the first object.
+    pub(super) const fn releases_first_object(self) -> bool {
+        !matches!(self, Self::Published(_, Tail::Idle))
+    }
+
+    /// The bytes each object was published with, in publication order.
+    pub(super) fn object_bytes(self) -> Vec<Vec<u8>> {
+        self.objects()
+            .iter()
+            .enumerate()
+            .map(|(object, chunks)| {
+                (0..*chunks)
+                    .flat_map(|ordinal| chunk(object, ordinal))
+                    .collect()
+            })
+            .collect()
     }
 
     pub(super) fn recovery_request(
@@ -58,10 +126,12 @@ impl World {
         root: &Path,
     ) -> worth_store_recovery_runtime::PhysicalRecoveryOpenRequest {
         match self {
-            Self::TwoChunks | Self::FailedIngestControl => {
+            Self::TwoChunks
+            | Self::FailedIngestControl
+            | Self::Published(Workload::TwentyFourChunks | Workload::ThreeSmallObjects, _) => {
                 super::super::certified_release_serving::request(root)
             }
-            Self::ResumeFrontier => {
+            Self::ResumeFrontier | Self::Published(Workload::SixtySixChunks, _) => {
                 super::super::certified_release_serving::request_for_long_ingest(root)
             }
         }
@@ -69,183 +139,17 @@ impl World {
 }
 
 /// Distinct whole chunks, so every one is its own selected record. The first
-/// two are the bytes of the two-chunk world.
-fn chunk(ordinal: usize) -> Vec<u8> {
+/// two of the first object are the bytes of the two-chunk world.
+fn chunk(object: usize, ordinal: usize) -> Vec<u8> {
     let mut chunk = vec![if ordinal % 2 == 0 { 0x83 } else { 0x94 }; CHUNK];
-    let salt = ((ordinal / 2) as u64).to_le_bytes();
+    let salt = ((object * 128 + ordinal / 2) as u64).to_le_bytes();
     for (byte, salt) in chunk.iter_mut().zip(salt) {
         *byte ^= salt;
     }
     chunk
 }
 
-fn checkpoint(world: &PhysicalResidencyStoreWorld, key: u8, stage: &str) {
-    let checkpoint = PhysicalCheckpointRequest::fuzzy(
-        PhysicalCheckpointIdempotencyKey::new([key; 32]),
-        PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
-    );
-    let TransitionOutcome::Success(handle) =
-        world.serving().checkpoints().start(checkpoint).into_raw()
-    else {
-        panic!("{stage} checkpoint must admit")
-    };
-    assert!(matches!(
-        handle.wait(),
-        PhysicalCheckpointOutcome::Completed(_)
-    ));
-}
-
-pub(super) fn child(marker: &Path, shape: World) {
-    let chunks = shape.chunks();
-    let world = match std::env::var(WAL_SEGMENT_BYTES_ENV) {
-        Ok(value) => PhysicalResidencyStoreWorld::initialize_for_recovery_with_wal_segment_bytes(
-            "c11-pending-v3",
-            NonZeroU64::new(value.parse().expect("bounded WAL segment size"))
-                .expect("nonzero WAL segment size"),
-        ),
-        Err(std::env::VarError::NotPresent) => {
-            PhysicalResidencyStoreWorld::initialize_for_recovery("c11-pending-v3")
-        }
-        Err(error) => panic!("invalid WAL segment environment: {error}"),
-    }
-    .expect("first pending WAL producer");
-    let submission = world.serving().record_submission();
-    let key = submission
-        .issue_idempotency_key(PhysicalMutationIdempotencyMaterial::new([0xa0; 32]))
-        .unwrap();
-    let TransitionOutcome::Success(PhysicalMutationPreparationSuccess::Prepared(prepared)) =
-        submission
-            .prepare_durable_append(
-                RecordAppendBatch::try_from_iter([b"c11-pending-v3-frontier".as_slice()]).unwrap(),
-                world.placement(),
-                PhysicalMutationRequest::platform_durable(
-                    key,
-                    PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
-                ),
-            )
-            .into_raw()
-    else {
-        panic!("baseline C5 frontier record must prepare")
-    };
-    assert!(matches!(
-        prepared.execute(),
-        PhysicalMutationOutcome::Completed(_)
-    ));
-    if shape == World::FailedIngestControl {
-        create_failed_ingest_control(&world);
-    }
-    checkpoint(&world, 0xa1, "baseline NoRelease");
-    let scope = admitted_blob_scope("c11.recovery.pending-v3.scope");
-    let blobs = world.serving().blobs().unwrap();
-    let read = BlobReadLimits::new(NonZeroU64::new(128).unwrap());
-    let object = blobs.issue_object_id(read).unwrap();
-    let declaration = BlobIngestDeclaration::new(
-        object,
-        BlobChunkSize::from_bytes(CHUNK as u64).unwrap(),
-        (chunks * CHUNK) as u64,
-        &scope,
-        BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-        PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
-    )
-    .unwrap();
-    let mut ingest = blobs
-        .begin_ingest(declaration, world.placement(), CHUNK as u64, read)
-        .unwrap();
-    for ordinal in 0..chunks {
-        ingest.push(&chunk(ordinal)).unwrap();
-        if shape == World::ResumeFrontier && ordinal == 0 {
-            ingest.checkpoint().unwrap();
-        }
-    }
-    let published = match ingest.finish() {
-        Ok(published) | Err(BlobIngestFailure::PublishedIndexPending { published, .. }) => {
-            published
-        }
-        Err(failure) => panic!("publication before pending descriptor: {failure:?}"),
-    };
-    drop(blobs);
-    let publication = world
-        .serving()
-        .certification_selected_latest_blob_publication()
-        .unwrap()
-        .unwrap();
-    assert_eq!(published.object(), object);
-    assert_eq!(published.generation().sequence(), 1);
-    assert!(publication.root_generation() > 1);
-    if shape == World::ResumeFrontier {
-        checkpoint(&world, 0xa2, "published frontier object");
-    }
-    let proof = AdmittedBlobReleaseProof::certification_admit(
-        world.serving().store_identity().bytes(),
-        object.bytes(),
-        published.generation().sequence(),
-        publication.record().allocation_epoch(),
-        publication.record().ordinal(),
-        publication.encoded_digest(),
-        [0x71; 32],
-    )
-    .unwrap();
-    let request = BlobReclaimRequest::released(
-        proof,
-        world.placement(),
-        PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
-        BlobReclaimLimits::new(
-            NonZeroU64::new(128).unwrap(),
-            NonZeroU64::new(32 << 20).unwrap(),
-            NonZeroU16::new(1).unwrap(),
-        )
-        .unwrap(),
-    );
-    let serving = world.serving();
-    let root_path = world.root().to_string_lossy().into_owned();
-    park_at_descriptor_wal(serving, request, marker, root_path.as_bytes());
-}
-
-fn create_failed_ingest_control(world: &PhysicalResidencyStoreWorld) {
-    let scope = admitted_blob_scope("c11.recovery.mixed-pending.failed.scope");
-    let blobs = world.serving().blobs().expect("failed-ingest blob owner");
-    let read = BlobReadLimits::new(NonZeroU64::new(128).unwrap());
-    let object = blobs.issue_object_id(read).expect("failed object");
-    let declaration = BlobIngestDeclaration::new(
-        object,
-        BlobChunkSize::from_bytes(CHUNK as u64).unwrap(),
-        (2 * CHUNK) as u64,
-        &scope,
-        BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-        PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
-    )
-    .unwrap();
-    let mut ingest = blobs
-        .begin_ingest(declaration, world.placement(), CHUNK as u64, read)
-        .expect("begin failed ingest");
-    ingest.push(&[0x47; CHUNK]).expect("failed-ingest chunk");
-    let token = ingest.resume_token();
-    drop(ingest);
-    blobs
-        .abort_ingest(
-            token,
-            &scope,
-            world.placement(),
-            PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
-            BlobTerminalLimits::new(NonZeroU64::new(128).unwrap()),
-        )
-        .expect("failed-ingest abandonment");
-    let receipt = blobs
-        .reclaim(BlobReclaimRequest::abandoned(
-            token,
-            &scope,
-            world.placement(),
-            PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
-            BlobReclaimLimits::new(
-                NonZeroU64::new(128).unwrap(),
-                NonZeroU64::new(8 << 20).unwrap(),
-                NonZeroU16::new(1).unwrap(),
-            )
-            .unwrap(),
-        ))
-        .expect("failed-ingest reclaim admission")
-        .wait()
-        .expect("failed-ingest drop");
-    assert_eq!(receipt.disposition(), BlobReclaimDisposition::Dropped);
-    assert_eq!(receipt.dropped_records().len(), 1);
+/// Where the child leaves the identities of the objects it published.
+pub(super) fn objects_path(marker: &Path) -> PathBuf {
+    marker.with_extension("objects")
 }

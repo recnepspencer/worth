@@ -3,12 +3,17 @@ use super::*;
 use crate::RecoveryPageSource;
 use worth_store_physical_format::{RecordArtifactFile, RecordFrameCoordinate};
 
-struct PageClaim<'a> {
-    member: usize,
-    target: &'a PhysicalRedoTarget,
+/// One admitted image of an inline page: the member that wrote it and every
+/// WAL record that claims it.
+#[derive(Debug)]
+pub(super) struct PageClaim<'a> {
+    pub(super) member: usize,
+    pub(super) target: &'a PhysicalRedoTarget,
     last_lsn: u64,
     lsns: Vec<u64>,
 }
+
+pub(super) type PageClaims<'a> = BTreeMap<(u64, u64), BTreeMap<u64, PageClaim<'a>>>;
 
 pub(super) fn admit_scratch_bytes(
     retained: u64,
@@ -68,11 +73,12 @@ pub(super) fn admit_scratch_bytes(
     Ok(observed)
 }
 
-pub(super) fn observed_predecessors(
+/// Every admitted inline image by page and page generation. One generation
+/// of a page belongs to exactly one member and one exact target.
+pub(super) fn page_claims(
     members: &[AdmittedPhysicalRedoMember],
-    observations: &[RecoveryPageObservation],
-) -> Result<BTreeSet<(u64, PhysicalRedoTargetIdentity)>, PhysicalRedoPlanningDenial> {
-    let mut pages = BTreeMap::<(u64, u64), BTreeMap<u64, PageClaim<'_>>>::new();
+) -> Result<PageClaims<'_>, PhysicalRedoPlanningDenial> {
+    let mut pages = PageClaims::new();
     for (index, member) in members.iter().enumerate() {
         for record in &member.records {
             for target in record.targets() {
@@ -105,6 +111,14 @@ pub(super) fn observed_predecessors(
             }
         }
     }
+    Ok(pages)
+}
+
+pub(super) fn observed_predecessors(
+    members: &[AdmittedPhysicalRedoMember],
+    observations: &[RecoveryPageObservation],
+) -> Result<BTreeSet<(u64, PhysicalRedoTargetIdentity)>, PhysicalRedoPlanningDenial> {
+    let pages = page_claims(members)?;
     let mut predecessors = BTreeSet::new();
     for observed in observations {
         let PhysicalRedoTargetIdentity::InlinePage {
@@ -161,10 +175,9 @@ fn admitted_anchor<'a>(
     let PhysicalRedoTargetIdentity::InlinePage { generation, .. } = observed.target() else {
         return None;
     };
-    if let Some(exact) = history
-        .get(&generation)
-        .filter(|claim| matches_observed(claim, observed))
-    {
+    if let Some(exact) = history.get(&generation).filter(|claim| {
+        matches_observed(claim, observed) || retired_image(members, claim, observed)
+    }) {
         return Some(exact);
     }
     let prior = generation.checked_sub(1)?;
@@ -220,6 +233,21 @@ fn published_image(
     digest == observed.frame_digest()
 }
 
+/// A historically retired page is anchored only by the exact last image its
+/// witness names, written by the operation that witness names.
+fn retired_image(
+    members: &[AdmittedPhysicalRedoMember],
+    claim: &PageClaim<'_>,
+    observed: &RecoveryPageObservation,
+) -> bool {
+    matches!(
+        super::historical_skip(*observed, members[claim.member].operation, claim.target),
+        Ok(Some(
+            PhysicalRedoDecisionKind::SkipHistoricallyRetiredTarget
+        ))
+    )
+}
+
 fn matches_observed(claim: &PageClaim<'_>, observed: &RecoveryPageObservation) -> bool {
     let RecoveryPageSource::Materialized { coordinate, .. } = observed.source() else {
         return false;
@@ -235,7 +263,7 @@ fn matches_observed(claim: &PageClaim<'_>, observed: &RecoveryPageObservation) -
             )
 }
 
-fn require_successor(
+pub(super) fn require_successor(
     members: &[AdmittedPhysicalRedoMember],
     prior: &PageClaim<'_>,
     next: &PageClaim<'_>,
@@ -320,7 +348,7 @@ fn require_preserved_records(
     Ok(())
 }
 
-fn inline_image<'a>(
+pub(super) fn inline_image<'a>(
     member: &'a AdmittedPhysicalRedoMember,
     target: &PhysicalRedoTarget,
 ) -> Result<&'a projection_admission::AdmittedInlineFrame, PhysicalRedoPlanningDenial> {

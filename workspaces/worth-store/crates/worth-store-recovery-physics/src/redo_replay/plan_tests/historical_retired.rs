@@ -4,7 +4,7 @@
 
 use super::*;
 use crate::redo_replay::plan::historical_drop::{anchored_root_identity, RootAnchors};
-use crate::redo_replay::plan::historical_retired::{unrouted_under_anchored_root, EdgeIdentity};
+use crate::redo_replay::plan::historical_retired::{EdgeIdentity, HistoricalRetirements};
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DurableExtentRecordPlacement, ExtentArenaId, ExtentArenaRange,
     ExtentChunkCoordinate, PersistedBlobSemanticRecordBinding,
@@ -15,8 +15,12 @@ use worth_store_physical_format::{
     PhysicalGeneration, PhysicalGenerationAuthority, RecordFrameCoordinate,
 };
 
+#[path = "historical_retired/inline_page.rs"]
+mod inline_page;
+
 const OLD: [u8; 32] = [0x31; 32];
 const RETIRING: [u8; 32] = [0x52; 32];
+const SELECTED: [u8; 32] = [0x64; 32];
 const EXTENT: (u64, u64) = (3, 4);
 
 fn record(ordinal: u64) -> PersistedRecordIdentity {
@@ -52,14 +56,14 @@ fn projection(
     .unwrap()
 }
 
-fn retirement(dropped: PersistedRecordIdentity) -> PersistedPhysicalRecoveryOperation {
+fn retirement(dropped: Vec<PersistedRecordIdentity>) -> PersistedPhysicalRecoveryOperation {
     let directory = record(10);
     PersistedPhysicalRecoveryOperation::DerivedDirectory {
         binding: PersistedDerivedDirectoryRecordBinding::new(
             PersistedBlobSemanticRecordBinding::new(directory, [5; 32], 12).unwrap(),
             None,
         ),
-        retirement: Some(PersistedDerivedDirectoryRetirement::new(None, vec![dropped]).unwrap()),
+        retirement: Some(PersistedDerivedDirectoryRetirement::new(None, dropped).unwrap()),
     }
 }
 
@@ -93,7 +97,7 @@ fn members(retired: PersistedRecordIdentity) -> AdmittedPhysicalRedoMembers {
             ),
             member(
                 RETIRING,
-                projection(record(10), (5, 1), retirement(retired)),
+                projection(record(10), (5, 1), retirement(vec![retired])),
             ),
         ]
         .into_boxed_slice(),
@@ -114,12 +118,27 @@ fn edge(operation: [u8; 32], ordinary: bool) -> EdgeIdentity {
     }
 }
 
+/// The history of these edges, anchored on a selected root that routes
+/// exactly `routes`.
+fn history<'a>(
+    members: &'a AdmittedPhysicalRedoMembers,
+    edges: &[EdgeIdentity],
+    routes: &[PersistedRecordIdentity],
+) -> HistoricalRetirements<'a> {
+    HistoricalRetirements::index(
+        &members.members,
+        edges.to_vec(),
+        Some(SELECTED),
+        routes.iter().copied(),
+    )
+}
+
 fn retiring(
     members: &AdmittedPhysicalRedoMembers,
     extent: (u64, u64),
     edges: &[EdgeIdentity],
 ) -> Option<[u8; 32]> {
-    members.retiring_operation(OLD, record(9), extent, edges.iter().copied())
+    history(members, edges, &[]).retiring_operation(OLD, record(9), extent)
 }
 
 #[test]
@@ -188,20 +207,70 @@ fn forged_retiring_edge_cannot_bind_an_admitted_member() {
 }
 
 #[test]
-fn selected_root_that_still_routes_the_record_denies_the_witness() {
-    const SELECTED: [u8; 32] = [0x64; 32];
-    let routes = [record(3), record(9), record(12)];
+fn an_edge_two_admitted_members_answer_binds_neither() {
+    let mut admitted = members(record(9));
+    let ordered = [edge(OLD, false), edge(RETIRING, true)];
+    assert_eq!(retiring(&admitted, EXTENT, &ordered), Some(RETIRING));
+    // A second member with the retiring member's exact identity: the edge no
+    // longer says which of them it ordered.
+    let mut twice = admitted.members.into_vec();
+    twice.push(member(
+        RETIRING,
+        projection(record(10), (5, 1), retirement(vec![record(9)])),
+    ));
+    admitted.members = twice.into_boxed_slice();
+    assert_eq!(retiring(&admitted, EXTENT, &ordered), None);
+}
+
+#[test]
+fn two_ordered_edges_of_the_old_operation_that_placed_the_record_are_ambiguous() {
+    let mut admitted = members(record(9));
+    // A second member of the old operation that placed the same extent record.
+    let mut twice = admitted.members.into_vec();
+    twice.push(AdmittedPhysicalRedoMember {
+        group: group(0x32),
+        ..member(
+            OLD,
+            projection(record(9), EXTENT, PersistedPhysicalRecoveryOperation::None),
+        )
+    });
+    admitted.members = twice.into_boxed_slice();
+    let second = EdgeIdentity {
+        group: group(0x32),
+        ..edge(OLD, false)
+    };
+    // Ordered once, the old operation published the record at one edge.
+    for once in [edge(OLD, false), second] {
+        assert_eq!(
+            retiring(&admitted, EXTENT, &[once, edge(RETIRING, true)]),
+            Some(RETIRING)
+        );
+    }
+    // Ordered twice, no single edge says when the record was published.
     assert_eq!(
-        unrouted_under_anchored_root(Some(SELECTED), routes.iter().copied(), record(9)),
+        retiring(
+            &admitted,
+            EXTENT,
+            &[edge(OLD, false), second, edge(RETIRING, true)]
+        ),
+        None
+    );
+}
+
+#[test]
+fn selected_root_that_still_routes_the_record_denies_the_witness() {
+    let admitted = members(record(9));
+    let routed = history(&admitted, &[], &[record(3), record(9), record(12)]);
+    assert_eq!(
+        routed.unrouted(record(9)),
         None,
         "a record the selected root still routes was never retired",
     );
+    assert_eq!(routed.unrouted(record(10)), Some(SELECTED));
+    let unanchored =
+        HistoricalRetirements::index(&admitted.members, vec![], None, std::iter::empty());
     assert_eq!(
-        unrouted_under_anchored_root(Some(SELECTED), routes.iter().copied(), record(10)),
-        Some(SELECTED)
-    );
-    assert_eq!(
-        unrouted_under_anchored_root(None, std::iter::empty(), record(10)),
+        unanchored.unrouted(record(10)),
         None,
         "an unanchored history mints no witness",
     );

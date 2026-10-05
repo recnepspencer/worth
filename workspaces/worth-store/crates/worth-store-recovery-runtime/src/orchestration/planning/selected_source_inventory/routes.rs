@@ -9,7 +9,7 @@ use worth_store_physical_format::{
     PhysicalTreeIdentity, RecordArtifactFile,
 };
 
-use super::{ManifestEntryBudget, PageObservationFailure, ResidentAllowance};
+use super::{invalid, ManifestEntryBudget, PageObservationFailure, ResidentAllowance};
 use crate::integrity_ingress::RecoveryIntegrityIngressTrace;
 
 pub(in crate::orchestration::planning) fn observe_routes_with_budget(
@@ -31,21 +31,25 @@ pub(in crate::orchestration::planning) fn observe_routes_with_resident_budget(
     trace: &mut RecoveryIntegrityIngressTrace,
     resident: &mut ResidentAllowance,
 ) -> Result<Vec<CurrentPhysicalRecordPlacement>, PageObservationFailure> {
-    let tree = PhysicalTreeIdentity::new(root.tree_identity())
-        .ok_or(PageObservationFailure::ManifestEntryLimit)?;
+    let root_artifact = RecordArtifactFile::RootManifest {
+        generation: root.generation(),
+    };
+    let tree =
+        PhysicalTreeIdentity::new(root.tree_identity()).ok_or_else(|| invalid(root_artifact))?;
     let mut pending = root.routing_root().into_iter().collect::<VecDeque<_>>();
     let mut visited = BTreeSet::new();
     let mut entries = Vec::new();
     while let Some(reference) = pending.pop_front() {
         resident.block(format)?;
-        if !visited.insert((reference.generation(), reference.block())) {
-            return Err(PageObservationFailure::ManifestEntryLimit);
-        }
-        budget.consume(1)?;
         let artifact = RecordArtifactFile::RootRoutingBlock {
             generation: reference.generation(),
             block: reference.block(),
         };
+        // Two references that reach one block contradict the tree.
+        if !visited.insert((reference.generation(), reference.block())) {
+            return Err(invalid(artifact));
+        }
+        budget.consume(1)?;
         resident.trace_slots(trace, 1)?;
         let observed = super::required_source(
             discovery.read_root_routing_block(
@@ -83,10 +87,7 @@ pub(in crate::orchestration::planning) fn observe_routes_with_resident_budget(
             )?;
             pending.extend(children.iter().copied());
         } else {
-            return Err(PageObservationFailure::InvalidManifest {
-                target: None,
-                artifact,
-            });
+            return Err(invalid(artifact));
         }
     }
     entries.sort_unstable_by_key(|route| route.record());
@@ -95,7 +96,12 @@ pub(in crate::orchestration::planning) fn observe_routes_with_resident_budget(
             .windows(2)
             .any(|pair| pair[0].record() == pair[1].record())
     {
-        return Err(PageObservationFailure::ManifestEntryLimit);
+        // The root counts records its tree does not route, or routes one twice.
+        return Err(invalid(root_artifact));
     }
     Ok(entries)
 }
+
+#[cfg(test)]
+#[path = "routes/tests.rs"]
+mod tests;

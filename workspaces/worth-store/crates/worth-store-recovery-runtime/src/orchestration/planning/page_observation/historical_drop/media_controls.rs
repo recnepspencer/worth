@@ -12,6 +12,7 @@ use worth_store_recovery_physics::{
 use crate::integrity_ingress::{
     admit_addressed_root, RecoveryArtifactNamespaceJoin, RecoveryIntegrityIngressTrace,
 };
+use crate::orchestration::planning::page_observation::ordered_history::WalkFailure;
 use crate::orchestration::planning::{
     completion::blob_reclaim::record, manifest_entry_budget::ManifestEntryBudget,
     selected_source_inventory::ResidentAllowance,
@@ -72,18 +73,18 @@ pub(in crate::orchestration::planning::page_observation) fn source_root(
     generation: u64,
     format: PhysicalRecordFormatDeclaration,
     budget: &mut ManifestEntryBudget,
-) -> Option<worth_store_physical_format::DurablePhysicalRootManifest> {
-    budget.consume(1).ok()?;
-    let source = discovery
-        .read_root_manifest(generation, u64::from(format.page_size().bytes()))
-        .ok()?;
+) -> Result<worth_store_physical_format::DurablePhysicalRootManifest, WalkFailure> {
+    budget.consume(1)?;
+    let source = discovery.read_root_manifest(generation, u64::from(format.page_size().bytes()))?;
     let admitted = admit_addressed_root(
         RecoveryArtifactNamespaceJoin::from_canonical(&source),
         discovery.store_identity(),
         format,
         generation,
     )
-    .ok()?;
+    .map_err(|_| WalkFailure::Unverified)?;
     let (root, observed_format) = admitted.project();
-    (observed_format == format && root.generation() == generation).then_some(root)
+    (observed_format == format && root.generation() == generation)
+        .then_some(root)
+        .ok_or(WalkFailure::Unverified)
 }

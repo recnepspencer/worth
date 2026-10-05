@@ -6,23 +6,24 @@ use std::{
     fs,
     path::{Path, PathBuf},
     process::{Command, Stdio},
-    sync::atomic::{AtomicBool, Ordering},
     thread,
     time::{Duration, Instant},
 };
 
 use worth_store::physical_runtime::{
-    production::PhysicalMutationCheckpoint, BlobCheckpointLimit, BlobIngestDeclaration,
-    BlobIngestFailure, BlobReadLimits, BlobReclaimLimits, BlobReclaimRequest,
-    PhysicalCheckpointDeadline, PhysicalCheckpointIdempotencyKey, PhysicalCheckpointOutcome,
-    PhysicalCheckpointRequest, PhysicalMutationDeadline, PhysicalMutationIdempotencyMaterial,
-    PhysicalMutationOutcome, PhysicalMutationPreparationSuccess, PhysicalMutationRequest,
-    RecordAppendBatch,
+    BlobCheckpointLimit, BlobIngestDeclaration, BlobIngestFailure, BlobReadFailure, BlobReadLimits,
+    BlobReadOpenFailure, BlobReclaimLimits, BlobReclaimRequest, PhysicalCheckpointDeadline,
+    PhysicalCheckpointIdempotencyKey, PhysicalCheckpointOutcome, PhysicalCheckpointRequest,
+    PhysicalMutationDeadline, PhysicalMutationIdempotencyMaterial, PhysicalMutationOutcome,
+    PhysicalMutationPreparationSuccess, PhysicalMutationRequest, RecordAppendBatch,
+    RecordReadDenial,
 };
 use worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld;
 
 use super::*;
 
+#[path = "pending_wal_world/descriptor_park.rs"]
+mod descriptor_park;
 #[path = "pending_wal_world/first.rs"]
 mod first;
 #[path = "pending_wal_world/second.rs"]
@@ -48,9 +49,16 @@ const FIRST_WORLD_ENV: &str = "WORTH_C11_PENDING_V3_FIRST_WORLD";
 const CHILD_TEST: &str = "pending_wal_world::pending_wal_child";
 const CHUNK: usize = 64 << 10;
 
+use descriptor_park::park_at_descriptor_wal;
+pub(super) use first::{
+    first, first_with_failed_ingest_control, first_with_resume_frontier,
+    first_with_wal_segment_bytes, published_above_checkpoint, Tail, Workload,
+};
+
 pub(super) struct PendingWalWorld {
     root: PathBuf,
     first: first::World,
+    objects: Vec<[u8; 16]>,
     _marker: tempfile::TempDir,
     next_descriptor: Cell<u64>,
 }
@@ -65,6 +73,42 @@ impl PendingWalWorld {
         &self,
     ) -> worth_store_recovery_runtime::PhysicalRecoveryOpenRequest {
         self.first.recovery_request(&self.root)
+    }
+
+    /// Requires every object the first child published and did not release
+    /// to read back byte-exact, and the released one to be gone.
+    pub(super) fn assert_objects_read_back(
+        &self,
+        serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
+    ) {
+        let scope = admitted_blob_scope("c11.recovery.pending-v3.scope");
+        let limits = BlobReadLimits::new(NonZeroU64::new(128).unwrap());
+        let blobs = serving.blobs().unwrap();
+        let expected = self.first.object_bytes();
+        assert_eq!(self.objects.len(), expected.len());
+        for (index, (object, expected)) in self.objects.iter().zip(expected).enumerate() {
+            let resolved = blobs.resolve_publication(*object, 1, &scope, limits);
+            if index == 0 && self.first.releases_first_object() {
+                match resolved {
+                    Err(BlobReadOpenFailure::PublicationNotFound) => {}
+                    Err(BlobReadOpenFailure::Read(BlobReadFailure::RecordRead(error)))
+                        if error.denial() == RecordReadDenial::RecordNotFound => {}
+                    other => panic!("released first object remained visible: {other:?}"),
+                }
+                continue;
+            }
+            let mut read = blobs
+                .read(resolved.unwrap(), &scope, 0, expected.len() as u64, limits)
+                .unwrap();
+            let mut observed = vec![0_u8; expected.len()];
+            let mut used = 0;
+            while used < observed.len() {
+                let count = read.read_next(&mut observed[used..]).unwrap();
+                assert!(count > 0, "object {index} ended at byte {used}");
+                used += count;
+            }
+            assert!(observed == expected, "object {index} read back changed");
+        }
     }
 
     pub(super) fn kill_second_after_certified_retirement(&self) {
@@ -149,65 +193,6 @@ impl Drop for PendingWalWorld {
             .to_string_lossy()
             .starts_with("worth-store-c11-pending-v3-"));
         fs::remove_dir_all(resolved).expect("remove exact child-owned pending world");
-    }
-}
-
-pub(super) fn first() -> PendingWalWorld {
-    first_with_segment_bytes(None, first::World::TwoChunks)
-}
-
-pub(super) fn first_with_wal_segment_bytes(bytes: NonZeroU64) -> PendingWalWorld {
-    first_with_segment_bytes(Some(bytes), first::World::TwoChunks)
-}
-
-pub(super) fn first_with_failed_ingest_control() -> PendingWalWorld {
-    first_with_segment_bytes(None, first::World::FailedIngestControl)
-}
-
-/// The first object is long enough to have checkpointed a resume frontier.
-pub(super) fn first_with_resume_frontier() -> PendingWalWorld {
-    first_with_segment_bytes(None, first::World::ResumeFrontier)
-}
-
-fn first_with_segment_bytes(
-    wal_segment_bytes: Option<NonZeroU64>,
-    first: first::World,
-) -> PendingWalWorld {
-    let marker_dir = tempfile::tempdir().unwrap();
-    let marker = marker_dir.path().join("ready");
-    let mut command = Command::new(std::env::current_exe().unwrap());
-    command
-        .args(["--exact", CHILD_TEST, "--nocapture", "--test-threads=1"])
-        .env(ROLE_ENV, first.role())
-        .env(MARKER_ENV, &marker)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
-    if let Some(bytes) = wal_segment_bytes {
-        command.env(WAL_SEGMENT_BYTES_ENV, bytes.get().to_string());
-    }
-    let mut child = command.spawn().unwrap();
-    let deadline = Instant::now() + Duration::from_secs(240);
-    while !marker.is_file() {
-        if child.try_wait().unwrap().is_some() || Instant::now() >= deadline {
-            let _ = child.kill();
-            let output = child.wait_with_output().unwrap();
-            panic!(
-                "pending V3 descriptor seam not reached: {} {}",
-                String::from_utf8_lossy(&output.stdout),
-                String::from_utf8_lossy(&output.stderr)
-            );
-        }
-        thread::sleep(Duration::from_millis(10));
-    }
-    child.kill().unwrap();
-    child.wait().unwrap();
-    let root = PathBuf::from(fs::read_to_string(&marker).unwrap());
-    assert!(root.is_dir());
-    PendingWalWorld {
-        root,
-        first,
-        _marker: marker_dir,
-        next_descriptor: Cell::new(0),
     }
 }
 
@@ -338,53 +323,4 @@ fn pending_wal_child() {
         ),
         other => panic!("unknown pending V3 child role: {other:?}"),
     }
-}
-
-fn park_at_descriptor_wal(
-    serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
-    request: BlobReclaimRequest,
-    marker: &Path,
-    marker_bytes: &[u8],
-) {
-    let first = serving.pause_physical_mutation_at(PhysicalMutationCheckpoint::AfterWalDurability);
-    let cancelled = AtomicBool::new(false);
-    thread::scope(|workers| {
-        workers.spawn(|| {
-            let deadline = Instant::now() + Duration::from_secs(180);
-            while !first.await_arrival() {
-                if cancelled.load(Ordering::SeqCst) {
-                    return;
-                }
-                assert!(Instant::now() < deadline, "manifest WAL durability");
-            }
-            let second =
-                serving.pause_physical_mutation_at(PhysicalMutationCheckpoint::AfterWalDurability);
-            first.release();
-            while !second.await_arrival() {
-                if cancelled.load(Ordering::SeqCst) {
-                    return;
-                }
-                assert!(Instant::now() < deadline, "reservation WAL durability");
-            }
-            let third =
-                serving.pause_physical_mutation_at(PhysicalMutationCheckpoint::AfterWalDurability);
-            second.release();
-            while !third.await_arrival() {
-                if cancelled.load(Ordering::SeqCst) {
-                    return;
-                }
-                assert!(Instant::now() < deadline, "descriptor WAL durability");
-            }
-            let pending = marker.with_extension("pending");
-            fs::write(&pending, marker_bytes).unwrap();
-            fs::rename(pending, marker).unwrap();
-        });
-        let result = serving
-            .blobs()
-            .unwrap()
-            .reclaim(request)
-            .and_then(|handle| handle.wait());
-        cancelled.store(true, Ordering::SeqCst);
-        panic!("released descriptor ended before durable WAL pause: {result:?}");
-    });
 }

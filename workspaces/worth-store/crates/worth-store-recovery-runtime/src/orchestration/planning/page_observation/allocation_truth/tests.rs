@@ -1,29 +1,12 @@
-use sha2::{Digest, Sha256};
-use worth_proof::TransitionOutcome;
-use worth_store::physical_runtime::recovery_wal::{LogSequenceNumber, WalLsnRange};
-use worth_store::physical_runtime::{
-    PhysicalCheckpointDeadline, PhysicalCheckpointIdempotencyKey, PhysicalCheckpointOutcome,
-    PhysicalCheckpointRequest,
-};
 use worth_store_physical_format::{
-    CurrentPhysicalRecordPlacement, DurableInlineRecordPlacement, PersistedInlineSegmentAllocation,
-    PersistedPhysicalDataFrameSubject, PersistedPhysicalRecoveryFrame,
-    PersistedPhysicalRecoveryProjection, PersistedPhysicalRecoveryRootState,
-    PersistedRecordIdentity, PhysicalGeneration, PhysicalGenerationAuthority, PhysicalPageId,
-    PhysicalRecordSlot, PhysicalSegmentId, RecordArtifactFile, RecordFrameCoordinate,
-    RecordFreeSpaceManifestEntry, RecordSegmentPageManifestEntry,
+    CurrentPhysicalRecordPlacement, PersistedRecordIdentity, RecordFreeSpaceManifestEntry,
 };
-use worth_store_recovery_physics::{decode_physical_redo_records, PhysicalRedoTarget};
-use worth_store_test_support::harness::physical_residency::{
-    canonical_physical_mutation_acknowledgment, PhysicalResidencyStoreWorld,
-};
+use worth_store_recovery_physics::PhysicalRedoTarget;
 
+use super::super::inline_image_fixture::inline_image;
 use super::{first_invalid_extent, reusable_capacity};
-use crate::entry::{
-    AdmittedPlatformAuthority, PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimits,
-    PhysicalRecoveryOpenRequest, PhysicalRecoveryPlatformAuthority,
-    PhysicalRecoveryStaticConfiguration,
-};
+use crate::orchestration::planning::selected_source_inventory;
+use crate::orchestration::planning::selected_world_fixture::{selected_world, SelectedWorld};
 
 #[path = "tests/capacity_tests.rs"]
 mod capacity_tests;
@@ -76,123 +59,20 @@ fn selected_capacity_rejects_bypassing_or_prematurely_spilling_reusable_pages() 
 fn selected_source_inventory_denies_before_crossing_manifest_block_read() {
     let world = selected_world("allocation-cumulative-entry-budget", 4);
     assert!(!world.placements.is_empty());
-    let SelectedWorld {
-        authority,
-        coordination,
-        root,
-        placements: _,
-        retained,
-    } = world;
-    let AdmittedPlatformAuthority {
-        media,
-        session,
-        _world_binding,
-        ..
-    } = authority;
-    let mut discovery = media.bounded_discovery(64, 1024 * 1024).unwrap();
-    let format = worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
-        .admit()
-        .unwrap();
-    let (result, _) = crate::orchestration::planning::selected_source_inventory::observe(
-        &mut discovery,
-        &root,
-        format,
-        1,
-        1024 * 1024,
-    );
-    assert_eq!(
-        result,
-        Err(super::PageObservationFailure::ManifestEntryLimit)
-    );
-    assert_eq!(discovery.counters().addressed_artifacts_read, 2);
-    drop(discovery.finish());
-    assert!(coordination.shutdown_is_quiescent());
-    session.refuse();
-    drop(retained);
-}
-
-struct SelectedWorld {
-    authority: AdmittedPlatformAuthority,
-    coordination: crate::orchestration::RecoveryCoordination,
-    root: worth_store_physical_format::DurablePhysicalRootManifest,
-    placements: Vec<CurrentPhysicalRecordPlacement>,
-    retained: worth_store_test_support::TemporaryDirectory,
-}
-
-fn selected_world(name: &str, segment_pages: u32) -> SelectedWorld {
-    let world = PhysicalResidencyStoreWorld::initialize_for_recovery_with_segment_pages(
-        name,
-        segment_pages,
-    )
-    .unwrap();
-    let retained = world.retained_root();
-    canonical_physical_mutation_acknowledgment(&world, [0x81; 32], &vec![7; 3_000]);
-    let request = PhysicalCheckpointRequest::fuzzy(
-        PhysicalCheckpointIdempotencyKey::new([0x82; 32]),
-        PhysicalCheckpointDeadline::after_milliseconds(5_000).unwrap(),
-    );
-    let TransitionOutcome::Success(handle) =
-        world.serving().checkpoints().start(request).into_raw()
-    else {
-        panic!("allocation-truth checkpoint admission")
-    };
-    assert!(matches!(
-        handle.wait(),
-        PhysicalCheckpointOutcome::Completed(_)
-    ));
-    drop(world);
-    let admitted = admitted_recovery(retained.path());
-    let selected = admitted.discover().unwrap().select().unwrap();
-    let (authority, coordination, selection, _, _, _, _) = selected.into_parts();
-    SelectedWorld {
-        authority,
-        coordination,
-        root: selection.root().selected().manifest().clone(),
-        placements: selection.page_facts().placements().to_vec(),
-        retained,
-    }
-}
-
-fn admitted_recovery(root: &std::path::Path) -> crate::AdmittedPhysicalRecovery {
-    let limits = PhysicalRecoveryLimits::admit(PhysicalRecoveryLimitDeclaration {
-        selector_candidates: 4,
-        checkpoint_candidates: 4,
-        manifest_bytes: 1024 * 1024,
-        manifest_entries: 4_096,
-        wal_segments: 8,
-        wal_frames: 64,
-        wal_bytes: 1024 * 1024,
-        redo_targets: 64,
-        redo_bytes: 1024 * 1024,
-        distinct_pages_and_extents: 64,
-        operation_bindings: 64,
-        staging_bytes: 4 * 1024 * 1024,
-        recovery_memory_bytes: 64 * 1024 * 1024,
-        dirty_frames: 64,
-        concurrent_commands: 8,
-        publication_effects: 4,
-        cleanup_candidates: 64,
-        cleanup_bytes: 1024 * 1024,
-        observation_bytes: 4 * 1024 * 1024,
-    })
-    .unwrap();
-    let configuration = PhysicalRecoveryStaticConfiguration::current();
-    let authority = PhysicalRecoveryPlatformAuthority::acquire(
-        root.to_path_buf(),
-        configuration.clone(),
-        limits,
-    )
-    .unwrap();
-    let profile = authority.qualified_backend_profile().clone();
-    PhysicalRecoveryOpenRequest::declare(
-        root.to_path_buf(),
-        configuration,
-        profile,
-        limits,
-        authority,
-    )
-    .admit()
-    .unwrap()
+    world.read(|source| {
+        let (result, _) = selected_source_inventory::observe(
+            source.discovery,
+            source.root,
+            source.format,
+            1,
+            1024 * 1024,
+        );
+        assert_eq!(
+            result,
+            Err(super::PageObservationFailure::ManifestEntryLimit)
+        );
+        assert_eq!(source.discovery.counters().addressed_artifacts_read, 2);
+    });
 }
 
 fn assert_rejected(world: SelectedWorld, targets: Vec<PhysicalRedoTarget>) {
@@ -204,32 +84,21 @@ fn assert_admitted(world: SelectedWorld, targets: Vec<PhysicalRedoTarget>) {
 }
 
 fn assert_result(world: SelectedWorld, targets: Vec<PhysicalRedoTarget>, expected: bool) {
-    let SelectedWorld {
-        authority,
-        coordination,
-        root,
-        placements,
-        retained,
-    } = world;
-    let AdmittedPlatformAuthority {
-        media,
-        session,
-        _world_binding,
-        ..
-    } = authority;
-    let mut discovery = media.bounded_discovery(64, 1024 * 1024).unwrap();
-    let format = worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
-        .admit()
-        .unwrap();
-    let (selected_source, integrity_trace) =
-        crate::orchestration::planning::selected_source_inventory::observe(
-            &mut discovery,
-            &root,
-            format,
+    let (selected_source, integrity_trace, root, placements) = world.read(|source| {
+        let (selected_source, integrity_trace) = selected_source_inventory::observe(
+            source.discovery,
+            source.root,
+            source.format,
             64,
             1024 * 1024,
         );
-    let selected_source = selected_source.unwrap();
+        (
+            selected_source.unwrap(),
+            integrity_trace,
+            source.root.clone(),
+            source.placements.to_vec(),
+        )
+    });
     assert_eq!(
         integrity_trace.observations().len() as u64,
         integrity_trace.counters().attempted,
@@ -272,10 +141,6 @@ fn assert_result(world: SelectedWorld, targets: Vec<PhysicalRedoTarget>, expecte
             "unexpected allocation admission result: {result:?}"
         );
     }
-    drop(discovery.finish());
-    assert!(coordination.shutdown_is_quiescent());
-    session.refuse();
-    drop(retained);
 }
 
 fn next_page(placements: &[CurrentPhysicalRecordPlacement]) -> u64 {
@@ -298,95 +163,12 @@ fn target(
     artifact_generation: u64,
     ordinal: u64,
 ) -> PhysicalRedoTarget {
-    let authority = PhysicalGenerationAuthority::for_canonical_physical_format();
-    let segment_id = PhysicalSegmentId::from_raw(segment).unwrap();
-    let page_cell = authority
-        .page_cell(segment_id, PhysicalPageId::from_raw(page).unwrap())
-        .with_page_generation(PhysicalGeneration::from_raw(page_generation).unwrap());
-    let bytes = vec![ordinal as u8; 8];
-    let coordinate = RecordFrameCoordinate::new(
-        RecordArtifactFile::Segment {
-            segment: artifact_segment,
-            generation: artifact_generation,
-        },
-        0,
-        bytes.len() as u32,
-    )
-    .unwrap();
-    let frame = PersistedPhysicalRecoveryFrame::new(
-        PersistedPhysicalDataFrameSubject::InlinePage(page_cell),
-        coordinate,
-        &bytes,
-    )
-    .unwrap();
     let record = PersistedRecordIdentity::new([ordinal as u8; 16], ordinal).unwrap();
-    let slot = authority
-        .slot_cell(
-            segment_id,
-            page_cell.page_id(),
-            PhysicalRecordSlot::from_raw(1).unwrap(),
-        )
-        .with_slot_generation(PhysicalGeneration::from_raw(1).unwrap());
-    let artifact_cell = authority
-        .segment_cell(PhysicalSegmentId::from_raw(artifact_segment).unwrap())
-        .with_segment_generation(PhysicalGeneration::from_raw(artifact_generation).unwrap());
-    let placement =
-        DurableInlineRecordPlacement::legacy_unknown(record, artifact_cell, page_cell, slot, 4, 4)
-            .unwrap();
-    let routing = RecordSegmentPageManifestEntry::new(page_cell, artifact_cell, 1, 0).unwrap();
-    let projection = PersistedPhysicalRecoveryProjection::new(
-        1,
-        PersistedPhysicalRecoveryRootState::new(
-            4096,
-            1,
-            4,
-            vec![PersistedInlineSegmentAllocation::new(artifact_cell, 4, 1).unwrap()],
-            Some(record),
-            Some(artifact_cell),
-        )
-        .unwrap(),
-        vec![record],
-        vec![frame],
-        vec![CurrentPhysicalRecordPlacement::Inline(placement)],
-        vec![routing],
-        Vec::new(),
+    inline_image(
+        (segment, page, page_generation),
+        (artifact_segment, artifact_generation),
+        &[record],
+        ordinal as u8,
     )
-    .unwrap();
-    let mut target = Vec::new();
-    target.push(1);
-    target.extend_from_slice(&segment.to_le_bytes());
-    target.extend_from_slice(&page.to_le_bytes());
-    target.extend_from_slice(&page_generation.to_le_bytes());
-    target.push(5);
-    target.extend_from_slice(&artifact_segment.to_le_bytes());
-    target.extend_from_slice(&artifact_generation.to_le_bytes());
-    target.extend_from_slice(&0_u64.to_le_bytes());
-    target.extend_from_slice(&(bytes.len() as u32).to_le_bytes());
-    let mut encoded = Vec::new();
-    field(&mut encoded, b"store.physical.wal.canonical-redo.v3");
-    encoded.extend_from_slice(&1_u64.to_le_bytes());
-    encoded.extend_from_slice(&0_u32.to_le_bytes());
-    encoded.extend_from_slice(&10_u64.to_le_bytes());
-    encoded.extend_from_slice(&1_u64.to_le_bytes());
-    field(&mut encoded, &target);
-    let digest: [u8; 32] = Sha256::digest(&bytes).into();
-    encoded.extend_from_slice(&digest);
-    field(&mut encoded, b"redo");
-    field(&mut encoded, &projection.encode());
-    decode_physical_redo_records(
-        &encoded,
-        WalLsnRange::new(LogSequenceNumber::new(10), LogSequenceNumber::new(11)).unwrap(),
-        1,
-        worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
-            .admit()
-            .unwrap(),
-    )
-    .unwrap()[0]
-        .targets()[0]
-        .clone()
-}
-
-fn field(target: &mut Vec<u8>, bytes: &[u8]) {
-    target.extend_from_slice(&(bytes.len() as u64).to_le_bytes());
-    target.extend_from_slice(bytes);
+    .1
 }

@@ -12,9 +12,6 @@ pub(super) fn required_observed(
     match result {
         Ok(observed) if observed.bytes().is_some() => Ok(observed),
         Ok(_) => Err(PageObservationFailure::MissingArtifact { target, artifact }),
-        Err(RecoveryDiscoveryFailure::ByteLimitExceeded { .. }) => {
-            Err(PageObservationFailure::ByteLimit)
-        }
-        Err(failure) => Err(PageObservationFailure::Media { target, failure }),
+        Err(failure) => Err(PageObservationFailure::media(target, failure)),
     }
 }

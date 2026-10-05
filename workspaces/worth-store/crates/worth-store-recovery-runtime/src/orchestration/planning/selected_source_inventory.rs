@@ -191,7 +191,7 @@ fn read_segment_pages(
             budget.remaining(),
             integrity_trace,
         )
-        .map_err(|failure| membership_failure(artifact, failure))?;
+        .map_err(|failure| membership_failure(artifact, failure, budget))?;
         topology.insert((reference.generation(), reference.block()), block.clone());
         if let Some(entries) = block.entries() {
             budget.consume(entries.len())?;
@@ -274,7 +274,7 @@ fn read_free_entries(
             budget.remaining(),
             integrity_trace,
         )
-        .map_err(|failure| membership_failure(artifact, failure))?;
+        .map_err(|failure| membership_failure(artifact, failure, budget))?;
         topology.insert((reference.generation(), reference.block()), block.clone());
         if let Some(found) = block.entries() {
             budget.consume(found.len())?;
@@ -354,11 +354,10 @@ const fn invalid(artifact: RecordArtifactFile) -> PageObservationFailure {
 fn membership_failure(
     artifact: RecordArtifactFile,
     failure: MembershipProjectionFailure,
+    budget: &mut ManifestEntryBudget,
 ) -> PageObservationFailure {
     match failure {
-        MembershipProjectionFailure::EntryLimit { .. } => {
-            PageObservationFailure::ManifestEntryLimit
-        }
+        MembershipProjectionFailure::EntryLimit { observed } => budget.refuse_decoded(observed),
         MembershipProjectionFailure::Integrity(rejection) => PageObservationFailure::Integrity {
             artifact,
             denial: rejection.diagnostic(),
@@ -369,3 +368,6 @@ fn membership_failure(
 #[cfg(test)]
 #[path = "selected_source_inventory/canonical_free_entry_tests.rs"]
 mod canonical_free_entry_tests;
+#[cfg(test)]
+#[path = "selected_source_inventory/membership_limit_tests.rs"]
+mod membership_limit_tests;

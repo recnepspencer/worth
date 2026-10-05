@@ -56,6 +56,10 @@ mod selected_batch_multi_pending;
 mod pending_successor_above_history;
 
 #[cfg(feature = "certification-test-authority")]
+#[path = "production_entry/published_above_checkpoint.rs"]
+mod published_above_checkpoint;
+
+#[cfg(feature = "certification-test-authority")]
 #[path = "production_entry/three_batch_fold.rs"]
 mod three_batch_fold;
 

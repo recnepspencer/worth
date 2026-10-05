@@ -10,7 +10,7 @@ use worth_store_physical_format::{
 };
 use worth_store_wal::LogSequenceNumber;
 
-pub(super) fn admitted_images(
+pub(in super::super) fn admitted_images(
     members: Vec<PhysicalRedoMemberInput>,
 ) -> AdmittedPhysicalRedoMembers {
     admit_physical_redo_members(
@@ -35,7 +35,7 @@ pub(super) fn admitted_images(
     .expect("canonical image members cross real WAL/projection admission")
 }
 
-pub(super) fn image(
+pub(in super::super) fn image(
     generation: u64,
     root_generation: u64,
     first_lsn: u64,

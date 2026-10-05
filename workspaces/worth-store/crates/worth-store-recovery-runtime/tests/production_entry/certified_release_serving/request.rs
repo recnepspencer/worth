@@ -39,12 +39,30 @@ pub(crate) fn request_with_configuration(
 /// Recovery of a world whose WAL holds one whole 66-chunk ingest and whose
 /// release batches fill a manifest. The WAL payloads alone pass the memory of
 /// the two-chunk worlds, and proving 64 dropped records absent from a result
-/// root reads more manifest entries than those worlds ever route.
+/// root reads more manifest entries than those worlds ever route. The ingest
+/// also leaves about 140 root generations above the checkpoint, and recovery
+/// re-reads the manifest of each one to order the retirements among them.
+/// Measured on these worlds: the first reopen takes up to 16,404 manifest
+/// entries and 44,134,018 bytes, both varying a little from run to run, and a
+/// later reopen of the pending release takes more than 17,408 entries.
 pub(crate) fn request_for_long_ingest(root: &Path) -> PhysicalRecoveryOpenRequest {
     declare(
         root,
-        32 << 20,
-        16384,
+        43 << 20,
+        18432,
+        PhysicalRecoveryStaticConfiguration::current(),
+    )
+}
+
+/// The limits of the two-chunk worlds with exactly this many manifest entries.
+pub(crate) fn request_with_manifest_entries(
+    root: &Path,
+    manifest_entries: u64,
+) -> PhysicalRecoveryOpenRequest {
+    declare(
+        root,
+        16 << 20,
+        manifest_entries,
         PhysicalRecoveryStaticConfiguration::current(),
     )
 }

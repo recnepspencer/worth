@@ -12,14 +12,18 @@ use worth_store_recovery_physics::{
     RecoveryPageObservation,
 };
 
+mod absent_target;
 mod allocation_truth;
 mod failure;
 mod historical_drop;
+#[cfg(test)]
+mod inline_image_fixture;
 mod materialized;
 mod ordered_history;
 mod selected_basis;
 mod tier_routes;
 
+use absent_target::{AbsentTarget, SelectedFrontier};
 pub(in crate::orchestration::planning) use allocation_truth::InlineAllocationTruth;
 pub(super) use failure::PageObservationFailure;
 use materialized::{observe_extent, observe_inline, selected_inline_target};
@@ -29,13 +33,14 @@ pub(super) struct PageObservationAttempt {
     pub(super) artifact_reads: u64,
     pub(super) bytes_read: u64,
     pub(super) integrity: crate::integrity_ingress::RecoveryIntegrityIngressCounters,
+    /// The manifest entries observation charged, whether or not it passed.
+    pub(super) manifest_budget: super::manifest_entry_budget::ManifestEntryBudget,
 }
 
 pub(super) struct ObservedPageBasis {
     pub(super) observations: Vec<RecoveryPageObservation>,
     pub(super) inline_truth: Option<allocation_truth::InlineAllocationTruth>,
     pub(super) selected_source: crate::progression::RecoverySelectedSourceInventory,
-    pub(super) manifest_budget: super::manifest_entry_budget::ManifestEntryBudget,
     pub(super) tier_custody: Option<worth_store_recovery_physics::VerifiedSelectedTierEpochCustody>,
     pub(super) historical_drops: Vec<historical_drop::HistoricalDropEvidence>,
     pub(super) ordered_releases: Option<Vec<ordered_history::OrderedReleasedObservation>>,
@@ -77,6 +82,10 @@ pub(super) fn observe_selected_pages(
         .bounded_discovery(maximum_entries, maximum_bytes)
         .expect("admitted nonzero recovery limits create a bounded planning reader");
     let mut integrity = crate::integrity_ingress::RecoveryIntegrityIngressTrace::new();
+    let mut manifest_budget = super::manifest_entry_budget::ManifestEntryBudget::new(
+        admitted_manifest_entries,
+        admitted_manifest_entries.saturating_sub(maximum_manifest_entries),
+    );
     let result = observe(
         &mut discovery,
         tier_evidence,
@@ -87,7 +96,7 @@ pub(super) fn observe_selected_pages(
         admitted_redo,
         format,
         admitted_manifest_entries,
-        maximum_manifest_entries,
+        &mut manifest_budget,
         maximum_bytes,
         maximum_staging_bytes,
         &mut integrity,
@@ -103,6 +112,7 @@ pub(super) fn observe_selected_pages(
             artifact_reads: counters.addressed_artifacts_read,
             bytes_read: counters.bytes_read,
             integrity: page_counters,
+            manifest_budget,
         },
     )
 }
@@ -120,22 +130,17 @@ fn observe(
     admitted_redo: &worth_store_recovery_physics::AdmittedPhysicalRedoMembers,
     format: PhysicalRecordFormatDeclaration,
     admitted_manifest_entries: u64,
-    maximum_manifest_entries: u64,
+    budget: &mut super::manifest_entry_budget::ManifestEntryBudget,
     byte_limit: u64,
     maximum_staging_bytes: u64,
     integrity: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) -> Result<ObservedPageBasis, PageObservationFailure> {
-    let already_observed = admitted_manifest_entries.saturating_sub(maximum_manifest_entries);
-    let mut budget = super::manifest_entry_budget::ManifestEntryBudget::new(
-        admitted_manifest_entries,
-        already_observed,
-    );
     let mut selected_source = super::selected_source_inventory::observe_with_budget(
         discovery,
         root_manifest,
         format,
-        &mut budget,
+        budget,
         byte_limit,
         integrity_trace,
     )?;
@@ -151,7 +156,7 @@ fn observe(
             discovery,
             fallback,
             fallback_format,
-            &mut budget,
+            budget,
             byte_limit,
             integrity_trace,
         )?;
@@ -228,30 +233,37 @@ fn observe(
     }
     let absent_targets = inline_targets
         .into_values()
-        .filter_map(|targets| targets.into_iter().next())
-        .chain(extent_targets.into_values().flat_map(BTreeMap::into_values))
+        .filter_map(AbsentTarget::inline_page)
+        .chain(
+            extent_targets
+                .into_values()
+                .flat_map(BTreeMap::into_values)
+                .map(AbsentTarget::extent_chunk),
+        )
         .collect::<Vec<_>>();
-    let (
-        historical_observations,
-        absent_targets,
-        historical_drops,
+    let historical_drop::ClassifiedTargets {
+        observations: historical_observations,
+        absent: absent_targets,
+        drops: historical_drops,
         history_scratch,
         ordered_releases,
-    ) = historical_drop::classify(
-        discovery,
-        tier_evidence.selection,
-        root_manifest,
-        placements,
+    } = historical_drop::classify(
+        historical_drop::HistoryWalk {
+            discovery,
+            selection: tier_evidence.selection,
+            selected_root: root_manifest,
+            selected_inventory: &selected_source,
+            routes: placements,
+            redo: admitted_redo,
+            release_intents: tier_evidence.sample.release_intents(),
+            format,
+            budget,
+            byte_limit,
+            maximum_entries: admitted_manifest_entries,
+            maximum_staging_bytes,
+            trace: integrity_trace,
+        },
         &absent_targets,
-        admitted_redo,
-        tier_evidence.sample.release_intents(),
-        &selected_source,
-        format,
-        &mut budget,
-        byte_limit,
-        admitted_manifest_entries,
-        maximum_staging_bytes,
-        integrity_trace,
     )?;
     observations.extend(historical_observations);
     let absent = allocation_truth::admit_absent_targets(
@@ -267,7 +279,6 @@ fn observe(
         observations,
         inline_truth: absent.inline_truth,
         selected_source,
-        manifest_budget: budget,
         tier_custody,
         historical_drops,
         ordered_releases,
@@ -282,11 +293,5 @@ pub(super) fn required_source(
     >,
     target: Option<PhysicalRedoTargetIdentity>,
 ) -> Result<worth_store::physical_runtime::ObservedRecoveryArtifact, PageObservationFailure> {
-    match result {
-        Ok(observed) => Ok(observed),
-        Err(worth_store::physical_runtime::RecoveryDiscoveryFailure::ByteLimitExceeded {
-            ..
-        }) => Err(PageObservationFailure::ByteLimit),
-        Err(failure) => Err(PageObservationFailure::Media { target, failure }),
-    }
+    result.map_err(|failure| PageObservationFailure::media(target, failure))
 }

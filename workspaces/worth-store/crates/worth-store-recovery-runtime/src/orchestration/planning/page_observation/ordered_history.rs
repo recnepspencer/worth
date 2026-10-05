@@ -35,9 +35,20 @@ use transcript::inventory_transcript;
 mod head_replay;
 #[path = "ordered_history/released_edge.rs"]
 mod released_edge;
+#[path = "ordered_history/walk_failure.rs"]
+mod walk_failure;
+pub(super) use walk_failure::WalkFailure;
+use walk_failure::WalkFailure::Unverified;
 #[path = "ordered_history/released_observation.rs"]
 mod released_observation;
 pub(in crate::orchestration::planning) use released_observation::OrderedReleasedObservation;
+
+/// The verified history, the V3 releases it replayed and its peak scratch.
+pub(super) type Walked = (
+    VerifiedOrderedRootHistory,
+    Vec<OrderedReleasedObservation>,
+    u64,
+);
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn admit(
@@ -54,12 +65,8 @@ pub(super) fn admit(
     maximum_entries: u64,
     maximum_scratch_bytes: u64,
     trace: &mut RecoveryIntegrityIngressTrace,
-) -> Option<(
-    VerifiedOrderedRootHistory,
-    Vec<OrderedReleasedObservation>,
-    u64,
-)> {
-    let checkpoint = selection.checkpoint()?;
+) -> Result<Walked, WalkFailure> {
+    let checkpoint = selection.checkpoint().ok_or(Unverified)?;
     let checkpoint_generation = checkpoint.checkpoint().source().root().generation();
     let checkpoint_root = source_root(discovery, checkpoint_generation, format, budget)?;
     let checkpoint_inventory = selected_source_inventory::observe_with_budget(
@@ -69,23 +76,22 @@ pub(super) fn admit(
         budget,
         byte_limit,
         trace,
-    )
-    .ok()?;
+    )?;
     let checkpoint_routes = selected_source_inventory::observe_routes_with_budget(
         discovery,
         &checkpoint_root,
         format,
         budget,
         trace,
-    )
-    .ok()?;
+    )?;
     let initial = inventory_transcript(
         &checkpoint_root,
         &checkpoint_inventory,
         &checkpoint_routes,
         format,
         maximum_entries,
-    )?;
+    )
+    .ok_or(Unverified)?;
     let cutoff = checkpoint
         .checkpoint()
         .compaction_cutover()
@@ -99,23 +105,25 @@ pub(super) fn admit(
         format,
         selected_root
             .generation()
-            .checked_sub(checkpoint_generation)?,
+            .checked_sub(checkpoint_generation)
+            .ok_or(Unverified)?,
         maximum_scratch_bytes,
     )
-    .ok()?;
+    .map_err(|_| Unverified)?;
     let mut current_root = checkpoint_root;
     let mut current_inventory = checkpoint_inventory;
     let mut current_routes = checkpoint_routes;
     let mut releases = Vec::new();
     let mut retained = released_edge::ReleasedRetention::default();
-    let selected_resident = inventory_resident_bytes(selected_inventory, selected_routes)?;
+    let selected_resident =
+        inventory_resident_bytes(selected_inventory, selected_routes).ok_or(Unverified)?;
     while current_root.generation() < selected_root.generation() {
         let mut matching = redo.admitted_root_step_members().filter(|member| {
             member.materialization().source_root_generation() == current_root.generation()
         });
         let member = matching.next();
         if matching.next().is_some() {
-            return None;
+            return Err(Unverified);
         }
         let basis = decide_ordered_root_step_basis(
             current_root.generation(),
@@ -124,8 +132,8 @@ pub(super) fn admit(
             member.is_some(),
             release_intents,
         )
-        .ok()?;
-        let next_generation = current_root.generation().checked_add(1)?;
+        .map_err(|_| Unverified)?;
+        let next_generation = current_root.generation().checked_add(1).ok_or(Unverified)?;
         let next_root = if next_generation == selected_root.generation() {
             selected_root.clone()
         } else {
@@ -134,44 +142,44 @@ pub(super) fn admit(
         let next_inventory = if next_generation == selected_root.generation() {
             None
         } else {
-            Some(
-                selected_source_inventory::observe_with_budget(
-                    discovery, &next_root, format, budget, byte_limit, trace,
-                )
-                .ok()?,
-            )
+            Some(selected_source_inventory::observe_with_budget(
+                discovery, &next_root, format, budget, byte_limit, trace,
+            )?)
         };
         let next_routes = if next_generation == selected_root.generation() {
             None
         } else {
-            Some(
-                selected_source_inventory::observe_routes_with_budget(
-                    discovery, &next_root, format, budget, trace,
-                )
-                .ok()?,
-            )
+            Some(selected_source_inventory::observe_routes_with_budget(
+                discovery, &next_root, format, budget, trace,
+            )?)
         };
         let result_inventory = next_inventory.as_ref().unwrap_or(selected_inventory);
         let result_routes = next_routes.as_deref().unwrap_or(selected_routes);
-        let current_resident = inventory_resident_bytes(&current_inventory, &current_routes)?;
+        let current_resident =
+            inventory_resident_bytes(&current_inventory, &current_routes).ok_or(Unverified)?;
         let result_resident = if next_inventory.is_some() {
-            inventory_resident_bytes(result_inventory, result_routes)?
+            inventory_resident_bytes(result_inventory, result_routes).ok_or(Unverified)?
         } else {
             0
         };
         let live_inventory = selected_resident
-            .checked_add(current_resident)?
-            .checked_add(result_resident)?;
-        let retained_before = retained.prior_bytes(releases.capacity())?;
+            .checked_add(current_resident)
+            .and_then(|live| live.checked_add(result_resident))
+            .ok_or(Unverified)?;
+        let retained_before = retained
+            .prior_bytes(releases.capacity())
+            .ok_or(Unverified)?;
         let input_limit = maximum_scratch_bytes
-            .checked_sub(live_inventory)?
-            .checked_sub(retained_before)?;
+            .checked_sub(live_inventory)
+            .and_then(|limit| limit.checked_sub(retained_before))
+            .ok_or(Unverified)?;
         let (source_segments, result_segments, input_scratch) = segment_pair_bounded(
             &current_inventory,
             result_inventory,
             maximum_entries,
             input_limit,
-        )?;
+        )
+        .ok_or(Unverified)?;
         let source = ReleasedInventoryView::new(
             &current_root,
             &current_inventory.free_space,
@@ -195,13 +203,13 @@ pub(super) fn admit(
                     format,
                     maximum_entries,
                 )
-                .ok()?;
+                .map_err(|_| Unverified)?;
                 history
                     .advance_retirement(edge, &next_root, &result_inventory.free_space, format)
-                    .ok()?;
+                    .map_err(|_| Unverified)?;
                 None
             }
-            (OrderedRootStepBasis::WalMember, member) => Some(member?),
+            (OrderedRootStepBasis::WalMember, member) => Some(member.ok_or(Unverified)?),
         };
         match member.map(|member| (member, member.materialization().operation())) {
             None => {}
@@ -227,7 +235,8 @@ pub(super) fn admit(
                     &mut history,
                     &mut releases,
                     &mut retained,
-                )?;
+                )
+                .ok_or(Unverified)?;
             }
             Some((member, _)) => {
                 let transition = VerifiedOrdinaryRootStep::admit_preplanning(
@@ -236,21 +245,26 @@ pub(super) fn admit(
                     member,
                     format,
                     maximum_entries,
-                    maximum_scratch_bytes.checked_sub(input_scratch)?,
+                    maximum_scratch_bytes
+                        .checked_sub(input_scratch)
+                        .ok_or(Unverified)?,
                 )
-                .ok()?;
+                .map_err(|_| Unverified)?;
                 let roster_bytes = (releases.capacity() as u64)
-                    .checked_mul(std::mem::size_of::<OrderedReleasedObservation>() as u64)?;
+                    .checked_mul(std::mem::size_of::<OrderedReleasedObservation>() as u64)
+                    .ok_or(Unverified)?;
                 let retained_bytes = retained
                     .manifest_bytes
-                    .checked_add(retained.control_bytes)?
-                    .checked_add(roster_bytes)?;
+                    .checked_add(retained.control_bytes)
+                    .and_then(|bytes| bytes.checked_add(roster_bytes))
+                    .ok_or(Unverified)?;
                 let step_peak = input_scratch
-                    .checked_add(transition.scratch_bytes())?
-                    .checked_add(retained_bytes)?
-                    .checked_add(live_inventory)?;
+                    .checked_add(transition.scratch_bytes())
+                    .and_then(|peak| peak.checked_add(retained_bytes))
+                    .and_then(|peak| peak.checked_add(live_inventory))
+                    .ok_or(Unverified)?;
                 if step_peak > maximum_scratch_bytes {
-                    return None;
+                    return Err(Unverified);
                 }
                 retained.peak_scratch = retained.peak_scratch.max(step_peak);
                 history
@@ -261,7 +275,7 @@ pub(super) fn admit(
                         &result_inventory.free_space,
                         format,
                     )
-                    .ok()?;
+                    .map_err(|_| Unverified)?;
             }
         }
         if let (Some(inventory), Some(routes)) = (next_inventory, next_routes) {
@@ -274,7 +288,7 @@ pub(super) fn admit(
     }
     let history = history
         .finish(selected_root, &selected_inventory.free_space, format)
-        .ok()?;
+        .map_err(|_| Unverified)?;
     retained.peak_scratch = retained.peak_scratch.max(history.peak_scratch_bytes());
-    Some((history, releases, retained.peak_scratch))
+    Ok((history, releases, retained.peak_scratch))
 }
