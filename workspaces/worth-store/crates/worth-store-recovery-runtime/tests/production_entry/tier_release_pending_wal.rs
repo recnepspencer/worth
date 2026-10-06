@@ -218,13 +218,13 @@ fn park_at_descriptor_wal(
     });
 }
 
-struct KilledWorld {
+pub(super) struct KilledWorld {
     root: PathBuf,
     _marker: tempfile::TempDir,
 }
 
 impl KilledWorld {
-    fn root(&self) -> &Path {
+    pub(super) fn root(&self) -> &Path {
         &self.root
     }
 }
@@ -242,7 +242,7 @@ impl Drop for KilledWorld {
     }
 }
 
-fn kill_producer_after_descriptor_wal() -> KilledWorld {
+pub(super) fn kill_producer_after_descriptor_wal() -> KilledWorld {
     let marker_dir = tempfile::tempdir().unwrap();
     let marker = marker_dir.path().join("ready");
     let mut child = Command::new(std::env::current_exe().unwrap())

@@ -2,14 +2,18 @@
 
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{BlobReclaimSourceBasisV1, BlobRecordKind, BlobRecordV1};
+use worth_store_recovery_physics::{ExceededRootHistoryBound, RootHistoryBound};
 
 use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
 use super::super::historical_publication::{self, HistoricalFailure};
 use super::closure_evidence::ReleasedClosureEvidence;
 use super::{binding_matches, historical, historical_anchor, selected, selected_blob_record};
+use crate::entry::{PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDimension};
 use crate::orchestration::planning::{
-    page_observation::HistoricalDropEvidence, selected_source_inventory,
+    page_observation::{HistoricalDropEvidence, PageLimit},
+    selected_source_inventory,
 };
+use crate::orchestration::recovery_budget::RecoveryAllowance;
 use crate::progression::verified_historical_release_transition;
 
 pub(in crate::orchestration::planning::completion) fn verify_historical(
@@ -256,7 +260,7 @@ pub(in crate::orchestration::planning::completion) fn verify_historical(
     {
         return Err(context.redo_block(basis.planning_counters(), None));
     }
-    let Ok((transition, input_scratch)) = verified_historical_release_transition(
+    let transition = verified_historical_release_transition(
         &historical_source.0,
         &historical_source.1,
         &source_routes,
@@ -270,8 +274,13 @@ pub(in crate::orchestration::planning::completion) fn verify_historical(
         format,
         context.limits.manifest_entries,
         context.limits.staging_bytes,
-    ) else {
-        return Err(context.redo_block(basis.planning_counters(), None));
+    );
+    let (transition, input_scratch) = match transition {
+        Ok(verified) => verified,
+        Err(exceeded) => {
+            let failure = transition_refused(exceeded, &context.limits);
+            return Err(historical_publication::unobserved(context, basis, failure));
+        }
     };
     if ordered_edge.transition() != &transition
         || !ordered_history.selected_topology().matches_headers(
@@ -310,3 +319,31 @@ pub(in crate::orchestration::planning::completion) fn verify_historical(
     ));
     Ok(context)
 }
+
+/// What the historical result's checks were refused, in recovery's own
+/// limits. They were handed the declared manifest entries as each view's
+/// bound and the declared staging bytes as their scratch, so a bound they ran
+/// past is that limit. `None` is failed verification.
+fn transition_refused(
+    exceeded: Option<ExceededRootHistoryBound>,
+    limits: &PhysicalRecoveryLimitDeclaration,
+) -> HistoricalFailure {
+    let Some(past) = exceeded else {
+        return HistoricalFailure::Invalid;
+    };
+    let dimension = match past.dimension() {
+        RootHistoryBound::Entries => PhysicalRecoveryLimitDimension::ManifestEntries,
+        RootHistoryBound::ScratchBytes => PhysicalRecoveryLimitDimension::StagingBytes,
+    };
+    // No limit when the refusal names no count past what was declared:
+    // the host refused scratch memory, which is no limit of ours.
+    RecoveryAllowance::declared(limits, dimension)
+        .beside(past.observed(), past.admitted())
+        .map_or(HistoricalFailure::Invalid, |limit| {
+            HistoricalFailure::Limit(PageLimit::Recovery(limit))
+        })
+}
+
+#[cfg(test)]
+#[path = "historical_redo_tests.rs"]
+mod tests;

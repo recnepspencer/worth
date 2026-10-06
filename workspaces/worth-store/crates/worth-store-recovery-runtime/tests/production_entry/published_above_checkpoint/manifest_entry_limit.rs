@@ -36,7 +36,7 @@ pub(super) const RELEASED_NEED: u64 = 176;
 /// historical drops' result, source, retained-candidate and dropped-record
 /// roots (8); and their redos' source and candidate roots (4), once each,
 /// their inventories paid by the same entry.
-const ORDERED_NEED: u64 = 396;
+pub(super) const ORDERED_NEED: u64 = 396;
 
 /// A release completed above the checkpoint: the walk runs for its drop,
 /// which then reads the source root it released from.

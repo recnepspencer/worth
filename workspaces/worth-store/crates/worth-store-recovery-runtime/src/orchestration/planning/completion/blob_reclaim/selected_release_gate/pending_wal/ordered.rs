@@ -232,16 +232,8 @@ pub(super) fn admit_roster(
         let batch = match admitted {
             Ok(batch) => batch,
             Err(cause) => {
-                return Err(denial::block(
-                    context,
-                    basis,
-                    Denial::Batch {
-                        operation: release.operation,
-                        edge_index,
-                        cause,
-                    },
-                    None,
-                ))
+                let (cause, limit) = denial::batch(release.operation, edge_index, cause, staging);
+                return Err(denial::block(context, basis, cause, limit));
             }
         };
         remaining_bytes = remaining_bytes.saturating_sub(batch.retained_bytes());

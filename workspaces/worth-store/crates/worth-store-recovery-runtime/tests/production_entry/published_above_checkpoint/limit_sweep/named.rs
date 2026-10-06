@@ -55,6 +55,8 @@ pub(super) fn only_a_limit(denial: &Planning) -> bool {
         Planning::SuccessorCandidate(Candidate::ManifestEntryLimit { .. }) => true,
         Planning::SuccessorCandidate(Candidate::Discovery { failure, .. }) => reader(failure),
         Planning::SelectedReleaseHead(denial) => head(denial),
+        // A pending tier release reads the released directory's records.
+        Planning::ReleasedDirectorySource(denial) => record(denial),
         _ => false,
     }
 }

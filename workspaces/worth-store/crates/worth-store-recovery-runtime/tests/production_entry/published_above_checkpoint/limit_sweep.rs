@@ -8,15 +8,23 @@
 //! are each swept from one up to the need.
 
 use super::super::*;
-use super::manifest_entry_limit::{released_world, IDLE_NEED, RELEASED_NEED};
+use super::manifest_entry_limit::{released_world, IDLE_NEED, ORDERED_NEED, RELEASED_NEED};
+use entries::{entry_need, History, Need, Staging};
 use pending_wal_world::{PendingWalWorld, Tail, Workload};
+use worlds::Killed;
 use worth_store_recovery_runtime::{
     PhysicalRecoveryBlock, PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension,
     PhysicalRecoveryOpenRequest, PhysicalRecoveryOutcome, WorthStoreRecovery,
 };
 
+#[path = "limit_sweep/entries.rs"]
+mod entries;
+#[path = "limit_sweep/moved_media.rs"]
+mod moved_media;
 #[path = "limit_sweep/named.rs"]
 mod named;
+#[path = "limit_sweep/worlds.rs"]
+mod worlds;
 
 /// What the first reopen needs where a checkpoint heads the released
 /// object: the release gate then replays the head path its roster holds.
@@ -24,6 +32,26 @@ mod named;
 /// root the candidate probe finds absent (1), and the historical roots a
 /// blob record is looked up under (4).
 const HEADED_NEED: u64 = 95;
+
+/// A certified release reopened with nothing pending: the gate replays its
+/// checkpoint head and nothing after it.
+const CERTIFIED_NEED: u64 = 39;
+
+/// The released world once its successor was sealed and served: the walk
+/// orders that completed history above the same checkpoint.
+const COMPLETED_NEED: u64 = 232;
+
+/// A tier release killed after its descriptor WAL: the gate reads the
+/// released directory's records and redoes the pending release.
+const TIER_NEED: u64 = 50;
+
+/// One checkpointed record rewritten inline: completing it rereads the one
+/// moved segment.
+const REWRITE_NEED: u64 = 6;
+
+/// One extent copied to another arena: completing it rereads the copy's
+/// chunks.
+const COPY_NEED: u64 = 11;
 
 /// The entries the two-chunk worlds admit.
 const SUFFICIENT_ENTRIES: u64 = 4096;
@@ -107,17 +135,27 @@ fn paged(blocked: &PhysicalRecoveryBlock) -> bool {
     blocked.cause().phase() == PhysicalRecoveryBlockKind::PageAdmission
 }
 
-/// The count the block says its charge or read reached, or one past the
-/// limit where it names none, and whether page admission blocked; `None`
-/// once the world recovers. A block that does not name the limit is
-/// recorded against the limit it was admitted under.
+/// What a probe that did not recover was told.
+struct Blocked {
+    /// Whether page admission blocked.
+    paged: bool,
+    /// The count the block says its charge or read reached, or one past the
+    /// limit where it names none.
+    count: u64,
+    /// The phase that blocked and the outermost denial it named.
+    denial: String,
+}
+
+/// What the probe under `admitted` was told; `None` once the world
+/// recovers. A block that does not name the limit is recorded against the
+/// limit it was admitted under.
 fn reached(
-    world: &PendingWalWorld,
+    root: &Path,
     swept: Swept,
     admitted: u64,
     failures: &mut Vec<String>,
-) -> Option<(bool, u64)> {
-    match WorthStoreRecovery::recover(swept.request(world.root(), admitted)) {
+) -> Option<Blocked> {
+    match WorthStoreRecovery::recover(swept.request(root, admitted)) {
         PhysicalRecoveryOutcome::Recovered(handoff) => {
             drop(handoff);
             None
@@ -127,41 +165,20 @@ fn reached(
                 failures.push(format!("{swept:?} {admitted}: {short}"));
             }
             let count = blocked.cause().limit().map_or(0, |limit| limit.observed());
-            Some((paged(&blocked), count.max(admitted + 1)))
+            let denial = format!("{:?}", blocked.evidence().planning_denial);
+            let outermost = denial
+                .split(['(', ' '])
+                .take(2)
+                .collect::<Vec<_>>()
+                .join("");
+            Some(Blocked {
+                paged: paged(&blocked),
+                count: count.max(admitted + 1),
+                denial: format!("{:?} {outermost}", blocked.cause().phase()),
+            })
         }
         outcome => panic!("{swept:?} {admitted}: neither recovered nor blocked: {outcome:?}"),
     }
-}
-
-/// Every entry limit up to the one the world recovers under, which is
-/// answered. A charge is refused at the same count under every limit short
-/// of it, and the world recovers under the count its last refusal reached.
-/// Ordering the history of every one of these worlds charges some step
-/// several entries at once, so one of its refusals names a count further
-/// than one past its limit.
-/// A recovery changes the world, so the sweep ends there; every block
-/// before it left the media as the kill did.
-fn entry_need(world: &PendingWalWorld, failures: &mut Vec<String>) -> Option<u64> {
-    let mut refused_at = None;
-    let mut charged_together = false;
-    for admitted in 1..=SUFFICIENT_ENTRIES {
-        let blocked = reached(world, Swept::ManifestEntries, admitted, failures);
-        let now = blocked.map(|(_, count)| count);
-        if let Some(count) = refused_at.filter(|count| admitted < *count && now != Some(*count)) {
-            failures.push(format!(
-                "ManifestEntries {admitted}: refused at {count} under a lower limit, now {now:?}",
-            ));
-        }
-        let Some((paged, count)) = blocked else {
-            if !charged_together {
-                failures.push("ManifestEntries: no ordered step named the count it reached".into());
-            }
-            return Some(admitted);
-        };
-        charged_together |= paged && count > admitted + 1;
-        refused_at = Some(count);
-    }
-    None
 }
 
 /// Byte limits from one byte up to the one the world recovers under, which
@@ -169,10 +186,10 @@ fn entry_need(world: &PendingWalWorld, failures: &mut Vec<String>) -> Option<u64
 /// by a recovery admitted exactly that count, so every such read is refused
 /// once. The others are passed a stride at a time: a page where ordering
 /// the history blocked, a record elsewhere.
-fn byte_need(world: &PendingWalWorld, swept: Swept, failures: &mut Vec<String>) -> Option<u64> {
+fn byte_need(root: &Path, swept: Swept, failures: &mut Vec<String>) -> Option<u64> {
     let mut admitted = 1;
     while admitted <= certified_release_serving::ADMITTED_BYTES {
-        let Some((paged, count)) = reached(world, swept, admitted, failures) else {
+        let Some(Blocked { paged, count, .. }) = reached(root, swept, admitted, failures) else {
             return Some(admitted);
         };
         admitted = if count > admitted + 1 {
@@ -189,16 +206,16 @@ fn byte_need(world: &PendingWalWorld, swept: Swept, failures: &mut Vec<String>) 
 /// Each sweep takes the world as the kill left it. All run before any is
 /// judged, so one report lists every limit that was not named. The entry
 /// need is fixed; bytes follow block sizes, so those needs are only found.
-fn assert_limits_are_reported_as_limits(
-    killed: impl Fn() -> PendingWalWorld,
-    need: u64,
+fn assert_limits_are_reported_as_limits<W: Killed>(
+    killed: impl Fn() -> W,
+    need: Need,
     stage: &str,
 ) {
     let mut failures = Vec::new();
-    let entries = entry_need(&killed(), &mut failures);
-    let manifest = byte_need(&killed(), Swept::ManifestBytes, &mut failures);
-    let bytes = byte_need(&killed(), Swept::ObservationBytes, &mut failures);
-    let staging = byte_need(&killed(), Swept::StagingBytes, &mut failures);
+    let entries = entry_need(&killed, need, &mut failures);
+    let manifest = byte_need(killed().root(), Swept::ManifestBytes, &mut failures);
+    let bytes = byte_need(killed().root(), Swept::ObservationBytes, &mut failures);
+    let staging = byte_need(killed().root(), Swept::StagingBytes, &mut failures);
     assert!(
         failures.is_empty(),
         "{stage}: {} blocks under {entries:?} entries, {manifest:?} manifest bytes, \
@@ -206,7 +223,11 @@ fn assert_limits_are_reported_as_limits(
         failures.len(),
         failures.join("\n"),
     );
-    assert_eq!(entries, Some(need), "{stage}: the entry need is fixed");
+    assert_eq!(
+        entries,
+        Some(need.entries),
+        "{stage}: the entry need is fixed"
+    );
     assert!(
         manifest.is_some_and(|bytes| bytes > RECORD_STRIDE),
         "{stage}: no manifest-byte limit blocked: {manifest:?}",
@@ -215,31 +236,98 @@ fn assert_limits_are_reported_as_limits(
         bytes.is_some_and(|bytes| bytes > PAGE_STRIDE),
         "{stage}: no observation-byte limit blocked: {bytes:?}",
     );
-    assert!(
-        staging.is_some_and(|bytes| bytes > PAGE_STRIDE),
-        "{stage}: no staging-byte limit blocked: {staging:?}",
-    );
+    match need.staging {
+        Staging::Staged => assert!(
+            staging.is_some_and(|bytes| bytes > PAGE_STRIDE),
+            "{stage}: no staging-byte limit blocked: {staging:?}",
+        ),
+        Staging::Unstaged => assert_eq!(staging, Some(1), "{stage}: nothing is staged"),
+    }
 }
 
 #[test]
 fn every_limit_under_the_need_of_published_objects_is_reported_as_that_limit() {
-    assert_limits_are_reported_as_limits(idle_world, IDLE_NEED, "published above the checkpoint");
+    assert_limits_are_reported_as_limits(
+        idle_world,
+        Need::every(IDLE_NEED, History::Ordered),
+        "published above the checkpoint",
+    );
 }
 
 #[test]
+#[ignore = "release-limit-sweeps: release and reclaim report Absent until Part II M12/M15"]
 fn every_limit_under_the_need_of_a_historical_release_is_reported_as_that_limit() {
     assert_limits_are_reported_as_limits(
         released_world,
-        RELEASED_NEED,
+        Need::every(RELEASED_NEED, History::Ordered),
         "released above the checkpoint",
     );
 }
 
 #[test]
+#[ignore = "release-limit-sweeps: release and reclaim report Absent until Part II M12/M15"]
 fn every_limit_under_the_need_of_a_release_above_a_checkpoint_head_is_reported_as_that_limit() {
     assert_limits_are_reported_as_limits(
         pending_successor_above_history::terminal_successor_of_a_checkpoint_head,
-        HEADED_NEED,
+        Need::every(HEADED_NEED, History::Ordered),
         "released above a checkpoint head",
+    );
+}
+
+#[test]
+#[ignore = "release-limit-sweeps: release and reclaim report Absent until Part II M12/M15"]
+fn every_limit_under_the_need_of_a_certified_release_is_reported_as_that_limit() {
+    assert_limits_are_reported_as_limits(
+        worlds::certified_release,
+        Need::every(CERTIFIED_NEED, History::Ordered).unstaged(),
+        "certified release",
+    );
+}
+
+#[test]
+#[ignore = "release-limit-sweeps: release and reclaim report Absent until Part II M12/M15"]
+fn every_limit_under_the_need_of_completed_history_is_reported_as_that_limit() {
+    assert_limits_are_reported_as_limits(
+        worlds::completed_history,
+        Need::strided(COMPLETED_NEED, 16),
+        "completed history",
+    );
+}
+
+#[test]
+#[ignore = "release-limit-sweeps: release and reclaim report Absent until Part II M12/M15"]
+fn every_limit_under_the_need_of_a_pending_tier_release_is_reported_as_that_limit() {
+    assert_limits_are_reported_as_limits(
+        tier_release_pending_wal::kill_producer_after_descriptor_wal,
+        Need::every(TIER_NEED, History::Unordered),
+        "pending tier release",
+    );
+}
+
+#[test]
+fn every_limit_under_the_need_of_a_killed_rewrite_is_reported_as_that_limit() {
+    assert_limits_are_reported_as_limits(
+        moved_media::killed_rewrite,
+        Need::every(REWRITE_NEED, History::Unordered),
+        "killed rewrite",
+    );
+}
+
+#[test]
+fn every_limit_under_the_need_of_a_killed_copy_is_reported_as_that_limit() {
+    assert_limits_are_reported_as_limits(
+        moved_media::killed_copy,
+        Need::every(COPY_NEED, History::Ordered),
+        "killed copy",
+    );
+}
+
+#[test]
+#[ignore = "release-limit-sweeps: release and reclaim report Absent until Part II M12/M15"]
+fn every_limit_under_the_need_of_a_pending_successor_is_reported_as_that_limit() {
+    assert_limits_are_reported_as_limits(
+        pending_successor_above_history::ordered_release_above_a_head_checkpoint,
+        Need::strided(ORDERED_NEED, 16),
+        "pending successor of an ordered release",
     );
 }

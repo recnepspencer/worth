@@ -12,14 +12,18 @@ use worth_store_physical_format::{
     SelectedRecordRouteMetadata,
 };
 
-use super::super::historical_publication::RootRouteInventory;
+use super::super::historical_publication::{HistoricalFailure, RootRouteInventory};
 use super::closure_evidence::ReleasedClosureEvidence;
 use super::continuation::VerifiedCheckpointSourceAbsence;
 use super::head_predecessor::{checkpoint_head, extends_checkpoint_head, head_predecessor_matches};
 use super::historical_predecessors::{authenticate_chain, HeadAnchoredBatch};
+use crate::entry::PhysicalRecoveryLimitDimension::ManifestEntries;
+use crate::orchestration::recovery_budget::{allowance_for_test, RecoveryAllowance};
 
 const STORE: [u8; 16] = [1; 16];
 const CHECKPOINT_GENERATION: u64 = 6;
+/// Far more entries than any chain here retains.
+const ENTRIES: RecoveryAllowance = allowance_for_test(ManifestEntries, 16);
 
 fn record(ordinal: u64) -> PersistedRecordIdentity {
     PersistedRecordIdentity::new([4; 16], ordinal).unwrap()
@@ -158,7 +162,7 @@ fn chain_leaving_the_ordered_releases_needs_the_replayed_checkpoint_head() {
     let source = source(3);
     let exact = head(source, digest(source), 3, false);
     let current = successor(source, exact, 5);
-    let anchored = authenticate_chain(current, source, 2, Some(exact), &[], &[exact], 16)
+    let anchored = authenticate_chain(current, source, 2, Some(exact), &[], &[exact], ENTRIES)
         .expect("exact checkpoint-source head anchors the chain");
     assert!(anchored.retained_same_key.is_empty());
     let batch = HeadAnchoredBatch {
@@ -168,18 +172,18 @@ fn chain_leaving_the_ordered_releases_needs_the_replayed_checkpoint_head() {
     assert_eq!(anchored.anchor, Some(batch));
     // No checkpoint head for the object, as under a NoRelease checkpoint.
     assert_eq!(
-        authenticate_chain(current, source, 2, Some(exact), &[], &[], 16),
-        None
+        authenticate_chain(current, source, 2, Some(exact), &[], &[], ENTRIES),
+        Err(HistoricalFailure::Invalid)
     );
     // The release replayed no prior, or a different prior, for its head.
     assert_eq!(
-        authenticate_chain(current, source, 2, None, &[], &[exact], 16),
-        None
+        authenticate_chain(current, source, 2, None, &[], &[exact], ENTRIES),
+        Err(HistoricalFailure::Invalid)
     );
     let other = head(source, digest(source), 4, false);
     assert_eq!(
-        authenticate_chain(current, source, 2, Some(other), &[], &[exact], 16),
-        None
+        authenticate_chain(current, source, 2, Some(other), &[], &[exact], ENTRIES),
+        Err(HistoricalFailure::Invalid)
     );
     for mismatch in [
         head(source, [0x77; 32], 3, false),
@@ -187,8 +191,16 @@ fn chain_leaving_the_ordered_releases_needs_the_replayed_checkpoint_head() {
         head(source, digest(source), 4, false),
     ] {
         assert_eq!(
-            authenticate_chain(current, source, 2, Some(mismatch), &[], &[mismatch], 16),
-            None
+            authenticate_chain(
+                current,
+                source,
+                2,
+                Some(mismatch),
+                &[],
+                &[mismatch],
+                ENTRIES
+            ),
+            Err(HistoricalFailure::Invalid)
         );
     }
 }

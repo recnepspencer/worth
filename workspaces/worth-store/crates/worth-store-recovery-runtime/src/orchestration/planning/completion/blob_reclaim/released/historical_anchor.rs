@@ -11,10 +11,13 @@ use worth_store_physical_format::{
 };
 
 use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
+use super::super::super::historical_publication;
 use super::super::selected_release_gate::admit_source_heads;
 use super::closure_evidence::ReleasedClosureEvidence;
 use super::continuation::{self, VerifiedCheckpointSourceAbsence};
 use super::historical_predecessors::{self, AuthenticatedPredecessors};
+use crate::entry::PhysicalRecoveryLimitDimension;
+use crate::orchestration::recovery_budget::RecoveryAllowance;
 use crate::progression::PlanningCustody;
 
 /// Custody of everything a release with a predecessor may find absent.
@@ -120,10 +123,13 @@ fn authenticate_chain(
             .as_deref()
             .unwrap_or(&[]),
         checkpoint_heads,
-        context.limits.manifest_entries,
+        RecoveryAllowance::declared(
+            &context.limits,
+            PhysicalRecoveryLimitDimension::ManifestEntries,
+        ),
     ) {
-        Some(predecessors) => Ok((context, predecessors)),
-        None => Err(context.redo_block(basis.planning_counters(), None)),
+        Ok(predecessors) => Ok((context, predecessors)),
+        Err(failure) => Err(historical_publication::unobserved(context, basis, failure)),
     }
 }
 
