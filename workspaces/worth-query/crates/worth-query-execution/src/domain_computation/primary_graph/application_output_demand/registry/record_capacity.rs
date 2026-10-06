@@ -186,6 +186,7 @@ impl DemandRegistryState {
             performed_obligations: Vec::new(),
             framework_required_count: 0,
             prerequisites: Vec::new(),
+            checkpoint_prerequisites: None,
             prepared_prerequisite_claims: 0,
             pending_cleanup_next: None,
             pending_cleanup_queued: false,

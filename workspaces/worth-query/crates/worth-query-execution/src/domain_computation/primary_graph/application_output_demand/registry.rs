@@ -232,6 +232,7 @@ struct DemandRecord {
     performed_obligations: Vec<PerformedOutputObligation>,
     framework_required_count: usize,
     prerequisites: Vec<Arc<WorthQueryOutputDemandKey>>,
+    checkpoint_prerequisites: Option<prerequisite_claims::CheckpointPrerequisiteClaims>,
     prepared_prerequisite_claims: usize,
     pending_cleanup_next: Option<Arc<WorthQueryOutputDemandKey>>,
     pending_cleanup_queued: bool,

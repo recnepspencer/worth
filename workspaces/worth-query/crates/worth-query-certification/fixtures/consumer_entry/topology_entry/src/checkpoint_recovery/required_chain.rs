@@ -20,6 +20,7 @@ mod performed_head_movement;
 mod producer;
 mod program;
 mod readiness;
+mod reopened_consumer;
 #[cfg(feature = "test-query-execution-observer")]
 mod required_queue;
 mod restored_currentness;
