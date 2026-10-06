@@ -93,6 +93,12 @@ evidence still returns `PendingUpstream`; it never establishes upstream currentn
 This lets a value-changing Preserve settlement remain selectable without an older,
 conclusively stale Initial candidate hiding it.
 
+A required refresh executes under the mode issued by its accepted predecessor.
+After its exact Current join, an existing caller can follow that completed
+refresh across selected-program and program-output modes. The caller retains
+its own advance authority; unfinished execution still requires the successor
+mode and installed producer edition to match.
+
 For ordinary candidate declarations, use
 `ApplicationCandidateResourceCeiling::representation_bytes(bytes)` (or omit
 `validator_work` in the mutation-binding macro). Installation derives validator

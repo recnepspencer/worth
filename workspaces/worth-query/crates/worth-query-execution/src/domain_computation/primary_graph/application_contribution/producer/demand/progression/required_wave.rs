@@ -39,6 +39,7 @@ pub(super) struct RequiredWaveSelection<'runtime, Schema> {
 }
 
 mod caller;
+mod current_handoff;
 mod drive;
 mod queued;
 mod resolved;

@@ -48,9 +48,8 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
     fn family_type(&self) -> TypeId;
     fn concrete_type(&self) -> TypeId;
     fn progression(&self) -> &RequiredSuccessorProvenance;
-    fn validate_for_promotion(
+    fn validate_for_current_handoff(
         &self,
-        mode: &WorthQueryProducerCommitAuthority,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial>;
     fn predecessor(&self) -> &SelectedReadyReadmission;
@@ -137,17 +136,19 @@ where
             .expect("installed required successor retains its exact predecessor Ready")
     }
 
-    fn validate_for_promotion(
+    fn validate_for_current_handoff(
         &self,
-        mode: &WorthQueryProducerCommitAuthority,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let demand = self
             .demand
             .as_ref()
             .expect("installed successor owns its demand");
-        self.progression()
-            .validate_for_execution(mode, &demand.installed_entry.edition, admission)
+        self.progression().validate_for_execution(
+            self.progression().commit_authority(),
+            &demand.installed_entry.edition,
+            admission,
+        )
     }
 
     fn producer_contacts(&self) -> usize {
