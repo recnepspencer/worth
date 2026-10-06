@@ -39,12 +39,12 @@ pub(super) fn merge_source_facts(
     for fact in admitted.into_iter().chain(dependent) {
         let locator = fact.dependency_key();
         if merged
-            .insert(locator, fact.clone())
+            .insert(locator.clone(), fact.clone())
             .is_some_and(|existing| existing != fact)
         {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch,
-                operation,
+                format!("{operation}: source facts conflict at {locator:?}"),
             ));
         }
     }
