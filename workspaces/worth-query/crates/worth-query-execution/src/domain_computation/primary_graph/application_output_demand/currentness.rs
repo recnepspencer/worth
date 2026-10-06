@@ -126,7 +126,18 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             owner,
             remaining_work,
         )?;
-        require_current_facts(relational, snapshot, read.facts.iter(), remaining_work)?;
+        require_current_facts(relational, snapshot, read.facts.iter(), remaining_work).map_err(
+            |error| match read.verification_requirement {
+                Some(reason) => WorthQueryOutputDemandDenial::new(
+                    error.kind(),
+                    format!(
+                        "{}; output requires full verification: {reason:?}",
+                        error.subject()
+                    ),
+                ),
+                None => error,
+            },
+        )?;
         if let Ok(selected) = relational.read_truth().positioned_snapshot(snapshot) {
             let mut admission = owner.edit_admission();
             let witness = read.native_output_witness.as_ref();

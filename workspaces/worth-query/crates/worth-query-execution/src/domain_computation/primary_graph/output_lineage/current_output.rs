@@ -23,6 +23,8 @@ pub(in crate::domain_computation::primary_graph) struct RetainedOutputCurrentnes
         Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     /// The facts and the witness are everything this output depends on.
     pub(in crate::domain_computation::primary_graph) consumed_nothing: bool,
+    pub(in crate::domain_computation::primary_graph) verification_requirement:
+        Option<super::invalidation::FullVerificationReason>,
     pub(in crate::domain_computation::primary_graph) work: usize,
 }
 
@@ -289,6 +291,7 @@ fn retained_currentness_read(
         native_output_witness: origin.native_output_witness_cell().map(Arc::clone),
         consumed_nothing: recorded.consumed_outputs.is_empty()
             && recorded.performed_origin.is_none(),
+        verification_requirement: recorded.verification_requirement(),
         work,
     }))
 }
