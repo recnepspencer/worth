@@ -5,7 +5,8 @@ use worth_execution::{
     CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig, LeaseRequest,
 };
 use worth_foundational::{
-    DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+    DeterminismContract, ExecutionBudget, ExecutionFallbackCause, ExecutionPosture,
+    ExecutionRequestPolicy,
 };
 
 #[test]
@@ -40,6 +41,11 @@ fn one_scope_enforces_total_work_and_preserves_snapshot_after_stop() {
     };
     assert!(matches!(stopped.cause, DecomposeFailure::Back { .. }));
     assert_eq!(stopped.total_report.charged_work(), 19);
+    assert_eq!(
+        stopped.total_report.fallback(),
+        Some(ExecutionFallbackCause::PolicySerial),
+        "a stopped decomposition keeps its stages' fallback"
+    );
 
     let sufficient = authority.request_lease(request(20)).unwrap();
     let complete = decompose
@@ -53,6 +59,10 @@ fn one_scope_enforces_total_work_and_preserves_snapshot_after_stop() {
         )
         .unwrap();
     assert_eq!(complete.total_report.charged_work(), 20);
+    assert_eq!(
+        complete.total_report.fallback(),
+        Some(ExecutionFallbackCause::PolicySerial)
+    );
     assert_eq!(complete.reduction_metrics.structural_visits, 11);
     assert_eq!(complete.reduction_metrics.combine_calls, 4);
     assert_eq!(complete.reduction_metrics.charged_work, 15);

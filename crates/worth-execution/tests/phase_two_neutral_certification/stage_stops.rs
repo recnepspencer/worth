@@ -4,13 +4,13 @@ use super::*;
 fn stage_stops_keep_canonical_prefix_and_do_not_publish_partial_decomposition() {
     let _guard = TEST_LOCK.lock().unwrap_or_else(|error| error.into_inner());
     let map = integer_map(4);
-    let cancelled = CancellationToken::new();
+    let cancelled = CancellationSource::new();
     cancelled.cancel();
     let cancelled_lease = lease(
         ExecutionPosture::Automatic,
         4,
         20,
-        cancelled,
+        cancelled.token(),
         None,
         DeterminismContract::CanonicalBitwise,
     );

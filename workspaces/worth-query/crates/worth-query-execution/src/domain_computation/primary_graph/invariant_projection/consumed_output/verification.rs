@@ -1,7 +1,9 @@
 use std::sync::{Arc, OnceLock};
 
 use im::OrdSet;
-use worth_relational::facade::mvcc::{CompanionCellEditStop, CompanionPreflightStop};
+use worth_relational::facade::mvcc::{
+    CompanionCellEditStop, CompanionPreflightStop, RelationalInterruptionEvent,
+};
 use worth_relational::facade::runtime::{PositionedRelationalSnapshot, RelationalRuntime};
 use worth_relational::facade::snapshots::SnapshotHandle;
 
@@ -92,6 +94,9 @@ pub(in crate::domain_computation::primary_graph) enum ConsumedOutputVerification
     PendingUpstream,
     RetryCurrentness(CompanionCellEditStop),
     WorkExhausted,
+    /// The request was cancelled or ran out of time while verifying. The
+    /// evidence was neither found current nor found missing.
+    Interrupted(RelationalInterruptionEvent),
 }
 
 impl ConsumedOutputEvidence {

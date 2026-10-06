@@ -3,20 +3,18 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
-use worth_execution::{
-    ExecutionMap, ExecutionWorkCeiling, MapKernelContext, MapKernelFailure, MapKernelStop,
-    PartitionItemId,
-};
+use worth_execution::{ExecutionMap, MapKernelContext, MapKernelStop, PartitionItemId};
 use worth_query_declaration::facade::application_program::{
     ApplicationFeature, ApplicationManagedComputation,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
+use super::super::execution_denial::kernel_failure;
 use super::super::{
-    WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationDenial,
-    WorthQueryManagedComputationExecution, WorthQueryManagedComputationInterruption,
+    WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationExecution,
     WorthQueryManagedComputationResourceDenial,
 };
+use super::gather_memory::GatheredMemory;
 use super::incremental::{
     observe_unretained, ComputationDeposit, ComputedIncremental, FullRecording,
     PreparedIncremental, WorthQueryPartitionedComputationFullCause,
@@ -73,6 +71,9 @@ where
 {
     Full {
         map: ExecutionMap<Gathered<Schema, Feature, Computation, Owner>, u64>,
+        /// The request memory the gathered partitions hold until the map's
+        /// admission takes it over.
+        memory: GatheredMemory,
         remaining_work: u64,
         items: Arc<BTreeMap<PartitionItemId, Owner::Item>>,
         recording: Option<FullRecording<Computation::Partition>>,
@@ -100,9 +101,10 @@ where
     /// results over the canonical tree, inside what `prepare` left of the
     /// computation's declared work.
     ///
-    /// No lease reaches a managed computation yet, so the serial backend runs
-    /// every partition on the calling thread, in the order and with the
-    /// charges any worker count would settle on.
+    /// The run is placed by the request's execution: on a child of the
+    /// request's lease, or serially within the request's policy. Either way
+    /// the partitions settle in identity order with the charges any worker
+    /// count would settle on.
     pub fn compute(
         self,
         execution: WorthQueryManagedComputationExecution<'_>,
@@ -160,23 +162,41 @@ where
         let (reduced, computed_work, completed) = match self.run {
             PreparedRun::Full {
                 map,
+                memory,
                 remaining_work,
                 items,
                 recording,
                 cause,
             } => {
-                let (reduced, _) = ExecutionWorkCeiling::new(remaining_work)
-                    .run(None, || {
-                        map.run_reduce(
-                            None,
-                            kernel,
-                            (reducer.identity)(),
-                            reducer.combine,
-                            declared_bytes,
-                            0,
+                let dispatch = execution
+                    .request
+                    .dispatch()
+                    .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
+                // The map's admission takes over the gathered partitions' hold,
+                // and the tree is handed to `tree_memory` as the run ends.
+                let mut tree_memory = execution
+                    .request
+                    .reserve(0)
+                    .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
+                let reduced = dispatch
+                    .reduce(
+                        remaining_work,
+                        &map,
+                        memory.into_held(),
+                        &mut tree_memory,
+                        kernel,
+                        (reducer.identity)(),
+                        reducer.combine,
+                        declared_bytes,
+                    )
+                    .map_err(|denial| {
+                        // The reduce pattern contains its kernels' panics:
+                        // what is left is the reducer's.
+                        WorthQueryPartitionedComputationDenial::from_work_ceiling(
+                            denial,
+                            WorthQueryPartitionedComputationDenial::ReducerPanicked,
                         )
-                    })
-                    .map_err(WorthQueryPartitionedComputationDenial::from_work_ceiling)?;
+                    })?;
                 let (tree, report, metrics) =
                     reduced.map_err(WorthQueryPartitionedComputationDenial::from_reduce)?;
                 let reduced = tree.result().clone();
@@ -188,6 +208,7 @@ where
                                 .into_inner()
                                 .unwrap_or_else(std::sync::PoisonError::into_inner),
                             tree,
+                            tree_memory,
                             metrics.charged_work,
                             cause,
                             report,
@@ -205,7 +226,7 @@ where
                     reduced,
                     computed_work,
                     completed,
-                } = prepared.compute(kernel, &reducer)?;
+                } = prepared.compute(execution.request, kernel, &reducer)?;
                 (reduced, computed_work, Some(completed))
             }
         };
@@ -223,27 +244,6 @@ where
             reduced,
             charged_work,
         })
-    }
-}
-
-/// What a partition's refusal is to the execution kernel.
-fn kernel_failure<Stopped>(
-    denial: WorthQueryManagedComputationDenial<Stopped>,
-) -> MapKernelFailure<Stopped> {
-    match denial {
-        WorthQueryManagedComputationDenial::Owner(stopped) => MapKernelFailure::Domain(stopped),
-        WorthQueryManagedComputationDenial::Resource(
-            WorthQueryManagedComputationResourceDenial::WorkExhausted,
-        ) => MapKernelFailure::Stop(MapKernelStop::WorkCeiling),
-        WorthQueryManagedComputationDenial::Resource(
-            WorthQueryManagedComputationResourceDenial::RetainedBytesExhausted,
-        ) => MapKernelFailure::ResultCapacityExceeded,
-        WorthQueryManagedComputationDenial::Interrupted(
-            WorthQueryManagedComputationInterruption::Cancelled,
-        ) => MapKernelFailure::Stop(MapKernelStop::Cancelled),
-        WorthQueryManagedComputationDenial::Interrupted(
-            WorthQueryManagedComputationInterruption::DeadlineExceeded,
-        ) => MapKernelFailure::Stop(MapKernelStop::DeadlineElapsed),
     }
 }
 

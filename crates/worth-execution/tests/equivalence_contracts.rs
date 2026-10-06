@@ -4,9 +4,9 @@ use std::{
 };
 
 use worth_execution::{
-    compare_canonical_values, CancellationToken, ConstructionDenial, EquivalencePredicate,
-    ExecutionAuthority, ExecutionAuthorityConfig, ExecutionMap, LeaseDenial, LeaseRequest,
-    MapKernelFailure, MapOutcome, MapPartition, OracleMismatch,
+    compare_canonical_values, CancellationSource, CancellationToken, ConstructionDenial,
+    EquivalencePredicate, ExecutionAuthority, ExecutionAuthorityConfig, ExecutionMap, LeaseDenial,
+    LeaseRequest, MapKernelFailure, MapOutcome, MapPartition, OracleMismatch,
 };
 use worth_foundational::{
     DeterminismContract, EquivalenceContractId, ExecutionBudget, ExecutionPosture,
@@ -139,11 +139,11 @@ fn predicates_install_once_and_leases_carry_exact_contract_to_children() {
     assert_eq!(*comparison.lock().unwrap(), Some(Err(OracleMismatch::Stop)));
     assert!(matches!(outcome, MapOutcome::Stopped { .. }));
 
-    let cancellation = CancellationToken::new();
+    let cancellation = CancellationSource::new();
     cancellation.cancel();
     let cancelled = authority
         .request_lease(LeaseRequest {
-            cancellation,
+            cancellation: cancellation.token(),
             ..request(DeterminismContract::CanonicalBitwise)
         })
         .unwrap();

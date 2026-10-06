@@ -4,7 +4,7 @@ use std::sync::{
     Arc, OnceLock,
 };
 
-use worth_execution::{CancellationToken, LeaseRequest};
+use worth_execution::{CancellationSource, CancellationToken, LeaseRequest};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
@@ -35,7 +35,7 @@ struct CheckedCounterRule {
     steps: usize,
     visits: Arc<AtomicUsize>,
     preparation_visits: Arc<AtomicUsize>,
-    cancellation: Option<CancellationToken>,
+    cancellation: Option<CancellationSource>,
     preparation_steps: usize,
     preparation_scratch_bytes: u64,
     target: Option<Arc<OnceLock<crate::identity::data::EntityId>>>,
@@ -239,7 +239,7 @@ fn checked_custom_preparation_reads_declared_structural_state() {
 
 #[test]
 fn checked_custom_preparation_observes_cancellation_mid_scan() {
-    let cancellation = CancellationToken::new();
+    let cancellation = CancellationSource::new();
     let preparation_visits = Arc::new(AtomicUsize::new(0));
     let evaluation_visits = Arc::new(AtomicUsize::new(0));
     let runtime = RelationalRuntimeApi::builder()
@@ -257,7 +257,7 @@ fn checked_custom_preparation_observes_cancellation_mid_scan() {
             .unwrap(),
         )
         .build();
-    let lease = checked_lease(8 * 1024 * 1024, 10_000, cancellation);
+    let lease = checked_lease(8 * 1024 * 1024, 10_000, cancellation.token());
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,
         &runtime,
@@ -328,7 +328,7 @@ fn checked_custom_preparation_denies_memory_before_large_scratch_claim() {
 
 #[test]
 fn checked_custom_evaluation_observes_cancellation_during_structural_views() {
-    let cancellation = CancellationToken::new();
+    let cancellation = CancellationSource::new();
     let target = Arc::new(OnceLock::new());
     let visits = Arc::new(AtomicUsize::new(0));
     let runtime = RelationalRuntimeApi::builder()
@@ -349,7 +349,7 @@ fn checked_custom_evaluation_observes_cancellation_during_structural_views() {
     target
         .set(create_entity_of_kind(&runtime, KindId(1), "checked-cancel"))
         .unwrap();
-    let lease = checked_lease(8 * 1024 * 1024, 10_000, cancellation);
+    let lease = checked_lease(8 * 1024 * 1024, 10_000, cancellation.token());
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,
         &runtime,

@@ -1,7 +1,7 @@
 //! Interrupted checked kernels cannot publish an epoch or poison later requests.
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use super::support::{authority, request};
+use super::support::{authority, cancellable, request};
 use crate::facade::{
     Aspect, AspectVersion, BoundedSignalInputs, EvaluationRequestMode, NodeContract,
     ParallelAdmissionPolicy, SignalError, SignalExecutionFailure, SignalExecutionStopReason,
@@ -56,8 +56,7 @@ fn assert_interrupted_epoch(panic_kernel: bool) {
             .iter()
             .cloned()
             .collect::<Vec<_>>();
-        let admission = request(workers, 2_000_000);
-        let cancellation = admission.cancellation.clone();
+        let (admission, cancellation) = cancellable(workers, 2_000_000);
         let lease = execution.request_lease(admission).unwrap();
         let calls = AtomicUsize::new(0);
         let error = graph

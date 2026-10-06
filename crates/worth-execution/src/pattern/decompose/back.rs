@@ -1,11 +1,12 @@
 use worth_foundational::PartitionIdentity;
+use worth_proof::CanonicalUniqueVec;
 
 use crate::report::ChargedBytes;
 
 use super::{BackInput, ExecutionMap, MapDenial, MapPartition};
 
 pub(super) fn admit_back_map<I: Clone + ChargedBytes, B: Clone + ChargedBytes>(
-    all_identities: &[PartitionIdentity],
+    all_identities: &CanonicalUniqueVec<PartitionIdentity>,
     changed_identities: &[PartitionIdentity],
     interiors: &[I],
     slices: &[B],
@@ -15,6 +16,7 @@ pub(super) fn admit_back_map<I: Clone + ChargedBytes, B: Clone + ChargedBytes>(
         .iter()
         .map(|identity| {
             let index = all_identities
+                .as_slice()
                 .binary_search(identity)
                 .expect("checked identity");
             MapPartition {

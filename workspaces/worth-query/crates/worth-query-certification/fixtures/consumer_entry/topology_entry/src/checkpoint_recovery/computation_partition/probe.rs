@@ -169,8 +169,9 @@ fn partition_of(region: u32) -> PartitionIdentity {
         .partition()
 }
 
-const BYTES_EXHAUSTED: WorthQueryManagedComputationResourceDenial =
-    WorthQueryManagedComputationResourceDenial::RetainedBytesExhausted;
+/// A result passed the bytes declared for one result.
+const RESULT_TOO_LARGE: WorthQueryManagedComputationResourceDenial =
+    WorthQueryManagedComputationResourceDenial::ResultCapacityExceeded;
 
 #[test]
 fn partition_key_is_its_least_items_key_whatever_order_the_input_holds() {
@@ -226,7 +227,7 @@ fn result_larger_than_the_declared_bytes_is_a_typed_denial() {
             demand("oversized").map(|total| total.bits),
             Err(WorthQueryPartitionedComputationDenial::Partition {
                 partition: partition_of(2),
-                cause: WorthQueryComputationPartitionStop::Resource(BYTES_EXHAUSTED),
+                cause: WorthQueryComputationPartitionStop::Resource(RESULT_TOO_LARGE),
             })
         );
         assert_eq!(
@@ -236,7 +237,7 @@ fn result_larger_than_the_declared_bytes_is_a_typed_denial() {
         assert_eq!(
             demand("together").map(|total| total.bits),
             Err(WorthQueryPartitionedComputationDenial::Resource(
-                BYTES_EXHAUSTED
+                RESULT_TOO_LARGE
             ))
         );
         assert_eq!(

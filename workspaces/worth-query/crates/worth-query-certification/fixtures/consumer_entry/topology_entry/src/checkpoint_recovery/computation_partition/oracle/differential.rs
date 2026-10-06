@@ -230,19 +230,36 @@ fn expected(kind: Kind) -> Option<Run> {
     }
 }
 
-#[test]
-fn every_reused_run_equals_a_full_run_of_the_same_facts() {
-    let _guard = checkpoint_recovery_test_guard();
+/// One demand of the seeded sequence: the facts it was made over, the edit
+/// before it, none for the first, the value its decision writes, and what
+/// it ran.
+pub(super) struct Demanded<'model> {
+    model: &'model Model,
+    kind: Option<Kind>,
+    own_write: Option<OwnWrite>,
+    pub(super) contacts: usize,
+    pub(super) runs: Vec<OracleRun>,
+}
+
+/// Runs the seeded sequence of edits through one runtime that keeps its
+/// output, and hands `each` every demand in order. The caller holds the
+/// checkpoint recovery guard.
+pub(super) fn sequence(mut each: impl FnMut(&str, Demanded<'_>)) {
     let mut rng = Lcg(SEED);
     let mut model = Model::new(&mut rng);
     let application = install(|graph| model.seed(graph));
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
-    let (contacts, mut runs) = demand(&request, &application);
-    assert_eq!((contacts, runs.len()), (1, 1));
-    let mut last = runs.remove(0);
-    assert_eq!(last.outcome, full_run(&model, None).outcome);
-    let (mut incremental, mut full, mut command) = (0_usize, 0_usize, 0_u64);
+    let (contacts, runs) = demand(&request, &application);
+    let first = Demanded {
+        model: &model,
+        kind: None,
+        own_write: None,
+        contacts,
+        runs,
+    };
+    each("the first demand", first);
+    let mut command = 0_u64;
     for round in 0..ROUNDS {
         let mut kinds = KINDS;
         for place in (1..kinds.len()).rev() {
@@ -256,44 +273,72 @@ fn every_reused_run_equals_a_full_run_of_the_same_facts() {
                 Change::Ordinate(y) => adjust(&request, &application, y, command),
             }
             arm_own_write(step.own_write);
-            let (contacts, mut runs) = demand(&request, &application);
+            let (contacts, runs) = demand(&request, &application);
             arm_own_write(None);
-            let reference = full_run(&model, step.own_write);
+            let demanded = Demanded {
+                model: &model,
+                kind: Some(kind),
+                own_write: step.own_write,
+                contacts,
+                runs,
+            };
+            each(&format!("round {round}, {kind:?}"), demanded);
             if let Some(write) = step.own_write {
                 let entry = usize::try_from(write.number).unwrap();
                 model.entries[entry].value = f64::from_bits(write.bits);
             }
-            let at = format!("round {round}, {kind:?}");
-            if runs.is_empty() {
-                assert_eq!(
-                    contacts, 0,
-                    "{at}: a demand that ran nothing kept its output"
-                );
-                assert_eq!(
-                    reference.outcome, last.outcome,
-                    "{at}: the kept output is current"
-                );
-                continue;
-            }
-            assert_eq!(runs.len(), 1, "{at}: one decision runs the totals once");
-            let run = runs.remove(0);
-            assert_eq!(
-                run.outcome, reference.outcome,
-                "{at}: reuse equals a full run"
-            );
-            match run.runs.as_slice() {
-                [Run::Incremental] => incremental += 1,
-                [Run::Full(_)] => full += 1,
-                _ => {}
-            }
-            if let (Some(expected), true) =
-                (expected(kind), last.outcome.is_ok() && run.outcome.is_ok())
-            {
-                assert_eq!(run.runs, [expected], "{at}: the run's kind");
-            }
-            last = run;
         }
     }
+}
+
+#[test]
+fn every_reused_run_equals_a_full_run_of_the_same_facts() {
+    let _guard = checkpoint_recovery_test_guard();
+    let mut last: Option<OracleRun> = None;
+    let (mut incremental, mut full) = (0_usize, 0_usize);
+    sequence(|at, mut demanded| {
+        let reference = full_run(demanded.model, demanded.own_write);
+        let Some(last_run) = last.as_ref() else {
+            assert_eq!((demanded.contacts, demanded.runs.len()), (1, 1));
+            let first = demanded.runs.remove(0);
+            assert_eq!(first.outcome, reference.outcome);
+            last = Some(first);
+            return;
+        };
+        if demanded.runs.is_empty() {
+            assert_eq!(
+                demanded.contacts, 0,
+                "{at}: a demand that ran nothing kept its output"
+            );
+            assert_eq!(
+                reference.outcome, last_run.outcome,
+                "{at}: the kept output is current"
+            );
+            return;
+        }
+        assert_eq!(
+            demanded.runs.len(),
+            1,
+            "{at}: one decision runs the totals once"
+        );
+        let run = demanded.runs.remove(0);
+        assert_eq!(
+            run.outcome, reference.outcome,
+            "{at}: reuse equals a full run"
+        );
+        match run.runs.as_slice() {
+            [Run::Incremental] => incremental += 1,
+            [Run::Full(_)] => full += 1,
+            _ => {}
+        }
+        if let (Some(expected), true) = (
+            demanded.kind.and_then(expected),
+            last_run.outcome.is_ok() && run.outcome.is_ok(),
+        ) {
+            assert_eq!(run.runs, [expected], "{at}: the run's kind");
+        }
+        last = Some(run);
+    });
     assert!(
         incremental > full,
         "most steps reuse partitions: {incremental} incremental, {full} full"

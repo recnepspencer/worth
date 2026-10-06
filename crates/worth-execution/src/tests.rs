@@ -15,8 +15,9 @@ use worth_foundational::{
 
 use crate::{
     authority::{
-        CancellationToken, ConstructionDenial, ExecutionAuthority, ExecutionAuthorityConfig,
-        LeaseDenial, LeaseRequest,
+        CancellationSource, CancellationToken, ConstructionDenial, ExecutionAuthority,
+        ExecutionAuthorityConfig, LeaseDenial, LeaseRequest, MemoryLimitDenial, MemoryLimitLevel,
+        SlotRefusal,
     },
     backend::{
         run_checked_batch, AdmittedBatch, BackendKind, BatchStop, KernelFailure, KernelStop,
@@ -27,6 +28,7 @@ static AUTHORITY: OnceLock<ExecutionAuthority> = OnceLock::new();
 static TEST_LOCK: Mutex<()> = Mutex::new(());
 
 mod adversarial;
+mod memory_level;
 mod nesting;
 mod prepared_map;
 
@@ -108,28 +110,40 @@ fn reservations_charge_every_ancestor_and_process_cap() {
     let held = first.try_reserve(2, 35).unwrap();
     assert!(matches!(
         second.try_reserve(2, 1),
-        Err(LeaseDenial::ResourceExhausted)
+        Err(SlotRefusal::WorkersBusy)
     ));
-    assert!(matches!(
-        second.try_reserve(1, 26),
-        Err(LeaseDenial::ResourceExhausted)
-    ));
+    assert_eq!(
+        second.try_reserve(1, 26).err(),
+        Some(SlotRefusal::Denied(LeaseDenial::MemoryExhausted(
+            MemoryLimitDenial {
+                requested: 26,
+                admitted: 25,
+                level: MemoryLimitLevel::Policy { ancestor: 1 },
+            }
+        )))
+    );
     assert!(matches!(
         first.try_reserve(1, 1),
-        Err(LeaseDenial::ResourceExhausted)
+        Err(SlotRefusal::WorkersBusy)
     ));
     let sibling = authority.request_lease(request(4, 100, 10)).unwrap();
     let process_held = sibling.try_reserve(2, 60).unwrap();
     assert!(matches!(
         sibling.try_reserve(1, 1),
-        Err(LeaseDenial::ResourceExhausted)
+        Err(SlotRefusal::WorkersBusy)
     ));
     drop(process_held);
     let memory_held = sibling.try_reserve(1, 100).unwrap();
-    assert!(matches!(
-        sibling.try_reserve(1, 1),
-        Err(LeaseDenial::ResourceExhausted)
-    ));
+    assert_eq!(
+        sibling.try_reserve(1, 1).err(),
+        Some(SlotRefusal::Denied(LeaseDenial::MemoryExhausted(
+            MemoryLimitDenial {
+                requested: 1,
+                admitted: 0,
+                level: MemoryLimitLevel::Policy { ancestor: 0 },
+            }
+        )))
+    );
     drop(memory_held);
     drop(held);
     let recycled = second.try_reserve(2, 40).unwrap();
@@ -152,10 +166,12 @@ fn batch_memory_denial_precedes_kernel_dispatch() {
         },
     );
     assert!(!called.load(Ordering::Acquire));
-    assert_eq!(
+    assert!(matches!(
         outcome.stop,
-        Some(BatchStop::Admission(LeaseDenial::ResourceExhausted))
-    );
+        Some(BatchStop::Admission(LeaseDenial::MemoryExhausted(
+            MemoryLimitDenial { admitted: 10, .. }
+        )))
+    ));
     assert_eq!(outcome.report.charged_work(), 0);
 }
 
@@ -254,10 +270,10 @@ fn work_ceiling_discards_later_results_at_canonical_boundary() {
 #[test]
 fn cancellation_and_deadline_stop_at_kernel_checkpoint() {
     let _serial = TEST_LOCK.lock().unwrap();
-    let token = CancellationToken::new();
+    let token = CancellationSource::new();
     let parent = authority()
         .request_lease(LeaseRequest {
-            cancellation: token.clone(),
+            cancellation: token.token(),
             ..request(2, 1_000, 10)
         })
         .unwrap();

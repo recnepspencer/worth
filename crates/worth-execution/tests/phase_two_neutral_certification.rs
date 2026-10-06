@@ -5,11 +5,12 @@ use std::{
 };
 
 use worth_execution::{
-    compare_canonical_values, BackInput, CancellationToken, CanonicalBits, ChargedBytes,
-    DecomposeFailure, DecomposeKernelEditions, EquivalencePredicate, ExecutionAuthority,
-    ExecutionAuthorityConfig, ExecutionDecompose, ExecutionForkJoin, ExecutionMap, ExecutionRounds,
-    ExecutionScan, ForkChild, InterfaceSolution, InteriorResult, LeaseRequest, MapKernelFailure,
-    MapKernelStop, MapOutcome, MapPartition, MapStop, RoundsOutcome, ScanOutcome,
+    compare_canonical_values, BackInput, CancellationSource, CancellationToken, CanonicalBits,
+    ChargedBytes, DecomposeFailure, DecomposeKernelEditions, EquivalencePredicate,
+    ExecutionAuthority, ExecutionAuthorityConfig, ExecutionDecompose, ExecutionForkJoin,
+    ExecutionMap, ExecutionRounds, ExecutionScan, ForkChild, InterfaceSolution, InteriorResult,
+    LeaseRequest, MapKernelFailure, MapKernelStop, MapOutcome, MapPartition, MapStop,
+    RoundsOutcome, ScanOutcome,
 };
 use worth_foundational::{
     DeterminismContract, EquivalenceContractId, ExecutionBudget, ExecutionPosture,
@@ -226,12 +227,12 @@ fn ordered_scan_and_rounds_stop_at_their_canonical_barriers() {
         reason: MapStop::WorkExhausted { .. }, ..
     } if completed_prefix == vec![1, 3] && id == PartitionIdentity::new(3)));
 
-    let cancellation = CancellationToken::new();
+    let cancellation = CancellationSource::new();
     let round_lease = lease(
         ExecutionPosture::Automatic,
         4,
         10,
-        cancellation.clone(),
+        cancellation.token(),
         None,
         DeterminismContract::CanonicalBitwise,
     );

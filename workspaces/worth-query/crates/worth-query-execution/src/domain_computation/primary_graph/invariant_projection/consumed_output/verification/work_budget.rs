@@ -25,8 +25,12 @@ pub(in super::super) fn map_admission_stop(
         | CompanionPreflightStop::CellCapacityExhausted { .. }
         | CompanionPreflightStop::PreparationMemoryExhausted { .. }
         | CompanionPreflightStop::PreparationMemoryCounterOverflow
-        | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }
-        | CompanionPreflightStop::Interrupted(_) => ConsumedOutputVerificationStop::Unavailable,
+        | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. } => {
+            ConsumedOutputVerificationStop::Unavailable
+        }
+        CompanionPreflightStop::Interrupted(event) => {
+            ConsumedOutputVerificationStop::Interrupted(event)
+        }
     }
 }
 
@@ -101,5 +105,35 @@ pub(super) fn fact_is_current(
         Err(WorthQuerySourceCurrentnessFailure::Unavailable) => {
             Err(ConsumedOutputVerificationStop::Unavailable)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use worth_relational::facade::mvcc::{
+        RelationalCancellationSource, RelationalInterruptionBoundary, RelationalOperationControl,
+    };
+
+    use super::*;
+
+    /// An interrupted verification is the request's interruption. Read as
+    /// `Unavailable`, it would send a caller to disclose sources or to
+    /// recompute for a request that no longer wants an answer.
+    #[test]
+    fn an_interrupted_verification_is_the_interruption_not_unavailable() {
+        let source = RelationalCancellationSource::new();
+        source.cancel();
+        let event = RelationalOperationControl::from(source.token())
+            .observe(RelationalInterruptionBoundary::PublicationPreflight)
+            .expect("a cancelled control is interrupted");
+        let interrupted = CompanionPreflightStop::Interrupted(event);
+        assert_eq!(
+            map_admission_stop(interrupted),
+            ConsumedOutputVerificationStop::Interrupted(event)
+        );
+        assert_eq!(
+            map_verification_stop(SettlementVerificationStop::Admission(interrupted)),
+            ConsumedOutputVerificationStop::Interrupted(event)
+        );
     }
 }

@@ -74,6 +74,7 @@ fn another_owner_with_the_same_types_runs_in_full() {
     let total = first.outcome.as_ref().unwrap().0;
     let doubling = WorthQueryInstalledPartitionedComputation::new(
         Doubling(Owner {
+            modulus: 2,
             status: StatusRead::Gather(1),
             reducer: sum,
             bump: Mutex::new(0),

@@ -9,6 +9,7 @@ publish = false
 [dependencies]
 getrandom = "0.3"
 sha2 = "0.10"
+worth-execution = { path = "../../../../crates/worth-execution" }
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-query-declaration = { path = "../worth-query-declaration" }
 worth-query-installation = { path = "../worth-query-installation" }

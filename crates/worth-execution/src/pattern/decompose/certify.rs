@@ -70,6 +70,7 @@ where
                 bytes.checked_add(
                     u64::try_from(
                         self.identities
+                            .as_slice()
                             .len()
                             .checked_mul(size_of::<worth_foundational::PartitionIdentity>())?,
                     )

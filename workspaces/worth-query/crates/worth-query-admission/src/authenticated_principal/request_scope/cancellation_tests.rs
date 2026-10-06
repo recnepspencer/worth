@@ -1,5 +1,5 @@
 use super::*;
-use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::task::Wake;
 
 #[derive(Default)]
@@ -40,4 +40,15 @@ fn dropped_waiter_does_not_retain_or_remove_a_live_peer_registration() {
         .poll(&mut Context::from_waker(&live_waker))
         .is_ready());
     assert!(source.state.waiters.lock().unwrap().is_empty());
+}
+
+#[test]
+fn cancelling_the_request_cancels_the_execution_token_it_hands_out() {
+    let source = WorthQueryCancellationSource::new();
+    let token = source.token();
+    let execution = token.execution_token();
+    assert!(!execution.is_cancelled());
+    source.cancel();
+    assert!(execution.is_cancelled());
+    assert!(token.execution_token().is_cancelled());
 }

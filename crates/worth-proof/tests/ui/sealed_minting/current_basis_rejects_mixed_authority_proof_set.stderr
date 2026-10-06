@@ -1,9 +1,9 @@
 error[E0277]: the trait bound `Proof<Disjointness, SecondAuthority>: ProofSetAuthorizedBy<FirstAuthority>` is not satisfied
-  --> tests/ui/sealed_minting/current_basis_rejects_mixed_authority_proof_set.rs:27:20
+  --> tests/ui/sealed_minting/current_basis_rejects_mixed_authority_proof_set.rs:26:20
    |
-26 |     let _artifact = Artifact::<RawPhase, _, _, _>::with_proofs_and_current_basis(
+25 |     let _artifact = Artifact::<RawPhase, _, _, _>::with_proofs_and_current_basis(
    |                     ------------------------------------------------------------ required by a bound introduced by this call
-27 |         "payload", proofs, 7_u8, first,
+26 |         "payload", proofs, 7_u8, first,
    |                    ^^^^^^ the trait `ProofSetAuthorizedBy<FirstAuthority>` is not implemented for `Proof<Disjointness, SecondAuthority>`
    |
 help: the trait `ProofSetAuthorizedBy<FirstAuthority>` is not implemented for `Proof<Disjointness, SecondAuthority>`

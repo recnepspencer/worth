@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use worth_execution::{ExecutionMap, MapPartition};
+use worth_execution::{ExecutionMap, KeylessPartition};
 use worth_query_declaration::facade::application_operation::{
     application_computation_input_digest, application_computation_partition_identity,
     ApplicationComputationPartitionIdentityDenial, ApplicationMutationBinding,
@@ -14,8 +14,10 @@ use worth_query_declaration::facade::application_program::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
+use super::super::request_execution::QueryRequestExecution;
 use super::super::WorthQueryManagedComputationResourceDenial;
 use super::compute::{units, Denial, PreparedRun, WorthQueryPreparedPartitionedComputation};
+use super::gather_memory::GatheredMemory;
 use super::incremental::{
     self, Begun, ComputationInstallation, FullRecording, WorthQueryPartitionedComputationFullCause,
 };
@@ -103,7 +105,8 @@ where
     where
         Binding: ApplicationMutationBinding<Schema, Operation = Owner::Operation>,
     {
-        self.prepare_through(reader.operation_reader(), input)
+        let execution = reader.execution();
+        self.prepare_through(reader.operation_reader(), execution, input)
     }
 
     pub(in crate::domain_computation::primary_graph) fn prepare_through(
@@ -114,6 +117,7 @@ where
             Schema,
             Owner::Operation,
         >,
+        execution: &QueryRequestExecution<'_>,
         input: &InputValue<Schema, Feature, Computation>,
     ) -> Result<
         WorthQueryPreparedPartitionedComputation<Schema, Feature, Computation, Owner>,
@@ -156,7 +160,14 @@ where
         let deposit = reader.computation_deposit();
         let (basis, cause) = match begun {
             Begun::Incremental(run) => {
-                let prepared = run.prepare(owner, reader, input, remaining_work, declared_bytes)?;
+                let prepared = run.prepare(
+                    owner,
+                    reader,
+                    execution,
+                    input,
+                    remaining_work,
+                    declared_bytes,
+                )?;
                 return Ok(WorthQueryPreparedPartitionedComputation {
                     installed: self.clone(),
                     prepared_work: prepared.remaining_work().spent(),
@@ -175,6 +186,9 @@ where
             recording.membership(membership);
         }
         let mut routing = ComputationPartitionRouting::default();
+        let mut routing_memory = execution
+            .reserve(0)
+            .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
         let mut items = BTreeMap::new();
         let mut keys = BTreeMap::new();
         entries.sort_by_key(|(item, _)| *item);
@@ -197,7 +211,9 @@ where
                         }
                         denial => encoding_resource_denial(denial),
                     })?;
-            let (partition, routed) = routing.route(item, *derived.digest())?;
+            let (partition, routed) = routing.route(item, *derived.digest(), |bound| {
+                routing_memory.resize(bound)
+            })?;
             remaining_work
                 .spend(routed.units())
                 .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
@@ -213,11 +229,12 @@ where
             keys.entry(partition).or_insert((key, key_bytes));
         }
         let items = Arc::new(items);
-        let identities = keys.keys().copied().collect();
-        let mut partitions = Vec::with_capacity(keys.len());
+        let mut memory = GatheredMemory::new(execution, declared_bytes)?;
+        let mut partitions = BTreeMap::new();
         for (identity, (key, key_bytes)) in keys {
             let key = Arc::new(key);
             let members = routing.members(identity).collect::<Arc<[_]>>();
+            memory.before_gather(execution)?;
             let (gathered, charge) =
                 reader.measured(ComputationRead::Partition(identity), |reader| {
                     owner.gather(
@@ -234,27 +251,30 @@ where
             if let Some(recording) = &mut recording {
                 recording.partition(identity, &key, key_bytes, &members, charge);
             }
-            partitions.push(MapPartition {
+            let value = GatheredComputationPartition {
                 identity,
-                value: GatheredComputationPartition {
-                    identity,
-                    key,
-                    items: members,
-                    gathered,
+                key,
+                items: members,
+                gathered,
+            };
+            memory.after_gather(&value)?;
+            partitions.insert(
+                identity,
+                KeylessPartition {
+                    value,
+                    kernel_scratch_bytes: 0,
+                    max_result_bytes: declared_bytes,
                 },
-                read_keys: Vec::new(),
-                write_keys: Vec::new(),
-                kernel_scratch_bytes: 0,
-                max_result_bytes: declared_bytes,
-            });
+            );
         }
-        let map = ExecutionMap::try_from_declared_partitions(identities, partitions)
-            .map_err(WorthQueryPartitionedComputationDenial::from_map)?;
+        let map = ExecutionMap::from_keyless_partitions(partitions)
+            .map_err(WorthQueryPartitionedComputationDenial::from_map_overflow)?;
         Ok(WorthQueryPreparedPartitionedComputation {
             installed: self.clone(),
             prepared_work: remaining_work.spent(),
             run: PreparedRun::Full {
                 map,
+                memory,
                 remaining_work: remaining_work.remaining(),
                 items,
                 recording,

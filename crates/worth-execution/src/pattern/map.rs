@@ -1,16 +1,20 @@
-use std::{collections::BTreeMap, mem::size_of};
+use std::collections::BTreeMap;
 
 use worth_foundational::{ExecutionPosture, ExecutionReport, PartitionIdentity};
 use worth_proof::{CanonicalUniqueVec, DisjointKeySetFamily, DisjointKeySetViolation};
 
 use crate::{
-    authority::ExecutionResourceLease,
-    backend::{run_checked_batch, AdmittedBatch, BackendKind, BatchDenial, BatchOutcome},
+    authority::{ExecutionMemoryReservation, ExecutionResourceLease},
+    backend::{run_checked_batch_taking, AdmittedBatch, BackendKind, BatchDenial, BatchOutcome},
     oracle::{self, CanonicalBits},
     report::ChargedBytes,
 };
 
+mod access;
+mod keyless;
 mod prepared;
+use access::access_memory_bytes;
+pub use keyless::{KeylessPartition, MapMemoryOverflow};
 pub use prepared::PreparedExecutionMap;
 
 pub use crate::backend::{
@@ -18,6 +22,16 @@ pub use crate::backend::{
     KernelStop as MapKernelStop,
 };
 pub use crate::oracle::OracleMismatch;
+
+/// A leased run under an automatic posture runs native; every other run is
+/// serial.
+fn backend_for(lease: Option<&ExecutionResourceLease<'_>>) -> BackendKind {
+    if lease.is_some_and(|value| value.resolved_posture() == ExecutionPosture::Automatic) {
+        BackendKind::Native
+    } else {
+        BackendKind::Serial
+    }
+}
 
 /// One declared access set and memory ceiling for the value dispatched under
 /// `identity`. Keys within each set must be in strictly increasing order.
@@ -192,7 +206,8 @@ impl<T, K: Ord + ChargedBytes> ExecutionMap<T, K> {
             read_sets.capacity(),
             &write_sets,
             write_member_capacity,
-        )?;
+        )
+        .ok_or(MapDenial::MemoryOverflow)?;
         let entries = partitions
             .into_iter()
             .map(|partition| {
@@ -257,13 +272,26 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
         E: Send + ChargedBytes,
         F: Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Sync,
     {
-        let backend =
-            if lease.is_some_and(|value| value.resolved_posture() == ExecutionPosture::Automatic) {
-                BackendKind::Native
-            } else {
-                BackendKind::Serial
-            };
-        self.run_with_backend(lease, backend, kernel)
+        self.run_with_backend(lease, backend_for(lease), kernel)
+    }
+
+    /// [`Self::run`], with the run's memory admission taking over `inputs`,
+    /// the caller's reservation for what the partitions hold. It becomes the
+    /// run's own, at the run's exact bytes on the run's lease or serial
+    /// budget, in one ledger step, so the inputs are never unreserved between
+    /// the caller's hold and the run's. The run releases it when it settles.
+    pub fn run_taking<R, E, F>(
+        &self,
+        lease: Option<&ExecutionResourceLease<'_>>,
+        inputs: ExecutionMemoryReservation,
+        kernel: F,
+    ) -> MapOutcome<R, E>
+    where
+        R: Send + ChargedBytes,
+        E: Send + ChargedBytes,
+        F: Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Sync,
+    {
+        self.run_with_backend_taking(lease, backend_for(lease), Some(inputs), kernel)
     }
 
     pub(crate) fn run_with_backend<R, E, F>(
@@ -277,7 +305,22 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
         E: Send + ChargedBytes,
         F: Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Sync,
     {
-        run_checked_batch(lease, &self.batch, backend, &kernel).into()
+        self.run_with_backend_taking(lease, backend, None, kernel)
+    }
+
+    pub(crate) fn run_with_backend_taking<R, E, F>(
+        &self,
+        lease: Option<&ExecutionResourceLease<'_>>,
+        backend: BackendKind,
+        taken: Option<ExecutionMemoryReservation>,
+        kernel: F,
+    ) -> MapOutcome<R, E>
+    where
+        R: Send + ChargedBytes,
+        E: Send + ChargedBytes,
+        F: Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Sync,
+    {
+        run_checked_batch_taking(lease, &self.batch, backend, taken, &kernel).into()
     }
 
     /// Certification runs the exact admitted inputs and kernel on the serial
@@ -345,41 +388,4 @@ fn check_read_write_conflicts<T, K: Ord>(
         }
     }
     Ok(())
-}
-
-fn access_memory_bytes<K: ChargedBytes>(
-    read_sets: &[Vec<K>],
-    read_set_capacity: usize,
-    write_sets: &DisjointKeySetFamily<PartitionIdentity, K>,
-    write_member_capacity: usize,
-) -> Result<u64, MapDenial> {
-    let keys = read_sets
-        .iter()
-        .chain(write_sets.members().iter().map(|(_, keys)| keys));
-    let mut total = 0_u64;
-    for set in keys {
-        let inline = set
-            .capacity()
-            .checked_mul(size_of::<K>())
-            .and_then(|bytes| u64::try_from(bytes).ok())
-            .ok_or(MapDenial::MemoryOverflow)?;
-        total = total.checked_add(inline).ok_or(MapDenial::MemoryOverflow)?;
-        for key in set {
-            total = total
-                .checked_add(key.additional_charged_bytes())
-                .ok_or(MapDenial::MemoryOverflow)?;
-        }
-    }
-    let read_members = read_set_capacity
-        .checked_mul(size_of::<Vec<K>>())
-        .and_then(|bytes| u64::try_from(bytes).ok())
-        .ok_or(MapDenial::MemoryOverflow)?;
-    let write_members = write_member_capacity
-        .checked_mul(size_of::<(PartitionIdentity, Vec<K>)>())
-        .and_then(|bytes| u64::try_from(bytes).ok())
-        .ok_or(MapDenial::MemoryOverflow)?;
-    total
-        .checked_add(read_members)
-        .and_then(|bytes| bytes.checked_add(write_members))
-        .ok_or(MapDenial::MemoryOverflow)
 }

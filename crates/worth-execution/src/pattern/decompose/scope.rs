@@ -89,7 +89,7 @@ where
         let tree_bound =
             match &self.snapshot {
                 None => ReductionTree::<C, F>::checked_build_memory_bound(
-                    self.identities.len(),
+                    self.identities.as_slice().len(),
                     self.max_reduction_value_bytes,
                 ),
                 Some(snapshot) => changed.identities().iter().try_fold(
@@ -115,6 +115,7 @@ where
             // admitted input and output storage separately.
             let identities = u64::try_from(
                 self.identities
+                    .as_slice()
                     .len()
                     .checked_mul(size_of::<worth_foundational::PartitionIdentity>())?
                     .checked_mul(2)?,
@@ -137,6 +138,7 @@ where
             });
         };
         let stage = Cell::new(DecomposeStage::Interior);
+        let fallback = Cell::new(None);
         let scope = run_scope_with_charge(
             lease,
             retained_bytes,
@@ -154,6 +156,7 @@ where
                         &back_substitute,
                         _context,
                         &stage,
+                        &fallback,
                     )
                     .map_err(MapKernelFailure::Domain)?;
                 if let Some(handoff) = retained_handoff.as_mut() {
@@ -167,7 +170,7 @@ where
                         })
                         .ok_or({
                             MapKernelFailure::Domain(DecomposeFailure::ScopeAdmission(
-                                LeaseDenial::ResourceExhausted,
+                                LeaseDenial::ChargedBytesOverflow,
                             ))
                         })?;
                     handoff(bytes).map_err(|denial| {
@@ -177,9 +180,14 @@ where
                 Ok(staged)
             },
         );
+        // The scope reports how the stages ran together; why a stage ran
+        // serially is the stage's to name.
+        let total_report = fallback
+            .get()
+            .map_or(scope.report, |cause| scope.report.with_fallback(cause));
         match scope.result {
             Ok(mut staged) => {
-                staged.complete.total_report = scope.report;
+                staged.complete.total_report = total_report;
                 self.snapshot = Some(staged.snapshot);
                 Ok(staged.complete)
             }
@@ -202,7 +210,7 @@ where
                 };
                 Err(DecomposeRunFailure {
                     cause,
-                    total_report: scope.report,
+                    total_report,
                 })
             }
         }

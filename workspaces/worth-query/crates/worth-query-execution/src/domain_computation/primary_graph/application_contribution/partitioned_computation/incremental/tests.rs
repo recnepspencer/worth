@@ -7,6 +7,7 @@ use std::sync::{Arc, Mutex};
 
 use worth_execution::PartitionItemId;
 use worth_foundational::facade::ExecutionReport;
+use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
 
 use worth_query_declaration::facade::application_program::ApplicationManagedComputation;
 
@@ -24,7 +25,9 @@ use super::{
     WorthQueryPartitionedComputationRun as Run,
 };
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
-use crate::domain_computation::primary_graph::application_contribution::InstalledProducerEdition;
+use crate::domain_computation::primary_graph::application_contribution::{
+    InstalledProducerEdition, QueryRequestExecution,
+};
 use crate::domain_computation::primary_graph::tests::application_attempt::{
     authenticated_principal, resolved_account,
 };
@@ -52,9 +55,11 @@ enum StatusRead {
     ItemKeys,
 }
 
-/// Items 1 to 4, odd and even. What a moved fact would change is set by the
-/// test: what the status partition gathers on top, and each kernel's work.
+/// Items 1 to 4, keyed by their remainder modulo `modulus`: odd and even by
+/// default. What a moved fact would change is set by the test: what the
+/// status partition gathers on top, and each kernel's work.
 struct Owner {
+    modulus: u64,
     status: StatusRead,
     reducer: fn(&u64, &u64) -> u64,
     bump: Mutex<u64>,
@@ -92,7 +97,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
         if matches!(self.status, StatusRead::ItemKeys) {
             reader.field(account, AccountStatus::reference())?;
         }
-        Ok(Parity(item % 2))
+        Ok(Parity(item % self.modulus))
     }
 
     fn gather(
@@ -132,7 +137,12 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
 }
 
 fn installed(status: StatusRead, reducer: fn(&u64, &u64) -> u64) -> Installed {
+    installed_over(2, status, reducer)
+}
+
+fn installed_over(modulus: u64, status: StatusRead, reducer: fn(&u64, &u64) -> u64) -> Installed {
     let owner = Owner {
+        modulus,
         status,
         reducer,
         bump: Mutex::new(0),
@@ -193,9 +203,43 @@ where
     Tested: ApplicationManagedComputation<Schema, Feature, Input = Input>,
     Owned: TestOwner<Tested>,
 {
-    let request = live_scope();
-    let principal = authenticated_principal(world, &request);
-    let account = resolved_account(world, "open", &request);
+    attempt_in(world, installed, prior, &live_scope())
+}
+
+/// [`attempt`] under `request`.
+fn attempt_in<Tested, Owned>(
+    world: &AuthorizationWorld,
+    installed: &WorthQueryInstalledPartitionedComputation<Schema, Feature, Tested, Owned>,
+    prior: Option<ComputationPrior>,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+) -> Attempt
+where
+    Tested: ApplicationManagedComputation<Schema, Feature, Input = Input>,
+    Owned: TestOwner<Tested>,
+{
+    attempt_placed(
+        world,
+        installed,
+        prior,
+        request,
+        RuntimeWorldExecutionPlacement::Unbounded,
+    )
+}
+
+/// [`attempt_in`] with the request's execution opened under `placement`.
+fn attempt_placed<Tested, Owned>(
+    world: &AuthorizationWorld,
+    installed: &WorthQueryInstalledPartitionedComputation<Schema, Feature, Tested, Owned>,
+    prior: Option<ComputationPrior>,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    placement: RuntimeWorldExecutionPlacement<'_>,
+) -> Attempt
+where
+    Tested: ApplicationManagedComputation<Schema, Feature, Input = Input>,
+    Owned: TestOwner<Tested>,
+{
+    let principal = authenticated_principal(world, request);
+    let account = resolved_account(world, "open", request);
     let operation = world
         .application
         .installed_schema()
@@ -208,7 +252,7 @@ where
             &account,
             &operation,
             Default::default(),
-            &request,
+            request,
         )
         .unwrap();
     installed.owner.gathered().lock().unwrap().clear();
@@ -218,22 +262,28 @@ where
     let (outcome, projection, _) = world
         .invariant
         .project_admitted_operation(&admission, |reader, root| -> Outcome {
+            let execution = QueryRequestExecution::open(placement, request);
             let computed = installed
-                .prepare_through(reader, root)?
-                .compute(WorthQueryManagedComputationExecution::new(&request))?;
+                .prepare_through(reader, &execution, root)?
+                .compute(WorthQueryManagedComputationExecution::new(&execution))?;
             let charged = computed.charged_work();
             Ok((computed.complete()?, charged))
         })
         .unwrap()
         .into_parts();
     ComputationPrior::hand_in_test(None);
-    let sealed = world
-        .application
-        .begin_projected_application_read_attempt(admission, projection)
-        .unwrap()
-        .complete_projected_dependencies()
-        .map(|_| SealedComputationRun::kept_in_test())
-        .map_err(|_| ());
+    // An interrupted request seals nothing: its attempt is refused at begin.
+    let sealed = if request.interruption().is_some() {
+        Err(())
+    } else {
+        world
+            .application
+            .begin_projected_application_read_attempt(admission, projection)
+            .unwrap()
+            .complete_projected_dependencies()
+            .map(|_| SealedComputationRun::kept_in_test())
+            .map_err(|_| ())
+    };
     let mut gathered = installed.owner.gathered().lock().unwrap().clone();
     gathered.sort_unstable();
     Attempt {
@@ -289,6 +339,10 @@ fn first_run(world: &AuthorizationWorld, installed: &Installed) -> Attempt {
 }
 
 mod carrying;
+mod certified;
 mod installation;
+mod interruption;
+mod request_memory;
+mod tree_memory;
 mod unobservable;
 mod wide;

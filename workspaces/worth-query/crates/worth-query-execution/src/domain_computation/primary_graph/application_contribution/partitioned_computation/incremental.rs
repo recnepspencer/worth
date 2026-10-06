@@ -17,6 +17,7 @@
 mod next_tree;
 mod recording;
 mod retained;
+mod tree_update;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
@@ -43,7 +44,9 @@ pub(in crate::domain_computation) use retained::{
 };
 
 use self::retained::{RetainedBasis, RetainedPartitions, TypedPrior};
+use super::super::request_execution::QueryRequestExecution;
 use super::compute::Denial;
+use super::gather_memory::GatheredMemory;
 use super::remaining_work::RemainingWork;
 use super::{
     InputValue, WorthQueryComputationPartitionMembers, WorthQueryComputationReader,
@@ -212,6 +215,7 @@ where
         self,
         owner: &Owner,
         reader: &mut Reader<'_, '_, Schema, Owner::Operation>,
+        execution: &QueryRequestExecution<'_>,
         input: &InputValue<Schema, Feature, Computation>,
         mut remaining_work: RemainingWork,
         declared_bytes: u64,
@@ -268,6 +272,8 @@ where
                 );
                 continue;
             }
+            let mut memory = GatheredMemory::new(execution, declared_bytes)?;
+            memory.before_gather(execution)?;
             let (gathered, charge) = reader.measured(read, |reader| {
                 owner.gather(
                     &mut WorthQueryComputationReader::lend(reader),
@@ -283,7 +289,7 @@ where
             let gathered = gathered.map_err(|denial| {
                 WorthQueryPartitionedComputationDenial::gathering(*identity, denial)
             })?;
-            prepared.gathered(*identity, partition, gathered, charge)?;
+            prepared.gathered(*identity, partition, gathered, charge, memory)?;
         }
         Ok(prepared)
     }

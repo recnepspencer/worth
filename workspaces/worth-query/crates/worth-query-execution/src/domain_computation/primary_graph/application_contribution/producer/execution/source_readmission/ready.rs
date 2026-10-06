@@ -18,7 +18,20 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
             Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => {
                 WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
             }
-            _ => WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
+            Stop::Interrupted(event) => {
+                WorthQueryOutputDemandDenialKind::of_interruption(event.interruption())
+            }
+            Stop::TopologyPending
+            | Stop::SelectedSourceMismatch
+            | Stop::SelectedPositionUnavailable { .. }
+            | Stop::ForeignCell
+            | Stop::RegistrationChanged
+            | Stop::CellCapacityExhausted { .. }
+            | Stop::PreparationMemoryExhausted { .. }
+            | Stop::PreparationMemoryCounterOverflow
+            | Stop::RetainedCompanionCapacityExhausted { .. } => {
+                WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
+            }
         },
         subject,
     )
@@ -36,6 +49,10 @@ pub(super) fn ready_currentness_denial(
             worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. }
             | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow,
         )) => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+        CurrentAcceptedStop::Closure(ConsumedOutputVerificationStop::Interrupted(event))
+        | CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(
+            worth_relational::facade::mvcc::CompanionPreflightStop::Interrupted(event),
+        )) => WorthQueryOutputDemandDenialKind::of_interruption(event.interruption()),
         CurrentAcceptedStop::Closure(ConsumedOutputVerificationStop::PendingUpstream) => {
             WorthQueryOutputDemandDenialKind::SchedulingDeferred
         }

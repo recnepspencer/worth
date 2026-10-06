@@ -111,7 +111,7 @@ fn certification_clone_panics_are_typed_failures() {
 fn cancelled_certification_does_not_clone_before_admission() {
     let _guard = TEST_LOCK.lock().unwrap_or_else(|error| error.into_inner());
     CLONES.store(0, Ordering::SeqCst);
-    let cancellation = CancellationToken::new();
+    let cancellation = CancellationSource::new();
     cancellation.cancel();
     let lease = authority()
         .request_lease(LeaseRequest {
@@ -121,7 +121,7 @@ fn cancelled_certification_does_not_clone_before_admission() {
                 ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), 1 << 20, 100),
             ),
             deadline: None,
-            cancellation,
+            cancellation: cancellation.token(),
         })
         .unwrap();
     let reduced = map(1).certify_reduce(

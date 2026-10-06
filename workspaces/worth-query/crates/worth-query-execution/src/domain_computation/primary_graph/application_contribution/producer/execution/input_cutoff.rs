@@ -235,6 +235,9 @@ fn cutoff_basis_denial(stop: InputCutoffVerificationStop) -> WorthQueryOutputDem
         | InputCutoffVerificationStop::WorkExhausted => {
             WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
         }
+        InputCutoffVerificationStop::Admission(Admission::Interrupted(event)) => {
+            WorthQueryOutputDemandDenialKind::of_interruption(event.interruption())
+        }
         InputCutoffVerificationStop::Admission(_) => {
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
         }
@@ -254,6 +257,9 @@ fn cutoff_admission_denial(
         match stop {
             Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => {
                 WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
+            }
+            Stop::Interrupted(event) => {
+                WorthQueryOutputDemandDenialKind::of_interruption(event.interruption())
             }
             _ => WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
         },

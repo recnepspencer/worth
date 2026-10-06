@@ -211,9 +211,9 @@ mod tests {
         assert!(seen.load(Ordering::SeqCst));
 
         seen.store(false, Ordering::SeqCst);
-        let cancelled = CancellationToken::new();
+        let cancelled = worth_execution::CancellationSource::new();
         cancelled.cancel();
-        let lease = crate::snapshot::test_execution_lease(cancelled);
+        let lease = crate::snapshot::test_execution_lease(cancelled.token());
         let error = admitted
             .read_packet_with_lease(&SnapshotReadPacket::new(vec![]), &lease)
             .unwrap_err();

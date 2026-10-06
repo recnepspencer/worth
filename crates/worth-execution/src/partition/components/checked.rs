@@ -41,7 +41,7 @@ impl ComponentPartitioner {
             0
         } else {
             u64::try_from(MEMBER_SCRATCH_BYTES)
-                .map_err(|_| PartitionUpdateDenial::Admission(LeaseDenial::ResourceExhausted))?
+                .map_err(|_| PartitionUpdateDenial::Admission(LeaseDenial::ChargedBytesOverflow))?
         };
         let _reservation = lease
             .reserve_retained_memory(bytes)
@@ -83,7 +83,7 @@ impl ComponentPartitioner {
             .and_then(|value| value.checked_add(2 * DEGREE_SCRATCH_BYTES))
             .and_then(|value| u64::try_from(value).ok())
             .ok_or(PartitionUpdateDenial::Admission(
-                LeaseDenial::ResourceExhausted,
+                LeaseDenial::ChargedBytesOverflow,
             ))?;
         let _reservation = lease
             .reserve_retained_memory(bytes)
@@ -183,7 +183,9 @@ impl ComponentPartitioner {
             context.checkpoint(1).map_err(PartitionUpdateDenial::Stop)?;
             work.members_visited += 1;
             degrees = degrees.checked_add(self.adjacent[item].len()).ok_or(
-                PartitionUpdateDenial::Admission(crate::authority::LeaseDenial::ResourceExhausted),
+                PartitionUpdateDenial::Admission(
+                    crate::authority::LeaseDenial::ChargedBytesOverflow,
+                ),
             )?;
         }
         // Parent links, rebuilt membership, and the transient candidate are
@@ -194,7 +196,7 @@ impl ComponentPartitioner {
             .and_then(|value| value.checked_add(degrees.checked_mul(DEGREE_SCRATCH_BYTES)?))
             .and_then(|value| u64::try_from(value).ok())
             .ok_or(PartitionUpdateDenial::Admission(
-                crate::authority::LeaseDenial::ResourceExhausted,
+                crate::authority::LeaseDenial::ChargedBytesOverflow,
             ))?;
         let _reservation = lease
             .reserve_retained_memory(bytes)

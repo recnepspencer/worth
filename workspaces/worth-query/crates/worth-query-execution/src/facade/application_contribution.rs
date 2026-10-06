@@ -18,13 +18,14 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryManagedComputationCheckpointDenial, WorthQueryManagedComputationDenial,
     WorthQueryManagedComputationExecution, WorthQueryManagedComputationInterruption,
     WorthQueryManagedComputationOwner, WorthQueryManagedComputationPrepared,
-    WorthQueryManagedComputationResourceDenial, WorthQueryOutputReadinessContractBuilder,
-    WorthQueryOutputReadinessContractDenial, WorthQueryPartitionedComputationDenial,
-    WorthQueryPartitionedComputationOwner, WorthQueryPreparedManagedComputation,
-    WorthQueryPreparedPartitionedComputation, WorthQueryProducerApplicability,
-    WorthQueryProducerDemandResources, WorthQueryProducerInputReuseContract,
-    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputFamily, WorthQueryWorkflowAssessmentOutputFamily,
+    WorthQueryManagedComputationResourceDenial, WorthQueryMemoryLimitLevel,
+    WorthQueryOutputReadinessContractBuilder, WorthQueryOutputReadinessContractDenial,
+    WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
+    WorthQueryPreparedManagedComputation, WorthQueryPreparedPartitionedComputation,
+    WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
+    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
+    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
+    WorthQueryReductionInputDenial, WorthQueryWorkflowAssessmentOutputFamily,
     WorthQueryWorkflowAssessmentPosture,
 };
 /// How a partitioned computation's run ran, for the test observer only.
@@ -34,5 +35,5 @@ pub use crate::domain_computation::primary_graph::{
 };
 /// What a partitioned owner's results and denials declare to execution, the
 /// identity of a planned item, and execution's refusal before dispatch.
-pub use worth_execution::{CanonicalBits, ChargedBytes, LeaseDenial, PartitionItemId};
+pub use worth_execution::{CanonicalBits, ChargedBytes, PartitionItemId};
 pub use worth_query_declaration::facade::application_schema::ApplicationSchemaComposition;

@@ -13,7 +13,10 @@ fn prepared_map_reserves_live_memory_before_dispatch_and_reports_it_once() {
     let held = occupied.try_reserve(0, 1_999).unwrap();
     assert!(matches!(
         map(&[7], 0).prepare_run::<u64, ()>(child),
-        Err(LeaseDenial::ResourceExhausted)
+        Err(LeaseDenial::MemoryExhausted(MemoryLimitDenial {
+            admitted: 1,
+            ..
+        }))
     ));
     drop(held);
     let child = parent.child(request(1, 1_000, 10)).unwrap();
@@ -22,7 +25,12 @@ fn prepared_map_reserves_live_memory_before_dispatch_and_reports_it_once() {
         .unwrap_or_else(|denial| panic!("prepared map denied: {denial:?}"));
     assert!(matches!(
         occupied.try_reserve(0, 1_999),
-        Err(LeaseDenial::ResourceExhausted)
+        Err(SlotRefusal::Denied(LeaseDenial::MemoryExhausted(
+            MemoryLimitDenial {
+                requested: 1_999,
+                ..
+            }
+        )))
     ));
     let outcome = prepared.run(|value, work| {
         work.checkpoint(1)?;
@@ -120,8 +128,11 @@ fn prepared_map_uses_dispatch_time_work_and_cancellation() {
     assert!(matches!(scope.result, Err(ScopeStop::Failure(_))));
     assert!(completed.load(Ordering::SeqCst));
 
-    let admission = request(1, 1_500, 10);
-    let cancellation = admission.cancellation.clone();
+    let cancellation = CancellationSource::new();
+    let admission = LeaseRequest {
+        cancellation: cancellation.token(),
+        ..request(1, 1_500, 10)
+    };
     let lease = authority().request_lease(admission).unwrap();
     let child = lease.child(request(1, 1_500, 10)).unwrap();
     let prepared = map(&[9], 0)

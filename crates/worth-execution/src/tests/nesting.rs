@@ -64,3 +64,57 @@ fn unrelated_nested_lease_denial_stops_parent() {
         })
     );
 }
+
+#[test]
+fn a_request_finding_every_process_worker_held_runs_inline() {
+    let _serial = TEST_LOCK.lock().unwrap();
+    let authority = authority();
+    let occupied = authority.request_lease(request(4, 100, 10)).unwrap();
+    let every_slot = occupied.try_reserve(4, 0).unwrap();
+    let lease = authority.request_lease(request(4, 1_800, 10)).unwrap();
+    let admitted = batch(&[1, 2, 3], 5);
+    let run = || {
+        run_checked_batch(
+            Some(&lease),
+            &admitted,
+            BackendKind::Native,
+            &|value, context| {
+                context.checkpoint(1)?;
+                Ok::<_, KernelFailure<()>>(*value * 2)
+            },
+        )
+    };
+    let inline = run();
+    assert_eq!(inline.stop, None);
+    assert_eq!(inline.values, vec![2, 4, 6]);
+    assert_eq!(
+        inline.report.fallback(),
+        Some(worth_foundational::ExecutionFallbackCause::Capacity)
+    );
+    assert_eq!(inline.report.physical().active_workers_high_watermark(), 1);
+    drop(every_slot);
+    let free = run();
+    assert_eq!(free.values, inline.values);
+    assert_eq!(free.report.charged_work(), inline.report.charged_work());
+}
+
+#[test]
+fn a_run_inside_a_serial_oracle_names_the_oracle() {
+    let _serial = TEST_LOCK.lock().unwrap();
+    let parent = authority().request_lease(request(2, 1_900, 10)).unwrap();
+    let child = parent.child(request(2, 1_000, 10)).unwrap();
+    let admitted = batch(&[1, 2], 5);
+    let outer = run_checked_batch(Some(&parent), &admitted, BackendKind::Serial, &|_, _| {
+        let nested =
+            run_checked_batch(Some(&child), &admitted, BackendKind::Native, &|value, _| {
+                Ok::<_, KernelFailure<()>>(*value)
+            });
+        assert_eq!(nested.stop, None);
+        assert_eq!(
+            nested.report.fallback(),
+            Some(worth_foundational::ExecutionFallbackCause::OracleSerial)
+        );
+        Ok::<_, KernelFailure<()>>(0_u64)
+    });
+    assert_eq!(outer.stop, None);
+}

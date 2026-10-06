@@ -11,7 +11,7 @@ mod keyed;
 
 pub use bisection::{Bisection, BisectionDenial, BisectionQuality, WeightedEdge, WeightedItem};
 pub use components::{ComponentDenial, ComponentPartitioner};
-pub use keyed::{KeyedDenial, KeyedItem, KeyedPartitioner};
+pub use keyed::{KeyedDenial, KeyedEditDenial, KeyedItem, KeyedPartitioner};
 
 use worth_foundational::PartitionIdentity;
 

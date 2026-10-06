@@ -16,6 +16,7 @@
 
 mod compute;
 mod denial;
+mod gather_memory;
 mod incremental;
 mod installed;
 mod plan;
@@ -26,7 +27,10 @@ mod routing;
 pub use compute::{
     WorthQueryCompletedPartitionedComputation, WorthQueryPreparedPartitionedComputation,
 };
-pub use denial::{WorthQueryComputationPartitionStop, WorthQueryPartitionedComputationDenial};
+pub use denial::{
+    WorthQueryComputationPartitionStop, WorthQueryPartitionedComputationDenial,
+    WorthQueryReductionInputDenial,
+};
 pub use incremental::WorthQueryPartitionedComputationFullCause;
 #[cfg(feature = "test-query-execution-observer")]
 pub use incremental::{

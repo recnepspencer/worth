@@ -2,6 +2,7 @@ use super::*;
 use crate::backend::BackendKind;
 use crate::reduction::ScheduledReductionError;
 use std::cell::Cell;
+use worth_foundational::ExecutionFallbackCause;
 
 impl<I, C, S, B, O, F> ExecutionDecompose<I, C, S, B, O, F>
 where
@@ -23,6 +24,7 @@ where
         back_substitute: &Back,
         context: &mut MapKernelContext<'_, '_>,
         stage: &Cell<DecomposeStage>,
+        fallback: &Cell<Option<ExecutionFallbackCause>>,
     ) -> Result<Staged<I, C, S, B, O, F>, DecomposeFailure<E>>
     where
         T: Sync + ChargedBytes,
@@ -43,22 +45,23 @@ where
         self.check_changed(changed.identities(), editions)
             .map_err(DecomposeFailure::Input)?;
         stage.set(DecomposeStage::Interior);
-        let (changed_values, interior_report) =
-            match changed.run_with_backend(lease, backend, interior) {
-                MapOutcome::Complete { values, report } => (values, report),
-                MapOutcome::Stopped {
+        let interior_outcome = changed.run_with_backend(lease, backend, interior);
+        note_fallback(fallback, &interior_outcome);
+        let (changed_values, interior_report) = match interior_outcome {
+            MapOutcome::Complete { values, report } => (values, report),
+            MapOutcome::Stopped {
+                boundary,
+                reason,
+                report,
+                ..
+            } => {
+                return Err(DecomposeFailure::Interior {
                     boundary,
                     reason,
                     report,
-                    ..
-                } => {
-                    return Err(DecomposeFailure::Interior {
-                        boundary,
-                        reason,
-                        report,
-                    });
-                }
-            };
+                });
+            }
+        };
         check_cap(&changed_values, self.max_staged_bytes).map_err(DecomposeFailure::Input)?;
         let changed_contributions = self
             .changed_contributions(changed.identities(), &changed_values)
@@ -68,7 +71,8 @@ where
         check_cap(&contributions, self.max_staged_bytes).map_err(DecomposeFailure::Input)?;
         let mut reuse = DecomposeReuse::default();
         if self.snapshot.is_some() {
-            reuse.unchanged_contributions = self.identities.len() - changed_contributions.len();
+            reuse.unchanged_contributions =
+                self.identities.as_slice().len() - changed_contributions.len();
         }
         stage.set(DecomposeStage::Reduction);
         let before = context.cost();
@@ -78,6 +82,7 @@ where
             for identity in changed_contributions {
                 let index = self
                     .identities
+                    .as_slice()
                     .binary_search(&identity)
                     .expect("checked identity");
                 let edit = tree
@@ -92,8 +97,7 @@ where
             }
             (tree, metrics, true)
         } else {
-            let plan = ReductionPlan::try_from_sorted_unique(self.identities.clone())
-                .map_err(DecomposeFailure::Reduction)?;
+            let plan = ReductionPlan::from_canonical(self.identities.clone());
             if let Some(lease) = lease {
                 let (tree, metrics) = ReductionTree::build_scheduled_checked(
                     lease,
@@ -117,6 +121,7 @@ where
             } else {
                 let entries = self
                     .identities
+                    .as_slice()
                     .iter()
                     .copied()
                     .zip(contributions.iter().cloned())
@@ -174,7 +179,9 @@ where
                 }],
             )
             .map_err(DecomposeFailure::InterfaceAdmission)?;
-            match map.run_with_backend(lease, backend, solve_interface) {
+            let outcome = map.run_with_backend(lease, backend, solve_interface);
+            note_fallback(fallback, &outcome);
+            match outcome {
                 MapOutcome::Complete { mut values, report } => (values.remove(0), Some(report)),
                 MapOutcome::Stopped { reason, report, .. } => {
                     return Err(DecomposeFailure::Interface { reason, report });
@@ -182,7 +189,7 @@ where
             }
         };
         check_cap(&interface, self.max_staged_bytes).map_err(DecomposeFailure::Input)?;
-        if interface.slices.len() != self.identities.len() {
+        if interface.slices.len() != self.identities.as_slice().len() {
             return Err(DecomposeFailure::Input(
                 DecomposeInputDenial::InterfaceSliceCoverageMismatch,
             ));
@@ -198,7 +205,7 @@ where
                 )
             });
         let back_ids = changed_back_identities(
-            &self.identities,
+            self.identities.as_slice(),
             previous,
             &interiors,
             &interface.slices,
@@ -218,7 +225,9 @@ where
         let (back_values, back_report) = if back_ids.is_empty() {
             (Vec::new(), None)
         } else {
-            match back_map.run_with_backend(lease, backend, back_substitute) {
+            let outcome = back_map.run_with_backend(lease, backend, back_substitute);
+            note_fallback(fallback, &outcome);
+            match outcome {
                 MapOutcome::Complete { values, report } => (values, Some(report)),
                 MapOutcome::Stopped {
                     boundary,
@@ -245,6 +254,7 @@ where
             for (identity, value) in back_ids.into_iter().zip(back_values) {
                 let index = self
                     .identities
+                    .as_slice()
                     .binary_search(&identity)
                     .expect("checked identity");
                 outputs[index] = value;
@@ -275,6 +285,17 @@ where
         };
         check_cap(&complete.values, self.max_staged_bytes).map_err(DecomposeFailure::Input)?;
         Ok(Staged { snapshot, complete })
+    }
+}
+
+/// Keeps the first stage's reason for running serially, in stage order, for
+/// the decomposition's total report.
+fn note_fallback<R, E>(
+    fallback: &Cell<Option<ExecutionFallbackCause>>,
+    outcome: &MapOutcome<R, E>,
+) {
+    if fallback.get().is_none() {
+        fallback.set(outcome.report().fallback());
     }
 }
 

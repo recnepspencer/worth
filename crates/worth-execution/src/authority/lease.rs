@@ -11,13 +11,21 @@ use worth_foundational::{
     DeterminismContract, EquivalenceContractId, ExecutionPosture, ExecutionRequestPolicy,
 };
 
-use super::{equivalence::EquivalenceRegistry, CancellationToken, EquivalencePredicate};
+use super::{
+    equivalence::EquivalenceRegistry, CancellationToken, EquivalencePredicate, MemoryLimitDenial,
+};
 
 static PROCESS_AUTHORITY: OnceLock<()> = OnceLock::new();
 static CONSTRUCTION_LOCK: Mutex<()> = Mutex::new(());
 mod limits;
+mod memory;
+mod reservation;
 mod retained;
+mod room;
 mod worker_context;
+pub(in crate::authority) use memory::LeaseMemory;
+pub(crate) use reservation::SlotRefusal;
+use reservation::{ClaimSlot, RunInline};
 thread_local! {
     static ACTIVE_WORKER: RefCell<Vec<(usize, u64)>> = const { RefCell::new(Vec::new()) };
 }
@@ -41,9 +49,30 @@ pub enum LeaseDenial {
     WorkerLimitExceedsParent,
     MemoryLimitExceedsParent,
     WorkLimitExceedsParent,
-    ResourceExhausted,
+    /// A memory limit on the process or the lease's lineage refused the bytes.
+    MemoryExhausted(MemoryLimitDenial),
+    /// The bytes a reservation would charge do not fit the charge counter.
+    ChargedBytesOverflow,
     UnrelatedNestedLease,
     EquivalenceContractUnavailable,
+}
+
+/// Why an authority can never lease a policy.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExecutionPolicyDenial {
+    WorkersExceedAuthority,
+    MemoryExceedsAuthority,
+    ContractUnavailable,
+}
+
+impl From<ExecutionPolicyDenial> for LeaseDenial {
+    fn from(denial: ExecutionPolicyDenial) -> Self {
+        match denial {
+            ExecutionPolicyDenial::WorkersExceedAuthority => Self::WorkerLimitExceedsParent,
+            ExecutionPolicyDenial::MemoryExceedsAuthority => Self::MemoryLimitExceedsParent,
+            ExecutionPolicyDenial::ContractUnavailable => Self::EquivalenceContractUnavailable,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -148,22 +177,35 @@ impl ExecutionAuthority {
         Ok(authority)
     }
 
+    /// Whether this authority can ever lease `policy`: its contract is
+    /// registered and its workers and memory fit the process. A refusal is
+    /// the one [`Self::request_lease`] makes for every request of `policy`.
+    pub fn admits_policy(
+        &self,
+        policy: &ExecutionRequestPolicy,
+    ) -> Result<(), ExecutionPolicyDenial> {
+        if let DeterminismContract::ContractEquivalent(id) = policy.determinism() {
+            if self.inner.equivalences.get(id).is_none() {
+                return Err(ExecutionPolicyDenial::ContractUnavailable);
+            }
+        }
+        let budget = policy.budget();
+        if budget.max_workers().get() > self.inner.config.max_workers.get() {
+            return Err(ExecutionPolicyDenial::WorkersExceedAuthority);
+        }
+        if budget.charged_memory_bytes() > self.inner.config.charged_memory_bytes {
+            return Err(ExecutionPolicyDenial::MemoryExceedsAuthority);
+        }
+        Ok(())
+    }
+
     pub fn request_lease(
         &self,
         request: LeaseRequest,
     ) -> Result<ExecutionResourceLease<'_>, LeaseDenial> {
-        if let DeterminismContract::ContractEquivalent(id) = request.policy.determinism() {
-            if self.inner.equivalences.get(id).is_none() {
-                return Err(LeaseDenial::EquivalenceContractUnavailable);
-            }
-        }
+        self.admits_policy(&request.policy)
+            .map_err(LeaseDenial::from)?;
         let budget = request.policy.budget();
-        if budget.max_workers().get() > self.inner.config.max_workers.get() {
-            return Err(LeaseDenial::WorkerLimitExceedsParent);
-        }
-        if budget.charged_memory_bytes() > self.inner.config.charged_memory_bytes {
-            return Err(LeaseDenial::MemoryLimitExceedsParent);
-        }
         let id = self.next_id();
         Ok(ExecutionResourceLease {
             authority: self,
@@ -214,6 +256,8 @@ impl<'a> ExecutionResourceLease<'a> {
     /// Reuse the invoking worker's slot for nested work. The child records one
     /// active worker against itself and descendants below the already-counted
     /// parent; newly retained memory is charged to every ancestor and process.
+    /// An entry that finds no free slot runs inline on its own thread, so
+    /// another run's occupancy never refuses it; only memory can.
     pub(crate) fn reserve_entry(
         &self,
         memory_bytes: u64,
@@ -230,9 +274,12 @@ impl<'a> ExecutionResourceLease<'a> {
                     .iter()
                     .map(|node| node.id)
                     .collect::<Vec<_>>();
-                self.reserve(0, worker_nodes, 1, memory_bytes)
+                self.reserve::<RunInline>(0, worker_nodes, 1, memory_bytes)
             }
-            _ => self.try_reserve(1, memory_bytes),
+            _ => {
+                let worker_nodes = self.lineage().iter().map(|node| node.id).collect();
+                self.reserve::<RunInline>(1, worker_nodes, 1, memory_bytes)
+            }
         }
     }
 
@@ -240,92 +287,20 @@ impl<'a> ExecutionResourceLease<'a> {
         &self,
         workers: usize,
         memory_bytes: u64,
-    ) -> Result<ResourceReservation, LeaseDenial> {
+    ) -> Result<ResourceReservation, SlotRefusal> {
         let worker_nodes = if workers == 0 {
             Vec::new()
         } else {
             self.lineage().iter().map(|node| node.id).collect()
         };
-        self.reserve(workers, worker_nodes, workers, memory_bytes)
+        self.reserve::<ClaimSlot>(workers, worker_nodes, workers, memory_bytes)
     }
 
     pub(crate) fn reserve_retained_memory(
         &self,
         memory_bytes: u64,
     ) -> Result<ResourceReservation, LeaseDenial> {
-        self.reserve(0, Vec::new(), 0, memory_bytes)
-    }
-
-    fn reserve(
-        &self,
-        process_workers: usize,
-        worker_nodes: Vec<u64>,
-        worker_count_per_node: usize,
-        memory_bytes: u64,
-    ) -> Result<ResourceReservation, LeaseDenial> {
-        if process_workers == 0 && worker_count_per_node == 0 && memory_bytes == 0 {
-            return Ok(ResourceReservation {
-                authority: Arc::clone(&self.authority.inner),
-                memory_lineage: Vec::new(),
-                worker_lineage: Vec::new(),
-                worker_count_per_node: 0,
-                process_workers: 0,
-                memory_bytes: 0,
-            });
-        }
-        let lineage = self.lineage();
-        let mut ledger = self
-            .authority
-            .inner
-            .ledger
-            .lock()
-            .unwrap_or_else(|error| error.into_inner());
-        let workers_after = ledger.active_workers.checked_add(process_workers);
-        let process_memory = ledger.charged_memory_bytes.checked_add(memory_bytes);
-        if workers_after.is_none_or(|count| count > self.authority.inner.config.max_workers.get())
-            || process_memory
-                .is_none_or(|count| count > self.authority.inner.config.charged_memory_bytes)
-        {
-            return Err(LeaseDenial::ResourceExhausted);
-        }
-        for node in &lineage {
-            let usage = ledger.nodes.get(&node.id);
-            let worker_increment = if worker_nodes.contains(&node.id) {
-                worker_count_per_node
-            } else {
-                0
-            };
-            let workers_after = usage.map_or(Some(worker_increment), |value| {
-                value.active_workers.checked_add(worker_increment)
-            });
-            let memory_after = usage.map_or(Some(memory_bytes), |value| {
-                value.charged_memory_bytes.checked_add(memory_bytes)
-            });
-            if workers_after.is_none_or(|count| count > node.max_workers)
-                || memory_after.is_none_or(|count| count > node.charged_memory_bytes)
-            {
-                return Err(LeaseDenial::ResourceExhausted);
-            }
-        }
-        ledger.active_workers = workers_after.expect("checked above");
-        ledger.charged_memory_bytes = process_memory.expect("checked above");
-        for node in &lineage {
-            let usage = ledger.nodes.entry(node.id).or_default();
-            usage.active_workers += if worker_nodes.contains(&node.id) {
-                worker_count_per_node
-            } else {
-                0
-            };
-            usage.charged_memory_bytes += memory_bytes;
-        }
-        Ok(ResourceReservation {
-            authority: Arc::clone(&self.authority.inner),
-            memory_lineage: lineage.iter().map(|node| node.id).collect(),
-            worker_lineage: worker_nodes,
-            worker_count_per_node,
-            process_workers,
-            memory_bytes,
-        })
+        self.reserve::<RunInline>(0, Vec::new(), 0, memory_bytes)
     }
 
     pub(crate) fn pool(&self) -> &ThreadPool {

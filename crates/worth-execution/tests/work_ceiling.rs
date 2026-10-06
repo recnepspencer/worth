@@ -4,9 +4,10 @@ use std::{
 };
 
 use worth_execution::{
-    CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig, ExecutionMap,
-    ExecutionResourceLease, ExecutionWorkCeiling, LeaseRequest, MapKernelFailure, MapPartition,
-    MapStop, ReduceInputDenial, ReductionRunStop, WorkCeilingDenial,
+    CancellationSource, CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig,
+    ExecutionMap, ExecutionResourceLease, ExecutionWorkCeiling, LeaseRequest, MapKernelFailure,
+    MapKernelStop, MapPartition, MapStop, ReduceInputDenial, ReductionRunStop, SerialRequest,
+    WorkCeilingDenial,
 };
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionReport,
@@ -39,23 +40,35 @@ fn reduce(
     count: u64,
 ) -> (Reduced, ExecutionReport) {
     let input = map(count);
-    ExecutionWorkCeiling::new(ceiling)
-        .run(lease, || {
-            input
-                .run_reduce(
-                    lease,
-                    |value, context| {
-                        context.checkpoint(PARTITION_WORK)?;
-                        Ok::<_, MapKernelFailure<()>>(*value)
-                    },
-                    0_u64,
-                    |left: &u64, right: &u64| left + right,
-                    8,
-                    0,
-                )
-                .map(|(tree, report, _)| (*tree.result(), report))
-        })
-        .expect("the computation ran")
+    let computation = || {
+        input
+            .run_reduce(
+                lease,
+                |value, context| {
+                    context.checkpoint(PARTITION_WORK)?;
+                    Ok::<_, MapKernelFailure<()>>(*value)
+                },
+                0_u64,
+                |left: &u64, right: &u64| left + right,
+                8,
+                0,
+            )
+            .map(|(tree, report, _)| (*tree.result(), report))
+    };
+    let ceiling = ExecutionWorkCeiling::new(ceiling);
+    match lease {
+        Some(lease) => ceiling.run(lease, computation),
+        None => ceiling.run_serial(&unbounded(), computation),
+    }
+    .expect("the computation ran")
+}
+
+fn unbounded() -> SerialRequest {
+    SerialRequest {
+        memory: None,
+        deadline: None,
+        cancellation: CancellationToken::new(),
+    }
 }
 
 fn exhausted_at(reduced: &Reduced) -> Option<u64> {
@@ -136,10 +149,63 @@ fn the_narrower_of_the_lease_and_the_declared_ceiling_binds() {
 #[test]
 fn a_panic_outside_every_pattern_is_typed_and_the_next_run_is_clean() {
     let panicked = catch_unwind(AssertUnwindSafe(|| {
-        ExecutionWorkCeiling::new(10).run(None, || -> u64 { panic!("outside a pattern") })
+        ExecutionWorkCeiling::new(10)
+            .run_serial(&unbounded(), || -> u64 { panic!("outside a pattern") })
     }))
     .expect("the ceiling contains the panic");
     assert_eq!(panicked.unwrap_err(), WorkCeilingDenial::Panicked);
     let (after, _) = reduce(None, u64::MAX, 2);
     assert_eq!(after.expect("the next run completes").0, 3);
+}
+
+#[test]
+fn a_serial_request_cancelled_mid_reduction_stops_at_a_combine() {
+    let cancellation = CancellationSource::new();
+    let request = SerialRequest {
+        cancellation: cancellation.token(),
+        ..unbounded()
+    };
+    let input = map(8);
+    let combines = std::sync::atomic::AtomicU64::new(0);
+    let (reduced, _) = ExecutionWorkCeiling::new(u64::MAX)
+        .run_serial(&request, || {
+            input.run_reduce(
+                None,
+                |value, _| Ok::<_, MapKernelFailure<()>>(*value),
+                0_u64,
+                |left: &u64, right: &u64| {
+                    combines.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    cancellation.cancel();
+                    left + right
+                },
+                8,
+                0,
+            )
+        })
+        .expect("the computation ran");
+    let Err(ReduceInputDenial::ReductionStopped { failure, .. }) = reduced else {
+        panic!("cancellation stops the reduction");
+    };
+    assert_eq!(
+        failure.reason,
+        ReductionRunStop::Hook(MapKernelStop::Cancelled)
+    );
+    assert_eq!(
+        combines.into_inner(),
+        1,
+        "the next combine boundary observes it"
+    );
+}
+
+#[test]
+fn a_serial_request_past_its_deadline_refuses_before_the_computation() {
+    let request = SerialRequest {
+        deadline: Some(std::time::Instant::now()),
+        ..unbounded()
+    };
+    let ran = ExecutionWorkCeiling::new(u64::MAX).run_serial(&request, || ());
+    assert_eq!(
+        ran.unwrap_err(),
+        WorkCeilingDenial::Stopped(MapKernelStop::DeadlineElapsed)
+    );
 }

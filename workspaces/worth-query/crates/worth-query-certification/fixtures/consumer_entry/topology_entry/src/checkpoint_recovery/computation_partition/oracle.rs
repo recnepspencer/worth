@@ -33,6 +33,7 @@ use super::*;
 mod counts;
 mod differential;
 mod program;
+mod worker_axis;
 
 use program::{OracleRoot, RegionArtifact, RegionConnection, TOTALS_RETAINED_BYTES, TOTALS_WORK};
 

@@ -683,6 +683,7 @@ dependencies = [
  "getrandom 0.3.4",
  "serde_json",
  "sha2",
+ "worth-execution",
  "worth-foundational",
  "worth-query-declaration",
  "worth-query-installation",

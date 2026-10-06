@@ -12,9 +12,10 @@ mod reduction;
 mod report;
 
 pub use authority::{
-    CancellationToken, ConstructionDenial, EquivalencePredicate, ExecutionAuthority,
-    ExecutionAuthorityConfig, ExecutionLeaseStatus, ExecutionResourceLease, LeaseDenial,
-    LeaseRequest,
+    CancellationSource, CancellationToken, ConstructionDenial, EquivalencePredicate,
+    ExecutionAuthority, ExecutionAuthorityConfig, ExecutionLeaseStatus, ExecutionMemoryReservation,
+    ExecutionPolicyDenial, ExecutionResourceLease, LeaseDenial, LeaseRequest, MemoryLimitDenial,
+    MemoryLimitLevel, SerialMemoryBudget, SerialRequest,
 };
 pub use oracle::{compare_canonical_values, CanonicalBits};
 
@@ -22,7 +23,7 @@ pub use oracle::{compare_canonical_values, CanonicalBits};
 mod tests;
 pub use partition::{
     Bisection, BisectionDenial, BisectionQuality, ComponentDenial, ComponentPartitioner,
-    KeyedDenial, KeyedItem, KeyedPartitioner, PartitionItemId, PartitionRoute,
+    KeyedDenial, KeyedEditDenial, KeyedItem, KeyedPartitioner, PartitionItemId, PartitionRoute,
     PartitionUpdateDenial, PartitionWork, SourceFactId, WeightedEdge, WeightedItem,
 };
 pub use pattern::{
@@ -30,10 +31,10 @@ pub use pattern::{
     DecomposeInputDenial, DecomposeKernelEditions, DecomposeReuse, DecomposeRunFailure,
     DecomposeStage, ExecutionDecompose, ExecutionForkJoin, ExecutionMap, ExecutionReduce,
     ExecutionRounds, ExecutionScan, ExecutionWorkCeiling, ForkChild, ForkJoinDenial,
-    ForkJoinOutcome, InterfaceSolution, InteriorResult, MapDenial, MapKernelContext,
-    MapKernelFailure, MapKernelStop, MapOutcome, MapPartition, MapStop, OracleMismatch,
-    PreparedExecutionMap, ReduceCertificationFailure, ReduceInputDenial, RoundsDenial,
-    RoundsOutcome, ScanDenial, ScanOutcome, WorkCeilingDenial,
+    ForkJoinOutcome, InterfaceSolution, InteriorResult, KeylessPartition, MapDenial,
+    MapKernelContext, MapKernelFailure, MapKernelStop, MapMemoryOverflow, MapOutcome, MapPartition,
+    MapStop, OracleMismatch, PreparedExecutionMap, ReduceCertificationFailure, ReduceInputDenial,
+    RoundsDenial, RoundsOutcome, ScanDenial, ScanOutcome, WorkCeilingDenial,
 };
 pub use reduction::{
     ReductionDenial, ReductionMetrics, ReductionPlan, ReductionRunFailure, ReductionRunStop,

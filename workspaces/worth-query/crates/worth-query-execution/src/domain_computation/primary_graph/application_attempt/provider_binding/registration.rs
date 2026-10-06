@@ -6,6 +6,7 @@ use super::super::WorthQueryApplicationCommitDenialStage as DenialStage;
 use super::WorthQueryPreparedApplicationProviderAttempt;
 
 mod provider_registration;
+use provider_registration::ApplicationAttemptRegistrationStop as RegistrationStop;
 pub(in crate::domain_computation::primary_graph) use provider_registration::WorthQueryPrimaryGraphApplicationAttempt;
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAttemptRegistration<'a>
@@ -143,7 +144,15 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             staged,
             expected_steps,
         )),
-        Err(_) => abort_registration(staged, DenialStage::ProviderPlan),
+        Err(RegistrationStop::Interrupted(interruption)) => {
+            use worth_relational::facade::mvcc::RelationalOperationInterruption as Interruption;
+            let _ = staged.abort();
+            Err(match interruption {
+                Interruption::Cancelled => WorthQueryProviderProgressionOutcome::Cancelled,
+                Interruption::TimedOut => WorthQueryProviderProgressionOutcome::TimedOut,
+            })
+        }
+        Err(RegistrationStop::Rejected(_)) => abort_registration(staged, DenialStage::ProviderPlan),
     }
 }
 

@@ -41,6 +41,11 @@ impl ReductionPlan {
         Ok(Self { identities })
     }
 
+    /// Keys already checked by construction need no second check.
+    pub fn from_canonical(identities: CanonicalUniqueVec<PartitionIdentity>) -> Self {
+        Self { identities }
+    }
+
     pub fn identities(&self) -> &[PartitionIdentity] {
         self.identities.as_slice()
     }

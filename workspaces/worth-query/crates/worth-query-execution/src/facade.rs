@@ -116,6 +116,10 @@ pub mod integration {
         WorthQueryInvalidationResourceDenial, WorthQueryInvalidationResourceInstallation,
         WorthQueryInvalidationResources,
     };
+    pub use worth_execution::{ExecutionAuthority, ExecutionAuthorityConfig};
+    pub use worth_foundational::{
+        DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+    };
     use worth_query_installation::facade::{
         ApplicationSchema, WorthQueryInstalledApplicationSchema,
     };

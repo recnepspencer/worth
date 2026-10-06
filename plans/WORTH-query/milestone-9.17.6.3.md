@@ -2314,15 +2314,8 @@ The next phase may trust that the touched graph alone decides what recomputes.
   failing partition, the canonical work boundary, and a typed denial for a
   kernel panic, a reducer panic, a result over the declared bytes and a key
   that does not encode.
-  The lease reaching `compute`, and the proof against the serial oracle at two
-  workers, machine width and wider than the machine, land in the lease item
-  below, before membership edits.
-  *Limitations:* the reducer and `prepare` are not interruptible. The declared
-  bytes bound each partition's result, not their total. `prepare` holds its
-  routing memory and every partition's gathered data at once, uncharged without
-  a lease. The floating-point sum proof compares
-  runs with each other; the comparison against the serial oracle
-  (`certify_reduce`) needs a lease.
+  *Limitation:* the declared bytes bound each partition's result, not their
+  total.
 - **6.3** Route marks to computation partitions through the settlement row's routing
   table, with item routing so `prepare` re-gathers only marked partitions.
   *Partly completed:* a producer's run retains its state on its record and the
@@ -2413,10 +2406,8 @@ The next phase may trust that the touched graph alone decides what recomputes.
   source snapshot is a stop, and a registration stopped after its World
   effect records `RegistrationIncomplete`. The reasons no mark row answers for
   are named once.
-  *Limitations:* an own effect whose comparison cannot answer stays denied
-  until a later publication on the branch supersedes the commit. An interrupted consumed-output verification answers
-  `Unavailable` (`work_budget.rs:45`), not an interruption; carrying the
-  request lease owns that.
+  *Limitation:* an own effect whose comparison cannot answer stays denied
+  until a later publication on the branch supersedes the commit.
 - **6.6** Charge every work meter as a reservation before the read it pays for,
   including the post-commit rebase, and say for each fresh edit admission
   whether the request or platform housekeeping pays.
@@ -2445,10 +2436,68 @@ The next phase may trust that the touched graph alone decides what recomputes.
 - **6.7** Carry the request lease into managed computations before membership edits.
   Resource denials are one Query-owned denial converted from the execution
   authority's in one place, and partition identity lists are canonical and
-  unique by type. The Components partitioner's retained edits take the lease.
-  Before Phase 7 runs waves concurrently, readers, meters and registry guards
-  are bound to their owning thread by type, and apply accepts only canonical
-  order.
+  unique by type. The Keyed partitioner's retained edits take the request's
+  memory. Before Phase 7 runs waves concurrently, readers and meters are bound
+  to their owning thread by type. Bridge's sink still takes an `Option` lease
+  (`managed_bridge.rs:261`); that is Phase 7 work, with canonical apply order.
+  *Completed:*
+  - A request opens its execution once, at entry, from the World's placement:
+    a lease drawn from the World's authority, or a serial request bounded by
+    the policy's memory. Each run dispatches on a child of that lease, so no
+    run consumes it. The policy is set by `with_execution_policy`, apart from
+    the authority, and neither has a `None` spelling. A policy larger than
+    its authority is refused when the World is built.
+  - Execution's refusals become Query's resource denial in
+    `execution_denial.rs`, one cause to one variant: an exhausted memory
+    limit with its denial, each reduction denial, and a cancelled or
+    timed-out interruption. A memory refusal names the limit that refused:
+    the request's policy, the process, or a declared bound. Every lease of a
+    request has its policy, so a dispatch child and a serial run refused by
+    it say so the same way. Limits are checked innermost first, so a policy
+    too small for a request is refused the same way whatever else the
+    process holds. A serial run keeps its memory denial. Busy
+    workers never refuse a request: a run that finds no free slot runs
+    inline on its caller's thread under its own lease's cap and memory,
+    with the `Capacity` fallback, the same bits and the same charged work.
+    Only an extra slot a running map tries to add is refused as busy. A
+    reduction's and a decomposition's report carry their stages' first
+    fallback cause, and a lease that resolves serial names why, inherited
+    from a serial ancestor or its own.
+  - Partition identity lists are built only through the infallible
+    `from_btree_set`.
+  - `prepare` holds its routing and each gather's declared bytes on the
+    request's memory before it holds them, and the map's admission takes
+    that hold over in one ledger step. The reducer takes over the request's
+    tree hold the same way and leaves the tree's bytes on it, held until the
+    lineage retains or evicts the run. An incremental run reserves each
+    result's bound before it dispatches, and its next tree's declared bound,
+    recombined paths or a rebuild from every leaf, before it builds; the hold
+    then settles to the tree. A serial request's ceiling is its
+    policy's memory, with framework bytes counted at one worker. The Keyed
+    partitioner charges the heap its retained keys own.
+  - Only the request's cancellation source cancels; leases and serial runs
+    carry an observe-only token. Cancellation and the scope's deadline stop
+    the reducer at the next tree node, on a full or an incremental run. An interrupted consumed-output
+    verification is an interruption, not `Unavailable`.
+  - Request-local readers and meters carry a marker that is `Send` and never
+    `Sync`, asserted beside each type, and a kernel that captures a
+    computation reader does not compile.
+  - The topology entry runs the region totals and the differential sequence
+    serially, at one worker, two, the machine's width and twice it, and
+    certified against seeded perturbed backends at two, the width and twice
+    it. The bits, the charged work, the work boundary and the least failing
+    partition match the serial run. At two workers or more every demand,
+    denied ones too, holds two kernels at once, and so does the differential
+    sequence.
+  *Limitations:*
+  - The request meter has no work ceiling (`edit_admission.rs:112-117`,
+    `u64::MAX`); a managed computation's work is bounded by its lease's
+    ceiling and its own declaration.
+  - Memory and deadline boundaries move with the worker count and are not
+    compared. Perturbation is reachable only through certification, and the
+    incremental map is not certified.
+  - The incremental path maps one partition per run, so it is serial in
+    effect; only a full run spreads partitions across workers.
 - **6.8** Maintain partitioner output incrementally and keep island identity stable.
   Retained structure equals what a fresh build of the current inputs produces;
   the differential test gains membership inserts, deletes, island merges and
@@ -2465,9 +2514,13 @@ The next phase may trust that partition-granular reuse is exact.
 ### Phase 7: Parallel advancement and remaining Query lanes
 
 - Pass the request lease from `advance` into Bridge, Relational and Signal.
+  Lease carriage into Bridge, Relational and Signal keeps each cause distinct:
+  Relational's `CommitExecutionDenialKind` (`read_only_packets.rs:165`) and
+  `DerivedIndexExecutionDenialKind` (`build_execution.rs:250`) still fold
+  every lease denial into `ResourceExhausted`.
 - Run the `compute` steps of each dependency-ready wave concurrently under the
   request lease, with nested partition work, and apply commits in canonical
-  order.
+  order. Apply accepts only canonical order, by type.
 - Move the workflow frontier and derived-view reconstruction onto the
   authority, and delete `ParallelAdmissionRoute` with its test-only executor.
 - Empty the ratchet list.

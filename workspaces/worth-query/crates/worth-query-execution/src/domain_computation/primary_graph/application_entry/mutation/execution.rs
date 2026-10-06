@@ -7,6 +7,7 @@ use super::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult,
     WorthQueryCompletedMutationCandidate,
 };
+use crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationAttemptDenial,
     WorthQueryOperationProjectionDenial, WorthQueryPrimaryGraphApplicationRuntime,
@@ -130,22 +131,28 @@ where
         let context_use = std::cell::Cell::new(
             crate::domain_computation::primary_graph::handler::DecisionContextUse::default(),
         );
-        let projected = self
-            .mutation_projection
-            .project_admitted_operation(&admission, |reader, scope| {
-                let mut decision_reader = DecisionReader::<Schema, Binding>::new(
-                    reader,
-                    scope,
-                    principal_identity,
-                    &operation_scope_binding,
-                    identities,
-                    request,
-                    &context_use,
-                );
-                on_contact();
-                handler.decide(input, &mut decision_reader)
-            })
-            .map_err(MutationHandlerExecutionDenial::Projection)?;
+        // The request holds the World owner for its duration, so its execution
+        // borrows the authority with no handle to upgrade, and the lease drops
+        // when the decision returns.
+        let world = std::sync::Arc::clone(&self.product_runtime.owner);
+        let projected = {
+            let execution = QueryRequestExecution::open(world.execution_placement(), request);
+            self.mutation_projection
+                .project_admitted_operation(&admission, |reader, scope| {
+                    let mut decision_reader = DecisionReader::<Schema, Binding>::new(
+                        reader,
+                        scope,
+                        principal_identity,
+                        &operation_scope_binding,
+                        identities,
+                        &execution,
+                        &context_use,
+                    );
+                    on_contact();
+                    handler.decide(input, &mut decision_reader)
+                })
+                .map_err(MutationHandlerExecutionDenial::Projection)?
+        };
         let (decision, projection, _) = projected.into_parts();
         let decision = match decision {
             HandlerResult::Completed(decision) => decision,

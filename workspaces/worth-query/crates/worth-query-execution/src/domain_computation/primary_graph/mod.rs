@@ -65,6 +65,7 @@ pub(in crate::domain_computation) use product_operation::SharedSelectedProductOp
 mod program_occurrence;
 mod provider;
 pub(in crate::domain_computation::primary_graph) use provider::OutstandingDispatchInFlightLease;
+mod request_local;
 mod resolution;
 mod resolution_denial;
 mod root;

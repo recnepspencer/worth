@@ -10,7 +10,8 @@ use fixture::{
 fn host_execution_authority_runs_charged_shared_read_batch() {
     use std::{num::NonZeroUsize, sync::Arc};
     use worth_execution::{
-        CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig, LeaseRequest,
+        CancellationSource, CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig,
+        LeaseRequest,
     };
     use worth_foundational::{
         DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -72,7 +73,7 @@ fn host_execution_authority_runs_charged_shared_read_batch() {
     assert_eq!(actual.canonical_digest(), expected.canonical_digest());
     assert!(actual.execution_report().unwrap().charged_work() > 3);
 
-    let cancelled = CancellationToken::new();
+    let cancelled = CancellationSource::new();
     cancelled.cancel();
     let cancelled_lease = server
         .execution_authority()
@@ -84,7 +85,7 @@ fn host_execution_authority_runs_charged_shared_read_batch() {
                 ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), 1 << 27, 10),
             ),
             deadline: None,
-            cancellation: cancelled,
+            cancellation: cancelled.token(),
         })
         .unwrap();
     assert!(matches!(

@@ -1,6 +1,8 @@
 use std::num::NonZeroUsize;
 
-use worth_execution::{CancellationToken, LeaseRequest, MapKernelFailure, MapStop};
+use worth_execution::{
+    CancellationSource, CancellationToken, LeaseRequest, MapKernelFailure, MapStop,
+};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
     PartitionIdentity,
@@ -89,9 +91,9 @@ fn leased_explicit_read_preserves_packet_identity_and_reports_stops() {
         })
     ));
 
-    let cancelled = CancellationToken::new();
+    let cancelled = CancellationSource::new();
     cancelled.cancel();
-    let cancelled_lease = lease(4, MEMORY, cancelled);
+    let cancelled_lease = lease(4, MEMORY, cancelled.token());
     let stopped = runtime
         .read_truth()
         .execute_query_plan_with_lease(plan.clone(), &cancelled_lease)
@@ -112,7 +114,7 @@ fn leased_explicit_read_preserves_packet_identity_and_reports_stops() {
             .read_truth()
             .execute_query_plan_with_lease(plan, &constrained),
         Err(QueryReadExecutionStop::PreparationStopped {
-            reason: MapStop::Admission(worth_execution::LeaseDenial::ResourceExhausted)
+            reason: MapStop::Admission(worth_execution::LeaseDenial::MemoryExhausted(_))
                 | MapStop::Failure {
                     cause: MapKernelFailure::ResultCapacityExceeded,
                     ..
@@ -168,7 +170,7 @@ fn leased_field_filter_charges_captured_comparison_bytes() {
             .read_truth()
             .execute_query_plan_with_lease(plan, &tight),
         Err(QueryReadExecutionStop::PreparationStopped {
-            reason: MapStop::Admission(worth_execution::LeaseDenial::ResourceExhausted)
+            reason: MapStop::Admission(worth_execution::LeaseDenial::MemoryExhausted(_))
                 | MapStop::Failure {
                     cause: MapKernelFailure::ResultCapacityExceeded,
                     ..

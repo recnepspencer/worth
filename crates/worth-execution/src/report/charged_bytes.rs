@@ -59,6 +59,14 @@ impl<T: ChargedBytes> ChargedBytes for Vec<T> {
     }
 }
 
+impl<T: ChargedBytes, const N: usize> ChargedBytes for [T; N] {
+    fn additional_charged_bytes(&self) -> u64 {
+        self.iter().fold(0_u64, |sum, item| {
+            sum.saturating_add(item.additional_charged_bytes())
+        })
+    }
+}
+
 impl<T: ChargedBytes> ChargedBytes for Option<T> {
     fn additional_charged_bytes(&self) -> u64 {
         self.as_ref()

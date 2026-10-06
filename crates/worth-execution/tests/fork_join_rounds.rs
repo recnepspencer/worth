@@ -8,9 +8,9 @@ use std::{
 };
 
 use worth_execution::{
-    CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig, ExecutionForkJoin,
-    ExecutionResourceLease, ExecutionRounds, ForkChild, ForkJoinOutcome, LeaseRequest, MapDenial,
-    MapKernelFailure, MapKernelStop, MapStop, RoundsOutcome,
+    CancellationSource, CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig,
+    ExecutionForkJoin, ExecutionResourceLease, ExecutionRounds, ForkChild, ForkJoinOutcome,
+    LeaseRequest, MapDenial, MapKernelFailure, MapKernelStop, MapStop, RoundsOutcome,
 };
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -158,9 +158,9 @@ fn fork_uses_canonical_failure_and_inherited_limits() {
     assert!(matches!(exhausted, ForkJoinOutcome::Stopped { .. }));
     assert!(exhausted.report().charged_work() <= 1);
 
-    let token = CancellationToken::new();
+    let token = CancellationSource::new();
     token.cancel();
-    let cancelled = lease(ExecutionPosture::Automatic, 10, token);
+    let cancelled = lease(ExecutionPosture::Automatic, 10, token.token());
     let outcome = fork().run(Some(&cancelled), |_, _| {
         Ok::<_, MapKernelFailure<()>>(0_u64)
     });
@@ -304,8 +304,8 @@ fn rounds_stop_at_canonical_barrier_on_failure_panic_and_limits() {
         reason: MapStop::WorkExhausted { .. }, ..
     } if identity == PartitionIdentity::new(3)));
 
-    let token = CancellationToken::new();
-    let cancelled_lease = lease(ExecutionPosture::Automatic, 4, token.clone());
+    let token = CancellationSource::new();
+    let cancelled_lease = lease(ExecutionPosture::Automatic, 4, token.token());
     let cancelled = plan.run(
         Some(&cancelled_lease),
         0_u64,

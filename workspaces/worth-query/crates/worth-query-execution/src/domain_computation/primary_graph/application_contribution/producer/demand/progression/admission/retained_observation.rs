@@ -211,6 +211,10 @@ where
                     Err(ConsumedOutputVerificationStop::RetryCurrentness(_)) => {
                         Err(retry(WorthQueryOutputDemandDenialKind::PublicationStale))
                     }
+                    Err(ConsumedOutputVerificationStop::Interrupted(event)) => Err(denial(
+                        WorthQueryOutputDemandDenialKind::of_interruption(event.interruption()),
+                        Family::IDENTITY,
+                    )),
                     Err(ConsumedOutputVerificationStop::Unavailable) => Err(unavailable()),
                 }
             })?;

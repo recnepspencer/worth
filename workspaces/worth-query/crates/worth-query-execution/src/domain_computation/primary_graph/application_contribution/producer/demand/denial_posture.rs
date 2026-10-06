@@ -88,4 +88,16 @@ impl WorthQueryOutputDemandDenialKind {
             other => Self::SourceScope(other),
         }
     }
+
+    /// The request's interruption, met while verifying what an output
+    /// consumed.
+    pub(in crate::domain_computation::primary_graph) const fn of_interruption(
+        interruption: worth_relational::facade::mvcc::RelationalOperationInterruption,
+    ) -> Self {
+        use worth_relational::facade::mvcc::RelationalOperationInterruption as Interruption;
+        match interruption {
+            Interruption::Cancelled => Self::Cancelled,
+            Interruption::TimedOut => Self::TimedOut,
+        }
+    }
 }

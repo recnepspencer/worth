@@ -5,23 +5,31 @@
 //! does not reach, and they refund to it. The declared work is the
 //! computation's own ceiling, so it is spent here, by one checked spend.
 
+use std::marker::PhantomData;
+
 use worth_query_declaration::facade::application_operation::CanonicalEncodingCharge;
 
+use super::super::super::request_local::{assert_request_local, RequestLocal};
 use super::super::WorthQueryManagedComputationResourceDenial;
 
 /// The declared work left and the work spent from it. Work is only ever
 /// spent, and only by `spend`, so the two always sum to the declared work.
+/// It is request-local: no kernel or concurrent compute spends it.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) struct RemainingWork {
     remaining: u64,
     spent: u64,
+    request_local: RequestLocal,
 }
+
+assert_request_local!(RemainingWork, EncodingMeter<'static>);
 
 impl RemainingWork {
     pub(super) const fn declared(work: u64) -> Self {
         Self {
             remaining: work,
             spent: 0,
+            request_local: PhantomData,
         }
     }
 
@@ -36,6 +44,7 @@ impl RemainingWork {
         *self = Self {
             remaining: self.remaining.checked_sub(work).ok_or(refused)?,
             spent: self.spent.checked_add(work).ok_or(refused)?,
+            request_local: PhantomData,
         };
         Ok(())
     }

@@ -80,7 +80,17 @@ where
 
     /// Borrow the authority installed by the host for request lease admission.
     pub fn execution_authority(&self) -> Option<&worth_execution::ExecutionAuthority> {
-        self.root.state.execution_authority.as_deref()
+        match self.execution_placement() {
+            super::RuntimeWorldExecutionPlacement::Leased { authority, .. } => Some(authority),
+            super::RuntimeWorldExecutionPlacement::Serial(_)
+            | super::RuntimeWorldExecutionPlacement::Unbounded => None,
+        }
+    }
+
+    /// How this World's requests run: leased under the host's policy, within
+    /// the policy on the calling thread, or unbounded.
+    pub fn execution_placement(&self) -> super::RuntimeWorldExecutionPlacement<'_> {
+        self.root.state.execution.placement()
     }
 
     pub fn publication_port(&self) -> RuntimeWorldPublicationPort<D, I, E, Ctx, T> {

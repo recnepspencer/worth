@@ -13,8 +13,8 @@ use std::{
 
 use serde_json::json;
 use worth_execution::{
-    CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig, ExecutionResourceLease,
-    LeaseRequest, MapKernelContext, MapKernelStop, MapStop,
+    CancellationSource, CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig,
+    ExecutionResourceLease, LeaseRequest, MapKernelContext, MapKernelStop, MapStop,
 };
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -41,7 +41,7 @@ const NESTED_RESOURCE: u8 = 2;
 struct NestedRelationalReadAdapter {
     runtime: Arc<RelationalRuntime>,
     plan: SnapshotPinnedQueryPlan,
-    cancellation: CancellationToken,
+    cancellation: CancellationSource,
     cancel_inside_adapter: AtomicU8,
     nested_stop: AtomicU8,
     seen_lease_address: AtomicUsize,
@@ -108,7 +108,7 @@ impl WorthServerProductApplicationAdapter for NestedRelationalReadAdapter {
             }
             Err(worth_relational::facade::runtime::QueryReadExecutionStop::PacketStopped {
                 reason:
-                    MapStop::Admission(worth_execution::LeaseDenial::ResourceExhausted)
+                    MapStop::Admission(worth_execution::LeaseDenial::MemoryExhausted(_))
                     | MapStop::Failure {
                         cause: worth_execution::MapKernelFailure::ResultCapacityExceeded,
                         ..
@@ -120,7 +120,7 @@ impl WorthServerProductApplicationAdapter for NestedRelationalReadAdapter {
             }
             Err(
                 worth_relational::facade::runtime::QueryReadExecutionStop::PreparationStopped {
-                    reason: MapStop::Admission(worth_execution::LeaseDenial::ResourceExhausted),
+                    reason: MapStop::Admission(worth_execution::LeaseDenial::MemoryExhausted(_)),
                     ..
                 },
             ) => {
@@ -174,7 +174,7 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
             ),
         )
         .unwrap();
-    let cancellation = CancellationToken::new();
+    let cancellation = CancellationSource::new();
     let adapter = Arc::new(NestedRelationalReadAdapter {
         runtime,
         plan,
@@ -232,7 +232,7 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
     assert_eq!(adapter.seen_lease_address.load(Ordering::SeqCst), 0);
 
     let wide = authority
-        .request_lease(lease_request(8 * 1024 * 1024, cancellation.clone()))
+        .request_lease(lease_request(8 * 1024 * 1024, cancellation.token()))
         .unwrap();
     let completed = session
         .product_operations()
@@ -246,7 +246,7 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
     );
 
     let small_lease = authority
-        .request_lease(lease_request(64 * 1024, cancellation.clone()))
+        .request_lease(lease_request(64 * 1024, cancellation.token()))
         .unwrap();
     let large_registration = WorthServerProductOperationInput::new(
         "nested.large-registration",
@@ -271,7 +271,7 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
     );
 
     let tight = authority
-        .request_lease(lease_request(64 * 1024, cancellation.clone()))
+        .request_lease(lease_request(64 * 1024, cancellation.token()))
         .unwrap();
     let stopped = session
         .product_operations()
@@ -299,7 +299,7 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
     adapter.nested_stop.store(0, Ordering::SeqCst);
     adapter.cancel_inside_adapter.store(1, Ordering::SeqCst);
     let cancelling = authority
-        .request_lease(lease_request(8 * 1024 * 1024, cancellation))
+        .request_lease(lease_request(8 * 1024 * 1024, cancellation.token()))
         .unwrap();
     let stopped = session
         .product_operations()

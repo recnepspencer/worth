@@ -1,6 +1,5 @@
 use std::future::Future;
 use std::pin::Pin;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, Waker};
 use std::time::{Duration, Instant};
@@ -14,9 +13,13 @@ pub enum WorthQueryRequestInterruption {
     DeadlineExceeded,
 }
 
+/// The flag every lease of this request observes, so a cancelled request
+/// stops at the next checkpoint of any pattern it runs. Only
+/// [`WorthQueryCancellationSource::cancel`] sets it, and that wakes every
+/// waiter: leases and serial runs see an observe-only token.
 #[derive(Default)]
 struct CancellationState {
-    cancelled: AtomicBool,
+    cancelled: worth_execution::CancellationSource,
     waiters: Mutex<Vec<(std::sync::Weak<()>, Waker)>>,
 }
 
@@ -37,9 +40,10 @@ impl WorthQueryCancellationSource {
     }
 
     pub fn cancel(&self) {
-        if self.state.cancelled.swap(true, Ordering::AcqRel) {
+        if self.state.cancelled.is_cancelled() {
             return;
         }
+        self.state.cancelled.cancel();
         let waiters = {
             let mut waiters = self
                 .state
@@ -61,7 +65,13 @@ pub struct WorthQueryCancellationToken {
 
 impl WorthQueryCancellationToken {
     pub fn is_cancelled(&self) -> bool {
-        self.state.cancelled.load(Ordering::Acquire)
+        self.state.cancelled.is_cancelled()
+    }
+
+    /// The signal an execution lease or serial request of this request
+    /// carries: an observe-only view, set when the source cancels.
+    pub fn execution_token(&self) -> worth_execution::CancellationToken {
+        self.state.cancelled.token()
     }
 
     pub fn cancelled(&self) -> WorthQueryCancellationFuture<'_> {

@@ -14,6 +14,7 @@ use crate::domain_computation::primary_graph::provider::{
 
 #[path = "provider_registration/consumed_capacity.rs"]
 mod consumed_capacity;
+pub(in crate::domain_computation::primary_graph) use consumed_capacity::ApplicationAttemptRegistrationStop;
 #[path = "provider_registration/output_contract.rs"]
 mod output_contract;
 #[path = "provider_registration/published_causality.rs"]
@@ -287,7 +288,10 @@ impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn register_application_attempt(
         &self,
         registration: WorthQueryApplicationAttemptRegistration<'_>,
-    ) -> Result<WorthQueryApplicationAttemptRegistrationCompletion, &'static str> {
+    ) -> Result<
+        WorthQueryApplicationAttemptRegistrationCompletion,
+        ApplicationAttemptRegistrationStop,
+    > {
         let reservation = self.reserve_application_attempt(&registration.affinity)?;
         let prepared = self.prepare_application_attempt(registration)?;
         let WorthQueryPreparedApplicationAttempt {
@@ -305,7 +309,7 @@ impl WorthQueryPrimaryGraphProvider {
     fn prepare_application_attempt<'a>(
         &self,
         registration: WorthQueryApplicationAttemptRegistration<'a>,
-    ) -> Result<WorthQueryPreparedApplicationAttempt, &'static str> {
+    ) -> Result<WorthQueryPreparedApplicationAttempt, ApplicationAttemptRegistrationStop> {
         let super::WorthQueryApplicationAttemptRegistration {
             mut required_output_demand,
             effect_owner: _effect_owner,

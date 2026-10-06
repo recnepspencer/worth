@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use super::{ExecutionResourceLease, LeaseDenial, ResourceReservation};
+use super::{room, ExecutionResourceLease, LeaseDenial, ResourceReservation};
 
 impl ExecutionResourceLease<'_> {
     pub(crate) fn lineage_depth(&self) -> usize {
@@ -34,32 +34,25 @@ impl ExecutionResourceLease<'_> {
             .ledger
             .lock()
             .unwrap_or_else(|e| e.into_inner());
-        let process_after = ledger
-            .charged_memory_bytes
-            .checked_sub(reservation.memory_bytes)
-            .and_then(|used| used.checked_add(memory_bytes))
-            .ok_or(LeaseDenial::ResourceExhausted)?;
-        if process_after > self.authority.inner.config.charged_memory_bytes {
-            return Err(LeaseDenial::ResourceExhausted);
-        }
-        for node in &lineage {
-            let old = if reservation.memory_lineage.contains(&node.id) {
-                reservation.memory_bytes
-            } else {
-                0
-            };
-            let used = ledger
-                .nodes
-                .get(&node.id)
-                .map_or(0, |usage| usage.charged_memory_bytes);
-            let after = used
-                .checked_sub(old)
-                .and_then(|value| value.checked_add(memory_bytes))
-                .ok_or(LeaseDenial::ResourceExhausted)?;
-            if after > node.charged_memory_bytes {
-                return Err(LeaseDenial::ResourceExhausted);
-            }
-        }
+        // Each level counts this charge's old bytes as room.
+        let held = reservation.memory_bytes;
+        room::check(
+            &ledger,
+            self.authority.inner.config.charged_memory_bytes,
+            held,
+            lineage.iter().map(|node| {
+                let old = if reservation.memory_lineage.contains(&node.id) {
+                    held
+                } else {
+                    0
+                };
+                (*node, old)
+            }),
+            memory_bytes,
+        )
+        .map_err(LeaseDenial::MemoryExhausted)?;
+        let process_used = ledger.charged_memory_bytes - held;
+        let process_after = process_used + memory_bytes;
         ledger.charged_memory_bytes = process_after;
         for id in &reservation.memory_lineage {
             let usage = ledger

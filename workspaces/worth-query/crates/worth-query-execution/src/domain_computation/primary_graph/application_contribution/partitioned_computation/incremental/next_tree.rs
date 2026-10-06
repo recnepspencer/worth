@@ -5,18 +5,24 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use worth_execution::{
-    ExecutionMap, ExecutionWorkCeiling, MapKernelContext, MapKernelFailure, MapKernelStop,
-    MapOutcome, MapPartition, ReductionPlan, ReductionTree,
+    ExecutionMap, KeylessPartition, MapKernelContext, MapKernelFailure, MapOutcome,
 };
 use worth_foundational::facade::PartitionIdentity;
 
+use super::super::super::execution_denial::PartitionRefusal;
+use super::super::super::request_execution::{kept_tree_bytes, QueryRequestExecution};
+use super::super::gather_memory::GatheredMemory;
 use super::super::plan::GatheredComputationPartition;
 use super::super::remaining_work::RemainingWork;
-use super::super::{WorthQueryDeterministicReducer, WorthQueryPartitionedComputationDenial};
+use super::super::{
+    WorthQueryComputationPartitionStop, WorthQueryDeterministicReducer,
+    WorthQueryPartitionedComputationDenial,
+};
 use super::retained::{
     observe, CarriedPartitions, CompletedComputationRun, RetainedBasis, RetainedPartition,
     RetainedPartitions, TypedPrior, WorthQueryPartitionedComputationRun,
 };
+use super::tree_update::{next_tree, same_bits};
 use crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial;
 use crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge;
 
@@ -24,6 +30,9 @@ use crate::domain_computation::primary_graph::invariant_projection::ComputationC
 struct Recomputed<Key, Gathered> {
     map: ExecutionMap<GatheredComputationPartition<Key, Gathered>, u64>,
     gather: Option<ComputationCallCharge>,
+    /// The request memory its gathering holds until its map's admission
+    /// takes it over.
+    memory: GatheredMemory,
 }
 
 /// An incremental run after `prepare`: the marked partitions gathered again,
@@ -75,25 +84,32 @@ where
         partition: &RetainedPartition<Key>,
         gathered: Gathered,
         gather: Option<ComputationCallCharge>,
+        mut memory: GatheredMemory,
     ) -> Result<(), WorthQueryPartitionedComputationDenial<Stopped>> {
-        let map = ExecutionMap::try_from_declared_partitions(
-            vec![identity],
-            vec![MapPartition {
-                identity,
-                value: GatheredComputationPartition {
-                    identity,
-                    key: Arc::clone(&partition.key),
-                    items: Arc::clone(&partition.members),
-                    gathered,
-                },
-                read_keys: Vec::new(),
-                write_keys: Vec::new(),
+        let value = GatheredComputationPartition {
+            identity,
+            key: Arc::clone(&partition.key),
+            items: Arc::clone(&partition.members),
+            gathered,
+        };
+        memory.after_gather(&value)?;
+        let map = ExecutionMap::from_keyless_partitions(BTreeMap::from([(
+            identity,
+            KeylessPartition {
+                value,
                 kernel_scratch_bytes: 0,
                 max_result_bytes: self.declared_bytes,
-            }],
-        )
-        .map_err(WorthQueryPartitionedComputationDenial::from_map)?;
-        self.recomputed.insert(identity, Recomputed { map, gather });
+            },
+        )]))
+        .map_err(WorthQueryPartitionedComputationDenial::from_map_overflow)?;
+        self.recomputed.insert(
+            identity,
+            Recomputed {
+                map,
+                gather,
+                memory,
+            },
+        );
         Ok(())
     }
 
@@ -101,9 +117,11 @@ where
     /// retained one. A carried kernel is charged its retained work in its
     /// place among the partitions; a recomputed result with the retained
     /// result's canonical bits replaces nothing. A recomputed kernel's work
-    /// is execution's report of its one-partition map.
+    /// is execution's report of its one-partition map, run on its own
+    /// dispatch of the request's execution.
     pub(in super::super) fn compute<Stopped, Kernel>(
         self,
+        execution: &QueryRequestExecution<'_>,
         kernel: Kernel,
         reducer: &WorthQueryDeterministicReducer<Reduced>,
     ) -> Result<ComputedIncremental<Reduced>, WorthQueryPartitionedComputationDenial<Stopped>>
@@ -119,7 +137,7 @@ where
         Kernel: Fn(
                 &GatheredComputationPartition<Key, Gathered>,
                 &mut MapKernelContext<'_, '_>,
-            ) -> Result<Reduced, MapKernelFailure<Stopped>>
+            ) -> Result<Reduced, MapKernelFailure<PartitionRefusal<Stopped>>>
             + Sync,
     {
         let Self {
@@ -132,13 +150,24 @@ where
         let retained = &*prior.typed;
         let exhausted = |partition| WorthQueryPartitionedComputationDenial::Partition {
             partition,
-            cause: super::super::WorthQueryComputationPartitionStop::Resource(
+            cause: WorthQueryComputationPartitionStop::Resource(
                 WorthQueryManagedComputationResourceDenial::WorkExhausted,
             ),
         };
         let mut remaining = remaining_work;
         let mut partitions = BTreeMap::new();
-        let mut results = Vec::new();
+        let mut results = BTreeMap::new();
+        let mut results_memory = execution
+            .reserve(0)
+            .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
+        // What one recomputed result can hold once it leaves its map: its
+        // entry, and at most the declared bytes its map admits it.
+        let result_bound = u64::try_from(size_of::<(PartitionIdentity, Reduced)>())
+            .ok()
+            .and_then(|inline| inline.checked_add(declared_bytes))
+            .ok_or(WorthQueryPartitionedComputationDenial::Resource(
+                WorthQueryManagedComputationResourceDenial::CapacityOverflow,
+            ))?;
         let skipped = retained
             .partitions
             .keys()
@@ -153,9 +182,34 @@ where
                 partitions.insert(*identity, Arc::clone(carried));
                 continue;
             };
-            let (outcome, _) = ExecutionWorkCeiling::new(remaining.remaining())
-                .run(None, || marked.map.run(None, &kernel))
-                .map_err(WorthQueryPartitionedComputationDenial::from_work_ceiling)?;
+            let dispatch = execution
+                .dispatch()
+                .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
+            // The result's bound is held before its map runs, so the result
+            // never exists unreserved; it settles to the result's own bytes.
+            let settled = results_memory.bytes();
+            results_memory
+                .grow(result_bound)
+                .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
+            // The map's admission takes over the gathered partition's hold.
+            let outcome = dispatch
+                .map(
+                    remaining.remaining(),
+                    &marked.map,
+                    marked.memory.into_held(),
+                    &kernel,
+                )
+                .map_err(|denial| {
+                    // Only the map runs under this ceiling, and it contains
+                    // its kernel's panics: what is left is the kernel's.
+                    WorthQueryPartitionedComputationDenial::from_work_ceiling(
+                        denial,
+                        WorthQueryPartitionedComputationDenial::Partition {
+                            partition: *identity,
+                            cause: WorthQueryComputationPartitionStop::Panicked,
+                        },
+                    )
+                })?;
             let (value, units) = match outcome {
                 MapOutcome::Complete { mut values, report } => (
                     values.pop().expect("one partition yields one result"),
@@ -174,8 +228,19 @@ where
                 .tree
                 .leaf(*identity)
                 .is_none_or(|leaf| !same_bits(leaf, &value));
+            let kept = if replaced {
+                u64::try_from(size_of::<(PartitionIdentity, Reduced)>())
+                    .ok()
+                    .and_then(|inline| inline.checked_add(value.additional_charged_bytes()))
+                    .and_then(|bytes| settled.checked_add(bytes))
+                    .ok_or(WorthQueryManagedComputationResourceDenial::CapacityOverflow)
+            } else {
+                Ok(settled)
+            };
+            kept.and_then(|bytes| results_memory.resize(bytes))
+                .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
             if replaced {
-                results.push((*identity, value));
+                results.insert(*identity, value);
             }
             if let Some(gather) = marked.gather {
                 partitions.insert(
@@ -196,7 +261,15 @@ where
             remaining.remaining(),
             declared_bytes,
             reducer,
+            execution,
+            &mut results_memory,
         )?;
+        // The results are the tree's now: the hold settles to what the tree
+        // keeps, as a full run's tree is handed over when its run ends.
+        kept_tree_bytes(&tree)
+            .ok_or(WorthQueryManagedComputationResourceDenial::CapacityOverflow)
+            .and_then(|bytes| results_memory.resize(bytes))
+            .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
         let computed_work = remaining
             .spent_since(remaining_work)
             .and_then(|kernels| kernels.checked_add(retained.reduction_work))
@@ -228,90 +301,8 @@ where
                     prior: prior.state,
                     skipped,
                 }),
+                tree_memory: results_memory,
             },
         })
     }
-}
-
-/// The retained tree with `results` in place of their partitions' leaves.
-///
-/// When the combines a full build charges fit, the tree is the retained one
-/// with each changed path recombined. Otherwise, or when recombining a path
-/// fails, the tree is built again from every leaf the way a full run builds
-/// it, so the run fails where and as a full run fails.
-fn next_tree<Key, Item, Reduced, Stopped>(
-    retained: &RetainedPartitions<Key, Item, Reduced>,
-    results: Vec<(PartitionIdentity, Reduced)>,
-    remaining: u64,
-    declared_bytes: u64,
-    reducer: &WorthQueryDeterministicReducer<Reduced>,
-) -> Result<
-    ReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
-    WorthQueryPartitionedComputationDenial<Stopped>,
->
-where
-    Reduced: Clone + worth_execution::ChargedBytes + worth_execution::CanonicalBits,
-{
-    if retained.reduction_work <= remaining {
-        let mut tree = retained.tree.clone();
-        let recombined = results.iter().all(|(identity, value)| {
-            tree.update_checked(
-                *identity,
-                value.clone(),
-                declared_bytes,
-                || Ok::<(), ()>(()),
-            )
-            .is_ok()
-        });
-        if recombined {
-            return Ok(tree);
-        }
-    }
-    let mut changed = results.into_iter().collect::<BTreeMap<_, _>>();
-    let leaves = retained
-        .partitions
-        .keys()
-        .map(|identity| {
-            let leaf = changed
-                .remove(identity)
-                .or_else(|| retained.tree.leaf(*identity).cloned());
-            (
-                *identity,
-                leaf.expect("every retained partition has a leaf"),
-            )
-        })
-        .collect::<Vec<_>>();
-    let plan = ReductionPlan::try_from_sorted_unique(
-        leaves.iter().map(|(identity, _)| *identity).collect(),
-    )
-    .expect("retained partitions are unique and in identity order");
-    let mut left = remaining;
-    ReductionTree::try_from_declared_checked(
-        plan,
-        leaves,
-        (reducer.identity)(),
-        reducer.combine,
-        declared_bytes,
-        || {
-            left = left.checked_sub(1).ok_or(MapKernelStop::WorkCeiling)?;
-            Ok(())
-        },
-    )
-    .map(|(tree, _)| tree)
-    .map_err(WorthQueryPartitionedComputationDenial::from_reduction)
-}
-
-/// Whether two results have the same canonical bits. A result whose bits do
-/// not encode is never the same.
-fn same_bits<Value: worth_execution::CanonicalBits>(left: &Value, right: &Value) -> bool {
-    fn bits<Value: worth_execution::CanonicalBits>(value: &Value) -> Option<Vec<u8>> {
-        let mut out = Vec::with_capacity(value.canonical_len()?);
-        value
-            .visit_canonical_bits(&mut |chunk| {
-                out.extend_from_slice(chunk);
-                true
-            })
-            .then_some(out)
-    }
-    matches!((bits(left), bits(right)), (Some(left), Some(right)) if left == right)
 }

@@ -1,16 +1,16 @@
 use crate::{
     authority::{ExecutionResourceLease, LeaseDenial},
     backend::{
-        run_checked_batch_with_charge, AdmittedBatch, BackendKind, BatchStop, KernelContext,
-        KernelFailure, KernelStop,
+        run_checked_batch_with_charge, AdmittedBatch, BackendKind, BatchDenial, BatchStop,
+        KernelContext, KernelFailure, KernelStop,
     },
     oracle::CanonicalBits,
     report::ChargedBytes,
 };
 
 use super::{
-    staged::FrontierCharge, ReductionMetrics, ReductionPlan, ReductionRunFailure, ReductionRunStop,
-    ReductionTree,
+    super::plan::ReductionDenial, staged::FrontierCharge, ReductionMetrics, ReductionPlan,
+    ReductionRunFailure, ReductionRunStop, ReductionTree,
 };
 
 pub(crate) enum ScheduledReductionError {
@@ -46,7 +46,7 @@ where
             max_value_bytes
                 .checked_mul(6)
                 .ok_or(ScheduledReductionError::Admission(
-                    LeaseDenial::ResourceExhausted,
+                    LeaseDenial::ChargedBytesOverflow,
                 ))?;
         let entries = frontier
             .tasks
@@ -55,13 +55,20 @@ where
             .map(|spec| {
                 let capacity = Self::checked_subtree_result_bound(spec.len(), max_value_bytes)
                     .ok_or(ScheduledReductionError::Admission(
-                        LeaseDenial::ResourceExhausted,
+                        LeaseDenial::ChargedBytesOverflow,
                     ))?;
                 Ok((spec.identity, spec, task_scratch, capacity))
             })
             .collect::<Result<Vec<_>, _>>()?;
-        let batch = AdmittedBatch::try_admit(entries, 0)
-            .map_err(|_| ScheduledReductionError::Admission(LeaseDenial::ResourceExhausted))?;
+        let batch = AdmittedBatch::try_admit(entries, 0).map_err(|denial| match denial {
+            BatchDenial::Identities => ScheduledReductionError::Reduction(ReductionRunFailure {
+                reason: ReductionRunStop::Denial(ReductionDenial::IdentitiesNotCanonical),
+                metrics: ReductionMetrics::default(),
+            }),
+            BatchDenial::MemoryOverflow => {
+                ScheduledReductionError::Admission(LeaseDenial::ChargedBytesOverflow)
+            }
+        })?;
         // Suppress the backend's task-order parent charge. Canonical tree
         // settlement below charges only the accepted operation prefix.
         let outcomes = run_checked_batch_with_charge(

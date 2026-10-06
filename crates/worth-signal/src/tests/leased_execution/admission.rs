@@ -1,4 +1,4 @@
-use super::support::{authority, request};
+use super::support::{authority, cancellable, request};
 use crate::facade::{
     Aspect, AspectVersion, BoundedSignalInputs, DeclaredSignalInput, EvaluationRequestMode,
     NodeContract, SignalError, SignalGraph,
@@ -96,9 +96,9 @@ fn cancelled_or_exhausted_request_does_not_invoke_the_evaluator_or_publish() {
             .build_evaluation_plan(&[node], EvaluationRequestMode::Default)
             .unwrap();
         let before = graph.node_aspect_version(node).unwrap();
-        let request = request(4, if cancelled { 1_000_000 } else { 0 });
+        let (request, source) = cancellable(4, if cancelled { 1_000_000 } else { 0 });
         if cancelled {
-            request.cancellation.cancel();
+            source.cancel();
         }
         let lease = authority().request_lease(request).unwrap();
         let calls = AtomicUsize::new(0);

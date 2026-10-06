@@ -70,6 +70,11 @@ fn compare(
         ) | FullVerificationStop::SourceRead(
             crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded,
         )) => return EquivalenceComparison::Inconclusive(ConsumedOutputVerificationStop::WorkExhausted),
+        Err(FullVerificationStop::Admission(CompanionPreflightStop::Interrupted(event))) => {
+            return EquivalenceComparison::Inconclusive(ConsumedOutputVerificationStop::Interrupted(
+                event,
+            ))
+        }
         Err(FullVerificationStop::ActorImageChanged) => return EquivalenceComparison::Inconclusive(
             ConsumedOutputVerificationStop::RetryCurrentness(worth_relational::facade::mvcc::CompanionCellEditStop::TopologyGenerationChanged)),
         Err(_) => return EquivalenceComparison::Inconclusive(ConsumedOutputVerificationStop::Unavailable),

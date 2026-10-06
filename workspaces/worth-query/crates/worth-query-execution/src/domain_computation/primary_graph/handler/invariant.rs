@@ -50,8 +50,7 @@ where
     principal_identity: &'borrow Binding::PrincipalIdentity,
     operation_scope_binding: &'borrow WorthQueryOperationScopeBinding,
     identities: &'borrow ApplicationMutationIdentities<'borrow, Schema, Binding>,
-    request:
-        &'borrow worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    execution: &'borrow QueryRequestExecution<'borrow>,
     context_use: &'borrow Cell<DecisionContextUse>,
 }
 
@@ -75,7 +74,7 @@ where
         principal_identity: &'borrow Binding::PrincipalIdentity,
         operation_scope_binding: &'borrow WorthQueryOperationScopeBinding,
         identities: &'borrow ApplicationMutationIdentities<'borrow, Schema, Binding>,
-        request: &'borrow worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        execution: &'borrow QueryRequestExecution<'borrow>,
         context_use: &'borrow Cell<DecisionContextUse>,
     ) -> Self {
         Self {
@@ -84,7 +83,7 @@ where
             principal_identity,
             operation_scope_binding,
             identities,
-            request,
+            execution,
             context_use,
         }
     }
@@ -148,9 +147,12 @@ where
     pub fn checkpoint(&self) -> Result<(), HandlerInterruption> {
         self.context_use
             .set(self.context_use.get().request_context());
-        self.request.interruption().map_or(Ok(()), |interruption| {
-            Err(HandlerInterruption::from(interruption))
-        })
+        self.execution
+            .request()
+            .interruption()
+            .map_or(Ok(()), |interruption| {
+                Err(HandlerInterruption::from(interruption))
+            })
     }
 
     /// The operation's reader, for a partitioned computation this handler
@@ -166,14 +168,24 @@ where
         self.reader
     }
 
+    /// The request's execution, for a partitioned computation this handler
+    /// runs.
+    pub(in crate::domain_computation::primary_graph) const fn execution(
+        &self,
+    ) -> &'borrow QueryRequestExecution<'borrow> {
+        self.execution
+    }
+
     pub fn managed_computation_execution(
         &self,
     ) -> crate::domain_computation::primary_graph::WorthQueryManagedComputationExecution<'_> {
         self.context_use
             .set(self.context_use.get().managed_computation());
         crate::domain_computation::primary_graph::WorthQueryManagedComputationExecution::new(
-            self.request,
+            self.execution,
         )
     }
 }
 use std::cell::Cell;
+
+use crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution;

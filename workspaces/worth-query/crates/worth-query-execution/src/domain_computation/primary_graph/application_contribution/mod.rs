@@ -2,8 +2,10 @@ mod composition;
 mod computation;
 mod conditional;
 mod contracts;
+mod execution_denial;
 mod partitioned_computation;
 mod producer;
+mod request_execution;
 mod setup;
 
 pub use composition::{
@@ -16,7 +18,7 @@ pub use computation::{
     WorthQueryManagedComputationDenial, WorthQueryManagedComputationExecution,
     WorthQueryManagedComputationInterruption, WorthQueryManagedComputationOwner,
     WorthQueryManagedComputationPrepared, WorthQueryManagedComputationResourceDenial,
-    WorthQueryPreparedManagedComputation,
+    WorthQueryMemoryLimitLevel, WorthQueryPreparedManagedComputation,
 };
 pub use conditional::{
     WorthQueryApplicationConditionalBinding, WorthQueryApplicationConditionalPackageContract,
@@ -45,6 +47,7 @@ pub use partitioned_computation::{
     WorthQueryComputationReadDenial, WorthQueryComputationReader, WorthQueryDeterministicReducer,
     WorthQueryInstalledPartitionedComputation, WorthQueryPartitionedComputationDenial,
     WorthQueryPartitionedComputationOwner, WorthQueryPreparedPartitionedComputation,
+    WorthQueryReductionInputDenial,
 };
 pub(in crate::domain_computation::primary_graph) use producer::{
     install_output_readiness_routes, InstalledProducerEdition, MatchedRequiredPredecessors,
@@ -61,5 +64,11 @@ pub use producer::{
     WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
     WorthQueryProducerOutputFamily, WorthQuerySelectedApplicationProducer,
     WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
+};
+pub(in crate::domain_computation::primary_graph) use request_execution::QueryRequestExecution;
+#[cfg(feature = "test-query-execution-observer")]
+pub use request_execution::{
+    place_managed_computations_on_this_thread_for_test, test_execution_workers,
+    WorthQueryExecutionPlacementForTest,
 };
 pub use setup::WorthQueryApplicationContributionSetup;

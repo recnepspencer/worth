@@ -59,7 +59,9 @@ pub use super::application_checkpoint::{
 #[cfg(feature = "test-query-execution-observer")]
 pub use super::application_contribution::{
     partitioned_computation_runs_on_this_thread_for_test,
-    WorthQueryPartitionedComputationFullCause, WorthQueryPartitionedComputationRun,
+    place_managed_computations_on_this_thread_for_test, test_execution_workers,
+    WorthQueryExecutionPlacementForTest, WorthQueryPartitionedComputationFullCause,
+    WorthQueryPartitionedComputationRun,
 };
 pub use super::application_contribution::{
     WorthQueryAdmittedOutputDemand, WorthQueryApplicationConditionalBinding,
@@ -80,16 +82,17 @@ pub use super::application_contribution::{
     WorthQueryManagedComputationCheckpointDenial, WorthQueryManagedComputationDenial,
     WorthQueryManagedComputationExecution, WorthQueryManagedComputationInterruption,
     WorthQueryManagedComputationOwner, WorthQueryManagedComputationPrepared,
-    WorthQueryManagedComputationResourceDenial, WorthQueryOutputDemandAdvance,
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
+    WorthQueryManagedComputationResourceDenial, WorthQueryMemoryLimitLevel,
+    WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
     WorthQueryOutputDemandRecoveryPosture, WorthQueryOutputReadinessContractBuilder,
     WorthQueryOutputReadinessContractDenial, WorthQueryPartitionedComputationDenial,
     WorthQueryPartitionedComputationOwner, WorthQueryPreparedManagedComputation,
     WorthQueryPreparedPartitionedComputation, WorthQueryProducerApplicability,
     WorthQueryProducerDemandResources, WorthQueryProducerInputReuseContract,
     WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputFamily, WorthQuerySelectedApplicationProducer,
-    WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
+    WorthQueryProducerOutputFamily, WorthQueryReductionInputDenial,
+    WorthQuerySelectedApplicationProducer, WorthQueryWorkflowAssessmentOutputFamily,
+    WorthQueryWorkflowAssessmentPosture,
 };
 pub use super::application_entry::mutation::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,

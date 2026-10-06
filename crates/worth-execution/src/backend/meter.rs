@@ -10,7 +10,7 @@ use std::{
 };
 
 use crate::{
-    authority::{CancellationToken, ExecutionResourceLease},
+    authority::{CancellationToken, ExecutionResourceLease, SerialMemoryBudget},
     report::ChargedBytes,
 };
 
@@ -66,6 +66,9 @@ pub(crate) struct RunLimits {
     physical_cell_charged: bool,
     force_serial: bool,
     bound_to_lease: bool,
+    /// The memory limit a lease-free run takes from its policy, inherited by
+    /// every lease-free descendant.
+    serial_memory: Option<SerialMemoryBudget>,
 }
 
 #[derive(Default)]
@@ -130,6 +133,10 @@ impl RunLimits {
 
     pub(crate) fn force_serial(&self) -> bool {
         self.force_serial
+    }
+
+    pub(crate) fn serial_memory(&self) -> Option<&SerialMemoryBudget> {
+        self.serial_memory.as_ref()
     }
 
     pub(crate) fn enter_physical_worker(&self, newly_active: bool) -> Option<WorkerActivityGuard> {

@@ -3,6 +3,7 @@
 //! and lists, and every reader list, as `ChargedBytes` declares them.
 
 use worth_execution::ChargedBytes;
+use worth_proof::CanonicalUniqueVec;
 
 use super::super::super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
 use super::{ComputationFactReaders, SealedComputationFact, SealedComputationFacts};
@@ -14,6 +15,11 @@ fn bytes(count: usize) -> u64 {
 /// A list's allocation: its capacity of inline values. The listed values own
 /// nothing more.
 fn list<T>(values: &Vec<T>) -> u64 {
+    bytes(values.capacity().saturating_mul(std::mem::size_of::<T>()))
+}
+
+/// A checked list's allocation: its capacity of inline keys.
+fn canonical<T>(values: &CanonicalUniqueVec<T>) -> u64 {
     bytes(values.capacity().saturating_mul(std::mem::size_of::<T>()))
 }
 
@@ -70,7 +76,7 @@ impl ChargedBytes for WorthQueryApplicationObservedFact {
 
 impl ChargedBytes for ComputationFactReaders {
     fn additional_charged_bytes(&self) -> u64 {
-        list(&self.item_keys).saturating_add(list(&self.partitions))
+        canonical(&self.item_keys).saturating_add(canonical(&self.partitions))
     }
 }
 

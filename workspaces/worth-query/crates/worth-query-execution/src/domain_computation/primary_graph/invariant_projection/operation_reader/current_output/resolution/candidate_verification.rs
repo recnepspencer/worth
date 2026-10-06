@@ -114,6 +114,9 @@ where
                     ConsumedOutputVerificationStop::Unavailable => {
                         WorthQueryCurrentOutputDenialKind::OutputUnavailable
                     }
+                    ConsumedOutputVerificationStop::Interrupted(event) => {
+                        WorthQueryCurrentOutputDenialKind::Interrupted(event.interruption())
+                    }
                 },
                 subject,
             )

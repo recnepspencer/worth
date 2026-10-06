@@ -4,14 +4,14 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use worth_execution::{CancellationToken, LeaseRequest, MapKernelStop};
+use worth_execution::{CancellationSource, CancellationToken, LeaseRequest, MapKernelStop};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
 
 #[test]
 fn one_large_packet_observes_cancellation_mid_kernel_without_result() {
-    let cancellation = CancellationToken::new();
+    let cancellation = CancellationSource::new();
     let lease = crate::tests::support::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
@@ -20,7 +20,7 @@ fn one_large_packet_observes_cancellation_mid_kernel_without_result() {
                 ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), 1024 * 1024, 100_000),
             ),
             deadline: None,
-            cancellation: cancellation.clone(),
+            cancellation: cancellation.token(),
         })
         .expect("lease admitted");
     let visited = AtomicUsize::new(0);

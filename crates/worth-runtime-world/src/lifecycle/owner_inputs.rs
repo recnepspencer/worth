@@ -1,12 +1,10 @@
-use std::sync::Arc;
-
-use worth_execution::ExecutionAuthority;
 use worth_relational::facade::branch::RelationalOwnerServicePorts;
 use worth_runtime_bridge::facade::RuntimeWorldCorrespondencePort;
 use worth_signal::facade::branch::SignalOwnerServicePorts;
 
 use crate::budget::RuntimeWorldBudgets;
 
+use super::execution::InstalledExecution;
 use super::RuntimeWorldClock;
 
 /// Concrete composition inputs issued by the two component owners and Bridge.
@@ -26,7 +24,7 @@ where
     pub(crate) bridge: RuntimeWorldCorrespondencePort,
     pub(crate) budgets: RuntimeWorldBudgets,
     pub(crate) clock: RuntimeWorldClock,
-    pub(crate) execution_authority: Option<Arc<ExecutionAuthority>>,
+    pub(crate) execution: InstalledExecution,
 }
 
 impl<D, I, E, Ctx, T> RuntimeWorldOwnerInputs<D, I, E, Ctx, T>
@@ -52,13 +50,13 @@ where
             bridge,
             budgets,
             clock,
-            execution_authority: None,
+            execution: InstalledExecution::Unbounded,
         }
     }
 
-    /// The host shares its sole process execution authority with this World.
-    pub fn with_execution_authority(mut self, authority: Arc<ExecutionAuthority>) -> Self {
-        self.execution_authority = Some(authority);
+    /// How this World's requests run, checked by the builder.
+    pub(crate) fn with_execution(mut self, execution: InstalledExecution) -> Self {
+        self.execution = execution;
         self
     }
 

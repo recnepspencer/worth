@@ -75,6 +75,11 @@ pub(super) fn verify(
                     "consumed output currentness changed during verification",
                 ),
             ),
+            PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::Interrupted(
+                event,
+            )) => WorthQueryProviderSessionCommitStop::ControlStopped(
+                super::stops::interruption_control_stopped(event),
+            ),
             other => {
                 let detail = match other {
                     PrecommitOutputStop::SelectedUnavailable => {
@@ -89,6 +94,9 @@ pub(super) fn verify(
                     PrecommitOutputStop::Verification(
                         ConsumedOutputVerificationStop::Unavailable,
                     ) => "consumed output source verification is unavailable",
+                    PrecommitOutputStop::Verification(
+                        ConsumedOutputVerificationStop::Interrupted(_),
+                    ) => unreachable!("an interruption is a control stop above"),
                     PrecommitOutputStop::Changed => {
                         "consumed output changed before application publication"
                     }

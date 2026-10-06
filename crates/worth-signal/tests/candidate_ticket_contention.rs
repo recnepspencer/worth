@@ -1,24 +1,56 @@
 //! A competing host reservation after evaluator admission cannot steal the
 //! candidate lookup memory that the same graph epoch already owns.
+//!
+//! The competitor fills the whole process memory, so this test owns its
+//! process and its authority: no other test can starve beside it.
 
+use std::num::NonZeroUsize;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{mpsc, Mutex};
+use std::sync::{mpsc, Mutex, OnceLock};
 use std::thread::JoinHandle;
 
-use worth_execution::{ExecutionMap, LeaseDenial, MapPartition, PreparedExecutionMap};
-use worth_foundational::{ExecutionBudget, ExecutionRequestPolicy, PartitionIdentity};
+use worth_execution::{
+    CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig, ExecutionMap, LeaseDenial,
+    LeaseRequest, MapPartition, PreparedExecutionMap,
+};
+use worth_foundational::{
+    DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+    PartitionIdentity,
+};
 
-use super::support::{authority, request};
-use crate::facade::{
-    Aspect, AspectVersion, BoundedSignalInputs, ChangedRegion, DeclaredSignalInput,
-    EvaluationRequestMode, NodeContract, NodeEvaluationResult, PartitionSubscription, ScopePath,
-    SignalGraph,
+use worth_signal::facade::adapters::NodeContract;
+use worth_signal::facade::{
+    Aspect, AspectVersion, BoundedSignalInputs, ChangedRegion, DeclaredSignalInput, DependencyEdge,
+    NodeEvaluationResult, PartitionSubscription, RunMode, ScopePath, SignalGraph,
 };
 
 const VALUE: Aspect = Aspect::new(0);
 const HOST_MEMORY: u64 = 512 * 1024 * 1024;
 
 type HostTicket = PreparedExecutionMap<'static, u8, u8, u8, ()>;
+
+fn authority() -> &'static ExecutionAuthority {
+    static AUTHORITY: OnceLock<ExecutionAuthority> = OnceLock::new();
+    AUTHORITY.get_or_init(|| {
+        ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
+            max_workers: NonZeroUsize::new(4).unwrap(),
+            charged_memory_bytes: HOST_MEMORY,
+        })
+        .expect("this test process's one authority")
+    })
+}
+
+fn request(workers: usize, work: u64) -> LeaseRequest {
+    LeaseRequest {
+        policy: ExecutionRequestPolicy::new(
+            ExecutionPosture::Automatic,
+            DeterminismContract::CanonicalBitwise,
+            ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), 32 * 1024 * 1024, work),
+        ),
+        deadline: None,
+        cancellation: CancellationToken::new(),
+    }
+}
 
 fn competing_ticket(scratch_bytes: u64) -> Result<HostTicket, LeaseDenial> {
     let mut host_request = request(1, 1_000_000);
@@ -96,13 +128,11 @@ fn candidate_publication_uses_its_pre_callback_host_reservation() {
     graph
         .set_dependencies(
             consumer,
-            [
-                crate::data::dependency::DependencyEdge::with_partition_scope(
-                    producer,
-                    VALUE,
-                    PartitionSubscription::exact(ScopePath::one("desk").unwrap()),
-                ),
-            ],
+            [DependencyEdge::with_partition_scope(
+                producer,
+                VALUE,
+                PartitionSubscription::exact(ScopePath::one("desk").unwrap()),
+            )],
         )
         .unwrap();
     assert_eq!(graph.subscribers_of(producer).unwrap(), &[consumer]);
@@ -112,7 +142,7 @@ fn candidate_publication_uses_its_pre_callback_host_reservation() {
     let blocker = Mutex::<Option<(mpsc::Sender<()>, JoinHandle<()>)>>::new(None);
     let result = graph.evaluate_checked(
         &[producer],
-        EvaluationRequestMode::Default,
+        RunMode::Default,
         &(),
         &|_| {
             calls.fetch_add(1, Ordering::SeqCst);

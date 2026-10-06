@@ -1,7 +1,7 @@
 //! The default apply threshold still uses the checked, atomic packet owner.
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use super::support::{authority, request};
+use super::support::{authority, cancellable, request};
 use crate::facade::{
     Aspect, AspectVersion, BoundedSignalInputs, EvaluationRequestMode, NodeContract, SignalError,
     SignalExecutionFailure, SignalExecutionStopReason, SignalGraph,
@@ -86,8 +86,7 @@ fn default_apply_threshold_preserves_singleton_on_cancel_and_last_work_unit() {
 
         let (mut graph, target) = fixture();
         let calls = AtomicUsize::new(0);
-        let admission = request(workers, 20_000_000);
-        let cancellation = admission.cancellation.clone();
+        let (admission, cancellation) = cancellable(workers, 20_000_000);
         let lease = authority().request_lease(admission).unwrap();
         let error = graph
             .evaluate_checked(

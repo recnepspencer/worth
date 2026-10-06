@@ -1,10 +1,10 @@
 use std::num::NonZeroUsize;
 
 use worth_execution::{
-    Bisection, BisectionDenial, CancellationToken, ComponentPartitioner, ExecutionAuthority,
-    ExecutionAuthorityConfig, ExecutionMap, KeyedDenial, KeyedItem, KeyedPartitioner, LeaseRequest,
-    MapKernelFailure, MapOutcome, MapPartition, MapStop, PartitionItemId, SourceFactId,
-    WeightedEdge, WeightedItem,
+    Bisection, BisectionDenial, CancellationToken, ChargedBytes, ComponentPartitioner,
+    ExecutionAuthority, ExecutionAuthorityConfig, ExecutionMap, KeyedDenial, KeyedEditDenial,
+    KeyedItem, KeyedPartitioner, LeaseRequest, MapKernelFailure, MapOutcome, MapPartition, MapStop,
+    PartitionItemId, SourceFactId, WeightedEdge, WeightedItem,
 };
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -17,6 +17,9 @@ fn item(id: u64) -> PartitionItemId {
 fn fact(id: u64) -> SourceFactId {
     SourceFactId(id)
 }
+fn admit(_: u64) -> Result<(), ()> {
+    Ok(())
+}
 
 #[test]
 fn keyed_routes_source_facts_and_denies_identity_aliases_without_mutation() {
@@ -27,35 +30,130 @@ fn keyed_routes_source_facts_and_denies_identity_aliases_without_mutation() {
         key: "east",
         partition: PartitionIdentity::new(7),
     };
-    assert_eq!(keyed.upsert(first.clone()).unwrap().items_rerouted, 1);
-    assert_eq!(keyed.upsert(first.clone()).unwrap().members_visited, 0);
+    assert_eq!(
+        keyed.upsert(first.clone(), admit).unwrap().items_rerouted,
+        1
+    );
+    assert_eq!(
+        keyed.upsert(first.clone(), admit).unwrap().members_visited,
+        0
+    );
     let fact_only = KeyedItem {
         source_fact: fact(52),
         ..first
     };
-    assert_eq!(keyed.upsert(fact_only).unwrap().items_rerouted, 0);
+    assert_eq!(keyed.upsert(fact_only, admit).unwrap().items_rerouted, 0);
     assert_eq!(keyed.route(item(1)).unwrap().source_fact, fact(52));
     assert_eq!(
         keyed.members(PartitionIdentity::new(7)).unwrap(),
         &std::collections::BTreeSet::from([item(1)])
     );
 
-    let denied = keyed.upsert(KeyedItem {
-        item: item(2),
-        source_fact: fact(60),
-        key: "west",
-        partition: PartitionIdentity::new(7),
-    });
+    let denied = keyed.upsert(
+        KeyedItem {
+            item: item(2),
+            source_fact: fact(60),
+            key: "west",
+            partition: PartitionIdentity::new(7),
+        },
+        admit,
+    );
     assert_eq!(
         denied,
-        Err(KeyedDenial::IdentityCollision {
+        Err(KeyedEditDenial::Keyed(KeyedDenial::IdentityCollision {
             partition: PartitionIdentity::new(7)
-        })
+        }))
     );
     assert!(keyed.route(item(2)).is_none());
     assert_eq!(keyed.members(PartitionIdentity::new(7)).unwrap().len(), 1);
     assert_eq!(keyed.remove(item(1)).items_rerouted, 1);
     assert!(keyed.members(PartitionIdentity::new(7)).is_none());
+}
+
+#[test]
+fn keyed_offers_the_retained_bound_before_an_edit_and_a_refusal_changes_nothing() {
+    let mut keyed = KeyedPartitioner::new();
+    let first = KeyedItem {
+        item: item(1),
+        source_fact: fact(51),
+        key: "east",
+        partition: PartitionIdentity::new(7),
+    };
+    let one = KeyedPartitioner::<&str>::retained_bytes(1, 1, 0).unwrap();
+    let mut offered = 0;
+    keyed
+        .upsert(first.clone(), |bound| {
+            offered = bound;
+            admit(bound)
+        })
+        .unwrap();
+    assert_eq!(offered, one);
+    let second = KeyedItem {
+        item: item(2),
+        key: "west",
+        partition: PartitionIdentity::new(8),
+        ..first
+    };
+    let two = KeyedPartitioner::<&str>::retained_bytes(2, 2, 0).unwrap();
+    assert!(two > one);
+    assert_eq!(
+        keyed.upsert(second, |bound| if bound > one {
+            Err(bound)
+        } else {
+            Ok(())
+        }),
+        Err(KeyedEditDenial::Admission(two))
+    );
+    assert!(keyed.route(item(2)).is_none());
+    assert!(keyed.members(PartitionIdentity::new(8)).is_none());
+}
+
+/// A key that owns 100 bytes of heap.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct OwnsHeap(&'static str);
+
+impl ChargedBytes for OwnsHeap {
+    fn additional_charged_bytes(&self) -> u64 {
+        100
+    }
+}
+
+/// Each retained copy of a key is charged its heap: one on its item, two on
+/// a new key's group. A removal releases what it retained.
+#[test]
+fn keyed_charges_the_heap_each_retained_key_owns() {
+    let entry = |id, key| KeyedItem {
+        item: item(id),
+        source_fact: fact(id),
+        key: OwnsHeap(key),
+        partition: PartitionIdentity::new(if key == "east" { 7 } else { 8 }),
+    };
+    let bound = |items, keys, heap: u64| {
+        KeyedPartitioner::<OwnsHeap>::retained_bytes(items, keys, 0).unwrap() + heap
+    };
+    let mut keyed = KeyedPartitioner::new();
+    let mut offered = Vec::new();
+    for (id, key) in [(1, "east"), (2, "east"), (3, "west")] {
+        keyed
+            .upsert(entry(id, key), |offer| {
+                offered.push(offer);
+                admit(offer)
+            })
+            .unwrap();
+    }
+    assert_eq!(
+        offered,
+        [bound(1, 1, 300), bound(2, 1, 400), bound(3, 2, 700)]
+    );
+    keyed.remove(item(3));
+    keyed.remove(item(2));
+    keyed
+        .upsert(entry(2, "east"), |offer| {
+            offered.push(offer);
+            admit(offer)
+        })
+        .unwrap();
+    assert_eq!(offered.last().copied(), Some(bound(2, 1, 400)));
 }
 
 #[test]
@@ -92,12 +190,15 @@ fn candidate_partition_work_is_charged_by_enclosing_map_lease() {
         let outcome = map.run(Some(&lease), |value, context| {
             let mut candidate = KeyedPartitioner::new();
             let work = candidate
-                .upsert(KeyedItem {
-                    item: item(*value),
-                    source_fact: fact(40),
-                    key: 7_u64,
-                    partition: PartitionIdentity::new(7),
-                })
+                .upsert(
+                    KeyedItem {
+                        item: item(*value),
+                        source_fact: fact(40),
+                        key: 7_u64,
+                        partition: PartitionIdentity::new(7),
+                    },
+                    admit,
+                )
                 .unwrap();
             work.charge(context)?;
             Ok::<_, MapKernelFailure<()>>(candidate.route(item(*value)).unwrap().partition.value())

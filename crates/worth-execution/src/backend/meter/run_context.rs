@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::authority::ExecutionResourceLease;
+use crate::authority::{ExecutionResourceLease, SerialRequest};
 
 use super::{activity, PhysicalActivity, RunLimits, WorkerActivity, ACTIVE_METER};
 
@@ -35,6 +35,7 @@ impl RunLimits {
             physical_cell_charged,
             inherited_serial,
             inherited_lease,
+            serial_memory,
         ) = if let Some(parent) = parent {
             let parent = parent.borrow();
             tokens.extend(parent.limits.tokens.iter().cloned());
@@ -46,6 +47,7 @@ impl RunLimits {
                 false,
                 parent.limits.force_serial,
                 parent.limits.bound_to_lease,
+                parent.limits.serial_memory.clone(),
             )
         } else {
             let certification = activity::active_certification_physical();
@@ -62,6 +64,7 @@ impl RunLimits {
                 charged,
                 false,
                 false,
+                None,
             )
         };
         let mut limits = Self {
@@ -73,6 +76,7 @@ impl RunLimits {
             physical_cell_charged,
             force_serial: serial || inherited_serial,
             bound_to_lease: lease.is_some() || inherited_lease,
+            serial_memory: if lease.is_some() { None } else { serial_memory },
         };
         if let Some(lease) = lease {
             limits.tokens.extend(lease.cancellation_lineage());
@@ -84,6 +88,22 @@ impl RunLimits {
             limits.ceiling = limits.ceiling.min(lease.policy().budget().work_ceiling());
         }
         limits
+    }
+
+    /// Installs a lease-free request's cancellation, deadline and memory.
+    pub(crate) fn within_serial(mut self, request: Option<&SerialRequest>) -> Self {
+        let Some(request) = request else {
+            return self;
+        };
+        self.tokens.push(request.cancellation.clone());
+        self.deadline = match (self.deadline, request.deadline) {
+            (Some(parent), Some(own)) => Some(parent.min(own)),
+            (parent, own) => parent.or(own),
+        };
+        if let Some(budget) = &request.memory {
+            self.serial_memory = Some(budget.clone());
+        }
+        self
     }
 
     /// Narrows the ceiling to a computation's declared work, never widening it.

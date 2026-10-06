@@ -36,6 +36,8 @@ mod owner;
 mod probe;
 mod refusal;
 mod region_output;
+#[cfg(feature = "test-query-execution-observer")]
+mod worker_axis;
 
 /// A set of entries, each tagged with the region it lies in. An owner reads
 /// the entries from the set's facts.

@@ -250,6 +250,11 @@ impl RetainedInputCutoffCandidate {
             Err(ConsumedOutputVerificationStop::WorkExhausted) => {
                 return Err(InputCutoffVerificationStop::WorkExhausted);
             }
+            Err(ConsumedOutputVerificationStop::Interrupted(event)) => {
+                return Err(InputCutoffVerificationStop::Admission(
+                    CompanionPreflightStop::Interrupted(event),
+                ));
+            }
         }
         if !witness.unchanged_in(runtime, snapshot, admission)? {
             return Ok(None);

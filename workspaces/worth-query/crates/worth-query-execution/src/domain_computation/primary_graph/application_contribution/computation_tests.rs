@@ -20,6 +20,7 @@ use worth_query_declaration::facade::{
 };
 
 use super::*;
+use crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution;
 
 struct Schema;
 impl ApplicationSchema for Schema {
@@ -148,16 +149,18 @@ fn installed_owner_enforces_prepare_compute_complete_and_work_ceiling() {
     let output = installed
         .prepare(&2)
         .expect("preparation fits")
-        .compute(WorthQueryManagedComputationExecution::new(&request))
+        .compute(WorthQueryManagedComputationExecution::new(
+            &QueryRequestExecution::unbounded_for_test(&request),
+        ))
         .expect("computation fits")
         .complete()
         .expect("completion succeeds");
     assert_eq!(output, 4);
-    let denial = match installed
-        .prepare(&5)
-        .expect("preparation fits")
-        .compute(WorthQueryManagedComputationExecution::new(&request))
-    {
+    let denial = match installed.prepare(&5).expect("preparation fits").compute(
+        WorthQueryManagedComputationExecution::new(&QueryRequestExecution::unbounded_for_test(
+            &request,
+        )),
+    ) {
         Err(denial) => denial,
         Ok(_) => panic!("work above the declared ceiling must be denied"),
     };
@@ -190,14 +193,16 @@ fn installed_owner_enforces_retention_and_real_request_interruption() {
         cancellation.token(),
     );
     cancellation.cancel();
-    let denial = match installed
-        .prepare(&1)
-        .unwrap()
-        .compute(WorthQueryManagedComputationExecution::new(&cancelled))
-    {
-        Err(denial) => denial,
-        Ok(_) => panic!("cancelled execution is denied at its checkpoint"),
-    };
+    let denial =
+        match installed
+            .prepare(&1)
+            .unwrap()
+            .compute(WorthQueryManagedComputationExecution::new(
+                &QueryRequestExecution::unbounded_for_test(&cancelled),
+            )) {
+            Err(denial) => denial,
+            Ok(_) => panic!("cancelled execution is denied at its checkpoint"),
+        };
     assert_eq!(
         denial,
         WorthQueryManagedComputationDenial::Interrupted(
@@ -210,14 +215,16 @@ fn installed_owner_enforces_retention_and_real_request_interruption() {
         Instant::now() - Duration::from_secs(1),
         deadline_source.token(),
     );
-    let denial = match installed
-        .prepare(&1)
-        .unwrap()
-        .compute(WorthQueryManagedComputationExecution::new(&expired))
-    {
-        Err(denial) => denial,
-        Ok(_) => panic!("expired execution is denied at its checkpoint"),
-    };
+    let denial =
+        match installed
+            .prepare(&1)
+            .unwrap()
+            .compute(WorthQueryManagedComputationExecution::new(
+                &QueryRequestExecution::unbounded_for_test(&expired),
+            )) {
+            Err(denial) => denial,
+            Ok(_) => panic!("expired execution is denied at its checkpoint"),
+        };
     assert_eq!(
         denial,
         WorthQueryManagedComputationDenial::Interrupted(

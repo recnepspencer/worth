@@ -19,6 +19,22 @@ use crate::domain_computation::primary_graph::{
 /// what the operation declares it reads. Query records the fact each read
 /// depends on with the call that made it: the membership, one item's key or
 /// one partition.
+///
+/// The reader belongs to the request, so a kernel, which is `Fn + Sync`,
+/// cannot capture it, even when its schema and operation are `Sync`:
+///
+/// ```compile_fail
+/// use worth_query_execution::facade::application_contribution::WorthQueryComputationReader;
+///
+/// fn kernel_captures<Schema: Sync, Operation: Sync>(
+///     reader: &WorthQueryComputationReader<'_, '_, '_, Schema, Operation>,
+/// ) {
+///     fn kernel(_: impl Fn() + Sync) {}
+///     kernel(move || {
+///         let _held = reader;
+///     });
+/// }
+/// ```
 pub struct WorthQueryComputationReader<'call, 'reader, 'runtime, Schema, Operation> {
     reader: &'call mut WorthQueryApplicationOperationInvariantProjectionReader<
         'reader,

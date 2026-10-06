@@ -19,7 +19,7 @@ impl WorthQueryProductRuntime {
             worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority,
         >,
     ) -> Result<Self, WorthQueryProductRuntimeInstallationDenial> {
-        let (budgets, clock, _invalidation_resources) = resources.into_parts();
+        let (budgets, clock, _invalidation_resources, execution) = resources.into_parts();
         let super::WorthQueryProductRelationalInstallation {
             services: relational_services,
             basis: relational_basis,
@@ -55,13 +55,20 @@ impl WorthQueryProductRuntime {
         let activation = activations.reserve().map_err(|denial| {
             installation_denial(format!("Root activation admission: {denial:?}"))
         })?;
-        let owner = RuntimeWorldOwner::builder()
+        let mut builder = RuntimeWorldOwner::builder()
             .with_bridge_correspondence(bridge.runtime_world_correspondence_port())
             .with_relational_services(relational_services)
             .with_signal_services(signal_services)
             .with_signal_definition_publication(definition_publication)
             .with_budgets(budgets)
-            .with_clock(RuntimeWorldClock::from_source(clock.clone()))
+            .with_clock(RuntimeWorldClock::from_source(clock.clone()));
+        if let Some(authority) = execution.authority {
+            builder = builder.with_execution_authority(authority);
+        }
+        if let Some(policy) = execution.policy {
+            builder = builder.with_execution_policy(policy);
+        }
+        let owner = builder
             .build()
             .map_err(|denial| installation_denial(format!("World installation: {denial:?}")))?;
         let branch = ProductBranchCreationIntent::named("primary")

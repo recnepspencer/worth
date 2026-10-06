@@ -7,8 +7,9 @@ use std::{
 };
 
 use worth_execution::{
-    CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig, ExecutionScan, LeaseDenial,
-    LeaseRequest, MapKernelFailure, MapKernelStop, MapStop, ScanOutcome,
+    CancellationSource, CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig,
+    ExecutionScan, LeaseDenial, LeaseRequest, MapKernelFailure, MapKernelStop, MapStop,
+    ScanOutcome,
 };
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -115,8 +116,8 @@ fn work_ceiling_and_cancellation_stop_at_named_carry_boundaries() {
         ..
     } if completed_prefix == vec![1, 3] && identity == PartitionIdentity::new(3)));
 
-    let token = CancellationToken::new();
-    let lease = lease(10, token.clone());
+    let token = CancellationSource::new();
+    let lease = lease(10, token.token());
     let cancelled = scan().run(Some(&lease), 0_u64, 0, 0, 0, 0, |carry, item, context| {
         context.checkpoint(1)?;
         if *item == 1 {
@@ -167,7 +168,9 @@ fn identity_storage_is_admitted_before_scan_dispatch() {
     assert!(matches!(
         outcome,
         ScanOutcome::Stopped {
-            reason: MapStop::Admission(LeaseDenial::ResourceExhausted),
+            reason: MapStop::Admission(LeaseDenial::MemoryExhausted(
+                worth_execution::MemoryLimitDenial { admitted: 4096, .. }
+            )),
             ..
         }
     ));

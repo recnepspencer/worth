@@ -13,6 +13,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use worth_execution::PartitionItemId;
 use worth_foundational::facade::PartitionIdentity;
+use worth_proof::CanonicalUniqueVec;
 
 use super::super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
 
@@ -28,41 +29,56 @@ pub(in crate::domain_computation::primary_graph) enum ComputationRead {
     Partition(PartitionIdentity),
 }
 
-/// Every owner call that read one decision fact. Items and partitions are in
-/// ascending order and named once.
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct ComputationFactReaders {
+/// Every owner call that read one decision fact while the attempt runs. A
+/// call that reads the fact again is still one call.
+#[derive(Default)]
+struct ComputationFactReads {
     membership: bool,
-    item_keys: Vec<PartitionItemId>,
-    partitions: Vec<PartitionIdentity>,
+    item_keys: BTreeSet<PartitionItemId>,
+    partitions: BTreeSet<PartitionIdentity>,
 }
 
-impl ComputationFactReaders {
+impl ComputationFactReads {
     fn record(&mut self, read: ComputationRead) {
         match read {
             ComputationRead::Membership => self.membership = true,
-            ComputationRead::ItemKey(item) => self.item_keys.push(item),
-            ComputationRead::Partition(partition) => self.partitions.push(partition),
+            ComputationRead::ItemKey(item) => {
+                self.item_keys.insert(item);
+            }
+            ComputationRead::Partition(partition) => {
+                self.partitions.insert(partition);
+            }
         }
     }
 
-    fn in_order(mut self) -> Self {
-        self.item_keys.sort_unstable();
-        self.item_keys.dedup();
-        self.partitions.sort_unstable();
-        self.partitions.dedup();
-        self
+    fn in_order(self) -> ComputationFactReaders {
+        ComputationFactReaders {
+            membership: self.membership,
+            item_keys: CanonicalUniqueVec::from_btree_set(self.item_keys),
+            partitions: CanonicalUniqueVec::from_btree_set(self.partitions),
+        }
     }
+}
 
+/// Every owner call that read one decision fact. Items and partitions are in
+/// ascending order and named once, by type.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph) struct ComputationFactReaders {
+    membership: bool,
+    item_keys: CanonicalUniqueVec<PartitionItemId>,
+    partitions: CanonicalUniqueVec<PartitionIdentity>,
+}
+
+impl ComputationFactReaders {
     /// Whether the membership or an item's key read the fact: a change to it
     /// can change which partitions there are.
     pub(in crate::domain_computation::primary_graph) fn partitioner(&self) -> bool {
-        self.membership || !self.item_keys.is_empty()
+        self.membership || !self.item_keys.as_slice().is_empty()
     }
 
     /// The partitions whose gathering read the fact.
     pub(in crate::domain_computation::primary_graph) fn partitions(&self) -> &[PartitionIdentity] {
-        &self.partitions
+        self.partitions.as_slice()
     }
 
     /// Every call that read the fact.
@@ -72,9 +88,16 @@ impl ComputationFactReaders {
         self.membership
             .then_some(ComputationRead::Membership)
             .into_iter()
-            .chain(self.item_keys.iter().copied().map(ComputationRead::ItemKey))
+            .chain(
+                self.item_keys
+                    .as_slice()
+                    .iter()
+                    .copied()
+                    .map(ComputationRead::ItemKey),
+            )
             .chain(
                 self.partitions
+                    .as_slice()
                     .iter()
                     .copied()
                     .map(ComputationRead::Partition),
@@ -90,6 +113,7 @@ impl ComputationFactReaders {
         self.partitioner()
             || self
                 .partitions
+                .as_slice()
                 .iter()
                 .any(|partition| skipped.contains(partition))
     }
@@ -100,11 +124,12 @@ impl ComputationFactReaders {
         item_keys: impl IntoIterator<Item = u64>,
         partitions: impl IntoIterator<Item = PartitionIdentity>,
     ) -> Self {
-        Self {
+        ComputationFactReads {
             membership,
             item_keys: item_keys.into_iter().map(PartitionItemId).collect(),
             partitions: partitions.into_iter().collect(),
         }
+        .in_order()
     }
 }
 
@@ -112,7 +137,7 @@ impl ComputationFactReaders {
 /// that read it.
 #[derive(Default)]
 pub(in crate::domain_computation::primary_graph) struct ComputationFactAttribution {
-    readers: BTreeMap<WorthQueryApplicationFactKey, ComputationFactReaders>,
+    readers: BTreeMap<WorthQueryApplicationFactKey, ComputationFactReads>,
 }
 
 impl ComputationFactAttribution {

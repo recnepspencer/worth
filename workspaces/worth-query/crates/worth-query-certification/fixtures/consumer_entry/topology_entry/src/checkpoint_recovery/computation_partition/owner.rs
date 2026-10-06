@@ -93,6 +93,8 @@ pub(super) fn total_region(
     entries: &[EntryData],
     checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
 ) -> Result<f64, WorthQueryManagedComputationDenial<u32>> {
+    #[cfg(feature = "test-query-execution-observer")]
+    super::worker_axis::enter_overlapped();
     let mut total = -0.0;
     for entry in entries {
         checkpoint.advance(entry.work)?;

@@ -145,19 +145,26 @@ impl WorthQueryApplicationOutputLineage {
     /// publish it. The reservation moves only from the record this one
     /// displaces, and only when it is the prior the run built from and still
     /// holds that state; the difference is reserved or released. Any other
-    /// run reserves afresh. A refusal evicts the state.
+    /// run reserves afresh. A refusal evicts the state. The request memory
+    /// the run's tree held is released only once the state is charged here
+    /// or evicted, so the tree is never unheld while it lives.
     pub(super) fn retain_computation(
         &self,
         sealed: SealedComputationRun,
         prior: Option<&PriorComputationRecord>,
         displaced: Option<&Arc<RecordedSettlementIdentity>>,
     ) -> RecordedComputation {
-        let SealedComputationRun { state, cloned_from } = sealed;
+        let SealedComputationRun {
+            state,
+            cloned_from,
+            tree_memory,
+        } = sealed;
         let moved = prior.zip(cloned_from.as_ref()).zip(displaced).and_then(
             |((prior, cloned_from), displaced)| prior.take_capacity(cloned_from, displaced),
         );
         drop(cloned_from);
         let Some(bytes) = state.retained_bytes() else {
+            drop(state);
             return RecordedComputation::Evicted;
         };
         let capacity = match moved {
@@ -172,12 +179,17 @@ impl WorthQueryApplicationOutputLineage {
             }
             None => self.retention.reserve(bytes),
         };
-        match capacity {
+        let recorded = match capacity {
             Ok(capacity) => RecordedComputation::Retained {
                 state: Arc::new(state),
                 capacity,
             },
-            Err(_) => RecordedComputation::Evicted,
-        }
+            Err(_) => {
+                drop(state);
+                RecordedComputation::Evicted
+            }
+        };
+        drop(tree_memory);
+        recorded
     }
 }

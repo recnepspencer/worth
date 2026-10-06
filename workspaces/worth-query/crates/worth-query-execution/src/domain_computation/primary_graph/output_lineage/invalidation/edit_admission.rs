@@ -1,17 +1,27 @@
+use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
 use worth_relational::facade::mvcc::{CompanionPreflightBudget, CompanionPreflightStop};
 
+use super::super::super::request_local::{assert_request_local, RequestLocal};
 use super::admission::IndexAdmission;
 use super::{index_capacity, retention, SourceInvalidationOwner};
 use crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity;
 
 /// A caller retains this meter across its complete derived-edit operation.
 /// It can also be carried by the authenticated required-set coordinator rather
-/// than creating a fresh allowance for every settlement.
+/// than creating a fresh allowance for every settlement. It is request-local:
+/// no kernel or concurrent compute charges it.
 pub(in crate::domain_computation) struct InvalidationEditAdmission {
     budget: CompanionPreflightBudget,
     counters: AdmissionCounters,
+    request_local: RequestLocal,
 }
+
+assert_request_local!(
+    InvalidationEditAdmission,
+    CarriedRequestInvalidationAdmission,
+    ReservedExternalWork<'static>,
+);
 
 #[derive(Default)]
 struct AdmissionTotals {
@@ -88,6 +98,7 @@ impl InvalidationEditAdmission {
         Self {
             budget,
             counters: AdmissionCounters::Local(AdmissionTotals::default()),
+            request_local: PhantomData,
         }
     }
 
@@ -111,6 +122,7 @@ impl InvalidationEditAdmission {
                 bytes: 0,
                 navigation: 0,
             }),
+            request_local: PhantomData,
         }
     }
 
@@ -160,6 +172,7 @@ impl InvalidationEditAdmission {
             admission: Self {
                 budget: self.budget,
                 counters: AdmissionCounters::Carried(Arc::clone(carried)),
+                request_local: PhantomData,
             },
         })
     }

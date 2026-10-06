@@ -37,24 +37,38 @@ impl<T> AdmittedBatch<T> {
         entries: Vec<(PartitionIdentity, T, u64, u64)>,
         access_memory_bytes: u64,
     ) -> Result<Self, BatchDenial> {
-        let sums = entries
-            .iter()
-            .try_fold((0_u64, 0_u64), |(scratch, results), item| {
-                Some((scratch.checked_add(item.2)?, results.checked_add(item.3)?))
-            });
-        let Some((kernel_scratch_bytes, declared_result_bytes)) = sums else {
-            return Err(BatchDenial::MemoryOverflow);
-        };
         let identities = entries.iter().map(|item| item.0).collect();
         let identities = match CanonicalUniqueVec::try_from_sorted_unique(identities) {
             Ok(checked) => checked,
             Err(_) => return Err(BatchDenial::Identities),
         };
-        let (values, max_result_bytes) = entries
+        let (values, capacities) = entries
             .into_iter()
-            .map(|(_, value, _, result_bytes)| (value, result_bytes))
+            .map(|(_, value, scratch, result_bytes)| (value, (scratch, result_bytes)))
             .unzip();
-        Ok(Self {
+        Self::admit_canonical(identities, values, capacities, access_memory_bytes)
+            .ok_or(BatchDenial::MemoryOverflow)
+    }
+
+    /// Admits `values` in the order of the checked `identities`, one value
+    /// and one `(kernel scratch, result)` capacity pair per identity; `None`
+    /// when the declared bytes do not fit.
+    pub(crate) fn admit_canonical(
+        identities: CanonicalUniqueVec<PartitionIdentity>,
+        values: Vec<T>,
+        capacities: Vec<(u64, u64)>,
+        access_memory_bytes: u64,
+    ) -> Option<Self> {
+        debug_assert_eq!(identities.as_slice().len(), values.len());
+        debug_assert_eq!(values.len(), capacities.len());
+        let (kernel_scratch_bytes, declared_result_bytes) =
+            capacities
+                .iter()
+                .try_fold((0_u64, 0_u64), |(scratch, results), &(more, result)| {
+                    Some((scratch.checked_add(more)?, results.checked_add(result)?))
+                })?;
+        let max_result_bytes = capacities.into_iter().map(|(_, result)| result).collect();
+        Some(Self {
             identities,
             values,
             max_result_bytes,

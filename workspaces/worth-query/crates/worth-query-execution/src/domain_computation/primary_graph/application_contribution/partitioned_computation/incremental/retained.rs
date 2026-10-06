@@ -14,6 +14,7 @@ use std::sync::{Arc, Mutex};
 use worth_execution::{ChargedBytes, PartitionItemId, ReductionTree};
 use worth_foundational::facade::{ExecutionReport, PartitionIdentity};
 
+use super::super::super::request_execution::QueryMemoryReservation;
 use crate::domain_computation::primary_graph::application_attempt::SealedComputationFacts;
 use crate::domain_computation::primary_graph::application_contribution::InstalledProducerEdition;
 use crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge;
@@ -217,6 +218,15 @@ pub(in crate::domain_computation) struct SealedComputationRun {
     /// moves the ledger reservation only from the record still holding
     /// exactly this state.
     pub(in crate::domain_computation::primary_graph) cloned_from: Option<Arc<RetainedComputation>>,
+    /// The request memory the state's tree holds until the lineage charges
+    /// the state.
+    pub(in crate::domain_computation::primary_graph) tree_memory: RunTreeMemory,
+}
+
+/// Request memory a run's tree holds from its build until the record that
+/// keeps it is charged.
+pub(in crate::domain_computation) struct RunTreeMemory {
+    _held: QueryMemoryReservation,
 }
 
 /// The partitions a run carried from `prior` without gathering them.
@@ -233,6 +243,8 @@ pub(in crate::domain_computation::primary_graph) struct CompletedComputationRun 
     /// The typed state's bytes, `None` when the sum overflows.
     pub(super) typed_bytes: Option<u64>,
     pub(super) carried: Option<CarriedPartitions>,
+    /// The request memory the run's tree holds.
+    pub(super) tree_memory: QueryMemoryReservation,
 }
 
 /// Where a completed run leaves itself for seal.
@@ -303,6 +315,9 @@ impl CompletedComputationRun {
                 bytes,
             },
             cloned_from: self.carried.map(|carried| carried.prior),
+            tree_memory: RunTreeMemory {
+                _held: self.tree_memory,
+            },
         }))
     }
 }

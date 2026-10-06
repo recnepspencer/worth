@@ -190,10 +190,10 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
     leased_preparation_index_budget::assert_prep_and_map_share_work(&runtime, &request, authority);
 
     let latest_generation = parallel.generations[0].generation_id;
-    let cancelled = CancellationToken::new();
+    let cancelled = worth_execution::CancellationSource::new();
     cancelled.cancel();
     let cancelled_lease = authority
-        .request_lease(lease_request(32 * 1024 * 1024, cancelled))
+        .request_lease(lease_request(32 * 1024 * 1024, cancelled.token()))
         .expect("cancelled request still receives a lease for typed execution stop");
     let stopped_index = runtime
         .index_authority()

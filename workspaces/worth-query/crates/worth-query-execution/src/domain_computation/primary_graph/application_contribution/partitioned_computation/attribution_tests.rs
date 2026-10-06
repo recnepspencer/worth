@@ -26,6 +26,7 @@ use super::{
     WorthQueryInstalledPartitionedComputation, WorthQueryPartitionedComputationOwner,
 };
 use crate::domain_computation::primary_graph::application_attempt::ComputationFactReaders;
+use crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution;
 use crate::domain_computation::primary_graph::tests::application_attempt::{
     authenticated_principal, resolved_account,
 };
@@ -236,8 +237,9 @@ fn routed(
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(&admission, |reader, root| {
+            let execution = QueryRequestExecution::unbounded_for_test(&request);
             for _ in 0..runs {
-                if installed.prepare_through(reader, root).is_err() {
+                if installed.prepare_through(reader, &execution, root).is_err() {
                     panic!("the owner's reads are declared reads of the operation");
                 }
             }

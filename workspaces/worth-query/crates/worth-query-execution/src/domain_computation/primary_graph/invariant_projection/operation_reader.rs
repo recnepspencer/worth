@@ -27,6 +27,7 @@ pub(in crate::domain_computation::primary_graph) use decision_reads::DecisionRea
 pub use prior_output::WorthQueryPriorOutputFamilyMember;
 pub(in crate::domain_computation::primary_graph) use prior_output::WorthQueryPriorOutputRead;
 
+use super::super::request_local::{assert_request_local, RequestLocal};
 use super::{
     WorthQueryApplicationInvariantProjectionAuthority,
     WorthQueryApplicationInvariantProjectionReader,
@@ -61,7 +62,12 @@ pub struct WorthQueryApplicationOperationInvariantProjectionReader<
         Option<crate::domain_computation::authorization::WorthQueryOperationScopeBinding>,
     decision_facts: &'reader mut DecisionReads,
     _operation: PhantomData<fn() -> Operation>,
+    request_local: RequestLocal,
 }
+
+assert_request_local!(
+    WorthQueryApplicationOperationInvariantProjectionReader<'static, 'static, (), ()>,
+);
 
 /// The result of projecting for an admitted operation: the output, the work
 /// spent, and a snapshot typed for that operation.
@@ -138,6 +144,7 @@ where
                 operation_scope: None,
                 decision_facts: &mut decision_facts,
                 _operation: PhantomData,
+                request_local: PhantomData,
             };
             let output = projection(&mut operation_reader);
             (output, decision_facts)
@@ -177,6 +184,7 @@ where
                         operation_scope: None,
                         decision_facts: &mut decision_facts,
                         _operation: PhantomData,
+                        request_local: PhantomData,
                     };
                 let output = projection(&mut operation_reader);
                 (output, decision_facts)
@@ -234,6 +242,7 @@ where
                             operation_scope: Some(admission.operation_scope_binding().clone()),
                             decision_facts: &mut decision_facts,
                             _operation: PhantomData,
+                            request_local: PhantomData,
                         };
                     operation_reader
                         .reader

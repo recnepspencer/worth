@@ -1,7 +1,6 @@
 mod admission;
 mod backpressure;
 mod backpressure_singleton;
-mod candidate_ticket_contention;
 mod checked_result_limit;
 mod comparator_resolver;
 mod default_threshold;

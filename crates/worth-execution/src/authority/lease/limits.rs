@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Instant};
 
-use worth_foundational::{ExecutionPosture, ExecutionRequestPolicy};
+use worth_foundational::{ExecutionFallbackCause, ExecutionPosture, ExecutionRequestPolicy};
 
 use super::{
     CancellationToken, ExecutionLeaseStatus, ExecutionResourceLease, LeaseDenial, LeaseNode,
@@ -51,16 +51,28 @@ impl<'a> ExecutionResourceLease<'a> {
     }
 
     pub fn resolved_posture(&self) -> ExecutionPosture {
-        if cfg!(target_arch = "wasm32")
-            || self
-                .lineage()
-                .iter()
-                .any(|node| node.posture == ExecutionPosture::Serial)
-            || self.node.max_workers == 1
-        {
+        if self.serial_cause().is_some() {
             ExecutionPosture::Serial
         } else {
             ExecutionPosture::Automatic
+        }
+    }
+
+    /// Why the lease resolves serial, if it does: the platform, a serial
+    /// posture anywhere in its lineage, or a single worker.
+    pub(crate) fn serial_cause(&self) -> Option<ExecutionFallbackCause> {
+        if cfg!(target_arch = "wasm32") {
+            Some(ExecutionFallbackCause::PlatformSerial)
+        } else if self
+            .lineage()
+            .iter()
+            .any(|node| node.posture == ExecutionPosture::Serial)
+        {
+            Some(ExecutionFallbackCause::PolicySerial)
+        } else if self.node.max_workers == 1 {
+            Some(ExecutionFallbackCause::WorkerLimit)
+        } else {
+            None
         }
     }
 

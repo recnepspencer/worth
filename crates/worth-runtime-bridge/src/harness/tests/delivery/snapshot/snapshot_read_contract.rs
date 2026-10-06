@@ -85,9 +85,9 @@ fn leased_route_surfaces_cancellation_before_snapshot_reads() {
     let route = runtime
         .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()))
         .unwrap();
-    let cancellation = worth_execution::CancellationToken::new();
+    let cancellation = worth_execution::CancellationSource::new();
     cancellation.cancel();
-    let lease = crate::snapshot::test_execution_lease(cancellation);
+    let lease = crate::snapshot::test_execution_lease(cancellation.token());
 
     let error = runtime
         .deliver_invalidation_with_lease(route, &lease)

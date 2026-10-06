@@ -106,7 +106,7 @@ pub(super) fn transaction_commit_stop(
     }
 }
 
-fn interruption_control_stopped(
+pub(super) fn interruption_control_stopped(
     event: worth_relational::facade::mvcc::RelationalInterruptionEvent,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitControlStopped {
     use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Kind;

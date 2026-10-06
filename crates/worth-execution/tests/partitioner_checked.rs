@@ -4,7 +4,7 @@ use std::{
 };
 
 use worth_execution::{
-    Bisection, CancellationToken, ComponentPartitioner, ExecutionAuthority,
+    Bisection, CancellationSource, CancellationToken, ComponentPartitioner, ExecutionAuthority,
     ExecutionAuthorityConfig, ExecutionMap, LeaseRequest, MapKernelFailure, MapOutcome,
     MapPartition, MapStop, PartitionItemId, PartitionUpdateDenial, SourceFactId, WeightedEdge,
     WeightedItem,
@@ -139,11 +139,14 @@ fn checked_split_and_recut_denials_preserve_retained_topology() {
             item(8),
             item(9),
         );
-        assert_eq!(
-            denial,
-            Err(PartitionUpdateDenial::Admission(
-                worth_execution::LeaseDenial::ResourceExhausted
-            ))
+        assert!(
+            matches!(
+                denial,
+                Err(PartitionUpdateDenial::Admission(
+                    worth_execution::LeaseDenial::MemoryExhausted(_)
+                ))
+            ),
+            "{denial:?}"
         );
         Ok::<_, MapKernelFailure<()>>(0_u64)
     });
@@ -167,8 +170,8 @@ fn checked_split_and_recut_denials_preserve_retained_topology() {
         PartitionIdentity::new(1)
     );
 
-    let cancellation = CancellationToken::new();
-    let cancelled = lease(authority, 100_000, 10_000, cancellation.clone());
+    let cancellation = CancellationSource::new();
+    let cancelled = lease(authority, 100_000, 10_000, cancellation.token());
     let outcome = map.run(Some(&cancelled), |_, context| {
         cancellation.cancel();
         let denial = components
@@ -251,11 +254,14 @@ fn checked_split_and_recut_denials_preserve_retained_topology() {
                 weight: 1,
             },
         );
-        assert_eq!(
-            denial,
-            Err(PartitionUpdateDenial::Admission(
-                worth_execution::LeaseDenial::ResourceExhausted
-            ))
+        assert!(
+            matches!(
+                denial,
+                Err(PartitionUpdateDenial::Admission(
+                    worth_execution::LeaseDenial::MemoryExhausted(_)
+                ))
+            ),
+            "{denial:?}"
         );
         Ok::<_, MapKernelFailure<()>>(0_u64)
     });

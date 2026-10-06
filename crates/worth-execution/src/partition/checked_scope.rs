@@ -69,7 +69,7 @@ impl OwnedRetainedCharge {
             })
             .and_then(|overhead| overhead.checked_add(bytes))
             .ok_or(PartitionUpdateDenial::Admission(
-                LeaseDenial::ResourceExhausted,
+                LeaseDenial::ChargedBytesOverflow,
             ))?;
         if let Some(reservation) = &mut self.reservation {
             lease

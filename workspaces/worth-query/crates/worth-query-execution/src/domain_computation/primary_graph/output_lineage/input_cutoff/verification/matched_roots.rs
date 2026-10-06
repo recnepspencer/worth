@@ -89,6 +89,9 @@ pub(super) fn pending_equalities_replaced(
         Err(ConsumedOutputVerificationStop::WorkExhausted) => {
             Err(InputCutoffVerificationStop::WorkExhausted)
         }
+        Err(ConsumedOutputVerificationStop::Interrupted(event)) => Err(
+            InputCutoffVerificationStop::Admission(CompanionPreflightStop::Interrupted(event)),
+        ),
     }
 }
 

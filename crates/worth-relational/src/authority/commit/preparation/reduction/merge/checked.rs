@@ -272,7 +272,7 @@ mod tests {
         sync::atomic::{AtomicUsize, Ordering},
     };
 
-    use worth_execution::{CancellationToken, LeaseRequest};
+    use worth_execution::{CancellationSource, CancellationToken, LeaseRequest};
     use worth_foundational::{
         DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
     };
@@ -352,11 +352,11 @@ mod tests {
 
     #[test]
     fn checked_merge_observes_cancellation_between_heap_pops() {
-        let cancellation = CancellationToken::new();
+        let cancellation = CancellationSource::new();
         let visits = AtomicUsize::new(0);
         let stop = canonical_merge_streams_checked(
             streams(),
-            &lease(10_000, cancellation.clone()),
+            &lease(10_000, cancellation.token()),
             None,
             |_, _| 0,
             |_| {

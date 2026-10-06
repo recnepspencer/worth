@@ -41,6 +41,9 @@ pub enum WorthQueryCurrentOutputDenialKind {
     ForeignIdentity,
     /// The selection exceeded the projection's work budget.
     WorkBudgetExceeded,
+    /// The request was cancelled or ran out of time while a recorded
+    /// output's consumed evidence was verified.
+    Interrupted(worth_relational::facade::mvcc::RelationalOperationInterruption),
 }
 
 /// Refusal to select a producer's current output.

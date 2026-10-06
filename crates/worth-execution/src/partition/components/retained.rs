@@ -27,7 +27,7 @@ impl ComponentPartitioner {
                 .len()
                 .checked_add(usize::from(!self.facts.contains_key(&item)))
                 .ok_or(PartitionUpdateDenial::Admission(
-                    LeaseDenial::ResourceExhausted,
+                    LeaseDenial::ChargedBytesOverflow,
                 ))?;
             let bound = self.retained_bytes(count, self.edge_count)?;
             self.retained_charge.admit(lease, bound)?;
@@ -54,7 +54,7 @@ impl ComponentPartitioner {
                 self.edge_count
                     .checked_add(add)
                     .ok_or(PartitionUpdateDenial::Admission(
-                        LeaseDenial::ResourceExhausted,
+                        LeaseDenial::ChargedBytesOverflow,
                     ))?;
             let bound = self.retained_bytes(self.facts.len(), edges)?;
             self.retained_charge.admit(lease, bound)?;
@@ -105,7 +105,7 @@ impl ComponentPartitioner {
             .and_then(|bytes| bytes.checked_add(edges.checked_mul(2 * DEGREE_SCRATCH_BYTES)?))
             .and_then(|bytes| u64::try_from(bytes).ok())
             .ok_or(PartitionUpdateDenial::Admission(
-                LeaseDenial::ResourceExhausted,
+                LeaseDenial::ChargedBytesOverflow,
             ))
     }
 }

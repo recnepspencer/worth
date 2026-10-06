@@ -6,6 +6,7 @@ use std::sync::Arc;
 use worth_execution::{ChargedBytes, PartitionItemId, ReductionTree};
 use worth_foundational::facade::{ExecutionReport, PartitionIdentity};
 
+use super::super::super::request_execution::QueryMemoryReservation;
 use super::retained::{
     observe, CompletedComputationRun, RetainedCall, RetainedPartition, RetainedPartitions,
     WorthQueryPartitionedComputationFullCause, WorthQueryPartitionedComputationRun,
@@ -83,12 +84,13 @@ impl<Key: Send + Sync + 'static> FullRecording<Key> {
 
     /// The completed run: its items, each kernel's work and the tree, when
     /// every charge measured and the kernels and combines account for all of
-    /// execution's work.
+    /// execution's work. `tree_memory` holds the tree until it is charged.
     pub(in super::super) fn complete<Item, Reduced>(
         self,
         items: Arc<BTreeMap<PartitionItemId, Item>>,
         mut kernel_units: BTreeMap<PartitionIdentity, u64>,
         tree: ReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
+        tree_memory: QueryMemoryReservation,
         reduction_work: u64,
         cause: WorthQueryPartitionedComputationFullCause,
         report: ExecutionReport,
@@ -140,6 +142,7 @@ impl<Key: Send + Sync + 'static> FullRecording<Key> {
             typed: typed.map(|typed| Arc::new(typed) as Arc<dyn std::any::Any + Send + Sync>),
             typed_bytes,
             carried: None,
+            tree_memory,
         }
     }
 }

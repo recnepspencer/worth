@@ -23,6 +23,8 @@ pub use ports::{RuntimeWorldOwnerLifecycleObservation, RuntimeWorldOwnerUnavaila
 
 pub(crate) mod availability;
 mod builder;
+mod execution;
+pub use execution::{RuntimeWorldBuildDenial, RuntimeWorldExecutionPlacement};
 mod public_owner;
 mod service_ports;
 pub use builder::{MissingRuntimeWorldInput, RuntimeWorldOwnerBuilder};

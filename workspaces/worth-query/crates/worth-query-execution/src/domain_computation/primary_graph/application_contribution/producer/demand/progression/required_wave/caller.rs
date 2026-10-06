@@ -122,6 +122,12 @@ where
         match pending {
             Ok(Some(_)) => {}
             Err(ConsumedOutputVerificationStop::WorkExhausted) => return Err(work_denial()),
+            Err(ConsumedOutputVerificationStop::Interrupted(event)) => {
+                return Err(denial(
+                    WorthQueryOutputDemandDenialKind::of_interruption(event.interruption()),
+                    "",
+                ))
+            }
             Ok(None)
             | Err(
                 ConsumedOutputVerificationStop::Unavailable

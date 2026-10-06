@@ -138,11 +138,11 @@ fn cancellation_and_deadline_gate_kernels_without_explicit_checkpoints() {
     let _serial = TEST_LOCK.lock().unwrap();
     let admitted = map(&[1, 2], 0);
     let called = AtomicUsize::new(0);
-    let cancelled_token = CancellationToken::new();
+    let cancelled_token = CancellationSource::new();
     cancelled_token.cancel();
     let cancelled = authority()
         .request_lease(LeaseRequest {
-            cancellation: cancelled_token,
+            cancellation: cancelled_token.token(),
             ..request(1, 1_000, 10)
         })
         .unwrap();
@@ -174,10 +174,10 @@ fn cancellation_and_deadline_gate_kernels_without_explicit_checkpoints() {
         ..
     } if identity == PartitionIdentity::new(1)));
 
-    let token = CancellationToken::new();
+    let token = CancellationSource::new();
     let between = authority()
         .request_lease(LeaseRequest {
-            cancellation: token.clone(),
+            cancellation: token.token(),
             ..request(1, 1_000, 10)
         })
         .unwrap();
@@ -230,9 +230,11 @@ fn framework_buffers_are_reserved_before_kernel_under_small_memory_caps() {
         assert!(matches!(
             outcome,
             MapOutcome::Stopped {
-                reason: MapStop::Admission(LeaseDenial::ResourceExhausted),
+                reason: MapStop::Admission(LeaseDenial::MemoryExhausted(
+                    MemoryLimitDenial { admitted, .. }
+                )),
                 ..
-            }
+            } if admitted == memory
         ));
         assert_eq!(outcome.report().physical().peak_charged_memory_bytes(), 0);
     }

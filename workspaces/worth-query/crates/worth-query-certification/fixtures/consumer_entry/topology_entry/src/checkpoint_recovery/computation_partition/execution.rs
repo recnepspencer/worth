@@ -6,7 +6,7 @@ use worth_foundational::facade::ExecutionFallbackCause;
 use worth_foundational::facade::PartitionIdentity;
 use worth_query_decl::facade::application_operation::application_computation_partition_identity;
 use worth_query_host::facade::application_contribution::{
-    LeaseDenial, WorthQueryComputationPartitionStop, WorthQueryManagedComputationResourceDenial,
+    WorthQueryComputationPartitionStop, WorthQueryManagedComputationResourceDenial,
     WorthQueryPartitionedComputationDenial,
 };
 
@@ -18,7 +18,7 @@ use super::*;
 
 const NEGATIVE_ZERO: u64 = (-0.0_f64).to_bits();
 
-fn entry(id: u64, region: u32, value: f64) -> RegionEntry {
+pub(super) fn entry(id: u64, region: u32, value: f64) -> RegionEntry {
     RegionEntry {
         id,
         region,
@@ -53,7 +53,7 @@ fn sum(values: impl IntoIterator<Item = f64>) -> f64 {
 
 /// Region sums whose total depends on how the additions associate, with zeros
 /// of both signs among the entries.
-fn association_sensitive_entries() -> Vec<RegionEntry> {
+pub(super) fn association_sensitive_entries() -> Vec<RegionEntry> {
     vec![
         entry(1, 1, 1.0e16),
         entry(2, 1, 1.0),
@@ -179,44 +179,30 @@ fn reordering_the_input_changes_neither_the_total_nor_the_charged_work() {
 #[test]
 fn partitions_whose_declared_bytes_do_not_sum_are_denied_and_the_next_demand_is_answered() {
     // The computation declares the largest byte count there is. Every
-    // partition may hold that much, and two such capacities have no sum.
+    // partition may hold that much, and two such capacities have no sum: the
+    // second gather is refused before it runs.
     let two_regions = [entry(1, 1, 2.0), entry(2, 2, 3.0)];
     let one_region = [entry(1, 1, 2.0), entry(2, 1, 3.0)];
     let sets: facts::Sets<'_> = &[("two-regions", &two_regions), ("one-region", &one_region)];
     with_totals::<UnboundedBytesOwner>(sets, |demand| {
         let unsummable = || -> RegionOutcome {
             Err(WorthQueryPartitionedComputationDenial::Resource(
-                WorthQueryManagedComputationResourceDenial::RetainedBytesExhausted,
+                WorthQueryManagedComputationResourceDenial::CapacityOverflow,
             ))
         };
         assert_eq!(demand("two-regions"), unsummable());
         // One partition's capacity is a sum of its own, and the reduction's
-        // bound over that many bytes is not: execution refuses the run.
-        assert_eq!(
-            demand("one-region"),
-            Err(
-                WorthQueryPartitionedComputationDenial::DeniedBeforeDispatch(
-                    LeaseDenial::ResourceExhausted
-                )
-            )
-        );
+        // bound over that many bytes is not: execution refuses the run with
+        // that same cause.
+        assert_eq!(demand("one-region"), unsummable());
         assert_eq!(demand("two-regions"), unsummable());
     });
 }
 
-fn refused(partition: PartitionIdentity, region: u32) -> RegionOutcome {
-    Err(WorthQueryPartitionedComputationDenial::Partition {
-        partition,
-        cause: WorthQueryComputationPartitionStop::Owner(region),
-    })
-}
-
-#[test]
-fn refusals_in_several_regions_report_the_least_partition_identity() {
+/// Six regions met in descending partition order, of which the second,
+/// fourth and fifth partitions fail, and the least failure: the last met.
+pub(super) fn several_refusals() -> (Vec<RegionEntry>, RegionOutcome) {
     let regions = in_partition_order(1..=6);
-    // The second, fourth and fifth partitions fail. The input meets the
-    // regions in descending partition order, so the least failing partition
-    // is the last failure met.
     let entries = regions
         .iter()
         .enumerate()
@@ -229,13 +215,22 @@ fn refusals_in_several_regions_report_the_least_partition_identity() {
             },
             ..entry(u64::from(*region), *region, 1.0)
         })
-        .collect::<Vec<_>>();
+        .collect();
+    let least = Err(WorthQueryPartitionedComputationDenial::Partition {
+        partition: partition_of(regions[1]),
+        cause: WorthQueryComputationPartitionStop::Owner(regions[1]),
+    });
+    (entries, least)
+}
+
+#[test]
+fn refusals_in_several_regions_report_the_least_partition_identity() {
+    let (entries, least) = several_refusals();
     let mut ascending = entries.clone();
     ascending.reverse();
 
     let sets: facts::Sets<'_> = &[("descending", &entries), ("ascending", &ascending)];
     with_region_totals(sets, |demand| {
-        let least = refused(partition_of(regions[1]), regions[1]);
         assert_eq!(demand("descending"), least);
         assert_eq!(demand("ascending"), least);
     });
@@ -258,28 +253,32 @@ fn kernel_panic_is_a_typed_stop_and_the_next_demand_runs() {
     });
 }
 
-#[test]
-fn work_ceiling_stops_at_the_same_partition_with_the_same_outcome_on_every_run() {
+/// Three regions of 1,500 units of work each, and where the computation's
+/// declared 4,096 stop them: two regions fit and the third does not,
+/// whichever region the input meets first.
+pub(super) fn heavy_regions() -> (Vec<RegionEntry>, RegionOutcome) {
     let regions = in_partition_order(1..=3);
-    // The computation declares 4,096 units of work. Two regions fit and the
-    // third does not, whichever region the input meets first.
     let heavy = regions
         .iter()
         .map(|region| RegionEntry {
             work: 1_500,
             ..entry(u64::from(*region), *region, 1.0)
         })
-        .collect::<Vec<_>>();
+        .collect();
+    let exhausted = Err(WorthQueryPartitionedComputationDenial::Partition {
+        partition: partition_of(regions[2]),
+        cause: WorthQueryComputationPartitionStop::Resource(
+            WorthQueryManagedComputationResourceDenial::WorkExhausted,
+        ),
+    });
+    (heavy, exhausted)
+}
+
+#[test]
+fn work_ceiling_stops_at_the_same_partition_with_the_same_outcome_on_every_run() {
+    let (heavy, exhausted) = heavy_regions();
     let mut reversed = heavy.clone();
     reversed.reverse();
-    let exhausted = || -> RegionOutcome {
-        Err(WorthQueryPartitionedComputationDenial::Partition {
-            partition: partition_of(regions[2]),
-            cause: WorthQueryComputationPartitionStop::Resource(
-                WorthQueryManagedComputationResourceDenial::WorkExhausted,
-            ),
-        })
-    };
 
     // The same regions inside the ceiling complete.
     let light = heavy
@@ -292,9 +291,9 @@ fn work_ceiling_stops_at_the_same_partition_with_the_same_outcome_on_every_run()
         ("light", &light),
     ];
     with_region_totals(sets, |demand| {
-        assert_eq!(demand("heavy"), exhausted());
-        assert_eq!(demand("reversed"), exhausted());
-        assert_eq!(demand("heavy"), exhausted());
+        assert_eq!(demand("heavy"), exhausted);
+        assert_eq!(demand("reversed"), exhausted);
+        assert_eq!(demand("heavy"), exhausted);
         assert_eq!(total(demand("light")).bits, 3.0_f64.to_bits());
     });
 }

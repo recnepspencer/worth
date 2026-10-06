@@ -10,7 +10,7 @@ use worth_foundational::{
 use worth_proof::CanonicalUniqueVec;
 
 use crate::{
-    authority::{ExecutionResourceLease, LeaseDenial},
+    authority::{ExecutionResourceLease, LeaseDenial, MemoryLimitDenial, MemoryLimitLevel},
     report::ChargedBytes,
 };
 
@@ -128,10 +128,16 @@ where
         .and_then(|bytes| bytes.checked_add(input_bytes))
         .and_then(|bytes| bytes.checked_add(limits.framework_context_bytes(1, 1)?));
     let Some(memory_bytes) = memory_bytes else {
-        return denied(initial, LeaseDenial::ResourceExhausted);
+        return denied(initial, LeaseDenial::ChargedBytesOverflow);
     };
-    if initial.additional_charged_bytes() > max_state_bytes {
-        return denied(initial, LeaseDenial::ResourceExhausted);
+    let state_bytes = initial.additional_charged_bytes();
+    if state_bytes > max_state_bytes {
+        let denial = MemoryLimitDenial {
+            requested: state_bytes,
+            admitted: max_state_bytes,
+            level: MemoryLimitLevel::Declared,
+        };
+        return denied(initial, LeaseDenial::MemoryExhausted(denial));
     }
     let reservation = if let Some(lease) = lease {
         match lease.reserve_entry(memory_bytes) {

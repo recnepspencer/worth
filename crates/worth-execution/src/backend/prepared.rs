@@ -53,7 +53,7 @@ pub(crate) fn prepare_batch_resources<T: ChargedBytes, R, E>(
                 batch.len(),
             )?)
         })
-        .ok_or(LeaseDenial::ResourceExhausted)?;
+        .ok_or(LeaseDenial::ChargedBytesOverflow)?;
     let reservation = lease.reserve_retained_memory(memory_bytes)?;
     let limits = RunLimits::for_run(Some(lease), matches!(backend, BackendKind::Serial));
     let context = PreparedMeterContext::capture(&limits);

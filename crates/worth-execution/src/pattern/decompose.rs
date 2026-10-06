@@ -1,12 +1,11 @@
 use worth_foundational::{ExecutionReport, PartitionIdentity};
+use worth_proof::CanonicalUniqueVec;
 
 use crate::{
     authority::{ExecutionResourceLease, LeaseDenial},
     backend::ScopeStop,
     oracle::CanonicalBits,
-    reduction::{
-        ReductionDenial, ReductionMetrics, ReductionPlan, ReductionRunFailure, ReductionTree,
-    },
+    reduction::{ReductionMetrics, ReductionPlan, ReductionRunFailure, ReductionTree},
     report::ChargedBytes,
 };
 
@@ -106,7 +105,6 @@ pub enum DecomposeFailure<E> {
         reason: MapStop<E>,
         report: ExecutionReport,
     },
-    Reduction(ReductionDenial),
     ReductionRun(ReductionRunFailure<MapKernelStop>),
     InterfaceAdmission(MapDenial),
     Interface {
@@ -223,7 +221,7 @@ impl<I: ChargedBytes, C: ChargedBytes, S: ChargedBytes, B: ChargedBytes, O: Char
 /// runs accept a checked map over just the changed identities.
 #[derive(Clone)]
 pub struct ExecutionDecompose<I, C, S, B, O, F> {
-    identities: Vec<PartitionIdentity>,
+    identities: CanonicalUniqueVec<PartitionIdentity>,
     reduction_identity: C,
     combine: F,
     max_interface_result_bytes: u64,
@@ -253,7 +251,7 @@ where
         max_staged_bytes: u64,
         reducer_storage_bytes: u64,
     ) -> Result<Self, DecomposeInputDenial> {
-        ReductionPlan::try_from_sorted_unique(identities.clone())
+        let identities = CanonicalUniqueVec::try_from_sorted_unique(identities)
             .map_err(|_| DecomposeInputDenial::IdentitiesNotCanonical)?;
         Ok(Self {
             identities,
@@ -276,19 +274,19 @@ where
         if identities.windows(2).any(|pair| pair[0] >= pair[1]) {
             return Err(DecomposeInputDenial::ChangedIdentitiesNotCanonical);
         }
-        if self.snapshot.is_none() && identities != self.identities {
+        if self.snapshot.is_none() && identities != self.identities.as_slice() {
             return Err(DecomposeInputDenial::InitialCoverageMismatch);
         }
         if self
             .snapshot
             .as_ref()
             .is_some_and(|previous| previous.editions.interior != editions.interior)
-            && identities != self.identities
+            && identities != self.identities.as_slice()
         {
             return Err(DecomposeInputDenial::InteriorKernelCoverageMismatch);
         }
         for identity in identities {
-            if self.identities.binary_search(identity).is_err() {
+            if self.identities.as_slice().binary_search(identity).is_err() {
                 return Err(DecomposeInputDenial::UnknownIdentity(*identity));
             }
         }
@@ -306,6 +304,7 @@ where
             for (identity, value) in identities.iter().zip(values) {
                 let index = self
                     .identities
+                    .as_slice()
                     .binary_search(identity)
                     .expect("checked identity");
                 interiors[index] = value.interior;
@@ -333,6 +332,7 @@ where
         for (identity, value) in identities.iter().copied().zip(values) {
             let index = self
                 .identities
+                .as_slice()
                 .binary_search(&identity)
                 .expect("checked identity");
             if !same_encoding(

@@ -3,7 +3,8 @@ use std::{
     sync::{Arc, OnceLock},
 };
 use worth_execution::{
-    CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig, LeaseRequest,
+    CancellationSource, CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig,
+    LeaseRequest,
 };
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -36,4 +37,14 @@ pub(crate) fn request(workers: usize, work: u64) -> LeaseRequest {
         deadline: None,
         cancellation: CancellationToken::new(),
     }
+}
+
+/// A request whose cancellation the returned source owns.
+pub(crate) fn cancellable(workers: usize, work: u64) -> (LeaseRequest, CancellationSource) {
+    let source = CancellationSource::new();
+    let request = LeaseRequest {
+        cancellation: source.token(),
+        ..request(workers, work)
+    };
+    (request, source)
 }

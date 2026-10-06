@@ -68,13 +68,13 @@ pub use crate::identity::{
 
 pub use crate::lifecycle::{
     MissingRuntimeWorldInput, RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchPort,
-    RuntimeWorldClock, RuntimeWorldClockSource, RuntimeWorldCloseDenial, RuntimeWorldCloseReport,
-    RuntimeWorldInspectionPort, RuntimeWorldInstant, RuntimeWorldLifecyclePort,
-    RuntimeWorldObservationPort, RuntimeWorldOwnedAsyncRequestAdmissionDenial,
-    RuntimeWorldOwnedAsyncRevalidationDenial, RuntimeWorldOwner, RuntimeWorldOwnerBuilder,
-    RuntimeWorldOwnerLifecycleObservation, RuntimeWorldOwnerUnavailable,
-    RuntimeWorldPublicationPort, RuntimeWorldRecoveryPort, RuntimeWorldRetainedRecordReport,
-    RuntimeWorldServiceDenial,
+    RuntimeWorldBuildDenial, RuntimeWorldClock, RuntimeWorldClockSource, RuntimeWorldCloseDenial,
+    RuntimeWorldCloseReport, RuntimeWorldExecutionPlacement, RuntimeWorldInspectionPort,
+    RuntimeWorldInstant, RuntimeWorldLifecyclePort, RuntimeWorldObservationPort,
+    RuntimeWorldOwnedAsyncRequestAdmissionDenial, RuntimeWorldOwnedAsyncRevalidationDenial,
+    RuntimeWorldOwner, RuntimeWorldOwnerBuilder, RuntimeWorldOwnerLifecycleObservation,
+    RuntimeWorldOwnerUnavailable, RuntimeWorldPublicationPort, RuntimeWorldRecoveryPort,
+    RuntimeWorldRetainedRecordReport, RuntimeWorldServiceDenial,
 };
 
 pub use crate::publication::{

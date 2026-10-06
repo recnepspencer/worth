@@ -54,7 +54,7 @@ impl Bisection {
             ))?;
         let bytes = if previous == 0 {
             u64::try_from(8 * size_of::<((PartitionItemId, PartitionItemId), u64)>())
-                .map_err(|_| PartitionUpdateDenial::Admission(LeaseDenial::ResourceExhausted))?
+                .map_err(|_| PartitionUpdateDenial::Admission(LeaseDenial::ChargedBytesOverflow))?
         } else {
             0
         };
@@ -206,7 +206,7 @@ impl Bisection {
                 degree_visits = degree_visits
                     .checked_add(self.incident[member].len())
                     .ok_or(PartitionUpdateDenial::Admission(
-                        LeaseDenial::ResourceExhausted,
+                        LeaseDenial::ChargedBytesOverflow,
                     ))?;
             }
             let next_members = selected.members.len() + usize::from(previous.is_none())
@@ -395,6 +395,6 @@ fn candidate_scratch_bytes(
         .and_then(|bytes| bytes.checked_add(path_nodes.checked_mul(per_member)?))
         .and_then(|bytes| u64::try_from(bytes).ok())
         .ok_or(PartitionUpdateDenial::Admission(
-            LeaseDenial::ResourceExhausted,
+            LeaseDenial::ChargedBytesOverflow,
         ))
 }

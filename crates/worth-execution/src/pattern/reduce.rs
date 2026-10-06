@@ -5,9 +5,9 @@ use worth_foundational::{
 };
 
 use crate::{
-    authority::{ExecutionResourceLease, LeaseDenial},
+    authority::{ExecutionMemoryReservation, ExecutionResourceLease, LeaseDenial},
     backend::{
-        run_scope, run_scope_with_charge, BackendKind, KernelContext, KernelFailure, KernelStop,
+        run_scope_holding, BackendKind, KernelContext, KernelFailure, KernelStop, ScopeHold,
         ScopeStop,
     },
     oracle::CanonicalBits,
@@ -20,6 +20,7 @@ use crate::{
 use super::{ExecutionMap, MapOutcome, MapStop};
 
 mod certify;
+mod entry;
 mod stage;
 pub use certify::ReduceCertificationFailure;
 
@@ -65,46 +66,6 @@ impl ChargedBytes for ReduceScopeError {
 }
 
 impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
-    /// Map values stay bound to checked identities while one parent scope
-    /// retains their memory through canonical tree construction. `max_value_bytes`
-    /// bounds each reducer value's inline and owned bytes and encoded length;
-    /// `reducer_storage_bytes` declares heap storage captured by `combine`.
-    pub fn run_reduce<R, E, Kernel, Combine>(
-        &self,
-        lease: Option<&ExecutionResourceLease<'_>>,
-        kernel: Kernel,
-        identity: R,
-        combine: Combine,
-        max_value_bytes: u64,
-        reducer_storage_bytes: u64,
-    ) -> Result<(ReductionTree<R, Combine>, ExecutionReport, ReductionMetrics), ReduceInputDenial<E>>
-    where
-        R: Send + Sync + ChargedBytes + Clone + CanonicalBits,
-        E: Send + ChargedBytes,
-        Kernel: Fn(&T, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>> + Sync,
-        Combine: Fn(&R, &R) -> R + Sync,
-    {
-        if let Some(lease) = lease {
-            self.run_reduce_leased(
-                lease,
-                kernel,
-                identity,
-                combine,
-                max_value_bytes,
-                reducer_storage_bytes,
-                if lease.resolved_posture() == ExecutionPosture::Automatic {
-                    BackendKind::Native
-                } else {
-                    BackendKind::Serial
-                },
-                true,
-                None,
-            )
-        } else {
-            self.run_reduce_serial(kernel, identity, combine, max_value_bytes)
-        }
-    }
-
     fn run_reduce_leased<R, E, Kernel, Combine>(
         &self,
         lease: &ExecutionResourceLease<'_>,
@@ -116,6 +77,8 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
         backend: BackendKind,
         charge_parent: bool,
         mut retained_handoff: Option<&mut dyn FnMut(u64) -> Result<(), LeaseDenial>>,
+        inputs: Option<ExecutionMemoryReservation>,
+        tree: Option<&mut ExecutionMemoryReservation>,
     ) -> Result<(ReductionTree<R, Combine>, ExecutionReport, ReductionMetrics), ReduceInputDenial<E>>
     where
         R: Send + Sync + ChargedBytes + Clone + CanonicalBits,
@@ -137,14 +100,25 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
             .and_then(|bytes| bytes.checked_add(reducer_storage_bytes))
             .ok_or_else(memory_admission_denial)?;
         let mut map_stopped = None;
+        let mut map_fallback = None;
         let mut reduction_checkpoint_failure = None;
-        let outcome = run_scope_with_charge(
+        let kept = |complete: &ReduceComplete<R, Combine>| {
+            kept_tree_bytes(&complete.tree, reducer_storage_bytes)
+        };
+        let hold = tree.map(|reservation| ScopeHold {
+            reservation,
+            kept: &kept,
+        });
+        let mut outcome = run_scope_holding(
             Some(lease),
             retained_bytes,
             tree_bytes,
             charge_parent,
+            hold,
             |context| {
-                let values = match self.run_with_backend(Some(lease), backend, kernel) {
+                let mapped = self.run_with_backend_taking(Some(lease), backend, inputs, kernel);
+                map_fallback = mapped.report().fallback();
+                let values = match mapped {
                     MapOutcome::Complete { values, .. } => values,
                     MapOutcome::Stopped {
                         boundary, reason, ..
@@ -183,20 +157,11 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
                     Err(error) => return Err(KernelFailure::Domain(error)),
                 };
                 if let Some(handoff) = retained_handoff.as_mut() {
-                    let bytes = complete
-                        .tree
-                        .additional_charged_bytes()
-                        .checked_add(reducer_storage_bytes)
-                        .and_then(|bytes| {
-                            bytes.checked_add(
-                                u64::try_from(size_of::<ReductionTree<R, Combine>>()).ok()?,
-                            )
-                        })
-                        .ok_or({
-                            KernelFailure::Domain(ReduceScopeError::Admission(
-                                LeaseDenial::ResourceExhausted,
-                            ))
-                        })?;
+                    let bytes = kept_tree_bytes(&complete.tree, reducer_storage_bytes).ok_or({
+                        KernelFailure::Domain(ReduceScopeError::Admission(
+                            LeaseDenial::ChargedBytesOverflow,
+                        ))
+                    })?;
                     handoff(bytes).map_err(|denial| {
                         KernelFailure::Domain(ReduceScopeError::Admission(denial))
                     })?;
@@ -204,6 +169,11 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
                 Ok(complete)
             },
         );
+        // The scope reports how the reduction ran; why its map ran serially is
+        // the map's to name.
+        if let Some(cause) = map_fallback {
+            outcome.report = outcome.report.with_fallback(cause);
+        }
         match outcome.result {
             Ok(complete) => Ok((complete.tree, outcome.report, complete.metrics)),
             Err(ScopeStop::Admission(denial)) => Err(ReduceInputDenial::ScopeAdmission {
@@ -249,6 +219,9 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
         identity: R,
         combine: Combine,
         max_value_bytes: u64,
+        reducer_storage_bytes: u64,
+        inputs: Option<ExecutionMemoryReservation>,
+        tree: Option<&mut ExecutionMemoryReservation>,
     ) -> Result<(ReductionTree<R, Combine>, ExecutionReport, ReductionMetrics), ReduceInputDenial<E>>
     where
         R: Send + ChargedBytes + Clone + CanonicalBits,
@@ -264,23 +237,33 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
         let mut map_stopped = None;
         let mut map_fallback = None;
         let mut reduction_failure = None;
-        let outcome = run_scope::<ReduceComplete<R, Combine>, ReduceScopeError, _>(
+        let kept = |complete: &ReduceComplete<R, Combine>| {
+            kept_tree_bytes(&complete.tree, reducer_storage_bytes)
+        };
+        let hold = tree.map(|reservation| ScopeHold {
+            reservation,
+            kept: &kept,
+        });
+        let outcome = run_scope_holding::<ReduceComplete<R, Combine>, ReduceScopeError, _>(
             None,
             0,
             tree_bytes,
+            true,
+            hold,
             |context| {
-                let values = match self.run(None, kernel) {
-                    MapOutcome::Complete { values, report } => {
-                        map_fallback = report.fallback();
-                        values
-                    }
-                    MapOutcome::Stopped {
-                        boundary, reason, ..
-                    } => {
-                        map_stopped = Some((boundary, reason));
-                        return Err(KernelFailure::Stop(KernelStop::NestedStopped));
-                    }
-                };
+                let values =
+                    match self.run_with_backend_taking(None, BackendKind::Serial, inputs, kernel) {
+                        MapOutcome::Complete { values, report } => {
+                            map_fallback = report.fallback();
+                            values
+                        }
+                        MapOutcome::Stopped {
+                            boundary, reason, ..
+                        } => {
+                            map_stopped = Some((boundary, reason));
+                            return Err(KernelFailure::Stop(KernelStop::NestedStopped));
+                        }
+                    };
                 context.checkpoint(0)?;
                 let plan = match ReductionPlan::try_from_sorted_unique(self.identities().to_vec()) {
                     Ok(plan) => plan,
@@ -358,6 +341,17 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
     }
 }
 
+/// What a completed tree keeps once its run ends: its nodes and identity,
+/// the reducer's declared storage, and the tree itself.
+fn kept_tree_bytes<R: ChargedBytes, Combine>(
+    tree: &ReductionTree<R, Combine>,
+    reducer_storage_bytes: u64,
+) -> Option<u64> {
+    tree.additional_charged_bytes()
+        .checked_add(reducer_storage_bytes)?
+        .checked_add(u64::try_from(size_of::<ReductionTree<R, Combine>>()).ok()?)
+}
+
 fn scope_reduction_reason<E>(cause: KernelFailure<E>) -> ReductionRunStop<KernelStop> {
     match cause {
         KernelFailure::Stop(stop) => ReductionRunStop::Hook(stop),
@@ -369,7 +363,7 @@ fn scope_reduction_reason<E>(cause: KernelFailure<E>) -> ReductionRunStop<Kernel
 
 fn memory_admission_denial<E>() -> ReduceInputDenial<E> {
     ReduceInputDenial::ScopeAdmission {
-        denial: LeaseDenial::ResourceExhausted,
+        denial: LeaseDenial::ChargedBytesOverflow,
         report: ExecutionReport::new(
             ExecutionPosture::Serial,
             0,

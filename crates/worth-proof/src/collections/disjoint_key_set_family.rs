@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use crate::collections::CanonicalUniqueVec;
 use crate::proof::{CanonicalOrder, Disjointness, Proof, StructuralProofAuthority, Uniqueness};
 
 /// A family ordered by opaque member identity, with strictly ordered keys in
@@ -67,6 +68,25 @@ impl<Id, K> DisjointKeySetFamily<Id, K> {
             uniqueness: Proof::mint(),
             disjointness: Proof::mint(),
         })
+    }
+
+    /// A member with no keys shares none, and checked identities give the
+    /// order, so the family needs no check.
+    pub fn with_empty_sets(identities: &CanonicalUniqueVec<Id>) -> Self
+    where
+        Id: Clone,
+    {
+        let members = identities
+            .as_slice()
+            .iter()
+            .map(|identity| (identity.clone(), Vec::new()))
+            .collect();
+        Self {
+            members,
+            member_order: Proof::mint(),
+            uniqueness: Proof::mint(),
+            disjointness: Proof::mint(),
+        }
     }
 
     pub fn members(&self) -> &[(Id, Vec<K>)] {

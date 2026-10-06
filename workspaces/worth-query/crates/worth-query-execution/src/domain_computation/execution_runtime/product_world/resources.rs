@@ -1,3 +1,7 @@
+use std::sync::Arc;
+
+use worth_execution::ExecutionAuthority;
+use worth_foundational::ExecutionRequestPolicy;
 use worth_runtime_world::facade::RuntimeWorldBudgets;
 
 use super::WorthQueryProductWorldClock;
@@ -12,6 +16,18 @@ pub struct WorthQueryProductWorldResources {
     budgets: RuntimeWorldBudgets,
     clock: WorthQueryProductWorldClock,
     invalidation: super::super::WorthQueryInvalidationResources,
+    execution: WorthQueryProductExecution,
+}
+
+/// How the World's requests run, handed to its builder unchanged: with no
+/// policy they run unbounded on the calling thread; with one, on the calling
+/// thread within it, or leased from the host's authority when one is
+/// installed beside it. An authority without a policy is refused at
+/// installation.
+#[derive(Clone, Default)]
+pub(crate) struct WorthQueryProductExecution {
+    pub(crate) authority: Option<Arc<ExecutionAuthority>>,
+    pub(crate) policy: Option<ExecutionRequestPolicy>,
 }
 
 impl WorthQueryProductWorldResources {
@@ -32,7 +48,21 @@ impl WorthQueryProductWorldResources {
             budgets,
             clock,
             invalidation,
+            execution: WorthQueryProductExecution::default(),
         }
+    }
+
+    /// Installs the host's process authority, from which every request
+    /// leases the installed policy's budget.
+    pub fn with_execution_authority(mut self, authority: Arc<ExecutionAuthority>) -> Self {
+        self.execution.authority = Some(authority);
+        self
+    }
+
+    /// Installs the policy every request runs under.
+    pub fn with_execution_policy(mut self, policy: ExecutionRequestPolicy) -> Self {
+        self.execution.policy = Some(policy);
+        self
     }
 
     pub fn invalidation_resources(&self) -> super::super::WorthQueryInvalidationResources {
@@ -45,8 +75,9 @@ impl WorthQueryProductWorldResources {
         RuntimeWorldBudgets,
         WorthQueryProductWorldClock,
         super::super::WorthQueryInvalidationResources,
+        WorthQueryProductExecution,
     ) {
-        (self.budgets, self.clock, self.invalidation)
+        (self.budgets, self.clock, self.invalidation, self.execution)
     }
 
     #[cfg(test)]

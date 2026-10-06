@@ -55,11 +55,14 @@ fn checked_merge_denial_preserves_both_islands_and_success_moves_only_loser() {
                 .lock()
                 .unwrap()
                 .add_edge_checked(&memory_tight, context, item(2), item(10));
-        assert_eq!(
-            denial,
-            Err(PartitionUpdateDenial::Admission(
-                worth_execution::LeaseDenial::ResourceExhausted
-            ))
+        assert!(
+            matches!(
+                denial,
+                Err(PartitionUpdateDenial::Admission(
+                    worth_execution::LeaseDenial::MemoryExhausted(_)
+                ))
+            ),
+            "{denial:?}"
         );
         Ok::<_, MapKernelFailure<()>>(0_u64)
     });
@@ -192,7 +195,7 @@ fn unrelated_and_cancelled_child_leases_cannot_edit_retained_routes() {
     assert!(matches!(outcome, MapOutcome::Stopped { .. }));
     assert!(components.lock().unwrap().route(item(1)).is_none());
 
-    let cancellation = CancellationToken::new();
+    let cancellation = CancellationSource::new();
     let child = parent
         .child(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
@@ -201,7 +204,7 @@ fn unrelated_and_cancelled_child_leases_cannot_edit_retained_routes() {
                 ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), 100_000, 100_000),
             ),
             deadline: None,
-            cancellation: cancellation.clone(),
+            cancellation: cancellation.token(),
         })
         .unwrap();
     cancellation.cancel();
@@ -238,7 +241,7 @@ fn persistent_graph_charge_stops_growth_and_shrinks_after_removal() {
             ) {
                 Ok(_) => count += 1,
                 Err(PartitionUpdateDenial::Admission(
-                    worth_execution::LeaseDenial::ResourceExhausted,
+                    worth_execution::LeaseDenial::MemoryExhausted(_),
                 )) => break,
                 Err(other) => panic!("unexpected checked denial: {other:?}"),
             }
