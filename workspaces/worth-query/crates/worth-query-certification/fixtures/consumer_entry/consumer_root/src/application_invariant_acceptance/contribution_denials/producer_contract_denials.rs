@@ -310,9 +310,7 @@ fn foreign_source_selector_is_denied_before_initial_state() {
         |_, _| panic!("foreign producer source must deny before initial state"),
     );
     match result {
-        Err(application_installation::WorthQueryInMemoryApplicationDenial::Contributions(
-            denial,
-        )) => {
+        Err(application_installation::WorthQueryApplicationOpenDenial::Contributions(denial)) => {
             assert_eq!(
                 denial.kind(),
                 WorthQueryPrimaryGraphInstallationDenialKind::ContributionMemberMismatch

@@ -122,7 +122,7 @@ where
 pub(super) fn install_program_with_limits<Program>(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     seed: fn(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
 ) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>
 where
@@ -213,7 +213,7 @@ pub(super) fn invalidation(
 pub(super) fn limits(
     retained_composite_commits: u64,
     invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
-) -> WorthQueryInMemoryApplicationLimits {
+) -> WorthQueryApplicationLimits {
     limits_with_room(retained_composite_commits, 16, 64, invalidation)
 }
 
@@ -225,8 +225,8 @@ pub(super) fn limits_with_room(
     active_observations: u64,
     unique_exact_component_pins: u64,
     invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
-) -> WorthQueryInMemoryApplicationLimits {
-    WorthQueryInMemoryApplicationLimits::new(
+) -> WorthQueryApplicationLimits {
+    WorthQueryApplicationLimits::new(
         WorthQueryProductWorldResources::install(
             RuntimeWorldBudgetInstallation {
                 branches: RuntimeWorldBranchBudgetInstallation {

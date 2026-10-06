@@ -1,23 +1,27 @@
-//! Rebinds the one program-activation cell to recovered authoritative truth.
+//! Reads the one program-activation record recovered authoritative truth holds.
 
-use worth_foundational::facade::ContractValidatedAspectValueView;
-use worth_query_installation::facade::WorthQueryProgramSupportRoster;
+use worth_foundational::facade::{AspectValue, ContractValidatedAspectValueView};
+use worth_relational::facade::identity::EntityId;
 
-use super::super::program_occurrence::{
-    program_revision_rendering, WorthQueryProgramActivationCell,
-};
 use super::super::{
     WorthQueryPrimaryGraph, WorthQueryPrimaryGraphInstallationDenial,
     WorthQueryPrimaryGraphInstallationDenialKind,
 };
 
-pub(in crate::domain_computation::primary_graph) fn recover_program_activation<Schema>(
+/// The activation a recovered image recorded: its row and the revision it names.
+pub(in crate::domain_computation::primary_graph) struct RecordedProgramActivation {
+    pub(in crate::domain_computation::primary_graph) identity: EntityId,
+    pub(in crate::domain_computation::primary_graph) rendering: AspectValue,
+}
+
+/// Reads the recovered main branch's activation. A program install seeds it
+/// before any bootstrap row and a declaration install never does, so its
+/// presence is what makes an image a program image.
+pub(in crate::domain_computation::primary_graph) fn recorded_program_activation(
     graph: &WorthQueryPrimaryGraph,
-    roster: &WorthQueryProgramSupportRoster<Schema>,
-    cell: &WorthQueryProgramActivationCell,
-) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+) -> Result<Option<RecordedProgramActivation>, WorthQueryPrimaryGraphInstallationDenial> {
     let layout = graph.layout.program_activation().clone();
-    let identity = graph.integration_handle().with_runtime(|runtime| {
+    graph.integration_handle().with_runtime(|runtime| {
         let basis = runtime
             .admit_branch_basis(&runtime.main_branch_identity())
             .map_err(|error| denial(format!("recovered branch basis refused: {error:?}")))?;
@@ -25,22 +29,8 @@ pub(in crate::domain_computation::primary_graph) fn recover_program_activation<S
             .read_truth()
             .project_observation(&basis.observation())
             .map_err(|error| denial(format!("recovered branch is unreadable: {error:?}")))?;
-        read_activation(
-            &branch,
-            &layout,
-            usize::MAX,
-            "recovered program activation is not in the admitted roster",
-            |rendering| {
-                roster
-                    .entries()
-                    .iter()
-                    .any(|entry| program_revision_rendering(entry.revision()) == *rendering)
-            },
-        )
-        .map(|(identity, _)| identity)
-    })?;
-    cell.publish(identity)
-        .map_err(|_| denial("recovered program activation was already published"))
+        scan_activation(&branch, &layout, usize::MAX).map(|(recorded, _)| recorded)
+    })
 }
 
 /// Reads the activation on the caller's exact branch view, with native scan accounting.
@@ -49,21 +39,36 @@ pub(super) fn read_activation(
     layout: &super::super::schema_layout::WorthQueryProgramActivationLayout,
     maximum_work_units: usize,
     mismatch_subject: &str,
-    accepts: impl FnOnce(&worth_foundational::facade::AspectValue) -> bool,
-) -> Result<
-    (worth_relational::facade::identity::EntityId, usize),
-    WorthQueryPrimaryGraphInstallationDenial,
-> {
+    accepts: impl FnOnce(&AspectValue) -> bool,
+) -> Result<(EntityId, usize), WorthQueryPrimaryGraphInstallationDenial> {
+    let (recorded, work) = scan_activation(branch, layout, maximum_work_units)?;
+    let recorded =
+        recorded.ok_or_else(|| denial("recovered branch contains no program activation record"))?;
+    if !accepts(&recorded.rendering) {
+        return Err(denial(mismatch_subject));
+    }
+    Ok((recorded.identity, work))
+}
+
+fn scan_activation(
+    branch: &worth_relational::facade::runtime::VisibilityProjectionView<'_>,
+    layout: &super::super::schema_layout::WorthQueryProgramActivationLayout,
+    maximum_work_units: usize,
+) -> Result<(Option<RecordedProgramActivation>, usize), WorthQueryPrimaryGraphInstallationDenial> {
     let read = branch
         .bounded_entities_of_kind(layout.entity_kind, maximum_work_units)
         .map_err(|_| denial("recovered program activation scan exceeded its bound"))?;
     let work = read.work_units();
     let records = read.into_records();
-    let [record] = records.as_slice() else {
-        return Err(denial(format!(
-            "recovered branch contains {} program activation records, expected one",
-            records.len()
-        )));
+    let record = match records.as_slice() {
+        [] => return Ok((None, work)),
+        [record] => record,
+        records => {
+            return Err(denial(format!(
+                "recovered branch contains {} program activation records, expected at most one",
+                records.len()
+            )))
+        }
     };
     let state = record
         .authoritative_aspect_state
@@ -86,10 +91,13 @@ pub(super) fn read_activation(
     let rendering = fields
         .get(field)
         .ok_or_else(|| denial("recovered program activation has no revision"))?;
-    if !accepts(rendering) {
-        return Err(denial(mismatch_subject));
-    }
-    Ok((record.entity_id, work))
+    Ok((
+        Some(RecordedProgramActivation {
+            identity: record.entity_id,
+            rendering: rendering.clone(),
+        }),
+        work,
+    ))
 }
 
 fn denial(subject: impl Into<String>) -> WorthQueryPrimaryGraphInstallationDenial {

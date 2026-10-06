@@ -3,14 +3,14 @@
 /// The choice is explicit because application topology determines the bounded
 /// validation and storage policy needed by its governed transactions.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum WorthQueryInMemoryApplicationProfile {
+pub enum WorthQueryApplicationProfile {
     GeneralPurpose,
     GeometryKernel,
     /// Finite 10k-node workflow publication over GeometryKernel policies.
     WorkflowScale,
 }
 
-impl WorthQueryInMemoryApplicationProfile {
+impl WorthQueryApplicationProfile {
     pub(super) fn publication_override(
         self,
         maximum_records: Option<std::num::NonZeroUsize>,
@@ -72,8 +72,8 @@ mod tests {
     #[test]
     fn explicit_record_limit_changes_no_other_profile_policy() {
         for profile in [
-            WorthQueryInMemoryApplicationProfile::GeneralPurpose,
-            WorthQueryInMemoryApplicationProfile::GeometryKernel,
+            WorthQueryApplicationProfile::GeneralPurpose,
+            WorthQueryApplicationProfile::GeometryKernel,
         ] {
             assert_eq!(profile.publication_override(None), None, "omission must preserve profile-default provenance, not install a numerically equal override");
             let default = worth_relational::facade::runtime::RelationalRuntimeConfig::resolved(
@@ -95,7 +95,7 @@ mod tests {
 
     #[test]
     fn workflow_scale_has_finite_publication_and_integrity_envelopes() {
-        let profile = WorthQueryInMemoryApplicationProfile::WorkflowScale;
+        let profile = WorthQueryApplicationProfile::WorkflowScale;
         let publication = profile.publication_override(None).unwrap();
         assert_eq!(publication.max_patch_records_per_commit, 240_000);
         assert_eq!(publication.max_transaction_footprint_loci, 240_000);

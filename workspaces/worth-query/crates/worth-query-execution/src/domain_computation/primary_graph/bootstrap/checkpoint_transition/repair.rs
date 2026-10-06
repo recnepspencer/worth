@@ -1,6 +1,6 @@
 //! Linear repair custody for an unpublished, performed installation.
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCheckpoint, WorthQueryPrimaryGraphIntegrationHandle,
+    ApplicationHome, WorthQueryApplicationCheckpoint, WorthQueryPrimaryGraphIntegrationHandle,
     WorthQueryPrimaryGraphPublication,
 };
 use worth_relational::facade::durability::{
@@ -15,25 +15,25 @@ enum Settlement {
 /// A performed transition awaiting native settlement or checkpoint capture.
 /// This capsule never exposes a World, including in its acknowledged phase.
 /// Consuming repair never reruns authoring or republishes. On acknowledgment it
-/// captures a target checkpoint for ordinary restore; a refusal returns this
+/// captures the successor image into a home an ordinary open resumes; a refusal returns this
 /// same capsule, including the exact native repair custody, for another attempt.
 #[must_use = "repair the performed native transition or explicitly discard this unpublished installation"]
-pub struct WorthQueryCheckpointTransitionRecovery {
+pub struct WorthQueryOpenAdoptionRecovery {
     graph: WorthQueryPrimaryGraphIntegrationHandle,
     publication: WorthQueryPrimaryGraphPublication,
     settlement: Option<Settlement>,
     detail: String,
 }
 
-impl std::fmt::Debug for WorthQueryCheckpointTransitionRecovery {
+impl std::fmt::Debug for WorthQueryOpenAdoptionRecovery {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("WorthQueryCheckpointTransitionRecovery")
+        f.debug_struct("WorthQueryOpenAdoptionRecovery")
             .field("detail", &self.detail)
             .finish_non_exhaustive()
     }
 }
 
-impl WorthQueryCheckpointTransitionRecovery {
+impl WorthQueryOpenAdoptionRecovery {
     pub(super) fn acknowledged(
         graph: WorthQueryPrimaryGraphIntegrationHandle,
         publication: WorthQueryPrimaryGraphPublication,
@@ -73,7 +73,7 @@ impl WorthQueryCheckpointTransitionRecovery {
         &self.detail
     }
 
-    pub fn repair_to_checkpoint(mut self) -> Result<WorthQueryApplicationCheckpoint, Self> {
+    pub fn repair(mut self) -> Result<ApplicationHome, Self> {
         match self
             .settlement
             .take()
@@ -104,9 +104,9 @@ impl WorthQueryCheckpointTransitionRecovery {
             .graph
             .with_runtime(|runtime| runtime.durability_authority().native_checkpoint())
         {
-            Ok(native) => {
-                Ok(WorthQueryApplicationCheckpoint::encode(native, &self.publication, &[]).0)
-            }
+            Ok(native) => Ok(ApplicationHome::holding(
+                WorthQueryApplicationCheckpoint::encode(native, &self.publication, &[]).0,
+            )),
             Err(error) => {
                 self.detail = format!("{error:?}");
                 Err(self)

@@ -15,7 +15,7 @@ use worth_query_host::facade::declaration::application_program::ApplicationWorkf
 use worth_query_host::facade::{
     application_installation::{
         in_memory_rostered_program, in_memory_rostered_program_with_authorization_time_source,
-        WorthQueryApplicationProgramRoster, WorthQueryInMemoryApplicationLimits,
+        WorthQueryApplicationLimits, WorthQueryApplicationProgramRoster,
     },
     domain::{
         WorthQueryApplicationWorkflowResourceCeiling,
@@ -184,10 +184,10 @@ fn payment_workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling 
     .expect("approved-payment workflow resources are nonzero")
 }
 
-pub(crate) fn bank_application_limits() -> WorthQueryInMemoryApplicationLimits {
+pub(crate) fn bank_application_limits() -> WorthQueryApplicationLimits {
     let queries = WorthQueryApplicationQueryResourceProfile::bounded(32_768, 262_144, 32_768, 64)
         .expect("bank application-query resource profile is statically non-zero");
-    WorthQueryInMemoryApplicationLimits::new(
+    WorthQueryApplicationLimits::new(
         super::product_world_resources::bank_product_world_resources(),
         WorthQueryApplicationCandidateResourceProfile::bounded(4_096, 2 * 1_024 * 1_024, 1_048_576)
             .expect("bank application candidate limits are statically non-zero"),

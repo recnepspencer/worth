@@ -870,6 +870,12 @@ reexport = "worth_query_publication::facade::application_entry"
 owner_source = "workspaces/worth-query/crates/worth-query-publication/src/application_entry/mod.rs"
 
 [[rule_contracts.query_audience.facade_surfaces]]
+label = "worth-query-host::application_installation"
+source = "workspaces/worth-query/crates/worth-query-host/src/facade.rs"
+reexport = "worth_query_execution::facade::application_installation"
+owner_source = "workspaces/worth-query/crates/worth-query-execution/src/facade/application_installation.rs"
+
+[[rule_contracts.query_audience.facade_surfaces]]
 label = "worth-query-host::provisional_aftermath"
 source = "workspaces/worth-query/crates/worth-query-host/src/facade.rs"
 reexport = "worth_query_execution::facade::provisional_aftermath"

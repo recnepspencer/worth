@@ -6,7 +6,7 @@ use worth_query_host::facade::{
         WorthQueryApplicationConditionalProducerAccess, WorthQueryApplicationContribution,
         WorthQueryApplicationContributionContracts, WorthQueryApplicationContributionSetup,
     },
-    application_installation::{self, WorthQueryInMemoryApplicationLimits},
+    application_installation::{self, WorthQueryApplicationLimits},
     declaration::{
         application_program::{
             ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
@@ -252,7 +252,7 @@ pub(super) fn publishes_delivers_and_executes() {
         validated_program(),
         TemporalHostSchema::declaration().unwrap(),
         (configuration,),
-        WorthQueryInMemoryApplicationLimits::new(
+        WorthQueryApplicationLimits::new(
             product_world_resources(1_024),
             runtime::WorthQueryApplicationCandidateResourceProfile::bounded(5_120, 2_048, 5_120)
                 .unwrap(),
@@ -351,7 +351,7 @@ pub(super) fn zero_route_installation_is_denied() {
             contacts,
             install_route: false,
         },),
-        WorthQueryInMemoryApplicationLimits::new(
+        WorthQueryApplicationLimits::new(
             product_world_resources(1_024),
             runtime::WorthQueryApplicationCandidateResourceProfile::bounded(5_120, 2_048, 5_120)
                 .unwrap(),
@@ -367,7 +367,7 @@ pub(super) fn zero_route_installation_is_denied() {
         |_, _| Ok(()),
     );
     match result {
-        Err(application_installation::WorthQueryInMemoryApplicationDenial::ConditionalPublication(
+        Err(application_installation::WorthQueryApplicationOpenDenial::ConditionalPublication(
             denial,
         )) => assert_eq!(
             denial.kind(),
@@ -385,6 +385,8 @@ use source_change::change_input;
 mod checkpoint;
 #[path = "contribution_installation/checkpoint_transition.rs"]
 mod checkpoint_transition;
+#[path = "contribution_installation/home_opening.rs"]
+mod home_opening;
 #[path = "contribution_installation/publication_limit.rs"]
 mod publication_limit;
 pub(super) use checkpoint::{

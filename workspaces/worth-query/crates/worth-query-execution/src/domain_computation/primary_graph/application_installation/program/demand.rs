@@ -33,6 +33,7 @@ type RootConnectionRef<Schema, Root> =
     <Root as ApplicationOutputGraphShape<Schema>>::RootConnection;
 type RootConnection<Schema, Root> =
     <RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::Binding;
+/// The demand type of a program root's required output connection.
 pub type WorthQueryProgramRootDemand<Schema, Root> =
     <RootConnection<Schema, Root> as WorthQueryApplicationRequiredOutputConnection<Schema>>::Demand;
 type ConnectionBinding<Schema, Connection> =
@@ -70,6 +71,7 @@ where
     marker: std::marker::PhantomData<fn() -> (Schema, Program, Demand)>,
 }
 
+/// One advance of a program output demand: still pending, or settled.
 pub enum WorthQueryProgramOutputAdvance<Schema, Program, Demand>
 where
     Schema: ApplicationSchema,

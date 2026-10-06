@@ -115,6 +115,7 @@ where
     }
 }
 
+/// Why a workflow vocabulary could not be bound to a program runtime.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowRuntimeBindingDenial {
     ForeignSchema,

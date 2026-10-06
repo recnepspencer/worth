@@ -7,6 +7,7 @@ mod application_checkpoint;
 mod application_contribution;
 pub(crate) mod application_discovery;
 mod application_entry;
+mod application_home;
 pub(crate) mod application_installation;
 pub(crate) mod application_invariant;
 mod application_invariant_preparation;

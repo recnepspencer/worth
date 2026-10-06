@@ -46,6 +46,7 @@ pub struct WorthQuerySelectedProgramOwner<'runtime, Schema> {
     root_graph_types: &'runtime [TypeId],
 }
 
+/// Why the installed program owner of a selected branch could not be resolved.
 #[derive(Debug)]
 pub enum WorthQuerySelectedProgramOwnerDenial {
     ProductSelection(

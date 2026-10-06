@@ -11,6 +11,7 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationProgram;
 use super::supported_program::{
     WorthQuerySupportedProgramHandle, WorthQuerySupportedProgramRecord,
 };
+use crate::domain_computation::primary_graph::application_installation::WorthQueryHomeOpening;
 use crate::domain_computation::primary_graph::program_occurrence::WorthQueryPresentedProgram;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
@@ -28,11 +29,17 @@ pub struct WorthQueryProgramApplicationRuntime<Schema, Program> {
     pub(in crate::domain_computation::primary_graph) action_bindings: Box<[TypeId]>,
     pub(in crate::domain_computation::primary_graph) supported:
         Box<[WorthQuerySupportedProgramRecord]>,
+    pub(in crate::domain_computation::primary_graph) opening: WorthQueryHomeOpening,
 }
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
     pub const fn runtime(&self) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         &self.runtime
+    }
+
+    /// How this runtime's home started: empty, resumed, or adopted.
+    pub const fn opening(&self) -> &WorthQueryHomeOpening {
+        &self.opening
     }
 
     pub const fn installed_program(

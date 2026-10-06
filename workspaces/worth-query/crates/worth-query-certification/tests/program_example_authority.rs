@@ -17,7 +17,7 @@ use worth_query_host::facade::{
     application_entry::{
         WorthQueryApplicationRequestExt, WorthQueryApplicationRequestMutationDenial,
     },
-    application_installation::{self, WorthQueryInMemoryApplicationDenial},
+    application_installation::{self, WorthQueryApplicationOpenDenial},
     declaration::application_operation::ApplicationMutationBinding,
     declaration::application_program::{
         ApplicationFeature, ApplicationFeatureInputLeaf, ApplicationFeatureSpec,
@@ -249,7 +249,7 @@ fn installed_conditional_requires_its_declared_program_action() {
     .expect("installation must reject the missing conditional action");
     assert!(matches!(
         denial,
-        WorthQueryInMemoryApplicationDenial::ConditionalProgramMismatch
+        WorthQueryApplicationOpenDenial::ConditionalProgramMismatch
     ));
 }
 
@@ -279,7 +279,7 @@ fn installed_conditional_rejects_a_client_action_for_its_operation() {
     .expect("the client action must not share the conditional operation");
     assert!(matches!(
         denial,
-        WorthQueryInMemoryApplicationDenial::ConditionalProgramMismatch
+        WorthQueryApplicationOpenDenial::ConditionalProgramMismatch
     ));
 }
 

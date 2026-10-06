@@ -138,7 +138,7 @@ let host = in_memory_rostered_program(
     limits,
     |bootstrap, installed_schema| Ok(()),                   // initial state
 )?;                // Result<WorthQueryProgramApplicationRuntime<OrderSchema, OrdersV1>,
-                   //        WorthQueryInMemoryApplicationDenial>
+                   //        WorthQueryApplicationOpenDenial>
 ```
 
 - The initial program is the one the host activates. Every other rostered

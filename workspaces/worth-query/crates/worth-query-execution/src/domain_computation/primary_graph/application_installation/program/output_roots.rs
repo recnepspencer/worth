@@ -11,6 +11,7 @@ type RootConnectionRef<Schema, Root> =
 type RootConnection<Schema, Root> =
     <RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::Binding;
 
+/// The required output bindings a program's root graph contributes.
 pub trait WorthQueryApplicationProgramRoots<Schema>
 where
     Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,

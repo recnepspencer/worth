@@ -9,9 +9,9 @@ use worth_query_host::facade::application_contribution::{
     WorthQueryApplicationContribution, WorthQueryApplicationContributionSetup,
 };
 use worth_query_host::facade::application_installation::{
-    in_memory_rostered_program, WorthQueryApplicationProgramRoster,
-    WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
-    WorthQueryInMemoryApplicationProfile, WorthQueryProgramApplicationRuntime,
+    in_memory_rostered_program, WorthQueryApplicationLimits, WorthQueryApplicationOpenDenial,
+    WorthQueryApplicationProfile, WorthQueryApplicationProgramRoster,
+    WorthQueryProgramApplicationRuntime,
 };
 use worth_query_host::facade::declaration::application_program::{
     ApplicationProgramDefinition, ApplicationProgramOutputsShape, ValidatedApplicationProgram,
@@ -132,7 +132,7 @@ pub fn publish_on_first_program() -> DocumentRetentionRuntime<RetentionProgramP0
 pub fn publish_on_first_program_for_workflow_scale() -> DocumentRetentionRuntime<RetentionProgramP0>
 {
     publish_on_first_program_with_limits(
-        WorthQueryInMemoryApplicationLimits::new(
+        WorthQueryApplicationLimits::new(
             world_resources(1_024, 256 * 1024 * 1024, 2_048),
             runtime::WorthQueryApplicationCandidateResourceProfile::bounded(
                 200_000,
@@ -146,12 +146,12 @@ pub fn publish_on_first_program_for_workflow_scale() -> DocumentRetentionRuntime
                 .expect("finite workflow-scale query resources"),
             primary_graph::SignalConditionalEvaluationBudget::development(),
         )
-        .with_profile(WorthQueryInMemoryApplicationProfile::WorkflowScale),
+        .with_profile(WorthQueryApplicationProfile::WorkflowScale),
     )
 }
 
 fn publish_on_first_program_with_limits(
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
 ) -> DocumentRetentionRuntime<RetentionProgramP0> {
     publish_with_limits(
         validated_first_program(),
@@ -195,7 +195,7 @@ pub fn publish_on_first_resource_program() -> DocumentRetentionRuntime<ResourceR
 
 /// Attempts a host that rosters P0 alone against the two-rule catalog.
 pub fn publish_first_program_alone(
-) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryInMemoryApplicationDenial> {
+) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryApplicationOpenDenial> {
     publish(
         validated_first_program(),
         WorthQueryApplicationProgramRoster::new(),
@@ -204,7 +204,7 @@ pub fn publish_first_program_alone(
 
 /// Attempts a host that rosters a program declaring an uninstalled rule.
 pub fn publish_with_foreign_rule_rostered(
-) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryInMemoryApplicationDenial> {
+) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryApplicationOpenDenial> {
     publish(
         validated_first_program(),
         WorthQueryApplicationProgramRoster::new()
@@ -219,7 +219,7 @@ pub fn publish_with_foreign_rule_rostered(
 pub fn publish<Initial>(
     initial: ValidatedApplicationProgram<DocumentRetentionSchema, Initial>,
     roster: WorthQueryApplicationProgramRoster<'_, DocumentRetentionSchema>,
-) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryInMemoryApplicationDenial>
+) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryApplicationOpenDenial>
 where
     Initial: ApplicationProgramDefinition<
             DocumentRetentionSchema,
@@ -237,8 +237,8 @@ where
 fn publish_with_limits<Initial>(
     initial: ValidatedApplicationProgram<DocumentRetentionSchema, Initial>,
     roster: WorthQueryApplicationProgramRoster<'_, DocumentRetentionSchema>,
-    limits: WorthQueryInMemoryApplicationLimits,
-) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryInMemoryApplicationDenial>
+    limits: WorthQueryApplicationLimits,
+) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryApplicationOpenDenial>
 where
     Initial: ApplicationProgramDefinition<
             DocumentRetentionSchema,
@@ -329,10 +329,10 @@ fn seed_document(
         .expect("the related document must seed");
 }
 
-pub fn host_limits() -> WorthQueryInMemoryApplicationLimits {
+pub fn host_limits() -> WorthQueryApplicationLimits {
     // Installation admits the binding's maximum publication shape even though
     // the ordinary Document handler requests its narrow candidate at execution.
-    WorthQueryInMemoryApplicationLimits::new(
+    WorthQueryApplicationLimits::new(
         world_resources(256, 4 * 1024 * 1024, 256),
         runtime::WorthQueryApplicationCandidateResourceProfile::bounded(
             200_000,

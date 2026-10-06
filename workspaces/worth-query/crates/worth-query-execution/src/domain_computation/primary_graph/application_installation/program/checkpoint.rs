@@ -5,15 +5,16 @@ use worth_query_declaration::facade::{
     application_schema::{ApplicationSchemaComposition, ApplicationSchemaDeclaration},
 };
 
-use crate::domain_computation::primary_graph::WorthQueryApplicationContributionTuple;
+use crate::domain_computation::primary_graph::{
+    ApplicationHome, WorthQueryApplicationContributionTuple,
+};
 
 use super::{
-    construction::in_memory_program_with_optional_authorization_time_source,
     WorthQueryApplicationProgramRoots, WorthQueryApplicationProgramRoster,
     WorthQueryProgramApplicationRuntime,
 };
 use crate::domain_computation::primary_graph::application_installation::{
-    WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
+    WorthQueryApplicationLimits, WorthQueryApplicationOpenDenial,
 };
 
 /// Restores a program runtime from one Query-issued committed-world checkpoint.
@@ -21,13 +22,16 @@ use crate::domain_computation::primary_graph::application_installation::{
 /// The fresh installation still validates declarations, contributions and the
 /// program. Initial-state authoring is intentionally absent: restored Query
 /// authority is the only model source for this path.
+///
+/// Retained, with the rostered form below, until every caller reopens a home
+/// through [`program`](super::program).
 pub fn in_memory_program_from_checkpoint<Schema, Program>(
     program: ValidatedApplicationProgram<Schema, Program>,
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     checkpoint: crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint,
-) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryInMemoryApplicationDenial>
+) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryApplicationOpenDenial>
 where
     Schema: ApplicationSchemaComposition,
     Program: ApplicationProgramDefinition<Schema>,
@@ -54,9 +58,9 @@ pub fn in_memory_rostered_program_from_checkpoint<Schema, Program>(
     roster: WorthQueryApplicationProgramRoster<'_, Schema>,
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     checkpoint: crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint,
-) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryInMemoryApplicationDenial>
+) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryApplicationOpenDenial>
 where
     Schema: ApplicationSchemaComposition,
     Program: ApplicationProgramDefinition<Schema>,
@@ -64,15 +68,8 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
     Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
-    in_memory_program_with_optional_authorization_time_source(
-        program,
-        roster,
-        declaration,
-        configuration,
-        limits,
-        |_graph, _installed| Ok(()),
-        None,
-        Some(checkpoint),
-        None,
-    )
+    super::program(program, declaration, configuration, limits)
+        .roster(roster)
+        .open(ApplicationHome::holding(checkpoint))
+        .map_err(|refusal| refusal.denial)
 }

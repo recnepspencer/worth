@@ -235,8 +235,7 @@ fn checkpoint_bytes_are_denied(corrupted_bytes: Vec<u8>) {
         Err(denial) => denial,
         Ok(_) => panic!("corrupt checkpoint bytes cannot publish an application"),
     };
-    let application_installation::WorthQueryInMemoryApplicationDenial::Graph(denial) = denial
-    else {
+    let application_installation::WorthQueryApplicationOpenDenial::Graph(denial) = denial else {
         panic!("corrupt checkpoint must be denied during graph recovery: {denial:?}")
     };
     assert_eq!(
@@ -245,8 +244,8 @@ fn checkpoint_bytes_are_denied(corrupted_bytes: Vec<u8>) {
     );
 }
 
-pub(super) fn checkpoint_limits() -> WorthQueryInMemoryApplicationLimits {
-    WorthQueryInMemoryApplicationLimits::new(
+pub(super) fn checkpoint_limits() -> WorthQueryApplicationLimits {
+    WorthQueryApplicationLimits::new(
         product_world_resources(1_024),
         runtime::WorthQueryApplicationCandidateResourceProfile::bounded(5_120, 2_048, 5_120)
             .unwrap(),

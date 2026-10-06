@@ -12,7 +12,7 @@ use worth_query_host::facade::{application_installation as installation, primary
 #[test]
 fn checkpoint_transition_target_rule_rejects_retained_predecessor_only_value() {
     let host = publish_on_first_program();
-    let predecessor = installation::WorthQueryCheckpointProgramPredecessor::new(
+    let predecessor = installation::WorthQueryOpenAdoptionPredecessor::new(
         &host.installed_program().revision().to_string(),
     )
     .unwrap();
@@ -35,7 +35,7 @@ fn checkpoint_transition_target_rule_rejects_retained_predecessor_only_value() {
         host_limits(),
         source.clone(),
         predecessor,
-        installation::WorthQueryCheckpointTransitionResources::bounded(512, 32, 8192).unwrap(),
+        installation::WorthQueryOpenAdoptionResources::bounded(512, 32, 8192).unwrap(),
         |writer, _| {
             authored = true;
             writer.bind_entity(
@@ -76,7 +76,7 @@ fn checkpoint_transition_target_rule_rejects_retained_predecessor_only_value() {
 #[test]
 fn checkpoint_transition_target_rule_accepts_complete_retained_and_created_state() {
     let host = publish_on_first_program();
-    let predecessor = installation::WorthQueryCheckpointProgramPredecessor::new(
+    let predecessor = installation::WorthQueryOpenAdoptionPredecessor::new(
         &host.installed_program().revision().to_string(),
     )
     .unwrap();
@@ -90,7 +90,7 @@ fn checkpoint_transition_target_rule_accepts_complete_retained_and_created_state
         host_limits(),
         source,
         predecessor,
-        installation::WorthQueryCheckpointTransitionResources::bounded(512, 32, 8192).unwrap(),
+        installation::WorthQueryOpenAdoptionResources::bounded(512, 32, 8192).unwrap(),
         |writer, _| {
             writer.bind_entity(
                 primary_graph::WorthQueryApplicationEntitySeed::new(

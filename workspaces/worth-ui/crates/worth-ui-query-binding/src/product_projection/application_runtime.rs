@@ -1,6 +1,6 @@
 use worth_query_host::facade::{
     application_installation::{
-        in_memory_program, WorthQueryInMemoryApplicationLimits, WorthQueryProgramApplicationRuntime,
+        in_memory_program, WorthQueryApplicationLimits, WorthQueryProgramApplicationRuntime,
     },
     declaration::authentication::{
         WorthQueryExternalPrincipalIdentity, WorthQueryPrincipalMappingStatus,
@@ -87,7 +87,7 @@ pub(super) fn external_identity() -> WorthQueryExternalPrincipalIdentity {
         .expect("the local UI source identity is canonical")
 }
 
-fn resource_limits() -> WorthQueryInMemoryApplicationLimits {
+fn resource_limits() -> WorthQueryApplicationLimits {
     let world = WorthQueryProductWorldResources::install(
         RuntimeWorldBudgetInstallation {
             branches: RuntimeWorldBranchBudgetInstallation {
@@ -127,7 +127,7 @@ fn resource_limits() -> WorthQueryInMemoryApplicationLimits {
         .expect("the Query invalidation installation is valid"),
     )
     .expect("the UI product resources are statically valid");
-    WorthQueryInMemoryApplicationLimits::new(
+    WorthQueryApplicationLimits::new(
         world,
         WorthQueryApplicationCandidateResourceProfile::bounded(512, 131_072, 4_096)
             .expect("the UI candidate limits are statically non-zero"),

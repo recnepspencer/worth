@@ -6,7 +6,7 @@ use std::sync::{
     Arc,
 };
 use worth_query_host::facade::{
-    application_installation::{self as installation, WorthQueryInMemoryApplicationLimits},
+    application_installation::{self as installation, WorthQueryApplicationLimits},
     declaration::authentication::WorthQueryPrincipalMappingStatus,
     domain, primary_graph, runtime,
 };
@@ -38,7 +38,7 @@ pub(super) fn assert_program_cannot_omit_an_installed_rule() {
         },
         Arc::new(AtomicUsize::new(0)),
     );
-    let limits = WorthQueryInMemoryApplicationLimits::new(
+    let limits = WorthQueryApplicationLimits::new(
         resources::world_resources(),
         runtime::WorthQueryApplicationCandidateResourceProfile::bounded(4096, 8192, 4096).unwrap(),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
@@ -64,7 +64,7 @@ pub(super) fn assert_program_cannot_omit_an_installed_rule() {
         },
     );
     let denial = match result {
-        Err(installation::WorthQueryInMemoryApplicationDenial::Program(denial)) => denial,
+        Err(installation::WorthQueryApplicationOpenDenial::Program(denial)) => denial,
         Err(other) => panic!("expected omitted-rule denial, received {other}"),
         Ok(_) => panic!("a program that omits an installed rule was accepted"),
     };
@@ -85,7 +85,7 @@ pub(super) fn assert_program_cannot_omit_a_required_binding() {
         },
         Arc::new(AtomicUsize::new(0)),
     );
-    let limits = WorthQueryInMemoryApplicationLimits::new(
+    let limits = WorthQueryApplicationLimits::new(
         resources::world_resources(),
         runtime::WorthQueryApplicationCandidateResourceProfile::bounded(4096, 8192, 4096).unwrap(),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
@@ -110,7 +110,7 @@ pub(super) fn assert_program_cannot_omit_a_required_binding() {
         },
     );
     let denial = match result {
-        Err(installation::WorthQueryInMemoryApplicationDenial::Program(denial)) => denial,
+        Err(installation::WorthQueryApplicationOpenDenial::Program(denial)) => denial,
         Err(other) => panic!("expected omitted-binding denial, received {other}"),
         Ok(_) => panic!("a program that omits a required installed binding was accepted"),
     };
@@ -133,7 +133,7 @@ pub(super) fn assert_required_output_source_cannot_be_an_action() {
         },
         Arc::new(AtomicUsize::new(0)),
     );
-    let limits = WorthQueryInMemoryApplicationLimits::new(
+    let limits = WorthQueryApplicationLimits::new(
         resources::world_resources(),
         runtime::WorthQueryApplicationCandidateResourceProfile::bounded(4096, 8192, 4096).unwrap(),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
@@ -243,7 +243,7 @@ pub(super) fn assert_repeated_optional_member_correspondence(world: &ConsumerWor
 pub(super) fn install_with_candidate_bytes(
     foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
     candidate_bytes: u64,
-) -> Result<ConsumerWorld, installation::WorthQueryInMemoryApplicationDenial> {
+) -> Result<ConsumerWorld, installation::WorthQueryApplicationOpenDenial> {
     install_with_resource_bytes(foreign, candidate_bytes, 4096)
 }
 
@@ -259,7 +259,7 @@ fn install_with_resource_bytes(
     foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
     candidate_bytes: u64,
     query_bytes: usize,
-) -> Result<ConsumerWorld, installation::WorthQueryInMemoryApplicationDenial> {
+) -> Result<ConsumerWorld, installation::WorthQueryApplicationOpenDenial> {
     let topology_calls = Arc::new(AtomicUsize::new(0));
     let parameter_calls = Arc::new(AtomicUsize::new(0));
     let invariant_calls = Arc::new(AtomicUsize::new(0));
@@ -275,7 +275,7 @@ fn install_with_resource_bytes(
         },
         Arc::clone(&parameter_calls),
     );
-    let limits = WorthQueryInMemoryApplicationLimits::new(
+    let limits = WorthQueryApplicationLimits::new(
         resources::world_resources(),
         runtime::WorthQueryApplicationCandidateResourceProfile::bounded(
             4096,

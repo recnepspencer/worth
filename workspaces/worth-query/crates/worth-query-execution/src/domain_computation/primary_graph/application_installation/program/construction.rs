@@ -9,32 +9,37 @@ use worth_query_installation::facade::{
     WorthQueryInstalledApplicationSchema, WorthQueryProgramSupportAdmission,
 };
 
+use super::super::home_opening::WorthQueryHomeOpening;
+use super::super::open_core::open_with_contributions;
+use super::super::open_plan::{HomeStart, OpenEntry, OpenPlan};
+use super::super::open_refusal::OpenFailure;
 use super::super::program_admission::WorthQueryAdmittedProgramSupport;
-use super::super::{
-    in_memory_with_contributions, WorthQueryInMemoryApplicationDenial,
-    WorthQueryInMemoryApplicationLimits,
-};
+use super::super::{WorthQueryApplicationLimits, WorthQueryApplicationOpenDenial};
 use super::supported_program::WorthQuerySupportedProgramRecord;
 use super::{
     WorthQueryApplicationProgramRoots, WorthQueryApplicationProgramRoster,
     WorthQueryProgramApplicationRuntime,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationContributionTuple, WorthQueryPrimaryGraphApplicationRuntime,
-    WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
+    ApplicationHome, WorthQueryApplicationContributionTuple,
+    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphBootstrap,
+    WorthQueryPrimaryGraphInstallationDenial,
 };
 
 /// Validates and installs program meaning before exposing its application runtime.
+///
+/// Retained, with the three constructors below, until every caller opens
+/// through [`program`](super::program).
 pub fn in_memory_program<Schema, Program>(
     program: ValidatedApplicationProgram<Schema, Program>,
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     initial_state: impl FnOnce(
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
-) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryInMemoryApplicationDenial>
+) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryApplicationOpenDenial>
 where
     Schema: ApplicationSchemaComposition,
     Program: ApplicationProgramDefinition<Schema>,
@@ -42,17 +47,10 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
     Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
-    in_memory_program_with_optional_authorization_time_source(
-        program,
-        WorthQueryApplicationProgramRoster::new(),
-        declaration,
-        configuration,
-        limits,
-        initial_state,
-        None,
-        None,
-        None,
-    )
+    super::program(program, declaration, configuration, limits)
+        .initial_state(initial_state)
+        .open(ApplicationHome::memory())
+        .map_err(|refusal| refusal.denial)
 }
 
 /// Validates and installs program meaning with one host-owned trusted-time
@@ -61,13 +59,13 @@ pub fn in_memory_program_with_authorization_time_source<Schema, Program>(
     program: ValidatedApplicationProgram<Schema, Program>,
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     initial_state: impl FnOnce(
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
     source: impl crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource,
-) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryInMemoryApplicationDenial>
+) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryApplicationOpenDenial>
 where
     Schema: ApplicationSchemaComposition,
     Program: ApplicationProgramDefinition<Schema>,
@@ -75,17 +73,11 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
     Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
-    in_memory_program_with_optional_authorization_time_source(
-        program,
-        WorthQueryApplicationProgramRoster::new(),
-        declaration,
-        configuration,
-        limits,
-        initial_state,
-        Some(Box::new(source)),
-        None,
-        None,
-    )
+    super::program(program, declaration, configuration, limits)
+        .authorization_time_source(source)
+        .initial_state(initial_state)
+        .open(ApplicationHome::memory())
+        .map_err(|refusal| refusal.denial)
 }
 
 /// Validates and installs one host's complete program roster before exposing
@@ -101,12 +93,12 @@ pub fn in_memory_rostered_program<Schema, Program>(
     roster: WorthQueryApplicationProgramRoster<'_, Schema>,
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     initial_state: impl FnOnce(
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
-) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryInMemoryApplicationDenial>
+) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryApplicationOpenDenial>
 where
     Schema: ApplicationSchemaComposition,
     Program: ApplicationProgramDefinition<Schema> + 'static,
@@ -114,17 +106,11 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
     Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
-    in_memory_program_with_optional_authorization_time_source(
-        program,
-        roster,
-        declaration,
-        configuration,
-        limits,
-        initial_state,
-        None,
-        None,
-        None,
-    )
+    super::program(program, declaration, configuration, limits)
+        .roster(roster)
+        .initial_state(initial_state)
+        .open(ApplicationHome::memory())
+        .map_err(|refusal| refusal.denial)
 }
 
 /// Installs a complete program roster with one host-owned trusted-time source
@@ -134,13 +120,13 @@ pub fn in_memory_rostered_program_with_authorization_time_source<Schema, Program
     roster: WorthQueryApplicationProgramRoster<'_, Schema>,
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     initial_state: impl FnOnce(
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
     source: impl crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource,
-) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryInMemoryApplicationDenial>
+) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryApplicationOpenDenial>
 where
     Schema: ApplicationSchemaComposition,
     Program: ApplicationProgramDefinition<Schema> + 'static,
@@ -148,35 +134,27 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
     Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
-    in_memory_program_with_optional_authorization_time_source(
-        program,
-        roster,
-        declaration,
-        configuration,
-        limits,
-        initial_state,
-        Some(Box::new(source)),
-        None,
-        None,
-    )
+    super::program(program, declaration, configuration, limits)
+        .roster(roster)
+        .authorization_time_source(source)
+        .initial_state(initial_state)
+        .open(ApplicationHome::memory())
+        .map_err(|refusal| refusal.denial)
 }
 
-pub(super) fn in_memory_program_with_optional_authorization_time_source<Schema, Program>(
+/// Opens one program entry: the shared installation path, then the program
+/// bound to the runtime it published.
+pub(super) fn open_program<Schema, Program>(
     program: ValidatedApplicationProgram<Schema, Program>,
     roster: WorthQueryApplicationProgramRoster<'_, Schema>,
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
-    limits: WorthQueryInMemoryApplicationLimits,
-    initial_state: impl FnOnce(
-        &mut WorthQueryPrimaryGraphBootstrap<Schema>,
-        &WorthQueryInstalledApplicationSchema<Schema>,
-    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
+    limits: WorthQueryApplicationLimits,
+    start: HomeStart<'_, Schema>,
     authorization_time_source: Option<
         Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
     >,
-    checkpoint: Option<crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint>,
-    checkpoint_transition: Option<crate::domain_computation::primary_graph::bootstrap::checkpoint_transition::CheckpointTransition<'_, Schema>>,
-) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryInMemoryApplicationDenial>
+) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, OpenFailure>
 where
     Schema: ApplicationSchemaComposition,
     Program: ApplicationProgramDefinition<Schema> + 'static,
@@ -188,27 +166,49 @@ where
         WorthQueryInstalledApplicationProgram<Schema, Program>,
         Vec<WorthQuerySupportedProgramRecord>,
     )> = None;
-    let mut runtime = in_memory_with_contributions::<Schema, Program::Contributions>(
+    let (runtime, started) = open_with_contributions::<Schema, Program::Contributions>(
         declaration,
         configuration,
         limits,
-        initial_state,
-        authorization_time_source,
-        Some(Box::new(|installed_schema| {
-            let (support, installed, supported) =
-                admit_program_roster(program, roster, installed_schema)?;
-            admitted = Some((installed, supported));
-            Ok(support)
-        })),
-        checkpoint,
-        checkpoint_transition,
+        OpenPlan {
+            entry: OpenEntry::Program(Box::new(|installed_schema| {
+                let (support, installed, supported) =
+                    admit_program_roster(program, roster, installed_schema)?;
+                admitted = Some((installed, supported));
+                Ok(support)
+            })),
+            start,
+            authorization_time_source,
+        },
     )?;
-    let (installed, supported) =
-        admitted.ok_or(WorthQueryInMemoryApplicationDenial::ProgramAdmissionIncomplete)?;
+    // The home already started. A refusal from here returns the successor
+    // once an adoption was acknowledged.
+    let bound = match (admitted, started.program_opening()) {
+        (Some((installed, supported)), Some(opening)) => {
+            bind_program(runtime, installed, supported, opening)
+        }
+        _ => Err(WorthQueryApplicationOpenDenial::ProgramAdmissionIncomplete),
+    };
+    bound.map_err(|denial| started.refused(denial))
+}
+
+/// Validates the installed program against the runtime that will carry it.
+fn bind_program<Schema, Program>(
+    mut runtime: WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    installed: WorthQueryInstalledApplicationProgram<Schema, Program>,
+    supported: Vec<WorthQuerySupportedProgramRecord>,
+    opening: WorthQueryHomeOpening,
+) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryApplicationOpenDenial>
+where
+    Schema: ApplicationSchemaComposition,
+    Program: ApplicationProgramDefinition<Schema> + 'static,
+    Program::Outputs:
+        ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
+{
     runtime
         .mutation_handlers
         .validate_managed_computations(installed.features())
-        .map_err(WorthQueryInMemoryApplicationDenial::Contributions)?;
+        .map_err(WorthQueryApplicationOpenDenial::Contributions)?;
     super::conditional::validate_conditional_actions(
         installed.actions(),
         runtime.installed_conditionals.operation_types(),
@@ -254,6 +254,7 @@ where
         output_source_bindings: output_source_bindings.into_iter().collect(),
         action_bindings: action_bindings.into_iter().collect(),
         supported: supported.into_boxed_slice(),
+        opening,
     })
 }
 
@@ -271,7 +272,7 @@ fn admit_program_roster<Schema, Program>(
         WorthQueryInstalledApplicationProgram<Schema, Program>,
         Vec<WorthQuerySupportedProgramRecord>,
     ),
-    WorthQueryInMemoryApplicationDenial,
+    WorthQueryApplicationOpenDenial,
 >
 where
     Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
@@ -307,7 +308,7 @@ fn require_rostered_binding_membership<Schema, Program>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     installed: &WorthQueryInstalledApplicationProgram<Schema, Program>,
     output_source_bindings: &std::collections::BTreeSet<std::any::TypeId>,
-) -> Result<(), WorthQueryInMemoryApplicationDenial>
+) -> Result<(), WorthQueryApplicationOpenDenial>
 where
     Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
 {
@@ -320,11 +321,11 @@ where
         runtime.installed_schema(),
         &answered,
     )
-    .map_err(WorthQueryInMemoryApplicationDenial::Program)
+    .map_err(WorthQueryApplicationOpenDenial::Program)
 }
 
 fn program_support_denied(
     denial: worth_query_installation::facade::WorthQueryProgramSupportDenial,
-) -> WorthQueryInMemoryApplicationDenial {
-    WorthQueryInMemoryApplicationDenial::Program(denial.into())
+) -> WorthQueryApplicationOpenDenial {
+    WorthQueryApplicationOpenDenial::Program(denial.into())
 }

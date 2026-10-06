@@ -619,7 +619,7 @@ let runtime = in_memory_program(
     program,        // ValidatedApplicationProgram<Schema, Program>
     declaration,
     configuration,  // handlers, invariants, producers, conditional nodes
-    limits,         // WorthQueryInMemoryApplicationLimits
+    limits,         // WorthQueryApplicationLimits
     initial_state,
 )?;
 ```

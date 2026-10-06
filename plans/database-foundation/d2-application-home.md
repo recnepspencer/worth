@@ -315,7 +315,7 @@ Each lands green with one implementer and one fresh reviewer. The root `Cargo.to
 `.../worth-query-certification/fixtures/consumer_entry/Cargo.toml`, BM
 `workspaces/worth-query-bank-world/Cargo.toml`, UM `workspaces/worth-ui/Cargo.toml`, BC
 `tools/boundary-check/Cargo.toml` (config `tools/boundary-check/config/road1.toml`). A step over 5
-minutes is split by target and filter first. The old constructors live from D.2.2 to D.2.6 only.
+minutes is split by target and filter first. The old constructors live from D.2.2 to D.2.7 only.
 
 - **D.2.1 Relational: retired names and in-place seal.** Its own slice: another workspace, a
   native format bump, and the preconditions for ordinal recovery and the close gate. The durable
@@ -331,9 +331,9 @@ minutes is split by target and filter first. The old constructors live from D.2.
   panic. Root workspace:
   `cargo test -p worth-relational --lib tests::branch`, then each new test by exact name.
 - **D.2.2 Open call and renames.** Home, both builders, `OpenPlan`, phased refusal, entry mismatch,
-  `opening`, close with the gate at the source owner, the gated source token, the test-gated
-  bridge source and the Relational in-place seal at close, open-time adoption, the runtime
-  authority accessor, the ordinal recovery with its regression test, the seam, the deferral type for `at(path)`. Every
+  `opening` (on the program runtime; when a recorded revision is both rostered and the adoption
+  predecessor, adoption wins), open-time adoption, the runtime authority accessor, the seam, the
+  deferral type for `at(path)`. Every
   rename in sections 1 and 2 across all users (43 files), including
   `bank-server/src/identity_runtime.rs:12`, `src/error.rs:6,37`, `tests/identity_denials.rs:8,75`.
   The eight constructors delegate to the builder. It migrates `worth-query-host/tests/
@@ -341,34 +341,44 @@ minutes is split by target and filter first. The old constructors live from D.2.
   the deleted denial arms. Add a `worth-query-host::application_installation` exports entry to
   `facades.toml` (today it lists module names only, lines 93-134). Tests: QM `-p
   worth-query-execution --lib application_home`, `--lib primary_graph::tests`; QM `-p
-  worth-query-host --test temporal_conditional_operation`; BM `-p bank-server`. The gate makes
-  `with_runtime*` fallible, so compile every renamed or gated user: QM `-p worth-query
-  --all-targets`, QM `-p worth-query-certification --all-targets`, FX `-p worth-query-consumer-root
-  -p worth-query-topology-entry --all-targets --all-features`, UM `-p worth-ui-query-binding
-  --all-targets` (`cargo check`). BC run. Bank-server gate.
-- **D.2.3 Host and execution tests.** `worth-query-host/tests/temporal_conditional_operation/
+  worth-query-host --test temporal_conditional_operation`; BM `-p bank-server`. Compile every
+  renamed user: QM `-p worth-query --all-targets`, QM `-p worth-query-certification
+  --all-targets`, FX `-p worth-query-consumer-root -p worth-query-topology-entry --all-targets
+  --all-features`, UM `-p worth-ui-query-binding --all-targets` (`cargo check`). BC run.
+  Bank-server gate.
+- **D.2.3 Close gate and ordinal recovery.** The lifecycle gate at the source owner's
+  `with_runtime*`, which becomes fallible at every call site; `close` on the three runtimes,
+  returning the home; the revocable product source token; the bridge source behind
+  `test-primary-graph-faults`; Relational's `try_seal` at close. Relational gains one public read
+  of live and retired branch names (root workspace, `-p worth-relational`), and open recovers the
+  product-branch ordinal from it; `u64::MAX` is `IdentityExhausted`. Tests: fork, delete the
+  highest branch, close, reopen, fork again gets a fresh ordinal; a deferred settlement via
+  `fail_next_durable_append_for_test` refuses close; close refuses during an in-flight admission;
+  a retained integration handle is denied with `Closed` after close; a retained invariant
+  projection snapshot's `field()` returns `Closed` after close and its drop is a no-op; a product
+  runtime installed from the source token is denied after close; the workflow runtime closes and
+  reopens. QM `-p worth-query-execution --lib application_home`, `--lib primary_graph::tests`; QM
+  `-p worth-query-host --test temporal_conditional_operation`; the D.2.2 compile list again,
+  because the gate changes every `with_runtime*` caller. BC run.
+- **D.2.4 Host and execution tests.** `worth-query-host/tests/temporal_conditional_operation/
   contribution_installation*`, `publication_limit.rs`; execution's
   `E/tests/restored_first_commit.rs`, `E/tests/retired_index_checkpoint.rs`,
   `E/tests/application_attempt/optional_output_role/indexed_selection.rs`, and the second restore
-  path `E/tests/fixture/world_installation.rs:88-118`, which moves to `open(home)`. Close tests: a
-  deferred settlement via `fail_next_durable_append_for_test` refuses close; close refuses during
-  an in-flight admission; a retained integration handle is denied with `Closed` after close; a
-  retained invariant projection snapshot's `field()` returns `Closed` after close and its drop is
-  a no-op; a product runtime installed from the source token is denied after close; the workflow
-  runtime closes and reopens. QM `-p worth-query-host --test temporal_conditional_operation`, QM
-  `-p worth-query-execution --lib primary_graph::tests`.
-- **D.2.4 Certification fixtures.** consumer_root (`application_invariant_acceptance/*`) and
+  path `E/tests/fixture/world_installation.rs:88-118`, which moves to `open(home)`. QM `-p
+  worth-query-host --test temporal_conditional_operation`, QM `-p worth-query-execution --lib
+  primary_graph::tests`.
+- **D.2.5 Certification fixtures.** consumer_root (`application_invariant_acceptance/*`) and
   topology_entry (`src/checkpoint_recovery.rs` module root, `checkpoint_recovery/*`,
   `required_chain/*`, `reuse_opt_out*`). Its checkpoint modules are gated behind its four existing
   features, so FX `-p worth-query-consumer-root`, then FX `-p worth-query-topology-entry --features
   test-invalidation-equivalence,test-output-delivery-faults,test-query-execution-observer,
   test-world-operation-control,test-durability-faults`.
-- **D.2.5 Certification tests and examples.** `tests/application_graph/` modules `adoption`,
+- **D.2.6 Certification tests and examples.** `tests/application_graph/` modules `adoption`,
   `document_retention_model/host`, `producer_predicate_checkpoint`, `restored_*`;
   `tests/program_example_authority.rs`; `examples/product_workflow_support/application.rs`. QM
   `-p worth-query-certification --test application_graph -- <module>` per module, `--test
   program_example_authority`, `--examples`.
-- **D.2.6 Bank, UI, deletion.** `bank-server/src/identity_runtime/installation.rs` moves to the
+- **D.2.7 Bank, UI, deletion.** `bank-server/src/identity_runtime/installation.rs` moves to the
   builder and the runtime authority accessor; `src/bank_projection/tests.rs`;
   `worth-ui-query-binding/src/product_projection/application_runtime.rs`. A bank reopen test (open,
   commit, close, reopen, read principals and invariants). Then delete the eight constructors and the
@@ -376,16 +386,16 @@ minutes is split by target and filter first. The old constructors live from D.2.
   worth-ui-query-binding`, QM `-p worth-query-host`, QM `-p worth-query-execution --lib`, QM `-p
   worth-query-certification --all-targets` (check), FX both packages `--all-targets
   --all-features`, BC run. Bank-server gate.
-- **D.2.7 Inventory and rows.** `WorthQueryReopenItem`, postures, `capabilities`, behavior probes
+- **D.2.8 Inventory and rows.** `WorthQueryReopenItem`, postures, `capabilities`, behavior probes
   for every row, the three postures folded, the ordinal audit (section 6). QM
   `-p worth-query-execution --lib reopen_inventory`, QM `-p worth-query-publication`, QM
   `-p worth-query-host`, BM `-p bank-server`; `facades.toml` refresh; bank-server gate.
-- **D.2.8 Docs and reconciliation.** Section 7. QM `-p worth-query-host --doc`, QM
+- **D.2.9 Docs and reconciliation.** Section 7. QM `-p worth-query-host --doc`, QM
   `-p worth-query-certification --examples`.
 
 ## 6. Bug classes and contracts
 
-- *A second installation path.* D.2.6 deletes the constructors; the `application_installation`
+- *A second installation path.* D.2.7 deletes the constructors; the `application_installation`
   snapshot entry pins its exports; the seam never builds a runtime.
 - *A reopen that silently drops state, or a partial resume reported as resumed.* One exhaustive
   row source and a behavior probe per row (`Resumed` iff `Survived`); record rows are root-scoped,
@@ -406,7 +416,7 @@ minutes is split by target and filter first. The old constructors live from D.2.
 - *An ordinal reused across reopen.* Ordinals are written into authoritative state: the
   product-branch ordinal names Relational branches, so it is recovered at open from live and
   retired names (checkpointed from D.2.1), exhausts as `IdentityExhausted` rather than wrapping,
-  and has the delete-highest-then-reopen test. D.2.7 audits every other counter for the same (the
+  and has the delete-highest-then-reopen test. D.2.8 audits every other counter for the same (the
   mutation partition first); any that reaches authoritative state is recovered the same way in
   that slice, the rest are Absent rows.
 - *`at(path)` doing real work.* Refused before any filesystem call; the test asserts the path does

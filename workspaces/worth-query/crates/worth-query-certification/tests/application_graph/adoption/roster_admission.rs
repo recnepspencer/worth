@@ -5,7 +5,7 @@
 //! unclaimed, and refuses a program that claims a rule this host never
 //! installed. Both refusals happen through the ordinary public install entry.
 
-use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial;
+use worth_query_host::facade::application_installation::WorthQueryApplicationOpenDenial;
 use worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition;
 use worth_query_host::facade::domain::WorthQueryProgramSupportDenial;
 
@@ -20,7 +20,7 @@ fn a_roster_leaving_an_installed_rule_unclaimed_is_refused() {
     let denial = publish_first_program_alone()
         .err()
         .expect("a roster that claims only one of two installed rules must be refused");
-    let WorthQueryInMemoryApplicationDenial::Program(program) = denial else {
+    let WorthQueryApplicationOpenDenial::Program(program) = denial else {
         panic!("the refusal must be a program installation refusal: {denial:?}");
     };
     let Some(WorthQueryProgramSupportDenial::UndeclaredInstalledRule { rule }) =
@@ -40,7 +40,7 @@ fn a_program_claiming_an_uninstalled_rule_is_refused() {
     let denial = publish_with_foreign_rule_rostered()
         .err()
         .expect("a program claiming a rule this host never installed must be refused");
-    let WorthQueryInMemoryApplicationDenial::Program(program) = denial else {
+    let WorthQueryApplicationOpenDenial::Program(program) = denial else {
         panic!("the refusal must be a program installation refusal: {denial:?}");
     };
     let Some(WorthQueryProgramSupportDenial::UnsupportedRuleContract {

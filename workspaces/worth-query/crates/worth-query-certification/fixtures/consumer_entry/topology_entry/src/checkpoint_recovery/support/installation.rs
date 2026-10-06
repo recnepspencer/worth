@@ -4,7 +4,7 @@ use super::*;
 pub(super) fn install_program_with_domain_denial<Program>(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     seed: fn(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
     domain_denial: Arc<AtomicBool>,
 ) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>

@@ -1,32 +1,43 @@
-use super::super::WorthQueryPrimaryGraphInstallationDenial;
+use super::super::{WorthQueryHomeAbsent, WorthQueryPrimaryGraphInstallationDenial};
 use worth_query_installation::facade::{
     WorthQueryInstallationAdmissionDenial, WorthQueryInstalledApplicationSchemaDenial,
     WorthQueryInstalledPackageIndexDenial, WorthQueryPortablePackageValidationDenial,
 };
 
-/// The exact phase that prevented an application from being published.
+/// The two entries an application opens through, and the two kinds of image
+/// they leave. An image with a program activation is a program image.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryOpenEntryKind {
+    Declaration,
+    Program,
+}
+
+/// The exact phase that prevented an application from being opened.
 #[derive(Debug)]
-pub enum WorthQueryInMemoryApplicationDenial {
+#[non_exhaustive]
+pub enum WorthQueryApplicationOpenDenial {
+    /// The home's form cannot be opened yet. Nothing was read from it.
+    Home(WorthQueryHomeAbsent),
+    /// The home holds an image the other entry wrote.
+    EntryKindMismatch {
+        image: WorthQueryOpenEntryKind,
+        entry: WorthQueryOpenEntryKind,
+    },
     Package(WorthQueryPortablePackageValidationDenial),
     Admission(WorthQueryInstallationAdmissionDenial),
     Runtime(WorthQueryInstalledPackageIndexDenial),
     Schema(WorthQueryInstalledApplicationSchemaDenial),
     Contributions(WorthQueryPrimaryGraphInstallationDenial),
     Graph(WorthQueryPrimaryGraphInstallationDenial),
-    /// Native target publication settled; a later installation phase refused.
-    /// The checkpoint preserves that actual successor for ordinary target restore.
-    CheckpointTransitionAcknowledged {
-        checkpoint: super::super::WorthQueryApplicationCheckpoint,
-        cause: Box<WorthQueryInMemoryApplicationDenial>,
-    },
     /// Native publication performed, but settlement stopped without repair custody.
     /// No World or acknowledged successor was issued.
-    CheckpointTransitionSettlementFailed(
-        Box<worth_relational::facade::transactions::TransactionCommitError>,
-    ),
-    CheckpointTransitionDeferred(Box<super::WorthQueryCheckpointTransitionRecovery>),
-    /// Native target settlement acknowledged, but checkpoint capture stopped.
-    CheckpointTransitionCaptureStopped(Box<super::WorthQueryCheckpointTransitionRecovery>),
+    AdoptionSettlementFailed(Box<worth_relational::facade::transactions::TransactionCommitError>),
+    /// Native publication performed, but its settlement deferred. The refused
+    /// home holds the repair capsule; this is the cause.
+    AdoptionDeferred(String),
+    /// Native target settlement acknowledged, but image capture stopped. The
+    /// refused home holds the repair capsule; this is the cause.
+    AdoptionCaptureStopped(String),
     InitialState(WorthQueryPrimaryGraphInstallationDenial),
     Publication(WorthQueryPrimaryGraphInstallationDenial),
     ConditionalPublication(
@@ -41,29 +52,27 @@ pub enum WorthQueryInMemoryApplicationDenial {
     ProgramAdmissionIncomplete,
 }
 
-impl std::fmt::Display for WorthQueryInMemoryApplicationDenial {
+impl std::fmt::Display for WorthQueryApplicationOpenDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "in-memory application installation denied: {self:?}"
-        )
+        write!(formatter, "application open denied: {self:?}")
     }
 }
 
-impl std::error::Error for WorthQueryInMemoryApplicationDenial {
+impl std::error::Error for WorthQueryApplicationOpenDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Package(error) => Some(error),
-            Self::Admission(_)
+            Self::Home(_)
+            | Self::EntryKindMismatch { .. }
+            | Self::Admission(_)
             | Self::Runtime(_)
             | Self::ConditionalProgramMismatch
             | Self::ProgramAdmissionIncomplete
             | Self::RequiredOutputSourceAction(_) => None,
             Self::WorkflowAuthorityRequiresProgram => None,
-            Self::CheckpointTransitionDeferred(_)
-            | Self::CheckpointTransitionCaptureStopped(_)
-            | Self::CheckpointTransitionSettlementFailed(_) => None,
-            Self::CheckpointTransitionAcknowledged { cause, .. } => Some(cause.as_ref()),
+            Self::AdoptionDeferred(_)
+            | Self::AdoptionCaptureStopped(_)
+            | Self::AdoptionSettlementFailed(_) => None,
             Self::Schema(error) => Some(error),
             Self::Contributions(error)
             | Self::Graph(error)

@@ -49,8 +49,8 @@ impl ExampleApplication {
     }
 }
 
-pub(crate) fn example_limits() -> application_installation::WorthQueryInMemoryApplicationLimits {
-    application_installation::WorthQueryInMemoryApplicationLimits::new(
+pub(crate) fn example_limits() -> application_installation::WorthQueryApplicationLimits {
+    application_installation::WorthQueryApplicationLimits::new(
         product_world_resources(),
         runtime::WorthQueryApplicationCandidateResourceProfile::bounded(5_120, 2_048, 5_120)
             .expect("valid candidate limits"),

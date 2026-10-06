@@ -13,6 +13,7 @@ use worth_runtime_world::facade::CompositeCommitIdentity;
 use super::WorthQueryProgramApplicationRuntime;
 use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
 
+/// Names one application preview a host asks to open.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationPreviewRequest {
     identity: String,
@@ -26,6 +27,7 @@ impl WorthQueryApplicationPreviewRequest {
     }
 }
 
+/// Why a preview session could not be readmitted to a runtime.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationPreviewReadmissionDenial {
     StaleSource,
@@ -36,6 +38,7 @@ pub enum WorthQueryApplicationPreviewReadmissionDenial {
     CleanupRejected,
 }
 
+/// One speculative preview held over its exact source observation until readmission.
 pub struct WorthQueryApplicationPreviewSession {
     handle: Option<BridgeSpeculativeSessionHandle>,
     source: Option<std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>>,
@@ -43,6 +46,7 @@ pub struct WorthQueryApplicationPreviewSession {
     source_commit: CompositeCommitIdentity,
 }
 
+/// A preview session readmitted by the runtime that issued it.
 pub struct WorthQueryReadmittedApplicationPreview {
     handle: Option<BridgeSpeculativeSessionHandle>,
     _source: std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>,

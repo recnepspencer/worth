@@ -1,9 +1,11 @@
 //! One target-validation candidate and its acknowledged native successor.
 use super::{
-    denial, selection, CheckpointTransition, WorthQueryCheckpointMigrationWriter,
-    WorthQueryCheckpointTransitionRecovery,
+    denial, selection, WorthQueryOpenAdoption, WorthQueryOpenAdoptionRecovery,
+    WorthQueryOpenAdoptionWriter,
 };
-use crate::domain_computation::primary_graph::application_installation::WorthQueryInMemoryApplicationDenial;
+use crate::domain_computation::primary_graph::application_installation::{
+    OpenFailure, WorthQueryApplicationOpenDenial,
+};
 use crate::domain_computation::primary_graph::{
     application_installation::program_admission::WorthQueryAdmittedProgramSupport,
     bootstrap::program_activation_recovery::read_activation,
@@ -12,11 +14,11 @@ use crate::domain_computation::primary_graph::{
         map_bootstrap_transaction_admission_denial,
     },
     program_occurrence::{program_revision_rendering, WorthQueryProgramActivationCell},
-    WorthQueryPrimaryGraphBootstrap,
+    WorthQueryApplicationCheckpoint, WorthQueryPrimaryGraphBootstrap,
 };
 use std::collections::BTreeMap;
-use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
+use worth_relational::facade::durability::RecoveredCheckpointTransitionError;
 use worth_relational::facade::transactions::{
     AspectFieldPatch, EntityMutationIntent, MutationIntent, RevalidateEntityIntent,
     UpdateEntityFieldsIntent, WorkerIntentBatch,
@@ -27,13 +29,11 @@ fn prepare_transition<Schema: ApplicationSchema>(
     installed: &WorthQueryInstalledApplicationSchema<Schema>,
     support: &WorthQueryAdmittedProgramSupport<Schema>,
     cell: &WorthQueryProgramActivationCell,
-    transition: CheckpointTransition<'_, Schema>,
-) -> Result<
-    worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority,
-    WorthQueryInMemoryApplicationDenial,
-> {
+    adoption: WorthQueryOpenAdoption<'_, Schema>,
+) -> Result<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority, OpenFailure>
+{
     let layout = graph.graph.layout.clone();
-    let expected = AspectValue::String(InternedString::from(transition.predecessor.0.as_str()));
+    let expected = adoption.predecessor.rendering();
     let (basis, identity, entities) = graph
         .graph
         .integration_handle()
@@ -52,7 +52,7 @@ fn prepare_transition<Schema: ApplicationSchema>(
             let (identity, work) = read_activation(
                 &branch,
                 layout.program_activation(),
-                transition.resources.maximum_selection_work,
+                adoption.resources.maximum_selection_work,
                 "recovered program activation does not match the expected checkpoint predecessor",
                 |rendering| *rendering == expected,
             )?;
@@ -60,20 +60,19 @@ fn prepare_transition<Schema: ApplicationSchema>(
                 &branch,
                 &layout,
                 installed,
-                transition.resources.maximum_selection_work,
+                adoption.resources.maximum_selection_work,
                 work,
             )?;
             Ok((basis, identity, entities))
         })
-        .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
-    let mut writer = WorthQueryCheckpointMigrationWriter::new(graph, transition.resources);
-    (transition.author)(&mut writer, installed)
-        .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
+        .map_err(WorthQueryApplicationOpenDenial::Graph)?;
+    let mut writer = WorthQueryOpenAdoptionWriter::new(graph, adoption.resources);
+    (adoption.author)(&mut writer, installed).map_err(WorthQueryApplicationOpenDenial::Graph)?;
     writer
         .finish()
-        .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
+        .map_err(WorthQueryApplicationOpenDenial::Graph)?;
     cell.bind_checkpoint_candidate(identity).map_err(|_| {
-        WorthQueryInMemoryApplicationDenial::Graph(denial(
+        WorthQueryApplicationOpenDenial::Graph(denial(
             "checkpoint activation candidate was already bound",
         ))
     })?;
@@ -99,7 +98,7 @@ fn prepare_transition<Schema: ApplicationSchema>(
         )));
     }
     let recovered = graph.recovered_relational_authority.take().ok_or_else(|| {
-        WorthQueryInMemoryApplicationDenial::Graph(denial(
+        WorthQueryApplicationOpenDenial::Graph(denial(
             "checkpoint transition has no recovered native authority",
         ))
     })?;
@@ -125,20 +124,43 @@ fn prepare_transition<Schema: ApplicationSchema>(
                 .durability_recovery()
                 .commit_checkpoint_transition(recovered, candidate))
         })
-        .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
+        .map_err(WorthQueryApplicationOpenDenial::Graph)?;
     match successor {
         Ok(acknowledged) => Ok(acknowledged.into_parts().1),
-        Err(worth_relational::facade::durability::RecoveredCheckpointTransitionError::DurabilityDeferred(deferred)) => {
-            let publication = graph.recovered_publication.clone().expect("native checkpoint bootstrap publication was readmitted before transition");
-            Err(WorthQueryInMemoryApplicationDenial::CheckpointTransitionDeferred(Box::new(
-                WorthQueryCheckpointTransitionRecovery::new(graph.graph.integration_handle(), publication, *deferred),
-            )))
+        Err(RecoveredCheckpointTransitionError::DurabilityDeferred(deferred)) => {
+            let publication = graph
+                .recovered_publication
+                .clone()
+                .expect("native checkpoint bootstrap publication was readmitted before transition");
+            let recovery = WorthQueryOpenAdoptionRecovery::new(
+                graph.graph.integration_handle(),
+                publication,
+                *deferred,
+            );
+            let cause = recovery.detail().to_owned();
+            Err(OpenFailure::in_repair(
+                recovery,
+                WorthQueryApplicationOpenDenial::AdoptionDeferred(cause),
+            ))
         }
-        Err(worth_relational::facade::durability::RecoveredCheckpointTransitionError::Refused(refusal)) => Err(WorthQueryInMemoryApplicationDenial::Graph(denial(format!("checkpoint native transition refused without performance: {:?}", refusal.denial())))),
-        Err(worth_relational::facade::durability::RecoveredCheckpointTransitionError::SettlementFailed(error)) => Err(WorthQueryInMemoryApplicationDenial::CheckpointTransitionSettlementFailed(error)),
+        Err(RecoveredCheckpointTransitionError::Refused(refusal)) => {
+            Err(WorthQueryApplicationOpenDenial::Graph(denial(format!(
+                "checkpoint native transition refused without performance: {:?}",
+                refusal.denial()
+            )))
+            .into())
+        }
+        Err(RecoveredCheckpointTransitionError::SettlementFailed(error)) => {
+            Err(WorthQueryApplicationOpenDenial::AdoptionSettlementFailed(error).into())
+        }
     }
 }
 
+/// Performs the declared adoption and returns the acknowledged successor image.
+///
+/// A refusal before native performance leaves the home unchanged. A deferred
+/// settlement or a stopped capture leaves only the repair capsule. A refusal
+/// after capture leaves the successor image.
 pub(in crate::domain_computation::primary_graph) fn transition_checkpoint<
     Schema: ApplicationSchema,
 >(
@@ -146,47 +168,40 @@ pub(in crate::domain_computation::primary_graph) fn transition_checkpoint<
     installed: &WorthQueryInstalledApplicationSchema<Schema>,
     support: &WorthQueryAdmittedProgramSupport<Schema>,
     cell: &WorthQueryProgramActivationCell,
-    transition: CheckpointTransition<'_, Schema>,
-) -> Result<(), WorthQueryInMemoryApplicationDenial> {
-    let recovery = std::rc::Rc::clone(&transition.recovery);
-    let successor = prepare_transition(graph, installed, support, cell, transition)?;
+    adoption: WorthQueryOpenAdoption<'_, Schema>,
+) -> Result<WorthQueryApplicationCheckpoint, OpenFailure> {
+    let successor = prepare_transition(graph, installed, support, cell, adoption)?;
     let publication = graph
         .recovered_publication
         .clone()
         .expect("transition holds its original native bootstrap publication");
-    match graph
+    let image = match graph
         .graph
         .integration_handle()
         .with_runtime(|runtime| runtime.durability_authority().native_checkpoint())
     {
-        Ok(native) => {
-            *recovery.borrow_mut() = Some(
-                crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint::encode(
-                    native,
-                    &publication,
-                    &[],
-                )
-                .0,
-            )
-        }
+        Ok(native) => WorthQueryApplicationCheckpoint::encode(native, &publication, &[]).0,
         Err(error) => {
-            return Err(
-                WorthQueryInMemoryApplicationDenial::CheckpointTransitionCaptureStopped(Box::new(
-                    WorthQueryCheckpointTransitionRecovery::acknowledged(
-                        graph.graph.integration_handle(),
-                        publication,
-                        successor,
-                        format!("acknowledged target checkpoint capture stopped: {error:?}"),
-                    ),
-                )),
-            )
+            let cause = format!("acknowledged target checkpoint capture stopped: {error:?}");
+            return Err(OpenFailure::in_repair(
+                WorthQueryOpenAdoptionRecovery::acknowledged(
+                    graph.graph.integration_handle(),
+                    publication,
+                    successor,
+                    cause.clone(),
+                ),
+                WorthQueryApplicationOpenDenial::AdoptionCaptureStopped(cause),
+            ));
         }
-    }
+    };
     graph.recovered_relational_authority = Some(successor);
-    cell.confirm_checkpoint_candidate().map_err(|_| {
-        WorthQueryInMemoryApplicationDenial::Graph(denial(
-            "checkpoint activation confirmation refused",
-        ))
-    })?;
-    Ok(())
+    if cell.confirm_checkpoint_candidate().is_err() {
+        return Err(OpenFailure::successor(
+            image,
+            WorthQueryApplicationOpenDenial::Graph(denial(
+                "checkpoint activation confirmation refused",
+            )),
+        ));
+    }
+    Ok(image)
 }

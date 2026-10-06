@@ -1,333 +1,44 @@
-//! Complete construction of one contribution-composed in-memory application.
+//! Opening one contribution-composed application on its home.
 
 mod checkpoint_lineage;
+mod declaration_open;
 mod denial;
+mod home_opening;
+mod home_start;
 mod limits;
+mod open_core;
+mod open_plan;
+mod open_refusal;
 mod profile;
+/// The program entry and the runtime it opens.
 mod program;
 pub(in crate::domain_computation::primary_graph) mod program_admission;
 pub use super::bootstrap::checkpoint_transition::{
-    WorthQueryCheckpointMigrationWriter, WorthQueryCheckpointProgramPredecessor,
-    WorthQueryCheckpointTransitionRecovery, WorthQueryCheckpointTransitionResources,
+    WorthQueryOpenAdoption, WorthQueryOpenAdoptionPredecessor, WorthQueryOpenAdoptionRecovery,
+    WorthQueryOpenAdoptionResources, WorthQueryOpenAdoptionWriter,
 };
-pub use denial::WorthQueryInMemoryApplicationDenial;
-pub use limits::WorthQueryInMemoryApplicationLimits;
-pub use profile::WorthQueryInMemoryApplicationProfile;
+pub use declaration_open::{declaration, in_memory, WorthQueryDeclarationOpen};
+pub use denial::{WorthQueryApplicationOpenDenial, WorthQueryOpenEntryKind};
+pub use home_opening::WorthQueryHomeOpening;
+pub use limits::WorthQueryApplicationLimits;
+pub(in crate::domain_computation::primary_graph) use open_refusal::OpenFailure;
+pub use open_refusal::{WorthQueryApplicationOpenRefusal, WorthQueryRefusedHome};
+pub use profile::WorthQueryApplicationProfile;
 pub(crate) use program::workflow_approval_authentication_intent;
 pub use program::{
     in_memory_program, in_memory_program_from_checkpoint,
     in_memory_program_with_authorization_time_source, in_memory_rostered_program,
     in_memory_rostered_program_from_checkpoint,
     in_memory_rostered_program_from_checkpoint_with_transition,
-    in_memory_rostered_program_with_authorization_time_source, WorthQueryAdmittedProgramOperation,
-    WorthQueryAdmittedProgramOutput, WorthQueryApplicationPreviewReadmissionDenial,
-    WorthQueryApplicationPreviewRequest, WorthQueryApplicationPreviewSession,
-    WorthQueryApplicationProgramRoots, WorthQueryApplicationProgramRoster,
-    WorthQueryProgramApplicationRuntime, WorthQueryProgramOutputAdvance, WorthQueryProgramOwner,
-    WorthQueryProgramRootDemand, WorthQueryProgramSupportRetirementReceipt,
-    WorthQueryReadmittedApplicationPreview, WorthQuerySelectedProgramOwner,
-    WorthQuerySelectedProgramOwnerDenial, WorthQuerySettledProgramOutput,
-    WorthQuerySupportedProgramHandle, WorthQueryWorkflowApplicationRuntime,
-    WorthQueryWorkflowRuntimeBindingDenial, WorthQueryWorkflowVocabulary,
+    in_memory_rostered_program_with_authorization_time_source, program,
+    WorthQueryAdmittedProgramOperation, WorthQueryAdmittedProgramOutput,
+    WorthQueryApplicationPreviewReadmissionDenial, WorthQueryApplicationPreviewRequest,
+    WorthQueryApplicationPreviewSession, WorthQueryApplicationProgramRoots,
+    WorthQueryApplicationProgramRoster, WorthQueryProgramApplicationRuntime, WorthQueryProgramOpen,
+    WorthQueryProgramOutputAdvance, WorthQueryProgramOwner, WorthQueryProgramRootDemand,
+    WorthQueryProgramSupportRetirementReceipt, WorthQueryReadmittedApplicationPreview,
+    WorthQuerySelectedProgramOwner, WorthQuerySelectedProgramOwnerDenial,
+    WorthQuerySettledProgramOutput, WorthQuerySupportedProgramHandle,
+    WorthQueryWorkflowApplicationRuntime, WorthQueryWorkflowRuntimeBindingDenial,
+    WorthQueryWorkflowVocabulary,
 };
-use program_admission::WorthQueryProgramAdmissionStep;
-
-use super::application_contribution::{
-    WorthQueryApplicationContributionTuple, WorthQueryConfiguredApplicationContributions,
-};
-use super::{
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphBootstrap,
-    WorthQueryPrimaryGraphInstallationDenial,
-};
-use crate::domain_computation::execution_runtime::WorthQueryExecutionRuntimeInstaller;
-use worth_query_declaration::facade::application_schema::{
-    ApplicationSchemaComposition, ApplicationSchemaDeclaration,
-};
-use worth_query_installation::facade::{
-    WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
-    WorthQueryInstalledApplicationSchema, WorthQueryPortableDomainIdentity,
-    WorthQueryPortableDomainPackage,
-};
-
-/// Installs contribution-owned schema meaning without an application program.
-pub fn in_memory<Schema>(
-    declaration: ApplicationSchemaDeclaration<Schema>,
-    configuration: <Schema::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
-    limits: WorthQueryInMemoryApplicationLimits,
-    initial_state: impl FnOnce(
-        &mut WorthQueryPrimaryGraphBootstrap<Schema>,
-        &WorthQueryInstalledApplicationSchema<Schema>,
-    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
-) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryInMemoryApplicationDenial>
-where
-    Schema: ApplicationSchemaComposition,
-    Schema::Contributions: WorthQueryApplicationContributionTuple<Schema>,
-{
-    in_memory_with_contributions::<Schema, Schema::Contributions>(
-        declaration,
-        configuration,
-        limits,
-        initial_state,
-        None,
-        None,
-        None,
-        None,
-    )
-}
-
-pub(super) fn in_memory_with_contributions<Schema, Contributions>(
-    declaration: ApplicationSchemaDeclaration<Schema>,
-    configuration: <Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
-    limits: WorthQueryInMemoryApplicationLimits,
-    initial_state: impl FnOnce(
-        &mut WorthQueryPrimaryGraphBootstrap<Schema>,
-        &WorthQueryInstalledApplicationSchema<Schema>,
-    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
-    authorization_time_source: Option<
-        Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
-    >,
-    program_admission: Option<WorthQueryProgramAdmissionStep<'_, Schema>>,
-    checkpoint: Option<super::WorthQueryApplicationCheckpoint>,
-    checkpoint_transition: Option<
-        super::bootstrap::checkpoint_transition::CheckpointTransition<'_, Schema>,
-    >,
-) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryInMemoryApplicationDenial>
-where
-    Schema: ApplicationSchemaComposition,
-    Contributions: WorthQueryApplicationContributionTuple<Schema>,
-{
-    use WorthQueryInMemoryApplicationDenial as Denial;
-
-    let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
-        Schema::OWNER,
-        Schema::MAJOR,
-        Schema::MINOR,
-    ));
-    let contracts = Contributions::contracts().map_err(Denial::Contributions)?;
-    let package = contracts
-        .compose_package(package.application_schema(declaration.clone()))
-        .validate()
-        .map_err(Denial::Package)?;
-    let admitted = WorthQueryInstallationAdmissionProfile::new(
-        "primary-graph-in-memory",
-        "application-contributions",
-    )
-    .admit(package)
-    .map_err(Denial::Admission)?;
-    let (runtime, authority) = WorthQueryExecutionRuntimeInstaller::new()
-        .application_candidate_resources(limits.candidates)
-        .application_query_resources(limits.queries)
-        .output_demand_resources(limits.output_demands)
-        .completed_evidence_resources(limits.completed_evidence)
-        .install(WorthQueryInstallationGeneration::initial(), [admitted])
-        .map_err(Denial::Runtime)?
-        .into_parts();
-    let installed = runtime
-        .installed_packages()
-        .bind_application_schema(declaration)
-        .map_err(Denial::Schema)?;
-    if program_admission.is_none()
-        && installed
-            .installed_mutation_binding_inventory()
-            .any(|binding| binding.requires_workflow_authority())
-    {
-        return Err(Denial::WorkflowAuthorityRequiresProgram);
-    }
-    let admitted_program_support = match program_admission {
-        Some(admit) => Some(admit(&installed)?),
-        None => None,
-    };
-    let configured = WorthQueryConfiguredApplicationContributions::<Schema>::configure::<
-        Contributions,
-    >(&installed, configuration, contracts)
-    .map_err(Denial::Contributions)?;
-    let (mut invariants, handlers, producers, conditionals) =
-        configured.into_parts().map_err(Denial::Contributions)?;
-    let activation = super::program_occurrence::WorthQueryProgramActivationCell::unpublished();
-    if let Some(support) = &admitted_program_support {
-        invariants.select_by_program(
-            super::invariant_installation::WorthQueryInvariantProgramBasis::admitted(
-                std::sync::Arc::clone(&support.roster),
-                activation.clone(),
-            ),
-        );
-    }
-    let mut relational_builder = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
-        .profile(limits.profile.relational_profile());
-    if let Some(publication) = limits
-        .profile
-        .publication_override(limits.maximum_publication_records)
-    {
-        relational_builder = relational_builder.publication(publication);
-    }
-    if let Some(scope_budget) = limits.profile.relation_integrity_scope_budget() {
-        relational_builder = relational_builder.relation_integrity_scope_budget(scope_budget);
-    }
-    let relational_runtime = relational_builder.build();
-    let decoded_checkpoint = checkpoint
-        .map(super::WorthQueryApplicationCheckpoint::decode)
-        .transpose()
-        .map_err(|detail| {
-            Denial::Graph(WorthQueryPrimaryGraphInstallationDenial::new(
-                super::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-                detail,
-            ))
-        })?;
-    if checkpoint_transition.is_some()
-        && decoded_checkpoint
-            .as_ref()
-            .is_some_and(|checkpoint| !checkpoint.accepted_outputs.is_empty())
-    {
-        return Err(Denial::Graph(
-            WorthQueryPrimaryGraphInstallationDenial::new(
-                super::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-                "checkpoint transition requires accepted-output migration support",
-            ),
-        ));
-    }
-    let restoring = decoded_checkpoint.is_some();
-    let mut graph = match decoded_checkpoint.as_ref() {
-        Some(checkpoint) => authority.prepare_primary_graph_from_native_checkpoint_with_invariants(
-            &runtime,
-            &installed,
-            relational_runtime,
-            limits.world,
-            invariants,
-            checkpoint,
-        ),
-        None => authority.prepare_primary_graph_with_relational_runtime_and_invariants(
-            &runtime,
-            &installed,
-            relational_runtime,
-            limits.world,
-            invariants,
-        ),
-    }
-    .map_err(Denial::Graph)?;
-    graph.mutation_handlers = handlers;
-    if restoring {
-        if let Some(support) = &admitted_program_support {
-            if let Some(transition) = checkpoint_transition {
-                super::bootstrap::checkpoint_transition::transition_checkpoint(
-                    &mut graph,
-                    &installed,
-                    support,
-                    &activation,
-                    transition,
-                )?;
-            } else {
-                super::bootstrap::recover_program_activation(
-                    &graph.graph,
-                    &support.roster,
-                    &activation,
-                )
-                .map_err(Denial::Graph)?;
-            }
-        }
-    }
-    if !restoring {
-        if let Some(support) = &admitted_program_support {
-            graph.program_activation_seed = Some(
-                super::bootstrap::WorthQueryProgramActivationSeed::for_initial_program(
-                    &support.initial_revision,
-                    activation.clone(),
-                ),
-            );
-        }
-        initial_state(&mut graph, &installed).map_err(Denial::InitialState)?;
-    }
-    // This is the exact support object moved into the final graph provider.
-    // Cold producer executors become installable only after it exists.
-    let producers = producers
-        .seal_with_support(graph.resource_support_ref(), runtime.installed_packages())
-        .map_err(Denial::Contributions)?;
-    let (mut application, installed_conditionals) =
-        if conditionals.is_empty() && producers.is_empty() {
-            let application = match authorization_time_source {
-                Some(source) => graph.publish_application_runtime_with_authorization_time_source(
-                    runtime,
-                    authority,
-                    installed,
-                    limits.conditionals,
-                    source,
-                ),
-                None => graph.publish_application_runtime(
-                    runtime,
-                    authority,
-                    installed,
-                    limits.conditionals,
-                ),
-            }
-            .map_err(Denial::Publication)?;
-            (application, Default::default())
-        } else {
-            let mut publication = match authorization_time_source {
-                Some(source) => graph
-                    .conditional_application_runtime_installation_with_authorization_time_source(
-                        runtime,
-                        authority,
-                        installed,
-                        limits.conditionals,
-                        source,
-                    ),
-                None => graph.conditional_application_runtime_installation(
-                    runtime,
-                    authority,
-                    installed,
-                    limits.conditionals,
-                ),
-            }
-            .map_err(Denial::ConditionalPublication)?;
-            publication.install_output_producers(producers.clone());
-            let installed_conditionals = conditionals
-                .install_all(&producers, &mut publication)
-                .map_err(Denial::ConditionalPublication)?;
-            let application = publication
-                .publish()
-                .map_err(Denial::ConditionalPublication)?;
-            (application, installed_conditionals)
-        };
-    application.installed_producers = producers;
-    application.installed_conditionals = installed_conditionals;
-    if let Some(support) = admitted_program_support {
-        application
-            .product_runtime
-            .activations
-            .require_program_coordination();
-        application.program_support = Some(
-            super::program_occurrence::WorthQueryInstalledProgramSupport::installed(
-                support.roster,
-                activation,
-            ),
-        );
-    }
-    application.recovered_outputs =
-        super::application_output_demand::WorthQueryRecoveredOutputs::from_records(
-            decoded_checkpoint
-                .map(|checkpoint| {
-                    checkpoint
-                        .accepted_outputs
-                        .into_iter()
-                        .map(|accepted| {
-                            let correspondence = application
-                                .installed_producers
-                                .readmit_checkpoint_output(&application.installed_schema, &accepted)
-                                .map_err(|detail| {
-                                    Denial::Graph(WorthQueryPrimaryGraphInstallationDenial::new(
-                                        super::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-                                        detail,
-                                    ))
-                                })?;
-                            Ok(super::application_output_demand::WorthQueryReadmittedAcceptedOutput {
-                                checkpoint: accepted,
-                                correspondence,
-                            })
-                        })
-                        .collect::<Result<Vec<_>, Denial>>()
-                })
-                .transpose()?
-                .unwrap_or_default(),
-        );
-    checkpoint_lineage::restore(&application).map_err(Denial::Graph)?;
-    Ok(application)
-}

@@ -14,7 +14,7 @@ use worth_query_host::facade::{
         WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationRequestExt,
         WorthQueryOutputDemandControls, WorthQueryProgramOutputCurrentnessDenial,
     },
-    application_installation::{self, WorthQueryInMemoryApplicationLimits},
+    application_installation::{self, WorthQueryApplicationLimits},
     primary_graph::{self, WorthQueryOutputDemandDenialKind},
 };
 

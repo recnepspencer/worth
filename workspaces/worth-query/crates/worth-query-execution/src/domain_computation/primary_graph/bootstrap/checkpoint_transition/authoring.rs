@@ -1,5 +1,5 @@
 //! Typed create effects for a sealed, pre-World checkpoint installation.
-use super::{denial, WorthQueryCheckpointTransitionResources};
+use super::{denial, WorthQueryOpenAdoptionResources};
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEntitySeed, WorthQueryApplicationRelationSeed,
     WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
@@ -9,17 +9,15 @@ use worth_query_installation::facade::ApplicationSchema;
 /// Authors new typed records in the same candidate as the program transition.
 /// This stage cannot commit, expose a World, or mutate an existing record.
 /// Links currently require endpoints created in this migration batch.
-pub struct WorthQueryCheckpointMigrationWriter<'installation, Schema> {
+pub struct WorthQueryOpenAdoptionWriter<'installation, Schema> {
     pub(super) graph: &'installation mut WorthQueryPrimaryGraphBootstrap<Schema>,
-    pub(super) resources: WorthQueryCheckpointTransitionResources,
+    pub(super) resources: WorthQueryOpenAdoptionResources,
     work: usize,
     bytes: usize,
     failed: bool,
 }
 
-impl<'installation, Schema: ApplicationSchema>
-    WorthQueryCheckpointMigrationWriter<'installation, Schema>
-{
+impl<'installation, Schema: ApplicationSchema> WorthQueryOpenAdoptionWriter<'installation, Schema> {
     #[cfg(feature = "test-durability-faults")]
     #[doc(hidden)]
     pub fn fail_next_durable_append_for_test(&self) {
@@ -31,7 +29,7 @@ impl<'installation, Schema: ApplicationSchema>
 
     pub(super) fn new(
         graph: &'installation mut WorthQueryPrimaryGraphBootstrap<Schema>,
-        resources: WorthQueryCheckpointTransitionResources,
+        resources: WorthQueryOpenAdoptionResources,
     ) -> Self {
         Self {
             graph,

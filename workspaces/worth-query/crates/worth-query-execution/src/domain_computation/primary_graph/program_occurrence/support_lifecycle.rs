@@ -14,6 +14,7 @@ pub enum WorthQueryProgramSupportStatus {
     Retired,
 }
 
+/// The receipt for one retired program support, carrying its retirement inventory.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProgramSupportRetirementReceipt {
     inventory: WorthQueryProgramSupportRetirementInventory,

@@ -3,12 +3,12 @@ use std::collections::BTreeSet;
 
 use worth_query_declaration::facade::application_program::ApplicationActionDeclaration;
 
-use super::super::WorthQueryInMemoryApplicationDenial;
+use super::super::WorthQueryApplicationOpenDenial;
 
 pub(super) fn validate_conditional_actions(
     actions: &[ApplicationActionDeclaration],
     installed_operations: impl Iterator<Item = TypeId>,
-) -> Result<(), WorthQueryInMemoryApplicationDenial> {
+) -> Result<(), WorthQueryApplicationOpenDenial> {
     let declared = actions
         .iter()
         .filter(|action| action.conditional_only())
@@ -21,6 +21,6 @@ pub(super) fn validate_conditional_actions(
     if declared == installed && !conflicting_client_action {
         Ok(())
     } else {
-        Err(WorthQueryInMemoryApplicationDenial::ConditionalProgramMismatch)
+        Err(WorthQueryApplicationOpenDenial::ConditionalProgramMismatch)
     }
 }

@@ -38,7 +38,7 @@ mod publication_target;
 mod seed_batches;
 use binding_denial::map_binding_denial_kind;
 mod truth_partition;
-pub(super) use program_activation_recovery::recover_program_activation;
+pub(super) use program_activation_recovery::recorded_program_activation;
 use program_activation_seeding::commit_initial_program_activation;
 pub(super) use program_activation_seeding::WorthQueryProgramActivationSeed;
 pub use publication::WorthQueryPrimaryGraphPublication;

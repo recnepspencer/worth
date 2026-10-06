@@ -1,5 +1,6 @@
 mod admission_denial;
 mod aggregate;
+mod authority_minting;
 mod consumed_output;
 mod inventory;
 mod locked_reader;
@@ -25,10 +26,7 @@ use worth_query_installation::facade::{
 use worth_relational::facade::identity::{EntityId, KindId, RelationId, VersionId};
 
 use super::schema_layout::WorthQueryPrimaryGraphLayout;
-use super::{
-    WorthQueryInstalledEntityResolutionContext, WorthQueryPrimaryGraphBootstrap,
-    WorthQueryPrimaryGraphIntegrationHandle,
-};
+use super::{WorthQueryInstalledEntityResolutionContext, WorthQueryPrimaryGraphIntegrationHandle};
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 
 pub use admission_denial::{
@@ -138,26 +136,6 @@ pub struct WorthQueryInvariantRelation<Schema, Relation, From, To> {
     from: WorthQueryInvariantEntityIdentity<Schema, From>,
     to: WorthQueryInvariantEntityIdentity<Schema, To>,
     _relation: PhantomData<fn() -> Relation>,
-}
-
-impl<Schema> WorthQueryPrimaryGraphBootstrap<Schema>
-where
-    Schema: ApplicationSchema,
-{
-    pub fn retain_invariant_projection_authority(
-        &self,
-    ) -> WorthQueryApplicationInvariantProjectionAuthority<Schema> {
-        WorthQueryApplicationInvariantProjectionAuthority {
-            graph: self.graph.integration_handle(),
-            layout: Arc::clone(&self.graph.layout),
-            runtime_authority: self.runtime_authority,
-            binding_identity: self.graph.binding_identity().clone(),
-            entity_resolution: self.graph.retain_entity_resolution_context(),
-            authority_identity: NEXT_INVARIANT_PROJECTION_AUTHORITY
-                .fetch_add(1, std::sync::atomic::Ordering::Relaxed),
-            _schema: PhantomData,
-        }
-    }
 }
 
 impl<Schema> WorthQueryApplicationInvariantProjectionAuthority<Schema>

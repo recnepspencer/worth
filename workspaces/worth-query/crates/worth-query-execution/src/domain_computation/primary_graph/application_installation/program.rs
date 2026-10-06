@@ -7,6 +7,7 @@ mod demand;
 mod derived_artifact;
 mod output_roots;
 mod output_source;
+mod program_open;
 mod program_owner;
 mod program_runtime;
 mod roster_authoring;
@@ -27,6 +28,7 @@ pub use demand::{
     WorthQuerySettledProgramOutput,
 };
 pub use output_roots::WorthQueryApplicationProgramRoots;
+pub use program_open::{program, WorthQueryProgramOpen};
 pub use program_owner::{
     WorthQueryProgramOwner, WorthQuerySelectedProgramOwner, WorthQuerySelectedProgramOwnerDenial,
 };

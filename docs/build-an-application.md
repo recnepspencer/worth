@@ -36,7 +36,7 @@ use worth_query_host::facade::{
 |---|---|
 | `…decl::facade::application_program` | `ApplicationFeature`, `ApplicationFeatureSpec`, `ApplicationProgramDefinition`, `ApplicationProgramAuthoring`, `ValidatedApplicationProgram`, ports and connections, `ApplicationWorkflowSpec`, `ApplicationWorkflowDefinitionBuilder` |
 | `…decl::facade::application_operation` | `ApplicationMutationBinding`, `ApplicationMutationIntent`, `ApplicationCapabilityMutationBinding` |
-| `…host::facade::application_installation` | `in_memory` (no program), `in_memory_program`, `in_memory_rostered_program`, `WorthQueryInMemoryApplicationLimits`, `WorthQueryProgramApplicationRuntime`, `WorthQueryProgramOwner` (a trait: import it to call `owned_revision()`) |
+| `…host::facade::application_installation` | `in_memory` (no program), `in_memory_program`, `in_memory_rostered_program`, `WorthQueryApplicationLimits`, `WorthQueryProgramApplicationRuntime`, `WorthQueryProgramOwner` (a trait: import it to call `owned_revision()`) |
 | `…host::facade::application_entry` | `WorthQueryApplicationRequestExt`, `WorthQueryApplicationMutationOutcome`, `WorthQueryBranchAdoptionPublicationOutcome`, `Workflow*Outcome`, `Published*Ref` |
 | `…host::facade::application_discovery` | `WorthQueryWorkflowDefinitionDiscovery` |
 | `…host::facade::domain` | `WorthQueryApplicationWorkflowSpecInstallation`, `WorthQueryApplicationWorkflowResourceCeiling`, `WorthQueryInstalledApplicationSchema` |
@@ -455,7 +455,7 @@ let runtime = application_installation::in_memory_program(
     program::validated_program(),                  // ValidatedApplicationProgram<S, P>
     declaration,                                   // ApplicationSchemaDeclaration<S>
     (TemporalContributionConfiguration { clock_source },), // one entry per contribution
-    example_limits(),                              // WorthQueryInMemoryApplicationLimits
+    example_limits(),                              // WorthQueryApplicationLimits
     |graph, installed| {                           // seed the primary graph
         let principal_binding = installed
             .principal_binding(TemporalPrincipalBinding::reference())
@@ -469,7 +469,7 @@ let runtime = application_installation::in_memory_program(
 
 ```rust
 // Same file: limits.
-application_installation::WorthQueryInMemoryApplicationLimits::new(
+application_installation::WorthQueryApplicationLimits::new(
     product_world_resources(),
     runtime::WorthQueryApplicationCandidateResourceProfile::bounded(5_120, 2_048, 5_120)
         .expect("valid candidate limits"),
@@ -534,11 +534,11 @@ discovery.
 Ordinary `in_memory_rostered_program_from_checkpoint` requires the recovered
 activation to name a supported program. For an app-owned predecessor mapping,
 `in_memory_rostered_program_from_checkpoint_with_transition` checks an exact
-`WorthQueryCheckpointProgramPredecessor` rendering and admits the current target
+`WorthQueryOpenAdoptionPredecessor` rendering and admits the current target
 through the ordinary program/roster installation path. The predecessor rendering
 never becomes a program revision or a roster member.
 
-Its bounded `WorthQueryCheckpointMigrationWriter` authors new typed entity seeds
+Its bounded `WorthQueryOpenAdoptionWriter` authors new typed entity seeds
 and relations between entities created in that batch. It currently cannot read or
 rewrite recovered records, or link a new record to an existing endpoint. Query
 commits those effects, the target activation and complete supported entity
@@ -547,16 +547,17 @@ retained workflows and relation-scoped rules require further migration support
 and are refused before authoring. Native candidate/publication limits remain in
 force alongside explicit selection and authoring bounds.
 
-A deferred native settlement returns `CheckpointTransitionDeferred` with the
-exact unpublished repair custody. Consuming `repair_to_checkpoint` returns a
-target checkpoint after acknowledgment, or the same capsule if repair/capture
-stops. `CheckpointTransitionCaptureStopped` specifically retains the acknowledged
-phase when its first checkpoint capture stops. A later installation failure returns
-`CheckpointTransitionAcknowledged`
-with the already acknowledged target checkpoint and the original phase denial;
-fix the installation configuration and ordinary-restore that checkpoint. A
-terminal performed settlement failure has its own typed denial and issues no
-acknowledged successor.
+The open call `application_installation::program(..).adopt_on_open(..).open(home)`
+returns the home with every refusal, by phase. A deferred native settlement is
+denied with `AdoptionDeferred` and the refused home is `InRepair`, holding the
+exact unpublished repair custody. Consuming `repair` returns the successor home
+after acknowledgment, or the same capsule if repair/capture stops.
+`AdoptionCaptureStopped` is the same phase when the first capture of the
+acknowledged target stops. A later installation failure returns the original
+phase denial with a `Successor` home; fix the installation configuration and
+open that home again. A terminal performed settlement failure has its own typed
+denial and issues no acknowledged successor. The old
+`_with_transition` constructor returns only the denial.
 
 ---
 

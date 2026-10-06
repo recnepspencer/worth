@@ -9,7 +9,7 @@ pub(crate) mod product_world_resources;
 
 #[cfg(test)]
 pub(crate) fn bank_application_limits(
-) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
+) -> worth_query_host::facade::application_installation::WorthQueryApplicationLimits {
     installation::bank_application_limits()
 }
 

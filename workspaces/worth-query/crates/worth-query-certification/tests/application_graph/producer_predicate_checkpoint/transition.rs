@@ -7,7 +7,7 @@ use worth_query_host::facade::application_installation as installation;
 fn checkpoint_transition_refuses_real_accepted_output_before_authoring() {
     let program = validated_program();
     let predecessor =
-        installation::WorthQueryCheckpointProgramPredecessor::new(&program.revision().to_string())
+        installation::WorthQueryOpenAdoptionPredecessor::new(&program.revision().to_string())
             .unwrap();
     let host = publish(
         program,
@@ -41,7 +41,7 @@ fn checkpoint_transition_refuses_real_accepted_output_before_authoring() {
         host_limits(),
         source.clone(),
         predecessor,
-        installation::WorthQueryCheckpointTransitionResources::bounded(512, 32, 8192).unwrap(),
+        installation::WorthQueryOpenAdoptionResources::bounded(512, 32, 8192).unwrap(),
         |_, _| {
             called = true;
             Ok(())

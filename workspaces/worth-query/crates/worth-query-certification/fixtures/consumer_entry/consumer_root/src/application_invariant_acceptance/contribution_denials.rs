@@ -21,9 +21,7 @@ use worth_query_host::facade::{
         WorthQueryApplicationContribution, WorthQueryApplicationContributionSetup,
     },
     application_installation,
-    application_installation::{
-        WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
-    },
+    application_installation::{WorthQueryApplicationLimits, WorthQueryApplicationOpenDenial},
     primary_graph::{
         self, WorthQueryPrimaryGraphInstallationDenial,
         WorthQueryPrimaryGraphInstallationDenialKind,
@@ -284,8 +282,8 @@ fn topology_configuration(calls: &Arc<AtomicUsize>) -> TopologyConfiguration {
     }
 }
 
-fn limits() -> WorthQueryInMemoryApplicationLimits {
-    WorthQueryInMemoryApplicationLimits::new(
+fn limits() -> WorthQueryApplicationLimits {
+    WorthQueryApplicationLimits::new(
         super::resources::world_resources(),
         runtime::WorthQueryApplicationCandidateResourceProfile::bounded(4096, 8192, 4096).unwrap(),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
@@ -299,14 +297,14 @@ fn assert_contribution_denial<Schema>(
             Schema,
             DenialProgram<Schema>,
         >,
-        WorthQueryInMemoryApplicationDenial,
+        WorthQueryApplicationOpenDenial,
     >,
     expected: WorthQueryPrimaryGraphInstallationDenialKind,
 ) where
     Schema: ApplicationSchemaComposition,
 {
     match result {
-        Err(WorthQueryInMemoryApplicationDenial::Contributions(denial)) => {
+        Err(WorthQueryApplicationOpenDenial::Contributions(denial)) => {
             assert_eq!(denial.kind(), expected, "{denial:?}")
         }
         Err(other) => panic!("expected contribution denial {expected:?}, got {other:?}"),
