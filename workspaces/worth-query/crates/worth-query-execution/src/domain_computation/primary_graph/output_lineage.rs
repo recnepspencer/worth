@@ -163,8 +163,9 @@ pub(super) struct WorthQueryCurrentOutputCandidate {
 
 pub(super) struct WorthQueryCurrentOutputFamilyResolution {
     pub(super) family_installed: bool,
+    pub(super) ambiguous_publication: bool,
     pub(super) candidates: Vec<WorthQueryCurrentOutputCandidate>,
-    pub(super) source_lookups: usize,
+    pub(super) selection_work: usize,
 }
 
 impl WorthQueryApplicationOutputLineage {
