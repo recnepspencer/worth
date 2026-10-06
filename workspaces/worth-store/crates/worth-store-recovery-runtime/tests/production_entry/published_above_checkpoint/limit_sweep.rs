@@ -26,9 +26,8 @@ const HEADED_NEED: u64 = 90;
 const SUFFICIENT_ENTRIES: u64 = 4096;
 
 /// How far a byte sweep moves past a block that names the limit without
-/// the count its read reached. Ordering the history rereads whole pages of
-/// these worlds, and its blocks name no count; discovery and the phases
-/// after the walk read records.
+/// the count its read reached. A page admission rereads whole pages of
+/// these worlds; discovery and the phases after the walk read records.
 const PAGE_STRIDE: u64 = 8192;
 const RECORD_STRIDE: u64 = 128;
 
@@ -64,12 +63,13 @@ fn idle_world() -> PendingWalWorld {
     pending_wal_world::published_above_checkpoint(Workload::ThreeSmallObjects, Tail::Idle)
 }
 
-/// Whether this block says anything but that a limit ran out. Discovery
-/// keeps the reader failure that met the limit as the source of its block;
-/// planning names the limit in its denial, or names nothing.
+/// Whether this block says anything but that a limit ran out. Discovery,
+/// which counts no planning, keeps the reader failure that met the limit as
+/// the source of its block; planning names the limit in its denial, or
+/// names nothing.
 fn names_damage(blocked: &PhysicalRecoveryBlock) -> bool {
     let evidence = blocked.evidence();
-    if blocked.kind == PhysicalRecoveryBlockKind::DiscoveryLimit {
+    if blocked.cause().limit().is_some() && evidence.planning_counters.is_none() {
         return evidence.planning_denial.is_some();
     }
     !evidence.source_denials.is_empty()
@@ -82,33 +82,38 @@ fn names_damage(blocked: &PhysicalRecoveryBlock) -> bool {
 /// How this block falls short of naming the swept limit, if it does.
 fn shortfall(blocked: &PhysicalRecoveryBlock, swept: Swept, admitted: u64) -> Option<String> {
     let evidence = blocked.evidence();
-    let named_limit = evidence.limit.is_some_and(|limit| {
-        limit.dimension == swept.dimension()
-            && limit.admitted == admitted
-            && limit.observed > admitted
+    let named_limit = blocked.cause().limit().is_some_and(|limit| {
+        limit.dimension() == swept.dimension()
+            && limit.admitted() == admitted
+            && limit.observed() > admitted
     });
     (blocked.recovery_effects() != 0 || names_damage(blocked) || !named_limit).then(|| {
         format!(
             "kind={:?} denial={:?} limit={:?} sources={:?} effects={}",
-            blocked.kind,
+            blocked.cause(),
             evidence.planning_denial,
-            evidence.limit,
+            blocked.cause().limit(),
             evidence.source_denials,
             blocked.recovery_effects(),
         )
     })
 }
 
+/// Whether page admission blocked, at a limit or not.
+fn paged(blocked: &PhysicalRecoveryBlock) -> bool {
+    blocked.cause().phase() == PhysicalRecoveryBlockKind::PageAdmission
+}
+
 /// The count the block says its charge or read reached, or one past the
-/// limit where it names none, with the phase that blocked; `None` once the
-/// world recovers. A block that does not name the limit is recorded against
-/// the limit it was admitted under.
+/// limit where it names none, and whether page admission blocked; `None`
+/// once the world recovers. A block that does not name the limit is
+/// recorded against the limit it was admitted under.
 fn reached(
     world: &PendingWalWorld,
     swept: Swept,
     admitted: u64,
     failures: &mut Vec<String>,
-) -> Option<(PhysicalRecoveryBlockKind, u64)> {
+) -> Option<(bool, u64)> {
     match WorthStoreRecovery::recover(swept.request(world.root(), admitted)) {
         PhysicalRecoveryOutcome::Recovered(handoff) => {
             drop(handoff);
@@ -118,8 +123,8 @@ fn reached(
             if let Some(short) = shortfall(&blocked, swept, admitted) {
                 failures.push(format!("{swept:?} {admitted}: {short}"));
             }
-            let count = blocked.evidence().limit.map_or(0, |limit| limit.observed);
-            Some((blocked.kind, count.max(admitted + 1)))
+            let count = blocked.cause().limit().map_or(0, |limit| limit.observed());
+            Some((paged(&blocked), count.max(admitted + 1)))
         }
         outcome => panic!("{swept:?} {admitted}: neither recovered nor blocked: {outcome:?}"),
     }
@@ -144,14 +149,13 @@ fn entry_need(world: &PendingWalWorld, failures: &mut Vec<String>) -> Option<u64
                 "ManifestEntries {admitted}: refused at {count} under a lower limit, now {now:?}",
             ));
         }
-        let Some((kind, count)) = blocked else {
+        let Some((paged, count)) = blocked else {
             if !charged_together {
                 failures.push("ManifestEntries: no ordered step named the count it reached".into());
             }
             return Some(admitted);
         };
-        charged_together |=
-            kind == PhysicalRecoveryBlockKind::PageAdmission && count > admitted + 1;
+        charged_together |= paged && count > admitted + 1;
         refused_at = Some(count);
     }
     None
@@ -165,13 +169,15 @@ fn entry_need(world: &PendingWalWorld, failures: &mut Vec<String>) -> Option<u64
 fn byte_need(world: &PendingWalWorld, swept: Swept, failures: &mut Vec<String>) -> Option<u64> {
     let mut admitted = 1;
     while admitted <= certified_release_serving::ADMITTED_BYTES {
-        let Some((kind, count)) = reached(world, swept, admitted, failures) else {
+        let Some((paged, count)) = reached(world, swept, admitted, failures) else {
             return Some(admitted);
         };
-        admitted = match kind {
-            _ if count > admitted + 1 => count,
-            PhysicalRecoveryBlockKind::PageAdmission => admitted + PAGE_STRIDE,
-            _ => admitted + RECORD_STRIDE,
+        admitted = if count > admitted + 1 {
+            count
+        } else if paged {
+            admitted + PAGE_STRIDE
+        } else {
+            admitted + RECORD_STRIDE
         };
     }
     None

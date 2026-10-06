@@ -153,7 +153,7 @@ fn routes_their_holder_has_no_room_for_are_refused_as_held_and_never_as_an_entry
             )
             .map(|routes| routes.len() as u64);
             let held = (resident.used(), trace.owned_heap_bytes());
-            (outcome, resident.peak(), budget.refused_at(), held)
+            (outcome, resident.peak(), budget.refused(), held)
         };
         let (routed, need, _, (used, traced)) = held(1 << 30);
         assert!(matches!(routed, Ok(count) if count == root.record_count()));

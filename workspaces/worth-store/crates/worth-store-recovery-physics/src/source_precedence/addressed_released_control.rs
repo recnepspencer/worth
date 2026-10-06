@@ -8,7 +8,9 @@ use worth_store_physical_format::{
 };
 
 use super::{
-    ordered_root_history::VerifiedReleasedRootEdge, released_v3_inventory_transition::transcript,
+    ordered_root_history::VerifiedReleasedRootEdge,
+    physics_budget::{ExceededPhysicsBound, PhysicsAllowance},
+    released_v3_inventory_transition::transcript,
     ReleasedInventoryView, WitnessedSelectedControlFrame,
 };
 
@@ -17,7 +19,12 @@ pub enum AddressedReleasedControlDenial {
     ResultRoot,
     Route,
     Frame,
-    Bound,
+    /// The frame would retain more bytes than its caller admitted.
+    Bound(ExceededPhysicsBound),
+    /// The frame's retained size passes every count, so no bound states it.
+    CountOverflow,
+    /// The frame's copy could not be allocated.
+    Allocation,
 }
 
 /// This token joins integrity-validated control bytes to a complete addressed
@@ -48,10 +55,10 @@ impl VerifiedAddressedReleasedControlFrame {
     ) -> Result<Self, AddressedReleasedControlDenial> {
         let retained_bytes = (frame.bytes().len() as u64)
             .checked_add(std::mem::size_of::<Self>() as u64)
-            .ok_or(AddressedReleasedControlDenial::Bound)?;
-        if retained_bytes > remaining_retained_bytes {
-            return Err(AddressedReleasedControlDenial::Bound);
-        }
+            .ok_or(AddressedReleasedControlDenial::CountOverflow)?;
+        PhysicsAllowance::retained_bytes(remaining_retained_bytes)
+            .admit(retained_bytes)
+            .map_err(AddressedReleasedControlDenial::Bound)?;
         if transcript(result, format, maximum_entries)
             .map_err(|_| AddressedReleasedControlDenial::ResultRoot)?
             != edge.transition().result_topology()
@@ -78,7 +85,7 @@ impl VerifiedAddressedReleasedControlFrame {
         let mut bytes = Vec::new();
         bytes
             .try_reserve_exact(frame.bytes().len())
-            .map_err(|_| AddressedReleasedControlDenial::Bound)?;
+            .map_err(|_| AddressedReleasedControlDenial::Allocation)?;
         bytes.extend_from_slice(frame.bytes());
         Ok(Self {
             candidate_root_frame_sha256: edge.result_root_frame_sha256(),

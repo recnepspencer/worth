@@ -4,15 +4,13 @@ use worth_store_recovery_physics::{
     PhysicalRedoTargetIdentity, ReconciledOperationFates, RecoveryPlanningCounters,
 };
 
-use crate::entry::{
-    PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure,
-    PhysicalRecoveryOutcome, PhysicalRecoveryPlanningDenial,
-};
+use crate::entry::{PhysicalRecoveryLimitDimension, PhysicalRecoveryOutcome};
+use crate::orchestration::recovery_budget::RecoveryAllowance;
 
 use super::admitted_basis::AdmittedPlanningBasis;
 use super::context::PlanningContext;
 use super::counters;
-use super::page_observation::{self, PageObservationFailure};
+use super::page_observation;
 
 pub(super) struct PageObservationResult {
     pub(super) observations: Vec<worth_store_recovery_physics::RecoveryPageObservation>,
@@ -101,7 +99,6 @@ pub(super) fn resolve(
         .observation_bytes
         .saturating_sub(context.counters.bytes_observed);
     if remaining_observation_bytes == 0 {
-        let admitted_bytes = context.limits.observation_bytes;
         let planning_counters = counters::after_fates(
             &admitted.sample,
             &admitted.fates,
@@ -109,16 +106,19 @@ pub(super) fn resolve(
             0,
             0,
         );
-        return Err(context.block_with_planning_attempt_denial(
-            PhysicalRecoveryBlockKind::PageAdmission,
+        // T2: a read grant charges the read's length; until then the least
+        // next read.
+        let limit = RecoveryAllowance::declared(
+            &context.limits,
+            PhysicalRecoveryLimitDimension::ObservationBytes,
+        )
+        .spent()
+        .map(Into::into);
+        return Err(context.page_block(
             planning_counters,
             "selected-source-inventory",
-            Some(PhysicalRecoveryLimitFailure {
-                dimension: PhysicalRecoveryLimitDimension::ObservationBytes,
-                observed: admitted_bytes.saturating_add(1),
-                admitted: admitted_bytes,
-            }),
-            PhysicalRecoveryPlanningDenial::Page(PageObservationFailure::ByteLimit.evidence()),
+            limit,
+            None,
         ));
     }
     let selected_wal = context
@@ -148,10 +148,9 @@ pub(super) fn resolve(
         context.selection.page_facts().placements(),
         &admitted.redo,
         admitted.format,
-        context.limits.manifest_entries,
+        &context.limits,
         admitted.remaining_manifest_entries,
         remaining_observation_bytes,
-        context.limits.staging_bytes,
         &mut context.integrity_trace,
     );
     context.authority.media = media;
@@ -194,18 +193,15 @@ pub(super) fn resolve(
             integrity: attempt.integrity,
         },
         Err(denial) => {
-            let limit = observation_limit(
-                &context,
-                &denial,
-                remaining_observation_bytes,
-                &attempt.manifest_budget,
-            );
-            return Err(context.block_with_planning_attempt_denial(
-                PhysicalRecoveryBlockKind::PageAdmission,
+            let (limit, page) = match denial.evidence() {
+                Ok(page) => (None, Some(page)),
+                Err(limit) => (limit.in_recovery(&context.limits), None),
+            };
+            return Err(context.page_block(
                 planning_counters,
                 "selected-source-inventory-and-pages",
                 limit,
-                PhysicalRecoveryPlanningDenial::Page(denial.evidence()),
+                page,
             ));
         }
     };
@@ -256,43 +252,4 @@ pub(super) fn resolve(
             validated_manifest_cleanup: None,
         },
     ))
-}
-
-/// The limit an exhausted observation ran out of. The manifest-entry budget
-/// names the count its refused charge would have reached; a byte reader stops
-/// at the limit without learning how far the artifact runs beyond it.
-fn observation_limit(
-    context: &PlanningContext,
-    denial: &PageObservationFailure,
-    remaining_observation_bytes: u64,
-    manifest_budget: &super::manifest_entry_budget::ManifestEntryBudget,
-) -> Option<PhysicalRecoveryLimitFailure> {
-    match denial {
-        PageObservationFailure::ByteLimit => Some(PhysicalRecoveryLimitFailure {
-            dimension: PhysicalRecoveryLimitDimension::ObservationBytes,
-            observed: context
-                .counters
-                .bytes_observed
-                .saturating_add(remaining_observation_bytes)
-                .saturating_add(1),
-            admitted: context.limits.observation_bytes,
-        }),
-        PageObservationFailure::ManifestEntryLimit => Some(PhysicalRecoveryLimitFailure {
-            dimension: PhysicalRecoveryLimitDimension::ManifestEntries,
-            observed: manifest_budget
-                .refused_at()
-                .unwrap_or_else(|| context.limits.manifest_entries.saturating_add(1)),
-            admitted: context.limits.manifest_entries,
-        }),
-        // The walk stops at the first step its scratch cannot hold, and so
-        // needed at least one byte more than was admitted.
-        PageObservationFailure::StagingByteLimit { at_least } => {
-            Some(PhysicalRecoveryLimitFailure {
-                dimension: PhysicalRecoveryLimitDimension::StagingBytes,
-                observed: (*at_least).max(context.limits.staging_bytes.saturating_add(1)),
-                admitted: context.limits.staging_bytes,
-            })
-        }
-        _ => None,
-    }
 }

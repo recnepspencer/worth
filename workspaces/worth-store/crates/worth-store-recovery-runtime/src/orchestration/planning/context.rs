@@ -128,6 +128,32 @@ impl PlanningContext {
         .with_block_integrity_observations(self.integrity.into_observations())
     }
 
+    /// Page observation stopped: at a limit, which carries its own counts and
+    /// names no page, or with what observation says of the pages.
+    pub(super) fn page_block(
+        self,
+        planning_counters: RecoveryPlanningCounters,
+        artifact: &str,
+        limit: Option<PhysicalRecoveryLimitFailure>,
+        denial: Option<crate::entry::PhysicalRecoveryPageAdmissionDenial>,
+    ) -> PhysicalRecoveryOutcome {
+        let integrity_trace = self.integrity_trace;
+        super::denial::block_with_root_protocol_counters(
+            self.authority,
+            self.coordination,
+            PhysicalRecoveryBlockKind::PageAdmission,
+            self.counters,
+            planning_counters,
+            self.root_protocol_counters,
+            artifact,
+            limit,
+            denial.map(PhysicalRecoveryPlanningDenial::Page),
+            self.root_protocol_denials,
+        )
+        .with_integrity_trace(integrity_trace)
+        .with_block_integrity_observations(self.integrity.into_observations())
+    }
+
     pub(super) fn successor_candidate_block(
         self,
         planning_counters: RecoveryPlanningCounters,
@@ -197,7 +223,7 @@ impl PlanningContext {
         self,
         planning_counters: RecoveryPlanningCounters,
         denial: RecoveryPlanCostDenial,
-        limit: PhysicalRecoveryLimitFailure,
+        limit: Option<PhysicalRecoveryLimitFailure>,
     ) -> PhysicalRecoveryOutcome {
         let integrity_trace = self.integrity_trace;
         cost_denial_block(

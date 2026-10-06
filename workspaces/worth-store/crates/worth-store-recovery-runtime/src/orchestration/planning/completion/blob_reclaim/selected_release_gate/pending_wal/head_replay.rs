@@ -6,11 +6,14 @@ use worth_store_recovery_physics::{
     SelectedReleaseHeadReplayDenial, VerifiedSelectedReleaseHeadReplayV14,
 };
 
+use crate::entry::{PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDimension};
 use crate::orchestration::planning::completion::historical_publication::{
     discovery_failure, HistoricalFailure,
 };
 use crate::orchestration::planning::manifest_entry_budget::ManifestEntryBudget;
+use crate::orchestration::planning::page_observation::PageLimit;
 use crate::orchestration::planning::selected_source_inventory::ResidentAllowance;
+use crate::orchestration::recovery_budget::RecoveryAllowance;
 
 pub(super) fn admit(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
@@ -18,10 +21,11 @@ pub(super) fn admit(
     projection: &PhysicalRedoProjection,
     redo: &ImmutablePhysicalRedoPlan,
     selected: &PhysicalSourceSelection,
-    staging_bytes: u64,
+    limits: &PhysicalRecoveryLimitDeclaration,
     resident: &mut ResidentAllowance,
 ) -> Result<VerifiedSelectedReleaseHeadReplayV14, HistoricalFailure> {
     const INVALID: HistoricalFailure = HistoricalFailure::Invalid;
+    let staging = RecoveryAllowance::declared(limits, PhysicalRecoveryLimitDimension::StagingBytes);
     let worth_store_physical_format::PersistedPhysicalRecoveryOperation::RecordsDropped {
         head_effect: Some(effect),
         ..
@@ -46,7 +50,7 @@ pub(super) fn admit(
         projection,
         redo,
         selected,
-        staging_bytes,
+        staging.admitted(),
         resident.remaining(),
         |reference, maximum| {
             discovery
@@ -57,25 +61,38 @@ pub(super) fn admit(
                 .ok_or(())
         },
     )
-    .map_err(|denial| unread.unwrap_or_else(|| refused(denial, resident)))?;
+    .map_err(|denial| unread.unwrap_or_else(|| refused(denial, staging, resident)))?;
     resident
         .bytes(replay.owned_heap_bytes().ok_or(INVALID)?)
         .map_err(|_| INVALID)?;
     Ok(replay)
 }
 
-/// What physics refused. The effect bytes it was admitted are recovery's
-/// staging bytes; the heap is what the allowance had left, which keeps the
-/// size it could not hold for the gate to report.
+/// What physics refused. The effect bytes it was admitted are all of
+/// recovery's `staging`, held beside nothing else; the heap is what the
+/// allowance had left, which keeps the size it could not hold for the gate to
+/// report.
 fn refused(
     denial: SelectedReleaseHeadReplayDenial,
+    staging: RecoveryAllowance,
     resident: &mut ResidentAllowance,
 ) -> HistoricalFailure {
-    let SelectedReleaseHeadReplayDenial::BoundExceeded(past) = denial else {
-        return HistoricalFailure::Invalid;
+    use SelectedReleaseHeadReplayDenial as Denial;
+    let past = match denial {
+        Denial::BoundExceeded(past) => past,
+        Denial::SizeOverflow => return HistoricalFailure::CountOverflow,
+        Denial::NotAdmittedUpsert
+        | Denial::NotAdmittedTerminalHeadRetirement
+        | Denial::SourceRoot
+        | Denial::SourcePath
+        | Denial::Read => return HistoricalFailure::Invalid,
     };
     match past.dimension() {
-        HeadReplayBound::EffectBytes => HistoricalFailure::StagingBytes(past.observed()),
+        HeadReplayBound::EffectBytes => staging
+            .beside(past.observed(), past.admitted())
+            .map_or(HistoricalFailure::CountOverflow, |limit| {
+                HistoricalFailure::Limit(PageLimit::Recovery(limit))
+            }),
         HeadReplayBound::HeapBytes => {
             let _ = resident.transient(past.observed());
             HistoricalFailure::Invalid
@@ -88,6 +105,10 @@ mod tests {
     use worth_store_recovery_physics::{test_support::head_replay_limit_for_test, HeadReplayBound};
 
     use super::*;
+    use crate::orchestration::recovery_budget::{allowance_for_test, recovery_limit_for_test};
+
+    const STAGING: RecoveryAllowance =
+        allowance_for_test(PhysicalRecoveryLimitDimension::StagingBytes, 896);
 
     #[test]
     fn a_bound_physics_refused_is_the_limit_that_ran_out_and_not_damage() {
@@ -98,18 +119,43 @@ mod tests {
         };
         let mut resident = ResidentAllowance::new(64);
         resident.bytes(24).unwrap();
+        // Physics was admitted all 896 staging bytes and needed 897.
         assert_eq!(
-            refused(past(HeadReplayBound::EffectBytes, 897, 896), &mut resident),
-            HistoricalFailure::StagingBytes(897)
+            refused(
+                past(HeadReplayBound::EffectBytes, 897, 896),
+                STAGING,
+                &mut resident
+            ),
+            HistoricalFailure::Limit(PageLimit::Recovery(recovery_limit_for_test(
+                PhysicalRecoveryLimitDimension::StagingBytes,
+                897,
+                896
+            )))
         );
         assert_eq!(
-            refused(SelectedReleaseHeadReplayDenial::SourcePath, &mut resident),
+            refused(
+                SelectedReleaseHeadReplayDenial::SourcePath,
+                STAGING,
+                &mut resident
+            ),
             HistoricalFailure::Invalid
+        );
+        assert_eq!(
+            refused(
+                SelectedReleaseHeadReplayDenial::SizeOverflow,
+                STAGING,
+                &mut resident
+            ),
+            HistoricalFailure::CountOverflow
         );
         assert_eq!(resident.exceeded_requirement(), None);
         // Forty bytes were left and the replay needed 41 at once.
         assert_eq!(
-            refused(past(HeadReplayBound::HeapBytes, 41, 40), &mut resident),
+            refused(
+                past(HeadReplayBound::HeapBytes, 41, 40),
+                STAGING,
+                &mut resident
+            ),
             HistoricalFailure::Invalid
         );
         assert_eq!(resident.exceeded_requirement(), Some(65));

@@ -97,7 +97,6 @@ pub(super) fn charge_and_reread(
     budget: &mut ManifestEntryBudget,
     trace: &mut RecoveryIntegrityIngressTrace,
     format: PhysicalRecordFormatDeclaration,
-    maximum_entries: u64,
     step: usize,
     source: Observed<'_>,
     selected: Observed<'_>,
@@ -115,7 +114,7 @@ pub(super) fn charge_and_reread(
     // The walk still rereads each intermediate root in full. The reread
     // charges nothing: it is admitted as one view, of no more entries than
     // recovery admits, and its bytes are observation bytes.
-    let mut view = ManifestEntryBudget::new(maximum_entries, 0);
+    let mut view = budget.view();
     let (root, unit) = source_root(discovery, generation, format, &mut view)?;
     let headers =
         selected_source_inventory::observe_headers(discovery, &root, format, &unit, trace)?;

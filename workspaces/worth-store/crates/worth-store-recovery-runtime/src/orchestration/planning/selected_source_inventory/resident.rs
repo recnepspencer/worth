@@ -2,6 +2,8 @@
 
 use worth_store_physical_format::PhysicalRecordFormatDeclaration;
 
+use crate::orchestration::recovery_budget::{ExceededRecoveryLimit, RecoveryAllowance};
+
 /// The allowance cannot hold what was asked of it. The ledger keeps what it
 /// would have needed, so its owner reports its own limit with that value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -32,6 +34,8 @@ pub(in crate::orchestration::planning) struct ResidentAllowance {
     maximum: u64,
     peak: u64,
     required: u64,
+    /// A size was asked of the ledger that no count of bytes can say.
+    past_every_count: bool,
 }
 
 impl ResidentAllowance {
@@ -41,6 +45,7 @@ impl ResidentAllowance {
             maximum,
             peak: 0,
             required: 0,
+            past_every_count: false,
         }
     }
 
@@ -62,6 +67,19 @@ impl ResidentAllowance {
         } else {
             None
         }
+    }
+
+    /// The limit the ledger ran out of, in the counts of `whole`, which
+    /// handed the ledger its maximum and held the rest. `None` where nothing
+    /// was refused, or a size passed every count: no limit can state it.
+    pub(in crate::orchestration::planning) fn refused_in(
+        &self,
+        whole: RecoveryAllowance,
+    ) -> Option<ExceededRecoveryLimit> {
+        if self.past_every_count || self.required <= self.maximum {
+            return None;
+        }
+        whole.beside(self.required, self.maximum)
     }
 
     /// Admit a concurrently live window without retaining it after the caller
@@ -97,6 +115,7 @@ impl ResidentAllowance {
     /// A size no count of bytes can say is more than any allowance admits.
     fn unrepresentable(&mut self) -> ResidentExhausted {
         self.required = u64::MAX;
+        self.past_every_count = true;
         ResidentExhausted
     }
 
@@ -170,6 +189,20 @@ mod tests {
         assert_eq!(resident.used(), 12_800);
         assert_eq!(resident.entries(100, 32), Err(ResidentExhausted));
         assert_eq!(resident.exceeded_requirement(), Some(25_600));
+        // Handed 16,000 of 20,000, the ledger needed 25,600: 29,600 in all.
+        let whole = crate::orchestration::recovery_budget::allowance_for_test(
+            crate::entry::PhysicalRecoveryLimitDimension::StagingBytes,
+            20_000,
+        );
+        let limit = resident.refused_in(whole).unwrap();
+        assert_eq!(
+            (limit.dimension(), limit.observed(), limit.admitted()),
+            (
+                crate::entry::PhysicalRecoveryLimitDimension::StagingBytes,
+                29_600,
+                20_000
+            ),
+        );
     }
 
     #[test]
@@ -200,6 +233,11 @@ mod tests {
         let mut bounded = ResidentAllowance::new(1 << 40);
         assert_eq!(bounded.entries(usize::MAX, 32), Err(ResidentExhausted));
         assert_eq!(bounded.exceeded_requirement(), Some(u64::MAX));
+        let whole = crate::orchestration::recovery_budget::allowance_for_test(
+            crate::entry::PhysicalRecoveryLimitDimension::StagingBytes,
+            1 << 41,
+        );
+        assert_eq!(bounded.refused_in(whole), None);
         assert_eq!(bounded.used(), 0);
     }
 

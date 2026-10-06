@@ -74,7 +74,15 @@ fn selected_source_inventory_is_charged_its_root_and_leaf_entries_and_no_block()
     assert!(observe("allocation-entry-charge-need", need).is_ok());
     assert_eq!(
         observe("allocation-entry-charge-short", need - 1).err(),
-        Some(super::PageObservationFailure::ManifestEntryLimit)
+        Some(super::PageObservationFailure::Limit(
+            crate::orchestration::planning::page_observation::PageLimit::Recovery(
+                crate::orchestration::recovery_budget::recovery_limit_for_test(
+                    crate::entry::PhysicalRecoveryLimitDimension::ManifestEntries,
+                    need,
+                    need - 1,
+                )
+            )
+        ))
     );
 }
 

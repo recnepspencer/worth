@@ -90,15 +90,14 @@ pub(super) fn verify(
         .saturating_sub(basis.observed_pages.source_copy_bytes_read)
         .saturating_sub(basis.observed_pages.historical_publication_bytes_read);
     if byte_limit < total_io_bytes {
-        let admitted = context.limits.observation_bytes;
-        return Err(context.redo_block(
-            basis.planning_counters(),
-            Some(crate::entry::PhysicalRecoveryLimitFailure {
-                dimension: crate::entry::PhysicalRecoveryLimitDimension::ObservationBytes,
-                observed: admitted.saturating_add(total_io_bytes - byte_limit),
-                admitted,
-            }),
-        ));
+        // The copy was left `byte_limit` of recovery's observation bytes.
+        let limit = crate::orchestration::recovery_budget::RecoveryAllowance::declared(
+            &context.limits,
+            crate::entry::PhysicalRecoveryLimitDimension::ObservationBytes,
+        )
+        .beside(total_io_bytes, byte_limit)
+        .map(Into::into);
+        return Err(context.redo_block(basis.planning_counters(), limit));
     }
     let format = context.authority.record_format;
     let store = context.authority.media.store_identity();

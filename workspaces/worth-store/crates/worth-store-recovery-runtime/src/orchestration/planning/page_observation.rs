@@ -1,3 +1,4 @@
+use crate::orchestration::recovery_budget::RecoveryAllowance;
 use std::collections::BTreeMap;
 
 use worth_store::physical_runtime::AdmittedRecoveryFilesystemMedia;
@@ -25,7 +26,7 @@ mod tier_routes;
 
 use absent_target::{AbsentTarget, SelectedFrontier};
 pub(in crate::orchestration::planning) use allocation_truth::InlineAllocationTruth;
-pub(super) use failure::{PageObservationFailure, ReaderLimit};
+pub(super) use failure::{PageLimit, PageObservationFailure};
 use materialized::{observe_extent, observe_inline, selected_inline_target};
 
 pub(super) struct PageObservationAttempt {
@@ -68,12 +69,17 @@ pub(super) fn observe_selected_pages(
     placements: &[CurrentPhysicalRecordPlacement],
     admitted_redo: &worth_store_recovery_physics::AdmittedPhysicalRedoMembers,
     format: PhysicalRecordFormatDeclaration,
-    admitted_manifest_entries: u64,
+    limits: &crate::entry::PhysicalRecoveryLimitDeclaration,
     maximum_manifest_entries: u64,
     maximum_bytes: u64,
-    maximum_staging_bytes: u64,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) -> (AdmittedRecoveryFilesystemMedia, PageObservationAttempt) {
+    let admitted_manifest_entries = limits.manifest_entries;
+    // The walk's scratch is recovery's staging bytes.
+    let staging = RecoveryAllowance::declared(
+        limits,
+        crate::entry::PhysicalRecoveryLimitDimension::StagingBytes,
+    );
     let targets = admitted_redo.observation_targets();
     let mut discovery = media
         .bounded_discovery(
@@ -82,8 +88,8 @@ pub(super) fn observe_selected_pages(
         )
         .expect("admitted nonzero recovery limits create a bounded planning reader");
     let mut integrity = crate::integrity_ingress::RecoveryIntegrityIngressTrace::new();
-    let mut manifest_budget = super::manifest_entry_budget::ManifestEntryBudget::new(
-        admitted_manifest_entries,
+    let mut manifest_budget = super::manifest_entry_budget::ManifestEntryBudget::declared(
+        limits,
         admitted_manifest_entries.saturating_sub(maximum_manifest_entries),
     );
     let result = observe(
@@ -97,7 +103,7 @@ pub(super) fn observe_selected_pages(
         format,
         admitted_manifest_entries,
         &mut manifest_budget,
-        maximum_staging_bytes,
+        staging,
         &mut integrity,
         integrity_trace,
     );
@@ -130,7 +136,7 @@ fn observe(
     format: PhysicalRecordFormatDeclaration,
     admitted_manifest_entries: u64,
     budget: &mut super::manifest_entry_budget::ManifestEntryBudget,
-    maximum_staging_bytes: u64,
+    staging: RecoveryAllowance,
     integrity: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) -> Result<ObservedPageBasis, PageObservationFailure> {
@@ -257,7 +263,7 @@ fn observe(
             format,
             budget,
             maximum_entries: admitted_manifest_entries,
-            maximum_staging_bytes,
+            staging,
             trace: integrity_trace,
         },
         &absent_targets,

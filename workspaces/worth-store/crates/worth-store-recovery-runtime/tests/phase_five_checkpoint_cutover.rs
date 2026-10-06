@@ -12,7 +12,8 @@ use worth_store_physical_format::{
     CHECKPOINT_STREAM_HEADER_RECORD_BYTES,
 };
 use worth_store_recovery_runtime::{
-    PhysicalRecoveryCheckpointIntegrityDenial, PhysicalRecoveryLimits, PhysicalRecoverySourceDenial,
+    PhysicalRecoveryBlockKind, PhysicalRecoveryCheckpointIntegrityDenial,
+    PhysicalRecoveryLimitDimension, PhysicalRecoveryLimits, PhysicalRecoverySourceDenial,
 };
 
 #[test]
@@ -126,12 +127,27 @@ fn checkpoint_binding_record_limit_is_a_typed_discovery_denial() {
         .any(|denial| matches!(
             denial,
             PhysicalRecoverySourceDenial::CheckpointIntegrity(
-                PhysicalRecoveryCheckpointIntegrityDenial::BindingRecordLimit {
-                    observed: 2,
-                    admitted: 1
-                }
+                PhysicalRecoveryCheckpointIntegrityDenial::BindingRecordLimit
             )
         )));
+    let limit = blocked
+        .cause()
+        .limit()
+        .expect("the binding count is a limit");
+    assert_eq!(
+        (
+            blocked.cause().phase(),
+            limit.dimension(),
+            limit.observed(),
+            limit.admitted()
+        ),
+        (
+            PhysicalRecoveryBlockKind::Checkpoint,
+            PhysicalRecoveryLimitDimension::OperationBindings,
+            2,
+            1
+        )
+    );
 }
 
 #[test]

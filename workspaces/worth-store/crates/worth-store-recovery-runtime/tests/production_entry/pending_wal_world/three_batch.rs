@@ -22,7 +22,7 @@ fn three_distinct_v3_batches_recover_and_open_serving() {
         match outcome {
             worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(blocked) => panic!(
                 "third distinct V3 C8 denied: kind={:?}, artifact={:?}, effects={}",
-                blocked.kind,
+                blocked.cause(),
                 blocked.evidence().artifact,
                 blocked.recovery_effects(),
             ),

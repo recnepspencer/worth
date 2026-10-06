@@ -170,13 +170,13 @@ fn recover_custody(request: PhysicalRecoveryOpenRequest) -> RecoveredPhysicalChe
         match outcome {
             PhysicalRecoveryOutcome::Blocked(block) => panic!(
                 "shared-reuse recovery blocked: kind={:?}; artifact={:?}; generation={:?}; source_denials={:?}; discovery={:?}; integrity={:?}; limit={:?}; effects={}",
-                block.kind,
+                block.cause(),
                 block.evidence().artifact.as_deref(),
                 block.evidence().source_generation,
                 block.evidence().source_denials.as_slice(),
                 block.evidence().counters,
                 block.evidence().integrity_counters(),
-                block.evidence().limit,
+                block.cause().limit(),
                 block.recovery_effects(),
             ),
             PhysicalRecoveryOutcome::PublicationIndeterminate(failure) => panic!(

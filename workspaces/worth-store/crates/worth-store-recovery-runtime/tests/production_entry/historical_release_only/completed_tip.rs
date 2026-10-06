@@ -37,7 +37,7 @@ fn two_completed_releases_without_ordinary_tail_serve_checkpoint_and_reopen_exac
                     failure.handoff_failure(), failure.reopen_failure(), failure.recovery_effects()),
                 PhysicalRecoveryOutcome::Blocked(block) => panic!(
                     "completed C8 admission blocked: kind={:?}; artifact={:?}; cause={:?}; effects={}",
-                    block.kind, block.evidence().artifact, block.evidence().planning_denial,
+                    block.cause(), block.evidence().artifact, block.evidence().planning_denial,
                     block.recovery_effects()),
                 other => panic!("completed history must independently rejoin Store: {other:?}"),
             };

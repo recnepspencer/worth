@@ -22,7 +22,7 @@ fn two_killed_v3_batches_fold_at_next_checkpoint_and_reopen() {
         match outcome {
             PhysicalRecoveryOutcome::Blocked(blocked) => panic!(
                 "two-object C8 blocked: kind={:?}, page={:?}, effects={}",
-                blocked.kind,
+                blocked.cause(),
                 blocked.evidence().planning_denial,
                 blocked.recovery_effects(),
             ),
@@ -90,7 +90,7 @@ fn two_killed_v3_batches_fold_at_next_checkpoint_and_reopen() {
         match outcome {
             PhysicalRecoveryOutcome::Blocked(blocked) => panic!(
                 "fresh folded C8 blocked: kind={:?}, artifact={:?}, planning={:?}, effects={}",
-                blocked.kind,
+                blocked.cause(),
                 blocked.evidence().artifact,
                 blocked.evidence().planning_denial,
                 blocked.recovery_effects(),

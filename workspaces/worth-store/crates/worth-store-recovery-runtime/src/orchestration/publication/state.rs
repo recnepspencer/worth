@@ -188,7 +188,9 @@ impl PublicationState {
         drop(media);
         session.block();
         PhysicalRecoveryOutcome::Blocked(PhysicalRecoveryBlock::new(
-            PhysicalRecoveryBlockKind::Publication,
+            crate::entry::PhysicalRecoveryBlockCause::Damage(
+                PhysicalRecoveryBlockKind::Publication,
+            ),
             store,
             session_identity,
             PhysicalRecoveryBlockEvidence {

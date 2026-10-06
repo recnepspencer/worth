@@ -8,8 +8,8 @@
 use std::path::Path;
 
 use worth_store_recovery_runtime::{
-    PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension, PhysicalRecoveryOutcome,
-    WorthStoreRecovery,
+    PhysicalRecoveryBlock, PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension,
+    PhysicalRecoveryOutcome, PhysicalRecoveryPlanningDenial, WorthStoreRecovery,
 };
 
 use super::ordinary_limits_observing;
@@ -53,22 +53,22 @@ pub fn completion_blocks_under_every_observation_limit(stage: &str, root: &Path)
             PhysicalRecoveryOutcome::Blocked(blocked) => blocked,
             outcome => panic!("{stage} {admitted}: neither recovered nor blocked: {outcome:?}"),
         };
-        let limit = blocked.evidence().limit;
+        let limit = blocked.cause().limit();
         let named = limit.is_some_and(|limit| {
-            limit.dimension == PhysicalRecoveryLimitDimension::ObservationBytes
-                && limit.admitted == admitted
-                && limit.observed > admitted
+            limit.dimension() == PhysicalRecoveryLimitDimension::ObservationBytes
+                && limit.admitted() == admitted
+                && limit.observed() > admitted
         });
         if !named || blocked.recovery_effects() != 0 {
             failures.push(format!(
                 "{admitted}: kind={:?} denial={:?} limit={limit:?} effects={}",
-                blocked.kind,
+                blocked.cause(),
                 blocked.evidence().planning_denial,
                 blocked.recovery_effects(),
             ));
         }
-        completion_blocks += usize::from(blocked.kind == PhysicalRecoveryBlockKind::RedoPlanning);
-        let reached = limit.map_or(0, |limit| limit.observed);
+        completion_blocks += usize::from(completion_reported(&blocked));
+        let reached = limit.map_or(0, |limit| limit.observed());
         (admitted, refused_at) = if reached > admitted + 1 {
             (reached, reached)
         } else {
@@ -76,4 +76,17 @@ pub fn completion_blocks_under_every_observation_limit(stage: &str, root: &Path)
         };
     }
     panic!("{stage}: the world did not recover under {SUFFICIENT_BYTES} observation bytes");
+}
+
+/// Planning past the selected source's page inventory is completion. Page
+/// admission reads that inventory, and completion's successor candidate,
+/// which names its denial.
+fn completion_reported(blocked: &PhysicalRecoveryBlock) -> bool {
+    let evidence = blocked.evidence();
+    let inventory = blocked.cause().phase() == PhysicalRecoveryBlockKind::PageAdmission
+        && !matches!(
+            evidence.planning_denial,
+            Some(PhysicalRecoveryPlanningDenial::SuccessorCandidate(_))
+        );
+    evidence.planning_counters.is_some() && !inventory
 }

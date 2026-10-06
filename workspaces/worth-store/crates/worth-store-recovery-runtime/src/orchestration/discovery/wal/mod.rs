@@ -37,6 +37,8 @@ pub(super) struct WalDiscoveryInventory {
 
 pub(super) enum WalDiscoveryInventoryDenialKind {
     CounterOverflow,
+    /// The frames needed past those the refusing count was handed: a
+    /// segment's share of what remained, or the whole WAL's frames.
     FrameLimitExceeded {
         observed: u64,
         admitted: u64,

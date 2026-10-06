@@ -55,8 +55,8 @@ fn conflicting_noncurrent_artifact_blocks_without_counterfeit_performed_evidence
         panic!("staging media conflict is Blocked")
     };
     assert_eq!(
-        blocked.kind,
-        worth_store_recovery_runtime::PhysicalRecoveryBlockKind::Staging
+        blocked.cause().damage(),
+        Some(worth_store_recovery_runtime::PhysicalRecoveryBlockKind::Staging)
     );
     let counters = blocked.evidence().staging_counters.unwrap();
     assert_eq!(counters.commands_submitted, 1);

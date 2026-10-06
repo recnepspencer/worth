@@ -7,8 +7,8 @@ use super::*;
 use pending_wal_world::PendingWalWorld;
 use std::fs;
 use worth_store_recovery_runtime::{
-    PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure, PhysicalRecoveryOutcome,
-    RecoveredPhysicalRuntimeHandoff, WorthStoreRecovery,
+    PhysicalRecoveryLimitDimension, PhysicalRecoveryOutcome, RecoveredPhysicalRuntimeHandoff,
+    WorthStoreRecovery,
 };
 
 /// What the first reopen of the frontier world needs. Fixed: about 140 root
@@ -22,9 +22,9 @@ pub(super) fn recover(world: &PendingWalWorld, stage: &str) -> RecoveredPhysical
         PhysicalRecoveryOutcome::Blocked(block) => panic!(
             "{stage} blocked: kind={:?}; artifact={:?}; limit={:?}; sources={:?}; cause={:?}; \
              effects={}",
-            block.kind,
+            block.cause(),
             block.evidence().artifact.as_deref(),
-            block.evidence().limit,
+            block.cause().limit(),
             block.evidence().source_denials,
             block.evidence().planning_denial,
             block.recovery_effects()
@@ -56,12 +56,16 @@ fn assert_needs_exactly(world: &PendingWalWorld, need: u64, stage: &str) {
     };
     assert_eq!(blocked.recovery_effects(), 0);
     assert_eq!(
-        blocked.evidence().limit,
-        Some(PhysicalRecoveryLimitFailure {
-            dimension: PhysicalRecoveryLimitDimension::ManifestEntries,
-            observed: need,
-            admitted: need - 1,
-        }),
+        blocked.cause().limit().map(|limit| (
+            limit.dimension(),
+            limit.observed(),
+            limit.admitted()
+        )),
+        Some((
+            PhysicalRecoveryLimitDimension::ManifestEntries,
+            need,
+            need - 1
+        )),
         "{stage}: denial={:?}",
         blocked.evidence().planning_denial,
     );

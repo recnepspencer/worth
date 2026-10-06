@@ -162,7 +162,7 @@ fn assert_oversized_candidate_is_damage_before_its_read(world: &ProcessWorld, ge
             page
         )
     );
-    assert_eq!(evidence.limit, None, "damage names no limit");
+    assert_eq!(blocked.cause().limit(), None, "damage names no limit");
     let counters = evidence.planning_counters.unwrap();
     assert_eq!(counters.successor_candidate_reads(), 0);
     assert_eq!(counters.successor_candidate_bytes(), 0);
@@ -206,8 +206,8 @@ fn assert_exact_limits(world: &ProcessWorld, exact_peak: u64, exact_observation:
         Err(other) => panic!("memory admission must block: {other:?}"),
     };
     let limit = blocked
-        .evidence()
-        .limit
+        .cause()
+        .limit()
         .expect("memory denial carries a limit");
     assert_eq!(blocked.recovery_effects(), 0);
     assert_eq!(raw_media_snapshot(&denied_root), media_before);
@@ -223,11 +223,11 @@ fn assert_exact_limits(world: &ProcessWorld, exact_peak: u64, exact_observation:
         "must deny at a resident boundary, not malformed media or another limit"
     );
     assert_eq!(
-        limit.dimension,
+        limit.dimension(),
         PhysicalRecoveryLimitDimension::RecoveryMemoryBytes
     );
     assert_eq!(
-        (limit.observed, limit.admitted),
+        (limit.observed(), limit.admitted()),
         (exact_peak, exact_peak - 1)
     );
     assert_exact_observation_limit(world, exact_observation);
@@ -245,8 +245,8 @@ fn assert_exact_observation_limit(world: &ProcessWorld, exact_observation: u64) 
         Err(other) => panic!("observation admission must block: {other:?}"),
     };
     let limit = blocked
-        .evidence()
-        .limit
+        .cause()
+        .limit()
         .expect("byte denial carries a limit");
     let Some(PhysicalRecoveryPlanningDenial::SuccessorCandidate(
         PhysicalRecoverySuccessorCandidateDenial::Discovery {
@@ -263,11 +263,11 @@ fn assert_exact_observation_limit(world: &ProcessWorld, exact_observation: u64) 
         FilesystemObservationBound::ObservationBytes
     );
     assert_eq!(
-        limit.dimension,
+        limit.dimension(),
         PhysicalRecoveryLimitDimension::ObservationBytes
     );
     assert_eq!(
-        (limit.observed, limit.admitted),
+        (limit.observed(), limit.admitted()),
         (exact_observation, exact_observation - 1)
     );
     assert_eq!(
@@ -296,15 +296,15 @@ fn successor_candidate_uses_one_cumulative_exact_manifest_entry_limit() {
         Ok(_) => panic!("one entry below the raw-media requirement must be denied"),
         Err(other) => panic!("manifest-entry admission had wrong outcome: {other:?}"),
     };
-    let limit = blocked
-        .evidence()
-        .limit
-        .expect("denial carries exact limit");
+    let limit = blocked.cause().limit().expect("denial carries exact limit");
     assert_eq!(
-        limit.dimension,
+        limit.dimension(),
         PhysicalRecoveryLimitDimension::ManifestEntries
     );
-    assert_eq!((limit.observed, limit.admitted), (required, required - 1));
+    assert_eq!(
+        (limit.observed(), limit.admitted()),
+        (required, required - 1)
+    );
 }
 
 fn candidate_world(schedule: u64, perturbation: u64) -> ProcessWorld {

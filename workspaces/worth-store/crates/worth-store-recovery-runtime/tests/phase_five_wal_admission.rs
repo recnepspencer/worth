@@ -106,7 +106,10 @@ fn corrupt_second_frame_is_rejected_before_any_wal_decoder_entry() {
     assert_eq!(counters.wal_owner_decoder_entries, 0);
     assert_eq!(counters.wal_corruption_denials, 1);
     let blocked = expect_blocked(discovered.select().err().unwrap());
-    assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::WalInventory);
+    assert_eq!(
+        blocked.cause().damage(),
+        Some(PhysicalRecoveryBlockKind::WalInventory)
+    );
     assert_eq!(blocked.evidence().integrity_observations.wal().len(), 2);
     assert!(blocked
         .evidence()
@@ -156,7 +159,10 @@ fn truncated_nonterminal_start_is_corruption_even_when_a_later_segment_is_valid(
     assert_eq!(counters.wal_owner_projections, 1);
     assert_eq!(counters.wal_owner_decoder_entries, 0);
     let blocked = expect_blocked(discovered.select().err().unwrap());
-    assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::WalInventory);
+    assert_eq!(
+        blocked.cause().damage(),
+        Some(PhysicalRecoveryBlockKind::WalInventory)
+    );
     assert_eq!(blocked.evidence().integrity_observations.wal().len(), 2);
 }
 
@@ -248,9 +254,52 @@ fn wal_frame_budget_block_preserves_completed_admission_evidence() {
     assert_eq!(counters.wal_integrity_admissions, 1);
     assert_eq!(counters.wal_owner_projections, 1);
     assert_eq!(blocked.evidence().integrity_observations.wal().len(), 1);
-    let limit = blocked.evidence().limit.unwrap();
-    assert_eq!(limit.dimension, PhysicalRecoveryLimitDimension::WalFrames);
-    assert_eq!((limit.observed, limit.admitted), (2, 1));
+    let limit = blocked.cause().limit().unwrap();
+    assert_eq!(limit.dimension(), PhysicalRecoveryLimitDimension::WalFrames);
+    assert_eq!((limit.observed(), limit.admitted()), (2, 1));
+}
+
+/// The second segment's reader is handed what the first left of the frames
+/// recovery admits: its refusal is stated in recovery's counts.
+#[test]
+fn a_later_segment_past_the_frames_left_states_recovery_frames() {
+    let parent = tempfile::tempdir().unwrap();
+    let root = parent.path().join("store");
+    let store = initialize_store(&root);
+    publish_synthetic_genesis(&root, store);
+    publish_synthetic_checkpoint(&root, store);
+    let families = root.join("families");
+    let frame = |segment, lsn, name: &str, payload: &[u8]| {
+        worth_store_test_support::harness::recovery::wal_tail::prepare_persisted_wal_frame(
+            &families,
+            segment,
+            lsn,
+            lsn + 1,
+            name,
+            payload,
+        )
+    };
+    let (first_path, first) = frame(1, 2, "segments-first", b"first");
+    let (second_path, mut second) = frame(2, 3, "segments-second", b"second");
+    second.extend_from_slice(&frame(2, 4, "segments-third", b"third").1);
+    std::fs::create_dir_all(first_path.parent().unwrap()).unwrap();
+    std::fs::write(first_path, first).unwrap();
+    std::fs::write(second_path, second).unwrap();
+    let mut declaration = limit_declaration(2, 8, 8 * 1024);
+    declaration.wal_frames = 2;
+    let limits = PhysicalRecoveryLimits::admit(declaration).unwrap();
+
+    let blocked = expect_blocked(
+        admitted_recovery_with_limits(&root, limits)
+            .discover()
+            .err()
+            .unwrap(),
+    );
+    // Handed the one frame left, the second segment held two beside the
+    // first segment's one.
+    let limit = blocked.cause().limit().expect("the frames recovery admits");
+    assert_eq!(limit.dimension(), PhysicalRecoveryLimitDimension::WalFrames);
+    assert_eq!((limit.observed(), limit.admitted()), (3, 2));
 }
 
 #[test]
@@ -335,7 +384,10 @@ fn planning_denial_preserves_alternate_success_wal_observations() {
         .unwrap();
     assert_eq!(selected.wal_integrity_observations().len(), 2);
     let blocked = expect_blocked(selected.plan().err().unwrap());
-    assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::BindingFreshness);
+    assert_eq!(
+        blocked.cause().damage(),
+        Some(PhysicalRecoveryBlockKind::BindingFreshness)
+    );
     assert_eq!(blocked.evidence().integrity_observations.wal().len(), 2);
     assert!(matches!(
         blocked.evidence().integrity_observations.wal()[1].outcome(),

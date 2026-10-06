@@ -1,5 +1,6 @@
 //! Bounded selected-media reads used by historical release classification.
 
+use crate::orchestration::recovery_budget::RecoveryAllowance;
 use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
 use worth_store_physical_format::{
     BlobRecordKind, CurrentPhysicalRecordPlacement, PersistedRecordIdentity,
@@ -38,6 +39,7 @@ pub(in crate::orchestration::planning::page_observation) fn selected_control(
     budget: &mut ManifestEntryBudget,
     trace: &mut RecoveryIntegrityIngressTrace,
     resident: &mut ResidentAllowance,
+    staging: RecoveryAllowance,
 ) -> Result<WitnessedSelectedControlFrame, WalkFailure> {
     let route = routes
         .iter()
@@ -51,13 +53,15 @@ pub(in crate::orchestration::planning::page_observation) fn selected_control(
         return Err(WalkFailure::Unverified);
     }
     let payload_bytes = route.payload_bytes();
-    resident.bytes(payload_bytes).in_scratch()?;
+    resident
+        .bytes(payload_bytes)
+        .map_err(|_| WalkFailure::resident(resident, staging))?;
     // A retained payload can coexist with a replacement Box and a decoded
     // manifest's dropped-record backing. Preflight that window before media IO.
     resident
         .transient(payload_bytes.checked_mul(2).proven()?)
-        .in_scratch()?;
-    let (bytes, witness) = record::read_with_witness_diagnostic(
+        .map_err(|_| WalkFailure::resident(resident, staging))?;
+    let read = record::read_with_witness_diagnostic(
         discovery,
         format,
         Some(route),
@@ -67,7 +71,9 @@ pub(in crate::orchestration::planning::page_observation) fn selected_control(
         trace,
         &mut 0,
         resident,
-    )?;
+    );
+    let (bytes, witness) =
+        read.map_err(|denial| WalkFailure::unread(denial, budget, resident, staging))?;
     WitnessedSelectedControlFrame::from_validated(bytes, witness).proven()
 }
 

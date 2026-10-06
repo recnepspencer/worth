@@ -58,8 +58,9 @@ pub(crate) enum ProcessRecoveryRefusalCause {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub(crate) enum ProcessRecoveryBlockCause {
-    DiscoveryLimit,
+    Limit,
     MediaObservation,
+    SourceAllocation,
     RootProtocol,
     Checkpoint,
     WalInventory,

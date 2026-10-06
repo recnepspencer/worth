@@ -1,5 +1,8 @@
 use super::super::RecoveryReportCounters;
-use crate::{PhysicalRecoveryBlockKind, PhysicalRecoveryOutcome, PhysicalRecoveryRefusalKind};
+use crate::{
+    PhysicalRecoveryBlockCause, PhysicalRecoveryBlockKind, PhysicalRecoveryOutcome,
+    PhysicalRecoveryRefusalKind,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RecoveryReportOutcome {
@@ -21,8 +24,11 @@ pub enum RecoveryReportRefusalCause {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RecoveryReportBlockCause {
-    DiscoveryLimit,
+    /// A limit recovery was admitted ran out; the media may recover under a
+    /// wider one.
+    Limit,
     MediaObservation,
+    SourceAllocation,
     RootProtocol,
     Checkpoint,
     WalInventory,
@@ -92,7 +98,9 @@ impl RecoveryReportEnvelope {
                         worth_store_recovery_physics::RecoveryPlanningCounters::peak_recovery_bytes,
                     ),
                 ),
-                denial_cause: Some(RecoveryReportDenialCause::Blocked(block_cause(block.kind))),
+                denial_cause: Some(RecoveryReportDenialCause::Blocked(block_cause(
+                    block.cause(),
+                ))),
             },
             PhysicalRecoveryOutcome::PublicationIndeterminate(indeterminate) => Self {
                 outcome: RecoveryReportOutcome::PublicationIndeterminate,
@@ -149,10 +157,14 @@ fn refusal_cause(kind: &PhysicalRecoveryRefusalKind) -> RecoveryReportRefusalCau
     }
 }
 
-fn block_cause(kind: PhysicalRecoveryBlockKind) -> RecoveryReportBlockCause {
+pub(super) fn block_cause(cause: PhysicalRecoveryBlockCause) -> RecoveryReportBlockCause {
+    let kind = match cause {
+        PhysicalRecoveryBlockCause::Limit { .. } => return RecoveryReportBlockCause::Limit,
+        PhysicalRecoveryBlockCause::Damage(kind) => kind,
+    };
     match kind {
-        PhysicalRecoveryBlockKind::DiscoveryLimit => RecoveryReportBlockCause::DiscoveryLimit,
         PhysicalRecoveryBlockKind::MediaObservation => RecoveryReportBlockCause::MediaObservation,
+        PhysicalRecoveryBlockKind::SourceAllocation => RecoveryReportBlockCause::SourceAllocation,
         PhysicalRecoveryBlockKind::RootProtocol => RecoveryReportBlockCause::RootProtocol,
         PhysicalRecoveryBlockKind::Checkpoint => RecoveryReportBlockCause::Checkpoint,
         PhysicalRecoveryBlockKind::WalInventory => RecoveryReportBlockCause::WalInventory,

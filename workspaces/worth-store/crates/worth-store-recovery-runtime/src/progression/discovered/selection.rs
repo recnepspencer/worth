@@ -5,8 +5,7 @@ use worth_store_recovery_physics::{
 };
 
 use crate::entry::{
-    PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure,
-    PhysicalRecoveryLimits, PhysicalRecoverySourceDenial,
+    PhysicalRecoveryBlockKind, PhysicalRecoveryLimits, PhysicalRecoverySourceDenial,
 };
 use crate::orchestration::{
     AdmittedWalInventory, BootstrapDiscovery, CheckpointDiscovery, ManifestFactsDiscovery,
@@ -112,6 +111,7 @@ pub(super) fn select_sources(
         &root,
         input.checkpoint,
         counters,
+        &limits.declaration(),
         &mut integrity_trace,
         coordination,
     )
@@ -211,7 +211,7 @@ fn select_manifest_facts(
         declaration.manifest_entries,
         declaration.distinct_pages_and_extents,
     )
-    .map_err(|denial| manifest_failure(denial, generation, *counters, declaration))?;
+    .map_err(|denial| manifest_failure(denial, generation, *counters))?;
     counters.selected_page_facts = page_facts.placements().len() as u64;
     counters.distinct_pages_and_extents = page_facts.distinct_pages_and_extents();
     let retained_previous_page_facts = match (root.retained_previous(), retained_previous) {
@@ -223,12 +223,7 @@ fn select_manifest_facts(
                 declaration.distinct_pages_and_extents,
             )
             .map_err(|denial| {
-                manifest_failure(
-                    denial,
-                    previous.selector().root_generation(),
-                    *counters,
-                    declaration,
-                )
+                manifest_failure(denial, previous.selector().root_generation(), *counters)
             })?,
         ),
         (Some(previous), Some(ManifestFactsState::Rejected(denial))) => {
@@ -343,33 +338,19 @@ fn manifest_failure(
     denial: worth_store_recovery_physics::PhysicalPageFactDenial,
     generation: u64,
     counters: PhysicalRecoveryDiscoveryCounters,
-    limits: crate::entry::PhysicalRecoveryLimitDeclaration,
 ) -> SelectionFailure {
-    let mut failure = SelectionFailure::new(
+    let failure = SelectionFailure::new(
         PhysicalRecoveryBlockKind::SourceSelection,
         counters,
         "records/root routing blocks",
     )
     .with_generation(generation)
     .with_source_denials(vec![PhysicalRecoverySourceDenial::ManifestFacts(denial)]);
+    // Physics was handed recovery's whole entry and page limits.
     match denial {
-        worth_store_recovery_physics::PhysicalPageFactDenial::ManifestEntryLimit => {
-            failure.kind = PhysicalRecoveryBlockKind::DiscoveryLimit;
-            failure.evidence.limit = Some(PhysicalRecoveryLimitFailure {
-                dimension: PhysicalRecoveryLimitDimension::ManifestEntries,
-                observed: limits.manifest_entries + 1,
-                admitted: limits.manifest_entries,
-            });
+        worth_store_recovery_physics::PhysicalPageFactDenial::Limit(past) => {
+            failure.with_limit(past.into())
         }
-        worth_store_recovery_physics::PhysicalPageFactDenial::DistinctPageOrExtentLimit => {
-            failure.kind = PhysicalRecoveryBlockKind::DiscoveryLimit;
-            failure.evidence.limit = Some(PhysicalRecoveryLimitFailure {
-                dimension: PhysicalRecoveryLimitDimension::DistinctPagesAndExtents,
-                observed: limits.distinct_pages_and_extents + 1,
-                admitted: limits.distinct_pages_and_extents,
-            });
-        }
-        _ => {}
+        _ => failure,
     }
-    failure
 }

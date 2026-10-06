@@ -2,8 +2,36 @@ use worth_store::physical_runtime::RecoveryDiscoveryFailure;
 use worth_store_physical_format::RecordArtifactFile;
 use worth_store_recovery_physics::PhysicalRedoTargetIdentity;
 
-use crate::entry::{HistoricalDropAdmissionStage, PhysicalRecoveryPageAdmissionDenial};
-pub(crate) use crate::orchestration::reader_limit::ReaderLimit;
+use crate::entry::{
+    HistoricalDropAdmissionStage, PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitFailure,
+    PhysicalRecoveryPageAdmissionDenial,
+};
+use crate::orchestration::reader_limit::ReaderBytes;
+use crate::orchestration::recovery_budget::ExceededRecoveryLimit;
+
+/// A limit page observation ran out of. It says nothing about the media.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum PageLimit {
+    /// Refused by recovery's own allowance, in recovery's counts.
+    Recovery(ExceededRecoveryLimit),
+    /// The observation bytes the reader was handed ran out, in its counts.
+    Reader(ReaderBytes),
+}
+
+impl PageLimit {
+    /// The limit in recovery's counts, where the reader was handed what was
+    /// left of recovery's declared observation bytes. `None` where no limit
+    /// can state the reader's counts in recovery's.
+    pub(crate) fn in_recovery(
+        self,
+        limits: &PhysicalRecoveryLimitDeclaration,
+    ) -> Option<PhysicalRecoveryLimitFailure> {
+        match self {
+            Self::Recovery(limit) => Some(limit.into()),
+            Self::Reader(bytes) => bytes.in_recovery(limits).map(Into::into),
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum PageObservationFailure {
@@ -39,32 +67,27 @@ pub(crate) enum PageObservationFailure {
     },
     MaterializedExtentCoordinate(PhysicalRedoTargetIdentity),
     InvalidPage(PhysicalRedoTargetIdentity),
-    ManifestEntryLimit,
-    ByteLimit,
-    /// The ordered walk outgrew the scratch admitted as staging bytes. It
-    /// needed at least this many; a step that knows only that it needed more
-    /// than it had left says zero.
-    StagingByteLimit {
-        at_least: u64,
-    },
+    Limit(PageLimit),
+    /// A count observation keeps went past every count. No limit admits it.
+    CountOverflow,
 }
 
 impl PageObservationFailure {
-    /// A failed media read: a limit where `ReaderLimit` says so, damage
-    /// everywhere else.
+    /// A failed media read: a limit where the reader's observation bytes ran
+    /// out, damage everywhere else.
     pub(crate) fn media(
         target: Option<PhysicalRedoTargetIdentity>,
         failure: RecoveryDiscoveryFailure,
     ) -> Self {
-        match ReaderLimit::of(&failure) {
-            Some(ReaderLimit::ObservationBytes { .. }) => Self::ByteLimit,
-            Some(ReaderLimit::Reads { .. }) => Self::ManifestEntryLimit,
+        match ReaderBytes::of(&failure) {
+            Some(bytes) => Self::Limit(PageLimit::Reader(bytes)),
             None => Self::Media { target, failure },
         }
     }
 
-    pub(crate) fn evidence(self) -> PhysicalRecoveryPageAdmissionDenial {
-        match self {
+    /// The damage, as evidence; a limit is no evidence about the media.
+    pub(crate) fn evidence(self) -> Result<PhysicalRecoveryPageAdmissionDenial, PageLimit> {
+        Ok(match self {
             Self::Media { target, failure } => {
                 PhysicalRecoveryPageAdmissionDenial::Media { target, failure }
             }
@@ -107,10 +130,9 @@ impl PageObservationFailure {
                 PhysicalRecoveryPageAdmissionDenial::MaterializedExtentCoordinate(target)
             }
             Self::InvalidPage(target) => PhysicalRecoveryPageAdmissionDenial::InvalidPage(target),
-            Self::ManifestEntryLimit => PhysicalRecoveryPageAdmissionDenial::ManifestEntryLimit,
-            Self::ByteLimit => PhysicalRecoveryPageAdmissionDenial::ObservationByteLimit,
-            Self::StagingByteLimit { .. } => PhysicalRecoveryPageAdmissionDenial::StagingByteLimit,
-        }
+            Self::CountOverflow => PhysicalRecoveryPageAdmissionDenial::CountOverflow,
+            Self::Limit(limit) => return Err(limit),
+        })
     }
 }
 
@@ -121,31 +143,42 @@ mod tests {
     use worth_store::physical_runtime::{FilesystemObservationBound, RecoveryDiscoveryArtifact};
 
     #[test]
-    fn only_an_exhausted_observation_budget_is_a_limit() {
-        let oversized = |bound| refused_past(bound, 65_537, 65_536);
+    fn only_the_readers_exhausted_observation_bytes_are_a_limit() {
         let target = Some(PhysicalRedoTargetIdentity::InlinePage {
             segment: 1,
             page: 2,
             generation: 3,
         });
+        let past = refused_past(FilesystemObservationBound::ObservationBytes, 65_537, 65_536);
+        let PageObservationFailure::Limit(limit) =
+            PageObservationFailure::media(target, past.clone())
+        else {
+            panic!("exhausted observation bytes are a limit");
+        };
+        // Handed 65,536 of recovery's 65,540, the reader needed 65,537.
+        let limit = limit
+            .in_recovery(&PhysicalRecoveryLimitDeclaration::observing_for_test(
+                65_540,
+            ))
+            .unwrap();
         assert_eq!(
-            PageObservationFailure::media(
-                target,
-                oversized(FilesystemObservationBound::ObservationBytes)
+            (limit.dimension(), limit.observed(), limit.admitted()),
+            (
+                crate::entry::PhysicalRecoveryLimitDimension::ObservationBytes,
+                65_541,
+                65_540
             ),
-            PageObservationFailure::ByteLimit,
         );
-        // The reader raises this only once its addressed reads ran out.
         assert_eq!(
-            PageObservationFailure::media(
-                target,
-                refused_past(FilesystemObservationBound::Reads, 1, 0)
-            ),
-            PageObservationFailure::ManifestEntryLimit,
+            PageObservationFailure::Limit(PageLimit::Reader(ReaderBytes::of(&past).unwrap()))
+                .evidence(),
+            Err(PageLimit::Reader(ReaderBytes::of(&past).unwrap())),
         );
         for failure in [
+            // The reader counts no reads: a refused read is past every count.
+            refused_past(FilesystemObservationBound::Reads, 1, 0),
             // The artifact outgrew the ceiling of its own read.
-            oversized(FilesystemObservationBound::RequestedBytes),
+            refused_past(FilesystemObservationBound::RequestedBytes, 65_537, 65_536),
             RecoveryDiscoveryFailure::InvalidAddress {
                 artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint,
             },

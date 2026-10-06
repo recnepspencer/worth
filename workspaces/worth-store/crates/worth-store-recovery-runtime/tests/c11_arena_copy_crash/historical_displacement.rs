@@ -145,7 +145,10 @@ fn assert_redo_blocked_before_effect(root: &Path) {
     let PhysicalRecoveryOutcome::Blocked(blocked) = outcome else {
         panic!("missing or invalid historical copy evidence must block: {outcome:?}")
     };
-    assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::RedoPlanning);
+    assert_eq!(
+        blocked.cause().damage(),
+        Some(PhysicalRecoveryBlockKind::RedoPlanning)
+    );
     assert_eq!(blocked.recovery_effects(), 0);
     assert_eq!(
         fs::read(root.join("families/records/bootstrap.catalog")).unwrap(),

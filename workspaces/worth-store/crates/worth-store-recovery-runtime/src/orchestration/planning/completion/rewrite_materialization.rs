@@ -64,7 +64,7 @@ pub(super) fn install(
     // earlier phases left, and the phases after are left what these leave.
     let remaining_bytes = match remaining_observation(&context, basis) {
         Ok(remaining_bytes) => remaining_bytes,
-        Err(failure) => return Err(unobserved(context, basis, failure, 0)),
+        Err(failure) => return Err(unobserved(context, basis, failure)),
     };
     let media = context.authority.media;
     let mut discovery = media
@@ -97,7 +97,7 @@ pub(super) fn install(
     charge_reader(basis, counters);
     let projections = match built {
         Ok(projections) => projections,
-        Err(failure) => return Err(unobserved(context, basis, failure, remaining_bytes)),
+        Err(failure) => return Err(unobserved(context, basis, failure)),
     };
     for projection in projections {
         basis.redo.install_rewrite_materialization(projection);

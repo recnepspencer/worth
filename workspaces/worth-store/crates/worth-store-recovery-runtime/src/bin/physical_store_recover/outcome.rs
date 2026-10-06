@@ -43,8 +43,8 @@ pub(super) fn render(outcome: PhysicalRecoveryOutcome) -> Result<(), String> {
         }
         PhysicalRecoveryOutcome::Blocked(block) => {
             eprintln!(
-                "C8_RECOVERY_BLOCKED kind={:?} store={} source_generation={:?} effects={}",
-                block.kind,
+                "C8_RECOVERY_BLOCKED cause={:?} store={} source_generation={:?} effects={}",
+                block.cause(),
                 hex(&block.store_identity().bytes()),
                 block.evidence().source_generation,
                 block.recovery_effects()

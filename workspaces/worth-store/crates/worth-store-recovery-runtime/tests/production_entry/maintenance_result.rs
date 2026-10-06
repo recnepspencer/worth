@@ -124,7 +124,10 @@ fn selected_released_result_cannot_clear_maintenance() {
     // selected V3 result included, during page admission, so the cleared
     // maintenance bit is refused there before redo planning begins. The
     // typed historical-drop stage proves the historical V3 path was reached.
-    assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::PageAdmission);
+    assert_eq!(
+        blocked.cause().damage(),
+        Some(PhysicalRecoveryBlockKind::PageAdmission)
+    );
     assert!(
         matches!(
             blocked.evidence().planning_denial,

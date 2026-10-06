@@ -94,7 +94,10 @@ fn resealed_checkpoint_zero_root_is_denied_before_addressed_source_read() {
         Err(failure) => failure,
         Ok(_) => panic!("zero source address must not become checkpoint material"),
     };
-    assert_eq!(failure.kind, PhysicalRecoveryBlockKind::Checkpoint);
+    assert_eq!(
+        failure.cause,
+        crate::entry::PhysicalRecoveryBlockCause::Damage(PhysicalRecoveryBlockKind::Checkpoint)
+    );
     assert!(matches!(
         failure.source_denials.as_slice(),
         [PhysicalRecoverySourceDenial::CheckpointBinding(

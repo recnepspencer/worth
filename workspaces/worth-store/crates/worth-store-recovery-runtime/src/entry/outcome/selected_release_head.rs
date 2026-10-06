@@ -18,15 +18,11 @@ pub enum PhysicalRecoverySelectedReleaseHeadDenial {
     ObservationByteLimit,
     ManifestEntryLimit,
     /// The checkpoint's verified roster counts more heads than recovery
-    /// admits manifest entries.
-    RosterEntryLimit {
-        observed: u64,
-        admitted: u64,
-    },
-    ResidentBoundExceeded {
-        required: u64,
-        admitted: u64,
-    },
+    /// admits manifest entries. The block's cause names the limit and its
+    /// counts.
+    RosterEntryLimit,
+    /// The block's cause names recovery memory's limit and its counts.
+    ResidentBoundExceeded,
     SourceRootRead {
         generation: u64,
         failure: RecoveryDiscoveryFailure,
@@ -57,10 +53,9 @@ pub enum PhysicalRecoveryReleaseHeadReadDenial {
     MissingBytes {
         reference: ReleaseCustodyHeadBlockReferenceV1,
     },
+    /// The block's cause names recovery memory's limit and its counts.
     ResidentBoundExceeded {
         reference: ReleaseCustodyHeadBlockReferenceV1,
-        required: u64,
-        admitted: u64,
     },
     Allocation {
         reference: ReleaseCustodyHeadBlockReferenceV1,
@@ -86,10 +81,8 @@ pub enum PhysicalRecoveryReleaseHeadWalkDenial {
         requested: u64,
         cause: std::collections::TryReserveError,
     },
-    ResidentBoundExceeded {
-        required: u64,
-        admitted: u64,
-    },
+    /// The block's cause names recovery memory's limit and its counts.
+    ResidentBoundExceeded,
     EntryCountExceeded,
 }
 
@@ -99,10 +92,8 @@ pub enum PhysicalRecoveryReleaseHeadControlDenial {
     HeadOrder,
     RequestCountOverflow,
     ManifestEntryLimit,
-    ResidentBoundExceeded {
-        required: u64,
-        admitted: u64,
-    },
+    /// The block's cause names recovery memory's limit and its counts.
+    ResidentBoundExceeded,
     Allocation {
         requested: u64,
         cause: std::collections::TryReserveError,

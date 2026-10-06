@@ -1,5 +1,6 @@
 //! Exact WAL descriptor plus candidate-root V3 control triple.
 
+use crate::orchestration::recovery_budget::RecoveryAllowance;
 use sha2::{Digest, Sha256};
 use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
 use worth_store_physical_format::{
@@ -41,7 +42,9 @@ pub(super) fn bind_addressed(
     format: PhysicalRecordFormatDeclaration,
     maximum_entries: u64,
     available_bytes: u64,
+    staging: RecoveryAllowance,
 ) -> Result<AddressedControls, WalkFailure> {
+    let refused = |denial| WalkFailure::control_refused(denial, staging);
     let descriptor_frame = VerifiedAddressedReleasedControlFrame::admit(
         edge,
         result,
@@ -50,10 +53,11 @@ pub(super) fn bind_addressed(
         format,
         maximum_entries,
         available_bytes,
-    )?;
+    )
+    .map_err(refused)?;
     let remaining = available_bytes
         .checked_sub(descriptor_frame.retained_bytes())
-        .in_scratch()?;
+        .proven()?;
     let reservation_frame = VerifiedAddressedReleasedControlFrame::admit(
         edge,
         result,
@@ -62,10 +66,11 @@ pub(super) fn bind_addressed(
         format,
         maximum_entries,
         remaining,
-    )?;
+    )
+    .map_err(refused)?;
     let remaining = remaining
         .checked_sub(reservation_frame.retained_bytes())
-        .in_scratch()?;
+        .proven()?;
     let manifest_frame = VerifiedAddressedReleasedControlFrame::admit(
         edge,
         result,
@@ -74,7 +79,8 @@ pub(super) fn bind_addressed(
         format,
         maximum_entries,
         remaining,
-    )?;
+    )
+    .map_err(refused)?;
     let retained_bytes = descriptor_frame
         .retained_bytes()
         .checked_add(reservation_frame.retained_bytes())
@@ -101,6 +107,7 @@ pub(super) fn released_controls(
     budget: &mut ManifestEntryBudget,
     trace: &mut RecoveryIntegrityIngressTrace,
     resident: &mut ResidentAllowance,
+    staging: RecoveryAllowance,
 ) -> Result<ReleasedControls, WalkFailure> {
     let mut members = redo
         .admitted_drop_members()
@@ -123,6 +130,7 @@ pub(super) fn released_controls(
         budget,
         trace,
         resident,
+        staging,
     )?;
     if descriptor_frame.bytes() != wal_record {
         return Err(Unverified);
@@ -136,6 +144,7 @@ pub(super) fn released_controls(
         budget,
         trace,
         resident,
+        staging,
     )?;
     let BlobRecordV1::DropSetManifestV3(manifest) =
         decode_blob_record(manifest_frame.bytes()).proven()?
@@ -164,6 +173,7 @@ pub(super) fn released_controls(
             budget,
             trace,
             resident,
+            staging,
         )?;
         let BlobRecordV1::OriginalDropReserved(reservation) =
             decode_blob_record(frame.bytes()).proven()?

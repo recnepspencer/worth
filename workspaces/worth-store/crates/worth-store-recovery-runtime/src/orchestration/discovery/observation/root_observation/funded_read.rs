@@ -11,11 +11,12 @@ use worth_store_physical_format::{
 };
 
 use crate::entry::{
-    PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension as Dimension,
+    PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDimension as Dimension,
     PhysicalRecoveryRootProtocolArtifact as Artifact, PhysicalRecoverySourceDenial,
     PhysicalRecoverySourceReadAllocationBoundary as Boundary,
     PhysicalRecoverySourceReadAllocationDenial as Cause,
 };
+use crate::orchestration::discovery::source_memory::source_allocation;
 use crate::orchestration::discovery::{refused_read, DiscoveryFailure};
 use crate::orchestration::reader_limit::{OversizedArtifact, ReadCeiling};
 
@@ -25,14 +26,19 @@ pub(super) type RootRead =
 
 pub(super) struct FundedRootReads<'window, 'owner> {
     allocation: &'window mut PhysicalRecoveryReadAllocation<'owner>,
+    limits: PhysicalRecoveryLimitDeclaration,
     retained: u64,
     scratch: u64,
 }
 
 impl<'window, 'owner> FundedRootReads<'window, 'owner> {
-    pub(super) fn new(allocation: &'window mut PhysicalRecoveryReadAllocation<'owner>) -> Self {
+    pub(super) fn new(
+        allocation: &'window mut PhysicalRecoveryReadAllocation<'owner>,
+        limits: PhysicalRecoveryLimitDeclaration,
+    ) -> Self {
         Self {
             allocation,
+            limits,
             retained: 0,
             scratch: 0,
         }
@@ -49,14 +55,15 @@ impl<'window, 'owner> FundedRootReads<'window, 'owner> {
         };
         let artifact = super::selector_artifact(role);
         let ceiling = ReadCeiling::of_artifact(ROOT_SELECTOR_BYTES as u64);
+        let limits = self.limits;
         match discovery.read_record_artifact_with_allocator(
             address,
             ceiling.requested(),
             |length| self.allocate(length),
         ) {
             Ok(observed) => Ok(Ok(observed)),
-            Err(failure) => refused(artifact, failure, |failure| {
-                refused_read(failure, ceiling, Dimension::ObservationBytes)
+            Err(failure) => refused(&limits, artifact, failure, |failure| {
+                refused_read(failure, ceiling, &limits, Dimension::ObservationBytes)
             })
             .map(Err),
         }
@@ -70,14 +77,15 @@ impl<'window, 'owner> FundedRootReads<'window, 'owner> {
         ceiling: ReadCeiling,
     ) -> RootRead {
         let artifact = super::root_artifact(role, generation);
+        let limits = self.limits;
         match discovery.read_record_artifact_with_allocator(
             RecordArtifactFile::RootManifest { generation },
             ceiling.requested(),
             |length| self.allocate(length),
         ) {
             Ok(observed) => Ok(Ok(observed)),
-            Err(failure) => refused(artifact, failure, |failure| {
-                refused_read(failure, ceiling, Dimension::ManifestBytes)
+            Err(failure) => refused(&limits, artifact, failure, |failure| {
+                refused_read(failure, ceiling, &limits, Dimension::ManifestBytes)
             })
             .map(Err),
         }
@@ -120,8 +128,10 @@ impl<'window, 'owner> FundedRootReads<'window, 'owner> {
         // a fixed array and needs no heap grant. Inline root fields retain no heap.
         let scratch = DurablePhysicalRootManifest::maximum_encoding_scratch_bytes() as u64;
         let total = self.retained.saturating_add(scratch.max(self.scratch));
+        let limits = self.limits;
         self.allocation.reserve_total(total).map_err(|cause| {
             allocation_failure(
+                &limits,
                 artifact,
                 Boundary::CanonicalValidation,
                 scratch,
@@ -134,6 +144,7 @@ impl<'window, 'owner> FundedRootReads<'window, 'owner> {
 }
 
 fn refused(
+    limits: &PhysicalRecoveryLimitDeclaration,
     artifact: Artifact,
     failure: RecoveryDiscoveryAllocationFailure<Cause>,
     refused_read: impl FnOnce(RecoveryDiscoveryFailure) -> Result<OversizedArtifact, DiscoveryFailure>,
@@ -143,6 +154,7 @@ fn refused(
         RecoveryDiscoveryAllocationFailure::Allocation {
             requested, cause, ..
         } => Err(allocation_failure(
+            limits,
             artifact,
             Boundary::ReadBuffer,
             requested as u64,
@@ -153,6 +165,7 @@ fn refused(
             observed,
             ..
         } => Err(allocation_failure(
+            limits,
             artifact,
             Boundary::ReadBuffer,
             requested as u64,
@@ -165,9 +178,11 @@ fn refused(
 }
 
 pub(in super::super) fn window_admission_failure(
+    limits: &PhysicalRecoveryLimitDeclaration,
     cause: PhysicalRecoveryRejoinResidentAdmissionDenial,
 ) -> DiscoveryFailure {
     allocation_failure(
+        limits,
         Artifact::CurrentSelector,
         Boundary::WindowAdmission,
         0,
@@ -176,19 +191,18 @@ pub(in super::super) fn window_admission_failure(
 }
 
 fn allocation_failure(
+    limits: &PhysicalRecoveryLimitDeclaration,
     artifact: Artifact,
     boundary: Boundary,
     requested: u64,
     cause: Cause,
 ) -> DiscoveryFailure {
-    let mut failure = DiscoveryFailure::from(PhysicalRecoveryBlockKind::DiscoveryLimit);
-    failure
-        .source_denials
-        .push(PhysicalRecoverySourceDenial::SourceReadAllocation {
+    source_allocation(limits, cause, |cause| {
+        PhysicalRecoverySourceDenial::SourceReadAllocation {
             artifact,
             boundary,
             requested,
             cause,
-        });
-    failure
+        }
+    })
 }

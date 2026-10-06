@@ -2,6 +2,7 @@ use crate::entry::{
     PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure,
     PhysicalRecoveryOutcome, PhysicalRecoverySuccessorCandidateDenial,
 };
+use crate::orchestration::recovery_budget::RecoveryAllowance;
 use crate::progression::{
     derive_execution_basis, requires_successor_candidate, CandidateMaterializationCost,
     ExecutionBasisDenial, PlanningMemoryDenial, PlanningResidentAllowance, RecoveryPublicationPlan,
@@ -9,6 +10,7 @@ use crate::progression::{
 };
 
 use super::super::context::PlanningContext;
+use super::super::manifest_entry_budget::ManifestEntryBudget;
 use super::super::resolved_basis::ResolvedPlanningBasis;
 use super::super::successor_candidate_observation;
 
@@ -37,23 +39,30 @@ pub(super) fn derive(
         })
         .and_then(|bytes| {
             bytes.checked_add(std::mem::size_of::<PlanningResidentAllowance>() as u64)
-        })
-        .unwrap_or(u64::MAX);
+        });
+    // A live size past every count is no limit: no count states it.
+    let Some(retained_memory_bytes) = retained_memory_bytes else {
+        return Err(context.cost_denial_block(
+            basis.planning_counters(),
+            worth_store_recovery_physics::RecoveryPlanCostDenial::RecoveryMemoryBytes,
+            None,
+        ));
+    };
     let mut allowance = match PlanningResidentAllowance::new(
         retained_memory_bytes,
         context.limits.recovery_memory_bytes,
     ) {
         Ok(allowance) => allowance,
         Err(PlanningMemoryDenial::RecoveryMemoryBytes { observed }) => {
-            let admitted = context.limits.recovery_memory_bytes;
+            let limit = RecoveryAllowance::declared(
+                &context.limits,
+                PhysicalRecoveryLimitDimension::RecoveryMemoryBytes,
+            )
+            .past(observed);
             return Err(context.cost_denial_block(
                 basis.planning_counters().with_peak_recovery_bytes(observed),
                 worth_store_recovery_physics::RecoveryPlanCostDenial::RecoveryMemoryBytes,
-                PhysicalRecoveryLimitFailure {
-                    dimension: PhysicalRecoveryLimitDimension::RecoveryMemoryBytes,
-                    observed,
-                    admitted,
-                },
+                limit,
             ));
         }
         Err(PlanningMemoryDenial::Allocation { .. }) => {
@@ -106,12 +115,12 @@ pub(super) fn derive(
         match attempt.result {
             Ok(candidate) => candidate,
             Err(denial) => {
-                let limit = candidate_limit(&context.limits, &denial, remaining_observation_bytes);
+                let budget = &basis.observed_pages.manifest_budget;
+                let limit = candidate_limit(&context.limits, &denial, budget, &allowance);
                 let required_peak = match &denial {
-                    PhysicalRecoverySuccessorCandidateDenial::RecoveryMemoryBytes {
-                        observed,
-                        ..
-                    } => allowance.peak().max(*observed),
+                    PhysicalRecoverySuccessorCandidateDenial::RecoveryMemoryBytes { .. } => {
+                        allowance.peak().max(allowance.refused().unwrap_or(0))
+                    }
                     _ => allowance.peak(),
                 };
                 let artifact = format!("{:?}", denial.artifact());
@@ -189,39 +198,39 @@ pub(super) fn derive(
             ));
         }
         Err(ExecutionBasisDenial::RecoveryMemoryBytes { observed }) => {
-            let admitted = context.limits.recovery_memory_bytes;
+            let limit = RecoveryAllowance::declared(
+                &context.limits,
+                PhysicalRecoveryLimitDimension::RecoveryMemoryBytes,
+            )
+            .past(observed);
             return Err(context.cost_denial_block(
                 basis.planning_counters().with_peak_recovery_bytes(observed),
                 worth_store_recovery_physics::RecoveryPlanCostDenial::RecoveryMemoryBytes,
-                PhysicalRecoveryLimitFailure {
-                    dimension: PhysicalRecoveryLimitDimension::RecoveryMemoryBytes,
-                    observed,
-                    admitted,
-                },
+                limit,
             ));
         }
         Err(ExecutionBasisDenial::StagingBytes { observed }) => {
-            let admitted = context.limits.staging_bytes;
+            let limit = RecoveryAllowance::declared(
+                &context.limits,
+                PhysicalRecoveryLimitDimension::StagingBytes,
+            )
+            .past(observed);
             return Err(context.cost_denial_block(
                 basis.planning_counters(),
                 worth_store_recovery_physics::RecoveryPlanCostDenial::StagingBytes,
-                PhysicalRecoveryLimitFailure {
-                    dimension: PhysicalRecoveryLimitDimension::StagingBytes,
-                    observed,
-                    admitted,
-                },
+                limit,
             ));
         }
         Err(ExecutionBasisDenial::DirtyFrames { observed }) => {
-            let admitted = context.limits.dirty_frames;
+            let limit = RecoveryAllowance::declared(
+                &context.limits,
+                PhysicalRecoveryLimitDimension::DirtyFrames,
+            )
+            .past(observed);
             return Err(context.cost_denial_block(
                 basis.planning_counters(),
                 worth_store_recovery_physics::RecoveryPlanCostDenial::DirtyFrames,
-                PhysicalRecoveryLimitFailure {
-                    dimension: PhysicalRecoveryLimitDimension::DirtyFrames,
-                    observed,
-                    admitted,
-                },
+                limit,
             ));
         }
         Err(ExecutionBasisDenial::SuccessorCandidate(denial)) => {
@@ -262,35 +271,31 @@ pub(super) fn derive(
 fn candidate_limit(
     limits: &PhysicalRecoveryLimitDeclaration,
     denial: &PhysicalRecoverySuccessorCandidateDenial,
-    remaining_observation_bytes: u64,
+    budget: &ManifestEntryBudget,
+    allowance: &PlanningResidentAllowance,
 ) -> Option<PhysicalRecoveryLimitFailure> {
+    use PhysicalRecoverySuccessorCandidateDenial as Candidate;
     match denial {
-        PhysicalRecoverySuccessorCandidateDenial::RecoveryMemoryBytes {
-            observed,
-            admitted,
-            ..
-        } => Some(PhysicalRecoveryLimitFailure {
-            dimension: PhysicalRecoveryLimitDimension::RecoveryMemoryBytes,
-            observed: *observed,
-            admitted: *admitted,
-        }),
+        // The candidate's window was handed its maximum of recovery's
+        // memory, beside what recovery already held.
+        Candidate::RecoveryMemoryBytes { .. } => {
+            RecoveryAllowance::declared(limits, PhysicalRecoveryLimitDimension::RecoveryMemoryBytes)
+                .beside(allowance.refused()?, allowance.maximum())
+                .map(Into::into)
+        }
         // An artifact that outgrew the ceiling of its own read is damage.
-        PhysicalRecoverySuccessorCandidateDenial::Discovery { failure, .. } => {
-            super::historical_publication::discovery_failure(failure.clone())
-                .limit(limits, remaining_observation_bytes)
+        Candidate::Discovery { failure, .. } => {
+            super::historical_publication::discovery_failure(failure.clone()).limit(limits, budget)
         }
         // Every byte recovery admitted was observed before this reader.
-        PhysicalRecoverySuccessorCandidateDenial::ObservationBytesExhausted { .. } => {
-            super::historical_publication::HistoricalFailure::ObservationBytes(None)
-                .limit(limits, remaining_observation_bytes)
+        Candidate::ObservationBytesExhausted { .. } => {
+            super::historical_publication::HistoricalFailure::ObservationSpent.limit(limits, budget)
         }
-        PhysicalRecoverySuccessorCandidateDenial::ManifestEntryLimit {
-            observed, admitted, ..
-        } => Some(PhysicalRecoveryLimitFailure {
-            dimension: PhysicalRecoveryLimitDimension::ManifestEntries,
-            observed: *observed,
-            admitted: *admitted,
-        }),
-        _ => None,
+        Candidate::ManifestEntryLimit { .. } => budget.refused().map(Into::into),
+        Candidate::Allocation { .. }
+        | Candidate::MissingArtifact { .. }
+        | Candidate::InvalidArtifact { .. }
+        | Candidate::RootProtocol { .. }
+        | Candidate::Conflict { .. } => None,
     }
 }

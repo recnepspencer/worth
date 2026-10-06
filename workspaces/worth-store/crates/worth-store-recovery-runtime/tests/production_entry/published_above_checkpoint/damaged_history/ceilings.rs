@@ -7,7 +7,7 @@
 
 use super::*;
 use pending_wal_world::PendingWalWorld;
-use worth_store_recovery_runtime::{PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure};
+use worth_store_recovery_runtime::PhysicalRecoveryLimitDimension;
 
 /// Blocked without effect and without naming a limit; `false` where the
 /// recovery never read the artifact and recovered.
@@ -21,11 +21,9 @@ fn blocks_as_damage(outcome: PhysicalRecoveryOutcome, artifact: &Path) -> bool {
             assert_eq!(blocked.recovery_effects(), 0);
             let evidence = blocked.evidence();
             assert!(
-                blocked.kind != PhysicalRecoveryBlockKind::DiscoveryLimit
-                    && evidence.limit.is_none(),
-                "{artifact:?} oversized is damage: {:?} {:?} {:?}",
-                blocked.kind,
-                evidence.limit,
+                blocked.cause().limit().is_none(),
+                "{artifact:?} oversized is damage: {:?} {:?}",
+                blocked.cause(),
                 evidence.planning_denial,
             );
             true
@@ -147,15 +145,17 @@ fn under_manifest_bytes(root: &Path, manifest_bytes: u64) -> PhysicalRecoveryOpe
     })
 }
 
-/// The manifest-byte limit this block names, if it names that.
-fn manifest_byte_limit(outcome: &PhysicalRecoveryOutcome) -> Option<PhysicalRecoveryLimitFailure> {
+/// The manifest-byte limit this block names, if it names that: what the
+/// read reached, and what recovery admitted.
+fn manifest_byte_limit(outcome: &PhysicalRecoveryOutcome) -> Option<(u64, u64)> {
     let PhysicalRecoveryOutcome::Blocked(blocked) = outcome else {
         panic!("too few manifest bytes must block: {outcome:?}")
     };
     blocked
-        .evidence()
-        .limit
-        .filter(|limit| limit.dimension == PhysicalRecoveryLimitDimension::ManifestBytes)
+        .cause()
+        .limit()
+        .filter(|limit| limit.dimension() == PhysicalRecoveryLimitDimension::ManifestBytes)
+        .map(|limit| (limit.observed(), limit.admitted()))
 }
 
 /// A routing block is read under its page or the manifest bytes recovery has
@@ -181,13 +181,7 @@ fn an_oversized_routing_block_is_damage_whatever_manifest_bytes_are_left() {
     let page = u64::from(format.page_size().bytes());
     assert!(length < page, "the block leaves room to pad");
     let to_page = (page - length) as usize;
-    let limit = |observed, admitted| {
-        Some(PhysicalRecoveryLimitFailure {
-            dimension: PhysicalRecoveryLimitDimension::ManifestBytes,
-            observed,
-            admitted,
-        })
-    };
+    let limit = |observed, admitted| Some((observed, admitted));
     let as_written = |manifest_bytes| {
         WorthStoreRecovery::recover(under_manifest_bytes(world.root(), manifest_bytes))
     };
@@ -203,11 +197,11 @@ fn an_oversized_routing_block_is_damage_whatever_manifest_bytes_are_left() {
     let mut reads = 0;
     let next = loop {
         let next = manifest_byte_limit(&as_written(before)).expect("short of every manifest");
-        assert_eq!(next.admitted, before);
+        assert_eq!(next.1, before);
         if manifest_byte_limit(&longer_by(to_page + 1, before)) != Some(next) {
             break next;
         }
-        before = next.observed;
+        before = next.0;
         reads += 1;
         assert!(reads < 64, "the block is never read");
     };
@@ -227,16 +221,16 @@ fn an_oversized_routing_block_is_damage_whatever_manifest_bytes_are_left() {
             panic!("{left} left: {outcome:?}")
         };
         assert_eq!(blocked.recovery_effects(), 0);
-        let named = blocked.evidence().limit;
+        let named = blocked.cause().limit();
         assert_ne!(
-            named.map(|limit| limit.observed),
+            named.map(|limit| limit.observed()),
             Some(before + page + 1),
             "{left} manifest bytes left: {named:?}",
         );
         if left + 1 >= page {
             assert_eq!(
-                (blocked.kind, named),
-                (PhysicalRecoveryBlockKind::SourceSelection, None),
+                (blocked.cause().damage(), named),
+                (Some(PhysicalRecoveryBlockKind::SourceSelection), None),
                 "{left} manifest bytes left",
             );
         }
@@ -272,15 +266,16 @@ fn a_checkpoint_stream_longer_than_the_observation_bytes_is_that_limit_from_the_
     let before = evidence.counters.bytes_observed;
     assert!(before > 0, "discovery reads roots before the stream");
     assert_eq!(
-        (blocked.kind, evidence.limit),
-        (
-            PhysicalRecoveryBlockKind::DiscoveryLimit,
-            Some(PhysicalRecoveryLimitFailure {
-                dimension: PhysicalRecoveryLimitDimension::ObservationBytes,
-                observed: before + length,
-                admitted: OBSERVATION_BYTES,
-            }),
-        ),
+        blocked.cause().limit().map(|limit| (
+            limit.dimension(),
+            limit.observed(),
+            limit.admitted()
+        )),
+        Some((
+            PhysicalRecoveryLimitDimension::ObservationBytes,
+            before + length,
+            OBSERVATION_BYTES,
+        )),
     );
     let serving = super::super::serve(&world, "after the oversized stream");
     world.assert_objects_read_back(&serving);

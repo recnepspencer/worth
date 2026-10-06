@@ -284,7 +284,7 @@ fn recover_and_open(root: &Path) -> worth_store::physical_runtime::ServingPhysic
         worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) => handoff,
         worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(block) => panic!(
             "mixed Tier/V3 C8 blocked at {:?}: {:?}",
-            block.kind,
+            block.cause(),
             block.evidence().planning_denial
         ),
         worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(

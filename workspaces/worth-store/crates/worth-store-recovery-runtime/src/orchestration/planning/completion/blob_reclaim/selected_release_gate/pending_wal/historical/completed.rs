@@ -26,12 +26,7 @@ pub(in crate::orchestration::planning::completion::blob_reclaim::selected_releas
     let mut resident = match super::super::super::resident_basis::seed(&context, basis) {
         Ok(resident) => resident,
         Err(limit) => {
-            let cause = limit.map_or(Denial::ResidentBasis, |value| {
-                Denial::ResidentBoundExceeded {
-                    required: value.observed,
-                    admitted: value.admitted,
-                }
-            });
+            let cause = limit.map_or(Denial::ResidentBasis, |_| Denial::ResidentBoundExceeded);
             return Err(block(context, basis, cause, limit));
         }
     };
@@ -143,9 +138,5 @@ fn resident_block(
     resident: &ResidentAllowance,
 ) -> crate::entry::PhysicalRecoveryOutcome {
     let limit = super::super::super::resident_basis::limit_failure(&context, resident);
-    let cause = Denial::ResidentBoundExceeded {
-        required: resident.exceeded_requirement().unwrap_or(u64::MAX),
-        admitted: resident.used().saturating_add(resident.remaining()),
-    };
-    block(context, basis, cause, limit)
+    block(context, basis, Denial::ResidentBoundExceeded, limit)
 }

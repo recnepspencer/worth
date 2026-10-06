@@ -27,11 +27,11 @@ pub use limits::{
     PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDenial, PhysicalRecoveryLimits,
 };
 pub use outcome::{
-    HistoricalDropAdmissionStage, PhysicalRecoveryBlock, PhysicalRecoveryBlockEvidence,
-    PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure,
-    PhysicalRecoveryOrderedReleaseDenial, PhysicalRecoveryOrderedReleaseJoin,
-    PhysicalRecoveryOrderedReleaseStorage, PhysicalRecoveryOutcome,
-    PhysicalRecoveryPageAdmissionDenial, PhysicalRecoveryPlanningDenial,
+    HistoricalDropAdmissionStage, PhysicalRecoveryBlock, PhysicalRecoveryBlockCause,
+    PhysicalRecoveryBlockEvidence, PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension,
+    PhysicalRecoveryLimitFailure, PhysicalRecoveryOrderedReleaseDenial,
+    PhysicalRecoveryOrderedReleaseJoin, PhysicalRecoveryOrderedReleaseStorage,
+    PhysicalRecoveryOutcome, PhysicalRecoveryPageAdmissionDenial, PhysicalRecoveryPlanningDenial,
     PhysicalRecoveryPublicationIndeterminate, PhysicalRecoveryRefusal, PhysicalRecoveryRefusalKind,
     PhysicalRecoveryReleaseHeadControlDenial, PhysicalRecoveryReleaseHeadReadDenial,
     PhysicalRecoveryReleaseHeadWalkDenial, PhysicalRecoverySelectedRecordReadDenial,

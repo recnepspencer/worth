@@ -1,6 +1,7 @@
 //! Bind one historical released edge's WAL-chosen head path to its addressed
 //! source-tree blocks while the bounded discovery cursor is still live.
 
+use crate::orchestration::recovery_budget::RecoveryAllowance;
 use worth_store::physical_runtime::{BoundedRecoveryFilesystemDiscovery, RecoveryDiscoveryFailure};
 use worth_store_physical_format::{DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration};
 use worth_store_recovery_physics::{
@@ -23,9 +24,13 @@ impl Unread {
     }
 
     /// A failed read's own verdict; without one, what physics refused.
-    fn verdict(self, denial: SelectedReleaseHeadReplayDenial, maximum_scratch: u64) -> WalkFailure {
+    fn verdict(
+        self,
+        denial: SelectedReleaseHeadReplayDenial,
+        staging: RecoveryAllowance,
+    ) -> WalkFailure {
         self.0
-            .unwrap_or_else(|| WalkFailure::replay_refused(denial, maximum_scratch))
+            .unwrap_or_else(|| WalkFailure::replay_refused(denial, staging))
     }
 }
 
@@ -38,7 +43,7 @@ pub(super) fn admit_addressed_member(
     result: &DurablePhysicalRootManifest,
     format: PhysicalRecordFormatDeclaration,
     maximum_effect_bytes: u64,
-    maximum_scratch: u64,
+    staging: RecoveryAllowance,
 ) -> Result<VerifiedSelectedReleaseHeadReplayV14, WalkFailure> {
     // Replaying one member's head path is one lookup, however many blocks
     // the path crosses.
@@ -60,7 +65,7 @@ pub(super) fn admit_addressed_member(
                 .ok_or(())
         },
     )
-    .map_err(|denial| unread.verdict(denial, maximum_scratch))
+    .map_err(|denial| unread.verdict(denial, staging))
 }
 
 pub(super) fn bind_edge(
@@ -70,7 +75,7 @@ pub(super) fn bind_edge(
     result: &DurablePhysicalRootManifest,
     format: PhysicalRecordFormatDeclaration,
     remaining_additional_heap_bytes: u64,
-    maximum_scratch: u64,
+    staging: RecoveryAllowance,
 ) -> Result<VerifiedOrderedReleasedHeadReplayV14, WalkFailure> {
     VerifiedOrderedReleasedHeadReplayV14::bind_edge(
         edge,
@@ -80,7 +85,7 @@ pub(super) fn bind_edge(
         format,
         remaining_additional_heap_bytes,
     )
-    .map_err(|denial| WalkFailure::replay_refused(denial, maximum_scratch))
+    .map_err(|denial| WalkFailure::replay_refused(denial, staging))
 }
 
 #[cfg(test)]
@@ -88,8 +93,13 @@ mod tests {
     use worth_store::physical_runtime::{FilesystemObservationBound, RecoveryDiscoveryArtifact};
 
     use super::*;
+    use crate::entry::PhysicalRecoveryLimitDimension::{ObservationBytes, StagingBytes};
+    use crate::orchestration::planning::page_observation::PageLimit;
     use crate::orchestration::reader_limit::refused_past;
+    use crate::orchestration::recovery_budget::{allowance_for_test, recovery_limit_for_test};
     use SelectedReleaseHeadReplayDenial as Denial;
+
+    const STAGING: RecoveryAllowance = allowance_for_test(StagingBytes, 100);
 
     #[test]
     fn a_replay_a_read_stopped_keeps_the_reads_verdict() {
@@ -99,15 +109,24 @@ mod tests {
             65_537,
             65_536,
         ));
+        // The reader was handed 65,536 of the 65,540 observation bytes.
+        let WalkFailure::Limit(limit) = out_of_bytes.verdict(Denial::Read, STAGING) else {
+            panic!("a reader out of bytes is a limit");
+        };
         assert_eq!(
-            out_of_bytes.verdict(Denial::Read, 100),
-            WalkFailure::ByteLimit
+            limit.in_recovery(
+                &crate::entry::PhysicalRecoveryLimitDeclaration::observing_for_test(65_540)
+            ),
+            Some(recovery_limit_for_test(ObservationBytes, 65_541, 65_540).into()),
         );
         let mut damaged = Unread::default();
         damaged.keep(RecoveryDiscoveryFailure::InvalidAddress {
             artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint,
         });
-        assert_eq!(damaged.verdict(Denial::Read, 100), WalkFailure::Unverified);
+        assert_eq!(
+            damaged.verdict(Denial::Read, STAGING),
+            WalkFailure::Unverified
+        );
     }
 
     #[test]
@@ -115,11 +134,15 @@ mod tests {
         use worth_store_recovery_physics::{
             test_support::head_replay_limit_for_test, HeadReplayBound,
         };
-        let refused = |denial| Unread::default().verdict(denial, 100);
+        let refused = |denial| Unread::default().verdict(denial, STAGING);
         let past = head_replay_limit_for_test(HeadReplayBound::EffectBytes, 70, 60);
         assert_eq!(
             refused(Denial::BoundExceeded(past)),
-            WalkFailure::ScratchLimit { at_least: 110 }
+            WalkFailure::Limit(PageLimit::Recovery(recovery_limit_for_test(
+                StagingBytes,
+                110,
+                100
+            )))
         );
         assert_eq!(refused(Denial::SourcePath), WalkFailure::Unverified);
         assert_eq!(refused(Denial::Read), WalkFailure::Unverified);

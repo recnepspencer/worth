@@ -48,7 +48,7 @@ pub(super) fn admit(
     };
     let remaining_bytes = match remaining_observation(&context, basis) {
         Ok(remaining_bytes) => remaining_bytes,
-        Err(failure) => return Err(unobserved(context, basis, failure, 0)),
+        Err(failure) => return Err(unobserved(context, basis, failure)),
     };
     let mut discovery = context
         .authority
@@ -81,7 +81,7 @@ pub(super) fn admit(
             projection,
             &basis.redo,
             &context.selection,
-            context.limits.staging_bytes,
+            &context.limits,
             &mut resident,
         )
     } else {
@@ -113,7 +113,7 @@ pub(super) fn admit(
         Ok(admitted) => admitted,
         Err(failure) => {
             let limit = resident_basis::limit_failure(&context, &resident)
-                .or_else(|| failure.limit(&context.limits, remaining_bytes));
+                .or_else(|| failure.limit(&context.limits, &basis.observed_pages.manifest_budget));
             return Err(context.redo_block(basis.planning_counters(), limit));
         }
     };
@@ -121,8 +121,9 @@ pub(super) fn admit(
         Ok(proof) => proof,
         Err(denial) => {
             let limit = resident_basis::limit_failure(&context, &resident).or_else(|| {
-                directory::unread(&denial)
-                    .and_then(|failure| failure.limit(&context.limits, remaining_bytes))
+                directory::unread(&denial).and_then(|failure| {
+                    failure.limit(&context.limits, &basis.observed_pages.manifest_budget)
+                })
             });
             return Err(context.block_with_planning_attempt_denial(
                 crate::entry::PhysicalRecoveryBlockKind::RedoPlanning,

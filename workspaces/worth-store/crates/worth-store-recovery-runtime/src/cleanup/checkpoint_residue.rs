@@ -58,7 +58,9 @@ pub(super) fn failure(
         RecoveryCheckpointResidueOutcome::DeniedBeforeEffect(denial) if quiescent => {
             session.block();
             PhysicalRecoveryOutcome::Blocked(PhysicalRecoveryBlock::new(
-                PhysicalRecoveryBlockKind::Checkpoint,
+                crate::entry::PhysicalRecoveryBlockCause::Damage(
+                    PhysicalRecoveryBlockKind::Checkpoint,
+                ),
                 store,
                 session_identity,
                 PhysicalRecoveryBlockEvidence {

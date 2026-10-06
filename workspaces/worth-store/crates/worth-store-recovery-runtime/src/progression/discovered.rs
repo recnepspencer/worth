@@ -129,7 +129,9 @@ impl DiscoveredPhysicalRecovery {
                     return blocked(
                         authority,
                         coordination,
-                        PhysicalRecoveryBlockKind::Checkpoint,
+                        crate::entry::PhysicalRecoveryBlockCause::Damage(
+                            PhysicalRecoveryBlockKind::Checkpoint,
+                        ),
                         PhysicalRecoveryBlockEvidence {
                             counters: selected.counters,
                             artifact: Some("families/checkpoint.current".to_owned()),
@@ -153,7 +155,12 @@ impl DiscoveredPhysicalRecovery {
                     selected.integrity_trace,
                 ))
             }
-            Err(failure) => blocked(authority, coordination, failure.kind, failure.evidence),
+            Err(failure) => blocked(
+                authority,
+                coordination,
+                crate::entry::PhysicalRecoveryBlockCause::of(failure.kind, failure.limit),
+                failure.evidence,
+            ),
         }
     }
 }
@@ -161,13 +168,13 @@ impl DiscoveredPhysicalRecovery {
 fn blocked(
     authority: crate::entry::AdmittedPlatformAuthority,
     coordination: crate::orchestration::RecoveryCoordination,
-    kind: PhysicalRecoveryBlockKind,
+    cause: crate::entry::PhysicalRecoveryBlockCause,
     evidence: PhysicalRecoveryBlockEvidence,
 ) -> Result<super::SelectedPhysicalRecovery, PhysicalRecoveryOutcome> {
     Err(crate::handoff::block_unsupported_scope(
         authority,
         coordination,
-        kind,
+        cause,
         evidence,
     ))
 }

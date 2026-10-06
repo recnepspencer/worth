@@ -5,7 +5,8 @@ use worth_store::physical_runtime::{
 use worth_store_recovery_physics::{PhysicalCheckpointBase, SelectedPhysicalRoot};
 
 use crate::entry::{
-    PhysicalRecoveryBlockKind, PhysicalRecoveryRootProtocolArtifact, PhysicalRecoverySourceDenial,
+    PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDeclaration,
+    PhysicalRecoveryRootProtocolArtifact, PhysicalRecoverySourceDenial,
     PhysicalRecoverySourceReadAllocationBoundary as AllocationBoundary,
     PhysicalRecoverySourceReadAllocationDenial as AllocationCause,
 };
@@ -13,7 +14,7 @@ use crate::integrity_ingress::{
     admit_observed_root_manifest, IntegrityAdmittedRecoveryArtifact, OwnerCheckpointProjection,
     RecoveryIntegrityIngressTrace,
 };
-use crate::orchestration::CheckpointDiscovery;
+use crate::orchestration::{source_memory_limit, CheckpointDiscovery};
 use crate::progression::PhysicalRecoveryDiscoveryCounters;
 
 use super::failure::SelectionFailure;
@@ -47,6 +48,7 @@ pub(super) fn select_checkpoint(
     root: &SelectedPhysicalRoot,
     checkpoint: CheckpointDiscovery,
     counters: PhysicalRecoveryDiscoveryCounters,
+    limits: &PhysicalRecoveryLimitDeclaration,
     trace: &mut RecoveryIntegrityIngressTrace,
     coordination: &mut PhysicalRecoveryCoordination,
 ) -> Result<(Option<PhysicalCheckpointBase>, CheckpointInstallation), SelectionFailure> {
@@ -63,9 +65,13 @@ pub(super) fn select_checkpoint(
         CheckpointDiscovery::Absent(observed) => {
             Ok((None, CheckpointInstallation::Absent(observed)))
         }
-        CheckpointDiscovery::Rejected(denial) => Err(failure(
-            PhysicalRecoverySourceDenial::CheckpointIntegrity(denial),
-        )),
+        CheckpointDiscovery::Rejected { denial, limit } => {
+            let blocked = failure(PhysicalRecoverySourceDenial::CheckpointIntegrity(denial));
+            Err(match limit {
+                Some(limit) => blocked.with_limit(limit),
+                None => blocked,
+            })
+        }
         CheckpointDiscovery::Admitted {
             projection,
             source_root,
@@ -86,13 +92,19 @@ pub(super) fn select_checkpoint(
                 };
             let artifact =
                 PhysicalRecoveryRootProtocolArtifact::CheckpointSourceRoot { generation };
-            let allocation_failure = |boundary, requested, cause| {
-                failure(PhysicalRecoverySourceDenial::SourceReadAllocation {
+            // A refused memory grant is recovery memory's limit.
+            let allocation_failure = |boundary, requested, cause: AllocationCause| {
+                let limit = source_memory_limit(limits, &cause);
+                let blocked = failure(PhysicalRecoverySourceDenial::SourceReadAllocation {
                     artifact,
                     boundary,
                     requested,
                     cause,
-                })
+                });
+                match limit {
+                    Some(limit) => blocked.with_limit(limit),
+                    None => blocked,
+                }
             };
             let mut allocation = coordination
                 .begin_source_read_allocation()

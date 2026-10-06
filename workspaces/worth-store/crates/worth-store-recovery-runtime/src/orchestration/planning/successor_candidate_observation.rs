@@ -50,11 +50,11 @@ fn observe_bounded(
     let root_unit = denial::charge_successor_root(budget, root_artifact)?;
     let mut artifacts = allowance
         .reserve(1)
-        .map_err(|denial| resident::memory_failure(root_artifact, allowance, denial))?;
+        .map_err(|denial| resident::memory_failure(root_artifact, denial))?;
     artifacts.push(observed(root_artifact, observed_root.bytes, allowance)?);
     let mut referenced_artifacts = allowance
         .reserve(1)
-        .map_err(|denial| resident::memory_failure(root_artifact, allowance, denial))?;
+        .map_err(|denial| resident::memory_failure(root_artifact, denial))?;
     referenced_artifacts.push(root_artifact);
     let placements = root_routing::read(
         discovery,
@@ -111,19 +111,19 @@ fn observe_bounded(
         free_space,
         placements: allowance
             .into_box(placements)
-            .map_err(|denial| resident::memory_failure(root_artifact, allowance, denial))?,
+            .map_err(|denial| resident::memory_failure(root_artifact, denial))?,
         segment_entries: allowance
             .into_box(segment_entries)
-            .map_err(|denial| resident::memory_failure(root_artifact, allowance, denial))?,
+            .map_err(|denial| resident::memory_failure(root_artifact, denial))?,
         free_entries: allowance
             .into_box(free_entries)
-            .map_err(|denial| resident::memory_failure(root_artifact, allowance, denial))?,
+            .map_err(|denial| resident::memory_failure(root_artifact, denial))?,
         referenced_artifacts: allowance
             .into_box(referenced_artifacts)
-            .map_err(|denial| resident::memory_failure(root_artifact, allowance, denial))?,
+            .map_err(|denial| resident::memory_failure(root_artifact, denial))?,
         artifacts: allowance
             .into_box(artifacts)
-            .map_err(|denial| resident::memory_failure(root_artifact, allowance, denial))?,
+            .map_err(|denial| resident::memory_failure(root_artifact, denial))?,
     }))
 }
 

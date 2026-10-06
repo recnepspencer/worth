@@ -50,12 +50,17 @@ fn present_root_reports_exact_resident_crossing_without_reading_bytes() {
     assert!(matches!(
         denial,
         PhysicalRecoverySuccessorCandidateDenial::RecoveryMemoryBytes {
-            artifact: RecordArtifactFile::RootManifest { generation: GENERATION },
+            artifact: RecordArtifactFile::RootManifest {
+                generation: GENERATION
+            },
             generation: GENERATION,
-            observed,
-            admitted: limit,
-        } if observed == fixture.bytes.len() as u64 && limit == admitted
+        }
     ));
+    // The window holds the need it refused, against the `admitted` it has.
+    assert_eq!(
+        (resident.refused(), resident.maximum()),
+        (Some(fixture.bytes.len() as u64), admitted)
+    );
     assert_eq!(discovery.counters().bytes_read, 0);
     discovery.finish();
 }

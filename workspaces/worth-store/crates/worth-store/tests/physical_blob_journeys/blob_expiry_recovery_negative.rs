@@ -51,7 +51,7 @@ fn resealed_future_expiry_wal_blocks_before_any_recovery_effect() {
         "future witness unexpectedly recovered: {stderr}"
     );
     assert!(
-        stderr.contains("C8_RECOVERY_BLOCKED kind=RedoPlanning")
+        stderr.contains("C8_RECOVERY_BLOCKED cause=Damage(RedoPlanning)")
             && stderr.contains("effects=0")
             && stderr.contains("planning_denial: None")
             && stderr.contains("canonical-redo-plan"),

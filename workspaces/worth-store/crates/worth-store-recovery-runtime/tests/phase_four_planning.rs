@@ -207,8 +207,8 @@ fn an_unsecured_checkpoint_cannot_cross_the_phase_four_boundary() {
         Err(outcome) => expect_blocked(outcome),
     };
     assert_eq!(
-        blocked.kind,
-        worth_store_recovery_runtime::PhysicalRecoveryBlockKind::BindingFreshness
+        blocked.cause().damage(),
+        Some(worth_store_recovery_runtime::PhysicalRecoveryBlockKind::BindingFreshness)
     );
     assert_eq!(
         blocked.evidence().planning_denial,

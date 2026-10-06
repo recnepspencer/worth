@@ -48,7 +48,7 @@ pub(super) fn read(
     // including when a decode-valid source fails the canonical comparison.
     allowance
         .transient(DurablePhysicalRootManifest::maximum_encoding_scratch_bytes() as u64)
-        .map_err(|failure| memory_failure(artifact, allowance, failure))?;
+        .map_err(|failure| memory_failure(artifact, failure))?;
     let admitted = admit_addressed_root(
         RecoveryArtifactNamespaceJoin::from_canonical(&source),
         discovery.store_identity(),

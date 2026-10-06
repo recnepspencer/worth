@@ -39,16 +39,19 @@ pub(super) fn observe(
 ) {
     let mut budget = ManifestEntryBudget::new(maximum_manifest_entries, 0);
     let mut integrity_trace = crate::integrity_ingress::RecoveryIntegrityIngressTrace::default();
-    let inventory = budget.charge_root().and_then(|root_unit| {
-        observe_with_budget(
-            discovery,
-            root,
-            format,
-            &root_unit,
-            &mut budget,
-            &mut integrity_trace,
-        )
-    });
+    let inventory = budget
+        .charge_root()
+        .map_err(PageObservationFailure::from)
+        .and_then(|root_unit| {
+            observe_with_budget(
+                discovery,
+                root,
+                format,
+                &root_unit,
+                &mut budget,
+                &mut integrity_trace,
+            )
+        });
     (inventory, integrity_trace)
 }
 
@@ -366,7 +369,9 @@ fn membership_failure(
     budget: &mut ManifestEntryBudget,
 ) -> PageObservationFailure {
     match failure {
-        MembershipProjectionFailure::EntryLimit { observed } => budget.refuse_decoded(observed),
+        MembershipProjectionFailure::EntryLimit { observed } => {
+            budget.refuse_decoded(observed).into()
+        }
         MembershipProjectionFailure::Integrity(rejection) => PageObservationFailure::Integrity {
             artifact,
             denial: rejection.diagnostic(),

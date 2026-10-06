@@ -133,7 +133,7 @@ fn total_observation_and_distinct_fact_limits_refuse_without_effects() {
             .err()
             .unwrap(),
         );
-        assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::DiscoveryLimit);
+        assert!(blocked.cause().limit().is_some());
         assert_eq!(blocked.recovery_effects(), 0);
     }
 }
@@ -185,9 +185,14 @@ fn repeated_selection_is_deterministic_and_never_promotes_wal_residue() {
 #[test]
 fn each_discovery_bound_refuses_before_recovery_effects() {
     for (selector_candidates, wal_segments, manifest_bytes, expected) in [
-        (1, 8, 8 * 1024, PhysicalRecoveryBlockKind::DiscoveryLimit),
-        (2, 8, 1, PhysicalRecoveryBlockKind::DiscoveryLimit),
-        (2, 1, 8 * 1024, PhysicalRecoveryBlockKind::DiscoveryLimit),
+        (
+            1,
+            8,
+            8 * 1024,
+            PhysicalRecoveryLimitDimension::SelectorCandidates,
+        ),
+        (2, 8, 1, PhysicalRecoveryLimitDimension::ManifestBytes),
+        (2, 1, 8 * 1024, PhysicalRecoveryLimitDimension::WalSegments),
     ] {
         let parent = tempfile::tempdir().unwrap();
         let root = parent.path().join("store");
@@ -204,7 +209,12 @@ fn each_discovery_bound_refuses_before_recovery_effects() {
             limits_for(selector_candidates, wal_segments, manifest_bytes),
         );
         let blocked = expect_blocked(admitted.discover().err().expect("limit crossing blocked"));
-        assert_eq!(blocked.kind, expected);
+        let limit = blocked
+            .cause()
+            .limit()
+            .expect("a limit crossing names its limit");
+        assert_eq!((limit.dimension(), limit.admitted()), (expected, 1));
+        assert!(limit.observed() > limit.admitted(), "{limit:?}");
         assert_eq!(blocked.recovery_effects(), 0);
     }
 }
@@ -243,7 +253,10 @@ fn absent_and_rejected_checkpoints_have_distinct_terminal_evidence() {
             .err()
             .expect("rejected checkpoint must block"),
     );
-    assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::Checkpoint);
+    assert_eq!(
+        blocked.cause().damage(),
+        Some(PhysicalRecoveryBlockKind::Checkpoint)
+    );
     assert_eq!(blocked.store_identity(), rejected_store);
     assert_eq!(blocked.evidence().counters.checkpoints_rejected, 1);
     assert!(blocked
@@ -285,9 +298,9 @@ fn cumulative_wal_bytes_stop_before_the_crossing_artifact() {
         .err()
         .expect("cumulative WAL crossing must block"),
     );
-    let limit = blocked.evidence().limit.unwrap();
-    assert_eq!(limit.dimension, PhysicalRecoveryLimitDimension::WalBytes);
-    assert_eq!((limit.observed, limit.admitted), (16, 12));
+    let limit = blocked.cause().limit().unwrap();
+    assert_eq!(limit.dimension(), PhysicalRecoveryLimitDimension::WalBytes);
+    assert_eq!((limit.observed(), limit.admitted()), (16, 12));
     assert_eq!(blocked.evidence().counters.wal_bytes, 8);
     assert_eq!(blocked.recovery_effects(), 0);
 
@@ -326,13 +339,13 @@ fn aggregate_manifest_entries_stop_before_the_crossing_tree_is_read() {
         .err()
         .expect("aggregate manifest entry crossing must block"),
     );
-    assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::DiscoveryLimit);
-    let limit = blocked.evidence().limit.unwrap();
+    assert!(blocked.cause().limit().is_some());
+    let limit = blocked.cause().limit().unwrap();
     assert_eq!(
-        limit.dimension,
+        limit.dimension(),
         PhysicalRecoveryLimitDimension::ManifestEntries
     );
-    assert_eq!((limit.observed, limit.admitted), (3, 2));
+    assert_eq!((limit.observed(), limit.admitted()), (3, 2));
     assert_eq!(blocked.evidence().counters.manifest_blocks, 0);
     assert_eq!(blocked.recovery_effects(), 0);
 

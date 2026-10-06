@@ -5,7 +5,7 @@
 use worth_store::physical_runtime::{FilesystemObservationBound, RecoveryDiscoveryFailure};
 use worth_store_recovery_physics::PhysicalRedoPlanningDenial;
 use worth_store_recovery_runtime::{
-    PhysicalRecoveryPageAdmissionDenial as Page, PhysicalRecoveryPlanningDenial as Planning,
+    PhysicalRecoveryPlanningDenial as Planning,
     PhysicalRecoveryReleaseHeadControlDenial as Control,
     PhysicalRecoveryReleaseHeadReadDenial as HeadRead,
     PhysicalRecoveryReleaseHeadWalkDenial as HeadWalk,
@@ -22,13 +22,6 @@ fn reader(failure: &RecoveryDiscoveryFailure) -> bool {
     )
 }
 
-fn page(denial: &Page) -> bool {
-    matches!(
-        denial,
-        Page::ManifestEntryLimit | Page::ObservationByteLimit | Page::StagingByteLimit
-    )
-}
-
 fn record(denial: &RecordRead) -> bool {
     match denial {
         RecordRead::ManifestEntryLimit => true,
@@ -42,11 +35,10 @@ fn record(denial: &RecordRead) -> bool {
 fn head(denial: &Head) -> bool {
     match denial {
         Head::ManifestEntryLimit
-        | Head::RosterEntryLimit { .. }
+        | Head::RosterEntryLimit
         | Head::ObservationByteLimit
         | Head::HeadWalk(HeadWalk::Read(HeadRead::ManifestEntryLimit { .. }))
         | Head::Control(Control::ManifestEntryLimit) => true,
-        Head::SourceRoutes(denial) => page(denial),
         Head::SourceRootRead { failure, .. }
         | Head::HeadWalk(HeadWalk::Read(HeadRead::Media { failure, .. })) => reader(failure),
         Head::Control(Control::ControlRead { denial, .. }) => record(denial),
@@ -56,7 +48,6 @@ fn head(denial: &Head) -> bool {
 
 pub(super) fn only_a_limit(denial: &Planning) -> bool {
     match denial {
-        Planning::Page(denial) => page(denial),
         Planning::Redo(PhysicalRedoPlanningDenial::ProjectionLimit { .. }) => true,
         // Every cost denial is a limit the plan's cost ran past.
         Planning::Cost(_) => true,

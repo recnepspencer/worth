@@ -91,7 +91,7 @@ fn selected_v3_witness_changed_after_first_c8_denies_repeat() {
     );
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
-        stderr.contains("C8_RECOVERY_BLOCKED kind=PageAdmission"),
+        stderr.contains("C8_RECOVERY_BLOCKED cause=Damage(PageAdmission)"),
         "changed selected control must fail at historical page admission: {stderr}"
     );
 }

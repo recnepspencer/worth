@@ -1,6 +1,7 @@
-//! The release-custody checks' own memory budget: the only place that mints
-//! their limits. A leaf module, because the authority's declaring module and
-//! its descendants can mint.
+//! Source precedence's own budget: the release-custody checks' memory and
+//! the page facts' counts. The only place that mints their limits. A leaf
+//! module, because the authority's declaring module and its descendants can
+//! mint.
 
 use worth_foundational::{BudgetRefused, ExhaustedLimit, LimitCounts, LimitDimension};
 use worth_proof::Performed;
@@ -8,11 +9,15 @@ use worth_proof::Performed;
 worth_proof::authority_marker!(pub PhysicsBudgetAuthority);
 
 /// Resident bytes bound what a custody check holds at once. Retained bytes
-/// bound what admitted pending-WAL batches keep after their check.
+/// bound what admitted pending-WAL batches keep after their check. Manifest
+/// entries and distinct pages and extents bound the page facts of one
+/// selected root.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PhysicsBound {
     ResidentBytes,
     RetainedBytes,
+    ManifestEntries,
+    DistinctPagesAndExtents,
 }
 
 impl LimitDimension for PhysicsBound {
@@ -45,6 +50,20 @@ impl PhysicsAllowance {
     pub(super) const fn retained_bytes(admitted: u64) -> Self {
         Self {
             bound: PhysicsBound::RetainedBytes,
+            admitted,
+        }
+    }
+
+    pub(super) const fn manifest_entries(admitted: u64) -> Self {
+        Self {
+            bound: PhysicsBound::ManifestEntries,
+            admitted,
+        }
+    }
+
+    pub(super) const fn distinct_pages_and_extents(admitted: u64) -> Self {
+        Self {
+            bound: PhysicsBound::DistinctPagesAndExtents,
             admitted,
         }
     }
@@ -92,6 +111,12 @@ mod tests {
         let retained = Allowance::retained_bytes(8).admit(9).unwrap_err();
         assert_eq!(named(retained), (RetainedBytes, 9, 8));
         assert_eq!(Allowance::resident_bytes(u64::MAX).admit(u64::MAX), Ok(()));
+        let entries = Allowance::manifest_entries(3).admit(4).unwrap_err();
+        assert_eq!(named(entries), (ManifestEntries, 4, 3));
+        let distinct = Allowance::distinct_pages_and_extents(5)
+            .admit(7)
+            .unwrap_err();
+        assert_eq!(named(distinct), (DistinctPagesAndExtents, 7, 5));
     }
 
     #[test]

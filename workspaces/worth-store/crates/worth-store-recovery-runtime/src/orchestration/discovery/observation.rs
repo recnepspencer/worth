@@ -5,7 +5,8 @@ use worth_store_recovery_physics::{
 };
 
 use crate::entry::{
-    PhysicalRecoveryLimitDimension, PhysicalRecoveryLimits, PhysicalRecoverySourceDenial,
+    PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDimension,
+    PhysicalRecoveryLimits, PhysicalRecoverySourceDenial,
 };
 use crate::integrity_ingress::{
     admit_observed_bootstrap_catalog, IntegrityAdmittedRecoveryArtifact,
@@ -15,10 +16,10 @@ use crate::progression::PhysicalRecoveryDiscoveryCounters;
 
 use super::super::manifest_facts::{observe_manifest_facts, ManifestObservationBudget};
 use super::super::reader_limit::{OversizedArtifact, ReadCeiling};
+use super::super::recovery_budget::RecoveryAllowance;
 use super::super::ManifestFactsDiscovery;
 use super::{
-    discovery_limit, refused_read, BootstrapDiscovery, CheckpointDiscovery, DiscoveryFailure,
-    WalDiscovery,
+    refused_read, BootstrapDiscovery, CheckpointDiscovery, DiscoveryFailure, WalDiscovery,
 };
 
 mod checkpoint;
@@ -59,15 +60,21 @@ pub(super) fn observe_all(
         let mut allocation = coordination
             .owner_mut()
             .begin_source_read_allocation()
-            .map_err(root_observation::window_admission_failure)?;
+            .map_err(|cause| root_observation::window_admission_failure(&declaration, cause))?;
         observe_root_slots(discovery, limits, record_format, counters, &mut allocation)?
     };
     let root_protocol_denials = roots.denials.clone();
     let preserve_root_denials =
         |failure: DiscoveryFailure| failure.with_root_protocol_denials(&root_protocol_denials);
-    let bootstrap =
-        observe_fallback_anchor(discovery, &roots, record_format, counters, ingress_trace)
-            .map_err(&preserve_root_denials)?;
+    let bootstrap = observe_fallback_anchor(
+        discovery,
+        &declaration,
+        &roots,
+        record_format,
+        counters,
+        ingress_trace,
+    )
+    .map_err(&preserve_root_denials)?;
     let (current_manifest_facts, previous_manifest_facts) =
         observe_root_manifest_facts(discovery, limits, &mut roots, counters)
             .map_err(&preserve_root_denials)?;
@@ -83,7 +90,7 @@ pub(super) fn observe_all(
         let mut allocation = coordination
             .owner_mut()
             .begin_source_read_allocation()
-            .map_err(checkpoint::window_admission_failure)
+            .map_err(|cause| checkpoint::window_admission_failure(&declaration, cause))
             .map_err(&preserve_manifest_observations)?;
         observe_checkpoint(
             discovery,
@@ -101,14 +108,15 @@ pub(super) fn observe_all(
     let (wal, residue, wal_entries) = observe_wal(discovery, coordination, limits, counters)
         .map_err(&preserve_manifest_observations)?;
     record_wal_counters(counters, &wal, &residue, wal_entries);
-    if discovery.counters().bytes_read > declaration.observation_bytes {
+    if let Err(limit) = RecoveryAllowance::declared(
+        &declaration,
+        PhysicalRecoveryLimitDimension::ObservationBytes,
+    )
+    .admit(discovery.counters().bytes_read)
+    {
         return Err(preserve_manifest_observations(
-            discovery_limit(
-                PhysicalRecoveryLimitDimension::ObservationBytes,
-                discovery.counters().bytes_read,
-                declaration.observation_bytes,
-            )
-            .with_integrity_observations(wal.integrity_observations()),
+            DiscoveryFailure::limit(PhysicalRecoveryBlockKind::MediaObservation, limit)
+                .with_integrity_observations(wal.integrity_observations()),
         ));
     }
     Ok(ObservedSources {
@@ -138,6 +146,7 @@ fn preserve_post_manifest_failure(
 
 fn observe_fallback_anchor(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    limits: &PhysicalRecoveryLimitDeclaration,
     roots: &RootObservations,
     record_format: PhysicalRecordFormatDeclaration,
     counters: &mut PhysicalRecoveryDiscoveryCounters,
@@ -155,6 +164,7 @@ fn observe_fallback_anchor(
             let OversizedArtifact = refused_read(
                 failure,
                 ceiling,
+                limits,
                 PhysicalRecoveryLimitDimension::ObservationBytes,
             )?;
             // A catalog is its fixed frame and nothing more.
@@ -243,10 +253,9 @@ fn observe_root_manifest_facts(
         discovery,
         &roots.current,
         ManifestObservationBudget {
+            limits: declaration,
             remaining_bytes: &mut roots.remaining_manifest_bytes,
-            admitted_bytes: declaration.manifest_bytes,
             remaining_entries: &mut remaining_manifest_entries,
-            admitted_entries: declaration.manifest_entries,
             blocks_read: &mut manifest_blocks,
         },
     );
@@ -258,10 +267,9 @@ fn observe_root_manifest_facts(
         discovery,
         &roots.previous,
         ManifestObservationBudget {
+            limits: declaration,
             remaining_bytes: &mut roots.remaining_manifest_bytes,
-            admitted_bytes: declaration.manifest_bytes,
             remaining_entries: &mut remaining_manifest_entries,
-            admitted_entries: declaration.manifest_entries,
             blocks_read: &mut manifest_blocks,
         },
     );

@@ -269,7 +269,7 @@ fn recover(root: &Path, marker: &Path) -> (Vec<(u64, u64, u64, u64)>, Vec<u8>) {
         if let PhysicalRecoveryOutcome::Blocked(blocked) = &outcome {
             panic!(
                 "mixed tail blocked {:?} artifact {:?} denial {:?} lsn {:?}",
-                blocked.kind,
+                blocked.cause(),
                 blocked.evidence().artifact,
                 blocked.evidence().planning_denial,
                 blocked.evidence().lsn

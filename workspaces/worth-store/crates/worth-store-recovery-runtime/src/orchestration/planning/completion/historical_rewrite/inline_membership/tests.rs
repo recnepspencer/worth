@@ -182,8 +182,11 @@ fn non_tail_page_generation_must_advance_by_one() {
 
 #[test]
 fn collecting_one_placements_pages_is_one_lookup_charged_before_its_reads() {
+    use crate::entry::PhysicalRecoveryLimitDimension::ManifestEntries;
     use crate::orchestration::planning::manifest_entry_budget::ManifestEntryBudget;
+    use crate::orchestration::planning::page_observation::PageLimit;
     use crate::orchestration::planning::selected_world_fixture::selected_world;
+    use crate::orchestration::recovery_budget::recovery_limit_for_test;
     const ADMITTED: u64 = 4_096;
     let placement = coordinates().source;
     let collect = |name: &str, observed: u64| {
@@ -211,7 +214,13 @@ fn collecting_one_placements_pages_is_one_lookup_charged_before_its_reads() {
     // None left: refused as that limit, before any read.
     assert_eq!(
         collect("inline-lookup-none-left", ADMITTED),
-        (Err(HistoricalFailure::ManifestEntries), 0, 0)
+        (
+            Err(HistoricalFailure::Limit(PageLimit::Recovery(
+                recovery_limit_for_test(ManifestEntries, ADMITTED + 1, ADMITTED)
+            ))),
+            0,
+            0
+        )
     );
     // One left pays for the lookup, however many entries its leaves hold. No
     // page of this world carries that generation, so it verifies nothing.

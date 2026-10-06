@@ -2,6 +2,7 @@
 //! root effects. This is preplanning lineage only; control custody is joined
 //! separately before Store may seal an ordered release sequence.
 
+use crate::orchestration::recovery_budget::RecoveryAllowance;
 use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DurablePhysicalRootManifest,
@@ -70,11 +71,11 @@ pub(super) fn admit(
     format: PhysicalRecordFormatDeclaration,
     budget: &mut ManifestEntryBudget,
     maximum_entries: u64,
-    maximum_scratch_bytes: u64,
+    staging: RecoveryAllowance,
     trace: &mut RecoveryIntegrityIngressTrace,
 ) -> Result<Walked, WalkFailure> {
     let refused = |exceeded, budget: &mut ManifestEntryBudget| {
-        WalkFailure::refused(exceeded, budget, maximum_scratch_bytes)
+        WalkFailure::refused(exceeded, budget, staging)
     };
     let checkpoint = selection.checkpoint().ok_or(Unverified)?;
     let checkpoint_generation = checkpoint.checkpoint().source().root().generation();
@@ -115,7 +116,7 @@ pub(super) fn admit(
         cutoff,
         initial,
         format,
-        maximum_scratch_bytes,
+        staging.admitted(),
     )
     .proven()?;
     let mut current_root = checkpoint_root;
@@ -156,7 +157,6 @@ pub(super) fn admit(
             budget,
             trace,
             format,
-            maximum_entries,
             charge::step(member.as_ref()).proven()?,
             source,
             selected,
@@ -180,15 +180,16 @@ pub(super) fn admit(
         let retained_before = retained
             .prior_bytes(releases.capacity())
             .ok_or(Unverified)?;
-        let held = live_inventory.saturating_add(retained_before);
-        let input_limit = maximum_scratch_bytes
-            .checked_sub(held)
-            .ok_or(WalkFailure::ScratchLimit { at_least: held })?;
+        let held = live_inventory
+            .checked_add(retained_before)
+            .ok_or(WalkFailure::CountOverflow)?;
+        let input_limit = WalkFailure::left(staging, held)?;
         let (source_segments, result_segments, input_scratch) = segment_pair_bounded(
             roots.source.inventory,
             roots.result.inventory,
-            maximum_entries,
+            budget,
             input_limit,
+            staging,
         )?;
         let source = roots.source.view(&source_segments);
         let result = roots.result.view(&result_segments);
@@ -233,7 +234,7 @@ pub(super) fn admit(
                         result_inventory,
                         format,
                         maximum_entries,
-                        maximum_scratch_bytes,
+                        staging,
                         live_inventory,
                         input_scratch,
                         retained_before,
@@ -256,7 +257,7 @@ pub(super) fn admit(
                     step_limit,
                 )
                 .map_err(|denial| refused(denial.exceeded_bound(), budget))?;
-                let step_peak = (maximum_scratch_bytes - step_limit) + transition.scratch_bytes();
+                let step_peak = (staging.admitted() - step_limit) + transition.scratch_bytes();
                 retained.peak_scratch = retained.peak_scratch.max(step_peak);
                 history
                     .advance_ordinary(

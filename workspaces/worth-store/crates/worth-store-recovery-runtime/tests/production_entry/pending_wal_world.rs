@@ -223,7 +223,7 @@ fn second_v3_descriptor_after_certified_retirement_checkpoint_is_durable() {
         match outcome {
             worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(blocked) => panic!(
                 "third-process C8 blocked at {:?}, effects={}, planning={:?}",
-                blocked.kind,
+                blocked.cause(),
                 blocked.recovery_effects(),
                 blocked.evidence().planning_counters
             ),
@@ -262,7 +262,7 @@ fn distinct_v3_descriptor_before_checkpoint_is_durable() {
         match outcome {
             worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(blocked) => panic!(
                 "same-checkpoint distinct V3 blocked at {:?}, denial={:?}, artifact={:?}, effects={}",
-                blocked.kind,
+                blocked.cause(),
                 blocked.evidence().planning_denial,
                 blocked.evidence().artifact,
                 blocked.recovery_effects()

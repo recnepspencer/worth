@@ -47,11 +47,16 @@ pub struct PhysicalRecoveryPublicationIndeterminate {
     integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 }
 
+#[path = "outcome/block_cause.rs"]
+mod block_cause;
 #[path = "outcome/planning_denial.rs"]
 mod planning_denial;
 mod refusal;
 #[path = "outcome/selected_release_head.rs"]
 mod selected_release_head;
+pub use block_cause::{
+    PhysicalRecoveryBlockCause, PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure,
+};
 pub use planning_denial::{
     PhysicalRecoveryOrderedReleaseDenial, PhysicalRecoveryOrderedReleaseJoin,
     PhysicalRecoveryOrderedReleaseStorage, PhysicalRecoveryPlanningDenial,
@@ -63,10 +68,14 @@ pub use selected_release_head::{
     PhysicalRecoverySelectedReleaseHeadDenial,
 };
 
+/// The phase whose observation or check failed. A limit is no kind: it is
+/// its own cause.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PhysicalRecoveryBlockKind {
-    DiscoveryLimit,
     MediaObservation,
+    /// A source read's resident admission or backing was refused; the source
+    /// denials name which.
+    SourceAllocation,
     RootProtocol,
     Checkpoint,
     WalInventory,
@@ -80,42 +89,11 @@ pub enum PhysicalRecoveryBlockKind {
     Publication,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PhysicalRecoveryLimitDimension {
-    SelectorCandidates,
-    ManifestBytes,
-    ManifestEntries,
-    WalSegments,
-    WalFrames,
-    WalBytes,
-    DistinctPagesAndExtents,
-    ObservationBytes,
-    OperationBindings,
-    RedoTargets,
-    RedoBytes,
-    StagingBytes,
-    RecoveryMemoryBytes,
-    DirtyFrames,
-    PublicationEffects,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct PhysicalRecoveryLimitFailure {
-    pub dimension: PhysicalRecoveryLimitDimension,
-    /// At least what the refused step needed, never the whole need: recovery
-    /// stops at the first step that crosses `admitted`. Where the consumer
-    /// counted the crossing this is the count that step would have reached;
-    /// otherwise it is one more than `admitted`.
-    pub observed: u64,
-    pub admitted: u64,
-}
-
 #[derive(Debug, Default)]
 pub struct PhysicalRecoveryBlockEvidence {
     pub counters: PhysicalRecoveryDiscoveryCounters,
     pub planning_counters: Option<RecoveryPlanningCounters>,
     pub root_protocol_counters: Option<super::PhysicalRecoveryRootProtocolCounters>,
-    pub limit: Option<PhysicalRecoveryLimitFailure>,
     pub artifact: Option<String>,
     pub source_generation: Option<u64>,
     pub lsn: Option<u64>,
@@ -309,11 +287,8 @@ pub enum PhysicalRecoveryPageAdmissionDenial {
     },
     MaterializedExtentCoordinate(PhysicalRedoTargetIdentity),
     InvalidPage(PhysicalRedoTargetIdentity),
-    ManifestEntryLimit,
-    ObservationByteLimit,
-    /// The ordered history walk needs more scratch than the staging bytes
-    /// admitted. The media was not found damaged.
-    StagingByteLimit,
+    /// A count observation keeps went past every count. No limit admits it.
+    CountOverflow,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -329,7 +304,7 @@ pub enum HistoricalDropAdmissionStage {
 
 #[derive(Debug)]
 pub struct PhysicalRecoveryBlock {
-    pub kind: PhysicalRecoveryBlockKind,
+    cause: PhysicalRecoveryBlockCause,
     store: StableStoreIdentity,
     session: super::PhysicalRecoverySessionIdentity,
     evidence: PhysicalRecoveryBlockEvidence,
@@ -338,19 +313,24 @@ pub struct PhysicalRecoveryBlock {
 
 impl PhysicalRecoveryBlock {
     pub(crate) const fn new(
-        kind: PhysicalRecoveryBlockKind,
+        cause: PhysicalRecoveryBlockCause,
         store: StableStoreIdentity,
         session: super::PhysicalRecoverySessionIdentity,
         evidence: PhysicalRecoveryBlockEvidence,
         recovery_effects: u64,
     ) -> Self {
         Self {
-            kind,
+            cause,
             store,
             session,
             evidence,
             recovery_effects,
         }
+    }
+
+    /// A limit recovery ran out of, or the phase that failed.
+    pub const fn cause(&self) -> PhysicalRecoveryBlockCause {
+        self.cause
     }
 
     pub const fn store_identity(&self) -> StableStoreIdentity {

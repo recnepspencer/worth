@@ -7,17 +7,20 @@ use worth_store::physical_runtime::{
 };
 
 use crate::entry::{
-    PhysicalRecoveryBlockKind, PhysicalRecoverySourceDenial,
+    PhysicalRecoveryLimitDeclaration, PhysicalRecoverySourceDenial,
     PhysicalRecoverySourceReadAllocationBoundary as Boundary,
     PhysicalRecoverySourceReadAllocationDenial as Cause,
 };
+use crate::orchestration::discovery::source_memory::stopped;
 use crate::orchestration::discovery::DiscoveryFailure;
 use crate::orchestration::reader_limit::OversizedArtifact;
 
 pub(in super::super) fn window_admission_failure(
+    limits: &PhysicalRecoveryLimitDeclaration,
     cause: PhysicalRecoveryRejoinResidentAdmissionDenial,
 ) -> DiscoveryFailure {
     failure(
+        limits,
         RecoveryDiscoveryArtifact::CurrentCheckpoint,
         Boundary::WindowAdmission,
         0,
@@ -26,6 +29,7 @@ pub(in super::super) fn window_admission_failure(
 }
 
 pub(super) fn refused(
+    limits: &PhysicalRecoveryLimitDeclaration,
     denial: RecoveryDiscoveryAllocationFailure<PhysicalRecoveryObservationAllocationDenial>,
     refused_read: impl FnOnce(RecoveryDiscoveryFailure) -> Result<OversizedArtifact, DiscoveryFailure>,
 ) -> Result<OversizedArtifact, DiscoveryFailure> {
@@ -41,9 +45,18 @@ pub(super) fn refused(
                 PhysicalRecoveryObservationAllocationDenial::PathResidency { boundary, .. } => {
                     Boundary::QualifiedPath(*boundary)
                 }
-                _ => Boundary::ReadBuffer,
+                PhysicalRecoveryObservationAllocationDenial::StoreMismatch
+                | PhysicalRecoveryObservationAllocationDenial::WalObservationUnavailable(_)
+                | PhysicalRecoveryObservationAllocationDenial::Residency(_)
+                | PhysicalRecoveryObservationAllocationDenial::ListingResidency { .. }
+                | PhysicalRecoveryObservationAllocationDenial::UnqualifiedListingStorage
+                | PhysicalRecoveryObservationAllocationDenial::UnqualifiedPathStorage
+                | PhysicalRecoveryObservationAllocationDenial::AllocatorExceededReservation {
+                    ..
+                } => Boundary::ReadBuffer,
             };
             failure(
+                limits,
                 artifact,
                 boundary,
                 requested as u64,
@@ -56,6 +69,7 @@ pub(super) fn refused(
             observed,
             ..
         } => failure(
+            limits,
             artifact,
             Boundary::ReadBuffer,
             requested as u64,
@@ -68,10 +82,12 @@ pub(super) fn refused(
 }
 
 pub(super) fn parser_failure(
+    limits: &PhysicalRecoveryLimitDeclaration,
     requested: u64,
     cause: PhysicalRecoveryRejoinResidentDenial,
 ) -> DiscoveryFailure {
     failure(
+        limits,
         RecoveryDiscoveryArtifact::CurrentCheckpoint,
         Boundary::ParserRecords,
         requested,
@@ -79,8 +95,13 @@ pub(super) fn parser_failure(
     )
 }
 
-pub(super) fn parser_capacity_failure(requested: u64, actual: u64) -> DiscoveryFailure {
+pub(super) fn parser_capacity_failure(
+    limits: &PhysicalRecoveryLimitDeclaration,
+    requested: u64,
+    actual: u64,
+) -> DiscoveryFailure {
     failure(
+        limits,
         RecoveryDiscoveryArtifact::CurrentCheckpoint,
         Boundary::ParserRecords,
         requested,
@@ -89,6 +110,7 @@ pub(super) fn parser_capacity_failure(requested: u64, actual: u64) -> DiscoveryF
 }
 
 pub(super) fn binding_decode_failure(
+    limits: &PhysicalRecoveryLimitDeclaration,
     denial: worth_store::physical_runtime::StoreRecoveryCheckpointBindingAllocationDenial,
 ) -> DiscoveryFailure {
     use worth_store::physical_runtime::StoreRecoveryCheckpointBindingAllocationDenial as Denial;
@@ -101,6 +123,7 @@ pub(super) fn binding_decode_failure(
         | Denial::BackingMismatch => 0,
     };
     failure(
+        limits,
         RecoveryDiscoveryArtifact::CurrentCheckpoint,
         Boundary::BindingDecode,
         requested,
@@ -109,6 +132,7 @@ pub(super) fn binding_decode_failure(
 }
 
 pub(super) fn binding_basis_failure(
+    limits: &PhysicalRecoveryLimitDeclaration,
     denial: worth_store::physical_runtime::StoreRecoveryCheckpointBindingAllocationDenial,
 ) -> DiscoveryFailure {
     use worth_store::physical_runtime::StoreRecoveryCheckpointBindingAllocationDenial as Denial;
@@ -121,6 +145,7 @@ pub(super) fn binding_basis_failure(
         | Denial::BackingMismatch => 0,
     };
     failure(
+        limits,
         RecoveryDiscoveryArtifact::CurrentCheckpoint,
         Boundary::BindingBasis,
         requested,
@@ -129,12 +154,13 @@ pub(super) fn binding_basis_failure(
 }
 
 fn failure(
+    limits: &PhysicalRecoveryLimitDeclaration,
     artifact: RecoveryDiscoveryArtifact,
     boundary: Boundary,
     requested: u64,
     cause: Cause,
 ) -> DiscoveryFailure {
-    DiscoveryFailure::from(PhysicalRecoveryBlockKind::DiscoveryLimit).with_root_protocol_denials(&[
+    stopped(limits, &cause).with_root_protocol_denials(&[
         PhysicalRecoverySourceDenial::CheckpointReadAllocation {
             artifact,
             boundary,

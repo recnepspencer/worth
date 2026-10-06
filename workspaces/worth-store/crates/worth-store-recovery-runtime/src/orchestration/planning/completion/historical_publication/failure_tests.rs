@@ -9,6 +9,8 @@ use worth_store::physical_runtime::{
 use super::*;
 use crate::entry::PhysicalRecoverySelectedRecordReadDenial;
 use crate::orchestration::reader_limit::refused_past;
+use crate::orchestration::recovery_budget::recovery_limit_for_test;
+use PhysicalRecoveryLimitDimension::{ManifestEntries, ObservationBytes, StagingBytes};
 
 fn limits() -> PhysicalRecoveryLimitDeclaration {
     PhysicalRecoveryLimitDeclaration {
@@ -38,64 +40,67 @@ fn outgrown(bound: FilesystemObservationBound) -> RecoveryDiscoveryFailure {
     refused_past(bound, 4_001, 4_000)
 }
 
+/// A reader handed 4,000 bytes that observed 4,001.
+fn reader_out_of_bytes() -> HistoricalFailure {
+    let bytes = ReaderBytes::of(&outgrown(FilesystemObservationBound::ObservationBytes));
+    HistoricalFailure::Limit(PageLimit::Reader(bytes.expect("the reader's own bytes")))
+}
+
+fn named(
+    dimension: PhysicalRecoveryLimitDimension,
+    observed: u64,
+    admitted: u64,
+) -> Option<PhysicalRecoveryLimitFailure> {
+    Some(recovery_limit_for_test(dimension, observed, admitted).into())
+}
+
 #[test]
-fn an_exhausted_limit_is_reported_with_the_value_recovery_admitted() {
+fn an_exhausted_limit_is_reported_with_recovery_s_own_counts() {
     let limits = limits();
-    assert_eq!(HistoricalFailure::Invalid.limit(&limits, 4_000), None);
+    let mut budget = ManifestEntryBudget::new(limits.manifest_entries, 497);
+    assert_eq!(HistoricalFailure::Invalid.limit(&limits, &budget), None);
     assert_eq!(
-        HistoricalFailure::ManifestEntries.limit(&limits, 4_000),
-        Some(PhysicalRecoveryLimitFailure {
-            dimension: PhysicalRecoveryLimitDimension::ManifestEntries,
-            observed: 501,
-            admitted: 500,
-        }),
+        HistoricalFailure::CountOverflow.limit(&limits, &budget),
+        None
+    );
+    // A budget that refused nothing has no counts to report.
+    assert_eq!(
+        HistoricalFailure::ManifestEntries.limit(&limits, &budget),
+        None
+    );
+    assert!(budget.charge(5).is_err());
+    assert_eq!(
+        HistoricalFailure::ManifestEntries.limit(&limits, &budget),
+        named(ManifestEntries, 502, 500),
     );
     // The reader started with 4,000 of the 10,000 bytes left and had
     // observed 4,001 at the crossing: 6,000 were spent before it.
     assert_eq!(
-        HistoricalFailure::ObservationBytes(Some(4_001)).limit(&limits, 4_000),
-        Some(PhysicalRecoveryLimitFailure {
-            dimension: PhysicalRecoveryLimitDimension::ObservationBytes,
-            observed: 10_001,
-            admitted: 10_000,
-        }),
+        reader_out_of_bytes().limit(&limits, &budget),
+        named(ObservationBytes, 10_001, 10_000),
     );
+    let staging =
+        recovery_limit_for_test(StagingBytes, limits.staging_bytes + 7, limits.staging_bytes);
     assert_eq!(
-        HistoricalFailure::StagingBytes(limits.staging_bytes + 7).limit(&limits, 4_000),
-        Some(PhysicalRecoveryLimitFailure {
-            dimension: PhysicalRecoveryLimitDimension::StagingBytes,
-            observed: limits.staging_bytes + 7,
-            admitted: limits.staging_bytes,
-        }),
+        HistoricalFailure::Limit(PageLimit::Recovery(staging)).limit(&limits, &budget),
+        Some(staging.into()),
     );
-    // A crossing nobody counted is one past the limit.
+    // T2: a phase with nothing left to observe is short of the least read.
     assert_eq!(
-        HistoricalFailure::ObservationBytes(None).limit(&limits, 4_000),
-        Some(PhysicalRecoveryLimitFailure {
-            dimension: PhysicalRecoveryLimitDimension::ObservationBytes,
-            observed: 10_001,
-            admitted: 10_000,
-        }),
-    );
-    assert_eq!(
-        HistoricalFailure::ObservationBytes(Some(2_500))
-            .limit(&limits, 2_000)
-            .map(|limit| limit.observed),
-        Some(10_500),
+        HistoricalFailure::ObservationSpent.limit(&limits, &budget),
+        named(ObservationBytes, 10_001, 10_000),
     );
 }
 
 #[test]
-fn only_a_reader_out_of_its_own_budget_is_a_limit() {
+fn only_a_reader_out_of_its_own_bytes_is_a_limit() {
     assert_eq!(
         discovery_failure(outgrown(FilesystemObservationBound::ObservationBytes)),
-        HistoricalFailure::ObservationBytes(Some(4_001)),
-    );
-    assert_eq!(
-        discovery_failure(refused_past(FilesystemObservationBound::Reads, 1, 0)),
-        HistoricalFailure::ManifestEntries,
+        reader_out_of_bytes(),
     );
     for damage in [
+        // A phase's reader counts no reads.
+        refused_past(FilesystemObservationBound::Reads, 2, 1),
         // The artifact outgrew the ceiling of its own read.
         outgrown(FilesystemObservationBound::RequestedBytes),
         RecoveryDiscoveryFailure::InvalidAddress {
@@ -108,13 +113,14 @@ fn only_a_reader_out_of_its_own_budget_is_a_limit() {
 
 #[test]
 fn a_page_observation_out_of_a_limit_stays_that_limit() {
+    let limit = PageLimit::Recovery(recovery_limit_for_test(ManifestEntries, 9, 8));
     assert_eq!(
-        HistoricalFailure::from(PageObservationFailure::ManifestEntryLimit),
-        HistoricalFailure::ManifestEntries,
+        HistoricalFailure::from(PageObservationFailure::Limit(limit)),
+        HistoricalFailure::Limit(limit),
     );
     assert_eq!(
-        HistoricalFailure::from(PageObservationFailure::ByteLimit),
-        HistoricalFailure::ObservationBytes(None),
+        HistoricalFailure::from(PageObservationFailure::CountOverflow),
+        HistoricalFailure::CountOverflow,
     );
     assert_eq!(
         HistoricalFailure::from(PageObservationFailure::InvalidManifest {
@@ -131,10 +137,7 @@ fn a_page_observation_out_of_a_limit_stays_that_limit() {
 fn a_phase_starting_with_no_observation_bytes_left_has_met_that_limit() {
     assert_eq!(left_to_observe(9), Ok(9));
     assert_eq!(left_to_observe(1), Ok(1));
-    assert_eq!(
-        left_to_observe(0),
-        Err(HistoricalFailure::ObservationBytes(None))
-    );
+    assert_eq!(left_to_observe(0), Err(HistoricalFailure::ObservationSpent));
 }
 
 #[test]
@@ -147,7 +150,7 @@ fn a_record_that_could_not_be_read_is_a_limit_only_where_its_reader_met_one() {
         ),
         (
             Denial::ManifestRead(outgrown(FilesystemObservationBound::ObservationBytes)),
-            HistoricalFailure::ObservationBytes(Some(4_001)),
+            reader_out_of_bytes(),
         ),
         (
             Denial::ManifestRead(outgrown(FilesystemObservationBound::RequestedBytes)),

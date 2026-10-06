@@ -6,6 +6,9 @@ use super::PhysicalRecoveryDiscoveryCounters;
 
 pub(in crate::progression::discovered) struct SelectionFailure {
     pub(in crate::progression::discovered) kind: PhysicalRecoveryBlockKind,
+    /// The limit selection ran out of, with its owner's counts.
+    pub(in crate::progression::discovered) limit:
+        Option<crate::entry::PhysicalRecoveryLimitFailure>,
     pub(in crate::progression::discovered) evidence: PhysicalRecoveryBlockEvidence,
 }
 
@@ -24,12 +27,18 @@ impl SelectionFailure {
     ) -> Self {
         Self {
             kind,
+            limit: None,
             evidence: PhysicalRecoveryBlockEvidence {
                 counters,
                 artifact: Some(artifact.to_owned()),
                 ..PhysicalRecoveryBlockEvidence::default()
             },
         }
+    }
+
+    pub(super) fn with_limit(mut self, limit: crate::entry::PhysicalRecoveryLimitFailure) -> Self {
+        self.limit = Some(limit);
+        self
     }
 
     pub(super) fn with_generation(mut self, generation: u64) -> Self {

@@ -56,11 +56,11 @@ pub(super) fn read(
     materialization.retain_free_space_header(header_bytes.len());
     allowance
         .grow(artifacts, 1)
-        .map_err(|failure| memory_failure(header_artifact, allowance, failure))?;
+        .map_err(|failure| memory_failure(header_artifact, failure))?;
     artifacts.push(observed(header_artifact, header_bytes, allowance)?);
     allowance
         .grow(referenced_artifacts, 1)
-        .map_err(|failure| memory_failure(header_artifact, allowance, failure))?;
+        .map_err(|failure| memory_failure(header_artifact, failure))?;
     referenced_artifacts.push(header_artifact);
     materialization.retain_reference();
     let mut pending = Vec::new();
@@ -71,7 +71,7 @@ pub(super) fn read(
         };
         allowance
             .grow(&mut pending, 1)
-            .map_err(|failure| memory_failure(artifact, allowance, failure))?;
+            .map_err(|failure| memory_failure(artifact, failure))?;
         pending.push(reference);
     }
     let mut visited = VisitedNodes::new();
@@ -85,20 +85,20 @@ pub(super) fn read(
         };
         allowance
             .grow(referenced_artifacts, 1)
-            .map_err(|failure| memory_failure(artifact, allowance, failure))?;
+            .map_err(|failure| memory_failure(artifact, failure))?;
         referenced_artifacts.push(artifact);
         materialization.retain_reference();
         if !visited
             .insert((reference.generation(), reference.block()), allowance)
-            .map_err(|failure| memory_failure(artifact, allowance, failure))?
+            .map_err(|failure| memory_failure(artifact, failure))?
         {
             return Err(invalid(artifact));
         }
-        let scratch = free_projection_scratch(format)
-            .map_err(|failure| memory_failure(artifact, allowance, failure))?;
+        let scratch =
+            free_projection_scratch(format).map_err(|failure| memory_failure(artifact, failure))?;
         allowance
             .retain(scratch)
-            .map_err(|failure| memory_failure(artifact, allowance, failure))?;
+            .map_err(|failure| memory_failure(artifact, failure))?;
         trace_slots(artifact, integrity_trace, allowance)?;
         let source = read_artifact(discovery, artifact, format, allowance)?;
         let tree =
@@ -119,12 +119,12 @@ pub(super) fn read(
             materialization.retain_free_entries(found.len());
             allowance
                 .grow(&mut entries, found.len())
-                .map_err(|failure| memory_failure(artifact, allowance, failure))?;
+                .map_err(|failure| memory_failure(artifact, failure))?;
             entries.extend_from_slice(found);
         } else if let Some(children) = block.children() {
             allowance
                 .grow(&mut pending, children.len())
-                .map_err(|failure| memory_failure(artifact, allowance, failure))?;
+                .map_err(|failure| memory_failure(artifact, failure))?;
             pending.extend(children.iter().copied());
         }
         drop(block);
@@ -138,12 +138,12 @@ pub(super) fn read(
         }
     }
     let pending_bytes = PlanningResidentAllowance::vector_bytes(&pending)
-        .map_err(|failure| memory_failure(header_artifact, allowance, failure))?;
+        .map_err(|failure| memory_failure(header_artifact, failure))?;
     drop(pending);
     allowance.release(pending_bytes);
     visited
         .release(allowance)
-        .map_err(|failure| memory_failure(header_artifact, allowance, failure))?;
+        .map_err(|failure| memory_failure(header_artifact, failure))?;
     entries.sort_unstable_by_key(|entry| worth_store_physical_format::FreeSpaceKey::from(*entry));
     Ok((header, entries))
 }

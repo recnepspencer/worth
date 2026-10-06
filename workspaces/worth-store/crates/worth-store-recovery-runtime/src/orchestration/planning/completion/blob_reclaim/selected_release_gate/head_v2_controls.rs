@@ -222,12 +222,11 @@ fn request_bytes<T>(count: usize) -> Result<u64, Denial> {
         .ok_or(Denial::RequestCountOverflow)
 }
 
+/// The allowance that refused: the resident one, which holds its counts for
+/// the block's cause, or else the entry budget, which holds its own.
 fn resident_failure(resident: &ResidentAllowance) -> Denial {
-    if let Some(required) = resident.exceeded_requirement() {
-        Denial::ResidentBoundExceeded {
-            required,
-            admitted: resident.used().saturating_add(resident.remaining()),
-        }
+    if resident.exceeded_requirement().is_some() {
+        Denial::ResidentBoundExceeded
     } else {
         Denial::ManifestEntryLimit
     }

@@ -1,13 +1,14 @@
 //! Read and classify WAL sources while their raw payload reservation remains live.
 
 use super::super::wal::{discover_wal_inventory, WalDiscoveryInventoryDenialKind};
-use super::super::{discovery_limit, DiscoveryFailure, WalDiscovery};
+use super::super::{refused_beside, DiscoveryFailure, WalDiscovery};
 use super::counters::record_wal_counters;
 use crate::entry::{
     PhysicalRecoveryBlockKind as PhysicalRecoveryBlock, PhysicalRecoveryLimitDimension,
     PhysicalRecoveryLimits,
 };
 use crate::orchestration::reader_limit::ReadCeiling;
+use crate::orchestration::recovery_budget::RecoveryAllowance;
 use crate::progression::PhysicalRecoveryDiscoveryCounters;
 use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
 use worth_store_recovery_physics::PhysicalRecoveryResidue;
@@ -29,10 +30,10 @@ pub(super) fn observe_wal(
         let mut allocation = coordination
             .owner_mut()
             .begin_source_read_allocation()
-            .map_err(allocation::window_admission_failure)?;
+            .map_err(|cause| allocation::window_admission_failure(&declaration, cause))?;
         allocation
             .read_wal_payloads(discovery, limits.wal_segments(), wal_bytes.requested())
-            .map_err(|failure| allocation::map_read_failure(failure, wal_bytes))?
+            .map_err(|failure| allocation::map_read_failure(&declaration, failure, wal_bytes))?
     };
     let wal_entries = observed.artifacts().len() as u64;
     let inspected = match discover_wal_inventory(
@@ -47,39 +48,46 @@ pub(super) fn observe_wal(
             record_wal_counters(counters, &wal, &residue, wal_entries);
             let observations = wal.integrity_observations;
             let failure = match denial.kind {
+                // A count past every count is no limit.
                 WalDiscoveryInventoryDenialKind::CounterOverflow => {
-                    DiscoveryFailure::from(PhysicalRecoveryBlock::DiscoveryLimit)
+                    DiscoveryFailure::from(PhysicalRecoveryBlock::WalInventory)
                 }
+                // A segment counts its frames against those it was handed
+                // of recovery's; the segments before it held the rest.
                 WalDiscoveryInventoryDenialKind::FrameLimitExceeded { observed, admitted } => {
-                    discovery_limit(
-                        PhysicalRecoveryLimitDimension::WalFrames,
+                    refused_beside(
+                        RecoveryAllowance::declared(
+                            &declaration,
+                            PhysicalRecoveryLimitDimension::WalFrames,
+                        ),
                         observed,
                         admitted,
+                        PhysicalRecoveryBlock::WalInventory,
                     )
                 }
                 WalDiscoveryInventoryDenialKind::SourceBinding => {
                     DiscoveryFailure::from(PhysicalRecoveryBlock::WalInventory)
                 }
                 WalDiscoveryInventoryDenialKind::Allocation(cause) => {
-                    allocation::admission_failure(cause)
+                    allocation::admission_failure(&declaration, cause)
                 }
                 WalDiscoveryInventoryDenialKind::InventoryAllocation { boundary, cause } => {
-                    allocation::inventory_failure(boundary, cause)
+                    allocation::inventory_failure(&declaration, boundary, cause)
                 }
             };
             return Err(failure.with_integrity_observations(observations));
         }
     };
-    if inspected.observed_bytes > declaration.wal_bytes {
-        let observed_bytes = inspected.observed_bytes;
+    if let Err(limit) =
+        RecoveryAllowance::declared(&declaration, PhysicalRecoveryLimitDimension::WalBytes)
+            .admit(inspected.observed_bytes)
+    {
         let (wal, residue) = finish_wal_inventory(inspected);
         record_wal_counters(counters, &wal, &residue, wal_entries);
-        return Err(discovery_limit(
-            PhysicalRecoveryLimitDimension::WalBytes,
-            observed_bytes,
-            declaration.wal_bytes,
-        )
-        .with_integrity_observations(wal.integrity_observations));
+        return Err(
+            DiscoveryFailure::limit(PhysicalRecoveryBlock::WalInventory, limit)
+                .with_integrity_observations(wal.integrity_observations),
+        );
     }
     debug_assert!(inspected.frames_scanned <= declaration.wal_frames);
     let (wal, residue) = finish_wal_inventory(inspected);

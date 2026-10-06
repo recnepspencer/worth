@@ -159,7 +159,7 @@ fn denial_cause_byte(cause: RecoveryReportDenialCause) -> u8 {
         }
         RecoveryReportDenialCause::Blocked(cause) => {
             16 + match cause {
-                RecoveryReportBlockCause::DiscoveryLimit => 0,
+                RecoveryReportBlockCause::Limit => 0,
                 RecoveryReportBlockCause::MediaObservation => 1,
                 RecoveryReportBlockCause::RootProtocol => 2,
                 RecoveryReportBlockCause::Checkpoint => 3,
@@ -172,6 +172,7 @@ fn denial_cause_byte(cause: RecoveryReportDenialCause) -> u8 {
                 RecoveryReportBlockCause::SelectedCustody => 12,
                 RecoveryReportBlockCause::Staging => 10,
                 RecoveryReportBlockCause::Publication => 11,
+                RecoveryReportBlockCause::SourceAllocation => 13,
             }
         }
         RecoveryReportDenialCause::PublicationSettlementIndeterminate => 32,
@@ -189,8 +190,8 @@ fn decode_denial_cause(value: u8) -> Result<RecoveryReportDenialCause, RecoveryR
             5 => RecoveryReportRefusalCause::CoordinationUnavailable,
             _ => unreachable!(),
         })),
-        16..=28 => Ok(RecoveryReportDenialCause::Blocked(match value - 16 {
-            0 => RecoveryReportBlockCause::DiscoveryLimit,
+        16..=29 => Ok(RecoveryReportDenialCause::Blocked(match value - 16 {
+            0 => RecoveryReportBlockCause::Limit,
             1 => RecoveryReportBlockCause::MediaObservation,
             2 => RecoveryReportBlockCause::RootProtocol,
             3 => RecoveryReportBlockCause::Checkpoint,
@@ -203,6 +204,7 @@ fn decode_denial_cause(value: u8) -> Result<RecoveryReportDenialCause, RecoveryR
             12 => RecoveryReportBlockCause::SelectedCustody,
             10 => RecoveryReportBlockCause::Staging,
             11 => RecoveryReportBlockCause::Publication,
+            13 => RecoveryReportBlockCause::SourceAllocation,
             _ => unreachable!(),
         })),
         32 => Ok(RecoveryReportDenialCause::PublicationSettlementIndeterminate),

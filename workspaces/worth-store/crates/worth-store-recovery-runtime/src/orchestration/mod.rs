@@ -6,12 +6,17 @@ mod planning;
 mod publication;
 mod reader_limit;
 mod recovery;
+mod recovery_budget;
+/// Tests outside orchestration mint their expected limits through its door.
+#[cfg(test)]
+pub(crate) use recovery_budget::recovery_limit_for_test;
 mod reopen;
 mod staging;
 mod wal_residency;
 pub(crate) mod wal_selection;
 
 pub(crate) use coordination::RecoveryCoordination;
+pub(crate) use discovery::source_memory::source_memory_limit;
 pub(crate) use discovery::{
     discover_sources, AdmittedWalInventory, BootstrapDiscovery, CheckpointDiscovery,
     DiscoveryMaterial, WalDiscovery,

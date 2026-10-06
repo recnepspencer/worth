@@ -1,6 +1,9 @@
 use super::super::test_inventory::{inventory, root, root_at};
 use super::*;
+use crate::entry::PhysicalRecoveryLimitDimension::ManifestEntries;
+use crate::orchestration::planning::page_observation::PageLimit;
 use crate::orchestration::planning::selected_world_fixture::{selected_world, SelectedSource};
+use crate::orchestration::recovery_budget::recovery_limit_for_test;
 
 /// What the member of the step under test declares.
 const STEP: u64 = 5;
@@ -32,22 +35,25 @@ fn inventory_of(world: &mut SelectedSource<'_>) -> RecoverySelectedSourceInvento
         .unwrap()
 }
 
-/// One run of the real step from `source` under `entries` manifest entries:
-/// the generation it reread, the artifacts it read and the entries it left.
+/// Recovery's manifest entries in these tests; each step is handed fewer.
+const WHOLE: u64 = 4_096;
+
+/// One run of the real step from `source` with `entries` of recovery's
+/// manifest entries left: the generation it reread, the artifacts it read and
+/// the entries it left.
 fn step(
     world: &mut SelectedSource<'_>,
     source: Observed<'_>,
     selected: Observed<'_>,
     entries: u64,
 ) -> (Result<Option<u64>, WalkFailure>, u64, u64) {
-    let mut budget = ManifestEntryBudget::new(entries, 0);
+    let mut budget = ManifestEntryBudget::new(WHOLE, WHOLE - entries);
     let before = world.discovery.counters().addressed_artifacts_read;
     let reread = charge_and_reread(
         world.discovery,
         &mut budget,
         &mut RecoveryIntegrityIngressTrace::default(),
         world.format,
-        4_096,
         STEP as usize,
         source,
         selected,
@@ -57,7 +63,14 @@ fn step(
     (reread, read, budget.remaining())
 }
 
-const LIMIT: Result<Option<u64>, WalkFailure> = Err(WalkFailure::ManifestEntryLimit);
+/// A step one entry short of the `need` it is charged at once: recovery had
+/// observed all but `need - 1` of its entries, and needed `need` more.
+fn short_of(need: u64) -> Result<Option<u64>, WalkFailure> {
+    let observed = WHOLE - (need - 1) + need;
+    Err(WalkFailure::Limit(PageLimit::Recovery(
+        recovery_limit_for_test(ManifestEntries, observed, WHOLE),
+    )))
+}
 
 #[test]
 fn a_step_that_changes_node_capacity_is_charged_the_whole_tree_of_its_result() {
@@ -103,7 +116,7 @@ fn a_step_one_entry_short_of_its_charge_reads_nothing() {
         let (far_root, far) = (root_at(generation + 1, 64, 1), inventory(64, 1, 1));
         let (source, far) = (observed(&source_root, &source), observed(&far_root, &far));
         let (short, read, _) = step(&mut world, source, far, STEP - 1);
-        assert_eq!(short, LIMIT);
+        assert_eq!(short, short_of(STEP));
         assert_eq!(read, 0, "the step is charged before its first read");
         let (exact, read, left) = step(&mut world, source, far, STEP);
         assert_eq!(exact, Ok(Some(generation)));
@@ -144,10 +157,10 @@ fn a_tree_the_step_rewrote_whole_is_charged_before_the_trees_after_it_are_read()
         let source = observed(&source_root, &source);
         let counted_by_headers = STEP + routes + free;
         let (short, read, _) = step(&mut world, source, far, counted_by_headers - 1);
-        assert_eq!(short, LIMIT);
+        assert_eq!(short, short_of(counted_by_headers));
         assert_eq!(read, 2, "only the root and the free-space header");
         let (short, read, _) = step(&mut world, source, far, counted_by_headers + pages - 1);
-        assert_eq!(short, LIMIT);
+        assert_eq!(short, short_of(counted_by_headers + pages));
         assert_eq!(read, 2 + segment_blocks, "and then only the segment tree");
         let (exact, _, left) = step(&mut world, source, far, counted_by_headers + pages);
         assert_eq!((exact, left), (Ok(Some(generation)), 0));
@@ -155,7 +168,7 @@ fn a_tree_the_step_rewrote_whole_is_charged_before_the_trees_after_it_are_read()
         // The same step onto the selected root, which the walk already holds.
         let selected = observed(world.root, &real);
         let (short, read, _) = step(&mut world, source, selected, counted_by_headers + pages - 1);
-        assert_eq!((short, read), (LIMIT, 0));
+        assert_eq!((short, read), (short_of(counted_by_headers + pages), 0));
         let (exact, read, left) = step(&mut world, source, selected, counted_by_headers + pages);
         assert_eq!((exact, read, left), (Ok(None), 0, 0));
 
@@ -170,7 +183,7 @@ fn a_tree_the_step_rewrote_whole_is_charged_before_the_trees_after_it_are_read()
         ] {
             let (source_root, source) = before(source_capacities.0, source_capacities.1);
             let source = observed(&source_root, &source);
-            assert_eq!(step(&mut world, source, far, need - 1).0, LIMIT);
+            assert_eq!(step(&mut world, source, far, need - 1).0, short_of(need));
             let (exact, _, left) = step(&mut world, source, far, need);
             assert_eq!((exact, left), (Ok(Some(generation)), 0));
         }

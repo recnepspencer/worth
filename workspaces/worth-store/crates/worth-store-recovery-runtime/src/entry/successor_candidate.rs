@@ -5,11 +5,11 @@ use super::PhysicalRecoveryRootProtocolDenial;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PhysicalRecoverySuccessorCandidateDenial {
+    /// The block's cause names recovery memory's limit and its counts, where
+    /// a count can state it.
     RecoveryMemoryBytes {
         artifact: RecordArtifactFile,
         generation: u64,
-        observed: u64,
-        admitted: u64,
     },
     Allocation {
         artifact: RecordArtifactFile,
@@ -41,11 +41,11 @@ pub enum PhysicalRecoverySuccessorCandidateDenial {
         generation: u64,
         denial: PhysicalRecoveryRootProtocolDenial,
     },
+    /// Recovery's manifest entries ran out while the candidate was read. The
+    /// block's cause names the limit and its counts.
     ManifestEntryLimit {
         artifact: RecordArtifactFile,
         generation: u64,
-        observed: u64,
-        admitted: u64,
     },
     Conflict {
         artifact: RecordArtifactFile,

@@ -197,7 +197,9 @@ impl StagedPhysicalRecovery {
         drop(media);
         session.block();
         PhysicalRecoveryOutcome::Blocked(crate::entry::PhysicalRecoveryBlock::new(
-            crate::entry::PhysicalRecoveryBlockKind::Staging,
+            crate::entry::PhysicalRecoveryBlockCause::Damage(
+                crate::entry::PhysicalRecoveryBlockKind::Staging,
+            ),
             store,
             session_identity,
             crate::entry::PhysicalRecoveryBlockEvidence {

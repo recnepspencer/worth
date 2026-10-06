@@ -77,8 +77,7 @@ impl WalDiscoveryInventory {
         mut self,
         failure: WalSegmentAdmissionFailure,
     ) -> WalDiscoveryInventoryDenial {
-        let prior_frames = self.frames_scanned;
-        self.frames_scanned = prior_frames.saturating_add(failure.policy_attempts);
+        self.frames_scanned = self.frames_scanned.saturating_add(failure.policy_attempts);
         if !self.record_ingress(failure.counters) {
             return self.deny(WalDiscoveryInventoryDenialKind::CounterOverflow);
         }
@@ -87,10 +86,7 @@ impl WalDiscoveryInventory {
                 WalDiscoveryInventoryDenialKind::CounterOverflow
             }
             WalSegmentAdmissionDenial::FrameLimitExceeded { observed, admitted } => {
-                WalDiscoveryInventoryDenialKind::FrameLimitExceeded {
-                    observed: prior_frames.saturating_add(observed),
-                    admitted: prior_frames.saturating_add(admitted),
-                }
+                WalDiscoveryInventoryDenialKind::FrameLimitExceeded { observed, admitted }
             }
             WalSegmentAdmissionDenial::SourceBinding => {
                 WalDiscoveryInventoryDenialKind::SourceBinding

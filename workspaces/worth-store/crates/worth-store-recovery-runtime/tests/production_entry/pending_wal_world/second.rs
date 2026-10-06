@@ -23,7 +23,7 @@ pub(super) fn child(root: &Path, marker: &Path) {
         worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) => handoff,
         worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(block) => panic!(
             "second C8 blocked at {:?}: {:?}",
-            block.kind,
+            block.cause(),
             block.evidence().planning_denial,
         ),
         other => panic!("second process could not recover first pending V3: {other:?}"),
@@ -50,7 +50,7 @@ pub(super) fn distinct_child(root: &Path, marker: &Path) {
         worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) => handoff,
         worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(block) => panic!(
             "distinct release C8 blocked at {:?}: {:?}",
-            block.kind,
+            block.cause(),
             block.evidence().planning_denial,
         ),
         worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(

@@ -12,9 +12,10 @@ use worth_store_recovery_physics::{
 };
 
 use crate::entry::{
-    PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure,
-    PhysicalRecoveryOutcome, PhysicalRecoveryPlanningDenial,
+    PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension, PhysicalRecoveryOutcome,
+    PhysicalRecoveryPlanningDenial,
 };
+use crate::orchestration::recovery_budget::RecoveryAllowance;
 
 use super::context::PlanningContext;
 use super::counters;
@@ -57,11 +58,7 @@ pub(super) fn admit(
         Ok(sample) => sample,
         Err(failure) => {
             let denial = failure.denial();
-            let limit = sample_limit(
-                &failure,
-                context.limits.operation_bindings,
-                context.limits.redo_bytes,
-            );
+            let limit = sample_limit(&failure, &context.limits);
             let planning_counters =
                 counters::failed_sample(failure.freshness_retained(), failure.freshness_expired());
             return Err(context.block_with_planning_attempt_denial(
@@ -144,18 +141,14 @@ pub(super) fn admit(
     };
     let targets = redo.target_identities();
     let distinct_targets = targets.iter().copied().collect::<BTreeSet<_>>().len() as u64;
-    if distinct_targets > context.limits.distinct_pages_and_extents {
-        let admitted = context.limits.distinct_pages_and_extents;
+    let distinct = RecoveryAllowance::declared(
+        &context.limits,
+        PhysicalRecoveryLimitDimension::DistinctPagesAndExtents,
+    );
+    if let Some(limit) = distinct.past(distinct_targets) {
         let planning_counters =
             counters::after_fates(&sample, &fates, PhysicalRedoPlanCounters::default(), 0, 0);
-        return Err(context.redo_block(
-            planning_counters,
-            Some(PhysicalRecoveryLimitFailure {
-                dimension: PhysicalRecoveryLimitDimension::DistinctPagesAndExtents,
-                observed: distinct_targets,
-                admitted,
-            }),
-        ));
+        return Err(context.redo_block(planning_counters, Some(limit)));
     }
     Ok((
         context,

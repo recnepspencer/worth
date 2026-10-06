@@ -177,7 +177,10 @@ fn assert_failure(
     let PhysicalRecoveryOutcome::Blocked(blocked) = outcome else {
         panic!("hostile reread must block before effects: {outcome:?}")
     };
-    assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::SelectedCustody);
+    assert_eq!(
+        blocked.cause().damage(),
+        Some(PhysicalRecoveryBlockKind::SelectedCustody)
+    );
     assert_eq!(blocked.recovery_effects(), 0);
     assert_eq!(
         blocked.evidence().artifact.as_deref(),

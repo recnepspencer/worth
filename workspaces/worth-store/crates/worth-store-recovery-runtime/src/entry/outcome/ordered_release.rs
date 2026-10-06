@@ -29,14 +29,11 @@ pub enum PhysicalRecoveryOrderedReleaseDenial {
     MissingReleases,
     MissingHistory,
     RosterBinding,
-    StagingBoundExceeded {
-        required: u64,
-        admitted: u64,
-    },
-    ResidentBoundExceeded {
-        required: u64,
-        admitted: u64,
-    },
+    /// The block's cause names staging's limit and its counts, where a
+    /// count can state it.
+    StagingBoundExceeded,
+    /// The block's cause names recovery memory's limit and its counts.
+    ResidentBoundExceeded,
     RosterAllocation {
         storage: PhysicalRecoveryOrderedReleaseStorage,
         requested: u64,

@@ -26,7 +26,12 @@ impl From<PhysicalRecoverySelectedRecordReadDenial> for HistoricalFailure {
             }
             PhysicalRecoverySelectedRecordReadDenial::ManifestEntryLimit => Self::ManifestEntries,
             // A resident allowance that refused names its own limit.
-            _ => Self::Invalid,
+            PhysicalRecoverySelectedRecordReadDenial::ResidentBoundExceeded
+            | PhysicalRecoverySelectedRecordReadDenial::InvalidRoute
+            | PhysicalRecoverySelectedRecordReadDenial::ManifestIntegrity(_)
+            | PhysicalRecoverySelectedRecordReadDenial::ChunkIntegrity { .. }
+            | PhysicalRecoverySelectedRecordReadDenial::Allocation { .. }
+            | PhysicalRecoverySelectedRecordReadDenial::InvalidPayload => Self::Invalid,
         }
     }
 }

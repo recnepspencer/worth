@@ -33,7 +33,7 @@ pub(super) fn child(root: &Path, marker: &Path, issuer_evidence: [u8; 32], batch
         worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) => handoff,
         worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(block) => panic!(
             "successor C8 blocked at {:?}: denial={:?}, artifact={:?}",
-            block.kind,
+            block.cause(),
             block.evidence().planning_denial,
             block.evidence().artifact,
         ),

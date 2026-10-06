@@ -5,13 +5,15 @@ use worth_store_recovery_physics::{
 };
 
 use crate::entry::{
-    AdmittedPlatformAuthority, PhysicalRecoveryBlockEvidence, PhysicalRecoveryBlockKind,
-    PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure, PhysicalRecoveryOutcome,
-    PhysicalRecoveryPlanningDenial, PhysicalRecoverySourceDenial,
+    AdmittedPlatformAuthority, PhysicalRecoveryBlockCause, PhysicalRecoveryBlockEvidence,
+    PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDimension,
+    PhysicalRecoveryLimitFailure, PhysicalRecoveryOutcome, PhysicalRecoveryPlanningDenial,
+    PhysicalRecoverySourceDenial,
 };
 use crate::handoff::block_unsupported_scope;
 use crate::progression::PhysicalRecoveryDiscoveryCounters;
 
+use super::super::recovery_budget::RecoveryAllowance;
 use super::super::RecoveryCoordination;
 
 pub(super) fn redo_block(
@@ -68,7 +70,7 @@ pub(super) fn cost_denial_block(
     planning_counters: RecoveryPlanningCounters,
     root_protocol_counters: crate::entry::PhysicalRecoveryRootProtocolCounters,
     denial: RecoveryPlanCostDenial,
-    limit: PhysicalRecoveryLimitFailure,
+    limit: Option<PhysicalRecoveryLimitFailure>,
     source_denials: Vec<PhysicalRecoverySourceDenial>,
 ) -> PhysicalRecoveryOutcome {
     block_with_root_protocol_counters(
@@ -79,17 +81,22 @@ pub(super) fn cost_denial_block(
         planning_counters,
         root_protocol_counters,
         "recovery-plan-cost",
-        Some(limit),
+        limit,
         Some(PhysicalRecoveryPlanningDenial::Cost(denial)),
         source_denials,
     )
 }
 
+/// The plan limit physics found the cost past, read beside recovery's
+/// declared allowance for it: physics counted against the plan limits it was
+/// handed. `None` where those counts do not cross the declared allowance: no
+/// limit can state that.
 pub(super) fn plan_cost_limit(
+    declared: &PhysicalRecoveryLimitDeclaration,
     denial: RecoveryPlanCostDenial,
     limits: RecoveryPlanLimits,
     cost: RecoveryPlanCost,
-) -> PhysicalRecoveryLimitFailure {
+) -> Option<PhysicalRecoveryLimitFailure> {
     let (dimension, observed, admitted) = match denial {
         RecoveryPlanCostDenial::RedoTargets => (
             PhysicalRecoveryLimitDimension::RedoTargets,
@@ -132,11 +139,20 @@ pub(super) fn plan_cost_limit(
             limits.dirty_frames(),
         ),
     };
-    PhysicalRecoveryLimitFailure {
-        dimension,
-        observed,
-        admitted,
-    }
+    beside(declared, dimension, observed, admitted)
+}
+
+/// `observed` past the `admitted` another owner was handed, read beside the
+/// whole of `dimension` recovery declared.
+fn beside(
+    declared: &PhysicalRecoveryLimitDeclaration,
+    dimension: PhysicalRecoveryLimitDimension,
+    observed: u64,
+    admitted: u64,
+) -> Option<PhysicalRecoveryLimitFailure> {
+    RecoveryAllowance::declared(declared, dimension)
+        .beside(observed, admitted)
+        .map(Into::into)
 }
 
 pub(super) fn block(
@@ -152,12 +168,11 @@ pub(super) fn block(
     block_unsupported_scope(
         authority,
         coordination,
-        kind,
+        PhysicalRecoveryBlockCause::of(kind, limit),
         PhysicalRecoveryBlockEvidence {
             counters,
             planning_counters: Some(RecoveryPlanningCounters::default()),
             root_protocol_counters: Some(root_protocol_counters),
-            limit,
             artifact: Some(artifact.to_owned()),
             source_denials,
             ..Default::default()
@@ -207,12 +222,11 @@ pub(super) fn block_with_root_protocol_counters(
     block_unsupported_scope(
         authority,
         coordination,
-        kind,
+        PhysicalRecoveryBlockCause::of(kind, limit),
         PhysicalRecoveryBlockEvidence {
             counters,
             planning_counters: Some(planning_counters),
             root_protocol_counters: Some(root_protocol_counters),
-            limit,
             artifact: Some(artifact.to_owned()),
             planning_denial,
             source_denials,
@@ -221,43 +235,35 @@ pub(super) fn block_with_root_protocol_counters(
     )
 }
 
+/// The limit a binding sample ran out of. The sampler was handed recovery's
+/// declared bindings and redo bytes, so its counts read beside them; its
+/// memory refusal is recovery memory's.
 pub(super) fn sample_limit(
     failure: &worth_store::physical_runtime::StoreRecoveryBindingSampleFailure,
-    operation_bindings: u64,
-    redo_bytes: u64,
+    declared: &PhysicalRecoveryLimitDeclaration,
 ) -> Option<PhysicalRecoveryLimitFailure> {
     match failure.denial() {
-        StoreRecoveryBindingSampleDenial::OperationBindingLimit => {
-            Some(PhysicalRecoveryLimitFailure {
-                dimension: PhysicalRecoveryLimitDimension::OperationBindings,
-                observed: failure.operation_bindings_observed(),
-                admitted: operation_bindings,
-            })
-        }
-        StoreRecoveryBindingSampleDenial::RedoByteLimit => Some(PhysicalRecoveryLimitFailure {
-            dimension: PhysicalRecoveryLimitDimension::RedoBytes,
-            observed: failure.redo_bytes_observed(),
-            admitted: redo_bytes,
-        }),
+        StoreRecoveryBindingSampleDenial::OperationBindingLimit => beside(
+            declared,
+            PhysicalRecoveryLimitDimension::OperationBindings,
+            failure.operation_bindings_observed(),
+            declared.operation_bindings,
+        ),
+        StoreRecoveryBindingSampleDenial::RedoByteLimit => beside(
+            declared,
+            PhysicalRecoveryLimitDimension::RedoBytes,
+            failure.redo_bytes_observed(),
+            declared.redo_bytes,
+        ),
         StoreRecoveryBindingSampleDenial::RecoveryMemoryLimit => {
-            use worth_store::physical_runtime::{
-                PhysicalRecoveryRejoinResidentDenial as Native,
-                StoreRecoveryBindingSampleAllocationDenial as Allocation,
-            };
-            let (observed, admitted) = match failure.allocation_denial()? {
-                Allocation::Backing {
-                    cause: Native::BudgetExceeded { required, admitted },
-                    ..
-                }
-                | Allocation::LocalLimit { required, admitted } => (*required, *admitted),
-                _ => return None,
-            };
-            Some(PhysicalRecoveryLimitFailure {
-                dimension: PhysicalRecoveryLimitDimension::RecoveryMemoryBytes,
-                observed,
-                admitted,
-            })
+            super::super::source_memory_limit(declared, failure.allocation_denial()?)
         }
-        _ => None,
+        StoreRecoveryBindingSampleDenial::FreshnessMediaMismatch
+        | StoreRecoveryBindingSampleDenial::ForeignCheckpoint
+        | StoreRecoveryBindingSampleDenial::MissingCheckpointSecurityBinding
+        | StoreRecoveryBindingSampleDenial::InvalidCheckpointSecurityBinding
+        | StoreRecoveryBindingSampleDenial::InvalidCheckpointBinding
+        | StoreRecoveryBindingSampleDenial::InvalidWalMember
+        | StoreRecoveryBindingSampleDenial::ConflictingOperationEvidence => None,
     }
 }

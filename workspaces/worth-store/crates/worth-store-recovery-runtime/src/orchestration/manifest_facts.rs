@@ -10,10 +10,11 @@ use worth_store_recovery_physics::{
 
 use crate::entry::{
     PhysicalManifestObservationDenial, PhysicalRecoveryBlockKind as PhysicalRecoveryBlock,
-    PhysicalRecoveryLimitDimension,
+    PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDimension,
 };
 use crate::orchestration::discovery::DiscoveryFailure;
 use crate::orchestration::reader_limit::{OversizedArtifact, ReadCeiling};
+use crate::orchestration::recovery_budget::RecoveryAllowance;
 
 pub(crate) enum ManifestFactsState {
     Unavailable,
@@ -28,11 +29,12 @@ pub(crate) struct ManifestFactsDiscovery {
     integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 }
 
+/// What is left of recovery's manifest bytes and entries, shared by the
+/// current and previous roots; `limits` holds the whole of each.
 pub(super) struct ManifestObservationBudget<'a> {
+    pub limits: PhysicalRecoveryLimitDeclaration,
     pub remaining_bytes: &'a mut u64,
-    pub admitted_bytes: u64,
     pub remaining_entries: &'a mut u64,
-    pub admitted_entries: u64,
     pub blocks_read: &'a mut u64,
 }
 
@@ -125,7 +127,11 @@ fn observe_manifest_block(
 > {
     let page_bytes = u64::from(root.selector().format().page_size().bytes());
     // A routing block is one page of its root's format.
-    let ceiling = ReadCeiling::within(page_bytes, budget.admitted_bytes, *budget.remaining_bytes);
+    let ceiling = ReadCeiling::within(
+        page_bytes,
+        budget.limits.manifest_bytes,
+        *budget.remaining_bytes,
+    );
     let artifact = match discovery.read_root_routing_block(
         reference.generation(),
         reference.block(),
@@ -136,6 +142,7 @@ fn observe_manifest_block(
             let OversizedArtifact = super::discovery::refused_read(
                 failure,
                 ceiling,
+                &budget.limits,
                 PhysicalRecoveryLimitDimension::ManifestBytes,
             )?;
             return Ok(Err(PhysicalManifestObservationDenial::Integrity {
@@ -151,7 +158,17 @@ fn observe_manifest_block(
     *budget.remaining_bytes = budget
         .remaining_bytes
         .checked_sub(observed_bytes)
-        .ok_or_else(|| DiscoveryFailure::from(PhysicalRecoveryBlock::DiscoveryLimit))?;
+        .ok_or_else(|| {
+            super::discovery::refused_beside(
+                RecoveryAllowance::declared(
+                    &budget.limits,
+                    PhysicalRecoveryLimitDimension::ManifestBytes,
+                ),
+                observed_bytes,
+                *budget.remaining_bytes,
+                PhysicalRecoveryBlock::MediaObservation,
+            )
+        })?;
     match admit_manifest_block(
         &artifact,
         discovery.store_identity(),
@@ -207,17 +224,20 @@ fn charge_record_count(
     record_count: u64,
     budget: &mut ManifestObservationBudget<'_>,
 ) -> Result<(), DiscoveryFailure> {
-    if record_count > *budget.remaining_entries {
-        return Err(super::discovery::discovery_limit(
-            PhysicalRecoveryLimitDimension::ManifestEntries,
-            budget
-                .admitted_entries
-                .saturating_sub(*budget.remaining_entries)
-                .saturating_add(record_count),
-            budget.admitted_entries,
+    let Some(remaining) = budget.remaining_entries.checked_sub(record_count) else {
+        // Recovery's entries less those this observation was handed were
+        // charged before it.
+        return Err(super::discovery::refused_beside(
+            RecoveryAllowance::declared(
+                &budget.limits,
+                PhysicalRecoveryLimitDimension::ManifestEntries,
+            ),
+            record_count,
+            *budget.remaining_entries,
+            PhysicalRecoveryBlock::RootProtocol,
         ));
-    }
-    *budget.remaining_entries -= record_count;
+    };
+    *budget.remaining_entries = remaining;
     Ok(())
 }
 

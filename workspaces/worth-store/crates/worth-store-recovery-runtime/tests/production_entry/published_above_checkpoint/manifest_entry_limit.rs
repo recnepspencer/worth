@@ -7,8 +7,7 @@ use super::super::*;
 use pending_wal_world::{PendingWalWorld, Tail, Workload};
 use worth_store::physical_runtime::ServingPhysicalRuntime;
 use worth_store_recovery_runtime::{
-    PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure, PhysicalRecoveryOutcome,
-    WorthStoreRecovery,
+    PhysicalRecoveryLimitDimension, PhysicalRecoveryOutcome, WorthStoreRecovery,
 };
 
 /// What the idle world needs: three two-chunk objects published above the
@@ -54,12 +53,16 @@ fn assert_one_entry_short_reports_the_limit(world: &PendingWalWorld, need: u64, 
         evidence.counters.manifest_entries,
     );
     assert_eq!(
-        evidence.limit,
-        Some(PhysicalRecoveryLimitFailure {
-            dimension: PhysicalRecoveryLimitDimension::ManifestEntries,
-            observed: need,
-            admitted,
-        }),
+        blocked.cause().limit().map(|limit| (
+            limit.dimension(),
+            limit.observed(),
+            limit.admitted()
+        )),
+        Some((
+            PhysicalRecoveryLimitDimension::ManifestEntries,
+            need,
+            admitted
+        )),
         "{stage}: denial={:?}",
         evidence.planning_denial,
     );

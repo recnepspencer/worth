@@ -42,7 +42,10 @@ fn two_object_pending_final_live_cost_denies_at_peak_minus_one_before_effects() 
     let PhysicalRecoveryOutcome::Blocked(blocked) = outcome else {
         panic!("same media at measured peak - 1 must block before effects: {outcome:?}")
     };
-    assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::RedoPlanning);
+    assert_eq!(
+        blocked.cause().phase(),
+        PhysicalRecoveryBlockKind::RedoPlanning
+    );
     assert_eq!(blocked.recovery_effects(), 0);
     let evidence = blocked.evidence();
     assert_eq!(
@@ -52,13 +55,16 @@ fn two_object_pending_final_live_cost_denies_at_peak_minus_one_before_effects() 
         )),
         "must be the final plan-cost gate, not an earlier source admission"
     );
-    let limit = evidence.limit.expect("typed final recovery-memory cost");
+    let limit = blocked
+        .cause()
+        .limit()
+        .expect("typed final recovery-memory cost");
     assert_eq!(
-        limit.dimension,
+        limit.dimension(),
         PhysicalRecoveryLimitDimension::RecoveryMemoryBytes
     );
-    assert_eq!(limit.observed, peak);
-    assert_eq!(limit.admitted, peak - 1);
+    assert_eq!(limit.observed(), peak);
+    assert_eq!(limit.admitted(), peak - 1);
     assert_unchanged(root, &current, &previous, &checkpoint);
 
     let outcome =

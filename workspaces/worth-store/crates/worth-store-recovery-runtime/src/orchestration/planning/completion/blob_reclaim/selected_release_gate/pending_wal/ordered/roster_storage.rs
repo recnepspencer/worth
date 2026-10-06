@@ -1,6 +1,6 @@
 //! Fallible, resident-charged backing for ordered batch and replay rosters.
 
-use super::{resident_denial, Denial, ResidentAllowance, Storage};
+use super::{Denial, ResidentAllowance, Storage};
 
 pub(super) fn reserve_roster<T>(
     values: &mut Vec<T>,
@@ -14,7 +14,7 @@ pub(super) fn reserve_roster<T>(
         .unwrap_or(u64::MAX);
     resident
         .transient(requested)
-        .map_err(|_| resident_denial(resident))?;
+        .map_err(|_| Denial::ResidentBoundExceeded)?;
     values
         .try_reserve_exact(count)
         .map_err(|cause| Denial::RosterAllocation {
@@ -28,5 +28,5 @@ pub(super) fn reserve_roster<T>(
         .unwrap_or(u64::MAX);
     resident
         .bytes(actual)
-        .map_err(|_| resident_denial(resident))
+        .map_err(|_| Denial::ResidentBoundExceeded)
 }

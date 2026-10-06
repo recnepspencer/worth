@@ -82,7 +82,7 @@ fn recover_seal(root: &Path, original_recovery_bytes: u64) -> RecoveredPhysicalC
         PhysicalRecoveryOutcome::Recovered(handoff) => handoff,
         PhysicalRecoveryOutcome::Blocked(blocked) => panic!(
             "genuine C8 blocked: kind={:?}, planning={:?}, publication={:?}, effects={}",
-            blocked.kind,
+            blocked.cause(),
             blocked.evidence().planning_denial,
             blocked.evidence().publication_denial,
             blocked.recovery_effects()

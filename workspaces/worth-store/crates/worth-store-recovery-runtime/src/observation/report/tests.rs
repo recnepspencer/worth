@@ -190,3 +190,39 @@ fn rehashed_prefix(encoded: &[u8], payload_length: usize) -> Vec<u8> {
     truncated.extend_from_slice(&digest);
     truncated
 }
+
+/// A limit is reported as a limit, never as the damage of a phase; each
+/// damaged phase keeps its own cause.
+#[test]
+fn a_block_cause_is_reported_as_a_limit_or_as_its_own_damage() {
+    use super::model::block_cause;
+    use crate::entry::{PhysicalRecoveryBlockCause as Cause, PhysicalRecoveryBlockKind as Kind};
+    use crate::orchestration::recovery_limit_for_test;
+    use RecoveryReportBlockCause as Report;
+    let limit = recovery_limit_for_test(crate::PhysicalRecoveryLimitDimension::WalBytes, 9, 8);
+    let limit = Cause::Limit {
+        phase: Kind::WalInventory,
+        limit: limit.into(),
+    };
+    assert_eq!(block_cause(limit), Report::Limit);
+    for (kind, report) in [
+        (Kind::MediaObservation, Report::MediaObservation),
+        (Kind::SourceAllocation, Report::SourceAllocation),
+        (Kind::RootProtocol, Report::RootProtocol),
+        (Kind::Checkpoint, Report::Checkpoint),
+        (Kind::WalInventory, Report::WalInventory),
+        (Kind::SourceSelection, Report::SourceSelection),
+        (Kind::BindingFreshness, Report::BindingFreshness),
+        (Kind::PageAdmission, Report::PageAdmission),
+        (
+            Kind::OperationReconciliation,
+            Report::OperationReconciliation,
+        ),
+        (Kind::RedoPlanning, Report::RedoPlanning),
+        (Kind::SelectedCustody, Report::SelectedCustody),
+        (Kind::Staging, Report::Staging),
+        (Kind::Publication, Report::Publication),
+    ] {
+        assert_eq!(block_cause(Cause::Damage(kind)), report, "{kind:?}");
+    }
+}

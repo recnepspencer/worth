@@ -85,7 +85,7 @@ fn an_oversized_root_or_routing_block_of_the_walked_history_is_damage_not_a_limi
         assert_eq!(blocked.recovery_effects(), 0);
         let evidence = blocked.evidence();
         assert!(
-            blocked.kind == PhysicalRecoveryBlockKind::PageAdmission
+            blocked.cause().damage() == Some(PhysicalRecoveryBlockKind::PageAdmission)
                 && matches!(
                     evidence.planning_denial,
                     Some(PhysicalRecoveryPlanningDenial::Page(
@@ -93,11 +93,12 @@ fn an_oversized_root_or_routing_block_of_the_walked_history_is_damage_not_a_limi
                     ))
                 ),
             "{artifact:?} oversized is damage: {:?} {:?}",
-            blocked.kind,
+            blocked.cause(),
             evidence.planning_denial,
         );
         assert_eq!(
-            evidence.limit, None,
+            blocked.cause().limit(),
+            None,
             "{artifact:?} oversized names no limit"
         );
     }
@@ -130,13 +131,14 @@ fn an_oversized_routing_block_of_the_selected_roots_is_damage_not_a_limit() {
         assert_eq!(blocked.recovery_effects(), 0);
         let evidence = blocked.evidence();
         assert_eq!(
-            blocked.kind,
-            PhysicalRecoveryBlockKind::SourceSelection,
+            blocked.cause().damage(),
+            Some(PhysicalRecoveryBlockKind::SourceSelection),
             "{artifact:?} oversized is damage: {:?}",
             evidence.source_denials,
         );
         assert_eq!(
-            evidence.limit, None,
+            blocked.cause().limit(),
+            None,
             "{artifact:?} oversized names no limit"
         );
     }

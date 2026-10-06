@@ -2,6 +2,8 @@
 //! admitted limit. It did not find a damaged manifest.
 
 use super::*;
+use crate::orchestration::planning::page_observation::PageLimit;
+use crate::orchestration::recovery_budget::recovery_limit_for_test;
 
 #[test]
 fn a_decoder_past_its_entries_is_refused_at_the_count_it_would_have_reached() {
@@ -15,7 +17,10 @@ fn a_decoder_past_its_entries_is_refused_at_the_count_it_would_have_reached() {
             MembershipProjectionFailure::EntryLimit { observed: 4 },
             &mut budget,
         ),
-        PageObservationFailure::ManifestEntryLimit,
+        PageObservationFailure::Limit(PageLimit::Recovery(recovery_limit_for_test(
+            crate::entry::PhysicalRecoveryLimitDimension::ManifestEntries,
+            11,
+            10,
+        ))),
     );
-    assert_eq!(budget.refused_at(), Some(11));
 }

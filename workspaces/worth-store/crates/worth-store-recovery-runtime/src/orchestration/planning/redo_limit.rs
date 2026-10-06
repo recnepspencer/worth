@@ -6,10 +6,12 @@ use worth_store_recovery_physics::{PhysicalRedoPlanningDenial, PhysicalRedoProje
 use crate::entry::{
     PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure,
 };
+use crate::orchestration::recovery_budget::RecoveryAllowance;
 
 /// Placements, segment updates and inline allocations are manifest entries,
 /// admitted on top of the `manifest_entries` already observed; the blocks a
-/// member writes are bounded by its own bytes and are not entries.
+/// member writes are bounded by its own bytes and are not entries. Physics was
+/// handed the whole memory, target and distinct-target limits.
 pub(super) fn redo_limit(
     limits: &PhysicalRecoveryLimitDeclaration,
     manifest_entries: u64,
@@ -18,29 +20,35 @@ pub(super) fn redo_limit(
     use PhysicalRecoveryLimitDimension as Dimension;
     use PhysicalRedoPlanningDenial as Denial;
     use PhysicalRedoProjectionLimit as Projection;
-    let (dimension, observed, admitted) = match denial {
+    let refused = |dimension, observed, admitted| {
+        RecoveryAllowance::declared(limits, dimension)
+            .beside(observed, admitted)
+            .map(Into::into)
+    };
+    match denial {
         Denial::RecoveryMemoryLimit { observed, admitted } => {
-            (Dimension::RecoveryMemoryBytes, observed, admitted)
+            refused(Dimension::RecoveryMemoryBytes, observed, admitted)
         }
-        Denial::TargetLimit { observed, admitted } => (Dimension::RedoTargets, observed, admitted),
+        Denial::TargetLimit { observed, admitted } => {
+            refused(Dimension::RedoTargets, observed, admitted)
+        }
         Denial::DistinctTargetLimit { observed, admitted } => {
-            (Dimension::DistinctPagesAndExtents, observed, admitted)
+            refused(Dimension::DistinctPagesAndExtents, observed, admitted)
         }
         Denial::ProjectionLimit {
             limit, observed, ..
         } => match limit {
             Projection::Frames | Projection::RecordIdentities => {
-                (Dimension::RedoTargets, observed, limits.redo_targets)
+                RecoveryAllowance::declared(limits, Dimension::RedoTargets).past(observed)
             }
             Projection::Placements
             | Projection::SegmentUpdates
             | Projection::Manifests
             | Projection::TotalEntries
-            | Projection::InlineAllocations => (
-                Dimension::ManifestEntries,
-                manifest_entries.saturating_add(observed),
-                limits.manifest_entries,
-            ),
+            | Projection::InlineAllocations => {
+                RecoveryAllowance::declared(limits, Dimension::ManifestEntries)
+                    .past(manifest_entries.checked_add(observed)?)
+            }
         },
         Denial::MalformedMember
         | Denial::WrongDomain
@@ -55,13 +63,8 @@ pub(super) fn redo_limit(
         | Denial::PageDigestMismatch
         | Denial::ProvenNoEffectHasWalAttempt
         | Denial::CounterOverflow
-        | Denial::TerminalHeadRetirementUnsupported => return None,
-    };
-    Some(PhysicalRecoveryLimitFailure {
-        dimension,
-        observed,
-        admitted,
-    })
+        | Denial::TerminalHeadRetirementUnsupported => None,
+    }
 }
 
 #[cfg(test)]
@@ -79,12 +82,12 @@ mod tests {
             wal_segments: 1,
             wal_frames: 1,
             wal_bytes: 1,
-            redo_targets: 7,
+            redo_targets: 8,
             redo_bytes: 1,
-            distinct_pages_and_extents: 1,
+            distinct_pages_and_extents: 8,
             operation_bindings: 1,
             staging_bytes: 1,
-            recovery_memory_bytes: 1,
+            recovery_memory_bytes: 8,
             dirty_frames: 1,
             concurrent_commands: 1,
             publication_effects: 1,
@@ -96,7 +99,7 @@ mod tests {
 
     fn named(denial: Denial) -> Option<(Dimension, u64, u64)> {
         redo_limit(&limits(), 30, denial)
-            .map(|limit| (limit.dimension, limit.observed, limit.admitted))
+            .map(|limit| (limit.dimension(), limit.observed(), limit.admitted()))
     }
 
     #[test]
@@ -122,7 +125,7 @@ mod tests {
         };
         assert_eq!(
             named(projection(PhysicalRedoProjectionLimit::Frames)),
-            Some((Dimension::RedoTargets, 13, 7))
+            Some((Dimension::RedoTargets, 13, 8))
         );
         // Projected entries are admitted on top of the thirty already seen.
         assert_eq!(

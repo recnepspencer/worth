@@ -8,7 +8,8 @@ use worth_store::physical_runtime::{
 };
 use worth_store_physical_format::RecordArtifactFile;
 use worth_store_recovery_runtime::{
-    PhysicalRecoveryOutcome, PhysicalRecoverySourceDenial, WorthStoreRecovery,
+    PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension, PhysicalRecoveryOutcome,
+    PhysicalRecoverySourceDenial, WorthStoreRecovery,
 };
 
 use super::*;
@@ -58,20 +59,38 @@ fn selected_release_source_memory_denies_before_effects_and_sufficient_twin_open
             };
             assert_eq!(blocked.recovery_effects(), 0);
             let evidence = blocked.evidence();
-            assert!(
-                evidence.source_denials.iter().any(|denial| matches!(
-                    denial,
+            let required = evidence
+                .source_denials
+                .iter()
+                .find_map(|denial| match denial {
                     PhysicalRecoverySourceDenial::WalAdmissionAllocation {
-                        cause: RecoveryWalAllocationDenial::Backing {
-                            cause: PhysicalRecoveryRejoinResidentDenial::BudgetExceeded {
-                                required,
-                                admitted,
+                        cause:
+                            RecoveryWalAllocationDenial::Backing {
+                                cause:
+                                    PhysicalRecoveryRejoinResidentDenial::BudgetExceeded {
+                                        required,
+                                        admitted,
+                                    },
+                                ..
                             },
-                            ..
-                        },
-                    } if *admitted == bounded && *required > bounded
-                )),
-                "the block must keep its typed recovery-memory cause: {evidence:?}"
+                    } if *admitted == bounded && *required > bounded => Some(*required),
+                    _ => None,
+                })
+                .unwrap_or_else(|| {
+                    panic!("the block must keep its typed recovery-memory cause: {evidence:?}")
+                });
+            // The same media recovers with more memory: a limit, not damage,
+            // stated with both counts.
+            let cause = blocked.cause();
+            assert_eq!(cause.phase(), PhysicalRecoveryBlockKind::SourceAllocation);
+            let limit = cause.limit().expect("recovery memory is a limit");
+            assert_eq!(
+                (limit.dimension(), limit.observed(), limit.admitted()),
+                (
+                    PhysicalRecoveryLimitDimension::RecoveryMemoryBytes,
+                    required,
+                    bounded
+                )
             );
             assert_eq!(
                 selector(&root, RecordArtifactFile::CurrentRootSelector),

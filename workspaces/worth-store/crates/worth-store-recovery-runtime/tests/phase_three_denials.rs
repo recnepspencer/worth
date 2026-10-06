@@ -15,7 +15,7 @@ use worth_store_recovery_physics::{
 };
 use worth_store_recovery_runtime::{
     PhysicalRecoveryBlock, PhysicalRecoveryBlockKind, PhysicalRecoveryCheckpointIntegrityDenial,
-    PhysicalRecoveryLimits, PhysicalRecoveryRootProtocolArtifact,
+    PhysicalRecoveryLimitDimension, PhysicalRecoveryLimits, PhysicalRecoveryRootProtocolArtifact,
     PhysicalRecoveryRootProtocolDenial, PhysicalRecoverySourceDenial,
 };
 
@@ -55,7 +55,10 @@ fn foreign_store_selector_is_rejected_through_the_persisted_boundary() {
             .err()
             .expect("foreign persisted Store must block"),
     );
-    assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::RootProtocol);
+    assert_eq!(
+        blocked.cause().damage(),
+        Some(PhysicalRecoveryBlockKind::RootProtocol)
+    );
     assert_eq!(blocked.store_identity(), primary_store);
     assert_eq!(blocked.evidence().counters.current_root_rejected, 1);
     assert!(matches!(
@@ -172,12 +175,27 @@ fn checkpoint_denials_retain_truncation_integrity_and_count_causes() {
     assert_checkpoint_denial(&count, |denial| {
         matches!(
             denial,
-            PhysicalRecoveryCheckpointIntegrityDenial::DirtyRecordLimit {
-                observed: 2,
-                admitted: 1
-            }
+            PhysicalRecoveryCheckpointIntegrityDenial::DirtyRecordLimit
         )
     });
+    let limit = count
+        .cause()
+        .limit()
+        .expect("the dirty-frame count is a limit");
+    assert_eq!(
+        (
+            count.cause().phase(),
+            limit.dimension(),
+            limit.observed(),
+            limit.admitted()
+        ),
+        (
+            PhysicalRecoveryBlockKind::Checkpoint,
+            PhysicalRecoveryLimitDimension::DirtyFrames,
+            2,
+            1
+        )
+    );
 }
 
 #[test]

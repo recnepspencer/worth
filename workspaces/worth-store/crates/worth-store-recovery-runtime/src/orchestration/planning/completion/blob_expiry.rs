@@ -285,6 +285,9 @@ mod tests {
             BlobAbandonmentReasonV1::ExplicitAbort,
         )
         .unwrap();
+        use crate::entry::PhysicalRecoveryLimitDimension::ManifestEntries;
+        use crate::orchestration::planning::page_observation::PageLimit;
+        use crate::orchestration::recovery_budget::recovery_limit_for_test;
         let read = |name: &str, observed: u64| {
             selected_world(name, 4).read(|source| {
                 let mut budget = ManifestEntryBudget::new(8, observed);
@@ -306,7 +309,13 @@ mod tests {
         // None left: refused as that limit, before the read.
         assert_eq!(
             read("declaration-read-none-left", 8),
-            (Err(HistoricalFailure::ManifestEntries), 0, 0)
+            (
+                Err(HistoricalFailure::Limit(PageLimit::Recovery(
+                    recovery_limit_for_test(ManifestEntries, 9, 8)
+                ))),
+                0,
+                0
+            )
         );
         // One left pays for the read. This world holds no such extent.
         let (outcome, remaining, _) = read("declaration-read-one-left", 7);

@@ -11,10 +11,11 @@ use worth_store_recovery_physics::{
 
 use super::{PlanningContext, ResolvedPlanningBasis};
 use crate::entry::{
-    PhysicalRecoveryOrderedReleaseDenial as Denial,
+    PhysicalRecoveryLimitDimension, PhysicalRecoveryOrderedReleaseDenial as Denial,
     PhysicalRecoveryOrderedReleaseStorage as Storage,
 };
 use crate::orchestration::planning::selected_source_inventory::ResidentAllowance;
+use crate::orchestration::recovery_budget::RecoveryAllowance;
 
 #[path = "ordered/denial.rs"]
 pub(super) mod denial;
@@ -30,14 +31,7 @@ fn resident_block(
     resident: &ResidentAllowance,
 ) -> crate::entry::PhysicalRecoveryOutcome {
     let limit = super::super::resident_basis::limit_failure(&context, resident);
-    denial::block(context, basis, resident_denial(resident), limit)
-}
-
-fn resident_denial(resident: &ResidentAllowance) -> Denial {
-    Denial::ResidentBoundExceeded {
-        required: resident.exceeded_requirement().unwrap_or(u64::MAX),
-        admitted: resident.used().saturating_add(resident.remaining()),
-    }
+    denial::block(context, basis, Denial::ResidentBoundExceeded, limit)
 }
 
 pub(super) fn attach(
@@ -152,25 +146,29 @@ pub(super) fn admit_roster(
             )
         })
         .and_then(|value| value.checked_add(history.peak_scratch_bytes()));
-    let admitted = context.limits.staging_bytes;
+    let staging = RecoveryAllowance::declared(
+        &context.limits,
+        PhysicalRecoveryLimitDimension::StagingBytes,
+    );
+    // A count past every count is no limit.
     let Some(required) = roster_bytes else {
         return Err(denial::block(
             context,
             basis,
-            Denial::StagingBoundExceeded {
-                required: u64::MAX,
-                admitted,
-            },
+            Denial::StagingBoundExceeded,
             None,
         ));
     };
-    let Some(mut remaining_bytes) = admitted.checked_sub(required) else {
-        return Err(denial::block(
-            context,
-            basis,
-            Denial::StagingBoundExceeded { required, admitted },
-            None,
-        ));
+    let mut remaining_bytes = match staging.admit(required) {
+        Ok(required) => staging.admitted() - required,
+        Err(limit) => {
+            return Err(denial::block(
+                context,
+                basis,
+                Denial::StagingBoundExceeded,
+                Some(limit.into()),
+            ))
+        }
     };
     let mut batches = Vec::new();
     let mut head_replays = Vec::new();

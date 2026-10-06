@@ -16,6 +16,9 @@ pub(crate) struct PlanningResidentAllowance {
     used: u64,
     maximum: u64,
     peak: u64,
+    /// The latest need this window refused, for a denial that carries no
+    /// counts of its own.
+    refused: Option<u64>,
 }
 
 impl PlanningResidentAllowance {
@@ -24,6 +27,7 @@ impl PlanningResidentAllowance {
             used: 0,
             maximum,
             peak: 0,
+            refused: None,
         };
         window.retain(retained)?;
         Ok(window)
@@ -50,10 +54,21 @@ impl PlanningResidentAllowance {
     pub(crate) fn transient(&mut self, bytes: u64) -> Result<(), PlanningMemoryDenial> {
         let observed = self.used.checked_add(bytes).ok_or_else(Self::overflow)?;
         if observed > self.maximum {
+            self.refuse(observed);
             return Err(PlanningMemoryDenial::RecoveryMemoryBytes { observed });
         }
         self.peak = self.peak.max(observed);
         Ok(())
+    }
+
+    /// Records that a charge against this window needed `observed` in all.
+    pub(crate) fn refuse(&mut self, observed: u64) {
+        self.refused = Some(observed);
+    }
+
+    /// The latest need this window refused: what it held and the charge.
+    pub(crate) const fn refused(&self) -> Option<u64> {
+        self.refused
     }
 
     pub(crate) fn release(&mut self, bytes: u64) {

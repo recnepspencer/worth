@@ -114,7 +114,7 @@ fn block(
     drop(media);
     session.block();
     PhysicalRecoveryOutcome::Blocked(PhysicalRecoveryBlock::new(
-        PhysicalRecoveryBlockKind::Staging,
+        crate::entry::PhysicalRecoveryBlockCause::Damage(PhysicalRecoveryBlockKind::Staging),
         store,
         session_identity,
         PhysicalRecoveryBlockEvidence {

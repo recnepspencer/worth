@@ -2,6 +2,7 @@
 //! source/result media. The head replay precedes the inventory transition;
 //! the resulting edge then binds that same owned replay without another read.
 
+use crate::orchestration::recovery_budget::RecoveryAllowance;
 use sha2::{Digest, Sha256};
 use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
 use worth_store_physical_format::{PersistedRecordIdentity, PhysicalRecordFormatDeclaration};
@@ -49,7 +50,7 @@ pub(super) struct ReleasedStep<'member, 'media> {
     pub(super) result_inventory: &'media RecoverySelectedSourceInventory,
     pub(super) format: PhysicalRecordFormatDeclaration,
     pub(super) maximum_entries: u64,
-    pub(super) maximum_scratch_bytes: u64,
+    pub(super) staging: RecoveryAllowance,
     pub(super) live_inventory: u64,
     pub(super) input_scratch: u64,
     pub(super) retained_before: u64,
@@ -68,20 +69,15 @@ pub(super) fn admit(
     let source_root = step.source.root;
     let result_root = step.result.root;
     let format = step.format;
+    let maximum = step.staging;
     let trace_backing = trace.owned_heap_bytes().proven()?;
-    let control_base = step
-        .live_inventory
-        .checked_add(step.input_scratch)
-        .proven()?
-        .checked_add(step.retained_before)
-        .proven()?
-        .checked_add(trace_backing)
-        .proven()?;
-    let mut control_resident = ResidentAllowance::new(
-        step.maximum_scratch_bytes
-            .checked_sub(control_base)
-            .in_scratch()?,
-    );
+    let control_base = held([
+        step.live_inventory,
+        step.input_scratch,
+        step.retained_before,
+        trace_backing,
+    ])?;
+    let mut control_resident = ResidentAllowance::new(WalkFailure::left(maximum, control_base)?);
     let binding = match member.materialization().operation() {
         worth_store_physical_format::PersistedPhysicalRecoveryOperation::RecordsDropped {
             binding,
@@ -100,6 +96,7 @@ pub(super) fn admit(
         budget,
         trace,
         &mut control_resident,
+        maximum,
     )?;
     let mut control_live = control_resident.used();
     retained.peak_scratch = retained
@@ -127,18 +124,14 @@ pub(super) fn admit(
         .proven()?
         .checked_add(retained.control_bytes)
         .proven()?;
-    let dropped_limit = step
-        .maximum_scratch_bytes
-        .checked_sub(step.live_inventory)
-        .in_scratch()?
-        .checked_sub(step.input_scratch)
-        .in_scratch()?
-        .checked_sub(prospective_retained)
-        .in_scratch()?
-        .checked_sub(trace_backing)
-        .in_scratch()?
-        .checked_sub(control_live)
-        .in_scratch()?;
+    let dropped_held = held([
+        step.live_inventory,
+        step.input_scratch,
+        prospective_retained,
+        trace_backing,
+        control_live,
+    ])?;
+    let dropped_limit = WalkFailure::left(maximum, dropped_held)?;
     let derived = match member.materialization().operation() {
         worth_store_physical_format::PersistedPhysicalRecoveryOperation::DerivedDirectory {
             retirement: Some(retirement),
@@ -146,17 +139,12 @@ pub(super) fn admit(
         } => retirement.dropped_records(),
         _ => &[],
     };
-    let dropped = dropped_bounded(
-        manifest.dropped(),
-        derived,
-        step.maximum_entries,
-        dropped_limit,
-    )?;
+    let dropped = dropped_bounded(manifest.dropped(), derived, budget, dropped_limit, maximum)?;
     let dropped_bytes = u64::try_from(dropped.capacity())
         .proven()?
         .checked_mul(std::mem::size_of::<PersistedRecordIdentity>() as u64)
         .proven()?;
-    let head_limit = dropped_limit.checked_sub(dropped_bytes).in_scratch()?;
+    let head_limit = WalkFailure::take(maximum, dropped_limit, dropped_bytes)?;
 
     let mut directory_resident = ResidentAllowance::new(head_limit);
     let directory_replacement = match member.materialization().operation() {
@@ -171,7 +159,7 @@ pub(super) fn admit(
                 .find(|route| route.record() == replacement.expected_previous().directory_record())
                 .copied()
                 .proven()?;
-            let bytes = crate::orchestration::planning::released_directory::read(
+            let read = crate::orchestration::planning::released_directory::read(
                 discovery,
                 route,
                 step.source_inventory,
@@ -179,10 +167,13 @@ pub(super) fn admit(
                 budget,
                 trace,
                 &mut directory_resident,
-            )?;
+            );
+            let bytes = read.map_err(|denial| {
+                WalkFailure::unread(denial, budget, &directory_resident, maximum)
+            })?;
             directory_resident.transient(
                 worth_store_recovery_physics::VerifiedReleasedDirectoryReplacement::maximum_decode_heap_bytes(),
-            ).in_scratch()?;
+            ).map_err(|_| WalkFailure::resident(&directory_resident, maximum))?;
             let proof = worth_store_recovery_physics::VerifiedReleasedDirectoryReplacement::admit(
                 &member,
                 source_root,
@@ -200,20 +191,19 @@ pub(super) fn admit(
         _ => None,
     };
     retained.peak_scratch = retained.peak_scratch.max(
-        step.maximum_scratch_bytes
+        maximum
+            .admitted()
             .checked_sub(head_limit)
-            .in_scratch()?
+            .proven()?
             .checked_add(directory_resident.peak())
             .proven()?,
     );
     let directory_trace_growth = directory_resident.used();
     control_resident
         .bytes(directory_trace_growth)
-        .in_scratch()?;
+        .map_err(|_| WalkFailure::resident(&control_resident, maximum))?;
     control_live = control_live.checked_add(directory_trace_growth).proven()?;
-    let head_limit = head_limit
-        .checked_sub(directory_trace_growth)
-        .in_scratch()?;
+    let head_limit = WalkFailure::take(maximum, head_limit, directory_trace_growth)?;
 
     // The addressed reader's observed frame and its owned Vec copy coexist.
     // Debit that window with the controls and dropped vector still resident.
@@ -229,7 +219,7 @@ pub(super) fn admit(
                 .checked_add(read_overlap)
                 .proven()?,
         )
-        .in_scratch()?;
+        .map_err(|_| WalkFailure::resident(&control_resident, maximum))?;
     let selected_replay = head_replay::admit_addressed_member(
         discovery,
         budget,
@@ -238,14 +228,14 @@ pub(super) fn admit(
         result_root,
         format,
         head_limit,
-        step.maximum_scratch_bytes,
+        step.staging,
     )?;
     let head_retained = selected_replay
         .owned_heap_bytes()
         .proven()?
         .checked_add(std::mem::size_of::<VerifiedOrderedReleasedHeadReplayV14>() as u64)
         .proven()?;
-    let matcher_limit = head_limit.checked_sub(head_retained).in_scratch()?;
+    let matcher_limit = WalkFailure::take(maximum, head_limit, head_retained)?;
     let (transition, adapter_scratch) = verified_historical_release_transition(
         source_root,
         step.source_inventory,
@@ -261,7 +251,7 @@ pub(super) fn admit(
         step.maximum_entries,
         matcher_limit,
     )
-    .map_err(|exceeded| WalkFailure::refused(exceeded, budget, step.maximum_scratch_bytes))?;
+    .map_err(|exceeded| WalkFailure::refused(exceeded, budget, step.staging))?;
     let matcher_peak = step
         .input_scratch
         .checked_add(dropped_bytes)
@@ -280,11 +270,7 @@ pub(super) fn admit(
         .proven()?
         .checked_add(head_retained)
         .proven()?;
-    if matcher_peak > step.maximum_scratch_bytes {
-        return Err(WalkFailure::ScratchLimit {
-            at_least: matcher_peak,
-        });
-    }
+    WalkFailure::hold(maximum, matcher_peak)?;
     retained.peak_scratch = retained.peak_scratch.max(matcher_peak);
 
     // A Vec growth can hold both its old backing and its replacement until
@@ -299,14 +285,10 @@ pub(super) fn admit(
         .proven()?;
     let reserve_live = matcher_peak
         .checked_sub(adapter_scratch)
-        .in_scratch()?
+        .proven()?
         .checked_add(roster_growth)
         .proven()?;
-    if reserve_live > step.maximum_scratch_bytes {
-        return Err(WalkFailure::ScratchLimit {
-            at_least: reserve_live,
-        });
-    }
+    WalkFailure::hold(maximum, reserve_live)?;
     releases.try_reserve_exact(1).proven()?;
     let roster_bytes = u64::try_from(releases.capacity())
         .proven()?
@@ -314,25 +296,16 @@ pub(super) fn admit(
         .proven()?;
     let bound_live = matcher_peak
         .checked_sub(adapter_scratch)
-        .in_scratch()?
+        .proven()?
         .checked_sub(next_roster)
-        .in_scratch()?
+        .proven()?
         .checked_add(roster_bytes)
         .proven()?;
-    if bound_live > step.maximum_scratch_bytes {
-        return Err(WalkFailure::ScratchLimit {
-            at_least: bound_live,
-        });
-    }
+    WalkFailure::hold(maximum, bound_live)?;
     let edge = history
         .advance_released(member, transition, result_root, step.result.free, format)
-        .map_err(|denial| {
-            WalkFailure::refused(denial.exceeded_bound(), budget, step.maximum_scratch_bytes)
-        })?;
-    let bind_remaining = step
-        .maximum_scratch_bytes
-        .checked_sub(bound_live)
-        .in_scratch()?;
+        .map_err(|denial| WalkFailure::refused(denial.exceeded_bound(), budget, step.staging))?;
+    let bind_remaining = WalkFailure::left(maximum, bound_live)?;
     let head_replay = head_replay::bind_edge(
         edge,
         selected_replay,
@@ -340,12 +313,9 @@ pub(super) fn admit(
         result_root,
         format,
         bind_remaining,
-        step.maximum_scratch_bytes,
+        step.staging,
     )?;
-    let addressed_remaining = step
-        .maximum_scratch_bytes
-        .checked_sub(bound_live)
-        .in_scratch()?;
+    let addressed_remaining = WalkFailure::left(maximum, bound_live)?;
     let addressed = controls::bind_addressed(
         edge,
         step.result,
@@ -353,14 +323,11 @@ pub(super) fn admit(
         format,
         step.maximum_entries,
         addressed_remaining,
+        maximum,
     )?;
     let next_control_bytes = addressed.retained_bytes;
     let post_bind_peak = bound_live.checked_add(next_control_bytes).proven()?;
-    if post_bind_peak > step.maximum_scratch_bytes {
-        return Err(WalkFailure::ScratchLimit {
-            at_least: post_bind_peak,
-        });
-    }
+    WalkFailure::hold(maximum, post_bind_peak)?;
     retained.peak_scratch = retained.peak_scratch.max(post_bind_peak);
     retained.control_bytes = retained
         .control_bytes
@@ -380,4 +347,12 @@ pub(super) fn admit(
         head_replay,
     });
     Ok(())
+}
+
+/// What the walk holds at once. A sum past every count is no limit.
+fn held<const N: usize>(parts: [u64; N]) -> Result<u64, WalkFailure> {
+    parts
+        .into_iter()
+        .try_fold(0_u64, u64::checked_add)
+        .ok_or(WalkFailure::CountOverflow)
 }

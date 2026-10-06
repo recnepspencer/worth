@@ -110,7 +110,7 @@ fn recover(
         PhysicalRecoveryOutcome::Recovered(handoff) => handoff,
         PhysicalRecoveryOutcome::Blocked(block) => panic!(
             "{stage} blocked: kind={:?}; artifact={:?}; cause={:?}; effects={}",
-            block.kind,
+            block.cause(),
             block.evidence().artifact.as_deref(),
             block.evidence().planning_denial,
             block.recovery_effects()

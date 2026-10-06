@@ -78,7 +78,10 @@ fn blocked_residue_denial(outcome: PhysicalRecoveryOutcome) -> RecoveryCheckpoin
     let PhysicalRecoveryOutcome::Blocked(blocked) = outcome else {
         panic!("a lasting checkpoint change must block at Store's residue gate")
     };
-    assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::Checkpoint);
+    assert_eq!(
+        blocked.cause().damage(),
+        Some(PhysicalRecoveryBlockKind::Checkpoint)
+    );
     assert_eq!(blocked.recovery_effects(), 0);
     blocked
         .evidence()

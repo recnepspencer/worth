@@ -79,7 +79,10 @@ fn assert_media_denial(
     blocked: &worth_store_recovery_runtime::PhysicalRecoveryBlock,
     expected_artifact: RecoveryDiscoveryArtifact,
 ) {
-    assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::MediaObservation);
+    assert_eq!(
+        blocked.cause().damage(),
+        Some(PhysicalRecoveryBlockKind::MediaObservation)
+    );
     let Some((artifact, failure)) =
         blocked
             .evidence()

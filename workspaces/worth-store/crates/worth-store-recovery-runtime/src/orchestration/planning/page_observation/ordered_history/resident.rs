@@ -1,11 +1,13 @@
 //! Peak retained media observations for one ordered root-step comparison.
 
+use crate::orchestration::recovery_budget::RecoveryAllowance;
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DropSetManifestV3, PersistedRecordIdentity,
     PhysicalFreeSpaceMembershipBlock, PhysicalSegmentMembershipBlock,
     RecordSegmentPageManifestEntry,
 };
 
+use crate::orchestration::planning::manifest_entry_budget::ManifestEntryBudget;
 use crate::progression::RecoverySelectedSourceInventory;
 
 use super::walk_failure::{Verdict, WalkFailure};
@@ -88,26 +90,56 @@ pub(super) fn inventory_resident_bytes(
     Some(bytes)
 }
 
+/// One view holds `count` entries `width` bytes wide: every entry recovery
+/// admits, and `available` of the walk's `staging`.
+fn view_fits(
+    budget: &mut ManifestEntryBudget,
+    count: u64,
+    width: u64,
+    available: u64,
+    staging: RecoveryAllowance,
+) -> Result<(), WalkFailure> {
+    if count > budget.admitted() {
+        return Err(budget.refuse_view(count).into());
+    }
+    let bytes = count.checked_mul(width).ok_or(WalkFailure::CountOverflow)?;
+    if bytes > available {
+        return Err(WalkFailure::past_scratch(bytes, available, staging));
+    }
+    Ok(())
+}
+
+/// A reserved backing of `capacity` entries `width` bytes wide fits
+/// `available` of the walk's `staging`.
+fn backing_fits(
+    capacity: usize,
+    width: u64,
+    available: u64,
+    staging: RecoveryAllowance,
+) -> Result<(), WalkFailure> {
+    let bytes = (capacity as u64)
+        .checked_mul(width)
+        .ok_or(WalkFailure::CountOverflow)?;
+    if bytes > available {
+        return Err(WalkFailure::past_scratch(bytes, available, staging));
+    }
+    Ok(())
+}
+
 fn segment_entries_bounded(
     inventory: &RecoverySelectedSourceInventory,
-    maximum_entries: u64,
+    budget: &mut ManifestEntryBudget,
     available_bytes: u64,
+    staging: RecoveryAllowance,
 ) -> Result<Vec<RecordSegmentPageManifestEntry>, WalkFailure> {
     let width = std::mem::size_of::<RecordSegmentPageManifestEntry>() as u64;
     let count = inventory.segment_pages.len() as u64;
-    if count > maximum_entries {
-        return Err(WalkFailure::ManifestEntryLimit);
-    }
-    if count.checked_mul(width).proven()? > available_bytes {
-        return Err(WalkFailure::MORE_SCRATCH);
-    }
+    view_fits(budget, count, width, available_bytes, staging)?;
     let mut entries = Vec::new();
     entries
         .try_reserve_exact(inventory.segment_pages.len())
         .proven()?;
-    if (entries.capacity() as u64).checked_mul(width).proven()? > available_bytes {
-        return Err(WalkFailure::MORE_SCRATCH);
-    }
+    backing_fits(entries.capacity(), width, available_bytes, staging)?;
     entries.extend(inventory.segment_pages.values().map(|page| page.entry));
     Ok(entries)
 }
@@ -115,8 +147,9 @@ fn segment_entries_bounded(
 pub(super) fn segment_pair_bounded(
     source: &RecoverySelectedSourceInventory,
     result: &RecoverySelectedSourceInventory,
-    maximum_entries: u64,
+    budget: &mut ManifestEntryBudget,
     available_bytes: u64,
+    staging: RecoveryAllowance,
 ) -> Result<
     (
         Vec<RecordSegmentPageManifestEntry>,
@@ -125,14 +158,15 @@ pub(super) fn segment_pair_bounded(
     ),
     WalkFailure,
 > {
-    let source_segments = segment_entries_bounded(source, maximum_entries, available_bytes)?;
+    let source_segments = segment_entries_bounded(source, budget, available_bytes, staging)?;
     let source_bytes = (source_segments.capacity() as u64)
         .checked_mul(std::mem::size_of::<RecordSegmentPageManifestEntry>() as u64)
         .proven()?;
     let result_segments = segment_entries_bounded(
         result,
-        maximum_entries,
-        available_bytes.checked_sub(source_bytes).in_scratch()?,
+        budget,
+        WalkFailure::take(staging, available_bytes, source_bytes)?,
+        staging,
     )?;
     let scratch = (source_segments.capacity() as u64)
         .checked_add(result_segments.capacity() as u64)
@@ -146,22 +180,19 @@ pub(super) fn segment_pair_bounded(
 pub(super) fn dropped_bounded(
     manifest: &[PersistedRecordIdentity],
     derived: &[PersistedRecordIdentity],
-    maximum_entries: u64,
+    budget: &mut ManifestEntryBudget,
     available_bytes: u64,
+    staging: RecoveryAllowance,
 ) -> Result<Vec<PersistedRecordIdentity>, WalkFailure> {
     let width = std::mem::size_of::<PersistedRecordIdentity>() as u64;
-    let count = manifest.len().checked_add(derived.len()).proven()?;
-    if count as u64 > maximum_entries {
-        return Err(WalkFailure::ManifestEntryLimit);
-    }
-    if (count as u64).checked_mul(width).proven()? > available_bytes {
-        return Err(WalkFailure::MORE_SCRATCH);
-    }
+    let count = manifest
+        .len()
+        .checked_add(derived.len())
+        .ok_or(WalkFailure::CountOverflow)?;
+    view_fits(budget, count as u64, width, available_bytes, staging)?;
     let mut dropped = Vec::new();
     dropped.try_reserve_exact(count).proven()?;
-    if (dropped.capacity() as u64).checked_mul(width).proven()? > available_bytes {
-        return Err(WalkFailure::MORE_SCRATCH);
-    }
+    backing_fits(dropped.capacity(), width, available_bytes, staging)?;
     dropped.extend_from_slice(manifest);
     dropped.extend_from_slice(derived);
     dropped.sort_unstable();

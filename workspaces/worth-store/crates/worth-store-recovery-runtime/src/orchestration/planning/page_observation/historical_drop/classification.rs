@@ -3,6 +3,7 @@
 //! target needs when no drop walked the history, and the targets that history
 //! retired.
 
+use crate::orchestration::recovery_budget::RecoveryAllowance;
 use std::sync::Arc;
 use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
 use worth_store_physical_format::{
@@ -41,7 +42,7 @@ pub(in crate::orchestration::planning::page_observation) struct HistoryWalk<'a> 
         PhysicalRecordFormatDeclaration,
     pub(in crate::orchestration::planning::page_observation) budget: &'a mut ManifestEntryBudget,
     pub(in crate::orchestration::planning::page_observation) maximum_entries: u64,
-    pub(in crate::orchestration::planning::page_observation) maximum_staging_bytes: u64,
+    pub(in crate::orchestration::planning::page_observation) staging: RecoveryAllowance,
     pub(in crate::orchestration::planning::page_observation) trace:
         &'a mut RecoveryIntegrityIngressTrace,
 }
@@ -59,7 +60,7 @@ impl HistoryWalk<'_> {
             self.format,
             self.budget,
             self.maximum_entries,
-            self.maximum_staging_bytes,
+            self.staging,
             self.trace,
         )
     }
@@ -127,7 +128,7 @@ impl<'target> OrderedTargets<'target> {
             {
                 match walk.admit() {
                     Ok((history, _, scratch)) => (Some(Arc::new(history)), None, scratch),
-                    Err(failure) => match failure.limit() {
+                    Err(failure) => match failure.stopped() {
                         Some(limit) => return Err(limit),
                         None => (None, None, 0),
                     },

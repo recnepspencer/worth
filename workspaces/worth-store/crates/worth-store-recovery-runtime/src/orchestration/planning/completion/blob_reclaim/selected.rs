@@ -139,7 +139,7 @@ fn scan_source(
     let selected = context.selection.page_facts().placements();
     let remaining_bytes = match remaining_observation(&context, basis) {
         Ok(remaining_bytes) => remaining_bytes,
-        Err(failure) => return Err(unobserved(context, basis, failure, 0)),
+        Err(failure) => return Err(unobserved(context, basis, failure)),
     };
     let format = context.authority.record_format;
     let mut discovery = context
@@ -268,7 +268,7 @@ fn scan_source(
                 + (candidate_chunk_ordinals.capacity() * std::mem::size_of::<Option<u64>>()) as u64,
         );
     if let Err(failure) = result {
-        return Err(unobserved(context, basis, failure, remaining_bytes));
+        return Err(unobserved(context, basis, failure));
     }
     if matches!(
         kind,

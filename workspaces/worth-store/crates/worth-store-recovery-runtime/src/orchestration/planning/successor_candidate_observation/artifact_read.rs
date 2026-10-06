@@ -59,21 +59,23 @@ pub(super) fn read(
             let retained = observed.owned_heap_bytes().ok_or_else(|| {
                 memory_failure(
                     artifact,
-                    allowance,
                     PlanningMemoryDenial::RecoveryMemoryBytes { observed: u64::MAX },
                 )
             })?;
             allowance
                 .retain(retained)
-                .map_err(|failure| memory_failure(artifact, allowance, failure))?;
+                .map_err(|failure| memory_failure(artifact, failure))?;
             Ok(observed)
         }
         Err(failure) => Err(match ceiling.passed(&failure) {
-            Some(PastCeiling::Budget { observed, .. }) => memory_failure(
-                artifact,
-                allowance,
-                PlanningMemoryDenial::RecoveryMemoryBytes { observed },
-            ),
+            // The reader counted from the window's first byte.
+            Some(PastCeiling::Budget { observed, .. }) => {
+                allowance.refuse(observed);
+                memory_failure(
+                    artifact,
+                    PlanningMemoryDenial::RecoveryMemoryBytes { observed },
+                )
+            }
             // Past its own ceiling the artifact is damage, as is every
             // refusal that is not the reader's own limit.
             Some(PastCeiling::Artifact) | None => {
@@ -103,12 +105,12 @@ pub(super) fn retain_successor(
     if generation == successor {
         allowance
             .grow(artifacts, 1)
-            .map_err(|failure| memory_failure(artifact, allowance, failure))?;
+            .map_err(|failure| memory_failure(artifact, failure))?;
         artifacts.push(observed(artifact, bytes, allowance)?);
         Ok(true)
     } else {
         let retained = PlanningResidentAllowance::vector_bytes(&bytes)
-            .map_err(|failure| memory_failure(artifact, allowance, failure))?;
+            .map_err(|failure| memory_failure(artifact, failure))?;
         drop(bytes);
         allowance.release(retained);
         Ok(false)
@@ -122,6 +124,6 @@ pub(super) fn observed(
 ) -> Result<RecoveryObservedCandidateArtifact, PhysicalRecoverySuccessorCandidateDenial> {
     let bytes = allowance
         .into_box(bytes)
-        .map_err(|failure| memory_failure(artifact, allowance, failure))?;
+        .map_err(|failure| memory_failure(artifact, failure))?;
     Ok(RecoveryObservedCandidateArtifact { artifact, bytes })
 }

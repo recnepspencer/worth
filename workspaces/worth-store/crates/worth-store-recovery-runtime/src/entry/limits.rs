@@ -101,6 +101,41 @@ impl PhysicalRecoveryLimitDeclaration {
             self.observation_bytes,
         ]
     }
+
+    /// A test's declaration of `observation_bytes`, and one of every other
+    /// dimension.
+    #[cfg(test)]
+    pub(crate) const fn observing_for_test(observation_bytes: u64) -> Self {
+        let mut declared = Self::from_values_for_test([1; 19]);
+        declared.observation_bytes = observation_bytes;
+        declared
+    }
+
+    /// A test's declaration of `values`, in the order admission reads them.
+    #[cfg(test)]
+    pub(crate) const fn from_values_for_test(values: [u64; 19]) -> Self {
+        Self {
+            selector_candidates: values[0],
+            checkpoint_candidates: values[1],
+            manifest_bytes: values[2],
+            manifest_entries: values[3],
+            wal_segments: values[4],
+            wal_frames: values[5],
+            wal_bytes: values[6],
+            redo_targets: values[7],
+            redo_bytes: values[8],
+            distinct_pages_and_extents: values[9],
+            operation_bindings: values[10],
+            staging_bytes: values[11],
+            recovery_memory_bytes: values[12],
+            dirty_frames: values[13],
+            concurrent_commands: values[14],
+            publication_effects: values[15],
+            cleanup_candidates: values[16],
+            cleanup_bytes: values[17],
+            observation_bytes: values[18],
+        }
+    }
 }
 
 /// Where `values` places the WAL segment ceiling.
@@ -187,26 +222,8 @@ mod tests {
     }
 
     fn declaration(values: [u64; 19]) -> PhysicalRecoveryLimitDeclaration {
-        PhysicalRecoveryLimitDeclaration {
-            selector_candidates: values[0],
-            checkpoint_candidates: values[1],
-            manifest_bytes: values[2],
-            manifest_entries: values[3],
-            wal_segments: values[4],
-            wal_frames: values[5],
-            wal_bytes: values[6],
-            redo_targets: values[7],
-            redo_bytes: values[8],
-            distinct_pages_and_extents: values[9],
-            operation_bindings: values[10],
-            staging_bytes: values[11],
-            recovery_memory_bytes: values[12],
-            dirty_frames: values[13],
-            concurrent_commands: values[14],
-            publication_effects: values[15],
-            cleanup_candidates: values[16],
-            cleanup_bytes: values[17],
-            observation_bytes: values[18],
-        }
+        let declared = PhysicalRecoveryLimitDeclaration::from_values_for_test(values);
+        assert_eq!(declared.values(), values);
+        declared
     }
 }

@@ -33,7 +33,7 @@ pub(super) fn read(
         };
         allowance
             .grow(&mut pending, 1)
-            .map_err(|failure| memory_failure(artifact, allowance, failure))?;
+            .map_err(|failure| memory_failure(artifact, failure))?;
         pending.push(reference);
     }
     let mut visited = VisitedNodes::new();
@@ -47,20 +47,20 @@ pub(super) fn read(
         };
         allowance
             .grow(referenced_artifacts, 1)
-            .map_err(|failure| memory_failure(artifact, allowance, failure))?;
+            .map_err(|failure| memory_failure(artifact, failure))?;
         referenced_artifacts.push(artifact);
         materialization.retain_reference();
         if !visited
             .insert((reference.generation(), reference.block()), allowance)
-            .map_err(|failure| memory_failure(artifact, allowance, failure))?
+            .map_err(|failure| memory_failure(artifact, failure))?
         {
             return Err(invalid(artifact));
         }
         let scratch = segment_projection_scratch(format)
-            .map_err(|failure| memory_failure(artifact, allowance, failure))?;
+            .map_err(|failure| memory_failure(artifact, failure))?;
         allowance
             .retain(scratch)
-            .map_err(|failure| memory_failure(artifact, allowance, failure))?;
+            .map_err(|failure| memory_failure(artifact, failure))?;
         trace_slots(artifact, integrity_trace, allowance)?;
         let source = read_artifact(discovery, artifact, format, allowance)?;
         let tree =
@@ -81,12 +81,12 @@ pub(super) fn read(
             materialization.retain_segment_entries(found.len());
             allowance
                 .grow(&mut entries, found.len())
-                .map_err(|failure| memory_failure(artifact, allowance, failure))?;
+                .map_err(|failure| memory_failure(artifact, failure))?;
             entries.extend_from_slice(found);
         } else if let Some(children) = block.children() {
             allowance
                 .grow(&mut pending, children.len())
-                .map_err(|failure| memory_failure(artifact, allowance, failure))?;
+                .map_err(|failure| memory_failure(artifact, failure))?;
             pending.extend(children.iter().copied());
         }
         drop(block);
@@ -104,7 +104,6 @@ pub(super) fn read(
             RecordArtifactFile::RootManifest {
                 generation: root.generation(),
             },
-            allowance,
             failure,
         )
     })?;
@@ -115,7 +114,6 @@ pub(super) fn read(
             RecordArtifactFile::RootManifest {
                 generation: root.generation(),
             },
-            allowance,
             failure,
         )
     })?;

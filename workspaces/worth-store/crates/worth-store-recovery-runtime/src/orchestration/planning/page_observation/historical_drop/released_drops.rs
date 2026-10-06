@@ -152,7 +152,7 @@ fn walked<'slot>(
     if slot.is_none() {
         let (history, releases, scratch) = walk.admit().map_err(|failure| {
             failure
-                .limit()
+                .stopped()
                 .unwrap_or_else(|| invalid(operation, Stage::OrderedHistory))
         })?;
         if releases.len() != historical_count(walk) {
@@ -201,7 +201,7 @@ impl ReleasedDrops<'_> {
         )
         .map_err(|failure| {
             failure
-                .limit()
+                .stopped()
                 .unwrap_or_else(|| invalid(operation, Stage::SourceRoot))
         })?;
         if <[u8; 32]>::from(Sha256::digest(source.encode(walk.format)))

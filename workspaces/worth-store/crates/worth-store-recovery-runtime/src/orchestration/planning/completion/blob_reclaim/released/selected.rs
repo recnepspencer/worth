@@ -94,7 +94,7 @@ pub(super) fn verify_initial(
     }
     let remaining_bytes = match remaining_observation(&context, basis) {
         Ok(remaining_bytes) => remaining_bytes,
-        Err(failure) => return Err(unobserved(context, basis, failure, 0)),
+        Err(failure) => return Err(unobserved(context, basis, failure)),
     };
     let Some(mut selected_routes_digest) =
         SelectedRouteTranscript::new(descriptor.source_root_generation(), source_routes.len())
@@ -342,7 +342,7 @@ pub(super) fn verify_initial(
         .historical_publication_peak_scratch_bytes
         .max(scratch);
     if let Err(failure) = scanned {
-        return Err(unobserved(context, basis, failure, remaining_bytes));
+        return Err(unobserved(context, basis, failure));
     }
     Ok(context)
 }

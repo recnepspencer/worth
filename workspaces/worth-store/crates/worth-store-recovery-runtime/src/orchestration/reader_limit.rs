@@ -3,8 +3,13 @@
 //! budget the caller set, never from an artifact's own ceiling. An artifact
 //! larger than its parent or its format admits is damage.
 
-use worth_store::physical_runtime::{FilesystemObservationBound, RecoveryDiscoveryFailure};
+use worth_store::physical_runtime::{
+    ExceededFilesystemObservationBound, FilesystemObservationBound, RecoveryDiscoveryFailure,
+};
 use worth_store_physical_format::PhysicalRecordFormatDeclaration;
+
+use super::recovery_budget::{ExceededRecoveryLimit, RecoveryAllowance};
+use crate::entry::{PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDimension};
 
 /// The addressed reads a recovery reader may make. Every read is counted
 /// before it is made by the limit it belongs to: a manifest entry or block,
@@ -20,34 +25,35 @@ pub(crate) fn extent_page_ceiling(format: PhysicalRecordFormatDeclaration) -> u6
     u64::from(format.page_size().bytes())
 }
 
-/// The reader's own allowance ran out. Every other refusal is not a limit of
-/// the reader.
+/// The observation bytes a reader was handed ran out, in the reader's own
+/// counts: from its first byte, against what it was handed. Every other
+/// refusal is not a limit of the reader: requested bytes are the ceiling of
+/// one read, and a reader counts no reads or entries of its own.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum ReaderLimit {
-    /// The reads its reader admitted ran out.
-    Reads { observed: u64, admitted: u64 },
-    /// The observation bytes ran out. `observed` counts from the reader's
-    /// first byte to the read that crossed.
-    ObservationBytes { observed: u64, admitted: u64 },
-}
+pub(crate) struct ReaderBytes(ExceededFilesystemObservationBound);
 
-impl ReaderLimit {
-    /// Only the reader's own allowances are its limits: requested bytes are
-    /// the ceiling of the one read.
-    pub(crate) const fn of(failure: &RecoveryDiscoveryFailure) -> Option<Self> {
-        let RecoveryDiscoveryFailure::Limit(past) = failure else {
-            return None;
-        };
-        let (observed, admitted) = (past.observed(), past.admitted());
-        match past.dimension() {
-            FilesystemObservationBound::Reads | FilesystemObservationBound::Entries => {
-                Some(Self::Reads { observed, admitted })
+impl ReaderBytes {
+    pub(crate) fn of(failure: &RecoveryDiscoveryFailure) -> Option<Self> {
+        match failure {
+            RecoveryDiscoveryFailure::Limit(past)
+                if past.dimension() == FilesystemObservationBound::ObservationBytes =>
+            {
+                Some(Self(*past))
             }
-            FilesystemObservationBound::ObservationBytes => {
-                Some(Self::ObservationBytes { observed, admitted })
-            }
-            FilesystemObservationBound::RequestedBytes => None,
+            _ => None,
         }
+    }
+
+    /// The limit recovery ran out of, where the reader was handed what was
+    /// left of recovery's declared observation bytes: the rest was observed
+    /// before it. `None` where the reader was handed more than recovery
+    /// admits, or a count passes every count.
+    pub(super) fn in_recovery(
+        self,
+        limits: &PhysicalRecoveryLimitDeclaration,
+    ) -> Option<ExceededRecoveryLimit> {
+        RecoveryAllowance::declared(limits, PhysicalRecoveryLimitDimension::ObservationBytes)
+            .beside(self.0.observed(), self.0.admitted())
     }
 }
 
@@ -157,30 +163,30 @@ mod tests {
     }
 
     #[test]
-    fn only_the_readers_own_allowance_is_a_reader_limit() {
+    fn only_the_readers_own_bytes_are_a_reader_limit() {
+        let bytes = ReaderBytes::of(&refused(9, Bound::ObservationBytes)).unwrap();
+        // Handed 7 of recovery's 10, the reader needed 9: 12 of 10.
+        let limit = bytes
+            .in_recovery(&PhysicalRecoveryLimitDeclaration::observing_for_test(10))
+            .unwrap();
         assert_eq!(
-            ReaderLimit::of(&refused(9, Bound::ObservationBytes)),
-            Some(ReaderLimit::ObservationBytes {
-                observed: 9,
-                admitted: 7,
-            }),
+            (limit.dimension(), limit.observed(), limit.admitted()),
+            (PhysicalRecoveryLimitDimension::ObservationBytes, 12, 10),
         );
-        for counted in [Bound::Reads, Bound::Entries] {
-            assert_eq!(
-                ReaderLimit::of(&refused(9, counted)),
-                Some(ReaderLimit::Reads {
-                    observed: 9,
-                    admitted: 7,
-                }),
-            );
-        }
+        // A reader handed more than recovery admits was no part of it.
+        assert_eq!(
+            bytes.in_recovery(&PhysicalRecoveryLimitDeclaration::observing_for_test(6)),
+            None
+        );
         for failure in [
+            refused(9, Bound::Reads),
+            refused(9, Bound::Entries),
             refused(9, Bound::RequestedBytes),
             RecoveryDiscoveryFailure::InvalidAddress {
                 artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint,
             },
         ] {
-            assert_eq!(ReaderLimit::of(&failure), None);
+            assert_eq!(ReaderBytes::of(&failure), None);
         }
     }
 

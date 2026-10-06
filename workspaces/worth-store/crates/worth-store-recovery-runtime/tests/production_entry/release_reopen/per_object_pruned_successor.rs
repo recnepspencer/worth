@@ -248,9 +248,9 @@ fn recover_serving(
         match outcome {
             PhysicalRecoveryOutcome::Blocked(block) => panic!(
                 "A/B recovery blocked at {:?}: {:?}; limit={:?}; effects={}",
-                block.kind,
+                block.cause(),
                 block.evidence().planning_denial,
-                block.evidence().limit,
+                block.cause().limit(),
                 block.recovery_effects(),
             ),
             PhysicalRecoveryOutcome::PublicationIndeterminate(failure) => panic!(

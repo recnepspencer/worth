@@ -30,8 +30,10 @@ pub enum PhysicalRecoveryRootProtocolDenial {
 pub enum PhysicalRecoveryCheckpointIntegrityDenial {
     AllocationRejected,
     Integrity(PhysicalIntegrityRejection),
-    DirtyRecordLimit { observed: u64, admitted: u64 },
-    BindingRecordLimit { observed: u64, admitted: u64 },
+    /// The block's cause names the limit and its counts.
+    DirtyRecordLimit,
+    /// The block's cause names the limit and its counts.
+    BindingRecordLimit,
     NonCanonicalEncoding,
     ScopeMismatch,
     SourceIncarnationMismatch,

@@ -30,13 +30,13 @@ fn a_record_count_past_the_entry_budget_is_that_limit_before_any_block_is_read()
                 .err()
                 .expect("a record count past the budget must block discovery"),
         );
-        assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::DiscoveryLimit);
-        let limit = blocked.evidence().limit.unwrap();
+        assert!(blocked.cause().limit().is_some());
+        let limit = blocked.cause().limit().unwrap();
         assert_eq!(
-            limit.dimension,
+            limit.dimension(),
             PhysicalRecoveryLimitDimension::ManifestEntries
         );
-        assert_eq!((limit.observed, limit.admitted), (observed, entries));
+        assert_eq!((limit.observed(), limit.admitted()), (observed, entries));
         assert_eq!(blocked.evidence().counters.manifest_blocks, 0);
         assert_eq!(blocked.evidence().counters.manifest_entries, 0);
         assert_eq!(blocked.recovery_effects(), 0);
@@ -61,8 +61,11 @@ fn a_chain_short_of_its_record_count_within_the_budget_is_damage_not_a_limit() {
             .err()
             .expect("a tree short of its record count must not be selected"),
     );
-    assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::SourceSelection);
-    assert_eq!(blocked.evidence().limit, None);
+    assert_eq!(
+        blocked.cause().damage(),
+        Some(PhysicalRecoveryBlockKind::SourceSelection)
+    );
+    assert_eq!(blocked.cause().limit(), None);
     assert!(blocked.evidence().source_denials.contains(
         &PhysicalRecoverySourceDenial::ManifestFacts(PhysicalPageFactDenial::RecordCountMismatch)
     ));
@@ -85,7 +88,7 @@ fn leaves_past_the_record_count_are_damage_and_a_full_tree_at_it_is_selected() {
             .err()
             .expect("leaves past the record count must not be selected"),
     );
-    assert_eq!(blocked.evidence().limit, None);
+    assert_eq!(blocked.cause().limit(), None);
     assert_eq!(
         manifest_denial(&blocked),
         &PhysicalManifestObservationDenial::RecordCountCeiling {

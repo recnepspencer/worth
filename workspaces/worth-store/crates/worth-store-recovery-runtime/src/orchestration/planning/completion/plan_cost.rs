@@ -118,7 +118,7 @@ pub(super) fn admit(
     let plan_cost = match admit_recovery_plan_cost(plan_limits, plan_cost) {
         Ok(cost) => cost,
         Err(denial) => {
-            let limit = plan_cost_limit(denial, plan_limits, plan_cost);
+            let limit = plan_cost_limit(&context.limits, denial, plan_limits, plan_cost);
             return Err(context.cost_denial_block(planning_counters, denial, limit));
         }
     };

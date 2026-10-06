@@ -1,9 +1,10 @@
 use std::path::Path;
 
 use worth_store_recovery_runtime::{
-    PhysicalRecoveryBlockKind, PhysicalRecoveryOutcome, PhysicalRecoveryRefusalKind,
-    PhysicalRecoveryRootProtocolArtifact, PhysicalRecoveryRootProtocolCounters,
-    PhysicalRecoveryRootProtocolDenial, PhysicalRecoverySourceDenial, WorthStoreRecovery,
+    PhysicalRecoveryBlockCause, PhysicalRecoveryBlockKind, PhysicalRecoveryOutcome,
+    PhysicalRecoveryRefusalKind, PhysicalRecoveryRootProtocolArtifact,
+    PhysicalRecoveryRootProtocolCounters, PhysicalRecoveryRootProtocolDenial,
+    PhysicalRecoverySourceDenial, WorthStoreRecovery,
 };
 
 use super::process_ingress_observation::{project_counters, project_ingress, project_wal};
@@ -50,12 +51,14 @@ fn project_outcome(outcome: PhysicalRecoveryOutcome) -> ProcessRecoveryObservati
         PhysicalRecoveryOutcome::Blocked(block) => {
             let evidence = block.evidence();
             println!(
-                "C9 recovery block kind={:?} planning={:?} sources={:?}",
-                block.kind, evidence.planning_denial, evidence.source_denials
+                "C9 recovery block cause={:?} planning={:?} sources={:?}",
+                block.cause(),
+                evidence.planning_denial,
+                evidence.source_denials
             );
             ProcessRecoveryObservation {
                 observed_store_identity: Some(block.store_identity().bytes()),
-                posture: ProcessRecoveryPosture::Blocked(project_block_cause(block.kind)),
+                posture: ProcessRecoveryPosture::Blocked(project_block_cause(block.cause())),
                 recovery_effects: block.recovery_effects(),
                 discovery: Some(project_discovery(evidence.counters)),
                 root_protocol: evidence
@@ -114,10 +117,14 @@ fn project_refusal_cause(kind: PhysicalRecoveryRefusalKind) -> ProcessRecoveryRe
     }
 }
 
-fn project_block_cause(kind: PhysicalRecoveryBlockKind) -> ProcessRecoveryBlockCause {
+fn project_block_cause(cause: PhysicalRecoveryBlockCause) -> ProcessRecoveryBlockCause {
+    let kind = match cause {
+        PhysicalRecoveryBlockCause::Limit { .. } => return ProcessRecoveryBlockCause::Limit,
+        PhysicalRecoveryBlockCause::Damage(kind) => kind,
+    };
     match kind {
-        PhysicalRecoveryBlockKind::DiscoveryLimit => ProcessRecoveryBlockCause::DiscoveryLimit,
         PhysicalRecoveryBlockKind::MediaObservation => ProcessRecoveryBlockCause::MediaObservation,
+        PhysicalRecoveryBlockKind::SourceAllocation => ProcessRecoveryBlockCause::SourceAllocation,
         PhysicalRecoveryBlockKind::RootProtocol => ProcessRecoveryBlockCause::RootProtocol,
         PhysicalRecoveryBlockKind::Checkpoint => ProcessRecoveryBlockCause::Checkpoint,
         PhysicalRecoveryBlockKind::WalInventory => ProcessRecoveryBlockCause::WalInventory,

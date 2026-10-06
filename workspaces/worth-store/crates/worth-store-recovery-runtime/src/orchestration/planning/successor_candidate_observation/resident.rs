@@ -8,19 +8,19 @@ use crate::entry::PhysicalRecoverySuccessorCandidateDenial;
 use crate::integrity_ingress::RecoveryIntegrityIngressTrace;
 use crate::progression::{PlanningMemoryDenial, PlanningResidentAllowance};
 
+/// The candidate's denial. A refused charge leaves its need with the window,
+/// which holds the counts for the block's cause; a count that overflowed
+/// leaves none.
 pub(super) fn memory_failure(
     artifact: RecordArtifactFile,
-    allowance: &PlanningResidentAllowance,
     failure: PlanningMemoryDenial,
 ) -> PhysicalRecoverySuccessorCandidateDenial {
     let generation = artifact_generation(artifact);
     match failure {
-        PlanningMemoryDenial::RecoveryMemoryBytes { observed } => {
+        PlanningMemoryDenial::RecoveryMemoryBytes { .. } => {
             PhysicalRecoverySuccessorCandidateDenial::RecoveryMemoryBytes {
                 artifact,
                 generation,
-                observed,
-                admitted: allowance.maximum(),
             }
         }
         PlanningMemoryDenial::Allocation {
@@ -45,7 +45,6 @@ pub(super) fn trace_slots(
     let requested = trace.observation_reservation_bytes(1).ok_or_else(|| {
         memory_failure(
             artifact,
-            allowance,
             PlanningMemoryDenial::RecoveryMemoryBytes { observed: u64::MAX },
         )
     })?;
@@ -54,18 +53,16 @@ pub(super) fn trace_slots(
     }
     allowance
         .transient(requested)
-        .map_err(|failure| memory_failure(artifact, allowance, failure))?;
+        .map_err(|failure| memory_failure(artifact, failure))?;
     let old = trace.owned_heap_bytes().ok_or_else(|| {
         memory_failure(
             artifact,
-            allowance,
             PlanningMemoryDenial::RecoveryMemoryBytes { observed: u64::MAX },
         )
     })?;
     let target = trace.next_observation_capacity(1).ok_or_else(|| {
         memory_failure(
             artifact,
-            allowance,
             PlanningMemoryDenial::RecoveryMemoryBytes { observed: u64::MAX },
         )
     })?;
@@ -74,7 +71,6 @@ pub(super) fn trace_slots(
         .map_err(|cause| {
             memory_failure(
                 artifact,
-                allowance,
                 PlanningMemoryDenial::Allocation {
                     requested_bytes: requested,
                     cause,
@@ -84,18 +80,16 @@ pub(super) fn trace_slots(
     let actual = trace.owned_heap_bytes().ok_or_else(|| {
         memory_failure(
             artifact,
-            allowance,
             PlanningMemoryDenial::RecoveryMemoryBytes { observed: u64::MAX },
         )
     })?;
     let growth = actual.checked_sub(old).ok_or_else(|| {
         memory_failure(
             artifact,
-            allowance,
             PlanningMemoryDenial::RecoveryMemoryBytes { observed: u64::MAX },
         )
     })?;
     allowance
         .retain(growth)
-        .map_err(|failure| memory_failure(artifact, allowance, failure))
+        .map_err(|failure| memory_failure(artifact, failure))
 }

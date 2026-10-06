@@ -10,53 +10,23 @@ use worth_store_recovery_physics::SelectedCustodyDenial;
 
 use super::*;
 use crate::entry::{
-    PhysicalRecoveryPageAdmissionDenial as Page,
+    PhysicalRecoveryLimitDimension::{self, ManifestEntries, ObservationBytes, StagingBytes},
     PhysicalRecoveryReleaseHeadControlDenial as Control,
     PhysicalRecoverySelectedRecordReadDenial as RecordRead,
 };
-use crate::orchestration::reader_limit::refused_past;
+use crate::orchestration::planning::page_observation::{PageLimit, PageObservationFailure};
+use crate::orchestration::planning::selected_source_inventory::{
+    ResidentTraceDenial, RoutesFailure,
+};
+use crate::orchestration::reader_limit::{refused_past, ReaderBytes};
+use crate::orchestration::recovery_budget::recovery_limit_for_test;
 
 fn outgrown(bound: FilesystemObservationBound) -> RecoveryDiscoveryFailure {
     refused_past(bound, 4_001, 4_000)
 }
 
-fn head_block() -> worth_store_physical_format::ReleaseCustodyHeadBlockReferenceV1 {
-    let key = worth_store_physical_format::ReleaseCustodyHeadKeyV1::new([7; 16], 1).unwrap();
-    worth_store_physical_format::ReleaseCustodyHeadBlockReferenceV1::new(5, 2, 0, key, key, [9; 32])
-        .expect("a leaf reference")
-}
-
-fn control_read(denial: RecordRead) -> Denial {
-    Denial::Control(Control::ControlRead {
-        record: PersistedRecordIdentity::new([7; 16], 3).expect("nonzero record identity"),
-        denial,
-    })
-}
-
-#[test]
-fn a_refused_charge_is_the_manifest_entry_limit() {
-    for denial in [
-        Denial::ManifestEntryLimit,
-        Denial::SourceRoutes(Page::ManifestEntryLimit),
-        Denial::Control(Control::ManifestEntryLimit),
-        control_read(RecordRead::ManifestEntryLimit),
-        Denial::SourceRootRead {
-            generation: 5,
-            failure: refused_past(FilesystemObservationBound::Reads, 1, 0),
-        },
-    ] {
-        assert_eq!(
-            unread(&denial),
-            Some(HistoricalFailure::ManifestEntries),
-            "{denial:?}",
-        );
-    }
-}
-
-#[test]
-fn a_roster_of_more_heads_than_recovery_admits_is_the_entry_limit_with_its_count() {
-    use crate::entry::{PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure};
-    let limits = crate::entry::PhysicalRecoveryLimitDeclaration {
+fn limits() -> crate::entry::PhysicalRecoveryLimitDeclaration {
+    crate::entry::PhysicalRecoveryLimitDeclaration {
         selector_candidates: 4,
         checkpoint_candidates: 64,
         manifest_bytes: 1 << 20,
@@ -76,44 +46,105 @@ fn a_roster_of_more_heads_than_recovery_admits_is_the_entry_limit_with_its_count
         cleanup_candidates: 4096,
         cleanup_bytes: 1 << 20,
         observation_bytes: 10_000,
-    };
-    // Physics names its bound and the roster's count; neither is relabeled.
-    let mut resident = ResidentAllowance::new(8);
-    let denial = roster_refused(
-        SelectedHeadRosterAdmissionDenial::HeadEntries {
-            observed: 57,
-            admitted: 40,
-        },
-        &mut resident,
-    );
-    assert_eq!(
+    }
+}
+
+fn limit(
+    dimension: PhysicalRecoveryLimitDimension,
+    observed: u64,
+    admitted: u64,
+) -> Option<crate::entry::PhysicalRecoveryLimitFailure> {
+    Some(recovery_limit_for_test(dimension, observed, admitted).into())
+}
+
+/// The limit a denial the phase met states through the allowance that refused.
+fn stated(
+    denial: &Denial,
+    limits: &crate::entry::PhysicalRecoveryLimitDeclaration,
+    budget: &ManifestEntryBudget,
+) -> Option<crate::entry::PhysicalRecoveryLimitFailure> {
+    unread(denial)?.limit(limits, budget)
+}
+
+/// A phase's budget of all 40 entries that refused a charge of 5 with 38
+/// already charged: 43 of 40.
+fn refused_budget() -> ManifestEntryBudget {
+    let mut budget = ManifestEntryBudget::new(40, 38);
+    assert!(budget.charge(5).is_err());
+    budget
+}
+
+fn head_block() -> worth_store_physical_format::ReleaseCustodyHeadBlockReferenceV1 {
+    let key = worth_store_physical_format::ReleaseCustodyHeadKeyV1::new([7; 16], 1).unwrap();
+    worth_store_physical_format::ReleaseCustodyHeadBlockReferenceV1::new(5, 2, 0, key, key, [9; 32])
+        .expect("a leaf reference")
+}
+
+fn control_read(denial: RecordRead) -> Denial {
+    Denial::Control(Control::ControlRead {
+        record: PersistedRecordIdentity::new([7; 16], 3).expect("nonzero record identity"),
         denial,
-        Denial::RosterEntryLimit {
-            observed: 57,
-            admitted: 40,
-        }
-    );
+    })
+}
+
+#[test]
+fn a_refused_charge_is_the_manifest_entry_limit() {
+    for denial in [
+        Denial::ManifestEntryLimit,
+        Denial::Control(Control::ManifestEntryLimit),
+        control_read(RecordRead::ManifestEntryLimit),
+    ] {
+        assert_eq!(
+            unread(&denial),
+            Some(HistoricalFailure::ManifestEntries),
+            "{denial:?}",
+        );
+    }
+}
+
+#[test]
+fn a_roster_of_more_heads_than_recovery_admits_is_the_entry_limit_with_its_count() {
+    let limits = limits();
+    // A refused charge is the budget's own refusal, with its counts.
     assert_eq!(
-        limit_of(&denial, &limits, 0),
-        Some(PhysicalRecoveryLimitFailure {
-            dimension: PhysicalRecoveryLimitDimension::ManifestEntries,
-            observed: 57,
-            admitted: 40,
-        })
+        stated(&Denial::ManifestEntryLimit, &limits, &refused_budget()),
+        limit(ManifestEntries, 43, 40)
     );
-    // Every other denial names its limit as before.
+    let mut budget = refused_budget();
+    let mut resident = ResidentAllowance::new(8);
+    let mut refused = |observed, admitted, budget: &mut ManifestEntryBudget| {
+        roster_refused(
+            SelectedHeadRosterAdmissionDenial::HeadEntries { observed, admitted },
+            &mut resident,
+            budget,
+        )
+    };
+    // Handed all 40 entries, the roster held 57. The denial names no count:
+    // the budget holds both.
+    let denial = refused(57, 40, &mut budget);
+    assert_eq!(denial, Denial::RosterEntryLimit);
     assert_eq!(
-        limit_of(&Denial::ManifestEntryLimit, &limits, 0),
-        HistoricalFailure::ManifestEntries.limit(&limits, 0)
+        stated(&denial, &limits, &budget),
+        limit(ManifestEntries, 57, 40)
     );
-    assert_eq!(limit_of(&Denial::DuplicateClaim, &limits, 0), None);
+    // Handed 10 of the 40, the roster needed 12: recovery held 30 beside it.
+    let narrower = refused(12, 10, &mut budget);
+    assert_eq!(
+        stated(&narrower, &limits, &budget),
+        limit(ManifestEntries, 42, 40)
+    );
+    // A roster handed more than recovery admits is no part of its limit.
+    let wider = refused(57, 41, &mut budget);
+    assert_eq!(stated(&wider, &limits, &budget), None);
+    assert_eq!(stated(&Denial::DuplicateClaim, &limits, &budget), None);
     // A tree of more heads than that roster counts is damage, not that limit.
     let overfull = roster_refused(
         SelectedHeadRosterAdmissionDenial::Walk(ReleaseCustodyHeadWalkDenial::Visit(())),
         &mut resident,
+        &mut budget,
     );
     assert_eq!(overfull, Denial::HeadWalk(WalkDenial::EntryCountExceeded));
-    assert_eq!(limit_of(&overfull, &limits, 0), None);
+    assert_eq!(stated(&overfull, &limits, &budget), None);
     // Nor is a tree of more blocks than that roster's heads can fill: the
     // ceiling is the roster's, and recovery sets no limit on blocks to name.
     let sprawling = roster_refused(
@@ -121,6 +152,7 @@ fn a_roster_of_more_heads_than_recovery_admits_is_the_entry_limit_with_its_count
             release_custody_head_walk_limit_for_test(ReleaseCustodyHeadWalkBound::Nodes, 9, 7),
         )),
         &mut resident,
+        &mut budget,
     );
     assert_eq!(
         sprawling,
@@ -129,22 +161,16 @@ fn a_roster_of_more_heads_than_recovery_admits_is_the_entry_limit_with_its_count
             admitted: 7,
         })
     );
-    assert_eq!(limit_of(&sprawling, &limits, 0), None);
+    assert_eq!(stated(&sprawling, &limits, &budget), None);
 }
 
 #[test]
 fn a_reader_out_of_observation_bytes_is_that_limit_with_the_count_it_reached() {
+    let (limits, budget) = (limits(), refused_budget());
     let observation = FilesystemObservationBound::ObservationBytes;
-    for denial in [
-        Denial::ObservationByteLimit,
-        Denial::SourceRoutes(Page::ObservationByteLimit),
-    ] {
-        assert_eq!(
-            unread(&denial),
-            Some(HistoricalFailure::ObservationBytes(None)),
-            "{denial:?}",
-        );
-    }
+    // A reader out of bytes refused with its own counts, beside the denial:
+    // the denial invents none.
+    assert_eq!(unread(&Denial::ObservationByteLimit), None);
     for denial in [
         Denial::SourceRootRead {
             generation: 5,
@@ -161,9 +187,10 @@ fn a_reader_out_of_observation_bytes_is_that_limit_with_the_count_it_reached() {
             failure: outgrown(observation),
         }),
     ] {
+        // Handed 4,000 of 10,000 bytes, the reader reached 4,001.
         assert_eq!(
-            unread(&denial),
-            Some(HistoricalFailure::ObservationBytes(Some(4_001))),
+            stated(&denial, &limits, &budget),
+            limit(ObservationBytes, 10_001, 10_000),
             "{denial:?}",
         );
     }
@@ -193,28 +220,53 @@ fn a_head_that_failed_verification_names_no_limit() {
     }
 }
 
-/// Physics refused the roster past this phase's resident window: that bound,
-/// with both counts. Its retained ceiling is the roster's own denial.
+/// Physics refused the roster, or the walk under it, past this phase's
+/// resident window: the allowance holds the whole need, and the denial names
+/// no count. Its retained ceiling is the roster's own denial.
 #[test]
 fn a_roster_past_its_resident_window_is_the_resident_bound_with_both_counts() {
     use worth_store_recovery_physics::{test_support::physics_limit_for_test, PhysicsBound};
-    let mut resident = ResidentAllowance::new(8);
-    let past = physics_limit_for_test(PhysicsBound::ResidentBytes, 11, 6);
-    assert_eq!(
-        roster_refused(
-            SelectedHeadRosterAdmissionDenial::Custody(SelectedCustodyDenial::Limit(past)),
-            &mut resident,
-        ),
-        Denial::ResidentBoundExceeded {
-            required: 11,
-            admitted: 6,
-        }
+    let memory = crate::orchestration::recovery_budget::allowance_for_test(
+        PhysicalRecoveryLimitDimension::RecoveryMemoryBytes,
+        20,
     );
+    let mut budget = refused_budget();
+    let past = physics_limit_for_test(PhysicsBound::ResidentBytes, 11, 6);
+    let walk =
+        release_custody_head_walk_limit_for_test(ReleaseCustodyHeadWalkBound::ResidentBytes, 13, 6);
+    for (denial, public, need) in [
+        (
+            SelectedHeadRosterAdmissionDenial::Custody(SelectedCustodyDenial::Limit(past)),
+            Denial::ResidentBoundExceeded,
+            11,
+        ),
+        (
+            SelectedHeadRosterAdmissionDenial::Walk(ReleaseCustodyHeadWalkDenial::Limit(walk)),
+            Denial::HeadWalk(WalkDenial::ResidentBoundExceeded),
+            13,
+        ),
+    ] {
+        // Handed 6 of 8, with 2 held: the window needed `need` more.
+        let mut resident = ResidentAllowance::new(8);
+        resident.bytes(2).unwrap();
+        assert_eq!(roster_refused(denial, &mut resident, &mut budget), public);
+        assert_eq!(unread(&public), None, "the resident allowance names it");
+        let limit = resident.refused_in(memory).expect("a resident limit");
+        assert_eq!(
+            (limit.dimension(), limit.observed(), limit.admitted()),
+            (
+                PhysicalRecoveryLimitDimension::RecoveryMemoryBytes,
+                need + 2 + 12,
+                20
+            )
+        );
+    }
     let retained = physics_limit_for_test(PhysicsBound::RetainedBytes, 11, 6);
     assert_eq!(
         roster_refused(
             SelectedHeadRosterAdmissionDenial::Custody(SelectedCustodyDenial::Limit(retained)),
-            &mut resident,
+            &mut ResidentAllowance::new(8),
+            &mut budget,
         ),
         Denial::Roster(SelectedCustodyDenial::Limit(retained))
     );
@@ -222,40 +274,69 @@ fn a_roster_past_its_resident_window_is_the_resident_bound_with_both_counts() {
 
 #[test]
 fn source_routes_this_phase_had_no_room_to_hold_are_its_resident_bound() {
-    use crate::orchestration::planning::page_observation::PageObservationFailure;
     let mut resident = ResidentAllowance::new(8);
     assert!(resident.bytes(9).is_err());
-    let held = routes_denial(
-        RoutesFailure::Held(ResidentTraceDenial::ResidentBoundExceeded),
-        &resident,
-    );
+    let held = routes_denial(RoutesFailure::Held(
+        ResidentTraceDenial::ResidentBoundExceeded,
+    ));
+    assert_eq!(held, Refused::from(Denial::ResidentBoundExceeded));
+    assert_eq!(resident.exceeded_requirement(), Some(9));
     assert_eq!(
-        held,
-        Denial::ResidentBoundExceeded {
-            required: 9,
-            admitted: 8,
-        }
-    );
-    assert_eq!(unread(&held), None, "the resident allowance names it");
-    assert_eq!(
-        routes_denial(
-            RoutesFailure::Observation(PageObservationFailure::ManifestEntryLimit),
-            &resident,
-        ),
-        Denial::SourceRoutes(Page::ManifestEntryLimit)
+        unread(&held.denial),
+        None,
+        "the resident allowance names it"
     );
     let cause = Vec::<u8>::new().try_reserve(usize::MAX).unwrap_err();
     assert_eq!(
-        routes_denial(
-            RoutesFailure::Held(ResidentTraceDenial::Allocation {
-                requested: 5,
-                cause: cause.clone(),
-            }),
-            &resident,
-        ),
-        Denial::HeadWalk(WalkDenial::Allocation {
+        routes_denial(RoutesFailure::Held(ResidentTraceDenial::Allocation {
+            requested: 5,
+            cause: cause.clone(),
+        }),),
+        Refused::from(Denial::HeadWalk(WalkDenial::Allocation {
             requested: 5,
             cause,
-        })
+        }))
+    );
+}
+
+/// A limit the routes met keeps its own counts beside the public denial
+/// that names it; damage keeps none.
+#[test]
+fn source_routes_out_of_a_limit_keep_its_counts() {
+    let routes = |limit| {
+        routes_denial(RoutesFailure::Observation(PageObservationFailure::Limit(
+            limit,
+        )))
+    };
+    let entries = PageLimit::Recovery(recovery_limit_for_test(ManifestEntries, 11, 10));
+    let reader = PageLimit::Reader(
+        ReaderBytes::of(&outgrown(FilesystemObservationBound::ObservationBytes)).unwrap(),
+    );
+    let staging = PageLimit::Recovery(recovery_limit_for_test(StagingBytes, 9, 8));
+    for (limit, denial) in [
+        (entries, Denial::ManifestEntryLimit),
+        (reader, Denial::ObservationByteLimit),
+        (staging, Denial::WalkLimits),
+    ] {
+        assert_eq!(
+            routes(limit),
+            Refused {
+                denial,
+                limit: Some(limit),
+            }
+        );
+    }
+    let target = worth_store_recovery_physics::PhysicalRedoTargetIdentity::InlinePage {
+        segment: 1,
+        page: 2,
+        generation: 3,
+    };
+    assert_eq!(
+        routes_denial(RoutesFailure::Observation(
+            PageObservationFailure::InvalidPage(target)
+        ),),
+        Refused::from(Denial::SourceRoutes(
+            crate::entry::PhysicalRecoveryPageAdmissionDenial::InvalidPage(target)
+        ))
     );
 }
