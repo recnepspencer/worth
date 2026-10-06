@@ -27,7 +27,8 @@ pub enum WorthQueryCurrentOutputDenialKind {
     /// A recorded output entity is not of the family's entity kind.
     EntityMismatch,
     /// A recorded output entity is no longer live, the producer changed after
-    /// its outputs were recorded, or a recorded source fact could not be read.
+    /// its outputs were recorded, a recorded source fact could not be read,
+    /// or distinct publication heads compete at the same native position.
     OutputUnavailable,
     /// The operation does not declare the family's entity or the producer as
     /// a decision read.

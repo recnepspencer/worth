@@ -5,6 +5,7 @@ use super::{
     WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputLineage,
 };
 
+mod family_publications;
 mod partition_selection;
 mod restoration_identity;
 
@@ -128,13 +129,14 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
             budget,
         )
     };
-    let family = resolve(3).expect("one binding lookup and two indexed partition heads");
-    assert_eq!(family.source_lookups, 3);
+    let family =
+        resolve(27).expect("head lookups and bounded publication selection fit the budget");
+    assert_eq!(family.selection_work, 27);
     assert_eq!(family.candidates.len(), 2);
     assert!(Arc::ptr_eq(&family.candidates[0].correspondence, &first));
     assert!(Arc::ptr_eq(&family.candidates[1].correspondence, &sibling));
     assert!(
-        resolve(2).is_err(),
+        resolve(26).is_err(),
         "partition selection must obey its work budget"
     );
 

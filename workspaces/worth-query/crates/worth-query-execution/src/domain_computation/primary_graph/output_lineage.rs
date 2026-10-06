@@ -88,6 +88,13 @@ struct ProductCoordinate {
     generation: u64,
 }
 
+#[derive(Clone, Copy)]
+struct FamilyPublicationHead<'a> {
+    coordinate: ProductCoordinate,
+    slot: usize,
+    recorded: &'a RecordedOutput,
+}
+
 pub(super) struct WorthQueryPriorOutputBindingResolution {
     pub(super) correspondence: Option<Arc<WorthQueryApplicationOutputCorrespondence>>,
     pub(super) source_lookups: usize,
@@ -114,8 +121,9 @@ pub(super) struct WorthQueryRetainedOutputCandidate {
 
 pub(super) struct WorthQueryCurrentOutputFamilyResolution {
     pub(super) family_installed: bool,
+    pub(super) ambiguous_publication: bool,
     pub(super) candidates: Vec<WorthQueryCurrentOutputCandidate>,
-    pub(super) source_lookups: usize,
+    pub(super) selection_work: usize,
 }
 
 impl WorthQueryApplicationOutputLineage {

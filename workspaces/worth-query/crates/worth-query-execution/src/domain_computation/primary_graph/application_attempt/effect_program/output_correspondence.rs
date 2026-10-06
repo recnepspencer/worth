@@ -173,6 +173,14 @@ impl WorthQueryApplicationOutputCorrespondence {
         })
     }
 
+    /// Publication metadata includes retirement; it grants no current identity.
+    pub(in crate::domain_computation::primary_graph) fn publication_entity_for_role(
+        &self,
+        role: &str,
+    ) -> Option<EntityId> {
+        self.roles.get(role).map(|binding| binding.entity)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn active_entity_for_role(
         &self,
         role: &str,
