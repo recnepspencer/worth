@@ -400,7 +400,7 @@ compact, and stream within declared resident-memory and allocation ceilings.
 ### Must Preserve
 
 - Store holds `worth-relational`'s committed truth only through Relational's own
-  storage port, implemented by a binding crate (Database Foundation D.7 and D.8)
+  storage port, implemented by a binding crate (Database Foundation D.8 and D.9)
 - semantic reconstruction may allocate domain objects at admitted boundaries,
   but physical storage cannot require full-store domain allocation
 
@@ -1295,7 +1295,7 @@ Part II Milestone 1 may begin only when:
   negotiation and is listed with its owner and the milestone that brings it
   back
 - a fresh store reopens after every crash point declared by the C.7 and C.8
-  crash matrices and the Database Foundation crash matrices (D.4, D.6, D.9 and
+  crash matrices and the Database Foundation crash matrices (D.4, D.7, D.9 and
   D.10), including before the first checkpoint. The blob-ingest, publication,
   drop, rebuild and LSM seams return with their capabilities
 - the Physical Database Roadmap workspace crates expose the typed source,

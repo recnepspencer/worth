@@ -188,7 +188,7 @@ It returns before Runtime Integration Milestone 19.
 Spec: [physical-foundation-reconstruction-roadmap.md](worth-store/physical-foundation-reconstruction-roadmap.md),
 C.13 "Deferred To S.12". The store is at least eight times the memory budget,
 with concurrent maintenance, crash and corruption injection, and offline
-verification. Database Foundation D.6 keeps the facade tests, the facade
+verification. Database Foundation D.6 and D.7 keep the facade tests, the facade
 concurrency test, the focused owner regressions and a crash-and-reopen
 journey. Returns with S.12,
 before Runtime Integration Milestone 14.

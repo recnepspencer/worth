@@ -1,11 +1,11 @@
-# D.5 Physical Runtime Facade
+# D.6 Physical Runtime Facade
 
 > Reviewed 2026-10-06 for the fast track, which the [Database Foundation
 > Roadmap](roadmap.md) replaced. Still governing: home, entry, fence, token
 > identity, fate arms, capacity, checkpoint cadence and retry window, and the
 > concurrency owners. Replaced: "Discovery: a named anchor" and the record ports
 > become D.4's root table and a tree port, and anchor locks become per-root
-> preparation. The first D.5 slice revises this note to match.
+> preparation. The first D.6 slice revises this note against D.2's reopen inventory.
 
 ## Design
 Originally slice 2 of the fast track. `S/` is `workspaces/worth-store/crates/worth-store/src/physical_runtime/`.

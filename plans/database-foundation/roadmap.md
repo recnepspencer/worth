@@ -30,32 +30,45 @@ milestone starts, and is reviewed before any code.
 
 The fast track built a facade for appending opaque records and finding them
 again through named anchors. That makes a record store, not a database for
-branches. What the code has today:
+branches.
 
-- **Store has a real paged copy-on-write B+tree,** in
-  `worth-store-physical-format/src/btree_node/` and
-  `worth-store/src/physical_runtime/layout/`. Its limits:
-  - only two derived families use it, BlobCatalog and DedupeIndex;
-  - keys are fixed width;
-  - it can insert but not delete;
-  - the height limit of 5 is spelled in three places;
-  - there is one root line;
-  - tree reads go straight to the record reader, not through the buffer pool.
-- **Relational keeps committed truth in memory,** in persistent structures:
-  - a radix trie of partitions;
-  - structure-of-arrays record arenas;
-  - path-copying maps.
+**Store has a real copy-on-write B+tree,** in
+`worth-store-physical-format/src/btree_node/` and
+`worth-store/src/physical_runtime/layout/`. Its reads already go through the
+buffer pool (`BoundedFrameLoader`). Its limits:
 
-  Its local-file durability rebuilds by replaying envelopes. About 63 files
-  read through `get_partition` and assume a resident `&PartitionState`.
-- **Runtime World keeps all its state in memory:** the branch registry, the
-  composite history and custody.
-- **C.11's release, retirement and tier-movement work assumes one root line.**
-  Finishing it before Store has many roots would mean building it twice.
+- **Only two derived families use it:** BlobCatalog and DedupeIndex.
+- **Keys are fixed width.**
+- **It can insert but not delete.**
+- **The height limit of 5 is spelled in three places.**
+- **Nodes are inline records,** one durable append each. Retirement works per
+  segment, extent or arena, so a dead node cannot be freed alone.
+- **Nodes carry sibling links,** which cannot be shared across forks.
+- **Every node append advances the one store root generation,** so all writes
+  serialize on one root line.
 
-So the order flips. Store gains authoritative trees and a root for each branch.
-Relational moves its committed truth into those trees. The C.11 remainder then
-returns, designed against many roots.
+**Relational keeps committed truth in memory,** in persistent structures:
+
+- a radix trie of partitions;
+- structure-of-arrays record arenas;
+- path-copying maps.
+
+Its record arenas hold version history alongside the head. Root regions hold
+`Arc<PartitionState>`. Nearly all application data sits in
+`PartitionId::main()`, because Query creates entities there. Its local-file
+durability rebuilds by replaying envelopes.
+
+**Runtime World and the Query host keep all their state in memory.**
+
+**C.11's release, retirement and tier-movement work assumes one root line.**
+Finishing it before Store has many roots would mean building it twice.
+
+So the order flips:
+
+1. Applications move to the final open call now, backed by today's runtimes.
+2. Store gains page-granular authoritative trees and a root for each branch.
+3. Relational moves its committed truth into those trees.
+4. The C.11 remainder then returns, designed against many roots.
 
 ## End State
 
@@ -63,24 +76,22 @@ The roadmap is done when all of these hold:
 
 - **Each branch is a named root** in Store's root table:
   - a fork shares its parent's root and copies no pages;
-  - a publish compare-and-swaps the branch's root inside WAL group commit.
+  - a publish compare-and-swaps the branch's root inside WAL group commit;
+  - several roots can publish atomically in one group.
 - **Relational's committed truth lives in authoritative tree families:**
-  records, versions, adjacency, a kind index and aspects.
-- **What is being worked on stays warm in native form;** everything else is
-  cold and read through bounded cursors that fault pages through the buffer
-  pool (see [Warm And Cold Data](#warm-and-cold-data)).
+  records, versions, adjacency, a kind index, aspects, and the unique-field
+  index.
+- **What is being worked on stays warm in native form.** Everything else is
+  cold and read through bounded cursors (see
+  [Warm And Cold Data](#warm-and-cold-data)).
 - **A restart reads the checkpointed root table** and redoes only the WAL tail
   above the checkpoint.
-- **Runtime World and Query host state is durable** in the same store:
-  - product branches, composite history and custody;
-  - installed program revisions;
-  - workflow definitions and running instances;
-  - idempotency records;
-  - pending aftermath.
+- **Every item on the reopen inventory is durable** in the same store (see
+  [D.2](#d2-application-home)).
 - **There is one durability path.** Relational's local-file durability is
   deleted.
 - **Applications open their home through one call,** and reopening resumes
-  everything (see [Public Surface](#public-surface)).
+  everything on the inventory (see [Public Surface](#public-surface)).
 
 ## Public Surface
 
@@ -95,7 +106,8 @@ names:
 - workflows;
 - aftermath.
 
-The database adds one concept: **where the application lives.**
+The database adds one concept: **where the application lives.** The call below
+is a sketch; D.2 designs the real one.
 
 ```rust
 let app = application_installation::program(validated, declaration, contributions)
@@ -104,23 +116,36 @@ let app = application_installation::program(validated, declaration, contribution
     .open()?;                            // a new home starts empty; an existing one resumes
 ```
 
-- **One open call; the home is a value.** The `in_memory*`,
-  `*_with_authorization_time_source` and `*_from_checkpoint` constructors
-  collapse into this builder. Reopening a home resumes branches, program
-  revisions, running workflows and pending aftermath. Restoring from a
-  checkpoint is not an application concept.
-- **`ApplicationHome::memory()` runs the same stack on RAM-backed media.**
-  There is one code path, and every test exercises real durability logic.
-- **No new outcomes.** With a durable home, `Committed` means durable.
-  `Commit(Indeterminate)` already exists, and is resolved after a reopen by
-  idempotency key through `provisional_aftermath`.
+- **One open call; the home is a value.** These collapse into one builder:
+  - the `in_memory*` constructors;
+  - the `*_with_authorization_time_source` constructors;
+  - the `*_from_checkpoint*` constructors.
+
+  The authorization time source becomes a builder option. Program transition
+  at open, today `*_from_checkpoint_with_transition` and
+  `WorthQueryCheckpointMigrationWriter`, becomes the open call's adoption step.
+  Restoring from a checkpoint is not an application concept.
+- **`ApplicationHome::memory()`** runs today's in-memory runtime until D.10, then
+  the same stack on RAM-backed media built in D.7. Memory homes never certify
+  persistence; durable certification runs on file media.
+- **`ApplicationHome::at(path)`** is refused, with its capability row `Absent`,
+  until D.9 puts Relational on Store. No replay-based bridge is wired in
+  between.
+- **Commits gain no new outcomes, and lose one.** With a durable home,
+  `Committed` means durable. `WorthQueryApplicationCommitOutcome::Indeterminate`
+  already exists. `ProductUnpublished` is deleted in D.10.
+  After a reopen, a retry with the same idempotency key answers
+  `AlreadyCommitted` or commits.
+- **Reads gain one storage denial,** carried inside the existing Query denial.
+  Read paths that are infallible today become fallible in D.8. This is a public
+  enum change, so the bank-server gate runs.
 - **Declarations never mention storage.** `worth-query-decl` has no index,
   table, blob or cache vocabulary. Layout follows from meaning:
   - entity kinds give the kind index;
   - relations give adjacency;
   - versions give history;
   - field types decide chunking;
-  - containment decides locality.
+  - placement is decided at creation (D.8).
 
   If a declared query cannot meet its work ceiling, the host says so in a
   diagnostic.
@@ -128,8 +153,8 @@ let app = application_installation::program(validated, declaration, contribution
   backup and restore, and repair live on the home handle and an operator
   command, never in application code. The memory budget joins the `runtime`
   resource profiles. S.10 and S.11 surface here.
-- **Everything below is internal:** the Store facade (D.5) and Relational's
-  storage port (D.7) are listed as internal crates in `docs/api.md` §7.
+- **Everything below is internal:** D.6 and D.8 add the Store facade and
+  Relational's storage port to `docs/api.md` §7 as internal crates.
 
 ## Warm And Cold Data
 
@@ -138,28 +163,38 @@ edited cannot sit behind a cursor. Old history must not take memory. Residency
 and representation are separate questions, and the design answers both.
 
 - **Durable truth always lives in Store's trees.**
-- **The warm working set is Relational's in-memory representation**
-  (structure-of-arrays record arenas and paged columns). It is a materialized
-  copy of the partitions being worked on: derived, never truth, and always
-  rebuildable from Store.
+- **The warm working set is a head-only native copy** of what is being worked
+  on:
+  - It uses structure-of-arrays columns, like today's record arenas, but holds
+    no version history.
+  - It is derived, never truth, and always rebuildable from Store.
+  - Today's arenas mix history into the same structure. D.8 splits them.
 - **Cold data is read through cursors and never materialized.** That covers
-  history, and partitions nobody is attending to.
-- **A commit writes the tree batch and applies the same journal to the warm
-  copy** when it is resident. One journal drives both, so they cannot drift. A
-  seeded differential test compares warm reads with cold reads.
+  history, and data nobody is attending to.
+- **Warm updates come from the committed tree batch,** not from a second
+  encoding of the journal:
+  - the warm copy is stamped with the root generation it reflects;
+  - a commit applies to it only when the stamps match, and otherwise the copy
+    is dropped and rewarmed.
 - **Warmth follows attention,** not cache hints:
-  - live reads and output demand keep their partitions warm;
+  - output demand and live reads keep their data warm;
   - the current head of open branches is warm, and history is cold;
   - reading an old version streams it and does not promote it;
-  - under the memory budget, the least recently demanded partitions are evicted
-    first.
-- **The unit of warmth is a whole partition, with a size cap.** Column-page
-  warmth stays possible later with no format change.
-- **Locality follows meaning.** An entity lives in its owner's partition
-  through a containment relation, so a part's geometry warms as one unit.
-- **Bulk values are stored as column chunks per partition,** not one key per
-  item. Warming is close to a copy. History keys are stored apart from the
-  current head, so warming a head does not read its history.
+  - under the memory budget, the least recently demanded data is evicted first.
+
+  Output demand names Query sources, not Relational partitions. D.10 defines
+  the mapping.
+- **The unit of warmth and placement is decided in D.8,** before any layout is
+  written:
+  - Partition identity is part of every record id, and today almost everything
+    lands in `main()`, so "whole partition" alone cannot be the unit.
+  - The design note decides how placement is chosen at creation (for example,
+    by the containing owner), and the warm unit (a placement group, column
+    pages within it, or both).
+  - It also decides what happens when one group exceeds the memory budget.
+- **Bulk values are stored as column chunks,** not one key per item, so warming
+  is close to a copy. History keys are stored apart from the current head, so
+  warming a head never reads its history.
 
 ## Standing Rules
 
@@ -169,15 +204,20 @@ and representation are separate questions, and the design answers both.
   - Relational owns meaning and defines its own fallible storage port in its
     own vocabulary.
   - A binding crate implements that port over the Store facade.
-  - Store never imports Relational or Query. Relational never imports Store.
-    Query core never imports Store (AGENTS.md).
-- **No temporary backend.** Every deferral can be added later with no format
-  or public API change. A deferral is lawful only when all three of these hold:
+  - Store never imports Relational or Query. Relational and Query core never
+    import Store.
+  - D.7 adds boundary-check rules that enforce all of this.
+- **No temporary backend.** A deferral is lawful only when all three of these
+  hold:
   - no facade port reaches it;
   - its capability reports `Absent`;
-  - deferring it changes no format or law a later milestone binds to.
-- **No historical compatibility.** Store is undeployed and development data is
-  disposable. Format versions bump and older stores are refused.
+  - deferring it changes no public API a later milestone binds to.
+- **Formats can change later,** because the store is undeployed and its data is
+  disposable. Format versions bump and older stores are refused. D.3 and D.4
+  still reserve the hooks known to be coming, so the change is a version bump
+  rather than a redesign:
+  - a layout-class tag in every root descriptor (LSM);
+  - a key-identity slot in the page envelope (S.11 encryption).
 - **Pre-plan the bug classes.** Each milestone lists the classes it could
   produce and the contract that kills each recurring one. Use `worth-proof`
   contracts (sealed authority, `Performed`, `LinearResource`,
@@ -185,83 +225,114 @@ and representation are separate questions, and the design answers both.
 - **One canonical spelling.** A milestone that adds a path removes or hides the
   one it replaces in the same milestone.
 - **Larger-than-memory is proven by exact counts:** pages faulted, the resident
-  bound, and work units. Never by wall-clock time.
+  bound and work units. Never by wall-clock time.
 - **Process:**
-  - work in numbered slices (D.2.1, D.2.2, and so on);
+  - work in numbered slices (D.3.1, D.3.2, and so on);
   - one implementer and one fresh independent reviewer per slice;
   - the reviewer's APPROVE follow-ups are fixed in the same slice;
   - commit when green;
   - scope cargo to the touched crates;
   - keep every iteration test step under 5 minutes, and run heavy lanes once
     per slice. `production_entry` (325 s) and Phase 8 (about 350 s) are over
-    that limit today, and D.2's first slice splits them into focused groups.
+    that limit today; D.3's first slice splits them into focused groups.
 
 ## Milestones
 
 ```text
-D.1  Recovery before the first checkpoint
-D.2  Authoritative tree families
-D.3  Cold reads through the buffer pool
+D.1  Recovery before the first checkpoint          done
+D.2  Application home
+D.3  Page-granular authoritative trees
 D.4  Branch roots
-D.5  Physical runtime facade
-D.6  Facade hardening
-D.7  Two-tier Relational storage port
-D.8  Relational records in Store trees
-D.9  Branch publication on Store
-D.10 Durable runtime and the application home
+D.5  Bounded cold reads
+D.6  Physical runtime facade
+D.7  Facade hardening and memory media
+D.8  Two-tier Relational storage port
+D.9  Relational truth on Store
+D.10 Durable runtime state
 D.11 Space reclamation across branches
 ```
 
 **Order:**
 
-- D.1 through D.6 are Store work.
-- D.7 has no Store dependency. It can move earlier if that helps; it must land
-  before D.8.
-- D.8 needs D.5 and D.7.
+- **D.2 comes first, so integration starts now.** Applications move to the final
+  open call immediately, and later milestones change only what backs it.
+- **D.3 to D.7 are Store work.**
+- **D.8 has no Store dependency.** It can run before or between the Store
+  milestones, and must land before D.9.
+- **D.9 needs D.6 and D.8.**
 - **D.10 closeout is the working database:** every branch is tracked durably,
-  and the data can be larger than memory.
-- D.11 must close before any long-running use, because until then the pages of
-  authoritative families are never reclaimed.
+  the data can be larger than memory, and reopen resumes the whole inventory.
+- **D.11 must close before any long-running use,** because until then the
+  pages of authoritative families are never reclaimed.
 
 ### D.1 Recovery before the first checkpoint
 
-In progress. Today, initializing a store, writing, and crashing before the
-first checkpoint gives `BLOCKED kind=WalInventory`. Recovery must admit the
-generation-zero basis, the state of a store before any checkpoint.
-
-**Design:**
+Done in commit `316870af71`. Recovery admits the generation-zero basis:
 
 - **Checkpoint presence is three-way:** `Present | Absent | Unreadable(damage)`.
   Only `Absent` admits generation zero.
-- **One named WAL origin constant,** `WAL_ORIGIN` in `worth-store-wal`,
-  replaces every `GENESIS.get() + 1` site and the raw `0` frontier.
+- **There is one WAL origin constant,** `WAL_ORIGIN` in `worth-store-wal`.
 - **At generation zero,** policy identity and the retention window come from
   the recovery configuration.
-- **Every checkpoint consumer accepts the empty basis.**
+- **Still denied, each with a killing test:**
+  - reclaim and maintenance frames;
+  - tier-epoch state;
+  - compaction products;
+  - retained released drops;
+  - a rejected `checkpoint.current`.
+- **Open follow-ups** are in [Deferred Work](#deferred-work).
+
+### D.2 Application home
+
+The final public open call, backed by today's runtimes. It needs no Store work.
+
+**Scope:**
+
+- **The reopen inventory.** List every piece of Query host, World and
+  Relational state an application needs after a reopen, with its owner and
+  where it becomes durable. It is the checklist for D.9 and D.10. At minimum it
+  covers:
+  - installed program revisions per branch;
+  - workflow definitions and running instances;
+  - idempotency records;
+  - pending aftermath;
+  - World's ProductUnpublished recovery catalog, deleted in D.10 rather than
+    made durable;
+  - inbound-occurrence receipts;
+  - capability delegation, elevation and mandatory review;
+  - query continuations;
+  - output-demand interests;
+  - the external-effect outbox;
+  - branch registry, composite history and custody.
+
+  Each item is either resumed or reported `Absent` by the home's capability
+  rows. "Reopen resumes everything" means everything on this list.
+- **The open call** from [Public Surface](#public-surface):
+  - one builder replaces every installation constructor, and the old ones are
+    deleted;
+  - `ApplicationHome::memory()` runs today's in-memory runtime;
+  - `ApplicationHome::at(path)` returns a typed refusal, and its capability row
+    reports `Absent` until D.9. Relational's replay-based local-file mode is not
+    wired through the host, because D.9 deletes it.
+- **The examples, bank-server and docs** move to the builder in this
+  milestone.
+- **Reconcile the Runtime Integration Roadmap** with this one: mark which of its
+  milestones this roadmap replaces, and renumber its return points.
 
 **Bug classes:**
 
-- *Generation zero admitted on a damaged checkpoint.* The three-way enum kills
-  this.
-- *The origin spelled two ways.* The one constant kills this.
+- *A second installation path.* The old constructors are deleted.
+- *A reopen that silently drops state.* Every inventory item is resumed or
+  reports `Absent`. The capability rows are derived from the inventory, and a
+  test checks every row; D.9 and D.10 flip rows as items become durable.
 
 **Acceptance:**
 
-- **Round trips** in `production_entry`, for a record and for a two-chunk blob:
-  1. initialize, write and crash, then recover in a fresh process;
-  2. read back exactly;
-  3. checkpoint and reopen.
-- **An empty store** reopens clean.
-- **Still denied, each case with a test that fails if its denial is removed:**
-  - a WAL that does not start at the origin;
-  - tier-epoch state;
-  - a compaction product;
-  - a retained released drop;
-  - a present but rejected `checkpoint.current`;
-  - extent-copy or manifest-residue cleanup frames.
-- **Green suites:** physics, runtime, Store, Phase 8 and the C.11 crash suites.
+- Every example and bank-server installs through the builder.
+- `ApplicationHome::at(path)` is refused with a typed reason.
+- The home's capability rows match the inventory.
 
-### D.2 Authoritative tree families
+### D.3 Page-granular authoritative trees
 
 Turn the derived-only B+tree into Store's general tree for authoritative data.
 
@@ -269,25 +340,36 @@ Turn the derived-only B+tree into Store's general tree for authoritative data.
 
 - **First slice: fast iteration.** Split `production_entry` and Phase 8 into
   focused groups that each run in under 5 minutes.
+- **Nodes are pages.** Each node owns a page that can be freed by itself. This
+  is the format D.11's reclamation depends on.
+- **Sibling links are dropped,** or kept only as hints that are never followed
+  across roots.
 - **Family classes.** The family registry distinguishes `Authoritative` from
   `Derived` families. Families are declared at open with a bounded count and a
   layout class:
   - `BTree` now;
-  - an LSM class is reserved for later, invisible to callers.
+  - an LSM class later, behind the reserved tag.
 - **Keys are byte strings** up to a declared cap and compare bytewise. The
   caller owns the order-preserving encoding.
 - **Values have variable length.** The design note decides how values above
   the inline limit are stored, including column chunks large enough for bulk
-  geometry (see [Warm And Cold Data](#warm-and-cold-data)). This is a format
-  decision, so it is made here.
+  geometry.
 - **Delete, with underflow handling.**
 - **Node splits by byte occupancy.**
 - **One derived height bound,** computed from page size, key cap and minimum
   fanout. It replaces the three height-5 constants.
-- **Sorted batch mutation.** One batch of puts and deletes on a root produces
-  one new root, and path-copies each shared node once per batch, not once per
-  key.
-- BlobCatalog and DedupeIndex move onto the general tree with no behavior
+- **Batch mutation:**
+  - one sorted batch of puts and deletes on a root is one multi-page durable
+    mutation in one WAL group;
+  - it produces one new root and path-copies each shared node once;
+  - it publishes that root through the existing family root directory with
+    one generation advance per batch, not one per node. D.4 brings
+    per-root generations.
+
+  This kills the C.13 "whole-Store submission serialization" regression at its
+  source.
+- **The page envelope reserves a key-identity slot** for S.11.
+- **BlobCatalog and DedupeIndex move onto the general tree** with no behavior
   change.
 
 **Bug classes:**
@@ -298,34 +380,83 @@ Turn the derived-only B+tree into Store's general tree for authoritative data.
 - *A derived family written as authority.* The family class is in the type, and
   authoritative writes need `worth-proof` authority.
 - *An unsorted or duplicate batch.* The sorted batch type cannot hold one.
+- *A batch half applied after a crash.* The batch is one WAL group.
 
 **Acceptance:**
 
-- **A seeded differential oracle** against an in-memory ordered map, over
-  random batches with deletes, splits and merges.
+- **A seeded differential oracle** against an in-memory ordered map, over random
+  batches with deletes, splits and merges.
 - **Exact page-write counts** per batch.
+- **A crash at every batch edge** recovers either the old root or the new one,
+  never a mix.
 - **The height bound holds** at the maximum key.
 - **Derived-family suites stay green.**
 
-### D.3 Cold reads through the buffer pool
+### D.4 Branch roots
 
 **Scope:**
 
-- **Tree page reads go through the bounded fault owner,**
-  `PhysicalBoundedFrameFaultOwner`: a miss faults the page in, and eviction
-  holds the resident bound.
-- **A per-owner handle table** replaces today's per-read path re-walk, which
-  costs about 17 metadata operations per read.
+- **A root table.** The design note picks its shape. The default is a tree
+  keyed by root name, reached from one manifest slot. Each entry holds:
+  - the root page;
+  - the generation;
+  - the family set;
+  - the reserved layout-class tag.
+- **Operations:**
+  - create an empty root;
+  - fork: a new name points at an existing root;
+  - publish: compare-and-swap on the expected generation;
+  - drop.
+- **Atomic multi-root publish.** Several roots advance together in one WAL
+  group. World's composite commits use it, which removes the ProductUnpublished
+  partial-commit class at its source.
+- **WAL and recovery:**
+  - root advances are WAL frames inside group commit, and redo rebuilds the
+    table;
+  - checkpoints capture the table;
+  - recovery discovers roots through it.
+- **Retirement is fenced by root multiplicity.** Until D.11, only families that
+  are single-line and store-global (today's derived families) retire replaced
+  nodes. Any family reachable from more than one root never retires.
+
+**Bug classes:**
+
+- *A lost update.* Publish needs a sealed expected-generation token.
+- *A root advance outside the WAL.* An advance can only be built inside group
+  commit.
+- *A fork that copies.* A test counts zero page writes per fork.
+- *A shared node reclaimed.* The root-multiplicity fence kills this.
+- *A composite commit half published.* The multi-root publish is one group.
+
+**Acceptance:**
+
+- **A many-branch world:** fork, publish on both sides, publish several roots
+  atomically, crash at every progression edge, and restart to the exact root
+  table.
+- **Root lookup** costs at most one page per tree level.
+
+### D.5 Bounded cold reads
+
+Tree reads already go through the buffer pool. This milestone makes them
+bounded and cheap.
+
+**Scope:**
+
+- **Remove the per-read routing re-walk.** Measure today's metadata operations
+  per read in a deterministic test, then replace the walk with a per-owner
+  handle table.
 - **Bounded cursors for point, range and resumable scans:**
   - a cursor pins at most one page per tree level;
   - every step is charged against a work budget;
   - a cursor resumes from a key, not a position.
+- **Cursors are scoped and cannot cross a pause point.** A long-lived reader
+  holds a root lease and a resume key, never a pin.
 
 **Bug classes:**
 
-- *A tree read that bypasses the pool.* Tree code reaches pages through one
-  page-access port, and the direct reader is not visible to it.
 - *A leaked pin.* A pin is a guard.
+- *A pin held across I/O or a pause.* The cursor type is not `Send` across a
+  pause; lasting readers keep a lease and a key.
 - *An unbounded scan.* Every cursor step is charged.
 
 **Acceptance:**
@@ -334,50 +465,12 @@ Turn the derived-only B+tree into Store's general tree for authoritative data.
   exactly.
 - Fault counts are exact, and the resident bound is never exceeded.
 - A cold reopen faults exactly one page per level for a point read.
+- Metadata operations per read are counted and bounded.
 
-### D.4 Branch roots
+### D.6 Physical runtime facade
 
-**Scope:**
-
-- **A root table.** The design note picks its shape. The default is a tree
-  keyed by root name, holding the root page, the generation and the family set,
-  reached from one manifest slot.
-- **Operations:**
-  - create an empty root;
-  - fork: a new name points at an existing root;
-  - publish: compare-and-swap on the expected generation;
-  - drop.
-- **WAL and recovery:**
-  - root advances are WAL frames inside group commit, and redo rebuilds the
-    table;
-  - checkpoints capture the table;
-  - recovery discovers roots through it.
-- **No reclamation until D.11.** Pages of authoritative families are never
-  reclaimed before D.11. Today's retirement gate compares one root generation.
-  It is fenced so it never touches an authoritative family.
-
-**Bug classes:**
-
-- *A lost update.* Publish needs a sealed expected-generation token.
-- *A root advance outside the WAL.* An advance can only be built inside group
-  commit.
-- *A fork that copies.* A test counts zero page writes per fork.
-- *A shared node reclaimed.* The family-class guard on retirement kills this.
-
-**Acceptance:**
-
-- **A many-branch world:** fork, publish on both sides, crash at every
-  progression edge, and restart to the exact root table.
-- **Root lookup** costs at most one page per tree level.
-
-### D.5 Physical runtime facade
-
-One entry and owned ports for everything above Store.
-
-**The first slice designs top-down.** It writes the public `open` call from
-[Public Surface](#public-surface) and lists exactly what reopening must resume.
-The internal ports are then shaped by that list, not the other way around. The reviewed design in
-[d5-physical-runtime-facade.md](d5-physical-runtime-facade.md) still governs:
+One entry and owned ports for everything above Store. The reviewed design in
+[d6-physical-runtime-facade.md](d6-physical-runtime-facade.md) still governs:
 
 - the entry;
 - the `facade-owner` gate;
@@ -387,21 +480,22 @@ The internal ports are then shaped by that list, not the other way around. The r
 - the checkpoint cadence and retry window.
 
 Its named-anchor discovery is replaced by D.4's root table, and its record ports
-by a tree port. The note is revised as the first slice of D.5.
+by a tree port. The first slice revises the note against D.2's reopen inventory.
 
 **Ports:**
 
-- **Tree reads:** point, range and cursor reads on a root snapshot lease.
+- **Tree reads:** point, range and cursor reads on a root lease.
 - **Tree writes:**
   - a fenced batch on a named root with an expected generation and a durability
     request;
+  - atomic multi-root batches;
   - fork;
   - drop.
 - **Capacity:** a pre-effect reservation and pressure evidence.
 - **Fate:** exact fate after a reopen, looked up by a token the caller
   persists.
 - **Capabilities and lifecycle.** Each capability row is derived from the port
-  set, and every `Absent` row names its owner and return point in one typed
+  set. Every `Absent` row names its owner and return point in one typed
   deferral registry.
 
 **Observer coverage.** The integrity observer reports `Incomplete` and names the
@@ -426,7 +520,7 @@ The note names the contract that kills each one.
 - an integration test for each port;
 - a restart that finds every branch root with bounded counts.
 
-### D.6 Facade hardening
+### D.7 Facade hardening and memory media
 
 **Concurrency.** Shared owners are:
 
@@ -435,9 +529,9 @@ The note names the contract that kills each one.
 - the checkpoint worker;
 - short allocation and registry locks, never held across a pause point or I/O.
 
-Writes to different roots prepare concurrently, and writes to one root
-serialize. A deterministic test holds one write at a progress point while a
-write to another root reaches `Terminal`.
+Batches on different roots prepare concurrently, and batches on one root
+serialize. A deterministic test holds one batch at a progress point while a
+batch on another root reaches `Terminal`.
 
 **Crash journey through the facade only:**
 
@@ -451,14 +545,20 @@ The reads are checked against an external model and the integrity observer.
 Run the journey crashing before and after the first checkpoint. The C.7 and C.8
 crash matrices stay green.
 
+**Memory media.** A RAM-backed media backend implements the same media contract
+as the filesystem backend: a real backend for `ApplicationHome::memory()`, not
+a test substitute. It is not used for durability certification.
+
 **Wrong-path fence:**
 
-- Application composition reaches only the facade crate.
+- Boundary-check rules enforce the ownership rules in
+  [Standing Rules](#standing-rules), and that application composition reaches
+  only the facade crate.
 - These substitutes, named in PF C.13, are deleted or moved behind
   `certification-test-authority`:
   - heap runtimes;
   - replay-based reopen;
-  - duplicate backends;
+  - duplicate filesystem backends;
   - fake fixtures;
   - obsolete certification paths.
 - No certification feature reaches the facade's normal build.
@@ -470,36 +570,46 @@ crash matrices stay green.
 - Add a sealed `RuntimeIntegrationPhysicalHandoff`.
 - Write a caller guide with compiled examples.
 
-### D.7 Two-tier Relational storage port
+### D.8 Two-tier Relational storage port
 
 Relational's read side assumes resident memory. This milestone puts every read
 behind a port in Relational's own vocabulary, with the two tiers from
 [Warm And Cold Data](#warm-and-cold-data). It has no Store dependency.
 
-- **Warm tier.** Hot code keeps reading in-memory partitions through a
-  residency guard. Taking the guard is the fallible, bounded step: it warms the
-  partition, or denies.
-- **Cold tier.** Point, range and history reads go through bounded cursors and
-  never materialize a partition.
+**Design note decisions,** made before the port shape is fixed:
 
-Most read sites change only how they obtain a partition, not how they read it.
+- **Placement.** How an entity's placement group is chosen at creation (ids
+  stay stable after that), and the warm unit.
+- **What happens when a group exceeds the memory budget.**
+- **Root regions hold a port-level root handle,** not an `Arc<PartitionState>`.
+  D.9 binds that handle to a tree root.
+- **The incremental content commitment is persisted** (in today's checkpoint
+  image, beside `partition_image_digest`), so publishing never needs the
+  previous partition resident.
+- **A head-only warm arena.** Version history moves to the cold tier.
+- **Prepare's read set.** Classify every read prepare performs:
+  - `AllObserved` and `FullObservedScan` scopes;
+  - unique-field checks;
+  - kind scans;
+  - invariant reads.
 
-**Scope:**
+  Each class gets a work ceiling. A full-scan invariant is denied or backed by
+  an index.
+- **The unique-field index is authoritative,** written in the same batch as its
+  records. Rebuilding it on open would be replay.
 
-- **Amend the Physical Database Roadmap.** S.2 "Must Preserve" says Store does
-  not replace Relational's in-memory arenas. It now says Store holds
-  Relational's committed truth through Relational's storage port.
-- **Define the port:**
-  - residency guards over partitions, with a size cap per partition;
-  - cursor reads over records, versions, adjacency and kinds;
-  - views that are owned or guarded, never borrowed past their guard;
-  - a typed storage denial that callers carry, not panic on.
-- **First backend: today's in-memory representation,** where every partition
-  is resident.
-- **Convert every `get_partition` site** to a guard or a cursor.
-  `get_partition` becomes private to the backend.
-- **Decide when a site needs a guard and when it needs a cursor.** History and
-  wide scans use cursors.
+**Port:**
+
+- residency guards over warm units;
+- cursor reads over records, versions, adjacency and kinds;
+- views that are owned or guarded, never borrowed past their guard;
+- a typed storage denial that callers carry, not panic on.
+
+**First backend: today's in-memory representation,** restructured as above,
+where everything is resident.
+
+**Convert every `get_partition` site** to a guard or a cursor. `get_partition`
+becomes private to the backend. History and wide scans use cursors.
 
 **Bug classes:**
 
@@ -507,40 +617,56 @@ Most read sites change only how they obtain a partition, not how they read it.
   backend.
 - *An infallible assumption.* Guard acquisition and cursor reads return
   `Result`.
-- *A cold read that materializes a partition.* The cursor API has no path to a
-  partition.
-- *Work-count drift.* The exact cost certification tests stay unchanged and
-  green.
+- *A cold read that materializes.* The cursor API has no path to a warm unit.
+- *A guard held across a pause.* Guards are scoped, as D.5's cursors are.
+- *A group that outgrows the budget.* The rule from the design note, with a
+  test at the boundary.
 
 **Acceptance:**
 
-- The Relational suites and certification cost tests are green, with no changed
-  counts.
+- The Relational suites are green.
+- Certification cost tests keep their counts, except where a count is
+  re-declared in the design note (publication and region capture).
 - A fault-injecting backend proves that every caller carries a storage denial.
 
-### D.8 Relational records in Store trees
+### D.9 Relational truth on Store
+
+One milestone switches Relational's durability, so two paths never coexist.
 
 **Scope:**
 
 - **The key layout.** The design note decides:
-  - the current head as column chunks per partition, so warming is close to a
-    copy;
-  - versions stored apart from the head, so history is a range scan and
-    warming never reads it;
+  - the current head as column chunks per placement group;
+  - versions stored apart from the head;
   - adjacency in both directions, keyed by endpoint, kind and other endpoint;
   - a real kind index;
+  - the unique-field index;
   - where aspects live;
-  - whether `IndexingState` stays derived as rebuildable tree families or
-    becomes authoritative.
-- **Locality follows containment.** An entity is placed in its owner's
-  partition. Today the caller of each mutation intent chooses the partition;
-  the design note replaces that with the containment rule, and decides where
-  it is declared.
-- **A binding crate** implements the D.7 port over the D.5 tree port. Every
+  - whether the rest of `IndexingState` stays derived or becomes authoritative.
+- **Everything else `DurableCheckpoint` carries:**
+  - the symbol table;
+  - the record-identity allocator, which holds slot frontiers, reusable slots
+    and pending reservations;
+  - lineage;
+  - aspect contracts;
+  - root schema images;
+  - index definitions and generations.
+
+  Commit envelopes are replaced by the batch itself.
+- **A binding crate** implements the D.8 port over the D.6 tree port. Every
   family has one encoder.
-- **Warming and eviction.** A partition warms from its column chunks and is
-  evicted by dropping the warm copy. Commits apply the same journal to both
-  tiers.
+- **Publication:**
+  - prepare turns the journal into a tree batch on the parent root;
+  - publish is a root compare-and-swap;
+  - settlement uses the fate port;
+  - branch reference cells are named roots.
+- **The pending-settlement record** is written in the same batch as the head
+  move.
+- **Warm copies** are stamped with a generation and updated from the committed
+  batch.
+- **`PersistedSegmentedLocalFs` and envelope replay are deleted.**
+  `ApplicationHome::at(path)` opens on Store. Inventory items not yet durable
+  keep reporting `Absent` until D.10.
 - **Kind scans use the index.** The linear kind walk is deleted.
 
 **Bug classes:**
@@ -548,61 +674,40 @@ Most read sites change only how they obtain a partition, not how they read it.
 - *A key encoding that does not preserve order.* A property test compares
   encoded order with decoded order for each encoder.
 - *An index that drifts from its records.* Index entries are derived in the
-  same batch, from one derivation.
-- *The warm copy drifts from durable truth.* One journal drives both tiers,
-  and a seeded test compares warm reads with cold reads after random commits,
-  evictions and rewarms.
+  same batch.
+- *The warm copy drifts from durable truth.* The generation stamp, plus a
+  seeded test comparing warm and cold reads after random commits, evictions and
+  rewarms.
+- *A head moved without a settlement record.* One constructor builds both.
+- *Recovered pending settlements* break the settlement registry's "bounded by
+  construction" proof. The proof is restated to cover entries rebuilt at open.
 
 **Acceptance:**
 
 - The Relational suites run against both backends, with identical results.
 - Work counts stay within declared bounds.
-- Cold reads are served after a restart.
-- Warming a partition costs reads proportional to its head, never to its
-  history.
-
-### D.9 Branch publication on Store
-
-**Scope:**
-
-- Prepare turns the slot-exact journal into a tree batch on the parent root.
-- Publish is a root compare-and-swap through the facade.
-- Settlement uses the fate port.
-- Branch reference cells are named roots.
-- The pending-settlement record is written in the same batch as the head move.
-- `PersistedSegmentedLocalFs` and envelope replay are deleted.
-
-**Bug classes:**
-
-- *A head moved without a settlement record.* One constructor builds both.
-- *Two durability paths.* The old path is deleted in this milestone.
-
-**Acceptance:**
-
 - A crash at every progression edge (prepare, publish, settle) recovers the
   exact head and settlement state.
 - `SettlementDeferred` survives a restart.
+- A durable home reopens in a fresh process with its Relational truth exact.
+- Warming costs reads proportional to the head, never to its history.
 
-### D.10 Durable runtime and the application home
+### D.10 Durable runtime state
 
 **Scope:**
 
-- **World state moves into tree families** behind a World storage port, in the
-  same pattern as D.7: the branch registry, the composite history catalog and
-  custody.
-- **Query host state moves too:**
-  - installed program revisions per branch;
-  - workflow definitions and running instances;
-  - idempotency records;
-  - pending aftermath.
-- **The application home ships** as described in
-  [Public Surface](#public-surface):
-  - one `open` call;
-  - `ApplicationHome::at(path)` and `ApplicationHome::memory()`, which runs on
-    RAM-backed media;
-  - the old `in_memory*` and `*_from_checkpoint` constructors are deleted.
-- **Residency follows demand.** Live reads and output demand keep partitions
-  warm, and the memory budget joins the `runtime` resource profiles.
+- **Every remaining item on D.2's reopen inventory becomes durable,** behind
+  storage ports in the same pattern as D.8. That covers World's registry,
+  history, custody and recovery catalog, and the Query host's state.
+- **World composite commits** use D.4's atomic multi-root publish. Once every
+  component owner is a Store root, delete
+  `WorthQueryApplicationCommitOutcome::ProductUnpublished` and World's
+  ProductUnpublished recovery catalog. This is a public enum change, so the
+  bank-server gate runs.
+- **Residency follows demand.** Define the mapping from output-demand sources
+  to warm units. The memory budget joins the `runtime` resource profiles.
+- **`ApplicationHome::memory()` moves to the memory media from D.7.** The old
+  in-memory runtime path is deleted.
 
 **Acceptance:**
 
@@ -610,12 +715,14 @@ Most read sites change only how they obtain a partition, not how they read it.
   - the data set is several times the resident limit;
   - fault counts are exact;
   - the restart is bounded.
-- **The working set stays warm.** A demanded partition is served without
-  faults while cold history is read alongside it.
-- **Reopen resumes everything:** a workflow mid-run, a pending aftermath and an
-  indeterminate commit resolved by idempotency key.
+- **The working set stays warm.** Demanded data is served without faults while
+  cold history is read alongside it.
+- **Reopen resumes the whole inventory,** including:
+  - a workflow mid-run;
+  - a pending aftermath;
+  - an indeterminate commit resolved by retry.
 - **A crash matrix** at every World, Query host and Relational progression edge.
-- **Parity** with today's in-memory runtime on the World and Query host suites.
+- **Parity** with the D.2 in-memory runtime on the World and Query host suites.
 
 Closing D.10 delivers the working database.
 
@@ -623,18 +730,19 @@ Closing D.10 delivers the working database.
 
 **Scope:**
 
-- **Reachability marking** runs from every live root and from the roots that
-  retained checkpoints still need.
-- **Unreachable node pages are reclaimed** through the existing range-release
-  WAL frames.
-- **C.11's arena retirement is redesigned** for many roots.
-
-The design note confirms that no format change is needed: nodes are
-self-describing pages, and allocation is already tracked by the arena and
-extent manifests.
+- **Reachability marking** runs from:
+  - every live root;
+  - the roots retained checkpoints need;
+  - every reader lease: retained reads, published snapshot handles and open
+    cursor leases.
+- **Unreachable node pages are freed one by one,** which D.3's page-granular
+  nodes make possible.
+- **C.11's arena retirement is redesigned** for many roots, and it reclaims
+  arenas the marking leaves empty.
 
 **Bug class:** *a reachable page reclaimed.* Reclamation consumes a mark proof
-taken at a published generation set.
+taken at a published generation set, and a lease taken after the mark blocks
+the free.
 
 **Acceptance:**
 
@@ -647,37 +755,37 @@ taken at a published generation set.
 - **Physical Foundation Reconstruction Roadmap:**
   - C.1 to C.10 are closed;
   - C.11, C.12 and C.13 are superseded here;
-  - their specs stay as history and design reference, not as plans.
+  - their specs stay as design reference, not as plans.
 - **Physical Database Roadmap:**
   - S.10, S.11 and S.12 keep their positions before their consumers;
   - its Runtime Integration Entry Gate is replaced by D.10 closeout.
-- **Runtime Integration Roadmap** (`runtime-integration-roadmap.md`):
+- **[Runtime Integration Roadmap](../worth-store/runtime-integration-roadmap.md):**
   - it predates this data model;
-  - its milestones are reconciled with D.1 to D.11 before Part II work resumes;
-  - "Milestone N" in the table below refers to its current numbering.
+  - D.2 reconciles it;
+  - until then, "Milestone N" in the table below refers to its current
+    numbering.
 
 ## Deferred Work
 
 Each item has no facade port and reports `Absent`, or it is internal and
-changes no format or public API.
+changes no public API.
 
 | Item | Owner | Returns |
 | --- | --- | --- |
-| Blob ingest and read ports | Store blob facade | Before the first consumer of large values (Milestone 12) |
+| Blob ingest and read ports | Store blob facade | Before the first consumer of large opaque values (Milestone 12) |
 | Abandoned-ingest reclaim and ingest expiry ports | Store blob custody | With the blob ports |
 | Release, terminal-head retirement and tier movement (C.11 Phase 6 remainder), redesigned for many roots | Store blob custody | After D.11, before Milestone 15 |
 | Release and pending-WAL rejoin rework; release-limit sweeps; pruning replaced release-control chains | Store rejoin | With the release work |
 | Same-tier relocation and maintenance ports | Store maintenance | Milestone 6 |
 | Linear ordered-history walk; physics refusals with no count | Recovery runtime | Before the first blob, maintenance or relocation port |
 | Limit-versus-damage separation for selected-rejoin bound refusals | Recovery runtime | S.10 |
-| D.1 follow-ups: manifest-residue Intent replay, covered-frame guard tests, checkpoint-sequence-0 identities | Recovery runtime | With the linear walk |
+| D.1 follow-ups: cleanup-Intent replay above the checkpoint (ignored repro in `physical_blob_journeys`), covered-frame guard tests, checkpoint-sequence-0 identities | Recovery runtime | With the linear walk |
 | Observer head readers for the newest manifest schema, and blob-walk rules | Integrity observer | With the blob ports |
-| Column-page warmth, for partitions above the size cap | Relational storage port | When a real workload needs a partition larger than the cap |
 | LSM layout class and compaction (C.11 Phase 7) | Store LSM | Before the first write-heavy family needs it (Milestone 9) |
 | Export and import (C.11 Phase 7) | Store | Milestone 11 |
 | C.11 Phase 8 heavy lane and full matrix | Store | S.12 |
 | C.12 formal protocol rebinding | Formal models | Milestone 19 |
 | C.13 joined hostile campaign | Store | S.12 |
 | S.10 bootstrap, recovery, PITR, backup and repair | Store | Milestone 8 |
-| S.11 security scope and key lifecycle | Store | Milestone 10 |
+| S.11 security scope and key lifecycle (uses the reserved key-identity slot) | Store | Milestone 10 |
 | S.12 bulk ingest and joined certification | Store | Milestone 14 |

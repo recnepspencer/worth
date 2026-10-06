@@ -1724,7 +1724,7 @@ replication transition is promoted in advance of its production owner.
 ## C.13: Physical Facade Integration And Runtime-Integration Entry
 
 Superseded by the [Database Foundation Roadmap](../database-foundation/roadmap.md), milestones D.1 to
-D.6.
+D.7.
 
 ### Goal
 
