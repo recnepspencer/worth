@@ -80,11 +80,23 @@ fn enlarged_and_shortened_lengths_precede_payload_admission_under_pressure() {
             MediaOperationRole::ReadMetadata,
             2,
         );
-        assert!(
-            matches!(result.unwrap(), Outcome::Mismatch(Mismatch::FileLength {
-            expected, observed,
-        }) if expected == PAYLOAD as u64 && observed == length as u64)
-        );
+        if length < PAYLOAD {
+            assert!(
+                matches!(result.unwrap(), Outcome::Mismatch(Mismatch::FileLength {
+                expected, observed,
+            }) if expected == PAYLOAD as u64 && observed == length as u64)
+            );
+        } else {
+            // Past its declared length the member is damage, with its real
+            // length: the selection's drift is only a shorter member.
+            let failure = result.unwrap_err();
+            assert!(
+                matches!(failure.diagnostic(), RecoveryWalReadFailureView::Discovery(
+                RecoveryWalDiscoveryFailureView::PastCeiling {
+                    artifact: RecoveryWalArtifactView::WalArtifact(name), length: real, ceiling,
+                }) if name == FIRST && real == length as u64 && ceiling == PAYLOAD as u64)
+            );
+        }
         assert_eq!(discovery.counters().wal_bytes_read, 0);
         assert_eq!(discovery.counters().bytes_read, 0);
         assert_eq!(active(&ports), held.bytes());
@@ -147,12 +159,14 @@ fn selected_read(
     window: &PhysicalRecoveryReadAllocation<'_>,
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
 ) -> Result<Outcome<FundedRecoveryWalObservations>, FundedRecoveryWalReadFailure> {
-    window.read_wal_source_with_selection(
-        source::WalReadSource::Recovery(discovery),
-        segments(4),
-        4096,
-        Some(&SingleFile),
-    )
+    window
+        .read_wal_source(
+            source::WalReadSource::Recovery(discovery),
+            segments(4),
+            ReadGrant::ceiling_only(),
+            Some(&SingleFile),
+        )
+        .map_err(GrantedReadStop::unread)
 }
 
 fn active(ports: &crate::physical_runtime::record_serving::RecordFramePorts) -> u64 {

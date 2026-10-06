@@ -12,7 +12,7 @@ use worth_store_physical_format::{
 use worth_store_recovery_physics::VerifiedSelectedNoReleaseCustody;
 
 use super::{
-    tier, wal_inventory, SelectedMediaRejoinDenial as Denial, MAX_CHECKPOINT_BYTES,
+    claimed_checkpoint, tier, wal_inventory, SelectedMediaRejoinDenial as Denial,
     MAX_CLEANUP_SAMPLE_BYTES, MAX_DISCOVERY_BYTES, MAX_DISCOVERY_ENTRIES,
 };
 use crate::physical_runtime::{
@@ -203,7 +203,11 @@ fn observe_selection(
         return Err(Denial::RootBinding);
     }
     let checkpoint_bytes = discovery
-        .read_current_checkpoint(MAX_CHECKPOINT_BYTES)
+        .read(
+            claimed_checkpoint(claim.checkpoint().encoded_bytes())?,
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
         .map_err(Denial::Discovery)?
         .into_bytes()
         .ok_or(Denial::MissingCheckpoint)?;

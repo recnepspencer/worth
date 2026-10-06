@@ -25,7 +25,11 @@ pub(super) fn deny_then_retry(
         .read_wal_payloads(
             discovery,
             limits.wal_segments(),
-            limits.declaration().wal_bytes,
+            RecoveryReadBudget::declared(
+                &limits.declaration(),
+                crate::entry::PhysicalRecoveryLimitDimension::WalBytes,
+            )
+            .grant(),
         )
         .unwrap();
     let source_bytes = raw
@@ -50,6 +54,7 @@ pub(super) fn deny_then_retry(
     let failure = match discover_wal_inventory(
         coordination.owner(),
         raw.artifacts(),
+        source_bytes,
         discovery.store_identity(),
         limits.declaration().wal_frames,
     ) {
@@ -84,6 +89,7 @@ pub(super) fn deny_then_retry(
     let mut healthy = match discover_wal_inventory(
         coordination.owner(),
         raw.artifacts(),
+        source_bytes,
         discovery.store_identity(),
         limits.declaration().wal_frames,
     ) {

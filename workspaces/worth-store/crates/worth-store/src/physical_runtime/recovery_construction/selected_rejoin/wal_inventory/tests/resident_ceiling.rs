@@ -2,6 +2,7 @@
 //! Store-entry backing. A real open reaches C8 planning's higher peak under the
 //! same recovery-memory setting first, so this denial is owned and tested here.
 use super::*;
+use worth_store_physical_backend::ReadGrant;
 
 #[test]
 fn store_entry_wal_read_denies_below_backing_plus_wal_charge() {
@@ -13,7 +14,8 @@ fn store_entry_wal_read_denies_below_backing_plus_wal_charge() {
     let mut discovery = media.bounded_discovery(64, MAX_WAL_BYTES).unwrap();
     let wal_charge = PhysicalRecoveryReadAllocation::for_coordination(&coordination)
         .unwrap()
-        .read_wal_payloads(&mut discovery, MAX_WAL_SEGMENTS, MAX_WAL_BYTES)
+        .read_wal_payloads(&mut discovery, MAX_WAL_SEGMENTS, ReadGrant::ceiling_only())
+        .map_err(GrantedReadStop::unread)
         .unwrap()
         .charged_bytes();
     assert!(wal_charge >= encoded.len() as u64);

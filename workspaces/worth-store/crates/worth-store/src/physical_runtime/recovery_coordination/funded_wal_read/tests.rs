@@ -101,7 +101,8 @@ fn second_wal_payload_denial_retains_diagnostic_across_clone_and_owner_disposal(
     let read_before = discovery.counters().wal_bytes_read;
     let mut window = coordination.begin_source_read_allocation().unwrap();
     let observations = window
-        .read_wal_payloads(&mut discovery, segments(2), 4096)
+        .read_wal_payloads(&mut discovery, segments(2), ReadGrant::ceiling_only())
+        .map_err(GrantedReadStop::unread)
         .unwrap();
     assert_eq!(observations.artifacts().len(), 2);
     for artifact in observations.artifacts() {
@@ -217,7 +218,8 @@ fn wal_result_roster_denies_before_allocation_or_payload_reads_then_retries() {
     drop(held);
     let mut window = coordination.begin_source_read_allocation().unwrap();
     let observations = window
-        .read_wal_payloads(&mut discovery, segments(2), 4096)
+        .read_wal_payloads(&mut discovery, segments(2), ReadGrant::ceiling_only())
+        .map_err(GrantedReadStop::unread)
         .unwrap();
     let expected = roster_bytes as u64
         + 2 * PAYLOAD as u64

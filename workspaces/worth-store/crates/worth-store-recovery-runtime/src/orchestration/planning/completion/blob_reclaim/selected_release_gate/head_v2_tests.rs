@@ -198,7 +198,8 @@ fn a_reader_out_of_observation_bytes_is_that_limit_with_the_count_it_reached() {
 
 #[test]
 fn a_head_that_failed_verification_names_no_limit() {
-    let requested = FilesystemObservationBound::RequestedBytes;
+    // A count the reader keeps of its own is no limit of recovery's.
+    let reads = FilesystemObservationBound::Reads;
     for denial in [
         Denial::Roster(SelectedCustodyDenial::CertificateRoster),
         Denial::HeadWalk(WalkDenial::BoundExceeded),
@@ -208,9 +209,9 @@ fn a_head_that_failed_verification_names_no_limit() {
         Denial::SourceRootFormatMismatch,
         Denial::SourceRootRead {
             generation: 5,
-            failure: outgrown(requested),
+            failure: outgrown(reads),
         },
-        control_read(RecordRead::ManifestRead(outgrown(requested))),
+        control_read(RecordRead::ManifestRead(outgrown(reads))),
         control_read(RecordRead::InvalidPayload),
     ] {
         assert!(

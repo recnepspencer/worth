@@ -12,9 +12,9 @@ use super::super::{
 use crate::recovery_media::grant_for_test::grant;
 use crate::recovery_media::{
     AdmittedRecoveryFilesystemMedia, AllocatedReadFailure, ArtifactCeiling, ArtifactDamage,
-    BoundedRecoveryFilesystemDiscovery, FilesystemObservationBound, ObservedRecoveryArtifact,
-    PageAddress, ReadGrant, ReadRefusal, RecoveryDiscoveryAllocationFailure,
-    RecoveryDiscoveryArtifact, RecoveryDiscoveryFailure, UnchargedRead,
+    BoundedRecoveryFilesystemDiscovery, FilesystemObservationBound, PageAddress, ReadGrant,
+    ReadRefusal, RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact,
+    RecoveryDiscoveryFailure, UnchargedRead,
 };
 
 #[derive(Debug, PartialEq, Eq)]
@@ -25,18 +25,8 @@ fn segments(count: u64) -> std::num::NonZeroU64 {
     std::num::NonZeroU64::new(count).expect("a segment ceiling of at least one")
 }
 
-/// A refusal's bound and both counts, or `None` when it is not a limit.
-fn named(failure: &RecoveryDiscoveryFailure) -> Option<(FilesystemObservationBound, u64, u64)> {
-    match failure {
-        RecoveryDiscoveryFailure::Limit(past) => {
-            Some((past.dimension(), past.observed(), past.admitted()))
-        }
-        _ => None,
-    }
-}
-
 mod stops;
-use stops::{format, page, root_ceiling, stopped, uncharged, Stop};
+use stops::{checkpoint, format, page, root_ceiling, stopped, uncharged, Stop};
 
 fn discovery(
     prepare: impl FnOnce(&std::path::Path),
@@ -99,10 +89,11 @@ fn whole_reads_allocate_after_observed_length_and_preserve_c4_counters() {
         .unwrap();
     assert_eq!(record.bytes(), Some(&b"root"[..]));
     let checkpoint = discovery
-        .read_current_checkpoint_with_allocator(16, |length| {
+        .read_with_allocator(checkpoint(), uncharged(), |length| {
             assert_eq!(length, 10);
             Ok::<_, DeniedAllocation>(vec![0; length])
         })
+        .observed()
         .unwrap();
     assert_eq!(checkpoint.bytes(), Some(&b"checkpoint"[..]));
     assert_eq!(discovery.counters().bytes_read, 14);
@@ -347,6 +338,7 @@ mod ceiling_grant;
 mod damage;
 mod range_refusal;
 mod record_storage;
+mod stream_ceiling;
 mod wal_context;
 mod wal_limits;
 mod wal_path;

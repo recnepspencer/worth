@@ -19,7 +19,7 @@ mod reopen;
 mod staging;
 
 pub use admitted::{AdmittedRecoveryFilesystemMedia, RecoveryMediaHandleObservation};
-pub use ceiling::{ArtifactCeiling, FixedArtifact, PageAddress};
+pub use ceiling::{ArtifactCeiling, FixedArtifact, PageAddress, StreamArtifact};
 #[cfg(all(feature = "recovery-runtime-owner", feature = "store-runtime-owner"))]
 pub use checkpoint_residue::ObservedRecoveryCheckpointArtifact;
 #[cfg(feature = "store-runtime-owner")]
@@ -39,7 +39,7 @@ pub use discovery::{
     RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact, RecoveryDiscoveryCount,
     RecoveryDiscoveryCounters, RecoveryDiscoveryFailure, RecoverySelectedWalReadOutcome,
     RecoveryWalListingAllocationMode, RecoveryWalObservationIdentity, RecoveryWalReadSelection,
-    RecoveryWalReadStorage, RecoveryWalSelectionMismatch,
+    RecoveryWalReadStorage, RecoveryWalSelectionMismatch, WalInventoryOutcome,
 };
 pub use generation::PhysicalRecoveryMediaGeneration;
 #[cfg(test)]

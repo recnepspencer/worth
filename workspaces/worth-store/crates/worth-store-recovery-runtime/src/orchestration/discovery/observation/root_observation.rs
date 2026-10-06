@@ -23,7 +23,7 @@ use crate::progression::PhysicalRecoveryDiscoveryCounters;
 
 use super::counters::record_root_counters;
 use crate::orchestration::discovery::DiscoveryFailure;
-use crate::orchestration::reader_limit::OversizedArtifact;
+use crate::orchestration::discovery::OversizedArtifact;
 use crate::orchestration::recovery_budget::RecoveryReadBudget;
 
 mod funded_read;

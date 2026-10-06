@@ -28,7 +28,10 @@ fn actual_read_grants_outlive_the_exclusive_window_and_release_with_bytes() {
     let mut discovery = media.bounded_discovery(2, 4096).unwrap();
     let mut window = coordination.begin_source_read_allocation().unwrap();
     window.reserve_total(7).unwrap();
-    let checkpoint = window.read_checkpoint(&mut discovery, 4096).unwrap();
+    let checkpoint = window
+        .read_checkpoint(&mut discovery, ReadGrant::ceiling_only())
+        .observed()
+        .unwrap();
     let root = window
         .read_checkpoint_source_root(
             &mut discovery,
@@ -79,7 +82,10 @@ fn native_path_pressure_denies_before_backend_payload_read_without_refund_admiss
     let mut discovery = media.bounded_discovery(2, 4096).unwrap();
     let before = ports.allocation_events().snapshot();
     let mut window = coordination.begin_source_read_allocation().unwrap();
-    let failure = window.read_checkpoint(&mut discovery, 4096).unwrap_err();
+    let failure = window
+        .read_checkpoint(&mut discovery, ReadGrant::ceiling_only())
+        .observed()
+        .unwrap_err();
     let RecoveryDiscoveryAllocationFailure::Allocation {
         requested, cause, ..
     } = failure
@@ -120,7 +126,10 @@ fn native_path_pressure_denies_before_backend_payload_read_without_refund_admiss
         );
     }
     drop(held);
-    let observation = window.read_checkpoint(&mut discovery, 4096).unwrap();
+    let observation = window
+        .read_checkpoint(&mut discovery, ReadGrant::ceiling_only())
+        .observed()
+        .unwrap();
     assert_eq!(observation.observed().bytes(), Some(&[41; 64][..]));
     drop(observation);
     assert_eq!(
@@ -143,7 +152,9 @@ fn absent_and_present_empty_release_transient_paths_but_only_absence_can_escape(
     let mut discovery = media.bounded_discovery(2, 4096).unwrap();
     let mut window = coordination.begin_source_read_allocation().unwrap();
     assert!(matches!(
-        window.read_checkpoint(&mut discovery, 4096),
+        window
+            .read_checkpoint(&mut discovery, ReadGrant::ceiling_only())
+            .observed(),
         Err(RecoveryDiscoveryAllocationFailure::Allocation {
             cause: PhysicalRecoveryObservationAllocationDenial::PathResidency {
                 boundary: ArtifactTreePathAllocationBoundary::FileAddress,
@@ -154,12 +165,18 @@ fn absent_and_present_empty_release_transient_paths_but_only_absence_can_escape(
     ));
     assert_eq!(discovery.counters().bytes_read, 0);
     drop(held);
-    let absent = window.read_checkpoint(&mut discovery, 4096).unwrap();
+    let absent = window
+        .read_checkpoint(&mut discovery, ReadGrant::ceiling_only())
+        .observed()
+        .unwrap();
     assert_eq!(absent.charged_bytes(), 0);
     assert_eq!(absent.owned_heap_bytes(), Some(0));
     assert!(absent.into_absent().unwrap().bytes().is_none());
     write_checkpoint(&directory, &[]);
-    let empty = window.read_checkpoint(&mut discovery, 4096).unwrap();
+    let empty = window
+        .read_checkpoint(&mut discovery, ReadGrant::ceiling_only())
+        .observed()
+        .unwrap();
     assert_eq!(empty.charged_bytes(), 0);
     assert_eq!(empty.owned_heap_bytes(), Some(0));
     let still_owned = empty.into_absent().unwrap_err();
@@ -179,7 +196,10 @@ fn foreign_discovery_is_rejected_before_callback_or_backend_observation() {
     let before = ports.allocation_events().snapshot();
     let mut discovery = foreign.bounded_discovery(1, 4096).unwrap();
     let mut window = coordination.begin_source_read_allocation().unwrap();
-    let failure = window.read_checkpoint(&mut discovery, 4096).unwrap_err();
+    let failure = window
+        .read_checkpoint(&mut discovery, ReadGrant::ceiling_only())
+        .observed()
+        .unwrap_err();
     assert!(matches!(
         failure,
         RecoveryDiscoveryAllocationFailure::Allocation {

@@ -10,7 +10,8 @@ use crate::physical_runtime::StoreRecoveryBindingFreshnessSample;
 
 const DISCOVERY_HEADROOM: u64 = 64 << 20;
 // `observe_claim` drops the first WAL inventory before calling this budget.
-// The final inventory owns at most MAX_WAL_BYTES of encoded frames; the extra
+// The final inventory owns at most MAX_WAL_BYTES of encoded frames: its budget
+// grants the read that whole, so a longer inventory is refused unread. The extra
 // allowance covers 65,536 frame structs, names, map nodes and its fingerprint.
 const FINAL_WAL_INVENTORY_HEADROOM: u64 = wal_inventory::MAX_WAL_BYTES + (32 << 20);
 

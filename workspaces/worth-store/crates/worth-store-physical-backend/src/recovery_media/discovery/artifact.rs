@@ -4,10 +4,11 @@ use worth_store_physical_format::RecordArtifactFile;
 
 use crate::filesystem_media::{ArtifactTreeDirectory, ArtifactTreeFile};
 
+use super::super::ceiling::{CeilingArtifact, StreamArtifact};
 use super::RecoveryDiscoveryFailure;
 
 mod backed;
-pub(super) use backed::{backed_checkpoint_artifact, backed_record_artifact};
+pub(super) use backed::{backed_ceiling_artifact, backed_record_artifact};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RecoveryDiscoveryArtifact {
@@ -31,6 +32,25 @@ pub(crate) fn record_artifact(
         .file(artifact.canonical_file_name().as_str())
         .map_err(|_| RecoveryDiscoveryFailure::invalid(context))
 }
+
+/// The tree file a ceiling names.
+pub(super) fn ceiling_artifact(
+    address: CeilingArtifact,
+) -> Result<ArtifactTreeFile, RecoveryDiscoveryFailure> {
+    match address {
+        CeilingArtifact::Record(file) => record_artifact(file),
+        CeilingArtifact::Stream(StreamArtifact::CurrentCheckpoint) => {
+            ArtifactTreeDirectory::families()
+                .file(CHECKPOINT_FILE)
+                .map_err(|_| {
+                    RecoveryDiscoveryFailure::invalid(RecoveryDiscoveryArtifact::CurrentCheckpoint)
+                })
+        }
+    }
+}
+
+/// The current checkpoint stream's file in the families directory.
+const CHECKPOINT_FILE: &str = "checkpoint.current";
 
 /// Directory classification has one owner; both read-storage modes consume it.
 fn record_directory(

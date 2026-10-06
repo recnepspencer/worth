@@ -1,4 +1,4 @@
-use super::super::{past_grant, refused_read, unread, CheckpointDiscovery, DiscoveryFailure};
+use super::super::{past_grant, unread, CheckpointDiscovery, DiscoveryFailure, OversizedArtifact};
 use crate::entry::{
     PhysicalRecoveryBlockKind, PhysicalRecoveryCheckpointIntegrityDenial,
     PhysicalRecoveryLimitDimension, PhysicalRecoveryLimits, PhysicalRecoveryRootProtocolArtifact,
@@ -8,12 +8,11 @@ use crate::integrity_ingress::{
     admit_observed_checkpoint_stream, CheckpointStreamAdmissionFailure,
     RecoveryIntegrityIngressRejection, RecoveryIntegrityIngressTrace,
 };
-use crate::orchestration::reader_limit::{OversizedArtifact, ReadCeiling};
 use crate::orchestration::recovery_budget::{RecoveryAllowance, RecoveryReadBudget};
 use crate::progression::PhysicalRecoveryDiscoveryCounters;
 use worth_store::physical_runtime::{
     BoundedRecoveryFilesystemDiscovery, GrantedRead, GrantedReadStop,
-    PhysicalRecoveryReadAllocation,
+    PhysicalRecoveryReadAllocation, ReadGrant, UnchargedRead,
 };
 use worth_store_physical_format::PhysicalRecordFormatDeclaration;
 
@@ -49,24 +48,15 @@ pub(super) fn observe_checkpoint(
     allocation: &mut PhysicalRecoveryReadAllocation<'_>,
 ) -> Result<CheckpointDiscovery, DiscoveryFailure> {
     let declaration = limits.declaration();
-    // Nothing declares the stream's length, so only the observation bytes
-    // the caller admitted bound its read: those discovery has not yet read.
-    let stream = ReadCeiling::of_budget_alone(
-        declaration.observation_bytes,
-        declaration
-            .observation_bytes
-            .saturating_sub(discovery.counters().bytes_read),
-    );
-    let artifact = match allocation.read_checkpoint(discovery, stream.requested()) {
+    // Nothing declares the stream's length and no budget of recovery's
+    // spends it, so only the observation bytes discovery was handed bound
+    // its read: all of recovery's, so the observation's counts are recovery's.
+    let read = allocation.read_checkpoint(discovery, ReadGrant::ceiling_only());
+    let artifact = match read.observed() {
         Ok(artifact) => artifact,
         Err(failure) => {
             let OversizedArtifact = allocation::refused(&declaration, failure, |failure| {
-                refused_read(
-                    failure,
-                    stream,
-                    &declaration,
-                    PhysicalRecoveryLimitDimension::ObservationBytes,
-                )
+                unread(failure, &declaration)
             })?;
             return Err(PhysicalRecoveryBlockKind::Checkpoint.into());
         }

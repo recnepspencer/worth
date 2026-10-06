@@ -77,7 +77,7 @@ fn only_a_candidate_reader_out_of_its_own_budget_names_a_limit() {
     assert_eq!(
         candidate_limit(
             &limits,
-            &outgrown(FilesystemObservationBound::RequestedBytes),
+            &outgrown(FilesystemObservationBound::Reads),
             &budget(),
             &window()
         ),

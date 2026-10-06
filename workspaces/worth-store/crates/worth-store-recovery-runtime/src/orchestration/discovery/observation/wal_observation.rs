@@ -1,16 +1,15 @@
 //! Read and classify WAL sources while their raw payload reservation remains live.
 
 use super::super::wal::{discover_wal_inventory, WalDiscoveryInventoryDenialKind};
-use super::super::{refused_beside, DiscoveryFailure, WalDiscovery};
+use super::super::{past_grant, refused_beside, DiscoveryFailure, WalDiscovery};
 use super::counters::record_wal_counters;
 use crate::entry::{
     PhysicalRecoveryBlockKind as PhysicalRecoveryBlock, PhysicalRecoveryLimitDimension,
     PhysicalRecoveryLimits,
 };
-use crate::orchestration::reader_limit::ReadCeiling;
-use crate::orchestration::recovery_budget::RecoveryAllowance;
+use crate::orchestration::recovery_budget::{RecoveryAllowance, RecoveryReadBudget};
 use crate::progression::PhysicalRecoveryDiscoveryCounters;
-use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
+use worth_store::physical_runtime::{BoundedRecoveryFilesystemDiscovery, GrantedReadStop};
 use worth_store_recovery_physics::PhysicalRecoveryResidue;
 
 mod allocation;
@@ -22,23 +21,32 @@ pub(super) fn observe_wal(
     counters: &mut PhysicalRecoveryDiscoveryCounters,
 ) -> Result<(WalDiscovery, Vec<PhysicalRecoveryResidue>, u64), DiscoveryFailure> {
     let declaration = limits.declaration();
-    // Nothing declares a WAL file's length, so the WAL bytes the caller
-    // admitted are the only ceiling its read has. The reader counts them
-    // across the files of this one read.
-    let wal_bytes = ReadCeiling::of_budget_alone(declaration.wal_bytes, declaration.wal_bytes);
+    // Nothing declares a complete inventory's file lengths, so the files
+    // share one grant of recovery's WAL bytes, the budget that states a read
+    // past it as its own limit.
+    let mut wal_bytes =
+        RecoveryReadBudget::declared(&declaration, PhysicalRecoveryLimitDimension::WalBytes);
     let observed = {
         let mut allocation = coordination
             .owner_mut()
             .begin_source_read_allocation()
             .map_err(|cause| allocation::window_admission_failure(&declaration, cause))?;
-        allocation
-            .read_wal_payloads(discovery, limits.wal_segments(), wal_bytes.requested())
-            .map_err(|failure| allocation::map_read_failure(&declaration, failure, wal_bytes))?
+        match allocation.read_wal_payloads(discovery, limits.wal_segments(), wal_bytes.grant()) {
+            Ok(observed) => observed,
+            Err(GrantedReadStop::PastGrant(overrun)) => {
+                return Err(past_grant(&wal_bytes, overrun));
+            }
+            Err(GrantedReadStop::Unread(failure)) => {
+                return Err(allocation::map_read_failure(&declaration, failure));
+            }
+        }
     };
+    wal_bytes.charge_inventory(observed.artifacts());
     let wal_entries = observed.artifacts().len() as u64;
     let inspected = match discover_wal_inventory(
         coordination.owner(),
         observed.artifacts(),
+        wal_bytes.spent(),
         discovery.store_identity(),
         declaration.wal_frames,
     ) {
@@ -78,17 +86,6 @@ pub(super) fn observe_wal(
             return Err(failure.with_integrity_observations(observations));
         }
     };
-    if let Err(limit) =
-        RecoveryAllowance::declared(&declaration, PhysicalRecoveryLimitDimension::WalBytes)
-            .admit(inspected.observed_bytes)
-    {
-        let (wal, residue) = finish_wal_inventory(inspected);
-        record_wal_counters(counters, &wal, &residue, wal_entries);
-        return Err(
-            DiscoveryFailure::limit(PhysicalRecoveryBlock::WalInventory, limit)
-                .with_integrity_observations(wal.integrity_observations),
-        );
-    }
     debug_assert!(inspected.frames_scanned <= declaration.wal_frames);
     let (wal, residue) = finish_wal_inventory(inspected);
     Ok((wal, residue, wal_entries))

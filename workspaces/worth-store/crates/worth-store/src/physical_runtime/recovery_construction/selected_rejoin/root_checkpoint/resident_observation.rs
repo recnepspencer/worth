@@ -73,31 +73,12 @@ impl<'a, 'b> RootCheckpointReader<'a, 'b> {
         }
     }
 
-    pub(super) fn checkpoint(&mut self, limit: u64) -> Result<Vec<u8>, Denial> {
-        let Some(resident) = self.resident.as_deref_mut() else {
-            return self
-                .discovery
-                .read_current_checkpoint(u64::MAX)
-                .map_err(Denial::Discovery)?
-                .into_bytes()
-                .ok_or(Denial::MissingCheckpoint);
-        };
-        let mut charged = 0;
-        let result = self
-            .discovery
-            .read_current_checkpoint_with_allocator(limit, |length| {
-                let bytes = resident.reserve_bytes(length)?;
-                charged = resident.vector_bytes(&bytes)?;
-                Ok(bytes)
-            });
-        let observed = match result {
-            Ok(observed) => observed,
-            Err(error) => {
-                resident.release(charged);
-                return Err(discovery_allocation_denial(error));
-            }
-        };
-        observed.into_bytes().ok_or(Denial::MissingCheckpoint)
+    /// The checkpoint stream its claim declares `encoded_bytes` long.
+    pub(super) fn checkpoint(&mut self, encoded_bytes: u64) -> Result<Vec<u8>, Denial> {
+        self.read(
+            super::super::claimed_checkpoint(encoded_bytes)?,
+            Denial::MissingCheckpoint,
+        )
     }
 
     pub(super) fn inspect_checkpoint(

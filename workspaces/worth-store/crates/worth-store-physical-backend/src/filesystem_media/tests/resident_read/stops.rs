@@ -46,8 +46,8 @@ impl<E> Stopped for AllocatedReadFailure<E> {
 }
 
 /// Where a charged read stopped; `None` for a read that returned.
-pub(super) fn stopped<D: worth_foundational::LimitDimension, F: Stopped>(
-    outcome: &worth_proof::DenialTransitionOutcome<ObservedRecoveryArtifact, ReadRefusal<D>, F>,
+pub(super) fn stopped<S, D: worth_foundational::LimitDimension, F: Stopped>(
+    outcome: &worth_proof::DenialTransitionOutcome<S, ReadRefusal<D>, F>,
 ) -> Option<Stop> {
     match outcome {
         TransitionOutcome::Success(_) => None,
@@ -78,6 +78,11 @@ pub(super) fn page() -> u64 {
 
 pub(super) fn root_ceiling(generation: u64) -> ArtifactCeiling {
     ArtifactCeiling::page(format(), PageAddress::RootManifest { generation })
+}
+
+/// The checkpoint stream, whose length no fact declares.
+pub(super) fn checkpoint() -> ArtifactCeiling {
+    ArtifactCeiling::undeclared(crate::recovery_media::StreamArtifact::CurrentCheckpoint)
 }
 
 pub(super) fn uncharged() -> ReadGrant<crate::recovery_media::Uncharged> {

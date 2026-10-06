@@ -1,9 +1,14 @@
 //! WAL-only observation of an already qualified live owner. No owned finish exists.
 
+use worth_foundational::LimitDimension;
+
+use super::super::grant::ReadGrant;
+use super::super::refusal::AllocatedReadFailure;
 use super::media_backing::{BorrowedMediaBacking, DiscoveryMediaBacking};
+use super::wal_artifacts::WalInventoryOutcome;
 use super::{
-    FilesystemObservation, ObservedWalArtifact, RecoveryDiscoveryAllocationFailure,
-    RecoveryDiscoveryCounters, RecoveryFilesystemQualificationError, RecoveryWalReadStorage,
+    FilesystemObservation, ObservedWalArtifact, RecoveryDiscoveryCounters,
+    RecoveryFilesystemQualificationError, RecoveryWalReadStorage,
 };
 use crate::filesystem_media::QualifiedFilesystemMedia;
 use std::num::NonZeroU64;
@@ -59,29 +64,33 @@ impl BorrowedWalFilesystemObservation<'_> {
     pub fn wal_path_storage_is_qualified(&self) -> bool {
         self.discovery.wal_path_storage_is_qualified()
     }
-    pub fn read_wal_artifacts_with_storage<S: RecoveryWalReadStorage>(
+    pub fn read_wal_artifacts_with_storage<D: LimitDimension, S: RecoveryWalReadStorage>(
         &mut self,
         maximum_segments: NonZeroU64,
-        byte_limit: u64,
+        grant: ReadGrant<D>,
         storage: &mut S,
-    ) -> Result<Vec<ObservedWalArtifact>, RecoveryDiscoveryAllocationFailure<S::Denial>> {
+    ) -> WalInventoryOutcome<Vec<ObservedWalArtifact>, D, AllocatedReadFailure<S::Denial>> {
         self.discovery
-            .read_wal_artifacts_with_storage(maximum_segments, byte_limit, storage)
+            .read_wal_artifacts_with_storage(maximum_segments, grant, storage)
     }
 
-    pub fn read_selected_wal_artifacts_with_storage<S: RecoveryWalReadStorage>(
+    pub fn read_selected_wal_artifacts_with_storage<
+        D: LimitDimension,
+        S: RecoveryWalReadStorage,
+    >(
         &mut self,
         maximum_segments: NonZeroU64,
-        byte_limit: u64,
+        grant: ReadGrant<D>,
         selection: &dyn super::RecoveryWalReadSelection,
         storage: &mut S,
-    ) -> Result<
+    ) -> WalInventoryOutcome<
         super::RecoverySelectedWalReadOutcome<Vec<ObservedWalArtifact>>,
-        RecoveryDiscoveryAllocationFailure<S::Denial>,
+        D,
+        AllocatedReadFailure<S::Denial>,
     > {
         self.discovery.read_selected_wal_artifacts_with_storage(
             maximum_segments,
-            byte_limit,
+            grant,
             selection,
             storage,
         )

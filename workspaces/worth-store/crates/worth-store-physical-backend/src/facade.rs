@@ -219,8 +219,8 @@ pub use crate::recovery_media::{
     RecoverySelectedWalReadOutcome, RecoveryStagingIndeterminatePhysical,
     RecoveryStagingSynchronizationOutcome, RecoveryStagingWriteDisposition,
     RecoveryStagingWriteOutcome, RecoveryWalListingAllocationMode, RecoveryWalObservationIdentity,
-    RecoveryWalReadSelection, RecoveryWalReadStorage, RecoveryWalSelectionMismatch, Uncharged,
-    UnchargedRead, UnchargedReadAuthority,
+    RecoveryWalReadSelection, RecoveryWalReadStorage, RecoveryWalSelectionMismatch, StreamArtifact,
+    Uncharged, UnchargedRead, UnchargedReadAuthority, WalInventoryOutcome,
 };
 pub use crate::recovery_staging::{
     ClosedNonCurrentStagingMedia, ClosedStagingArtifactVerificationDenial,

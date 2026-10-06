@@ -7,7 +7,8 @@ use worth_store_physical_backend::{
     AllocatedReadFailure, ArtifactCeiling, ArtifactTreeListingAllocationBoundary,
     ArtifactTreePathAllocationBoundary, BorrowedRecordFilesystemObservation,
     BoundedRecoveryFilesystemDiscovery, ObservedRecoveryArtifact, PageAddress, ReadGrant,
-    ReadRefusal, RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact, UnchargedRead,
+    ReadRefusal, RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact, StreamArtifact,
+    UnchargedRead,
 };
 use worth_store_physical_format::{PhysicalRecordFormatDeclaration, RecordArtifactFile};
 
@@ -84,31 +85,18 @@ impl FundedRecoveryObservation {
 }
 
 impl PhysicalRecoveryReadAllocation<'_> {
+    /// Re-reads the checkpoint stream its selected claim declares `declared`
+    /// bytes long: a longer stream is damage with its real length.
     pub(in crate::physical_runtime) fn read_serving_checkpoint(
         &mut self,
         observation: &mut BorrowedRecordFilesystemObservation<'_>,
-        byte_limit: u64,
+        declared: u64,
     ) -> Result<
         FundedRecoveryObservation,
         RecoveryDiscoveryAllocationFailure<PhysicalRecoveryObservationAllocationDenial>,
     > {
-        use PhysicalRecoveryObservationAllocationDenial as Denial;
-        let failure = |cause| RecoveryDiscoveryAllocationFailure::Allocation {
-            artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint,
-            offset: 0,
-            requested: 0,
-            cause,
-        };
-        if observation.store_identity() != self.store_identity() {
-            return Err(failure(Denial::StoreMismatch));
-        }
-        if !observation.path_storage_is_qualified() {
-            return Err(failure(Denial::UnqualifiedPathStorage));
-        }
-        let mut storage = storage::NativeObservationStorage::new(self);
-        let observed =
-            observation.read_current_checkpoint_with_storage(byte_limit, &mut storage)?;
-        Ok(storage.finish(observed))
+        let ceiling = ArtifactCeiling::declared(StreamArtifact::CurrentCheckpoint, declared);
+        self.read_serving_record(observation, ceiling)
     }
 
     /// Re-reads one whole artifact under its ceiling.
@@ -120,8 +108,8 @@ impl PhysicalRecoveryReadAllocation<'_> {
         FundedRecoveryObservation,
         RecoveryDiscoveryAllocationFailure<PhysicalRecoveryObservationAllocationDenial>,
     > {
-        let address = ceiling.file();
-        self.read_serving_observation(observation, address, |observation, storage| {
+        let context = ceiling.artifact();
+        self.read_serving_observation(observation, context, |observation, storage| {
             observation
                 .read_with_storage(ceiling, ReadGrant::ceiling_only(), storage)
                 .observed()
@@ -138,7 +126,8 @@ impl PhysicalRecoveryReadAllocation<'_> {
         FundedRecoveryObservation,
         RecoveryDiscoveryAllocationFailure<PhysicalRecoveryObservationAllocationDenial>,
     > {
-        self.read_serving_observation(observation, address, |observation, storage| {
+        let context = RecoveryDiscoveryArtifact::Record(address);
+        self.read_serving_observation(observation, context, |observation, storage| {
             observation
                 .read_record_artifact_range_with_storage(
                     address,
@@ -154,7 +143,7 @@ impl PhysicalRecoveryReadAllocation<'_> {
     fn read_serving_observation(
         &mut self,
         observation: &mut BorrowedRecordFilesystemObservation<'_>,
-        address: RecordArtifactFile,
+        context: RecoveryDiscoveryArtifact,
         read: impl FnOnce(
             &mut BorrowedRecordFilesystemObservation<'_>,
             &mut storage::NativeObservationStorage<'_, '_>,
@@ -168,7 +157,7 @@ impl PhysicalRecoveryReadAllocation<'_> {
     > {
         use PhysicalRecoveryObservationAllocationDenial as Denial;
         let failure = |cause| RecoveryDiscoveryAllocationFailure::Allocation {
-            artifact: RecoveryDiscoveryArtifact::Record(address),
+            artifact: context,
             offset: 0,
             requested: 0,
             cause,
@@ -184,15 +173,13 @@ impl PhysicalRecoveryReadAllocation<'_> {
         Ok(storage.finish(observed))
     }
 
-    pub fn read_checkpoint(
+    /// The checkpoint stream, whose length no fact declares, under `grant`.
+    pub fn read_checkpoint<D: LimitDimension>(
         &mut self,
         discovery: &mut BoundedRecoveryFilesystemDiscovery,
-        byte_limit: u64,
-    ) -> Result<
-        FundedRecoveryObservation,
-        RecoveryDiscoveryAllocationFailure<PhysicalRecoveryObservationAllocationDenial>,
-    > {
-        self.read_observation(discovery, byte_limit)
+        grant: ReadGrant<D>,
+    ) -> FundedReadOutcome<D> {
+        self.read_whole(discovery, checkpoint_stream(), grant)
     }
 
     /// The checkpoint's source root: one page of `format`, under `grant`.
@@ -227,7 +214,7 @@ impl PhysicalRecoveryReadAllocation<'_> {
     ) -> FundedReadOutcome<D> {
         if discovery.store_identity() != self.owner.ports().store_identity() {
             return TransitionOutcome::Failed(AllocatedReadFailure::Allocation {
-                artifact: RecoveryDiscoveryArtifact::Record(ceiling.file()),
+                artifact: ceiling.artifact(),
                 offset: 0,
                 requested: 0,
                 cause: PhysicalRecoveryObservationAllocationDenial::StoreMismatch,
@@ -238,28 +225,21 @@ impl PhysicalRecoveryReadAllocation<'_> {
             .read_with_storage(ceiling, grant, &mut storage)
             .map_success(|observed| storage.finish(observed))
     }
+}
 
-    fn read_observation(
-        &mut self,
-        discovery: &mut BoundedRecoveryFilesystemDiscovery,
-        byte_limit: u64,
-    ) -> Result<
-        FundedRecoveryObservation,
-        RecoveryDiscoveryAllocationFailure<PhysicalRecoveryObservationAllocationDenial>,
-    > {
-        use PhysicalRecoveryObservationAllocationDenial as Denial;
-        if discovery.store_identity() != self.owner.ports().store_identity() {
-            return Err(RecoveryDiscoveryAllocationFailure::Allocation {
-                artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint,
-                offset: 0,
-                requested: 0,
-                cause: Denial::StoreMismatch,
-            });
-        }
-        let mut storage = storage::NativeObservationStorage::new(self);
-        let observed = discovery.read_current_checkpoint_with_storage(byte_limit, &mut storage)?;
-        Ok(storage.finish(observed))
-    }
+/// The checkpoint stream: nothing declares its length.
+const fn checkpoint_stream() -> ArtifactCeiling {
+    ArtifactCeiling::undeclared(StreamArtifact::CurrentCheckpoint)
+}
+
+/// The checkpoint stream read whole and uncharged, as a test observes it.
+#[cfg(test)]
+pub(in crate::physical_runtime) fn observe_checkpoint_for_test(
+    discovery: &mut BoundedRecoveryFilesystemDiscovery,
+) -> Result<ObservedRecoveryArtifact, worth_store_physical_backend::RecoveryDiscoveryFailure> {
+    discovery
+        .read(checkpoint_stream(), ReadGrant::ceiling_only())
+        .observed()
 }
 
 #[cfg(test)]

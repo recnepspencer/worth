@@ -1,10 +1,13 @@
 //! The most one read of a whole artifact may return, from the fact that
 //! declares it. A ceiling names its artifact, so it cannot be paired with
-//! another, and no caller can state it as a number: a fixed slot's size is its
-//! format's constant, and every other whole artifact a recovery reads is one
-//! page of its declared format. An artifact longer than its ceiling is damage
-//! no budget can fix.
+//! another, and no caller can state a record's as a number: a fixed slot's
+//! size is its format's constant, and every other whole record a recovery
+//! reads is one page of its declared format. A stream is as long as the fact
+//! the caller holds declares it; a stream no fact declares has no ceiling at
+//! all, only the grant and the observation's bytes. An artifact longer than
+//! its ceiling is damage no budget can fix.
 
+use super::discovery::RecoveryDiscoveryArtifact;
 use worth_store_physical_format::{
     PhysicalRecordFormatDeclaration, RecordArtifactFile, BOOTSTRAP_CATALOG_BYTES,
     ROOT_SELECTOR_BYTES,
@@ -51,19 +54,60 @@ pub enum PageAddress {
     },
 }
 
+/// The streams a recovery reads whole. A stream's length is declared only
+/// where a fact the caller holds states it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StreamArtifact {
+    CurrentCheckpoint,
+}
+
 /// What one read may return of the artifact it names.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ArtifactCeiling {
-    file: RecordArtifactFile,
+    artifact: CeilingArtifact,
     extent: CeilingExtent,
 }
 
-/// How a ceiling bounds its artifact: a whole file no longer than `bytes`, or
-/// exactly `length` bytes at `offset` of a larger one.
+/// The artifact a ceiling names: a record file, or a stream.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum CeilingArtifact {
+    Record(RecordArtifactFile),
+    Stream(StreamArtifact),
+}
+
+/// How a ceiling bounds its artifact: a whole file within `bytes`, or exactly
+/// `length` bytes at `offset` of a larger one.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CeilingExtent {
-    Whole { bytes: u64, fixed: bool },
+    Whole { bytes: CeilingBytes, fixed: bool },
     Frame { offset: u64, length: u32 },
+}
+
+/// How long a whole artifact may be: what a fact declares, or, for a stream
+/// no fact declares, no length of its own.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum CeilingBytes {
+    Declared(u64),
+    Undeclared,
+}
+
+impl CeilingBytes {
+    /// The bytes a read may be asked for under this ceiling alone.
+    pub(crate) const fn admitted(self) -> u64 {
+        match self {
+            Self::Declared(bytes) => bytes,
+            Self::Undeclared => u64::MAX,
+        }
+    }
+
+    /// `length` past this ceiling: the declared ceiling it passed. `None`
+    /// within it, and always for a stream no fact declares.
+    pub(crate) const fn passed_by(self, length: u64) -> Option<u64> {
+        match self {
+            Self::Declared(ceiling) if length > ceiling => Some(ceiling),
+            Self::Declared(_) | Self::Undeclared => None,
+        }
+    }
 }
 
 impl ArtifactCeiling {
@@ -71,9 +115,9 @@ impl ArtifactCeiling {
     pub fn page(format: PhysicalRecordFormatDeclaration, address: PageAddress) -> Self {
         let page = format.page_size().bytes();
         let whole = |file| Self {
-            file,
+            artifact: CeilingArtifact::Record(file),
             extent: CeilingExtent::Whole {
-                bytes: u64::from(page),
+                bytes: CeilingBytes::Declared(u64::from(page)),
                 fixed: false,
             },
         };
@@ -101,10 +145,10 @@ impl ArtifactCeiling {
                 generation,
                 frame,
             } => Self {
-                file: RecordArtifactFile::Segment {
+                artifact: CeilingArtifact::Record(RecordArtifactFile::Segment {
                     segment,
                     generation,
-                },
+                }),
                 extent: CeilingExtent::Frame {
                     offset: u64::from(frame) * u64::from(page),
                     length: page,
@@ -129,10 +173,34 @@ impl ArtifactCeiling {
             ),
         };
         Self {
-            file,
+            artifact: CeilingArtifact::Record(file),
             extent: CeilingExtent::Whole {
-                bytes: bytes as u64,
+                bytes: CeilingBytes::Declared(bytes as u64),
                 fixed: true,
+            },
+        }
+    }
+
+    /// A stream no fact declares a length for: only the read's grant and the
+    /// observation's own bytes bound it.
+    pub const fn undeclared(stream: StreamArtifact) -> Self {
+        Self {
+            artifact: CeilingArtifact::Stream(stream),
+            extent: CeilingExtent::Whole {
+                bytes: CeilingBytes::Undeclared,
+                fixed: false,
+            },
+        }
+    }
+
+    /// A stream whose length a fact the caller holds declares, such as a
+    /// checkpoint claim's encoded bytes: a longer stream is damage.
+    pub const fn declared(stream: StreamArtifact, bytes: u64) -> Self {
+        Self {
+            artifact: CeilingArtifact::Stream(stream),
+            extent: CeilingExtent::Whole {
+                bytes: CeilingBytes::Declared(bytes),
+                fixed: false,
             },
         }
     }
@@ -152,8 +220,18 @@ impl ArtifactCeiling {
             .map(|address| Self::page(format, address))
     }
 
-    pub const fn file(&self) -> RecordArtifactFile {
-        self.file
+    /// The artifact this ceiling names, as a read reports it.
+    pub fn artifact(&self) -> RecoveryDiscoveryArtifact {
+        match self.artifact {
+            CeilingArtifact::Record(file) => RecoveryDiscoveryArtifact::Record(file),
+            CeilingArtifact::Stream(StreamArtifact::CurrentCheckpoint) => {
+                RecoveryDiscoveryArtifact::CurrentCheckpoint
+            }
+        }
+    }
+
+    pub(crate) const fn address(&self) -> CeilingArtifact {
+        self.artifact
     }
 
     pub(crate) const fn extent(&self) -> CeilingExtent {

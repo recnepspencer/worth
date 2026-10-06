@@ -27,7 +27,6 @@ pub(super) struct NativeWalReadStorage<'window, 'coordination> {
 impl<'window, 'coordination> NativeWalReadStorage<'window, 'coordination> {
     pub(super) fn prepare(
         window: &'window PhysicalRecoveryReadAllocation<'coordination>,
-        byte_limit: u64,
     ) -> Result<Self, FundedRecoveryWalReadFailure> {
         let diagnostic = PreparedWalReadDiagnostic::prepare(window)?;
         Ok(Self {
@@ -35,7 +34,6 @@ impl<'window, 'coordination> NativeWalReadStorage<'window, 'coordination> {
                 window,
                 backing: None,
                 retained: 0,
-                byte_limit,
             },
             listing: NativeWalListingBacking::default(),
             diagnostic,

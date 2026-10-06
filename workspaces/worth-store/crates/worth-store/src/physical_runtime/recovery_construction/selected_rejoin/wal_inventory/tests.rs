@@ -8,7 +8,11 @@ mod reread;
 #[cfg(windows)]
 mod resident_ceiling;
 #[cfg(windows)]
+mod serving_growth;
+#[cfg(windows)]
 mod torn_tail;
+#[cfg(windows)]
+mod wal_bytes;
 
 fn identity(segment: u64, generation: u64) -> WalSegmentArtifactIdentity {
     WalSegmentArtifactIdentity::new(

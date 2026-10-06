@@ -13,39 +13,12 @@ use crate::entry::{
     PhysicalRecoveryLimitDimension, PhysicalRecoveryMediaObservationFailure,
     PhysicalRecoverySourceDenial,
 };
-use crate::orchestration::reader_limit::{OversizedArtifact, PastBudget, ReadCeiling};
 use crate::orchestration::recovery_budget::{RecoveryAllowance, RecoveryReadBudget};
 
-/// A stream read the reader refused for its requested bytes. `Ok` is an
-/// artifact larger than its own ceiling: damage, which the caller words for
-/// the artifact it read. `Err` blocks discovery. `budget_dimension` names the
-/// caller's budget that narrowed `ceiling`. T2b: the stream readers take a
-/// grant, and this goes.
-pub(in crate::orchestration) fn refused_read(
-    failure: RecoveryDiscoveryFailure,
-    ceiling: ReadCeiling,
-    limits: &PhysicalRecoveryLimitDeclaration,
-    budget_dimension: PhysicalRecoveryLimitDimension,
-) -> Result<OversizedArtifact, DiscoveryFailure> {
-    let past = match failure {
-        RecoveryDiscoveryFailure::Limit(past) => past,
-        RecoveryDiscoveryFailure::Damage(damage) => return damaged_read(damage),
-    };
-    match past.dimension() {
-        FilesystemObservationBound::RequestedBytes => {
-            let PastBudget { observed, admitted } = ceiling.passed(&past);
-            Err(refused_beside(
-                RecoveryAllowance::declared(limits, budget_dimension),
-                observed,
-                admitted,
-                PhysicalRecoveryBlock::MediaObservation,
-            ))
-        }
-        FilesystemObservationBound::ObservationBytes
-        | FilesystemObservationBound::Reads
-        | FilesystemObservationBound::Entries => Err(observation_refused(past, limits)),
-    }
-}
+/// An artifact longer than the ceiling its fact declares. Each reader words
+/// this damage for the artifact it read.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::orchestration) struct OversizedArtifact;
 
 /// What a whole read met that was no grant's. `Ok` is an artifact longer than
 /// its own ceiling: damage, which the caller words for the artifact it read.
@@ -73,7 +46,7 @@ pub(in crate::orchestration) fn past_grant(
 
 /// The observation's own bound stopped a read. Discovery's reader was handed
 /// all of recovery's observation bytes, so its counts are recovery's.
-fn observation_refused(
+pub(in crate::orchestration) fn observation_refused(
     past: ExceededFilesystemObservationBound,
     limits: &PhysicalRecoveryLimitDeclaration,
 ) -> DiscoveryFailure {
@@ -87,11 +60,8 @@ fn observation_refused(
         // Discovery's main reader counts no reads or entries: each count
         // limit counts its own before the read, so a refused count is past
         // every count, and no limit can state it. A WAL listing counts its
-        // entries, and its caller reads them as WAL segments first. Only a
-        // stream read asks for a length, and `refused_read` reads that one.
-        FilesystemObservationBound::Reads
-        | FilesystemObservationBound::Entries
-        | FilesystemObservationBound::RequestedBytes => {
+        // entries, and its caller reads them as WAL segments first.
+        FilesystemObservationBound::Reads | FilesystemObservationBound::Entries => {
             DiscoveryFailure::from(PhysicalRecoveryBlock::MediaObservation)
         }
     }

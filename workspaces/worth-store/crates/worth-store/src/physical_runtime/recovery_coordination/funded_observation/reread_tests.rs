@@ -33,7 +33,7 @@ fn borrowed_checkpoint_denies_payload_before_read_then_retains_exact_native_back
         .counters()
         .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead);
     let failure = window
-        .read_serving_checkpoint(&mut observation, ORIGINAL)
+        .read_serving_checkpoint(&mut observation, input.len() as u64)
         .unwrap_err();
     assert!(
         matches!(failure,
@@ -61,7 +61,7 @@ fn borrowed_checkpoint_denies_payload_before_read_then_retains_exact_native_back
     );
     drop(held);
     let observed = window
-        .read_serving_checkpoint(&mut observation, ORIGINAL)
+        .read_serving_checkpoint(&mut observation, input.len() as u64)
         .unwrap();
     assert_eq!(observed.observed().bytes(), Some(input.as_slice()));
     assert_eq!(observed.charged_bytes(), 8192);
@@ -94,7 +94,10 @@ fn borrowed_head_reread_denies_native_address_backing_then_retries_and_retains_b
             block: 2,
         },
     );
-    let address = ceiling.file();
+    let address = RecordArtifactFile::ReleaseCustodyHeadBlock {
+        generation: 7,
+        block: 2,
+    };
     let directory = root.path().join("store/families/records/roots");
     std::fs::create_dir_all(&directory).unwrap();
     let path = directory.join(address.file_name());

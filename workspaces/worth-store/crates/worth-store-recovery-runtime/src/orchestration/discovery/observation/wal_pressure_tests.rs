@@ -222,7 +222,11 @@ fn run() {
             .read_wal_payloads(
                 &mut discovery,
                 limits.wal_segments(),
-                limits.declaration().wal_bytes,
+                RecoveryReadBudget::declared(
+                    &limits.declaration(),
+                    crate::entry::PhysicalRecoveryLimitDimension::WalBytes,
+                )
+                .grant(),
             )
             .unwrap();
         let payload_bytes: u64 = raw

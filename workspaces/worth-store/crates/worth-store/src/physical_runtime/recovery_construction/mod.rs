@@ -12,3 +12,4 @@ pub use handoff::{
 pub use port::PhysicalRecoveryConstructionPort;
 pub(in crate::physical_runtime) use selected_rejoin::SelectedControlMediaFingerprint;
 pub(in crate::physical_runtime) use selected_rejoin::SelectedWalMediaFingerprint;
+pub use selected_rejoin::{ExceededSelectedWalInventoryBound, SelectedWalInventoryBound};

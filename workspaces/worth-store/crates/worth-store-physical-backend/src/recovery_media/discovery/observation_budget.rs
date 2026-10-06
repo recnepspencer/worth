@@ -10,15 +10,15 @@ worth_foundational::limit_authority!(pub FilesystemObservationBudgetAuthority);
 /// - reads: the artifacts one observation may read;
 /// - entries: the names one WAL listing may hold, or the WAL observations one
 ///   observation may issue;
-/// - observation bytes: the bytes one observation may read in all;
-/// - requested bytes: the ceiling a caller named for one read or one WAL
-///   inventory.
+/// - observation bytes: the bytes one observation may read in all.
+///
+/// A caller's own budget is no bound of the observation: a read past its
+/// grant hands the overrun back to the grant's owner.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FilesystemObservationBound {
     Reads,
     Entries,
     ObservationBytes,
-    RequestedBytes,
 }
 
 impl LimitDimension for FilesystemObservationBound {
@@ -53,10 +53,6 @@ impl FilesystemObservationAllowance {
         Self::of(FilesystemObservationBound::ObservationBytes, admitted)
     }
 
-    pub(super) const fn requested_bytes(admitted: u64) -> Self {
-        Self::of(FilesystemObservationBound::RequestedBytes, admitted)
-    }
-
     const fn of(bound: FilesystemObservationBound, admitted: u64) -> Self {
         Self { bound, admitted }
     }
@@ -68,20 +64,6 @@ impl FilesystemObservationAllowance {
         } else {
             Err(self.refuse(needed))
         }
-    }
-
-    /// A limit a narrower allowance of the same bound refused, read where
-    /// `held` more of it was already spent beside it: both counts move by
-    /// what is held, so the distance between them stays the one the narrower
-    /// allowance found. A moved count past every count is `None`: no limit
-    /// can state it.
-    pub(super) fn held_beside(
-        narrower: ExceededFilesystemObservationBound,
-        held: u64,
-    ) -> Option<ExceededFilesystemObservationBound> {
-        let admitted = narrower.admitted().checked_add(held)?;
-        let observed = narrower.observed().checked_add(held)?;
-        Some(Self::of(narrower.dimension(), admitted).refuse(observed))
     }
 
     fn refuse(self, observed: u64) -> ExceededFilesystemObservationBound {
@@ -120,7 +102,6 @@ mod tests {
             (Allowance::reads(3), Reads),
             (Allowance::entries(3), Entries),
             (Allowance::observation_bytes(3), ObservationBytes),
-            (Allowance::requested_bytes(3), RequestedBytes),
         ] {
             assert_eq!(allowance.admit(3), Ok(3));
             assert_eq!(named(allowance.admit(4).unwrap_err()), (bound, 4, 3));
@@ -132,16 +113,5 @@ mod tests {
     #[should_panic(expected = "a limit is a need past its ceiling")]
     fn a_test_limit_within_its_ceiling_is_refused() {
         super::filesystem_observation_limit_for_test(Reads, 3, 3);
-    }
-
-    #[test]
-    fn held_bytes_move_both_counts_and_keep_the_bound() {
-        let inner = Allowance::requested_bytes(10).admit(12).unwrap_err();
-        assert_eq!(
-            Allowance::held_beside(inner, 22).map(named),
-            Some((RequestedBytes, 34, 32))
-        );
-        // A moved count past every count is no limit.
-        assert_eq!(Allowance::held_beside(inner, u64::MAX - 11), None);
     }
 }

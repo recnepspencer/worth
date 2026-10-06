@@ -9,6 +9,7 @@ use crate::physical_runtime::{
     FilesystemAccessPosture, FilesystemMediaAdmission, PhysicalRuntimeAdmission, PhysicalStore,
     QualifiedRecoveryFilesystemMedia,
 };
+use worth_store_physical_backend::{ReadGrant, UnchargedRead};
 
 #[test]
 fn c4_observation_cannot_be_substituted_during_segment_assembly() {
@@ -43,18 +44,22 @@ fn c4_observation_cannot_be_substituted_during_segment_assembly() {
     let mut discovery_a = media_a.bounded_discovery(2, 4096).unwrap();
     let mut discovery_b = media_b.bounded_discovery(2, 4096).unwrap();
     let observed_a = discovery_a
-        .read_wal_artifacts(NonZeroU64::MIN, 4096)
+        .read_wal_artifacts(NonZeroU64::MIN, ReadGrant::ceiling_only())
+        .observed()
         .unwrap();
     let repeated_a = discovery_a
-        .read_wal_artifacts(NonZeroU64::MIN, 4096)
+        .read_wal_artifacts(NonZeroU64::MIN, ReadGrant::ceiling_only())
+        .observed()
         .unwrap();
     let observed_b = discovery_b
-        .read_wal_artifacts(NonZeroU64::MIN, 4096)
+        .read_wal_artifacts(NonZeroU64::MIN, ReadGrant::ceiling_only())
+        .observed()
         .unwrap();
     let media_a = discovery_a.finish();
     let mut rediscovery_a = media_a.bounded_discovery(1, 4096).unwrap();
     let rediscovered_a = rediscovery_a
-        .read_wal_artifacts(NonZeroU64::MIN, 4096)
+        .read_wal_artifacts(NonZeroU64::MIN, ReadGrant::ceiling_only())
+        .observed()
         .unwrap();
     let range = PhysicalByteRange::new(0, frame.len() as u64).unwrap();
     let scope = PhysicalArtifactScope::wal_frame(store_a, identity, range);

@@ -1,19 +1,21 @@
-//! The one engine for reads of whole artifacts and exact ranges. Each refusal
-//! is decided here, with the read's real length: from the artifact's metadata
-//! for a whole read, from the range itself for a range. Past the ceiling is
-//! damage; past the caller's grant is that budget's; past the observation's
-//! own reads or bytes is the observation's.
+//! The one engine for reads of whole artifacts, streams and exact ranges.
+//! Each refusal is decided here, with the read's real length: from the
+//! artifact's metadata for a whole read, from the range itself for a range.
+//! Past a declared ceiling is damage; past the caller's grant is that
+//! budget's; past the observation's own reads or bytes is the observation's.
 
 use worth_foundational::LimitDimension;
 use worth_proof::{DenialTransitionOutcome, TransitionOutcome};
 
 use crate::filesystem_media::{ArtifactTreeFailure, ArtifactTreeFailureKind, ArtifactTreeMedia};
 
-use super::super::grant::ReadGrant;
-use super::super::refusal::{ArtifactDamage, ReadRefusal};
+use super::super::ceiling::CeilingBytes;
+use super::super::grant::{GrantShare, ReadGrant};
+use super::super::refusal::{AllocatedReadFailure, ArtifactDamage, ReadRefusal};
 use super::{
     DiscoveryMediaBacking, FilesystemObservation, ObservedRecoveryArtifact,
-    RecoveryDiscoveryArtifact, RecoveryDiscoveryFailure,
+    RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact, RecoveryDiscoveryCount,
+    RecoveryDiscoveryFailure,
 };
 
 /// Where a charged read stopped.
@@ -46,6 +48,45 @@ impl<D: LimitDimension, F: From<ArtifactDamage>> ReadStop<D, F> {
     }
 }
 
+impl<D: LimitDimension, E> From<RecoveryDiscoveryAllocationFailure<E>>
+    for ReadStop<D, AllocatedReadFailure<E>>
+{
+    /// What a read into a caller's buffer met before any grant was asked.
+    fn from(failure: RecoveryDiscoveryAllocationFailure<E>) -> Self {
+        match failure {
+            RecoveryDiscoveryAllocationFailure::Discovery(failure) => Self::stop(failure),
+            RecoveryDiscoveryAllocationFailure::Allocation {
+                artifact,
+                offset,
+                requested,
+                cause,
+            } => Self::Failed(AllocatedReadFailure::Allocation {
+                artifact,
+                offset,
+                requested,
+                cause,
+            }),
+            RecoveryDiscoveryAllocationFailure::BufferLengthMismatch {
+                artifact,
+                offset,
+                requested,
+                observed,
+            } => Self::Failed(AllocatedReadFailure::BufferLengthMismatch {
+                artifact,
+                offset,
+                requested,
+                observed,
+            }),
+        }
+    }
+}
+
+impl<D: LimitDimension, E> From<RecoveryDiscoveryFailure> for ReadStop<D, AllocatedReadFailure<E>> {
+    fn from(failure: RecoveryDiscoveryFailure) -> Self {
+        Self::stop(failure)
+    }
+}
+
 /// One admitted read. Opening it spends one of the observation's reads, and
 /// only opening it yields the tree, so no read reaches the media unspent.
 /// What a caller does before opening it, such as admitting its own path
@@ -62,9 +103,20 @@ impl<'tree> ReadAttempt<'tree> {
     }
 }
 
-pub(super) fn outcome<D: LimitDimension, F>(
-    read: Result<ObservedRecoveryArtifact, ReadStop<D, F>>,
-) -> DenialTransitionOutcome<ObservedRecoveryArtifact, ReadRefusal<D>, F> {
+/// The count a read's grant spends, named by the stream being read: one
+/// inventory's WAL bytes for a WAL file, the bytes read for every other.
+pub(super) const fn granted_count(context: &RecoveryDiscoveryArtifact) -> RecoveryDiscoveryCount {
+    match context {
+        RecoveryDiscoveryArtifact::WalArtifact(_) => RecoveryDiscoveryCount::WalBytesRead,
+        RecoveryDiscoveryArtifact::Record(_)
+        | RecoveryDiscoveryArtifact::CurrentCheckpoint
+        | RecoveryDiscoveryArtifact::WalDirectory => RecoveryDiscoveryCount::BytesRead,
+    }
+}
+
+pub(super) fn outcome<T, D: LimitDimension, F>(
+    read: Result<T, ReadStop<D, F>>,
+) -> DenialTransitionOutcome<T, ReadRefusal<D>, F> {
     match read {
         Ok(observed) => TransitionOutcome::Success(observed),
         Err(ReadStop::Refused(refusal)) => TransitionOutcome::Denied(refusal),
@@ -73,20 +125,21 @@ pub(super) fn outcome<D: LimitDimension, F>(
 }
 
 impl<M: DiscoveryMediaBacking> FilesystemObservation<M> {
-    /// Reads a whole artifact of at most `ceiling` bytes. The tree is asked
-    /// for no more than the ceiling, the grant and this observation's bytes
-    /// allow, and reports the artifact's real length when it is longer.
+    /// Reads a whole artifact within `ceiling`. The tree is asked for no more
+    /// than the ceiling, what is left of the grant and this observation's
+    /// bytes allow, and reports the artifact's real length when it is longer.
     pub(super) fn read_whole_charged<D: LimitDimension, F: From<ArtifactDamage>>(
         &mut self,
         context: RecoveryDiscoveryArtifact,
-        ceiling: u64,
+        ceiling: CeilingBytes,
         fixed: bool,
-        grant: &ReadGrant<D>,
+        grant: &GrantShare<'_, D>,
         read: impl FnOnce(ReadAttempt<'_>, u64) -> Result<Vec<u8>, TreeReadFailure<F>>,
     ) -> Result<ObservedRecoveryArtifact, ReadStop<D, F>> {
         self.admit_read().map_err(ReadStop::stop)?;
         let limit = ceiling
-            .min(grant.bytes().unwrap_or(u64::MAX))
+            .admitted()
+            .min(grant.left().unwrap_or(u64::MAX))
             .min(self.remaining_bytes);
         let store = self.parts.store_identity();
         match read(self.attempt(), limit) {
@@ -178,15 +231,15 @@ impl<M: DiscoveryMediaBacking> FilesystemObservation<M> {
     }
 
     /// A whole read the tree refused at the artifact's real `length`: past
-    /// the ceiling, then past the grant, then past this observation's bytes.
-    /// A refusal that names no length, or a length every bound admits, is
-    /// the tree's own damage.
+    /// a declared ceiling, then past what is left of the grant, then past
+    /// this observation's bytes. A refusal that names no length, or a length
+    /// every bound admits, is the tree's own damage.
     fn whole_refusal<D: LimitDimension, F: From<ArtifactDamage>>(
         &self,
         context: RecoveryDiscoveryArtifact,
         failure: ArtifactTreeFailure,
-        ceiling: u64,
-        grant: &ReadGrant<D>,
+        ceiling: CeilingBytes,
+        grant: &GrantShare<'_, D>,
     ) -> ReadStop<D, F> {
         let Some(limit) = failure.access_limit() else {
             return ReadStop::damage(ArtifactDamage::Media {
@@ -195,15 +248,19 @@ impl<M: DiscoveryMediaBacking> FilesystemObservation<M> {
             });
         };
         let length = limit.observed;
-        if length > ceiling {
+        if let Some(ceiling) = ceiling.passed_by(length) {
             return ReadStop::damage(ArtifactDamage::PastCeiling {
                 artifact: context,
                 length,
                 ceiling,
             });
         }
-        if let Some(overrun) = grant.overrun(length) {
-            return ReadStop::Refused(ReadRefusal::PastGrant(overrun));
+        match grant.overrun(length) {
+            Ok(Some(overrun)) => return ReadStop::Refused(ReadRefusal::PastGrant(overrun)),
+            Ok(None) => {}
+            Err(_) => {
+                return ReadStop::damage(ArtifactDamage::CountOverflow(granted_count(&context)))
+            }
         }
         match self.spent_with(length) {
             Err(refused) => ReadStop::stop(refused),

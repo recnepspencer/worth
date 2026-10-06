@@ -34,7 +34,8 @@ fn native_file_open_pressure_denies_after_address_before_payload_and_retries() {
     let failure = coordination
         .begin_source_read_allocation()
         .unwrap()
-        .read_checkpoint(&mut discovery, 4096)
+        .read_checkpoint(&mut discovery, ReadGrant::ceiling_only())
+        .observed()
         .unwrap_err();
     assert!(
         matches!(failure, RecoveryDiscoveryAllocationFailure::Allocation {
@@ -55,7 +56,8 @@ fn native_file_open_pressure_denies_after_address_before_payload_and_retries() {
     let observed = coordination
         .begin_source_read_allocation()
         .unwrap()
-        .read_checkpoint(&mut discovery, 4096)
+        .read_checkpoint(&mut discovery, ReadGrant::ceiling_only())
+        .observed()
         .unwrap();
     assert_eq!(observed.observed().bytes(), Some(&[41; 64][..]));
     drop(observed);
@@ -92,7 +94,8 @@ fn metadata_boundary_pressure_denies_payload_then_same_owner_retries() {
             coordination
                 .begin_source_read_allocation()
                 .unwrap()
-                .read_checkpoint(&mut discovery, 4096)
+                .read_checkpoint(&mut discovery, ReadGrant::ceiling_only())
+                .observed()
         });
         wait_for_metadata(&gate, &worker);
         let active = ports.counters().active_operation_bytes_for(Scope::Recovery);
@@ -130,7 +133,8 @@ fn metadata_boundary_pressure_denies_payload_then_same_owner_retries() {
     let observation = coordination
         .begin_source_read_allocation()
         .unwrap()
-        .read_checkpoint(&mut discovery, 4096)
+        .read_checkpoint(&mut discovery, ReadGrant::ceiling_only())
+        .observed()
         .unwrap();
     assert_eq!(observation.observed().bytes(), Some(&[41; 64][..]));
     assert_eq!(observation.charged_bytes(), 64);

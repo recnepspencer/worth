@@ -8,8 +8,7 @@ use super::super::grant::ReadGrant;
 use super::super::refusal::AllocatedReadOutcome;
 use super::media_backing::BorrowedMediaBacking;
 use super::{
-    DiscoveryMediaBacking, FilesystemObservation, ObservedRecoveryArtifact,
-    RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryCounters,
+    DiscoveryMediaBacking, FilesystemObservation, RecoveryDiscoveryCounters,
     RecoveryFilesystemQualificationError,
 };
 use crate::filesystem_media::{ArtifactTreeReadAllocator, QualifiedFilesystemMedia};
@@ -66,15 +65,6 @@ impl BorrowedRecordFilesystemObservation<'_> {
 
     /// Rechecks the live checkpoint through the same confined, allocated
     /// artifact reader. This observation cannot select or certify a checkpoint.
-    pub fn read_current_checkpoint_with_storage<S: ArtifactTreeReadAllocator>(
-        &mut self,
-        byte_limit: u64,
-        storage: &mut S,
-    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryAllocationFailure<S::Denial>> {
-        self.observation
-            .read_current_checkpoint_with_storage(byte_limit, storage)
-    }
-
     pub fn read_with_storage<D: LimitDimension, S: ArtifactTreeReadAllocator>(
         &mut self,
         ceiling: ArtifactCeiling,

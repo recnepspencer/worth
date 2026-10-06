@@ -38,6 +38,11 @@ pub enum RecoveredPhysicalRuntimeConstructionDenial {
         boundary: Option<PhysicalRecoveryRejoinResidentBoundary>,
         cause: crate::physical_runtime::FundedRecoveryWalReadFailure,
     },
+    /// The complete WAL inventory passed its budget before its first effect.
+    RejoinWalBytes {
+        boundary: Option<PhysicalRecoveryRejoinResidentBoundary>,
+        cause: super::selected_rejoin::ExceededSelectedWalInventoryBound,
+    },
     RejoinResident(super::selected_rejoin::PhysicalRecoveryRejoinResidentDenial),
     RejoinWalAdmission {
         boundary: Option<PhysicalRecoveryRejoinResidentBoundary>,

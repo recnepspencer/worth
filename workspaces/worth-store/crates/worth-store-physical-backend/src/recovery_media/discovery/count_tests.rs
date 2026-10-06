@@ -2,9 +2,8 @@
 //! count, and refuses as its bound's limit when it goes past its ceiling.
 
 use super::{
-    ArtifactTreeFailure, ArtifactTreeFailureKind, FilesystemObservation,
-    FilesystemObservationBound, RecoveryDiscoveryCount, RecoveryDiscoveryCounters,
-    RecoveryDiscoveryFailure,
+    FilesystemObservation, FilesystemObservationBound, RecoveryDiscoveryCount,
+    RecoveryDiscoveryCounters, RecoveryDiscoveryFailure,
 };
 
 /// An observation with no media behind it, `entries` and `bytes` admitted
@@ -72,28 +71,32 @@ fn spent_bytes_are_a_limit_past_the_observation_and_no_limit_past_every_count() 
 }
 
 #[test]
-fn a_refused_read_past_every_count_names_the_count_it_passed() {
+fn a_refused_length_past_every_count_names_the_count_it_passed() {
     let spent = observation(3, 0, u64::MAX, u64::MAX);
     assert_eq!(
-        spent.read_refused(u64::MAX, 1),
+        spent.spent_with(1).map(drop),
         overflow(RecoveryDiscoveryCount::ObservationBytes)
     );
-    // The tree tells no length: one past every ceiling is past every count.
-    let unbounded = observation(3, 0, u64::MAX, 0);
-    let refused = ArtifactTreeFailure::recovery_io(
-        ArtifactTreeFailureKind::AccessLimitExceeded,
-        std::io::ErrorKind::Other,
-    );
-    assert_eq!(
-        unbounded.whole_read_refused(&refused, u64::MAX, u64::MAX),
-        overflow(RecoveryDiscoveryCount::ReadLength).err()
-    );
-    assert_eq!(
-        unbounded
-            .whole_read_refused(&refused, 4, 4)
-            .map(|failure| limit(Err(failure))),
-        Some(Some((FilesystemObservationBound::RequestedBytes, 5, 4)))
-    );
+    // The files one inventory read before, with the next one's length, past
+    // every count: no grant can state it.
+    let grant = crate::recovery_media::grant::for_test::grant(u64::MAX - 1);
+    let mut share = crate::recovery_media::grant::GrantShare::of(&grant);
+    share.spend(2);
+    let past = share
+        .overrun(u64::MAX - 2)
+        .map(|past| past.map(|past| past.length()));
+    assert_eq!(past, Ok(Some(u64::MAX)));
+    assert!(share.overrun(u64::MAX - 1).is_err());
+}
+
+#[test]
+fn a_grant_past_every_count_names_the_stream_being_read() {
+    use super::{charged_read::granted_count, RecoveryDiscoveryArtifact as Artifact};
+    let wal = Artifact::WalArtifact("segment-1-generation-1.wal".into());
+    assert_eq!(granted_count(&wal), RecoveryDiscoveryCount::WalBytesRead);
+    for stream in [Artifact::CurrentCheckpoint, Artifact::WalDirectory] {
+        assert_eq!(granted_count(&stream), RecoveryDiscoveryCount::BytesRead);
+    }
 }
 
 #[test]

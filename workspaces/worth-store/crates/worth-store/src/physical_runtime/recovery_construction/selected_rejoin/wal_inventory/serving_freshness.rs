@@ -5,6 +5,8 @@ use super::{
 };
 use crate::physical_runtime::{
     FundedRecoveryWalObservations, FundedRecoveryWalReadFailure, PhysicalRecoveryReadAllocation,
+    RecoveryWalArtifactView as Artifact, RecoveryWalDiscoveryFailureView as Discovery,
+    RecoveryWalReadFailureView as View,
 };
 use sha2::{Digest, Sha256};
 use std::ffi::OsStr;
@@ -20,16 +22,17 @@ impl SelectedWalMediaFingerprint {
         media: &QualifiedFilesystemMedia,
         window: &mut PhysicalRecoveryReadAllocation<'_>,
     ) -> Result<bool, FundedRecoveryWalReadFailure> {
-        match window.read_selected_serving_wal_payloads(
-            media,
-            MAX_WAL_SEGMENTS,
-            MAX_WAL_BYTES,
-            self,
-        )? {
-            RecoverySelectedWalReadOutcome::Observed(mut observed) => {
+        let read =
+            window.read_selected_serving_wal_payloads(media, MAX_WAL_SEGMENTS, MAX_WAL_BYTES, self);
+        match read {
+            Ok(RecoverySelectedWalReadOutcome::Observed(mut observed)) => {
                 Ok(self.matches_observations(&mut observed))
             }
-            RecoverySelectedWalReadOutcome::Mismatch(_) => Ok(false),
+            Ok(RecoverySelectedWalReadOutcome::Mismatch(_)) => Ok(false),
+            // A member longer than its fingerprint is drift, as a shorter one
+            // is: the read names it damage, freshness names it stale.
+            Err(failure) if longer_than_selected(&failure) => Ok(false),
+            Err(failure) => Err(failure),
         }
     }
 
@@ -122,4 +125,27 @@ impl RecoveryWalReadSelection for SelectedWalMediaFingerprint {
 
 fn selected_identity(name: &OsStr) -> Option<WalSegmentArtifactIdentity> {
     WalSegmentArtifactIdentity::parse(name.to_str()?)
+}
+
+/// Whether the read stopped at a selected WAL member longer than its declared
+/// length.
+fn longer_than_selected(failure: &FundedRecoveryWalReadFailure) -> bool {
+    match failure.diagnostic() {
+        View::Discovery(Discovery::PastCeiling {
+            artifact: Artifact::WalArtifact(_),
+            ..
+        }) => true,
+        View::Discovery(
+            Discovery::PastCeiling {
+                artifact: Artifact::Record(_) | Artifact::CurrentCheckpoint | Artifact::WalDirectory,
+                ..
+            }
+            | Discovery::Limit(_)
+            | Discovery::CountOverflow(_)
+            | Discovery::Media { .. }
+            | Discovery::InvalidAddress { .. },
+        )
+        | View::Allocation { .. }
+        | View::BufferLengthMismatch { .. } => false,
+    }
 }

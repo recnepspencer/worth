@@ -40,7 +40,7 @@ pub enum RecoveryWalDiscoveryFailureView<'a> {
     Limit(ExceededFilesystemObservationBound),
     /// A count past every count: no ceiling admits it, so no limit states it.
     CountOverflow(RecoveryDiscoveryCount),
-    /// The artifact is longer than the ceiling its format declares.
+    /// The artifact is longer than the ceiling its fact declares.
     PastCeiling {
         artifact: RecoveryWalArtifactView<'a>,
         length: u64,

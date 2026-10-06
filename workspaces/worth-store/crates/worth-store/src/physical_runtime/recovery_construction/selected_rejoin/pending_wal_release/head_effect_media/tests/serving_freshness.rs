@@ -25,7 +25,9 @@ fn moved_effect_witness_alone_detects_changed_serving_frame_and_balances_reads()
     );
     let origin = window.recovery_origin_generation().unwrap();
     drop(window);
-    let absent = discovery.read_current_checkpoint(4096).unwrap();
+    let absent =
+        crate::physical_runtime::recovery_coordination::observe_checkpoint_for_test(&mut discovery)
+            .unwrap();
     drop(discovery.finish());
     coordination.install_absent_checkpoint(absent).unwrap();
     let (residency, ownership) = coordination.into_quiescent_recovery_parts().unwrap();

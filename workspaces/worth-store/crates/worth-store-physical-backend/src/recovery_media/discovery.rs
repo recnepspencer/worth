@@ -1,8 +1,6 @@
 use super::refusal::ArtifactDamage;
 use super::{AdmittedRecoveryFilesystemMedia, RecoveryFilesystemQualificationError};
-use crate::filesystem_media::{
-    ArtifactTreeDirectory, ArtifactTreeFailure, ArtifactTreeFailureKind, ArtifactTreeFile,
-};
+use crate::filesystem_media::{ArtifactTreeDirectory, ArtifactTreeFailure};
 
 mod addressed_payload;
 mod artifact;
@@ -35,6 +33,7 @@ pub use resident_read::RecoveryDiscoveryAllocationFailure;
 pub use selected_wal::{
     RecoverySelectedWalReadOutcome, RecoveryWalReadSelection, RecoveryWalSelectionMismatch,
 };
+pub use wal_artifacts::WalInventoryOutcome;
 pub use wal_storage::{RecoveryWalListingAllocationMode, RecoveryWalReadStorage};
 
 pub type BoundedRecoveryFilesystemDiscovery =
@@ -75,14 +74,13 @@ pub enum RecoveryDiscoveryFailure {
 pub enum RecoveryDiscoveryCount {
     /// The reads one observation issued, with the next.
     Reads,
-    /// One byte past a read ceiling, where the tree could not tell a length.
-    ReadLength,
     /// The bytes one observation spent, with the next read.
     ObservationBytes,
-    /// The bytes every read returned, counted for the caller.
+    /// The bytes every read returned, counted for the caller, or with the next
+    /// read's length against the grant it spends.
     BytesRead,
-    /// The WAL bytes one inventory read, counted for the caller or held
-    /// beside the next read.
+    /// The WAL bytes one inventory read: counted for the caller, or with the
+    /// next file's length against the inventory's grant.
     WalBytesRead,
     /// The WAL observations one observation issued, with the next.
     WalObservations,
@@ -116,59 +114,12 @@ impl BoundedRecoveryFilesystemDiscovery {
         })
     }
 
-    pub fn read_current_checkpoint(
-        &mut self,
-        byte_limit: u64,
-    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryFailure> {
-        let context = RecoveryDiscoveryArtifact::CurrentCheckpoint;
-        let artifact = ArtifactTreeDirectory::families()
-            .file("checkpoint.current")
-            .map_err(|_| RecoveryDiscoveryFailure::invalid(context.clone()))?;
-        self.read_artifact(artifact, context, byte_limit, false)
-    }
-
     pub const fn counters(&self) -> RecoveryDiscoveryCounters {
         self.counters
     }
 
     pub fn finish(self) -> AdmittedRecoveryFilesystemMedia {
         AdmittedRecoveryFilesystemMedia::from_discovery(self.parts, self.discovery_incarnation)
-    }
-
-    fn read_artifact(
-        &mut self,
-        artifact: ArtifactTreeFile,
-        context: RecoveryDiscoveryArtifact,
-        byte_limit: u64,
-        fixed: bool,
-    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryFailure> {
-        let effective_byte_limit = byte_limit.min(self.remaining_bytes);
-        self.admit_read()?;
-        self.remaining_entries -= 1;
-        match self
-            .parts
-            .artifact_tree()
-            .read_bounded(&artifact, effective_byte_limit)
-        {
-            Ok(bytes) => {
-                self.spend_read_bytes(bytes.len() as u64)?;
-                if !fixed {
-                    self.counters.addressed_artifacts_read += 1;
-                }
-                Ok(ObservedRecoveryArtifact::new(
-                    self.parts.store_identity,
-                    context,
-                    0,
-                    Some(bytes),
-                ))
-            }
-            Err(failure) if failure.kind() == ArtifactTreeFailureKind::Absent => Ok(
-                ObservedRecoveryArtifact::new(self.parts.store_identity, context, 0, None),
-            ),
-            Err(failure) => Err(self
-                .whole_read_refused(&failure, byte_limit, effective_byte_limit)
-                .unwrap_or_else(|| RecoveryDiscoveryFailure::media(context, failure))),
-        }
     }
 }
 
@@ -208,47 +159,6 @@ impl<M> FilesystemObservation<M> {
         FilesystemObservationAllowance::observation_bytes(self.maximum_bytes)
             .admit(spent)
             .map_err(RecoveryDiscoveryFailure::Limit)
-    }
-
-    /// A read of `length` bytes refused within `byte_limit` and the bytes
-    /// this reader has left: a whole artifact the tree would not read, or a
-    /// range its caller asked for. One longer than `byte_limit` passed the
-    /// ceiling its caller named for it, however little this reader has left;
-    /// only one within that ceiling ran this reader out of bytes. Where the
-    /// tree cannot tell a whole artifact's length it reports one byte past
-    /// what it was asked for, which decides the same way. A length within
-    /// both passes: no bound of this reader refused it.
-    fn read_refused(&self, byte_limit: u64, length: u64) -> Result<(), RecoveryDiscoveryFailure> {
-        FilesystemObservationAllowance::requested_bytes(byte_limit)
-            .admit(length)
-            .map_err(RecoveryDiscoveryFailure::Limit)?;
-        self.spent_with(length).map(drop)
-    }
-
-    /// What a whole read the tree refused says about this observation: the
-    /// limit one of its allowances refuses for the length the tree reported,
-    /// read within `effective_byte_limit`. Every other failure is the tree's.
-    fn whole_read_refused(
-        &self,
-        failure: &ArtifactTreeFailure,
-        byte_limit: u64,
-        effective_byte_limit: u64,
-    ) -> Option<RecoveryDiscoveryFailure> {
-        if failure.kind() != ArtifactTreeFailureKind::AccessLimitExceeded {
-            return None;
-        }
-        let length = match failure.access_limit() {
-            Some(limit) => limit.observed,
-            None => match effective_byte_limit.checked_add(1) {
-                Some(past) => past,
-                None => {
-                    return Some(RecoveryDiscoveryFailure::overflow(
-                        RecoveryDiscoveryCount::ReadLength,
-                    ))
-                }
-            },
-        };
-        self.read_refused(byte_limit, length).err()
     }
 }
 

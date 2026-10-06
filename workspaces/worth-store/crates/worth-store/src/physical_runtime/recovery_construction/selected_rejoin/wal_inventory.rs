@@ -3,6 +3,7 @@ mod admission;
 mod resident_memory;
 mod serving_freshness;
 mod storage;
+mod wal_bytes;
 use super::resident::{
     PhysicalRecoveryRejoinResidentDenial as ResidentDenial, StoreRejoinResidentLedger,
 };
@@ -13,7 +14,11 @@ use crate::physical_runtime::{
 };
 use sha2::{Digest, Sha256};
 use storage::WalRoster;
-use worth_store_physical_backend::{BoundedRecoveryFilesystemDiscovery, ObservedWalArtifact};
+use wal_bytes::SelectedWalInventoryBudget;
+pub use wal_bytes::{ExceededSelectedWalInventoryBound, SelectedWalInventoryBound};
+use worth_store_physical_backend::{
+    BoundedRecoveryFilesystemDiscovery, GrantedReadStop, ObservedWalArtifact,
+};
 use worth_store_physical_format::store_namespace::NamespaceEntryType;
 const MAX_WAL_SEGMENTS: std::num::NonZeroU64 = std::num::NonZeroU64::new(4_096).unwrap();
 pub(super) const MAX_WAL_BYTES: u64 = 128 << 20;
@@ -85,27 +90,47 @@ pub(super) fn admit_complete_inventory(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     coordination: &PhysicalRecoveryCoordination,
 ) -> Result<AdmittedWalInventory, Denial> {
-    admit_complete(discovery, coordination, None)
+    admit_complete(
+        discovery,
+        coordination,
+        SelectedWalInventoryBudget::complete(),
+        None,
+    )
 }
 pub(super) fn admit_complete_inventory_with_resident(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     coordination: &PhysicalRecoveryCoordination,
     resident: &mut StoreRejoinResidentLedger,
 ) -> Result<AdmittedWalInventory, Denial> {
-    admit_complete(discovery, coordination, Some(resident))
+    admit_complete(
+        discovery,
+        coordination,
+        SelectedWalInventoryBudget::complete(),
+        Some(resident),
+    )
 }
+/// The inventory's budget grants its whole to the one read, so the backend
+/// refuses the file that crosses it before reading it: no frame is retained
+/// past what the retained-memory envelope budgets.
 fn admit_complete(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     coordination: &PhysicalRecoveryCoordination,
+    budget: SelectedWalInventoryBudget,
     mut resident: Option<&mut StoreRejoinResidentLedger>,
 ) -> Result<AdmittedWalInventory, Denial> {
     let mut window = PhysicalRecoveryReadAllocation::for_coordination(coordination)
         .map_err(Denial::WalReadOwnership)?;
     let raw = window
-        .read_wal_payloads(discovery, MAX_WAL_SEGMENTS, MAX_WAL_BYTES)
-        .map_err(|cause| Denial::WalRead {
-            boundary: None,
-            cause,
+        .read_wal_payloads(discovery, MAX_WAL_SEGMENTS, budget.grant())
+        .map_err(|stop| match stop {
+            GrantedReadStop::PastGrant(overrun) => Denial::WalBytes {
+                boundary: None,
+                cause: SelectedWalInventoryBudget::refuse(overrun),
+            },
+            GrantedReadStop::Unread(cause) => Denial::WalRead {
+                boundary: None,
+                cause,
+            },
         })?;
     let raw_charge = raw.charged_bytes();
     if let Some(resident) = resident.as_deref_mut() {

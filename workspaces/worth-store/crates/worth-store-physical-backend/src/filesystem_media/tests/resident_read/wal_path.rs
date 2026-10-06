@@ -136,7 +136,8 @@ fn wal_path_denials_precede_their_open_and_same_owner_retry_disposes_backing() {
         };
         let before = observer.snapshot();
         let failure = discovery
-            .read_wal_artifacts_with_storage(segments(4), 32, &mut storage)
+            .read_wal_artifacts_with_storage(segments(4), uncharged(), &mut storage)
+            .observed()
             .unwrap_err();
         assert!(
             matches!(failure, RecoveryDiscoveryAllocationFailure::Allocation { requested, cause: PathDenied(actual), .. } if requested > 0 && actual == boundary)
@@ -165,7 +166,8 @@ fn wal_path_denials_precede_their_open_and_same_owner_retry_disposes_backing() {
             );
         }
         let observed = discovery
-            .read_wal_artifacts_with_storage(segments(4), 32, &mut storage)
+            .read_wal_artifacts_with_storage(segments(4), uncharged(), &mut storage)
+            .observed()
             .unwrap();
         assert_eq!(observed.len(), 1);
         assert_eq!(observed[0].name(), std::ffi::OsStr::new(name));
@@ -199,7 +201,9 @@ fn unqualified_path_profile_denies_before_address_admission_or_payload() {
     assert!(!discovery.wal_path_storage_is_qualified());
     let before = observer.snapshot().positioned_read_attempts();
     assert!(matches!(
-        discovery.read_wal_artifacts_with_storage(segments(4), 32, &mut storage),
+        discovery
+            .read_wal_artifacts_with_storage(segments(4), uncharged(), &mut storage)
+            .observed(),
         Err(RecoveryDiscoveryAllocationFailure::Discovery(
             RecoveryDiscoveryFailure::Damage(ArtifactDamage::InvalidAddress { .. })
         ))
@@ -240,7 +244,8 @@ fn borrowed_serving_wal_observation_uses_the_live_owner_and_unique_reads() {
     let mut observation = media.bounded_wal_observation(4, 32).unwrap();
     assert_eq!(observation.store_identity(), media.store_identity());
     let failure = observation
-        .read_wal_artifacts_with_storage(segments(4), 32, &mut storage)
+        .read_wal_artifacts_with_storage(segments(4), uncharged(), &mut storage)
+        .observed()
         .unwrap_err();
     assert!(matches!(
         failure,
@@ -255,14 +260,16 @@ fn borrowed_serving_wal_observation_uses_the_live_owner_and_unique_reads() {
     );
     assert_eq!(census.borrow().active, [0; 4]);
     let first = observation
-        .read_wal_artifacts_with_storage(segments(4), 32, &mut storage)
+        .read_wal_artifacts_with_storage(segments(4), uncharged(), &mut storage)
+        .observed()
         .unwrap();
     assert_eq!(first[0].store_identity(), media.store_identity());
     assert_eq!(first[0].bytes(), Some(b"payload".as_slice()));
     let second = media
         .bounded_wal_observation(4, 32)
         .unwrap()
-        .read_wal_artifacts_with_storage(segments(4), 32, &mut storage)
+        .read_wal_artifacts_with_storage(segments(4), uncharged(), &mut storage)
+        .observed()
         .unwrap();
     assert_ne!(
         first[0].observation_identity(),

@@ -223,7 +223,7 @@ fn observe_parts(
         return Err(Denial::RootBinding);
     }
     let root_sha256 = Sha256::digest(&root_bytes).into();
-    // Discovery's overall admission budget is the checkpoint read bound.
+    // The verified claim declares the checkpoint stream's length: its ceiling.
     let checkpoint_bytes = reader.checkpoint(verified_checkpoint.encoded_bytes())?;
     if checkpoint_bytes.len() as u64 != verified_checkpoint.encoded_bytes()
         || checkpoint_stream_encoded_digest(&checkpoint_bytes)

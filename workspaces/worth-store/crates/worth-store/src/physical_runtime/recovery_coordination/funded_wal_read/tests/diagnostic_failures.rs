@@ -45,7 +45,8 @@ fn context_admission_denies_before_copy_and_payload_then_same_owner_retries() {
     drop(held);
     let mut window = coordination.begin_source_read_allocation().unwrap();
     let observed = window
-        .read_wal_payloads(&mut discovery, segments(1), 4096)
+        .read_wal_payloads(&mut discovery, segments(1), ReadGrant::ceiling_only())
+        .map_err(GrantedReadStop::unread)
         .unwrap();
     assert_eq!(observed.artifacts()[0].bytes(), Some(&[17; PAYLOAD][..]));
     drop(observed);
@@ -86,7 +87,8 @@ fn actual_media_read_failure_retains_name_and_cause_until_last_clone() {
     let mut discovery = media.bounded_discovery(4, 4096).unwrap();
     let mut window = coordination.begin_source_read_allocation().unwrap();
     let failure = window
-        .read_wal_payloads(&mut discovery, segments(1), 4096)
+        .read_wal_payloads(&mut discovery, segments(1), ReadGrant::ceiling_only())
+        .map_err(GrantedReadStop::unread)
         .unwrap_err();
     let RecoveryWalReadFailureView::Discovery(RecoveryWalDiscoveryFailureView::Media {
         artifact: RecoveryWalArtifactView::WalArtifact(name),
@@ -112,7 +114,8 @@ fn actual_media_read_failure_retains_name_and_cause_until_last_clone() {
     assert_eq!(clone.diagnostic(), failure.diagnostic());
     drop(failure);
     let observed = window
-        .read_wal_payloads(&mut discovery, segments(1), 4096)
+        .read_wal_payloads(&mut discovery, segments(1), ReadGrant::ceiling_only())
+        .map_err(GrantedReadStop::unread)
         .unwrap();
     assert_eq!(observed.artifacts()[0].bytes(), Some(&[17; PAYLOAD][..]));
     drop(observed);

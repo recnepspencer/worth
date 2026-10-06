@@ -20,7 +20,7 @@ use worth_store_recovery_physics::{
     SelectedTierEpochCustodySource, VerifiedSelectedTierEpochCustody,
 };
 
-use super::super::{SelectedMediaRejoinDenial as Denial, MAX_CHECKPOINT_BYTES};
+use super::super::{claimed_checkpoint, SelectedMediaRejoinDenial as Denial};
 use crate::physical_runtime::CompletedPhysicalRecoveryFreshReopen;
 
 pub(in crate::physical_runtime::recovery_construction::selected_rejoin) struct ObservedTierSelection
@@ -134,7 +134,11 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn obser
         return Err(Denial::RootBinding);
     }
     let checkpoint_bytes = discovery
-        .read_current_checkpoint(MAX_CHECKPOINT_BYTES)
+        .read(
+            claimed_checkpoint(claim.checkpoint().encoded_bytes())?,
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
         .map_err(Denial::Discovery)?
         .into_bytes()
         .ok_or(Denial::MissingCheckpoint)?;

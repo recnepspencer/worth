@@ -47,7 +47,10 @@ fn a_wal_directory_that_is_not_one_is_the_trees_failure() {
         8,
         64,
     );
-    let managed = discovery.read_wal_artifacts(segments(2), 64).unwrap_err();
+    let managed = discovery
+        .read_wal_artifacts(segments(2), uncharged())
+        .observed()
+        .unwrap_err();
     assert!(
         matches!(
             &managed,
@@ -58,13 +61,15 @@ fn a_wal_directory_that_is_not_one_is_the_trees_failure() {
         ),
         "{managed:?}",
     );
-    let allocated = discovery.read_wal_artifacts_with_allocators(
-        segments(2),
-        64,
-        |count| Ok::<_, DeniedAllocation>(Vec::with_capacity(count)),
-        |length| Ok(vec![0; length]),
-        |count| Ok(std::ffi::OsString::with_capacity(count)),
-    );
+    let allocated = discovery
+        .read_wal_artifacts_with_allocators(
+            segments(2),
+            uncharged(),
+            |count| Ok::<_, DeniedAllocation>(Vec::with_capacity(count)),
+            |length| Ok(vec![0; length]),
+            |count| Ok(std::ffi::OsString::with_capacity(count)),
+        )
+        .observed();
     match &allocated {
         Err(RecoveryDiscoveryAllocationFailure::Discovery(failure)) => {
             assert_eq!(

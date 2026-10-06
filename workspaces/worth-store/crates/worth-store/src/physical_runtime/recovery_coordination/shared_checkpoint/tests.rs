@@ -39,7 +39,9 @@ fn shared_checkpoint_clones_hold_actual_backing_and_charge_after_owner_close() {
         actual
     );
     let mut discovery = media.bounded_discovery(1, 4096).unwrap();
-    let absent = discovery.read_current_checkpoint(4096).unwrap();
+    let absent =
+        crate::physical_runtime::recovery_coordination::observe_checkpoint_for_test(&mut discovery)
+            .unwrap();
     let media = discovery.finish();
     coordination.install_absent_checkpoint(absent).unwrap();
     let (owner, ownership) = coordination.into_quiescent_recovery_parts().unwrap();
@@ -193,9 +195,13 @@ fn actual_absence_is_required_and_other_absent_locator_cannot_install_it() {
         coordination.require_observed_checkpoint(),
         Err(Denial::Unobserved)
     );
-    let absent = discovery.read_current_checkpoint(4096).unwrap();
+    let absent =
+        crate::physical_runtime::recovery_coordination::observe_checkpoint_for_test(&mut discovery)
+            .unwrap();
     assert!(absent.bytes().is_none());
-    let repeated = discovery.read_current_checkpoint(4096).unwrap();
+    let repeated =
+        crate::physical_runtime::recovery_coordination::observe_checkpoint_for_test(&mut discovery)
+            .unwrap();
     let media = discovery.finish();
     coordination.install_absent_checkpoint(absent).unwrap();
     assert_eq!(

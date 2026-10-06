@@ -17,9 +17,9 @@ use crate::integrity_ingress::{
 use crate::progression::PhysicalRecoveryDiscoveryCounters;
 
 use super::super::manifest_facts::{observe_manifest_facts, ManifestObservationBudget};
-use super::super::reader_limit::OversizedArtifact;
 use super::super::recovery_budget::RecoveryAllowance;
 use super::super::ManifestFactsDiscovery;
+use super::OversizedArtifact;
 use super::{unread, BootstrapDiscovery, CheckpointDiscovery, DiscoveryFailure, WalDiscovery};
 
 mod checkpoint;

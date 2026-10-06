@@ -71,6 +71,57 @@ impl<D: LimitDimension> ReadGrant<D> {
     }
 }
 
+/// One grant as the reads that share it spend it, such as the files of one
+/// WAL inventory: each is asked for no more than is left, and one past it is
+/// refused with what the reads before it took plus its own real length.
+#[derive(Debug)]
+pub(crate) struct GrantShare<'grant, D: LimitDimension> {
+    grant: &'grant ReadGrant<D>,
+    spent: u64,
+}
+
+/// What the reads sharing one grant took, with the next read's length, went
+/// past every count.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct SharePastEveryCount;
+
+impl<'grant, D: LimitDimension> GrantShare<'grant, D> {
+    /// The whole grant, for the reads that share it.
+    pub(crate) const fn of(grant: &'grant ReadGrant<D>) -> Self {
+        Self { grant, spent: 0 }
+    }
+
+    /// What is left of the grant; `None` where no caller budgets the reads.
+    pub(crate) fn left(&self) -> Option<u64> {
+        self.grant.bytes().map(|granted| granted - self.spent)
+    }
+
+    /// The next read's real `length` passed what is left: the overrun counts
+    /// from the grant's first byte.
+    pub(crate) fn overrun(
+        &self,
+        length: u64,
+    ) -> Result<Option<GrantOverrun<D>>, SharePastEveryCount> {
+        if self.grant.bound.is_none() {
+            return Ok(None);
+        }
+        let through = self.spent.checked_add(length).ok_or(SharePastEveryCount)?;
+        Ok(self.grant.overrun(through))
+    }
+
+    /// Spends what a read returned, which was no more than was left. A read
+    /// no caller budgets spends nothing.
+    pub(crate) fn spend(&mut self, bytes: u64) {
+        if let Some(left) = self.left() {
+            assert!(
+                bytes <= left,
+                "a read returns no more than is left of its grant"
+            );
+            self.spent += bytes;
+        }
+    }
+}
+
 /// A read whose real length passed what its grant allowed. Only a grant can
 /// produce one, so an `Uncharged` read never does.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

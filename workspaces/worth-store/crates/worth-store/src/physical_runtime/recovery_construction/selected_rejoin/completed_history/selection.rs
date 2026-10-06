@@ -14,7 +14,9 @@ use worth_store_physical_format::{
 use worth_store_recovery_physics::VerifiedOrderedHistoricalReleaseCustody;
 
 use super::super::resident::StoreRejoinResidentLedger;
-use super::super::{tier, SelectedMediaRejoinDenial as Denial, MAX_CHECKPOINT_BYTES};
+use super::super::{
+    claimed_checkpoint, tier, SelectedMediaRejoinDenial as Denial, MAX_CHECKPOINT_BYTES,
+};
 use crate::physical_runtime::{
     CompletedPhysicalRecoveryFreshReopen, FundedRecoveryObservation, PhysicalRecoveryReadAllocation,
 };
@@ -152,7 +154,10 @@ pub(super) fn observe(
         return Err(Denial::RootBinding);
     }
     let checkpoint = window
-        .read_checkpoint(discovery, MAX_CHECKPOINT_BYTES)
+        .read_record(
+            discovery,
+            claimed_checkpoint(claim.checkpoint().encoded_bytes())?,
+        )
         .map_err(read_denial)?;
     resident
         .retain(checkpoint.owned_heap_bytes().ok_or(Denial::BoundExceeded)?)

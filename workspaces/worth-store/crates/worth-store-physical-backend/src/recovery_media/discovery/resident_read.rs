@@ -3,19 +3,16 @@ use worth_store_physical_format::{
     ExtentArenaRange, RecordArtifactFile, EXTENT_ARENA_MANIFEST_FRAME_BYTES,
 };
 
-use crate::filesystem_media::{
-    ArtifactTreeAllocatedReadFailure, ArtifactTreeDirectory, ArtifactTreeFailureKind,
-    ArtifactTreeFile, ArtifactTreeMedia,
-};
+use crate::filesystem_media::ArtifactTreeAllocatedReadFailure;
 
 use super::super::ceiling::{ArtifactCeiling, CeilingExtent};
-use super::super::grant::ReadGrant;
+use super::super::grant::{GrantShare, ReadGrant};
 use super::super::refusal::{AllocatedReadFailure, AllocatedReadOutcome, ArtifactDamage};
 use super::addressed_payload::extent_offset;
+use super::artifact::ceiling_artifact;
 use super::charged_read::{outcome, ReadStop, TreeReadFailure};
 use super::{
-    record_artifact, FilesystemObservation, ObservedRecoveryArtifact, RecoveryDiscoveryArtifact,
-    RecoveryDiscoveryFailure,
+    record_artifact, FilesystemObservation, RecoveryDiscoveryArtifact, RecoveryDiscoveryFailure,
 };
 
 /// What a read into a caller's buffer met, stated as the observation's result.
@@ -51,15 +48,15 @@ impl<M: super::DiscoveryMediaBacking> FilesystemObservation<M> {
         grant: ReadGrant<D>,
         allocate: impl FnOnce(usize) -> Result<Vec<u8>, E>,
     ) -> AllocatedReadOutcome<D, E> {
-        let file = ceiling.file();
-        let context = RecoveryDiscoveryArtifact::Record(file);
-        let artifact = match record_artifact(file) {
+        let context = ceiling.artifact();
+        let artifact = match ceiling_artifact(ceiling.address()) {
             Ok(artifact) => artifact,
             Err(failure) => return outcome(Err(ReadStop::stop(failure))),
         };
         let caller = context.clone();
         outcome(match ceiling.extent() {
             CeilingExtent::Whole { bytes, fixed } => {
+                let grant = GrantShare::of(&grant);
                 self.read_whole_charged(context, bytes, fixed, &grant, |attempt, limit| {
                     attempt
                         .open()
@@ -134,82 +131,6 @@ impl<M: super::DiscoveryMediaBacking> FilesystemObservation<M> {
                     .map_err(|failure| allocated(failure, &caller, offset))
             }),
         )
-    }
-
-    pub fn read_current_checkpoint_with_allocator<E>(
-        &mut self,
-        byte_limit: u64,
-        allocate: impl FnOnce(usize) -> Result<Vec<u8>, E>,
-    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryAllocationFailure<E>> {
-        let context = RecoveryDiscoveryArtifact::CurrentCheckpoint;
-        let artifact = ArtifactTreeDirectory::families()
-            .file("checkpoint.current")
-            .map_err(|_| RecoveryDiscoveryFailure::invalid(context.clone()))?;
-        self.read_whole(artifact, context, byte_limit, false, allocate)
-    }
-
-    pub(super) fn read_whole<E>(
-        &mut self,
-        artifact: ArtifactTreeFile,
-        context: RecoveryDiscoveryArtifact,
-        byte_limit: u64,
-        fixed: bool,
-        allocate: impl FnOnce(usize) -> Result<Vec<u8>, E>,
-    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryAllocationFailure<E>> {
-        self.read_whole_with(context, byte_limit, fixed, |tree, limit| {
-            tree.read_bounded_with_allocator(&artifact, limit, allocate)
-        })
-    }
-
-    /// The stream readers' engine (checkpoint and WAL), until they take a
-    /// ceiling.
-    pub(super) fn read_whole_with<E>(
-        &mut self,
-        context: RecoveryDiscoveryArtifact,
-        byte_limit: u64,
-        fixed: bool,
-        read: impl FnOnce(
-            ArtifactTreeMedia<'_>,
-            u64,
-        ) -> Result<Vec<u8>, ArtifactTreeAllocatedReadFailure<E>>,
-    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryAllocationFailure<E>> {
-        let effective_byte_limit = byte_limit.min(self.remaining_bytes);
-        self.admit_read()?;
-        self.remaining_entries -= 1;
-        match read(self.parts.artifact_tree(), effective_byte_limit) {
-            Ok(bytes) => {
-                self.spend_read_bytes(bytes.len() as u64)?;
-                if !fixed {
-                    self.counters.addressed_artifacts_read += 1;
-                }
-                Ok(ObservedRecoveryArtifact::new(
-                    self.parts.store_identity(),
-                    context,
-                    0,
-                    Some(bytes),
-                ))
-            }
-            Err(ArtifactTreeAllocatedReadFailure::Media(failure))
-                if failure.kind() == ArtifactTreeFailureKind::Absent =>
-            {
-                Ok(ObservedRecoveryArtifact::new(
-                    self.parts.store_identity(),
-                    context,
-                    0,
-                    None,
-                ))
-            }
-            Err(failure) => Err(match &failure {
-                ArtifactTreeAllocatedReadFailure::Media(media) => {
-                    self.whole_read_refused(media, byte_limit, effective_byte_limit)
-                }
-                _ => None,
-            }
-            .map_or_else(
-                || map_allocated_failure(failure, context, 0),
-                RecoveryDiscoveryAllocationFailure::Discovery,
-            )),
-        }
     }
 }
 

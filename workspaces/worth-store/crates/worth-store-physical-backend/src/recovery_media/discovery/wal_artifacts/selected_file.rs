@@ -1,107 +1,75 @@
-//! Exact selected lengths gate payload allocation at the ordinary metadata boundary.
+//! One WAL member read within its ceiling and what is left of the
+//! inventory's grant. A selected member's declared length is its ceiling, and
+//! gates payload allocation at the ordinary metadata boundary.
 
+use super::super::super::ceiling::CeilingBytes;
+use super::super::resident_read::allocated;
 use super::super::selected_wal::{SelectedReadDenial, SelectedReadStorage};
-use super::super::FilesystemObservationBound;
 use super::*;
-use crate::filesystem_media::{
-    ArtifactTreeAllocatedReadFailure, ArtifactTreeFailureKind, ArtifactTreeFile,
-};
+use crate::filesystem_media::{ArtifactTreeFile, ArtifactTreeReadAllocator};
 
 impl<M: super::super::DiscoveryMediaBacking> FilesystemObservation<M> {
-    pub(super) fn read_wal_artifact_with_storage<S: RecoveryWalReadStorage>(
+    /// Reads one WAL file. A file longer than `expected` is damage with its
+    /// real length; one shorter is a mismatch with the selection.
+    pub(super) fn read_wal_member<D: LimitDimension, S: RecoveryWalReadStorage>(
         &mut self,
         file: ArtifactTreeBackedPath<ArtifactTreeFile, S::PathBacking>,
         context: RecoveryDiscoveryArtifact,
-        remaining_wal_bytes: u64,
-        byte_limit: u64,
+        share: &GrantShare<'_, D>,
         native: bool,
         expected: Option<u64>,
         storage: &mut S,
-    ) -> Result<Outcome<Option<Vec<u8>>>, RecoveryDiscoveryAllocationFailure<S::Denial>> {
+    ) -> Result<Outcome<Option<Vec<u8>>>, InventoryStop<D, S::Denial>> {
         let mut allocator = SelectedReadStorage { storage, expected };
-        let read_limit = expected.map_or(remaining_wal_bytes, |length| {
-            length.min(remaining_wal_bytes)
-        });
-        let result = self.read_whole_with(context, read_limit, false, |tree, limit| {
+        let ceiling = expected.map_or(CeilingBytes::Undeclared, CeilingBytes::Declared);
+        let caller = context.clone();
+        let read = self.read_whole_charged(context, ceiling, false, share, |attempt, limit| {
+            let tree = attempt.open();
             let result = if native {
                 tree.read_backed_bounded_with_allocator(file, limit, &mut allocator)
             } else {
                 let result = tree.read_bounded_with_allocator(file.get(), limit, |length| {
-                    crate::filesystem_media::ArtifactTreeReadAllocator::allocate_read_buffer(
-                        &mut allocator,
-                        length,
-                    )
+                    allocator.allocate_read_buffer(length)
                 });
                 drop(file);
                 result
             };
-            // A larger selected file fails before the allocator is invoked. Do
-            // not reinterpret a tighter independent observation budget as drift.
-            match result {
-                Err(ArtifactTreeAllocatedReadFailure::Media(failure))
-                    if expected == Some(limit)
-                        && failure.kind() == ArtifactTreeFailureKind::AccessLimitExceeded =>
-                {
-                    let observed = failure
-                        .access_limit()
-                        .map_or(limit.saturating_add(1), |bound| bound.observed);
-                    Err(ArtifactTreeAllocatedReadFailure::Allocation {
-                        requested: 0,
-                        cause: SelectedReadDenial::Length(
-                            RecoveryWalSelectionMismatch::FileLength {
-                                expected: limit,
-                                observed,
-                            },
-                        ),
-                    })
-                }
-                result => result,
-            }
+            result.map_err(|failure| allocated(failure, &caller, 0))
         });
-        match result {
+        match read {
             Ok(artifact) => Ok(Outcome::Observed(artifact.into_bytes())),
-            Err(RecoveryDiscoveryAllocationFailure::Allocation {
+            Err(ReadStop::Failed(AllocatedReadFailure::Allocation {
                 cause: SelectedReadDenial::Length(mismatch),
                 ..
-            }) => Ok(Outcome::Mismatch(mismatch)),
-            Err(RecoveryDiscoveryAllocationFailure::Allocation {
+            })) => Ok(Outcome::Mismatch(mismatch)),
+            Err(ReadStop::Failed(AllocatedReadFailure::Allocation {
                 artifact,
                 offset,
                 requested,
                 cause: SelectedReadDenial::Storage(cause),
-            }) => Err(RecoveryDiscoveryAllocationFailure::Allocation {
+            })) => Err(ReadStop::Failed(AllocatedReadFailure::Allocation {
                 artifact,
                 offset,
                 requested,
                 cause,
-            }),
-            Err(RecoveryDiscoveryAllocationFailure::BufferLengthMismatch {
+            })),
+            Err(ReadStop::Failed(AllocatedReadFailure::BufferLengthMismatch {
                 artifact,
                 offset,
                 requested,
                 observed,
-            }) => Err(RecoveryDiscoveryAllocationFailure::BufferLengthMismatch {
-                artifact,
-                offset,
-                requested,
-                observed,
-            }),
-            // The read was asked for what this inventory had left; the
-            // inventory's ceiling also holds what earlier reads took.
-            Err(RecoveryDiscoveryAllocationFailure::Discovery(
-                RecoveryDiscoveryFailure::Limit(past),
-            )) if past.dimension() == FilesystemObservationBound::RequestedBytes => {
-                Err(FilesystemObservationAllowance::held_beside(
-                    past,
-                    byte_limit.saturating_sub(remaining_wal_bytes),
-                )
-                .map_or(
-                    RecoveryDiscoveryFailure::overflow(RecoveryDiscoveryCount::WalBytesRead),
-                    RecoveryDiscoveryFailure::Limit,
-                )
-                .into())
+            })) => Err(ReadStop::Failed(
+                AllocatedReadFailure::BufferLengthMismatch {
+                    artifact,
+                    offset,
+                    requested,
+                    observed,
+                },
+            )),
+            Err(ReadStop::Failed(AllocatedReadFailure::Damage(damage))) => {
+                Err(ReadStop::damage(damage))
             }
-            Err(RecoveryDiscoveryAllocationFailure::Discovery(failure)) => Err(failure.into()),
+            Err(ReadStop::Refused(refusal)) => Err(ReadStop::Refused(refusal)),
         }
     }
 }

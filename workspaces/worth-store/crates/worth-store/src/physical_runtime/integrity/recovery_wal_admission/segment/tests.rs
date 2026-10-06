@@ -9,6 +9,7 @@ use std::{alloc::Layout, num::NonZeroU64, sync::atomic::AtomicUsize};
 use worth_store_buffer_pool::{
     PhysicalOperationAllocationScope as Scope, PhysicalResidencyDimension as Dimension,
 };
+use worth_store_physical_backend::{ReadGrant, UnchargedRead};
 use worth_store_physical_format::wal_frame::{encode_wal_frame_v1, WalFrameV1EncodeRequest};
 use worth_store_physical_integrity::{
     validate_wal_frame_prefix, UntrustedPhysicalArtifact, WalFrameIntegrityValidation,
@@ -43,7 +44,10 @@ fn fixture() -> (
     let (media, coordination) =
         super::super::media_generation_tests::recovery_media_and_coordination(&root);
     let mut discovery = media.bounded_discovery(1, 4096).unwrap();
-    let observed = discovery.read_wal_artifacts(NonZeroU64::MIN, 4096).unwrap();
+    let observed = discovery
+        .read_wal_artifacts(NonZeroU64::MIN, ReadGrant::ceiling_only())
+        .observed()
+        .unwrap();
     (directory, discovery.finish(), coordination, observed)
 }
 

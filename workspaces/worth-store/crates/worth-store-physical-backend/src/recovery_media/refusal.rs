@@ -130,6 +130,16 @@ pub enum GrantedReadStop<D: LimitDimension, F> {
     Unread(F),
 }
 
+impl<F> GrantedReadStop<Uncharged, F> {
+    /// What a read no caller budgets met: it never passes a grant.
+    pub fn unread(self) -> F {
+        match self {
+            Self::PastGrant(overrun) => overrun.impossible(),
+            Self::Unread(failure) => failure,
+        }
+    }
+}
+
 /// A read a caller budgets, stated as the observation's result with the
 /// grant's overrun set apart for the grant's owner.
 pub trait GrantedRead {

@@ -52,7 +52,9 @@ fn moved_recovery_owner_matches_heads_despite_distinct_serving_observer_generati
     drop(window);
 
     let mut discovery = media.bounded_discovery(1, 4096).unwrap();
-    let absent = discovery.read_current_checkpoint(4096).unwrap();
+    let absent =
+        crate::physical_runtime::recovery_coordination::observe_checkpoint_for_test(&mut discovery)
+            .unwrap();
     let _media = discovery.finish();
     coordination.install_absent_checkpoint(absent).unwrap();
     let (owner, ownership) = coordination.into_quiescent_recovery_parts().unwrap();

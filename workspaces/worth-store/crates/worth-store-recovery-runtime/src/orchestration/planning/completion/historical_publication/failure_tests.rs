@@ -145,7 +145,7 @@ fn a_record_that_could_not_be_read_is_a_limit_only_where_its_reader_met_one() {
             reader_out_of_bytes(),
         ),
         (
-            Denial::ManifestRead(outgrown(FilesystemObservationBound::RequestedBytes)),
+            Denial::ManifestRead(outgrown(FilesystemObservationBound::Reads)),
             HistoricalFailure::Invalid,
         ),
         (Denial::InvalidPayload, HistoricalFailure::Invalid),

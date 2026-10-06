@@ -56,21 +56,15 @@ pub(super) struct WalDiscoveryInventoryDenial {
     pub inventory: WalDiscoveryInventory,
 }
 
+/// Classifies the WAL files `observed` read, which returned `observed_bytes`
+/// in all: what recovery's WAL-bytes budget charged for them.
 pub(super) fn discover_wal_inventory(
     owner: &worth_store::physical_runtime::PhysicalRecoveryCoordination,
     observed: &[ObservedWalArtifact],
+    observed_bytes: u64,
     store: StableStoreIdentity,
     maximum_frames: u64,
 ) -> Result<WalDiscoveryInventory, WalDiscoveryInventoryDenial> {
-    let observed_bytes = observed
-        .iter()
-        .try_fold(0_u64, |total, artifact| {
-            total.checked_add(artifact.bytes().map_or(0, |bytes| bytes.len() as u64))
-        })
-        .ok_or_else(|| WalDiscoveryInventoryDenial {
-            kind: WalDiscoveryInventoryDenialKind::CounterOverflow,
-            inventory: WalDiscoveryInventory::new(0, 0, Vec::new()),
-        })?;
     let (mut canonical, mut residue) =
         partition_entries(owner, observed).map_err(|cause| WalDiscoveryInventoryDenial {
             kind: WalDiscoveryInventoryDenialKind::InventoryAllocation {

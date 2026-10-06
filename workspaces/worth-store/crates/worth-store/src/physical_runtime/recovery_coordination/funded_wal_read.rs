@@ -2,10 +2,11 @@
 
 use std::num::NonZeroU64;
 
+use worth_foundational::LimitDimension;
 use worth_store_buffer_pool::OperationAllocationGrant;
-use worth_store_physical_backend::{BoundedRecoveryFilesystemDiscovery, ObservedWalArtifact};
 use worth_store_physical_backend::{
-    RecoverySelectedWalReadOutcome as Outcome, RecoveryWalReadSelection,
+    BoundedRecoveryFilesystemDiscovery, GrantedRead, GrantedReadStop, ObservedWalArtifact,
+    ReadGrant, RecoverySelectedWalReadOutcome as Outcome, RecoveryWalReadSelection,
 };
 
 use super::{PhysicalRecoveryObservationAllocationDenial, PhysicalRecoveryReadAllocation};
@@ -52,122 +53,118 @@ impl FundedRecoveryWalObservations {
     }
 }
 
+/// What stopped a funded WAL read: the caller's grant, whose owner states it
+/// as its own limit, or what an uncharged read would have met.
+pub type FundedWalReadStop<D> = GrantedReadStop<D, FundedRecoveryWalReadFailure>;
+
 impl PhysicalRecoveryReadAllocation<'_> {
     /// Admit the result roster before reserving its storage, then each known
-    /// file length before constructing or reading its buffer. The cumulative
-    /// charge survives this temporary Coordination borrow with the result.
-    pub fn read_wal_payloads(
+    /// file length before constructing or reading its buffer. The files share
+    /// `grant`. The cumulative charge survives this temporary Coordination
+    /// borrow with the result.
+    pub fn read_wal_payloads<D: LimitDimension>(
         &mut self,
         discovery: &mut BoundedRecoveryFilesystemDiscovery,
         maximum_segments: NonZeroU64,
-        byte_limit: u64,
-    ) -> Result<FundedRecoveryWalObservations, FundedRecoveryWalReadFailure> {
-        self.read_wal_source(
-            source::WalReadSource::Recovery(discovery),
-            maximum_segments,
-            byte_limit,
-        )
-    }
-
-    #[cfg(test)]
-    pub(in crate::physical_runtime) fn read_serving_wal_payloads(
-        &mut self,
-        media: &worth_store_physical_backend::QualifiedFilesystemMedia,
-        maximum_segments: NonZeroU64,
-        byte_limit: u64,
-    ) -> Result<FundedRecoveryWalObservations, FundedRecoveryWalReadFailure> {
-        let observation = media
-            .bounded_wal_observation(maximum_segments.get(), byte_limit)
-            .map_err(|cause| {
-                FundedRecoveryWalReadFailure::inline(
-                    0,
-                    PhysicalRecoveryObservationAllocationDenial::WalObservationUnavailable(cause),
-                )
-            })?;
-        self.read_wal_source(
-            source::WalReadSource::Serving(observation),
-            maximum_segments,
-            byte_limit,
-        )
-    }
-
-    fn read_wal_source(
-        &self,
-        discovery: source::WalReadSource<'_, '_>,
-        maximum_segments: NonZeroU64,
-        byte_limit: u64,
-    ) -> Result<FundedRecoveryWalObservations, FundedRecoveryWalReadFailure> {
-        match self.read_wal_source_with_selection(discovery, maximum_segments, byte_limit, None)? {
+        grant: ReadGrant<D>,
+    ) -> Result<FundedRecoveryWalObservations, FundedWalReadStop<D>> {
+        let source = source::WalReadSource::Recovery(discovery);
+        match self.read_wal_source(source, maximum_segments, grant, None)? {
             Outcome::Observed(observed) => Ok(observed),
             Outcome::Mismatch(_) => unreachable!("unconstrained reads have no selected inventory"),
         }
     }
 
+    /// A Serving observation of `observation_bytes`, which no caller budgets.
+    #[cfg(test)]
+    pub(in crate::physical_runtime) fn read_serving_wal_payloads(
+        &mut self,
+        media: &worth_store_physical_backend::QualifiedFilesystemMedia,
+        maximum_segments: NonZeroU64,
+        observation_bytes: u64,
+    ) -> Result<FundedRecoveryWalObservations, FundedRecoveryWalReadFailure> {
+        let source = serving_source(media, maximum_segments, observation_bytes)?;
+        let read = self.read_wal_source(source, maximum_segments, ReadGrant::ceiling_only(), None);
+        match read.map_err(GrantedReadStop::unread)? {
+            Outcome::Observed(observed) => Ok(observed),
+            Outcome::Mismatch(_) => unreachable!("unconstrained reads have no selected inventory"),
+        }
+    }
+
+    /// The inventory `selection` declares, in a Serving observation of
+    /// `observation_bytes`: each member's declared length is its ceiling.
     pub(in crate::physical_runtime) fn read_selected_serving_wal_payloads(
         &mut self,
         media: &worth_store_physical_backend::QualifiedFilesystemMedia,
         maximum_segments: NonZeroU64,
-        byte_limit: u64,
+        observation_bytes: u64,
         selection: &dyn RecoveryWalReadSelection,
     ) -> Result<Outcome<FundedRecoveryWalObservations>, FundedRecoveryWalReadFailure> {
-        let observation = media
-            .bounded_wal_observation(maximum_segments.get(), byte_limit)
-            .map_err(|cause| {
-                FundedRecoveryWalReadFailure::inline(
-                    0,
-                    PhysicalRecoveryObservationAllocationDenial::WalObservationUnavailable(cause),
-                )
-            })?;
-        self.read_wal_source_with_selection(
-            source::WalReadSource::Serving(observation),
-            maximum_segments,
-            byte_limit,
-            Some(selection),
-        )
+        let source = serving_source(media, maximum_segments, observation_bytes)?;
+        let grant = ReadGrant::ceiling_only();
+        self.read_wal_source(source, maximum_segments, grant, Some(selection))
+            .map_err(GrantedReadStop::unread)
     }
 
-    fn read_wal_source_with_selection(
+    fn read_wal_source<D: LimitDimension>(
         &self,
         mut discovery: source::WalReadSource<'_, '_>,
         maximum_segments: NonZeroU64,
-        byte_limit: u64,
+        grant: ReadGrant<D>,
         selection: Option<&dyn RecoveryWalReadSelection>,
-    ) -> Result<Outcome<FundedRecoveryWalObservations>, FundedRecoveryWalReadFailure> {
+    ) -> Result<Outcome<FundedRecoveryWalObservations>, FundedWalReadStop<D>> {
         use PhysicalRecoveryObservationAllocationDenial as Denial;
+        let refused =
+            |cause| GrantedReadStop::Unread(FundedRecoveryWalReadFailure::inline(0, cause));
         if discovery.store_identity() != self.store_identity() {
-            return Err(FundedRecoveryWalReadFailure::inline(
-                0,
-                Denial::StoreMismatch,
-            ));
+            return Err(refused(Denial::StoreMismatch));
         }
         if !discovery.listing_is_qualified() {
-            return Err(FundedRecoveryWalReadFailure::inline(
-                0,
-                Denial::UnqualifiedListingStorage,
-            ));
+            return Err(refused(Denial::UnqualifiedListingStorage));
         }
         if !discovery.path_is_qualified() {
-            return Err(FundedRecoveryWalReadFailure::inline(
-                0,
-                Denial::UnqualifiedPathStorage,
-            ));
+            return Err(refused(Denial::UnqualifiedPathStorage));
         }
-        let mut storage = storage::NativeWalReadStorage::prepare(self, byte_limit)?;
-        match discovery.read(maximum_segments, byte_limit, &mut storage, selection) {
+        let mut storage =
+            storage::NativeWalReadStorage::prepare(self).map_err(GrantedReadStop::Unread)?;
+        match discovery
+            .read(maximum_segments, grant, &mut storage, selection)
+            .granted()
+        {
             Ok(Outcome::Observed(artifacts)) => {
                 Ok(Outcome::Observed(storage.finish_observations(artifacts)))
             }
             Ok(Outcome::Mismatch(mismatch)) => Ok(Outcome::Mismatch(mismatch)),
-            Err(failure) => Err(storage.finish_failure(failure)),
+            // The grant's refusal holds no artifact: every buffer has unwound.
+            Err(GrantedReadStop::PastGrant(overrun)) => Err(GrantedReadStop::PastGrant(overrun)),
+            Err(GrantedReadStop::Unread(failure)) => {
+                Err(GrantedReadStop::Unread(storage.finish_failure(failure)))
+            }
         }
     }
+}
+
+/// A Serving WAL observation of `observation_bytes`.
+fn serving_source<'media>(
+    media: &'media worth_store_physical_backend::QualifiedFilesystemMedia,
+    maximum_segments: NonZeroU64,
+    observation_bytes: u64,
+) -> Result<source::WalReadSource<'static, 'media>, FundedRecoveryWalReadFailure> {
+    let observation = media
+        .bounded_wal_observation(maximum_segments.get(), observation_bytes)
+        .map_err(|cause| {
+            FundedRecoveryWalReadFailure::inline(
+                0,
+                PhysicalRecoveryObservationAllocationDenial::WalObservationUnavailable(cause),
+            )
+        })?;
+    Ok(source::WalReadSource::Serving(observation))
 }
 
 struct WalObservationBacking<'window, 'coordination> {
     window: &'window PhysicalRecoveryReadAllocation<'coordination>,
     backing: Option<OperationAllocationGrant>,
     retained: u64,
-    byte_limit: u64,
 }
 
 impl WalObservationBacking<'_, '_> {
@@ -188,7 +185,7 @@ impl WalObservationBacking<'_, '_> {
         use PhysicalRecoveryObservationAllocationDenial as Denial;
         let overflow = || {
             Denial::Residency(PhysicalRecoveryRejoinResidentDenial::SizeOverflow {
-                admitted: self.byte_limit,
+                admitted: self.window.recovery_byte_limit(),
             })
         };
         let requested = count

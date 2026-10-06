@@ -13,7 +13,7 @@ use crate::entry::{
 };
 use crate::orchestration::discovery::source_memory::stopped;
 use crate::orchestration::discovery::DiscoveryFailure;
-use crate::orchestration::reader_limit::OversizedArtifact;
+use crate::orchestration::discovery::OversizedArtifact;
 
 pub(in super::super) fn window_admission_failure(
     limits: &PhysicalRecoveryLimitDeclaration,

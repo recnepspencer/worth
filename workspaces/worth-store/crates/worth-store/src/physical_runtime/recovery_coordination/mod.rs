@@ -43,12 +43,14 @@ pub use effect::{
 pub(in crate::physical_runtime::recovery_coordination) use effect::{
     RecoveryCleanupRemovalBinding, RecoveryCleanupRemovalSettlement, RecoveryCleanupRemovalTarget,
 };
+#[cfg(test)]
+pub(in crate::physical_runtime) use funded_observation::observe_checkpoint_for_test;
 pub use funded_observation::{
     FundedReadOutcome, FundedRecoveryObservation, PhysicalRecoveryObservationAllocationDenial,
 };
 pub use funded_wal_read::{
-    FundedRecoveryWalObservations, FundedRecoveryWalReadFailure, RecoveryWalArtifactView,
-    RecoveryWalDiscoveryFailureView, RecoveryWalReadFailureView,
+    FundedRecoveryWalObservations, FundedRecoveryWalReadFailure, FundedWalReadStop,
+    RecoveryWalArtifactView, RecoveryWalDiscoveryFailureView, RecoveryWalReadFailureView,
 };
 pub use owner::{
     PhysicalRecoveryCoordination, PhysicalRecoveryCoordinationAdmissionError,

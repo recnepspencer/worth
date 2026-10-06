@@ -6,14 +6,12 @@ use crate::entry::{
     PhysicalRecoverySourceReadAllocationDenial as Cause,
 };
 use crate::orchestration::discovery::source_memory::{source_allocation, stopped};
-use crate::orchestration::discovery::{refused_beside, refused_read, DiscoveryFailure};
-use crate::orchestration::reader_limit::{OversizedArtifact, ReadCeiling};
+use crate::orchestration::discovery::{observation_refused, refused_beside, DiscoveryFailure};
 use crate::orchestration::recovery_budget::RecoveryAllowance;
 use worth_store::physical_runtime::{
     FilesystemObservationBound, FundedRecoveryWalReadFailure,
     PhysicalRecoveryRejoinResidentAdmissionDenial, RecoveryDiscoveryArtifact,
-    RecoveryDiscoveryFailure, RecoveryWalAllocationDenial, RecoveryWalDiscoveryFailureView,
-    RecoveryWalReadFailureView,
+    RecoveryWalAllocationDenial, RecoveryWalDiscoveryFailureView, RecoveryWalReadFailureView,
 };
 
 pub(super) fn window_admission_failure(
@@ -32,9 +30,8 @@ pub(super) fn window_admission_failure(
 pub(super) fn map_read_failure(
     limits: &PhysicalRecoveryLimitDeclaration,
     failure: FundedRecoveryWalReadFailure,
-    wal_bytes: ReadCeiling,
 ) -> DiscoveryFailure {
-    let mut mapped = classify_read_failure(limits, failure.diagnostic(), wal_bytes);
+    let mut mapped = classify_read_failure(limits, failure.diagnostic());
     mapped
         .source_denials
         .push(PhysicalRecoverySourceDenial::WalRead { failure });
@@ -44,7 +41,6 @@ pub(super) fn map_read_failure(
 fn classify_read_failure(
     limits: &PhysicalRecoveryLimitDeclaration,
     view: RecoveryWalReadFailureView<'_>,
-    wal_bytes: ReadCeiling,
 ) -> DiscoveryFailure {
     match view {
         // The listing counts the segments it found against those it was
@@ -60,18 +56,11 @@ fn classify_read_failure(
             )
         }
         RecoveryWalReadFailureView::Discovery(RecoveryWalDiscoveryFailureView::Limit(past)) => {
-            let refused = RecoveryDiscoveryFailure::Limit(past);
-            let wal = PhysicalRecoveryLimitDimension::WalBytes;
-            match refused_read(refused, wal_bytes, limits, wal) {
-                Err(limit) => limit,
-                // No WAL file has a ceiling of its own to pass.
-                Ok(OversizedArtifact) => {
-                    DiscoveryFailure::from(PhysicalRecoveryBlockKind::MediaObservation)
-                }
-            }
+            observation_refused(past, limits)
         }
         // A count past every count is no limit: the media observation stops.
-        // T2b: a WAL file past its declared length is that file's damage.
+        // A complete inventory declares no file's length, so none passes a
+        // ceiling of its own.
         RecoveryWalReadFailureView::Discovery(
             RecoveryWalDiscoveryFailureView::PastCeiling { .. }
             | RecoveryWalDiscoveryFailureView::Media { .. }
@@ -149,7 +138,7 @@ mod tests {
         let past = filesystem_observation_limit_for_test(bound, observed, admitted);
         let view =
             RecoveryWalReadFailureView::Discovery(RecoveryWalDiscoveryFailureView::Limit(past));
-        let failure = classify_read_failure(limits, view, ReadCeiling::of_budget_alone(8, 8));
+        let failure = classify_read_failure(limits, view);
         assert_eq!(
             failure.cause.phase(),
             PhysicalRecoveryBlockKind::MediaObservation
@@ -167,14 +156,10 @@ mod tests {
 
     #[test]
     fn each_wal_refusal_names_its_own_limit_with_both_counts() {
-        use FilesystemObservationBound::{Entries, ObservationBytes as Observed, RequestedBytes};
-        use PhysicalRecoveryLimitDimension::{ObservationBytes, WalBytes, WalSegments};
+        use FilesystemObservationBound::{Entries, ObservationBytes as Observed};
+        use PhysicalRecoveryLimitDimension::{ObservationBytes, WalSegments};
         let limits = declared(2);
         assert_eq!(classified(&limits, Entries, 3, 2), limit(WalSegments, 3, 2));
-        assert_eq!(
-            classified(&limits, RequestedBytes, 10, 8),
-            limit(WalBytes, 10, 8)
-        );
         assert_eq!(
             classified(&limits, Observed, 10, 9),
             limit(ObservationBytes, 10, 9)
@@ -193,10 +178,31 @@ mod tests {
         let view = RecoveryWalReadFailureView::Discovery(
             RecoveryWalDiscoveryFailureView::CountOverflow(RecoveryDiscoveryCount::WalBytesRead),
         );
-        let failure = classify_read_failure(&declared(2), view, ReadCeiling::of_budget_alone(8, 8));
+        let failure = classify_read_failure(&declared(2), view);
         assert_eq!(
             failure.cause,
             PhysicalRecoveryBlockCause::Damage(PhysicalRecoveryBlockKind::MediaObservation)
         );
+    }
+
+    /// A WAL member one byte longer than its declared length is that member's
+    /// damage, even where recovery's WAL bytes would not admit it either: a
+    /// length past its fact is never the WAL-bytes limit.
+    #[test]
+    fn a_wal_member_past_its_declared_length_is_damage_not_wal_bytes() {
+        let view =
+            RecoveryWalReadFailureView::Discovery(RecoveryWalDiscoveryFailureView::PastCeiling {
+                artifact: worth_store::physical_runtime::RecoveryWalArtifactView::WalArtifact(
+                    std::ffi::OsStr::new("segment-1-generation-1.wal"),
+                ),
+                length: 9,
+                ceiling: 8,
+            });
+        let failure = classify_read_failure(&declared(2), view);
+        assert_eq!(
+            failure.cause,
+            PhysicalRecoveryBlockCause::Damage(PhysicalRecoveryBlockKind::MediaObservation)
+        );
+        assert_eq!(failure.cause.limit(), None);
     }
 }

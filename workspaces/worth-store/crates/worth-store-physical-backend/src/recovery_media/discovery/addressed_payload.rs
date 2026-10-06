@@ -4,8 +4,9 @@ use worth_store_physical_format::{
 };
 
 use super::super::ceiling::{ArtifactCeiling, CeilingExtent};
-use super::super::grant::ReadGrant;
+use super::super::grant::{GrantShare, ReadGrant};
 use super::super::refusal::{ArtifactDamage, ArtifactReadOutcome};
+use super::artifact::ceiling_artifact;
 use super::charged_read::{outcome, ReadStop, TreeReadFailure};
 use super::{record_artifact, BoundedRecoveryFilesystemDiscovery, RecoveryDiscoveryArtifact};
 
@@ -16,14 +17,14 @@ impl BoundedRecoveryFilesystemDiscovery {
         ceiling: ArtifactCeiling,
         grant: ReadGrant<D>,
     ) -> ArtifactReadOutcome<D> {
-        let file = ceiling.file();
-        let context = RecoveryDiscoveryArtifact::Record(file);
-        let artifact = match record_artifact(file) {
+        let context = ceiling.artifact();
+        let artifact = match ceiling_artifact(ceiling.address()) {
             Ok(artifact) => artifact,
             Err(failure) => return outcome(Err(ReadStop::stop(failure))),
         };
         outcome(match ceiling.extent() {
             CeilingExtent::Whole { bytes, fixed } => {
+                let grant = GrantShare::of(&grant);
                 self.read_whole_charged(context, bytes, fixed, &grant, |attempt, limit| {
                     attempt
                         .open()

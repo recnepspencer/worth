@@ -6,7 +6,7 @@ use worth_store::physical_runtime::{
     AdmittedPhysicalRecordFormat, AdmittedPhysicalRecordResidencyPolicy, FilesystemAccessPosture,
     FilesystemMediaAdmission, PhysicalRecoveryCoordinationCapacity, PhysicalRecoveryFreshnessPort,
     PhysicalRecoveryRejoinResidentDenial, PhysicalRuntimeAdmission, PhysicalStore,
-    QualifiedRecoveryFilesystemMedia,
+    QualifiedRecoveryFilesystemMedia, ReadGrant, UnchargedRead,
 };
 use worth_store_physical_format::PhysicalRecordFormatDeclaration;
 
@@ -58,7 +58,10 @@ fn persisted_read_and_parser_records_share_original_native_ceiling_until_disposa
         .unwrap();
     let mut discovery = media.bounded_discovery(1, 4096).unwrap();
     let mut window = coordination.begin_source_read_allocation().unwrap();
-    let observed = window.read_checkpoint(&mut discovery, 4096).unwrap();
+    let observed = window
+        .read_checkpoint(&mut discovery, ReadGrant::ceiling_only())
+        .observed()
+        .unwrap();
     assert_eq!(observed.observed().store_identity(), store);
     assert_eq!(observed.observed().bytes(), Some(input.as_slice()));
     assert_eq!(observed.charged_bytes(), 128);

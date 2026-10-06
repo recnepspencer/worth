@@ -287,22 +287,26 @@ fn cumulative_wal_bytes_stop_before_the_crossing_artifact() {
     let crossing_store = initialize_store(&crossing_root);
     publish_synthetic_genesis(&crossing_root, crossing_store);
     write_two_eight_byte_residue_files(&crossing_root);
-    let mut declaration = limit_declaration(2, 8, 8 * 1024);
-    declaration.wal_bytes = 12;
-    let blocked = expect_blocked(
-        admitted_recovery_with_limits(
-            &crossing_root,
-            PhysicalRecoveryLimits::admit(declaration).unwrap(),
-        )
-        .discover()
-        .err()
-        .expect("cumulative WAL crossing must block"),
-    );
-    let limit = blocked.cause().limit().unwrap();
-    assert_eq!(limit.dimension(), PhysicalRecoveryLimitDimension::WalBytes);
-    assert_eq!((limit.observed(), limit.admitted()), (16, 12));
-    assert_eq!(blocked.evidence().counters.wal_bytes, 8);
-    assert_eq!(blocked.recovery_effects(), 0);
+    // Short by four bytes and by one, the second file is refused with the
+    // eight the first took plus its own real eight.
+    for wal_bytes in [12, 15] {
+        let mut declaration = limit_declaration(2, 8, 8 * 1024);
+        declaration.wal_bytes = wal_bytes;
+        let blocked = expect_blocked(
+            admitted_recovery_with_limits(
+                &crossing_root,
+                PhysicalRecoveryLimits::admit(declaration).unwrap(),
+            )
+            .discover()
+            .err()
+            .expect("cumulative WAL crossing must block"),
+        );
+        let limit = blocked.cause().limit().unwrap();
+        assert_eq!(limit.dimension(), PhysicalRecoveryLimitDimension::WalBytes);
+        assert_eq!((limit.observed(), limit.admitted()), (16, wal_bytes));
+        assert_eq!(blocked.evidence().counters.wal_bytes, 8);
+        assert_eq!(blocked.recovery_effects(), 0);
+    }
 
     let exact_parent = tempfile::tempdir().unwrap();
     let exact_root = exact_parent.path().join("store");

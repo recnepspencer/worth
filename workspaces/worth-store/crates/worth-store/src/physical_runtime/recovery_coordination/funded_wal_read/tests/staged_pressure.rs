@@ -72,7 +72,12 @@ pub(super) fn read_after_boundary_pressure(
             coordination
                 .begin_source_read_allocation()
                 .unwrap()
-                .read_wal_payloads(discovery, segments(maximum_segments), 4096)
+                .read_wal_payloads(
+                    discovery,
+                    segments(maximum_segments),
+                    ReadGrant::ceiling_only(),
+                )
+                .map_err(GrantedReadStop::unread)
         });
         let deadline = Instant::now() + Duration::from_secs(10);
         while gate.reached_context().is_none() {
@@ -118,7 +123,8 @@ fn tiny_original_ceiling_denies_provider_before_entries_then_adequate_owner_read
     let failure = coordination
         .begin_source_read_allocation()
         .unwrap()
-        .read_wal_payloads(&mut discovery, segments(1), 4096)
+        .read_wal_payloads(&mut discovery, segments(1), ReadGrant::ceiling_only())
+        .map_err(GrantedReadStop::unread)
         .unwrap_err();
     assert!(
         matches!(failure.diagnostic(), RecoveryWalReadFailureView::Allocation {
@@ -182,7 +188,8 @@ fn tiny_original_ceiling_denies_provider_before_entries_then_adequate_owner_read
     let observed = owner
         .begin_source_read_allocation()
         .unwrap()
-        .read_wal_payloads(&mut discovery, segments(1), 4096)
+        .read_wal_payloads(&mut discovery, segments(1), ReadGrant::ceiling_only())
+        .map_err(GrantedReadStop::unread)
         .unwrap();
     assert_eq!(observed.artifacts()[0].bytes(), Some(&[17; PAYLOAD][..]));
     drop(owner);

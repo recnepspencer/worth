@@ -15,7 +15,7 @@ use crate::entry::{
     PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDimension,
 };
 use crate::orchestration::discovery::DiscoveryFailure;
-use crate::orchestration::reader_limit::OversizedArtifact;
+use crate::orchestration::discovery::OversizedArtifact;
 use crate::orchestration::recovery_budget::{RecoveryAllowance, RecoveryReadBudget};
 
 pub(crate) enum ManifestFactsState {

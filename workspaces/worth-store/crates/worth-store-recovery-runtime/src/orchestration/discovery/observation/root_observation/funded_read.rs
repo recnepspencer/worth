@@ -17,8 +17,8 @@ use crate::entry::{
     PhysicalRecoverySourceReadAllocationDenial as Cause,
 };
 use crate::orchestration::discovery::source_memory::source_allocation;
+use crate::orchestration::discovery::OversizedArtifact;
 use crate::orchestration::discovery::{past_grant, unread, DiscoveryFailure};
-use crate::orchestration::reader_limit::OversizedArtifact;
 use crate::orchestration::recovery_budget::RecoveryReadBudget;
 
 /// The inner `Err` is the artifact found larger than its own ceiling.

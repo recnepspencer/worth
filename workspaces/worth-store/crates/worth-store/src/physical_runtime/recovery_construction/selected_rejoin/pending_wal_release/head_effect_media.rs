@@ -7,7 +7,7 @@ use worth_store_physical_backend::{
 };
 use worth_store_physical_format::{
     DurablePhysicalRootManifest, PersistedReleaseCustodyHeadEffectV1,
-    PhysicalRecordFormatDeclaration, ReleaseCustodyHeadBlockReferenceV1,
+    PhysicalRecordFormatDeclaration, RecordArtifactFile, ReleaseCustodyHeadBlockReferenceV1,
     ReleaseCustodyHeadMutationV1,
 };
 use worth_store_recovery_physics::VerifiedSelectedReleaseHeadReplayV14;
@@ -174,6 +174,10 @@ fn witness_node(
     format: PhysicalRecordFormatDeclaration,
     slices: &mut FundedHeadEffectSlices,
 ) -> Result<(), Denial> {
+    let artifact = RecordArtifactFile::ReleaseCustodyHeadBlock {
+        generation: reference.generation(),
+        block: reference.block(),
+    };
     let ceiling = ArtifactCeiling::page(
         format,
         PageAddress::ReleaseCustodyHeadBlock {
@@ -181,7 +185,6 @@ fn witness_node(
             block: reference.block(),
         },
     );
-    let artifact = ceiling.file();
     let observed = window
         .read_record(discovery, ceiling)
         .map_err(read_denial)?;

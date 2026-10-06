@@ -14,6 +14,9 @@ pub(super) fn construction_denial(
         SelectedMediaRejoinDenial::WalRead { boundary, cause } => {
             RecoveredPhysicalRuntimeConstructionDenial::RejoinWalRead { boundary, cause }
         }
+        SelectedMediaRejoinDenial::WalBytes { boundary, cause } => {
+            RecoveredPhysicalRuntimeConstructionDenial::RejoinWalBytes { boundary, cause }
+        }
         SelectedMediaRejoinDenial::WalAdmission { boundary, cause } => {
             RecoveredPhysicalRuntimeConstructionDenial::RejoinWalAdmission { boundary, cause }
         }

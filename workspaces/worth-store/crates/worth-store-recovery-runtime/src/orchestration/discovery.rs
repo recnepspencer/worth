@@ -17,7 +17,9 @@ pub(super) mod source_memory;
 mod wal;
 
 use observation::observe_all;
-pub(super) use read_refusal::{past_grant, refused_beside, refused_read, unread};
+pub(super) use read_refusal::{
+    observation_refused, past_grant, refused_beside, unread, OversizedArtifact,
+};
 pub(crate) use wal::AdmittedWalInventory;
 
 pub(crate) struct DiscoveryMaterial {

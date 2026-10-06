@@ -232,9 +232,14 @@ fn tail_partition_pressure(
         remaining
     );
 
+    let returned = observed
+        .iter()
+        .map(|artifact| artifact.bytes().map_or(0, |bytes| bytes.len() as u64))
+        .sum();
     let mut retry = match discover_wal_inventory(
         coordination.owner(),
         observed,
+        returned,
         discovery.store_identity(),
         limits.declaration().wal_frames,
     ) {

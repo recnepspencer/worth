@@ -289,7 +289,8 @@ fn checkpoint_and_fixed_slot_backed_reads_preserve_success_absence_and_counters(
     );
     let mut storage = storage(None, true);
     let failure = discovery
-        .read_current_checkpoint_with_storage(16, &mut storage)
+        .read_with_storage(checkpoint(), uncharged(), &mut storage)
+        .observed()
         .unwrap_err();
     assert!(matches!(
         failure,
@@ -301,7 +302,8 @@ fn checkpoint_and_fixed_slot_backed_reads_preserve_success_absence_and_counters(
         }
     ));
     let checkpoint = discovery
-        .read_current_checkpoint_with_storage(16, &mut storage)
+        .read_with_storage(checkpoint(), uncharged(), &mut storage)
+        .observed()
         .unwrap();
     assert_eq!(checkpoint.bytes(), Some(&b"checkpoint"[..]));
     let absent = discovery
@@ -338,7 +340,9 @@ fn checkpoint_and_fixed_slot_backed_reads_preserve_success_absence_and_counters(
 fn unqualified_record_storage_rejects_before_address_or_payload_callbacks() {
     let (_parent, _observer, mut discovery) = discovery(|_| {}, 4, 64);
     let mut storage = storage(None, false);
-    let result = discovery.read_current_checkpoint_with_storage(16, &mut storage);
+    let result = discovery
+        .read_with_storage(checkpoint(), uncharged(), &mut storage)
+        .observed();
     assert!(matches!(
         result,
         Err(RecoveryDiscoveryAllocationFailure::Discovery(

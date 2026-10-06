@@ -1,7 +1,12 @@
 use std::{convert::Infallible, ffi::OsString, num::NonZeroU64};
 
+use worth_foundational::LimitDimension;
+use worth_proof::{DenialTransitionOutcome, TransitionOutcome};
 use worth_store_physical_format::store_namespace::NamespaceEntryType;
 
+use super::super::grant::{GrantShare, ReadGrant};
+use super::super::refusal::{AllocatedReadFailure, ArtifactDamage, ReadRefusal};
+use super::charged_read::{outcome, ReadStop};
 use super::resident_read::map_allocated_failure;
 use super::wal_storage::{allocate_wal_context, allocate_wal_roster, CallbackWalStorage};
 use super::{
@@ -21,47 +26,52 @@ use crate::filesystem_media::{
 
 mod selected_file;
 
+/// What one WAL inventory read: its files, or the grant, the observation's
+/// own bound or the damage that stopped it.
+pub type WalInventoryOutcome<T, D, F> = DenialTransitionOutcome<T, ReadRefusal<D>, F>;
+
+/// What stopped a WAL inventory part way.
+type InventoryStop<D, E> = ReadStop<D, AllocatedReadFailure<E>>;
+
 impl<M: super::DiscoveryMediaBacking> FilesystemObservation<M> {
-    pub fn read_wal_artifacts(
+    /// Reads every WAL file into storage of its real length. The files share
+    /// `grant`: one past what the files before it left is refused with their
+    /// bytes and its own real length.
+    pub fn read_wal_artifacts<D: LimitDimension>(
         &mut self,
         maximum_segments: NonZeroU64,
-        byte_limit: u64,
-    ) -> Result<Vec<ObservedWalArtifact>, RecoveryDiscoveryFailure> {
-        self.read_wal_artifacts_with_payload_allocator(
+        grant: ReadGrant<D>,
+    ) -> WalInventoryOutcome<Vec<ObservedWalArtifact>, D, ArtifactDamage> {
+        let read = self.read_wal_artifacts_with_allocators(
             maximum_segments,
-            byte_limit,
+            grant,
+            |count| Ok(Vec::with_capacity(count)),
             |length| -> Result<Vec<u8>, Infallible> { Ok(vec![0; length]) },
-        )
-        .map_err(|denial| match denial {
-            RecoveryDiscoveryAllocationFailure::Discovery(denial) => denial,
-            RecoveryDiscoveryAllocationFailure::Allocation { cause, .. } => match cause {},
-            RecoveryDiscoveryAllocationFailure::BufferLengthMismatch { .. } => {
+            |count| Ok(OsString::with_capacity(count)),
+        );
+        match read {
+            TransitionOutcome::Success(observed) => TransitionOutcome::Success(observed),
+            TransitionOutcome::Denied(refusal) => TransitionOutcome::Denied(refusal),
+            TransitionOutcome::Failed(AllocatedReadFailure::Damage(damage)) => {
+                TransitionOutcome::Failed(damage)
+            }
+            TransitionOutcome::Failed(AllocatedReadFailure::Allocation { cause, .. }) => {
+                match cause {}
+            }
+            TransitionOutcome::Failed(AllocatedReadFailure::BufferLengthMismatch { .. }) => {
                 unreachable!("the built-in WAL allocators return the requested storage")
             }
-        })
-    }
-
-    /// Allocate each WAL payload after the admitted file length is known and
-    /// before reading its bytes. Directory names and the result roster remain
-    /// outside this payload-only allocator boundary.
-    pub fn read_wal_artifacts_with_payload_allocator<E>(
-        &mut self,
-        maximum_segments: NonZeroU64,
-        byte_limit: u64,
-        allocate: impl FnMut(usize) -> Result<Vec<u8>, E>,
-    ) -> Result<Vec<ObservedWalArtifact>, RecoveryDiscoveryAllocationFailure<E>> {
-        self.read_wal_artifacts_with_allocators(
-            maximum_segments,
-            byte_limit,
-            |count| Ok(Vec::with_capacity(count)),
-            allocate,
-            |count| Ok(OsString::with_capacity(count)),
-        )
+            TransitionOutcome::Deferred(never)
+            | TransitionOutcome::Stale(never)
+            | TransitionOutcome::RebindRequired(never) => match never {},
+        }
     }
 
     /// Allocate the empty result roster after listing establishes its count,
     /// before reading any payload. The roster allocator receives a slot count;
     /// allocation-failure requests and buffer mismatches report backing bytes.
+    /// Each WAL payload is allocated after its file length is known and
+    /// before its bytes are read.
     ///
     /// The context allocator supplies empty storage for one diagnostic name;
     /// C.4 fills it with the listed name before address validation or reading.
@@ -69,17 +79,17 @@ impl<M: super::DiscoveryMediaBacking> FilesystemObservation<M> {
     /// before the next callback; a failed read retains it in the failure.
     /// Provider, listing, original-name, and path allocations remain outside
     /// this boundary. Listed names move into their observations without a copy.
-    pub fn read_wal_artifacts_with_allocators<E>(
+    pub fn read_wal_artifacts_with_allocators<D: LimitDimension, E>(
         &mut self,
         maximum_segments: NonZeroU64,
-        byte_limit: u64,
+        grant: ReadGrant<D>,
         allocate_roster: impl FnOnce(usize) -> Result<Vec<ObservedWalArtifact>, E>,
         allocate_payload: impl FnMut(usize) -> Result<Vec<u8>, E>,
         allocate_context: impl FnMut(usize) -> Result<OsString, E>,
-    ) -> Result<Vec<ObservedWalArtifact>, RecoveryDiscoveryAllocationFailure<E>> {
+    ) -> WalInventoryOutcome<Vec<ObservedWalArtifact>, D, AllocatedReadFailure<E>> {
         let mut storage =
             CallbackWalStorage::new(allocate_roster, allocate_payload, allocate_context);
-        self.read_wal_artifacts_with_storage(maximum_segments, byte_limit, &mut storage)
+        self.read_wal_artifacts_with_storage(maximum_segments, grant, &mut storage)
     }
 
     pub fn wal_listing_storage_is_qualified(&self) -> bool {
@@ -96,37 +106,43 @@ impl<M: super::DiscoveryMediaBacking> FilesystemObservation<M> {
     /// One read algorithm for caller-managed or staged admitted listing storage.
     /// Admitted mode requires qualified path and listing mechanics before the
     /// first address allocation. Caller-managed mode retains its raw behavior.
-    pub fn read_wal_artifacts_with_storage<S: RecoveryWalReadStorage>(
+    pub fn read_wal_artifacts_with_storage<D: LimitDimension, S: RecoveryWalReadStorage>(
         &mut self,
         maximum_segments: NonZeroU64,
-        byte_limit: u64,
+        grant: ReadGrant<D>,
         storage: &mut S,
-    ) -> Result<Vec<ObservedWalArtifact>, RecoveryDiscoveryAllocationFailure<S::Denial>> {
-        match self.read_wal_inventory(maximum_segments, byte_limit, storage, None)? {
-            Outcome::Observed(observed) => Ok(observed),
+    ) -> WalInventoryOutcome<Vec<ObservedWalArtifact>, D, AllocatedReadFailure<S::Denial>> {
+        let read = self.read_wal_inventory(maximum_segments, &grant, storage, None);
+        outcome(read.map(|read| match read {
+            Outcome::Observed(observed) => observed,
             Outcome::Mismatch(_) => unreachable!("unconstrained reads have no selected inventory"),
-        }
+        }))
     }
 
-    pub fn read_selected_wal_artifacts_with_storage<S: RecoveryWalReadStorage>(
+    /// Reads the inventory `selection` declares. Each member's declared
+    /// length is its ceiling: a longer file is damage with its real length, a
+    /// shorter one a mismatch with the selection.
+    pub fn read_selected_wal_artifacts_with_storage<
+        D: LimitDimension,
+        S: RecoveryWalReadStorage,
+    >(
         &mut self,
         maximum_segments: NonZeroU64,
-        byte_limit: u64,
+        grant: ReadGrant<D>,
         selection: &dyn RecoveryWalReadSelection,
         storage: &mut S,
-    ) -> Result<Outcome<Vec<ObservedWalArtifact>>, RecoveryDiscoveryAllocationFailure<S::Denial>>
+    ) -> WalInventoryOutcome<Outcome<Vec<ObservedWalArtifact>>, D, AllocatedReadFailure<S::Denial>>
     {
-        self.read_wal_inventory(maximum_segments, byte_limit, storage, Some(selection))
+        outcome(self.read_wal_inventory(maximum_segments, &grant, storage, Some(selection)))
     }
 
-    fn read_wal_inventory<S: RecoveryWalReadStorage>(
+    fn read_wal_inventory<D: LimitDimension, S: RecoveryWalReadStorage>(
         &mut self,
         maximum_segments: NonZeroU64,
-        byte_limit: u64,
+        grant: &ReadGrant<D>,
         storage: &mut S,
         selection: Option<&dyn RecoveryWalReadSelection>,
-    ) -> Result<Outcome<Vec<ObservedWalArtifact>>, RecoveryDiscoveryAllocationFailure<S::Denial>>
-    {
+    ) -> Result<Outcome<Vec<ObservedWalArtifact>>, InventoryStop<D, S::Denial>> {
         // A ceiling past what this platform can list admits all it can list.
         let listed = usize::try_from(maximum_segments.get()).unwrap_or(usize::MAX);
         let directory_context = RecoveryDiscoveryArtifact::WalDirectory;
@@ -177,7 +193,7 @@ impl<M: super::DiscoveryMediaBacking> FilesystemObservation<M> {
         }
         let mut observed =
             allocate_wal_roster(entries.len(), |count| storage.allocate_wal_roster(count))?;
-        let mut remaining_wal_bytes = byte_limit;
+        let mut share = GrantShare::of(grant);
         for entry in entries {
             let (name, entry_type) = entry.into_parts();
             let expected = match selection {
@@ -201,24 +217,18 @@ impl<M: super::DiscoveryMediaBacking> FilesystemObservation<M> {
                 };
                 let file = match backed_file(directory.get(), file_name, storage) {
                     Ok(file) => file,
-                    Err(failure) => return Err(map_allocated_failure(failure, context, 0)),
+                    Err(failure) => return Err(map_allocated_failure(failure, context, 0).into()),
                 };
                 // Context is created once; successful reads dispose it before
                 // the next callback. The file address drops before metadata.
-                let bytes = match self.read_wal_artifact_with_storage(
-                    file,
-                    context,
-                    remaining_wal_bytes,
-                    byte_limit,
-                    native,
-                    expected,
-                    storage,
-                )? {
+                let read = self.read_wal_member(file, context, &share, native, expected, storage);
+                let bytes = match read? {
                     Outcome::Observed(bytes) => bytes,
                     Outcome::Mismatch(mismatch) => return Ok(Outcome::Mismatch(mismatch)),
                 };
-                // The read was left these bytes and returned no more of them.
-                remaining_wal_bytes = remaining_wal_bytes.saturating_sub(byte_count(&bytes));
+                // The read was asked for no more than the files before it
+                // left, and returned no more of it.
+                share.spend(byte_count(&bytes));
                 self.count_wal_bytes(byte_count(&bytes))?;
                 bytes
             } else {

@@ -16,17 +16,19 @@ fn wal_context_copy_denial_precedes_payload_read_and_same_owner_retries() {
     );
     let reads_before = observer.snapshot().positioned_read_attempts();
     let context_calls = Cell::new(0);
-    let denied = discovery.read_wal_artifacts_with_allocators(
-        segments(2),
-        16,
-        |count| Ok(Vec::with_capacity(count)),
-        |_| panic!("context refusal must precede payload allocation"),
-        |count| {
-            assert_eq!(count, name.as_encoded_bytes().len());
-            context_calls.set(context_calls.get() + 1);
-            Err::<std::ffi::OsString, _>(DeniedAllocation)
-        },
-    );
+    let denied = discovery
+        .read_wal_artifacts_with_allocators(
+            segments(2),
+            uncharged(),
+            |count| Ok(Vec::with_capacity(count)),
+            |_| panic!("context refusal must precede payload allocation"),
+            |count| {
+                assert_eq!(count, name.as_encoded_bytes().len());
+                context_calls.set(context_calls.get() + 1);
+                Err::<std::ffi::OsString, _>(DeniedAllocation)
+            },
+        )
+        .observed();
     assert!(matches!(
         denied,
         Err(RecoveryDiscoveryAllocationFailure::Allocation {
@@ -51,13 +53,15 @@ fn wal_context_copy_denial_precedes_payload_read_and_same_owner_retries() {
         } else {
             (0, storage.len())
         };
-        let malformed = discovery.read_wal_artifacts_with_allocators(
-            segments(2),
-            16,
-            |count| Ok(Vec::with_capacity(count)),
-            |_| panic!("malformed context storage must precede payload allocation"),
-            |_| Ok::<_, DeniedAllocation>(std::mem::take(&mut storage)),
-        );
+        let malformed = discovery
+            .read_wal_artifacts_with_allocators(
+                segments(2),
+                uncharged(),
+                |count| Ok(Vec::with_capacity(count)),
+                |_| panic!("malformed context storage must precede payload allocation"),
+                |_| Ok::<_, DeniedAllocation>(std::mem::take(&mut storage)),
+            )
+            .observed();
         assert!(matches!(malformed,
             Err(RecoveryDiscoveryAllocationFailure::BufferLengthMismatch {
                 artifact: RecoveryDiscoveryArtifact::WalDirectory, offset: 0,
@@ -71,7 +75,7 @@ fn wal_context_copy_denial_precedes_payload_read_and_same_owner_retries() {
     let observed = discovery
         .read_wal_artifacts_with_allocators(
             segments(2),
-            16,
+            uncharged(),
             |count| Ok(Vec::with_capacity(count)),
             |length| Ok(vec![0; length]),
             |count| {
@@ -80,6 +84,7 @@ fn wal_context_copy_denial_precedes_payload_read_and_same_owner_retries() {
                 Ok::<_, DeniedAllocation>(std::ffi::OsString::with_capacity(count))
             },
         )
+        .observed()
         .expect("same discovery retries after context refusal");
     assert_eq!(context_calls.get(), 2);
     assert_eq!(observed.len(), 2);

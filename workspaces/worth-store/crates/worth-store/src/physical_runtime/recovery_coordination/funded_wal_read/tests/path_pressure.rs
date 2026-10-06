@@ -38,7 +38,8 @@ fn deny_initial_path(boundary: Boundary, path_allowance: u64) {
     let failure = coordination
         .begin_source_read_allocation()
         .unwrap()
-        .read_wal_payloads(&mut discovery, segments(1), 4096)
+        .read_wal_payloads(&mut discovery, segments(1), ReadGrant::ceiling_only())
+        .map_err(GrantedReadStop::unread)
         .unwrap_err();
     let RecoveryWalReadFailureView::Allocation {
         artifact: RecoveryWalArtifactView::WalDirectory,
@@ -81,7 +82,8 @@ fn deny_initial_path(boundary: Boundary, path_allowance: u64) {
     drop(held);
     let mut window = coordination.begin_source_read_allocation().unwrap();
     let observed = window
-        .read_wal_payloads(&mut discovery, segments(1), 4096)
+        .read_wal_payloads(&mut discovery, segments(1), ReadGrant::ceiling_only())
+        .map_err(GrantedReadStop::unread)
         .unwrap();
     assert_eq!(observed.artifacts()[0].bytes(), Some(&[17; PAYLOAD][..]));
     assert_eq!(
@@ -150,7 +152,8 @@ fn file_address_denies_after_listing_and_context_then_same_owner_retries() {
     drop(held);
     let mut window = coordination.begin_source_read_allocation().unwrap();
     let observed = window
-        .read_wal_payloads(&mut discovery, segments(1), 4096)
+        .read_wal_payloads(&mut discovery, segments(1), ReadGrant::ceiling_only())
+        .map_err(GrantedReadStop::unread)
         .unwrap();
     assert_eq!(observed.artifacts()[0].bytes(), Some(&[17; PAYLOAD][..]));
     assert_eq!(

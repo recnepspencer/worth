@@ -7,7 +7,9 @@
 
 use worth_foundational::{ExhaustedLimit, LimitCounts, LimitDimension};
 use worth_proof::Performed;
-use worth_store::physical_runtime::{GrantOverrun, ObservedRecoveryArtifact, ReadGrant};
+use worth_store::physical_runtime::{
+    GrantOverrun, ObservedRecoveryArtifact, ObservedWalArtifact, ReadGrant,
+};
 
 use crate::entry::{PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDimension};
 
@@ -135,7 +137,19 @@ impl RecoveryReadBudget {
     /// Charges what a granted read returned. The read returned no more than
     /// its grant, which was what was left.
     pub(super) fn charge(&mut self, observed: &ObservedRecoveryArtifact) {
-        let bytes = observed.bytes().map_or(0, |bytes| bytes.len() as u64);
+        self.charge_bytes(observed.bytes().map_or(0, <[u8]>::len));
+    }
+
+    /// Charges what a granted WAL inventory returned across its files, which
+    /// shared the grant.
+    pub(super) fn charge_inventory(&mut self, observed: &[ObservedWalArtifact]) {
+        for artifact in observed {
+            self.charge_bytes(artifact.bytes().map_or(0, <[u8]>::len));
+        }
+    }
+
+    fn charge_bytes(&mut self, bytes: usize) {
+        let bytes = bytes as u64;
         self.spent = self
             .spent
             .checked_add(bytes)
