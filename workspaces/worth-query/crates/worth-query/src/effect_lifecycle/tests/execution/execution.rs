@@ -190,7 +190,9 @@ fn lowered_merge_execution_runs_through_relational_merge_authority() {
         .expect("merge should lower");
 
     let executed = lowered
-        .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_with(
+            EffectExecutionAuthority::crate_relational_without_application_schema(&mut runtime),
+        )
         .expect("lowered merge should execute");
 
     assert!(matches!(

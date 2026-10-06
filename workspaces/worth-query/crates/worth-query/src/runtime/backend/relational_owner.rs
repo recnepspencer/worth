@@ -3,6 +3,11 @@ use worth_query_execution::facade::integration::{
     WorthQueryRelationalSourceOwner,
 };
 use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::transactions::MergeExecutionOutcome;
+
+use crate::effect_lifecycle::{
+    execute_lowered_merge, MergeUniqueValueAuthority, RelationalEffectExecutionFailure,
+};
 
 use super::WorthQueryPrimaryGraphBackendHandle;
 
@@ -30,6 +35,29 @@ impl WorthQueryBackendRelationalOwner {
             Self::Unpublished(runtime) => Ok(mutate(runtime)),
             Self::ProductSource(owner) => Ok(owner.with_runtime_mut(mutate)),
             Self::PrimaryGraph(owner) => owner.execute_mutation(mutate),
+        }
+    }
+
+    /// Executes one lowered merge; only the primary graph carries an
+    /// application schema whose unique fields the merge must keep.
+    pub(super) fn execute_merge(
+        &mut self,
+        declaration: &crate::workflow::LoweredMergeWorkflowDeclaration,
+    ) -> Result<
+        Result<MergeExecutionOutcome, RelationalEffectExecutionFailure>,
+        WorthQueryPrimaryGraphIndexRefreshDenial,
+    > {
+        let unschematized = |runtime: &mut RelationalRuntime| {
+            execute_lowered_merge(
+                runtime,
+                declaration,
+                MergeUniqueValueAuthority::NoApplicationSchema,
+            )
+        };
+        match self {
+            Self::Unpublished(runtime) => Ok(unschematized(runtime)),
+            Self::ProductSource(owner) => Ok(owner.with_runtime_mut(unschematized)),
+            Self::PrimaryGraph(owner) => owner.execute_merge(declaration),
         }
     }
 

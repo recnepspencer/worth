@@ -188,9 +188,7 @@ impl WorthQueryBridgeBackedRuntimeBackend {
             )
         })?;
         owner
-            .execute_mutation(|runtime| {
-                crate::effect_lifecycle::execute_lowered_merge(runtime, declaration)
-            })
+            .execute_merge(declaration)
             .map_err(primary_graph_refresh_merge_error)?
     }
 

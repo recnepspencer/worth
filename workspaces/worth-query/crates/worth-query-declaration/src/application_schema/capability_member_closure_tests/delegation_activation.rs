@@ -2,6 +2,8 @@ use super::*;
 use crate::application_capability::ApplicationCapabilityDelegationActivationDefinition;
 use crate::application_schema::ApplicationOperationProgramTarget;
 
+mod identity_uniqueness;
+
 struct ActivationOperation;
 struct Identity;
 struct ActivationContextRelation;
@@ -151,7 +153,7 @@ fn activation_members() -> Vec<ApplicationSchemaMember> {
 
 fn activation_members_for(contract: ErasedContract) -> Vec<ApplicationSchemaMember> {
     let mut members = members(contract);
-    members.push(field_member("Identity"));
+    members.push(unique_field_member("Identity"));
     members.push(ApplicationSchemaMember::Operation {
         operation: "Activate".to_owned(),
         input_type: crate::portable_identity::WorthQueryPortableTypeIdentity::declared(

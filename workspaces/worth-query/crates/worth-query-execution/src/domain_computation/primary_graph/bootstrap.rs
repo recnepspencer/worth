@@ -35,6 +35,7 @@ mod program_activation_seeding;
 mod publication;
 mod publication_target;
 mod seed_batches;
+mod unique_seed_values;
 use binding_denial::map_binding_denial_kind;
 mod truth_partition;
 pub(super) use program_activation_recovery::recover_program_activation;
@@ -65,6 +66,7 @@ pub struct WorthQueryPrimaryGraphBootstrap<Schema> {
     rows: Vec<WorthQueryPrincipalBootstrapRow>,
     external_identities: BTreeSet<(String, WorthQueryExternalPrincipalIdentity)>,
     principal_identities: BTreeSet<(String, AuthoritativeFieldComparisonKey)>,
+    unique_seed_values: BTreeSet<unique_seed_values::WorthQueryUniqueSeedValue>,
     principal_keys: BTreeSet<(KindId, String)>,
     pub(super) entity_keys: BTreeSet<(KindId, String)>,
     pub(super) pending_entity_keys: BTreeSet<(KindId, String)>,
@@ -206,6 +208,7 @@ where
                 &row.binding,
             ));
         }
+        self.admit_principal_unique_values(&row)?;
         self.external_identities.insert(external_identity_key);
         self.principal_keys.insert(principal_key.clone());
         self.entity_keys.insert(principal_key.clone());

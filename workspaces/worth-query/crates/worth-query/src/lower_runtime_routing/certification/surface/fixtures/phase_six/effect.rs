@@ -106,7 +106,9 @@ pub(crate) fn representative_effect_relational_merge_row() -> RepresentativeArti
     ))
     .lower()
     .expect("relational merge should lower")
-    .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+    .execute_with(
+        EffectExecutionAuthority::crate_relational_without_application_schema(&mut runtime),
+    )
     .expect("relational merge should execute");
     route_planned_row(
         WorthQueryLowerRuntimeSeamKey::EffectBackedRelationalMerge,

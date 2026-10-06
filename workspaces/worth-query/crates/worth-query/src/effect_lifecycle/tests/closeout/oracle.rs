@@ -78,7 +78,9 @@ fn merge_execution_verifies_against_independent_relational_runtime_state() {
         .expect("merge should lower");
 
     let executed = lowered
-        .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_with(
+            EffectExecutionAuthority::crate_relational_without_application_schema(&mut runtime),
+        )
         .expect("merge should execute");
     let verification = executed
         .verify_against_relational_runtime(&runtime)

@@ -22,7 +22,7 @@ fn install_grant_fields(
     schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     schema
-        .field(
+        .unique_field(
             CapabilityGrant::reference(),
             CapabilityGrantIdentityField::reference(),
         )

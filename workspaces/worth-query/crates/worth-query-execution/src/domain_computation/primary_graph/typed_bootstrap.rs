@@ -135,7 +135,10 @@ where
                     .map(|locator| (locator, value))
                     .ok_or_else(|| invalid_seed(field))
             })
-            .collect::<Result<_, _>>()?;
+            .collect::<Result<BTreeMap<_, _>, _>>()?;
+        self.admit_unique_seed_values(
+            fields.iter().map(|(locator, value)| (kind, locator, value)),
+        )?;
         self.entity_rows
             .push(WorthQueryTypedEntityBootstrapRow { kind, key, fields });
         Ok(())

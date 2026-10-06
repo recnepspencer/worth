@@ -1,9 +1,11 @@
 //! Pre-publication application denial categories and owner evidence.
 
 mod capacity;
+mod lane;
 mod program_binding;
 mod recorded_idempotency;
 mod request_authority;
+mod unique_value;
 mod workflow;
 
 /// Why a commit was refused before publication.
@@ -30,6 +32,12 @@ pub enum WorthQueryApplicationCommitDenialKind {
     },
     /// The product basis the attempt relied on was no longer current.
     ProductBasisStale,
+    /// A write of a unique field names a value another live entity holds, or
+    /// the program writes one value twice; `detail()` names the field.
+    UniqueValueTaken,
+    /// A unique field's equality index could not answer the lookup its write
+    /// must observe.
+    UniqueIndexUnavailable,
     /// The owner already held its maximum number of active snapshots.
     ActiveSnapshotCapacityExhausted {
         maximum_active_snapshots: usize,
@@ -317,79 +325,10 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn elevation_transition_required(
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::ElevationTransitionRequired,
-            stage: WorthQueryApplicationCommitDenialStage::ElevationTransition,
-            detail: None,
-            cause: None,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn delegation_activation_required(
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::DelegationActivationRequired,
-            stage: WorthQueryApplicationCommitDenialStage::DelegationTransition,
-            detail: None,
-            cause: None,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn capability_revocation_required(
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::CapabilityRevocationRequired,
-            stage: WorthQueryApplicationCommitDenialStage::DelegationTransition,
-            detail: None,
-            cause: None,
-        }
-    }
-
     pub(in crate::domain_computation) const fn application_program_required() -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired,
             stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
-            detail: None,
-            cause: None,
-        }
-    }
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn elevation_request_program_mismatch(
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::ElevationRequestProgramMismatch,
-            stage: WorthQueryApplicationCommitDenialStage::ElevationTransition,
-            detail: None,
-            cause: None,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn elevation_approval_program_mismatch(
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::ElevationApprovalProgramMismatch,
-            stage: WorthQueryApplicationCommitDenialStage::ElevationTransition,
-            detail: None,
-            cause: None,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn elevation_close_program_mismatch(
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::ElevationCloseProgramMismatch,
-            stage: WorthQueryApplicationCommitDenialStage::ElevationTransition,
-            detail: None,
-            cause: None,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn mandatory_review_program_mismatch(
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::MandatoryReviewProgramMismatch,
-            stage: WorthQueryApplicationCommitDenialStage::ElevationTransition,
             detail: None,
             cause: None,
         }

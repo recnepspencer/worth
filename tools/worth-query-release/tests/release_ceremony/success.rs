@@ -29,7 +29,7 @@ fn external_signature_ceremony_reproduces_the_frozen_release_and_report() {
     assert_eq!(report["envelope_protocol_version"], 1);
     assert_eq!(report["archive_protocol_version"], 2);
     assert_eq!(report["manifest_protocol_version"], 1);
-    assert_eq!(report["record_protocol_version"], 5);
+    assert_eq!(report["record_protocol_version"], 6);
 
     let second_envelope = world.output_path("second.worth-query");
     let second_report = world.output_path("second.json");

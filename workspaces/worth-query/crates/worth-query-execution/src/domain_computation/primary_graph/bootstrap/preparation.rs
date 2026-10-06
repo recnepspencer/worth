@@ -167,6 +167,7 @@ impl WorthQueryExecutionInstallationAuthority {
             rows: Vec::new(),
             external_identities: BTreeSet::new(),
             principal_identities: BTreeSet::new(),
+            unique_seed_values: BTreeSet::new(),
             principal_keys: BTreeSet::new(),
             entity_keys: BTreeSet::new(),
             pending_entity_keys: BTreeSet::new(),

@@ -60,6 +60,7 @@ fn members() -> Vec<ApplicationSchemaMember> {
             frame: Some(text("worth.tests.frame.v1")),
             writable: true,
             equality_queryable: true,
+            unique: true,
         },
         ApplicationSchemaMember::Relation {
             relation: text("relates"),

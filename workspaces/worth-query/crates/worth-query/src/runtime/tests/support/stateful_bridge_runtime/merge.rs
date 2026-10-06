@@ -41,6 +41,10 @@ pub(super) fn execute_merge(
         .borrow()
         .relational_source
         .with_runtime_mut(|runtime| {
-            crate::effect_lifecycle::execute_lowered_merge(runtime, declaration)
+            crate::effect_lifecycle::execute_lowered_merge(
+                runtime,
+                declaration,
+                crate::effect_lifecycle::MergeUniqueValueAuthority::NoApplicationSchema,
+            )
         })
 }

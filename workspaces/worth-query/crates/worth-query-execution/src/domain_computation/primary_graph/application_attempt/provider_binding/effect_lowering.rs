@@ -19,7 +19,9 @@ use crate::domain_computation::{
 
 mod observed_fact_index;
 mod optional_field_patch;
+mod unique_values;
 pub(super) use observed_fact_index::ObservedFactIndex;
+pub(super) use unique_values::UniqueValueWrites;
 
 #[derive(Clone)]
 pub(super) enum WorthQueryLoweredProviderEffect {
@@ -93,6 +95,7 @@ impl CreatedEffectReferences {
 
 pub(super) fn lower_provider_effect(
     facts: &ObservedFactIndex<'_>,
+    unique: &mut UniqueValueWrites<'_>,
     created: &CreatedEffectReferences,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     effect: WorthQueryApplicationRealizedEffect,
@@ -103,15 +106,20 @@ pub(super) fn lower_provider_effect(
             key,
             fields,
             partition,
-        } => lower_create_entity(partition.resolve(mutation_partition), kind, key, fields),
+        } => {
+            for (locator, value) in &fields {
+                unique.admit(facts, kind, None, locator, value)?;
+            }
+            lower_create_entity(partition.resolve(mutation_partition), kind, key, fields)
+        }
         WorthQueryApplicationRealizedEffect::UpdateEntity {
             entity_id, fields, ..
-        } => lower_update_entity(facts, entity_id, fields),
+        } => lower_update_entity(facts, unique, entity_id, fields),
         WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
             entity_id,
             fields,
             ..
-        } => optional_field_patch::lower(facts, entity_id, fields),
+        } => optional_field_patch::lower(facts, unique, entity_id, fields),
         WorthQueryApplicationRealizedEffect::DeleteEntity { entity_id } => {
             lower_delete_entity(facts, entity_id)
         }
@@ -160,13 +168,16 @@ fn lower_create_entity(
 
 fn lower_update_entity(
     facts: &ObservedFactIndex<'_>,
+    unique: &mut UniqueValueWrites<'_>,
     entity_id: EntityId,
     fields: BTreeMap<AspectFieldLocator, AspectValue>,
 ) -> Result<WorthQueryLoweredProviderEffect, WorthQueryApplicationAttemptDenial> {
     let steps = fields
-        .keys()
-        .map(|locator| {
+        .iter()
+        .map(|(locator, value)| {
             let target = facts.field_identity(entity_id, locator)?;
+            let kind = facts.field_kind(entity_id, locator)?;
+            unique.admit(facts, kind, Some(entity_id), locator, value)?;
             effect_step(WorthQueryProvisionalEffectAction::Replace {
                 target_identity: target.into(),
             })
@@ -313,8 +324,18 @@ mod tests {
         ];
         let references = CreatedEffectReferences::new(&effects, application_partition);
         let facts = ObservedFactIndex::new(&[]);
+        let mut unique = UniqueValueWrites::new(
+            crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields::none(),
+        );
         let mut lowered = effects.into_iter().map(|effect| {
-            lower_provider_effect(&facts, &references, application_partition, effect).unwrap()
+            lower_provider_effect(
+                &facts,
+                &mut unique,
+                &references,
+                application_partition,
+                effect,
+            )
+            .unwrap()
         });
         let entity_partition = |lowered| match lowered {
             WorthQueryLoweredProviderEffect::Mutation {

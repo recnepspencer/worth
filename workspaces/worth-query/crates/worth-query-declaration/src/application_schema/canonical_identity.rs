@@ -8,7 +8,7 @@ use super::{
     ApplicationSchemaContributionProvenance, ApplicationSchemaIdentity, ApplicationSchemaMember,
 };
 
-const RULE_VERSION: &str = "worth-query-application-schema-v14";
+const RULE_VERSION: &str = "worth-query-application-schema-v15";
 
 pub(super) struct ApplicationSchemaCanonicalHeader<'a> {
     pub owner: &'a str,

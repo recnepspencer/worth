@@ -1,7 +1,11 @@
 use std::collections::BTreeMap;
 
-use worth_foundational::facade::AspectFieldLocator;
-use worth_relational::facade::identity::{EntityId, RelationId};
+use worth_foundational::facade::{
+    prepare_aspect_value_identity_basis, AspectFieldLocator, AspectValue,
+    CanonicalAspectValueIdentityBasis,
+};
+use worth_relational::facade::identity::{EntityId, KindId, RelationId};
+use worth_relational::facade::indexes::DerivedIndexId;
 
 use super::super::{
     progression_denial, WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
@@ -16,7 +20,15 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_b
     fields: BTreeMap<EntityId, BTreeMap<AspectFieldLocator, usize>>,
     entities: BTreeMap<EntityId, usize>,
     relations: BTreeMap<RelationId, usize>,
+    selections: BTreeMap<SelectionKey, usize>,
 }
+
+type SelectionKey = (
+    DerivedIndexId,
+    KindId,
+    AspectFieldLocator,
+    CanonicalAspectValueIdentityBasis,
+);
 
 impl<'facts> ObservedFactIndex<'facts> {
     pub(in crate::domain_computation::primary_graph::application_attempt::provider_binding) fn new(
@@ -27,6 +39,7 @@ impl<'facts> ObservedFactIndex<'facts> {
             fields: BTreeMap::new(),
             entities: BTreeMap::new(),
             relations: BTreeMap::new(),
+            selections: BTreeMap::new(),
         };
         for (position, fact) in facts.iter().enumerate() {
             match fact {
@@ -61,10 +74,74 @@ impl<'facts> ObservedFactIndex<'facts> {
                             .or_insert(position);
                     }
                 }
+                WorthQueryApplicationObservedFact::IndexedEntitySelection {
+                    index_id,
+                    entity_kind,
+                    locator,
+                    value,
+                    ..
+                } => {
+                    index
+                        .selections
+                        .entry((
+                            *index_id,
+                            *entity_kind,
+                            locator.clone(),
+                            prepare_aspect_value_identity_basis(value),
+                        ))
+                        .or_insert(position);
+                }
                 _ => {}
             }
         }
         index
+    }
+
+    /// The entity kind the sealed fact for this field records.
+    pub(super) fn field_kind(
+        &self,
+        entity_id: EntityId,
+        locator: &AspectFieldLocator,
+    ) -> Result<KindId, WorthQueryApplicationAttemptDenial> {
+        match self
+            .fields
+            .get(&entity_id)
+            .and_then(|fields| fields.get(locator))
+            .map(|position| &self.facts[*position])
+        {
+            Some(
+                WorthQueryApplicationObservedFact::Field { kind, .. }
+                | WorthQueryApplicationObservedFact::AbsentField { kind, .. },
+            ) => Ok(*kind),
+            _ => Err(progression_denial()),
+        }
+    }
+
+    /// Every live entity the sealed selection found holding `value`. A sealed
+    /// selection did not overflow, so the list is exact whatever its limit.
+    pub(super) fn selection_candidates(
+        &self,
+        index_id: DerivedIndexId,
+        kind: KindId,
+        locator: &AspectFieldLocator,
+        value: &AspectValue,
+    ) -> Result<&'facts [EntityId], WorthQueryApplicationAttemptDenial> {
+        let key = (
+            index_id,
+            kind,
+            locator.clone(),
+            prepare_aspect_value_identity_basis(value),
+        );
+        match self
+            .selections
+            .get(&key)
+            .map(|position| &self.facts[*position])
+        {
+            Some(WorthQueryApplicationObservedFact::IndexedEntitySelection {
+                candidates, ..
+            }) => Ok(candidates),
+            _ => Err(progression_denial()),
+        }
     }
 
     pub(super) fn field_identity(

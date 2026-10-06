@@ -16,6 +16,7 @@ use worth_relational::facade::identity::{EntityId, KindId, PartitionId, Relation
 fn mixed_effects_lower_to_the_exact_independent_semantic_model() {
     let world = mixed_effect_world();
     let prepared = prepare_provider_attempt(
+        crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields::none(),
         PartitionId::main(),
         world.effects.len(),
         Vec::new(),
@@ -42,6 +43,7 @@ fn mixed_effects_lower_to_the_exact_independent_semantic_model() {
 fn alternate_effect_insertion_preserves_each_exact_association_and_order() {
     let world = mixed_effect_world();
     let prepared = prepare_provider_attempt(
+        crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields::none(),
         PartitionId::main(),
         world.alternate_effects.len(),
         Vec::new(),
@@ -67,6 +69,7 @@ fn alternate_effect_insertion_preserves_each_exact_association_and_order() {
 fn created_records_and_symbolic_endpoints_use_the_issued_mutation_partition() {
     let world = mixed_effect_world();
     let prepared = prepare_provider_attempt(
+        crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields::none(),
         PartitionId(7),
         world.effects.len(),
         Vec::new(),
@@ -124,6 +127,7 @@ fn two_relation_deletes_from_one_adjacency_share_one_provisional_retirement() {
         },
     ];
     let prepared = prepare_provider_attempt(
+        crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields::none(),
         PartitionId::main(),
         effects.len(),
         Vec::new(),

@@ -10,6 +10,7 @@ mod authority_and_denial;
 mod control_stopped;
 #[path = "execution_artifacts/settlement_deferred.rs"]
 mod settlement_deferred;
+pub(crate) use authority_and_denial::EffectMergeAuthority;
 pub use authority_and_denial::{
     EffectExecutionAuthority, EffectExecutionDenial, EffectExecutionDenialKind,
 };

@@ -26,7 +26,13 @@ mod provider_idempotency;
 mod provider_inbound_completion;
 mod registry_lowering;
 mod support_admission;
+mod unique_fields;
 pub(in crate::domain_computation::primary_graph) use support_admission::WorthQuerySupportLookupStop;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use unique_fields::WorthQueryUniqueFieldFixture;
+pub(in crate::domain_computation::primary_graph) use unique_fields::{
+    WorthQueryUniqueFieldIndex, WorthQueryUniqueFields,
+};
 
 use super::workflow::schema::WorthQueryWorkflowLayout;
 use crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxLayout;
@@ -62,6 +68,7 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
     application_entity_kinds: BTreeSet<KindId>,
     application_relation_kinds: BTreeSet<KindId>,
     fields: BTreeMap<(String, String, String), WorthQueryPrimaryFieldLayout>,
+    unique_fields: unique_fields::WorthQueryUniqueFieldNames,
     aspect_contracts: BTreeMap<(String, AspectKey), AspectContract>,
     equality_field_keys: BTreeMap<AspectKey, BTreeSet<FieldKey>>,
     projection_field_keys: BTreeMap<AspectKey, BTreeSet<FieldKey>>,
@@ -87,7 +94,11 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryRelationLayout {
 pub(in crate::domain_computation) struct WorthQueryPrimaryFieldLayout {
     pub(super) entity_kind: KindId,
     pub(super) locator: AspectFieldLocator,
+    /// Whether the schema declares the field equality-queryable.
+    pub(super) equality_queryable: bool,
+    /// The installed equality index; `None` until installation registers it.
     pub(super) equality_index_id: Option<DerivedIndexId>,
+    pub(super) unique: bool,
 }
 
 impl WorthQueryPrimaryGraphLayout {
@@ -181,11 +192,9 @@ impl WorthQueryPrimaryGraphLayout {
         let capability_grant_joins =
             lower_capability_grant_joins(schema, &entity_kinds, &relation_layouts)?;
         let fields = lower_fields(schema, &entity_kinds)?;
-        let equality_field_keys = field_capability_keys(
-            fields
-                .values()
-                .filter(|layout| layout.equality_index_id.is_some()),
-        );
+        let unique_fields = unique_fields::WorthQueryUniqueFieldNames::lower(&fields);
+        let equality_field_keys =
+            field_capability_keys(fields.values().filter(|layout| layout.equality_queryable));
         let projection_field_keys = field_capability_keys(fields.values());
 
         Ok((
@@ -196,6 +205,7 @@ impl WorthQueryPrimaryGraphLayout {
                 application_entity_kinds,
                 application_relation_kinds,
                 fields,
+                unique_fields,
                 aspect_contracts,
                 equality_field_keys,
                 projection_field_keys,

@@ -36,5 +36,6 @@ fn field(presence: ApplicationFieldPresence) -> ApplicationSchemaMember {
         frame: None,
         writable: false,
         equality_queryable: true,
+        unique: false,
     }
 }

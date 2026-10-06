@@ -26,3 +26,31 @@ pub(super) fn activation_programs_are_framework_owned(
         )
     })
 }
+
+/// Every activation keys its child grant by a unique identity field, so a
+/// second activation for one child id observes the first grant and is denied.
+pub(super) fn activation_identities_are_unique(
+    members: &[ApplicationSchemaMember],
+    contracts: &[&ErasedApplicationCapabilityContract],
+) -> bool {
+    contracts
+        .iter()
+        .filter_map(|contract| contract.delegation().activation())
+        .all(|activation| {
+            let identity = activation.identity();
+            members.iter().any(|member| {
+                matches!(
+                    member,
+                    ApplicationSchemaMember::Field {
+                        entity,
+                        aspect,
+                        field,
+                        unique: true,
+                        ..
+                    } if entity == identity.entity()
+                        && aspect == identity.aspect()
+                        && field == identity.field()
+                )
+            })
+        })
+}

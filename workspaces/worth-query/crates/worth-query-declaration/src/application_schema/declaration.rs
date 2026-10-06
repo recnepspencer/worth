@@ -1,13 +1,11 @@
 use std::marker::PhantomData;
 
 use super::aspect_contract_identity::ApplicationAspectMarkerIdentity;
-use super::capabilities::{ApplicationFieldUnit, EqualityPosture, WritePosture};
 use super::contribution::{
     ApplicationSchemaContributionIdentity, ApplicationSchemaContributionProvenance,
     AuthoredApplicationSchemaContribution,
 };
 use super::declaration_denial::ApplicationSchemaDeclarationDenial;
-use super::field_reference::ApplicationFieldRef;
 use super::member_provenance::ApplicationSchemaMemberProvenance;
 use super::principal_binding_reference::ApplicationPrincipalBindingRef;
 use super::references::{
@@ -18,6 +16,7 @@ use super::schema_identity::ApplicationSchemaIdentity;
 use super::schema_member::ApplicationSchemaMember;
 
 mod authorization;
+mod fields;
 mod finalization;
 
 pub trait ApplicationSchema: Sized + 'static {
@@ -266,37 +265,6 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             aspect: aspect.name().to_string(),
             identity: Aspect::ASPECT_IDENTITY,
             revision: Aspect::CONTRACT_REVISION,
-        });
-        self
-    }
-
-    pub fn field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
-        mut self,
-        entity: ApplicationEntityRef<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-    ) -> Self
-    where
-        Entity: super::ApplicationEntityMarkerIdentity<Schema>,
-        Aspect: ApplicationAspectMarkerIdentity<Schema, Entity>,
-        Field: super::ApplicationFieldMarkerIdentity<Schema, Entity, Aspect, Value = Value>,
-        Write: WritePosture,
-        Equality: EqualityPosture,
-        Unit: ApplicationFieldUnit,
-    {
-        let recipe = field.binding_recipe();
-        self.member_provenance
-            .register_field_binding(recipe.clone());
-        self.members.push(ApplicationSchemaMember::Field {
-            entity: entity.name().to_string(),
-            aspect: field.aspect().to_string(),
-            field: field.field().to_string(),
-            presence: Field::PRESENCE,
-            scalar_family: field.scalar_family(),
-            value_type: field.value_type_name().to_string(),
-            unit: field.unit().map(str::to_string),
-            frame: recipe.frame().map(|frame| frame.as_str().to_owned()),
-            writable: Write::WRITABLE,
-            equality_queryable: Equality::QUERYABLE,
         });
         self
     }

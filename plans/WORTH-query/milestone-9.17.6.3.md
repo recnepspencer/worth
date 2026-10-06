@@ -2231,10 +2231,6 @@ before machinery for another lands.
       gives it none, so the assessment answers
       `WorkflowAssessmentEvidenceMismatch` until a commit that rebases
       refreshes the row.
-    - Query's own delegation activation reads nothing about the child
-      grant, so a second activation for an existing child id commits. The
-      bank handler reads the child's absence. The platform fix changes a
-      declared contract and is tracked as its own task.
     - An exact selection reports its producer's first declared posture, also
       for a producer that declares Preserve and then runs over the live
       output. The reported posture selects no behavior.
@@ -2279,6 +2275,25 @@ before machinery for another lands.
   counts, locality evidence and the randomized differential test.
   *Completed:* the courtroom above. Its oracle and seeded sequences run
   through one neutral fixture, the topology entry.
+
+- A field declared unique names at most one entity. *Completed:*
+  - The schema declares it once, on an equality-indexed field. Installation
+    refuses it without its index, and refuses a delegation whose child
+    identity field is not unique.
+  - Every program write of a unique field (create, update, optional patch)
+    lowers only when the decision holds that value's indexed selection with
+    no candidate but the written entity, and one program writes each value
+    at most once. An unavailable index is its own denial.
+  - Delegation appends its child id's absence when the application did not
+    read it, inside the operation's decision fact budget.
+  - An identity is never reused: re-delegating an existing child id is
+    denied whatever the grant's status, and a status may still change. A
+    delete frees its value, but a delete and a create of one value in one
+    program is denied.
+  - A merge looks up, at the target head, only the unique values it writes,
+    so its lookups are proportional to its own writes.
+  - Bootstrap seeds hold each unique value at most once. Test-backend seeds
+    bypass the law.
 
 Work admission and capacity follow these rules. *Completed.*
 

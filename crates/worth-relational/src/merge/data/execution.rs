@@ -280,6 +280,12 @@ impl PreparedMergeExecution {
         self.compiled.artifact()
     }
 
+    /// The writes this merge commits onto its target, in commit order. Read
+    /// only: a caller may refuse the merge from them, never alter it.
+    pub fn merged_intents(&self) -> &[crate::transactions::data::MutationIntent] {
+        &self.mutation_plan.merged_intents
+    }
+
     pub(crate) fn execution_ready_plan(&self) -> &ExecutionReadyLoweredMergePlan {
         self.compiled.execution_ready_plan()
     }

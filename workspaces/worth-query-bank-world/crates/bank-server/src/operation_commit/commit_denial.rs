@@ -17,6 +17,8 @@ pub enum BankCommitDenialKind {
         kind: WorthQueryApplicationAttemptDenialKind,
     },
     ProductBasisStale,
+    UniqueValueTaken,
+    UniqueIndexUnavailable,
     ActiveSnapshotCapacityExhausted {
         maximum_active_snapshots: usize,
     },
@@ -90,6 +92,8 @@ pub(crate) const fn denial_kind(
             BankCommitDenialKind::WorkflowSettlementDenied { kind }
         }
         Query::ProductBasisStale => BankCommitDenialKind::ProductBasisStale,
+        Query::UniqueValueTaken => BankCommitDenialKind::UniqueValueTaken,
+        Query::UniqueIndexUnavailable => BankCommitDenialKind::UniqueIndexUnavailable,
         Query::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
         } => BankCommitDenialKind::ActiveSnapshotCapacityExhausted {

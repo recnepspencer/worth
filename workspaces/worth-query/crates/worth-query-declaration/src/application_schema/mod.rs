@@ -79,6 +79,8 @@ mod relation_integrity_tests;
 #[cfg(test)]
 mod stable_aspect_identity_tests;
 #[cfg(test)]
+mod unique_field_tests;
+#[cfg(test)]
 mod value_binding_tests;
 
 pub use aspect_contract_identity::ApplicationAspectMarkerIdentity;

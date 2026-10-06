@@ -162,7 +162,8 @@ fn select_lineage(
         layout.lineage.identity.clone(),
         text(identity),
         LINEAGE_LOOKUP_LIMIT,
-    )?;
+    )
+    .ok()?;
     let WorthQueryApplicationObservedFact::IndexedEntitySelection { candidates, .. } = selection
     else {
         return None;

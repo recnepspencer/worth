@@ -1,4 +1,5 @@
 mod authentication;
+mod public_merge;
 mod runtime_world;
 mod schema;
 
@@ -125,7 +126,7 @@ fn post_installation_bridge_backend_repairs_settlement_through_its_public_owner(
         .expect("a subsequent public operation proceeds after repair");
 }
 
-fn primary_graph_merge_runtime() -> crate::runtime::WorthQueryRuntime {
+pub(super) fn primary_graph_merge_runtime() -> crate::runtime::WorthQueryRuntime {
     complete_backend_from_parts_builder()
         .conditional_execution_resources(WorthQueryConditionalExecutionResources::development())
         .domain_package(primary_graph_domain_package())

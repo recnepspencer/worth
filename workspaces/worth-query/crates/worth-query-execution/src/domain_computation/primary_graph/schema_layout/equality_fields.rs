@@ -11,7 +11,7 @@ impl WorthQueryPrimaryGraphLayout {
     ) -> Option<&WorthQueryPrimaryFieldLayout> {
         self.fields
             .get(&(entity.to_string(), aspect.to_string(), field.to_string()))
-            .filter(|layout| layout.equality_index_id.is_some())
+            .filter(|layout| layout.equality_queryable)
     }
 
     /// One owned lookup key and the comparison work of one std B-tree search.
@@ -58,7 +58,7 @@ impl WorthQueryPrimaryGraphLayout {
     ) -> impl Iterator<Item = (&(String, String, String), &mut WorthQueryPrimaryFieldLayout)> {
         self.fields
             .iter_mut()
-            .filter(|(_, layout)| layout.equality_index_id.is_some())
+            .filter(|(_, layout)| layout.equality_queryable)
     }
 
     pub(in crate::domain_computation::primary_graph) fn equality_index_ids(

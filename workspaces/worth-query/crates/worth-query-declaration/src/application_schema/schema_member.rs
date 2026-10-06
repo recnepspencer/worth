@@ -93,6 +93,9 @@ pub enum ApplicationSchemaMember {
         frame: Option<String>,
         writable: bool,
         equality_queryable: bool,
+        /// No two live entities of the kind hold one value of this field.
+        /// Requires `equality_queryable`: the equality index is the lookup.
+        unique: bool,
     },
     Relation {
         relation: String,

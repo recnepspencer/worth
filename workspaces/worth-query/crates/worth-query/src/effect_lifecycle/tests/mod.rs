@@ -7,6 +7,8 @@ mod deferred;
 mod execution;
 #[path = "execution/execution_branching.rs"]
 mod execution_branching;
+#[path = "execution/execution_merge_unique_values.rs"]
+mod execution_merge_unique_values;
 #[path = "execution/execution_support.rs"]
 mod execution_support;
 #[path = "authoring/foundation.rs"]

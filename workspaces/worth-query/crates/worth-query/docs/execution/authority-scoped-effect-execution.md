@@ -6,8 +6,13 @@
 
 Authority-scoped effect execution turns an admitted effect into work performed
 by the runtime that owns its target. Use it after authoring and admission when
-you need to execute a writeback, mutation, merge, or supported delivery
-neighbor and retain an honest typed outcome.
+you need to execute a writeback, mutation, or supported delivery neighbor and
+retain an honest typed outcome.
+
+A merge runs only through the workspace that owns its runtime
+(`branch_merge`), because only that owner knows the graph's unique fields.
+`EffectExecutionAuthority` lent a runtime denies a lowered merge with
+`EffectExecutionDenialKind::MergeRequiresRuntimeOwner`.
 
 [Effects](effects.md) owns authoring (`workspace.effect`, triggers, and staged
 intent). This guide owns lowering, execution, and recovery when a Relational

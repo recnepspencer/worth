@@ -301,11 +301,15 @@ fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
         return terminal(denied(DenialStage::ProposalBinding));
     };
     let effect_posture = provider.effect_posture;
-    let provider_attempt = match prepare_application_provider_attempt(provider, mutation_partition)
-    {
-        Ok(prepared) => prepared,
-        Err(_) => return terminal(denied(DenialStage::ProposalBinding)),
-    };
+    let provider_attempt =
+        match prepare_application_provider_attempt(&lease, provider, mutation_partition) {
+            Ok(prepared) => prepared,
+            Err(denial) => {
+                return terminal(WorthQueryApplicationCommitOutcome::Denied(
+                    WorthQueryApplicationCommitDenial::effect_lowering_denied(&denial),
+                ))
+            }
+        };
     WorthQueryApplicationCommitPreparation::Ready(WorthQueryPreparedApplicationCommit {
         admission,
         lease,
@@ -320,10 +324,15 @@ fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
 }
 
 fn prepare_application_provider_attempt(
+    lease: &WorthQueryApplicationSnapshotLease,
     preparation: WorthQueryProviderAttemptPreparation,
     mutation_partition: worth_relational::facade::identity::PartitionId,
-) -> Result<WorthQueryPreparedApplicationProviderAttempt, ()> {
+) -> Result<
+    WorthQueryPreparedApplicationProviderAttempt,
+    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial,
+>{
     prepare_provider_attempt(
+        lease.layout.unique_fields(),
         mutation_partition,
         preparation.application_effect_count,
         preparation.installed_read_scopes,
@@ -342,7 +351,6 @@ fn prepare_application_provider_attempt(
         preparation.output_currentness_facts,
     )
     .map(|prepared| prepared.with_required_output_demand(preparation.required_output_demand))
-    .map_err(|_| ())
 }
 
 fn take_commit_authorization<Schema, Operation, Input, Scope>(

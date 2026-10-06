@@ -9,6 +9,8 @@ pub(in crate::domain_computation::primary_graph::application_attempt) use regist
 
 #[cfg(test)]
 mod semantic_model_tests;
+#[cfg(test)]
+mod unique_value_tests;
 
 use worth_query_installation::facade::{
     InstalledCorrectionMechanism, InstalledPreImageDemand, WorthQueryInstalledAftermathContract,
@@ -85,6 +87,9 @@ pub(super) fn installed_preimage_demand(
 }
 
 pub(super) fn prepare_provider_attempt(
+    unique_fields: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<
+        '_,
+    >,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     application_effect_count: usize,
     installed_read_scopes: Vec<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
@@ -109,6 +114,7 @@ pub(super) fn prepare_provider_attempt(
 ) -> Result<WorthQueryPreparedApplicationProviderAttempt, WorthQueryApplicationAttemptDenial> {
     let mut accumulator = WorthQueryProviderEffectAccumulator::new(
         &facts,
+        unique_fields,
         &effects,
         mutation_partition,
         application_effect_count,
@@ -138,6 +144,9 @@ pub(super) fn prepare_provider_attempt(
 }
 
 pub(super) fn prepare_program_migration_batch(
+    unique_fields: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<
+        '_,
+    >,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     facts: &[WorthQueryApplicationObservedFact],
     effects: Vec<WorthQueryApplicationRealizedEffect>,
@@ -147,6 +156,7 @@ pub(super) fn prepare_program_migration_batch(
 > {
     let mut accumulator = WorthQueryProviderEffectAccumulator::new(
         facts,
+        unique_fields,
         &effects,
         mutation_partition,
         effects.len(),

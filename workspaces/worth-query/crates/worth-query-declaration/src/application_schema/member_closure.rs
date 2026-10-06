@@ -95,6 +95,11 @@ impl<'a> ClosureIndex<'a> {
             } if !self.units.contains(unit.as_str()) => {
                 Err(ApplicationSchemaDeclarationDenial::MissingUnit)
             }
+            ApplicationSchemaMember::Field {
+                unique: true,
+                equality_queryable: false,
+                ..
+            } => Err(ApplicationSchemaDeclarationDenial::UniqueFieldWithoutEqualityIndex),
             ApplicationSchemaMember::Relation { from, to, .. }
                 if !self.entities.contains(from.as_str())
                     || !self.entities.contains(to.as_str()) =>

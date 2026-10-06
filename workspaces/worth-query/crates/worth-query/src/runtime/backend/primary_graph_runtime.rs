@@ -63,4 +63,22 @@ impl WorthQueryPrimaryGraphBackendHandle {
     ) -> Result<Result<T, E>, WorthQueryPrimaryGraphIndexRefreshDenial> {
         self.integration.execute_mutation_with_index_refresh(mutate)
     }
+
+    pub(in crate::runtime) fn execute_merge(
+        &self,
+        declaration: &crate::workflow::LoweredMergeWorkflowDeclaration,
+    ) -> Result<
+        Result<
+            worth_relational::facade::transactions::MergeExecutionOutcome,
+            crate::effect_lifecycle::RelationalEffectExecutionFailure,
+        >,
+        WorthQueryPrimaryGraphIndexRefreshDenial,
+    > {
+        let unique_values =
+            crate::effect_lifecycle::MergeUniqueValueAuthority::PrimaryGraph(&self.integration);
+        self.integration
+            .execute_mutation_with_index_refresh(|runtime| {
+                crate::effect_lifecycle::execute_lowered_merge(runtime, declaration, unique_values)
+            })
+    }
 }

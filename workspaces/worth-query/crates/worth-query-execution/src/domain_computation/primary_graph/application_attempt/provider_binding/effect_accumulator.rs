@@ -3,7 +3,7 @@ use std::sync::Arc;
 use worth_relational::facade::transactions::{MutationIntent, WorkerIntentBatch};
 
 use super::effect_lowering::{
-    lower_provider_effect, CreatedEffectReferences, ObservedFactIndex,
+    lower_provider_effect, CreatedEffectReferences, ObservedFactIndex, UniqueValueWrites,
     WorthQueryLoweredProviderEffect,
 };
 use super::{
@@ -12,14 +12,16 @@ use super::{
     WorthQueryApplicationRealizedEffect,
 };
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationEmission;
+use crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields;
 use crate::domain_computation::WorthQueryProvisionalEffectStep;
 
 mod expected_steps;
 pub(in crate::domain_computation::primary_graph) use expected_steps::WorthQueryExpectedEffectStepPreparationWork;
 use expected_steps::WorthQueryExpectedEffectSteps;
 
-pub(super) struct WorthQueryProviderEffectAccumulator<'facts> {
+pub(super) struct WorthQueryProviderEffectAccumulator<'facts, 'layout> {
     facts: ObservedFactIndex<'facts>,
+    unique: UniqueValueWrites<'layout>,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     created: CreatedEffectReferences,
     lowered: Vec<WorthQueryLoweredProviderEffect>,
@@ -33,9 +35,10 @@ pub(super) struct WorthQueryRegisteredProviderEffects {
     mutation_partition: worth_relational::facade::identity::PartitionId,
 }
 
-impl<'facts> WorthQueryProviderEffectAccumulator<'facts> {
+impl<'facts, 'layout> WorthQueryProviderEffectAccumulator<'facts, 'layout> {
     pub(super) fn new(
         facts: &'facts [WorthQueryApplicationObservedFact],
+        unique_fields: WorthQueryUniqueFields<'layout>,
         effects: &[WorthQueryApplicationRealizedEffect],
         mutation_partition: worth_relational::facade::identity::PartitionId,
         application_effect_count: usize,
@@ -51,6 +54,7 @@ impl<'facts> WorthQueryProviderEffectAccumulator<'facts> {
             .unwrap_or(mutation_partition);
         Self {
             facts: ObservedFactIndex::new(facts),
+            unique: UniqueValueWrites::new(unique_fields),
             mutation_partition,
             created: CreatedEffectReferences::new(effects, mutation_partition),
             lowered: Vec::with_capacity(effects.len()),
@@ -61,8 +65,13 @@ impl<'facts> WorthQueryProviderEffectAccumulator<'facts> {
         &mut self,
         effect: WorthQueryApplicationRealizedEffect,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-        let lowered =
-            lower_provider_effect(&self.facts, &self.created, self.mutation_partition, effect)?;
+        let lowered = lower_provider_effect(
+            &self.facts,
+            &mut self.unique,
+            &self.created,
+            self.mutation_partition,
+            effect,
+        )?;
         self.lowered.push(lowered);
         Ok(())
     }
@@ -241,7 +250,13 @@ mod tests {
             fields: BTreeMap::new(),
             partition: WorthQueryApplicationCreationPartition::Context(workflow),
         }];
-        let accumulator = WorthQueryProviderEffectAccumulator::new(&[], &effects, issued, 0);
+        let accumulator = WorthQueryProviderEffectAccumulator::new(
+            &[],
+            WorthQueryUniqueFields::none(),
+            &effects,
+            issued,
+            0,
+        );
         assert_eq!(accumulator.mutation_partition, issued);
     }
 }

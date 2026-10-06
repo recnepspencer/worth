@@ -20,7 +20,9 @@ use canonical_structure::validate_canonical_structure;
 use capability_revocation_program::revocation_programs_are_framework_owned;
 use composition::composition_is_closed;
 use declared_dimensions::DeclaredCapabilityDimensions;
-use delegation_activation_program::activation_programs_are_framework_owned;
+use delegation_activation_program::{
+    activation_identities_are_unique, activation_programs_are_framework_owned,
+};
 use dependencies::dependencies_are_closed;
 use elevation_lifecycle_program::lifecycle_program_targets_are_framework_owned;
 use topology::topology_is_valid;
@@ -54,6 +56,9 @@ pub(super) fn validate_application_capability_members(
         return Err(
             ApplicationSchemaDeclarationDenial::InvalidApplicationCapabilityDelegationActivationProgram,
         );
+    }
+    if !activation_identities_are_unique(members, &contracts) {
+        return Err(ApplicationSchemaDeclarationDenial::DelegationActivationIdentityNotUnique);
     }
     if !revocation_programs_are_framework_owned(members, &contracts) {
         return Err(ApplicationSchemaDeclarationDenial::InvalidApplicationCapability);

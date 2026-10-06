@@ -38,6 +38,7 @@ fn typed_field_member(entity: &str, aspect: &str, field: &str) -> ApplicationSch
         frame: None,
         writable: false,
         equality_queryable: true,
+        unique: false,
     }
 }
 

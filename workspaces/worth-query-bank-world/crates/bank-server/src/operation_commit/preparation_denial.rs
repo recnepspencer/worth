@@ -40,6 +40,8 @@ pub enum BankApplicationAttemptDenialKind {
     ForeignConditionalDefinitionChange,
     DuplicateConditionalDefinitionChange,
     IncompleteEffectBasis,
+    UniqueValueTaken,
+    UniqueIndexUnavailable,
     DelegationActivationRequired,
     DelegationActivationProgramMismatch,
     CapabilityRevocationRequired,
@@ -186,6 +188,8 @@ const fn application_attempt_kind(
             BankApplicationAttemptDenialKind::DuplicateConditionalDefinitionChange
         }
         Query::IncompleteEffectBasis => BankApplicationAttemptDenialKind::IncompleteEffectBasis,
+        Query::UniqueValueTaken => BankApplicationAttemptDenialKind::UniqueValueTaken,
+        Query::UniqueIndexUnavailable => BankApplicationAttemptDenialKind::UniqueIndexUnavailable,
         Query::DelegationActivationRequired => {
             BankApplicationAttemptDenialKind::DelegationActivationRequired
         }

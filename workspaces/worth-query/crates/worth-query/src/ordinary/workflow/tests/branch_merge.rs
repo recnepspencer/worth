@@ -362,7 +362,9 @@ fn explicit_merge(
         .lower()
         .expect("explicit merge should lower");
     let receipt = lowered
-        .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_with(
+            EffectExecutionAuthority::crate_relational_without_application_schema(&mut runtime),
+        )
         .expect("explicit merge should execute")
         .receipt();
     let diagnostics = materialize_diagnostics

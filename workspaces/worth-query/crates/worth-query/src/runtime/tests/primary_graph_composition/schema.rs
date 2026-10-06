@@ -41,7 +41,7 @@ worth_query_application_schema! {
                 .aspect(Principal::reference(), PrincipalIdentity::reference())
                 .field(ExternalMapping::reference(), ExternalIdentityField::reference())
                 .field(ExternalMapping::reference(), MappingStatusField::reference())
-                .field(Principal::reference(), PrincipalIdentityField::reference())
+                .unique_field(Principal::reference(), PrincipalIdentityField::reference())
                 .relation(
                     MappingTarget::reference(),
                     ExternalMapping::reference(),

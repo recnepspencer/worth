@@ -107,6 +107,11 @@ where
         .issue_application_mutation_partition()
         .ok_or(WorthQueryProgramMigrationPreparationDenial::MutationPartitionUnavailable)?;
     let effect_count = effects.len();
-    let batch = prepare_program_migration_batch(mutation_partition, &read_set.facts, effects)?;
+    let batch = prepare_program_migration_batch(
+        read_set.lease.layout.unique_fields(),
+        mutation_partition,
+        &read_set.facts,
+        effects,
+    )?;
     Ok((source_product, batch, effect_count))
 }

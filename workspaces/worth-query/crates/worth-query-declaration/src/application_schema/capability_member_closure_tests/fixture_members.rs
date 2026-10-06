@@ -111,7 +111,16 @@ pub(super) fn field_member(field: &str) -> ApplicationSchemaMember {
         frame: None,
         writable: false,
         equality_queryable: true,
+        unique: false,
     }
+}
+
+pub(super) fn unique_field_member(field: &str) -> ApplicationSchemaMember {
+    let mut member = field_member(field);
+    if let ApplicationSchemaMember::Field { unique, .. } = &mut member {
+        *unique = true;
+    }
+    member
 }
 
 pub(super) fn resource_field_member(field: &str) -> ApplicationSchemaMember {
@@ -129,6 +138,7 @@ pub(super) fn resource_field_member(field: &str) -> ApplicationSchemaMember {
         frame: None,
         writable: false,
         equality_queryable: true,
+        unique: false,
     }
 }
 

@@ -5,7 +5,6 @@ use worth_query_installation::facade::{
     ApplicationSchemaMember, ErasedApplicationSchemaDeclaration,
 };
 use worth_relational::facade::identity::KindId;
-use worth_relational::facade::indexes::DerivedIndexId;
 
 use super::{
     planned_field_locator, required_kind, WorthQueryPrimaryFieldLayout,
@@ -80,17 +79,20 @@ pub(super) fn lower_fields(
                 aspect,
                 field,
                 equality_queryable,
+                unique,
                 ..
-            } => Some((entity, aspect, field, equality_queryable)),
+            } => Some((entity, aspect, field, equality_queryable, unique)),
             _ => None,
         })
-        .map(|(entity, aspect, field, equality_queryable)| {
+        .map(|(entity, aspect, field, equality_queryable, unique)| {
             Ok((
                 (entity.clone(), aspect.clone(), field.clone()),
                 WorthQueryPrimaryFieldLayout {
                     entity_kind: required_kind(entity_kinds, entity)?,
                     locator: planned_field_locator(aspect, field)?,
-                    equality_index_id: equality_queryable.then_some(DerivedIndexId(0)),
+                    equality_queryable: *equality_queryable,
+                    equality_index_id: None,
+                    unique: *unique,
                 },
             ))
         })

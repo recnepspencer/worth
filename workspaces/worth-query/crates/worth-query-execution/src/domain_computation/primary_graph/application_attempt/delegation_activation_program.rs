@@ -1,5 +1,7 @@
 use worth_query_declaration::facade::domain_computation::WorthQueryResourceDimension;
 
+mod child_identity;
+
 use super::effect_program::WorthQueryApplicationRealizedEffect;
 use super::effect_validation::denial;
 use super::{
@@ -26,7 +28,7 @@ impl<Schema, Operation, Input, Scope>
     >
 {
     pub fn materialize_capability_delegation_program(
-        self,
+        mut self,
     ) -> Result<
         WorthQueryDelegationActivationProgram<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -36,6 +38,7 @@ impl<Schema, Operation, Input, Scope>
             .delegation_activation_binding()
             .ok_or_else(|| transition_required(self.admission.operation()))?;
         let effects = activation_effects(binding, self.admission.allowed_graph_contract())?;
+        self.observe_created_unique_values(&effects)?;
         let emission_retained_bytes_ceiling = self
             .admission
             .allowed_graph_contract()

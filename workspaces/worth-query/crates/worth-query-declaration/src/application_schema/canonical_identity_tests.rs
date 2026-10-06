@@ -326,6 +326,7 @@ fn field(
         frame: None,
         writable,
         equality_queryable,
+        unique: false,
     }
 }
 

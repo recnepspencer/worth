@@ -107,7 +107,9 @@ pub(super) fn relational_merge_execution_row() -> EffectLifecyclePhase4Certifica
     let executed = scope_admitted_effect_plan(admitted)
         .lower()
         .expect("merge should lower")
-        .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_with(
+            EffectExecutionAuthority::crate_relational_without_application_schema(&mut runtime),
+        )
         .expect("merge should execute");
     EffectLifecyclePhase4CertificationRow::new(
         EffectLifecyclePhase4LaneKind::RelationalMergeExecution,

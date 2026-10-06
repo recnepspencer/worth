@@ -50,6 +50,13 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     ForeignConditionalDefinitionChange,
     DuplicateConditionalDefinitionChange,
     IncompleteEffectBasis,
+    /// A write of a unique field names a value another live entity holds,
+    /// or the program writes that value twice. Deleting the holder in the
+    /// same program does not free it.
+    UniqueValueTaken,
+    /// A unique field's equality index could not answer the lookup its write
+    /// must observe.
+    UniqueIndexUnavailable,
     DelegationActivationRequired,
     DelegationActivationProgramMismatch,
     CapabilityRevocationRequired,

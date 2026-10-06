@@ -16,6 +16,7 @@ mod execution_artifacts;
 mod execution_bridge;
 mod execution_control_stop;
 mod execution_deferred_kind;
+mod execution_merge;
 mod execution_relational_batch;
 mod execution_relational_scalar;
 mod intent;
@@ -128,9 +129,9 @@ pub use taxonomy::{
     DeniedEffectEligibilityKind, EffectAuthorityLane, EffectFamily, EffectIntentDenialKind,
 };
 
-pub(crate) use execution::execute_lowered_merge;
 pub(crate) use execution_bridge::execute_lowered_writeback;
 pub(crate) use execution_deferred_kind::companion_stop_is_transient;
+pub(crate) use execution_merge::{execute_lowered_merge, MergeUniqueValueAuthority};
 
 #[cfg(test)]
 mod tests;

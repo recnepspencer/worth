@@ -19,6 +19,7 @@ fn schema_axes_use_the_current_complete_identity_preimage() {
         frame: Some("worth.tests.frame.v1".to_owned()),
         writable: false,
         equality_queryable: false,
+        unique: false,
     };
     let no_self_edges_relation = ApplicationSchemaMember::Relation {
         relation: "Relation".to_owned(),
@@ -38,7 +39,7 @@ fn schema_axes_use_the_current_complete_identity_preimage() {
     ] {
         assert_eq!(
             identity.canonical_basis().payload().version().as_str(),
-            "worth-query-application-schema-v14"
+            "worth-query-application-schema-v15"
         );
     }
 }
@@ -73,13 +74,34 @@ fn relation_endpoint_policy_changes_current_canonical_meaning() {
     );
     assert_eq!(
         unchanged.canonical_basis().payload().version().as_str(),
-        "worth-query-application-schema-v14"
+        "worth-query-application-schema-v15"
     );
     assert_eq!(
         no_self_edges.canonical_basis().payload().version().as_str(),
-        "worth-query-application-schema-v14"
+        "worth-query-application-schema-v15"
     );
     assert_ne!(unchanged, no_self_edges);
+}
+
+#[test]
+fn field_uniqueness_changes_current_canonical_meaning() {
+    let field = |unique| ApplicationSchemaMember::Field {
+        entity: "Entity".to_owned(),
+        aspect: "Aspect".to_owned(),
+        field: "Field".to_owned(),
+        presence: ApplicationFieldPresence::Required,
+        scalar_family: ScalarAspectType::UInt64,
+        value_type: "worth.rust.u64".to_owned(),
+        unit: None,
+        frame: None,
+        writable: false,
+        equality_queryable: true,
+        unique,
+    };
+    let shared = canonical_identity(header(), &[field(false)], &[]);
+    let unique = canonical_identity(header(), &[field(true)], &[]);
+
+    assert_ne!(shared, unique);
 }
 
 fn header() -> ApplicationSchemaCanonicalHeader<'static> {

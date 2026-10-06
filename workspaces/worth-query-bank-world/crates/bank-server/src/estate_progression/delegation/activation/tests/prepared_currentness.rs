@@ -90,7 +90,7 @@ fn unrelated_revocation_preserves_the_prepared_delegation_and_a_taken_child_id_s
     assert_eq!(grants_named(&fixture, &specialist, CHILD), 1);
 }
 
-fn grants_named(
+pub(super) fn grants_named(
     fixture: &crate::estate_capability_admission::fixture::CapabilityFixture,
     principal: &BankAuthenticatedPrincipal,
     grant: CapabilityGrantId,

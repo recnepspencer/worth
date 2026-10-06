@@ -147,7 +147,7 @@ where
         Ok(WorthQueryWorkflowProposalRequest {
             execution: WorkflowProposalRequestExecution::Prepared {
                 application,
-                prepared,
+                prepared: Box::new(prepared),
                 idempotency: mutation.idempotency,
             },
         })
@@ -168,7 +168,7 @@ where
 {
     Prepared {
         application: &'application worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        prepared: PreparedWorkflowProposal<Schema, Operation, Input, Scope>,
+        prepared: Box<PreparedWorkflowProposal<Schema, Operation, Input, Scope>>,
         idempotency: worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyBinding,
     },
     Resolved(WorkflowProposalOutcome),
@@ -189,7 +189,7 @@ where
                 idempotency,
             } => WorthQueryWorkflowProposalAdapter::compare_and_commit(
                 application,
-                prepared,
+                *prepared,
                 idempotency,
             ),
             WorkflowProposalRequestExecution::Resolved(outcome) => outcome,

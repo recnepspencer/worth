@@ -7,6 +7,15 @@ use worth_relational::facade::indexes::{
 
 use super::WorthQueryApplicationObservedFact;
 
+/// Why an indexed lookup yields no selection fact.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph) enum WorthQueryIndexedSelectionRefusal {
+    /// More entities hold the value than the lookup's candidate limit.
+    Overflowed,
+    /// The index could not answer at the snapshot.
+    Unavailable,
+}
+
 pub(in crate::domain_computation::primary_graph) fn observe_indexed_entity_selection(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -15,7 +24,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_indexed_entity_selec
     locator: AspectFieldLocator,
     value: AspectValue,
     candidate_limit: usize,
-) -> Option<WorthQueryApplicationObservedFact> {
+) -> Result<WorthQueryApplicationObservedFact, WorthQueryIndexedSelectionRefusal> {
     observe_examined(
         runtime,
         snapshot,
@@ -28,6 +37,29 @@ pub(in crate::domain_computation::primary_graph) fn observe_indexed_entity_selec
     .map(|(selection, _)| selection)
 }
 
+/// The entities holding `value` at the snapshot, for a reader that records
+/// no fact: a merge's unique lookup reads the candidates only.
+pub(in crate::domain_computation::primary_graph) fn observe_indexed_candidates(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    index_id: DerivedIndexId,
+    entity_kind: KindId,
+    locator: &AspectFieldLocator,
+    value: &AspectValue,
+    candidate_limit: usize,
+) -> Result<Vec<EntityId>, WorthQueryIndexedSelectionRefusal> {
+    bounded_entity_field_selection(
+        runtime,
+        snapshot,
+        index_id,
+        entity_kind,
+        locator,
+        value,
+        candidate_limit,
+    )
+    .map(BoundedEntityFieldLookupOutcome::into_candidate_entity_ids)
+}
+
 /// The selection as the snapshot holds it, with the index entries its lookup
 /// examined.
 fn observe_examined(
@@ -38,7 +70,7 @@ fn observe_examined(
     locator: AspectFieldLocator,
     value: AspectValue,
     candidate_limit: usize,
-) -> Option<(WorthQueryApplicationObservedFact, usize)> {
+) -> Result<(WorthQueryApplicationObservedFact, usize), WorthQueryIndexedSelectionRefusal> {
     let outcome = bounded_entity_field_selection(
         runtime,
         snapshot,
@@ -59,7 +91,7 @@ fn observe_examined(
         candidate_limit,
         candidates: outcome.into_candidate_entity_ids(),
     };
-    Some((selection, examined))
+    Ok((selection, examined))
 }
 
 pub(super) fn remains_equal(
@@ -82,7 +114,7 @@ pub(super) fn remains_equal(
         value,
         candidate_limit,
     )
-    .is_some_and(|current| {
+    .is_ok_and(|current| {
         current.retain_definition().as_ref() == definition.as_ref()
             && current.candidate_entity_ids() == expected
     })
@@ -96,7 +128,7 @@ fn bounded_entity_field_selection(
     locator: &AspectFieldLocator,
     value: &AspectValue,
     candidate_limit: usize,
-) -> Option<BoundedEntityFieldLookupOutcome> {
+) -> Result<BoundedEntityFieldLookupOutcome, WorthQueryIndexedSelectionRefusal> {
     let request = BoundedEntityFieldLookupRequest::new(
         snapshot.clone(),
         index_id,
@@ -105,12 +137,15 @@ fn bounded_entity_field_selection(
         value.clone(),
         candidate_limit,
     )
-    .ok()?;
+    .map_err(|_| WorthQueryIndexedSelectionRefusal::Unavailable)?;
     let outcome = runtime
         .index_access()
         .execute_bounded_entity_field_lookup(request, BoundedIndexParityMode::Production)
-        .ok()?;
-    (!outcome.overflowed()).then_some(outcome)
+        .map_err(|_| WorthQueryIndexedSelectionRefusal::Unavailable)?;
+    if outcome.overflowed() {
+        return Err(WorthQueryIndexedSelectionRefusal::Overflowed);
+    }
+    Ok(outcome)
 }
 
 pub(in crate::domain_computation::primary_graph) fn reobserve(
@@ -138,6 +173,7 @@ pub(in crate::domain_computation::primary_graph) fn reobserve(
         value.clone(),
         *candidate_limit,
     )
+    .ok()
 }
 
 pub(super) fn currentness(

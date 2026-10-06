@@ -222,6 +222,9 @@ pub use super::invariant_projection::{
     WorthQueryInvariantRelation, WorthQueryOperationProjectionDenial,
     WorthQueryOperationProjectionDenialKind, WorthQueryPriorOutputFamilyMember,
 };
+pub use super::merge_unique_values::{
+    WorthQueryMergeUniqueValueDenial, WorthQueryMergeUniqueValueDenialKind,
+};
 pub use super::ordinary_read::{
     WorthQueryOrdinaryReadBatch, WorthQueryOrdinaryReadMetadata, WorthQueryOrdinaryReadProjection,
     WorthQueryOrdinaryReadVersion,

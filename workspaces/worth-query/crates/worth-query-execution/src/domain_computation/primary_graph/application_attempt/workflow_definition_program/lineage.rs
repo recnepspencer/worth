@@ -37,7 +37,7 @@ pub(super) fn select_lineage<Spec: ApplicationWorkflowSpec>(
         identity,
         LINEAGE_LOOKUP_LIMIT,
     )
-    .ok_or_else(|| lineage_denial(definition.identity().as_str()))?;
+    .map_err(|_| lineage_denial(definition.identity().as_str()))?;
     let candidates = match &selection {
         WorthQueryApplicationObservedFact::IndexedEntitySelection { candidates, .. } => {
             candidates.clone()

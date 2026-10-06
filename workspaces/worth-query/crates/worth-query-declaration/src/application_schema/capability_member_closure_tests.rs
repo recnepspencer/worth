@@ -99,7 +99,7 @@ mod population_budget;
 #[path = "capability_member_closure_tests/portable_reconstruction.rs"]
 mod portable_reconstruction;
 
-use fixture_members::{field_member, members, relation_member};
+use fixture_members::{field_member, members, relation_member, unique_field_member};
 
 fn build_from_members(
     members: Vec<ApplicationSchemaMember>,

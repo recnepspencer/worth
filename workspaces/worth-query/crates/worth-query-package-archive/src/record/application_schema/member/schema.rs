@@ -82,6 +82,7 @@ fn write_field(
         frame,
         writable,
         equality_queryable,
+        unique,
     } = member
     else {
         unreachable!()
@@ -99,7 +100,8 @@ fn write_field(
         output.text(frame)?;
     }
     foundational_value::write_bool(output, *writable)?;
-    foundational_value::write_bool(output, *equality_queryable)
+    foundational_value::write_bool(output, *equality_queryable)?;
+    foundational_value::write_bool(output, *unique)
 }
 
 fn write_relation(
@@ -154,6 +156,7 @@ pub(super) fn decode(
                 .transpose()?,
             writable: foundational_value::decode_bool(input)?,
             equality_queryable: foundational_value::decode_bool(input)?,
+            unique: foundational_value::decode_bool(input)?,
         },
         4 | 26 => ApplicationSchemaMember::Relation {
             relation: input.text()?.to_owned(),

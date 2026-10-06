@@ -17,6 +17,7 @@ pub(super) fn append_schema_field(
         frame,
         writable,
         equality_queryable,
+        unique,
     } = member
     else {
         unreachable!("field lowering requires a field member")
@@ -35,4 +36,5 @@ pub(super) fn append_schema_field(
     basis.optional_text(format!("{prefix}.frame"), frame.as_deref());
     basis.bool(format!("{prefix}.writable"), *writable);
     basis.bool(format!("{prefix}.equality-queryable"), *equality_queryable);
+    basis.bool(format!("{prefix}.unique"), *unique);
 }

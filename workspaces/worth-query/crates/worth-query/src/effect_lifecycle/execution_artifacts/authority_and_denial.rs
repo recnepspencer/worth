@@ -52,6 +52,20 @@ pub enum EffectExecutionDenialKind {
     RelationalCommitFailed,
     MergePreparationFailed,
     MergeExecutionFailed,
+    /// A merge writes a unique value another live entity holds at the
+    /// target head, or writes one unique value twice.
+    UniqueValueTaken,
+    /// A unique field's equality index could not answer for a merge.
+    UniqueIndexUnavailable,
+    /// The merge's target head could not be opened for its unique lookup.
+    MergeTargetHeadUnavailable,
+    /// A merge updates an entity that is not live at its target head.
+    MergedEntityNotLive,
+    /// A merge writes an entity in a shape the unique lookup cannot read.
+    MergeWriteShapeUnread,
+    /// A lent runtime cannot prove it holds no application schema, so a
+    /// merge runs only through the backend that owns its runtime.
+    MergeRequiresRuntimeOwner,
 }
 
 impl EffectExecutionDenialKind {
@@ -107,14 +121,32 @@ impl EffectExecutionDenialKind {
             Self::RelationalCommitFailed => "relational_commit_failed",
             Self::MergePreparationFailed => "merge_preparation_failed",
             Self::MergeExecutionFailed => "merge_execution_failed",
+            Self::UniqueValueTaken => "unique_value_taken",
+            Self::UniqueIndexUnavailable => "unique_index_unavailable",
+            Self::MergeTargetHeadUnavailable => "merge_target_head_unavailable",
+            Self::MergedEntityNotLive => "merged_entity_not_live",
+            Self::MergeWriteShapeUnread => "merge_write_shape_unread",
+            Self::MergeRequiresRuntimeOwner => "merge_requires_runtime_owner",
         }
     }
+}
+
+/// Whether this authority may execute a lowered merge. A runtime lent by a
+/// caller may be the primary graph, whose unique fields only the backend
+/// that owns it can read, so a public authority never executes a merge.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum EffectMergeAuthority {
+    /// Merges run through the backend that owns the runtime.
+    RuntimeOwnerRequired,
+    /// A runtime this crate built for itself, with no application schema.
+    CrateRuntimeWithoutApplicationSchema,
 }
 
 #[derive(Debug)]
 pub struct EffectExecutionAuthority<'a> {
     relational: Option<&'a mut RelationalRuntime>,
     bridge: Option<&'a RuntimeBridge>,
+    merge: EffectMergeAuthority,
 }
 
 impl<'a> EffectExecutionAuthority<'a> {
@@ -122,6 +154,7 @@ impl<'a> EffectExecutionAuthority<'a> {
         Self {
             relational: Some(runtime),
             bridge: None,
+            merge: EffectMergeAuthority::RuntimeOwnerRequired,
         }
     }
 
@@ -129,6 +162,7 @@ impl<'a> EffectExecutionAuthority<'a> {
         Self {
             relational: None,
             bridge: Some(runtime),
+            merge: EffectMergeAuthority::RuntimeOwnerRequired,
         }
     }
 
@@ -136,6 +170,18 @@ impl<'a> EffectExecutionAuthority<'a> {
         Self {
             relational: Some(relational),
             bridge: Some(bridge),
+            merge: EffectMergeAuthority::RuntimeOwnerRequired,
+        }
+    }
+
+    /// Relational authority over a runtime this crate built for itself,
+    /// which carries no application schema and so may execute merges.
+    pub(crate) fn crate_relational_without_application_schema(
+        runtime: &'a mut RelationalRuntime,
+    ) -> Self {
+        Self {
+            merge: EffectMergeAuthority::CrateRuntimeWithoutApplicationSchema,
+            ..Self::relational(runtime)
         }
     }
 
@@ -163,6 +209,10 @@ impl<'a> EffectExecutionAuthority<'a> {
 
     pub(crate) fn has_bridge_authority(&self) -> bool {
         self.bridge.is_some()
+    }
+
+    pub(crate) fn merge_authority(&self) -> EffectMergeAuthority {
+        self.merge
     }
 }
 

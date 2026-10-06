@@ -184,6 +184,7 @@ fn dependencies() -> Vec<ApplicationSchemaMember> {
             frame: None,
             writable: false,
             equality_queryable: true,
+            unique: false,
         },
     ]
 }
@@ -214,6 +215,7 @@ fn relation_predicate_dependencies(equality_queryable: bool) -> Vec<ApplicationS
             frame: None,
             writable: false,
             equality_queryable,
+            unique: false,
         },
         ApplicationSchemaMember::Relation {
             relation: "AccountAllActivity".to_owned(),

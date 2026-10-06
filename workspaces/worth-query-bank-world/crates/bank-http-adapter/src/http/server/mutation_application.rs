@@ -346,7 +346,8 @@ pub(super) fn commit_denial(
                 BankHttpNextAction::ContactOperator,
             ),
         ),
-        Denial::CandidateValidatorWorkExceeded { .. }
+        Denial::UniqueValueTaken
+        | Denial::CandidateValidatorWorkExceeded { .. }
         | Denial::WorkflowSettlementDenied { .. }
         | Denial::PreparedRootBudgetExhausted { .. }
         | Denial::ElevationTransitionRequired
@@ -376,6 +377,7 @@ pub(super) fn commit_denial(
         | Denial::CandidateIdentityExhausted
         | Denial::IndexGenerationIdentityExhausted
         | Denial::ProgramActivationUnresolved
+        | Denial::UniqueIndexUnavailable
         | Denial::ProgramSupportRetired
         | Denial::MutationBindingMismatch
         | Denial::MutationInputMismatch => (

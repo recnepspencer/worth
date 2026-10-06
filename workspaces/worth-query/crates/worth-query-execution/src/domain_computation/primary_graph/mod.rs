@@ -45,6 +45,7 @@ mod invariant_installation;
 mod invariant_projection;
 mod live_delivery;
 mod managed_bridge;
+mod merge_unique_values;
 pub(crate) use managed_bridge::build_primary_graph_product_bridge;
 mod observations;
 mod ordinary_read;

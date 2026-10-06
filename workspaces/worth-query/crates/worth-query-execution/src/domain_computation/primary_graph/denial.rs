@@ -28,6 +28,9 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     DuplicatePrincipalIdentity,
     /// Two bootstrap principals share a principal key.
     DuplicatePrincipalKey,
+    /// Two bootstrap rows write one value of a unique field; the subject
+    /// names the field.
+    DuplicateUniqueSeedValue,
     /// The bootstrap has no content.
     EmptyBootstrap,
     /// A schema member is not valid for installation.

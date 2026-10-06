@@ -22,6 +22,7 @@ const GRANDCHILD: CapabilityGrantId = CapabilityGrantId::new(402).unwrap();
 
 mod expiry;
 mod prepared_currentness;
+mod unread_child_identity;
 
 #[test]
 fn raw_specialized_commit_cannot_bypass_the_installed_program() {

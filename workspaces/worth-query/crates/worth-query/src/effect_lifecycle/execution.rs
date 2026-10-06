@@ -1,16 +1,15 @@
-use worth_relational::facade::runtime::RelationalRuntime;
-use worth_relational::facade::transactions::MergeExecutionOutcome;
-
+use super::execution_artifacts::EffectMergeAuthority;
 pub use super::execution_artifacts::{
     EffectExecutionAuthority, EffectExecutionControlStopped, EffectExecutionDeferred,
     EffectExecutionDenial, EffectExecutionDenialKind, EffectExecutionSettlementDeferred,
     EffectExecutionStop, ExecutedEffectAuthorityArtifact, ExecutedEffectPlan,
 };
 use super::execution_bridge::execute_lowered_writeback;
+use super::execution_merge::{execute_lowered_merge, MergeUniqueValueAuthority};
 use super::execution_relational_scalar::execute_lowered_mutation;
 use super::lowering::{LoweredEffectExecutionArtifact, LoweredEffectExecutionPlan};
 use super::receipt::EffectExecutionReceipt;
-use super::{EffectExecutionDeferredKind, RelationalEffectExecutionFailure};
+use super::RelationalEffectExecutionFailure;
 impl LoweredEffectExecutionPlan {
     pub(crate) fn execute_with(
         self,
@@ -73,15 +72,29 @@ pub(crate) fn execute_lowered_effect_plan_with_authority(
                     "lowered relational merge execution rejected bridge host override; the admitted lowered plan requires relational authority",
                 )));
             }
-            let runtime = authority.relational_runtime().ok_or_else(|| {
-                EffectExecutionStop::Denied(EffectExecutionDenial::new(
+            if !authority.has_relational_authority() {
+                return Err(EffectExecutionStop::Denied(EffectExecutionDenial::new(
                     &lowered,
                     EffectExecutionDenialKind::MissingRelationalAuthority,
                     "lowered relational merge execution requires a relational runtime authority",
-                ))
-            })?;
-            let outcome = execute_lowered_merge(runtime, declaration)
-                .map_err(|failure| lower_relational_stop(&lowered, failure))?;
+                )));
+            }
+            if authority.merge_authority() == EffectMergeAuthority::RuntimeOwnerRequired {
+                return Err(EffectExecutionStop::Denied(EffectExecutionDenial::new(
+                    &lowered,
+                    EffectExecutionDenialKind::MergeRequiresRuntimeOwner,
+                    "a lent runtime may hold an application schema; run the merge through the backend that owns it",
+                )));
+            }
+            let runtime = authority
+                .relational_runtime()
+                .expect("relational authority was checked above");
+            let outcome = execute_lowered_merge(
+                runtime,
+                declaration,
+                MergeUniqueValueAuthority::NoApplicationSchema,
+            )
+            .map_err(|failure| lower_relational_stop(&lowered, failure))?;
             Ok(ExecutedEffectPlan::new(
                 lowered,
                 ExecutedEffectAuthorityArtifact::Merge(outcome),
@@ -138,63 +151,6 @@ fn lower_relational_stop(
                 lowered, message, settlement,
             ))
         }
-    }
-}
-
-pub(crate) fn execute_lowered_merge(
-    runtime: &mut RelationalRuntime,
-    declaration: &crate::workflow::LoweredMergeWorkflowDeclaration,
-) -> Result<MergeExecutionOutcome, RelationalEffectExecutionFailure> {
-    let prepared = runtime
-        .bind_merge_execution_request(declaration.merge_request().clone())
-        .map_err(merge_binding_failure)
-        .and_then(|bound| {
-            runtime.prepare_merge_execution(bound).map_err(|error| {
-                let (kind, message) =
-                    lower_runtime_error(error, EffectExecutionDenialKind::MergePreparationFailed);
-                RelationalEffectExecutionFailure::Denied { kind, message }
-            })
-        })?;
-    runtime
-        .execute_prepared_merge(prepared)
-        .map_err(|error| match error {
-            worth_relational::facade::merge::MergeExecutionError::Commit(error) => {
-                super::relational_execution_deferred::transaction_commit(error)
-            }
-            other => {
-                let (kind, message) =
-                    lower_runtime_error(other, EffectExecutionDenialKind::MergeExecutionFailed);
-                RelationalEffectExecutionFailure::Denied { kind, message }
-            }
-        })
-}
-
-fn merge_binding_failure(
-    denial: worth_relational::facade::merge::RelationalMergeRequestBindingDenial,
-) -> RelationalEffectExecutionFailure {
-    match denial {
-        worth_relational::facade::merge::RelationalMergeRequestBindingDenial::RetentionCapacityExhausted => {
-            RelationalEffectExecutionFailure::Deferred {
-                kind: EffectExecutionDeferredKind::RetentionBackpressure,
-                message: format!("{denial:?}"),
-            }
-        }
-        worth_relational::facade::merge::RelationalMergeRequestBindingDenial::RetentionIdentityExhausted => {
-            RelationalEffectExecutionFailure::Denied {
-                kind: EffectExecutionDenialKind::TransactionRetentionIdentityExhausted,
-                message: format!("{denial:?}"),
-            }
-        }
-        worth_relational::facade::merge::RelationalMergeRequestBindingDenial::SnapshotIdentityExhausted => {
-            RelationalEffectExecutionFailure::Denied {
-                kind: EffectExecutionDenialKind::SnapshotIdentityExhausted,
-                message: format!("{denial:?}"),
-            }
-        }
-        _ => RelationalEffectExecutionFailure::Denied {
-            kind: EffectExecutionDenialKind::MergePreparationFailed,
-            message: format!("{denial:?}"),
-        },
     }
 }
 
