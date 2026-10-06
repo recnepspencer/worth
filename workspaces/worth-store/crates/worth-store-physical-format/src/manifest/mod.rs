@@ -46,8 +46,8 @@ pub use durable_membership::{
     RecordSegmentPageManifestEntry,
 };
 pub use durable_root::{
-    maximum_current_root_entries, DurablePhysicalRootManifest, DurablePhysicalRootManifestBuilder,
-    RootManifestDenial,
+    durable_root_manifest_frame_digest, maximum_current_root_entries, DurablePhysicalRootManifest,
+    DurablePhysicalRootManifestBuilder, RootManifestDenial,
 };
 pub use durable_root_placement::{
     CurrentPhysicalRecordPlacement, DurableExtentRecordPlacement, DurableInlineRecordPlacement,

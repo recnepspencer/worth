@@ -1,8 +1,8 @@
 use worth_store_physical_format::{
-    DerivedFamilyRootDirectoryBinding, DurablePhysicalRootManifest, FreeSpaceBlockReference,
-    IndexedThroughBlobPublication, ManifestBlockReference, PersistedRecordIdentity,
-    PhysicalRecordFormatDeclaration, ReleaseCustodyHeadBlockReferenceV1, SegmentGenerationCell,
-    SegmentManifestBlockReference,
+    durable_root_manifest_frame_digest, DerivedFamilyRootDirectoryBinding,
+    DurablePhysicalRootManifest, FreeSpaceBlockReference, IndexedThroughBlobPublication,
+    ManifestBlockReference, PersistedRecordIdentity, PhysicalRecordFormatDeclaration,
+    ReleaseCustodyHeadBlockReferenceV1, SegmentGenerationCell, SegmentManifestBlockReference,
 };
 
 use super::super::{
@@ -180,7 +180,6 @@ impl<'media> IntegrityValidatedRootManifest<'media> {
 
     /// Exact complete frame identity of this independently admitted source root.
     pub fn frame_sha256(&self) -> [u8; 32] {
-        use sha2::{Digest, Sha256};
-        Sha256::digest(self.inspected.bytes()).into()
+        durable_root_manifest_frame_digest(self.inspected.bytes())
     }
 }

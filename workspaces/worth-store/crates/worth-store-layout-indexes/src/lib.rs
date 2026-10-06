@@ -200,8 +200,6 @@ pub(crate) use strategy::{
 };
 
 pub(crate) use declarations::layout_declarations;
-mod operational_repair;
-pub use operational_repair::{
-    LayoutRepairConsequence, LayoutRepairConsequenceDenial, LayoutRepairConsequenceOwner,
-    LayoutRepairConsequencePlan, LayoutRepairConsequenceReceipt, LayoutRepairRegionObservation,
-};
+/// The S.10 layout repair consequence owner that operations schedules in its
+/// owner-plan DAG. Consumers import it through this named module only.
+pub mod operational_repair;

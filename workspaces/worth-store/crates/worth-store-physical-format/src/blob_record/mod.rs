@@ -16,6 +16,7 @@ mod reclaim;
 mod resume_session;
 mod session;
 mod tree_node;
+mod validation_digest;
 
 pub use chunk_frame::{BlobChunkFrameV1, BlobChunkOccurrenceV1, DecodedBlobChunkFrameV1};
 pub use chunk_reuse_claim::BlobChunkReuseClaimV1;
@@ -36,6 +37,7 @@ pub use reclaim::{
 pub use resume_session::{BlobAbandonmentReasonV1, BlobSessionAbandonedV1, BlobSessionFrontierV1};
 pub use session::BlobSessionDeclarationV1;
 pub use tree_node::{BlobTreeEntryV1, BlobTreeNodeKind, BlobTreeNodeV1, BlobTreeOccurrenceV1};
+pub use validation_digest::blob_record_v1_validation_digest;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BlobRecordV1<'bytes> {

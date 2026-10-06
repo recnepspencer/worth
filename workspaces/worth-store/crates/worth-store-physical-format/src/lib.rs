@@ -108,18 +108,18 @@ pub use blob_manifest_residue_cleanup_v2::{
     ReservedDropRecordV1, BLOB_MANIFEST_RESIDUE_CLEANUP_V2_DOMAIN,
 };
 pub use blob_record::{
-    decode_blob_record, BlobAbandonmentReasonV1, BlobChunkFrameV1, BlobChunkOccurrenceV1,
-    BlobChunkReuseClaimV1, BlobChunkReuseClaimV2, BlobDedupeQuarantineV1,
-    BlobGenerationPublicationV1, BlobReclaimDescriptorV1, BlobReclaimDescriptorV2,
-    BlobReclaimDescriptorV3, BlobReclaimSourceBasisV1, BlobReclaimSourceKind, BlobRecordDenial,
-    BlobRecordKind, BlobRecordV1, BlobSessionAbandonedV1, BlobSessionDeclarationV1,
-    BlobSessionFrontierV1, BlobTreeEntryV1, BlobTreeNodeKind, BlobTreeNodeV1, BlobTreeOccurrenceV1,
-    DecodedBlobChunkFrameV1, DropSetManifestV1, DropSetManifestV2, DropSetManifestV2View,
-    DropSetManifestV3, DropSetManifestV3View, FailedIngestReclaimBasisV1,
-    OriginalDropReservationRequestV1, OriginalDropReservedV1, ReleasedDropCustodyV1,
-    ReleasedDropPredecessorV1, ReleasedGenerationReclaimBasisV1, BLOB_CHUNK_FRAME_MAX_BYTES,
-    BLOB_CONTROL_FRAME_MAX_BYTES, BLOB_RECORD_HEADER_BYTES, BLOB_RECORD_VERSION,
-    BLOB_TREE_NODE_FRAME_MAX_BYTES, MAXIMUM_DROP_SET_RECORDS,
+    blob_record_v1_validation_digest, decode_blob_record, BlobAbandonmentReasonV1,
+    BlobChunkFrameV1, BlobChunkOccurrenceV1, BlobChunkReuseClaimV1, BlobChunkReuseClaimV2,
+    BlobDedupeQuarantineV1, BlobGenerationPublicationV1, BlobReclaimDescriptorV1,
+    BlobReclaimDescriptorV2, BlobReclaimDescriptorV3, BlobReclaimSourceBasisV1,
+    BlobReclaimSourceKind, BlobRecordDenial, BlobRecordKind, BlobRecordV1, BlobSessionAbandonedV1,
+    BlobSessionDeclarationV1, BlobSessionFrontierV1, BlobTreeEntryV1, BlobTreeNodeKind,
+    BlobTreeNodeV1, BlobTreeOccurrenceV1, DecodedBlobChunkFrameV1, DropSetManifestV1,
+    DropSetManifestV2, DropSetManifestV2View, DropSetManifestV3, DropSetManifestV3View,
+    FailedIngestReclaimBasisV1, OriginalDropReservationRequestV1, OriginalDropReservedV1,
+    ReleasedDropCustodyV1, ReleasedDropPredecessorV1, ReleasedGenerationReclaimBasisV1,
+    BLOB_CHUNK_FRAME_MAX_BYTES, BLOB_CONTROL_FRAME_MAX_BYTES, BLOB_RECORD_HEADER_BYTES,
+    BLOB_RECORD_VERSION, BLOB_TREE_NODE_FRAME_MAX_BYTES, MAXIMUM_DROP_SET_RECORDS,
 };
 pub use bootstrap::{
     physical_bootstrap_catalog, BootstrapCatalog, BootstrapCatalogDenial, CurrentRootCatalogEntry,
@@ -188,12 +188,12 @@ pub use derived_family_root_directory::{
     MAX_DERIVED_FAMILY_ROOTS,
 };
 pub use extent_record::{
-    decode_extent_chunk, encode_extent_chunk, prepare_extent_chunk, prepare_extent_chunk_reusing,
-    ExtentBackedRecordPlacement, ExtentBackedRecordView, ExtentChunkCoordinate, ExtentFrameDenial,
-    ExtentMembership, ExtentRecordAppendReport, ExtentRecordAppendRequest,
-    ExtentRecordCounterSnapshot, ExtentRecordDenial, ExtentRecordDenialKind,
-    ExtentRecordLocateReport, PhysicalExtentRecordAuthority, DURABLE_EXTENT_FRAME_HEADER_BYTES,
-    EXTENT_CHUNK_METADATA_BYTES,
+    decode_extent_chunk, encode_extent_chunk, extent_payload_digest, prepare_extent_chunk,
+    prepare_extent_chunk_reusing, ExtentBackedRecordPlacement, ExtentBackedRecordView,
+    ExtentChunkCoordinate, ExtentFrameDenial, ExtentMembership, ExtentPayloadDigestCalculator,
+    ExtentRecordAppendReport, ExtentRecordAppendRequest, ExtentRecordCounterSnapshot,
+    ExtentRecordDenial, ExtentRecordDenialKind, ExtentRecordLocateReport,
+    PhysicalExtentRecordAuthority, DURABLE_EXTENT_FRAME_HEADER_BYTES, EXTENT_CHUNK_METADATA_BYTES,
 };
 pub use format_identity::{
     PhysicalEpoch, PhysicalExtentId, PhysicalFormatMagic, PhysicalFormatVersion,
@@ -233,8 +233,8 @@ pub use in_memory_physical_format_model::{
     PlatformPhysicalScanReport,
 };
 pub use manifest::{
-    arena_tier_at_epoch, maximum_current_root_entries, maximum_segment_manifest_pages,
-    required_tree_level, verify_release_custody_head_controls,
+    arena_tier_at_epoch, durable_root_manifest_frame_digest, maximum_current_root_entries,
+    maximum_segment_manifest_pages, required_tree_level, verify_release_custody_head_controls,
     verify_release_custody_head_controls_view, verify_release_custody_head_successor,
     verify_release_custody_head_successor_view, AllocationClassManifestEntry,
     BoundedFreeSpaceMembershipBlockDecodeDenial, BoundedRootRoutingBlockDecodeDenial,

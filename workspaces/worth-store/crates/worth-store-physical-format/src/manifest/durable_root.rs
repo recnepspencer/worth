@@ -348,11 +348,14 @@ mod accessors;
 mod builder;
 #[path = "durable_root/capacity.rs"]
 mod capacity;
+#[path = "durable_root/frame_digest.rs"]
+mod frame_digest;
 #[path = "durable_root/publication_fields.rs"]
 mod publication_fields;
 #[path = "durable_root/release_head_reference.rs"]
 mod release_head_reference;
 pub use capacity::maximum_current_root_entries;
+pub use frame_digest::durable_root_manifest_frame_digest;
 
 #[cfg(test)]
 #[path = "durable_root/preallocated_encode_tests.rs"]

@@ -27,7 +27,7 @@ fn independently_encoded_chunk() -> Vec<u8> {
     frame
 }
 
-fn rehash(frame: &mut [u8]) {
+pub(super) fn rehash(frame: &mut [u8]) {
     let mut hasher = Sha256::new();
     hasher.update(&frame[..16]);
     hasher.update(&frame[48..]);
@@ -154,7 +154,7 @@ fn independent_drop_manifest_checks_sorted_ids_and_domain_digest() {
     ));
 }
 
-fn control_frame(kind: u8, payload: &[u8]) -> Vec<u8> {
+pub(super) fn control_frame(kind: u8, payload: &[u8]) -> Vec<u8> {
     let mut frame = Vec::with_capacity(HEADER + payload.len());
     frame.extend_from_slice(MAGIC);
     frame.extend_from_slice(&[kind, 1]);
@@ -164,6 +164,15 @@ fn control_frame(kind: u8, payload: &[u8]) -> Vec<u8> {
     frame.extend_from_slice(payload);
     rehash(&mut frame);
     frame
+}
+
+/// Bytes of a lower-hex golden literal shared with the format crate's tests.
+pub(super) fn golden(hex: &str) -> Vec<u8> {
+    assert_eq!(hex.len() % 2, 0, "whole bytes");
+    hex.as_bytes()
+        .chunks_exact(2)
+        .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
+        .collect()
 }
 
 #[test]

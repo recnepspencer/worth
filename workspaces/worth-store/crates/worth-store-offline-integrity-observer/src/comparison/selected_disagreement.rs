@@ -116,7 +116,7 @@ pub fn compare_selected_integrity_observations(
     })
 }
 
-type Record = worth_store_physical_format::PersistedRecordIdentity;
+type Record = super::selected_protocol::SelectedRecordIdentity;
 
 fn index(artifacts: &[SelectedArtifact]) -> Result<BTreeMap<Record, &SelectedArtifact>, Denial> {
     let mut indexed = BTreeMap::new();

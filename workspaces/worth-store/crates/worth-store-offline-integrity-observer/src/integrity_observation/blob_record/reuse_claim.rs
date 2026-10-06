@@ -114,34 +114,83 @@ pub(super) fn decode_v2(
 
 #[cfg(test)]
 mod tests {
-    use worth_store_physical_format::{
-        BlobChunkReuseClaimV1, BlobChunkReuseClaimV2, BlobGenerationPublicationV1,
-        PersistedRecordIdentity,
-    };
-
+    use super::super::tests::{control_frame, golden, rehash};
     use super::*;
+    use crate::integrity_observation::sha256::sha256;
+
+    const CHUNK: u32 = 64 << 10;
+    // Byte-identical copies of the goldens in worth-store-physical-format's
+    // `tests/blob_control_record_golden.rs`, which its encoder must produce.
+    const REUSE_CLAIM_V1_FRAME_HEX: &str = "5752433131424c420b010100a80000000a1601cf025dabe87098a24d1133bf460152a9c09f2d9296ade59ae6cf343df6010101010101010101010101010101010202020202020202020202020202020207000000000000000303030303030303030303030303030303030303030303030303030303030303000001000000010004040404040404040404040404040404040404040404040404040404040404040505050505050505050505050505050506000000000000000707070707070707070707070707070708000000000000000000000000000000";
+    const REUSE_CLAIM_V2_FRAME_HEX: &str = "5752433131424c420f010100b40100006a666da631f38b480e8e2701a6f56018fbbd2a0184b416aad35e9a1c74db6b360101010101010101010101010101010102020202020202020202020202020202000000000000000003030303030303030303030303030303030303030303030303030303030303030000010000000100040404040404040404040404040404040404040404040404040404040404040407070707070707070707070707070707060000000000000007070707070707070707070707070707090000000000000000000000000000001b2475c7d7b109d3d4e7afda0af5a55848b76e7a5367ac749fc019da4fd247835752433131424c4204010000bc000000008500f2dbd62317aa4d9b340e60645c805c8f5b6e245fb89d606ad78d549ade0101010101010101010101010101010109090909090909090909090909090909040404040404040404040404040404040100000000000000070707070707070707070707070707070800000000000000060606060606060606060606060606060606060606060606060606060606060600000100000000000505050505050505050505050505050505050505050505050505050505050505000001000303030303030303030303030303030303030303030303030303030303030303";
+
+    fn record(epoch: u8, ordinal: u64) -> [u8; 24] {
+        let mut record = [epoch; 24];
+        record[16..].copy_from_slice(&ordinal.to_le_bytes());
+        record
+    }
+
+    /// Literal kind-11 payload: store, session, ordinal, scope, chunk size,
+    /// length, digest, chunk record, source publication, source ordinal.
+    fn independently_encoded_claim(ordinal: u64, chunk: [u8; 24], source: [u8; 24]) -> Vec<u8> {
+        let mut payload = Vec::with_capacity(168);
+        payload.extend_from_slice(&[1; 16]);
+        payload.extend_from_slice(&[2; 16]);
+        payload.extend_from_slice(&ordinal.to_le_bytes());
+        payload.extend_from_slice(&[3; 32]);
+        payload.extend_from_slice(&CHUNK.to_le_bytes());
+        payload.extend_from_slice(&CHUNK.to_le_bytes());
+        payload.extend_from_slice(&[4; 32]);
+        payload.extend_from_slice(&chunk);
+        payload.extend_from_slice(&source);
+        payload.extend_from_slice(&0_u64.to_le_bytes());
+        payload
+    }
+
+    /// Literal kind-4 frame for one single-chunk generation in store `[1; 16]`.
+    fn independently_encoded_publication() -> Vec<u8> {
+        let mut payload = Vec::with_capacity(188);
+        payload.extend_from_slice(&[1; 16]);
+        payload.extend_from_slice(&[9; 16]);
+        payload.extend_from_slice(&[4; 16]);
+        payload.extend_from_slice(&1_u64.to_le_bytes());
+        payload.extend_from_slice(&record(7, 8));
+        payload.extend_from_slice(&[6; 32]);
+        payload.extend_from_slice(&u64::from(CHUNK).to_le_bytes());
+        payload.extend_from_slice(&[5; 32]);
+        payload.extend_from_slice(&CHUNK.to_le_bytes());
+        payload.extend_from_slice(&[3; 32]);
+        control_frame(4, &payload)
+    }
 
     #[test]
-    fn independent_parser_reads_codec_vector() {
-        let claim = BlobChunkReuseClaimV1::new(
-            [1; 16],
-            [2; 16],
-            7,
-            [3; 32],
-            64 << 10,
-            64 << 10,
-            [4; 32],
-            PersistedRecordIdentity::new([5; 16], 6).unwrap(),
-            PersistedRecordIdentity::new([7; 16], 8).unwrap(),
-            9,
-        )
-        .unwrap();
-        let bytes = claim.encode();
+    fn independent_parser_reads_literal_claim_payload() {
+        let payload = independently_encoded_claim(7, record(5, 6), record(7, 8));
         assert!(matches!(
-            decode(&bytes[48..]),
+            decode(&payload),
             Some(BlobFact::ReuseClaim {
                 ordinal: 7,
-                source_ordinal: 9,
+                source_ordinal: 0,
+                chunk_record,
+                source_publication,
+                ..
+            }) if chunk_record == record(5, 6) && source_publication == record(7, 8)
+        ));
+    }
+
+    #[test]
+    fn encoder_golden_is_the_literal_layout_and_parses_as_a_whole_frame() {
+        let frame = golden(REUSE_CLAIM_V1_FRAME_HEX);
+        assert_eq!(
+            frame[48..],
+            independently_encoded_claim(7, record(5, 6), record(7, 8))
+        );
+        let mut counters = crate::OfflineIntegrityObservationCounters::default();
+        assert!(matches!(
+            super::super::decode(&frame, Some([1; 16]), &mut counters),
+            Ok(BlobFact::ReuseClaim {
+                ordinal: 7,
+                source_witness: None,
                 ..
             })
         ));
@@ -149,37 +198,15 @@ mod tests {
 
     #[test]
     fn versioned_claim_requires_canonical_embedded_publication() {
-        let record = |ordinal| PersistedRecordIdentity::new([7; 16], ordinal).unwrap();
-        let publication = BlobGenerationPublicationV1::new(
-            [1; 16],
-            [9; 16],
-            [4; 16],
-            1,
-            record(8),
-            [6; 32],
-            64 << 10,
-            [5; 32],
-            64 << 10,
-            [3; 32],
-        )
-        .unwrap();
-        let base = BlobChunkReuseClaimV1::new(
-            [1; 16],
-            [2; 16],
-            0,
-            [3; 32],
-            64 << 10,
-            64 << 10,
-            [4; 32],
-            record(6),
-            record(9),
-            0,
-        )
-        .unwrap();
-        let digest = crate::integrity_observation::sha256::sha256(&publication.encode());
-        let encoded = BlobChunkReuseClaimV2::new(base, publication, digest)
-            .unwrap()
-            .encode();
+        let publication = independently_encoded_publication();
+        let digest = sha256(&publication);
+        let mut payload = independently_encoded_claim(0, record(7, 6), record(7, 9));
+        payload.extend_from_slice(&digest);
+        payload.extend_from_slice(&publication);
+        let mut encoded = control_frame(15, &payload);
+        encoded[10..12].copy_from_slice(&1_u16.to_le_bytes());
+        rehash(&mut encoded);
+        assert_eq!(encoded, golden(REUSE_CLAIM_V2_FRAME_HEX));
         let mut counters = crate::OfflineIntegrityObservationCounters::default();
         assert!(
             matches!(super::super::decode(&encoded, Some([1; 16]), &mut counters),
@@ -187,8 +214,14 @@ mod tests {
                 source_witness: Some(ReuseSourceWitness { frame_digest, .. }), ..
             }) if frame_digest == digest)
         );
+        // A resealed frame whose embedded publication digest is wrong is
+        // malformed, not a checksum failure.
         let mut changed = encoded;
         changed[48 + 168] ^= 1;
-        assert!(super::super::decode(&changed, Some([1; 16]), &mut counters).is_err());
+        rehash(&mut changed);
+        assert!(matches!(
+            super::super::decode(&changed, Some([1; 16]), &mut counters),
+            Err(super::super::Outcome::Damaged(_))
+        ));
     }
 }

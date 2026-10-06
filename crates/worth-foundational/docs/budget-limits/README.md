@@ -11,8 +11,8 @@ one as the other is a lie, so the two are told apart by type.
   enum, and names the sealed authority that alone may mint limits of it.
 - `LimitCounts`: what the budget held when it refused. `observed` is at least
   what the work needed; `admitted` is what the budget allowed.
-- `BudgetRefused`: the action a budget records, with
-  `worth_proof::Performed::record`, when it refuses.
+- `BudgetRefused`: the action an owner's `refuse` door records when its
+  budget refuses.
 - `ExhaustedLimit<D>`: the limit. Private fields; its one constructor,
   `refused`, consumes the owner's `Performed<BudgetRefused, D::Authority,
   LimitCounts>`.
@@ -24,9 +24,12 @@ counts. Each owner declares, in a leaf module (the declaring module's
 descendants can mint too):
 
 1. its dimension enum, implementing `LimitDimension`;
-2. a `worth_proof::authority_marker!`;
-3. the budget whose refuse path alone records the refusal and calls
-   `ExhaustedLimit::refused`, with the real observed and admitted counts.
+2. its sealed authority, with `worth_foundational::limit_authority!(pub Owner)`,
+   the one way to declare a budget owner. It adds one private
+   `Owner::refuse(dimension, counts)` door that records the refusal and mints
+   the limit in one step;
+3. the budget whose refuse path alone calls `Owner::refuse`, with the real
+   observed and admitted counts.
 
 Coherence admits one `LimitDimension` implementation per dimension, and the
 orphan rule keeps it in the crate that declares the enum. So damage reported as

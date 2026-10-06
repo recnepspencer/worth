@@ -3,10 +3,9 @@
 //! module, because the authority's declaring module and its descendants can
 //! mint.
 
-use worth_foundational::{BudgetRefused, ExhaustedLimit, LimitCounts, LimitDimension};
-use worth_proof::Performed;
+use worth_foundational::{ExhaustedLimit, LimitCounts, LimitDimension};
 
-worth_proof::authority_marker!(pub PhysicsBudgetAuthority);
+worth_foundational::limit_authority!(pub PhysicsBudgetAuthority);
 
 /// Resident bytes bound what a custody check holds at once. Retained bytes
 /// bound what admitted pending-WAL batches keep after their check. Manifest
@@ -74,9 +73,7 @@ impl PhysicsAllowance {
             return Ok(());
         }
         let counts = LimitCounts::new(needed, self.admitted);
-        let refusal =
-            Performed::<BudgetRefused, _, _>::record(&PhysicsBudgetAuthority::witness(), counts);
-        Err(ExhaustedLimit::refused(self.bound, refusal))
+        Err(PhysicsBudgetAuthority::refuse(self.bound, counts))
     }
 }
 

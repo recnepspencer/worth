@@ -2,9 +2,9 @@
 //! validated manifest membership and every original validated chunk frame.
 //! A caller-provided byte vector or digest cannot construct this witness.
 
-use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
-    DurableExtentRecordPlacement, DURABLE_EXTENT_FRAME_HEADER_BYTES, EXTENT_CHUNK_METADATA_BYTES,
+    extent_payload_digest, DurableExtentRecordPlacement, ExtentPayloadDigestCalculator,
+    DURABLE_EXTENT_FRAME_HEADER_BYTES, EXTENT_CHUNK_METADATA_BYTES,
 };
 
 use super::super::{PhysicalArtifactScope, UntrustedPhysicalArtifact};
@@ -17,7 +17,7 @@ pub struct SelectedExtentPayloadBuilder {
     placement: DurableExtentRecordPlacement,
     next_ordinal: u32,
     next_offset: u64,
-    digest: Sha256,
+    digest: ExtentPayloadDigestCalculator,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -42,7 +42,7 @@ impl SelectedExtentPayloadBuilder {
             placement,
             next_ordinal: 1,
             next_offset: 0,
-            digest: Sha256::new(),
+            digest: ExtentPayloadDigestCalculator::default(),
         })
     }
 
@@ -101,7 +101,7 @@ impl SelectedExtentPayloadBuilder {
         }
         Some(IntegrityValidatedSelectedExtentPayload {
             placement: self.placement,
-            payload_sha256: self.digest.finalize().into(),
+            payload_sha256: self.digest.finish(),
             logical_bytes: self.next_offset,
         })
     }
@@ -122,6 +122,6 @@ impl IntegrityValidatedSelectedExtentPayload {
 
     pub fn matches_frame(self, bytes: &[u8]) -> bool {
         bytes.len() as u64 == self.logical_bytes
-            && <[u8; 32]>::from(Sha256::digest(bytes)) == self.payload_sha256
+            && extent_payload_digest(bytes) == self.payload_sha256
     }
 }

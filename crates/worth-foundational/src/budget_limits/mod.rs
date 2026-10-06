@@ -5,22 +5,21 @@
 //! must never be confused, and a limit must carry the counts the budget really
 //! had, not numbers made up where the refusal was reported.
 //!
-//! [`ExhaustedLimit`] makes that a type law. Each budget owner declares:
+//! [`ExhaustedLimit`] makes that a type law. Each budget owner declares, in a
+//! *leaf* module (the declaring module's descendants can mint too):
 //! - a dimension enum implementing [`LimitDimension`], naming what ran out;
-//! - a sealed authority marker (`worth_proof::authority_marker!`) in a *leaf*
-//!   module, because the declaring module's descendants can mint too;
-//! - the budget whose refuse path alone records the refusal with
-//!   [`Performed::record`](worth_proof::Performed::record) and calls
-//!   [`ExhaustedLimit::refused`].
+//! - its sealed authority with [`limit_authority!`](crate::limit_authority),
+//!   the one way to declare a budget owner, whose private
+//!   `Owner::refuse(dimension, counts)` door is the only mint;
+//! - the budget whose refuse path alone calls that door with the real counts.
 //!
 //! Coherence gives each dimension exactly one `Authority`, so only that
-//! owner's witness can produce the `Performed` the constructor demands:
+//! owner's door can mint its limits:
 //!
 //! ```
 //! mod entries_budget {
-//!     use worth_foundational::{BudgetRefused, ExhaustedLimit, LimitCounts, LimitDimension};
-//!     use worth_proof::Performed;
-//!     worth_proof::authority_marker!(pub EntriesAuthority);
+//!     use worth_foundational::{ExhaustedLimit, LimitCounts, LimitDimension};
+//!     worth_foundational::limit_authority!(pub EntriesAuthority);
 //!
 //!     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 //!     pub enum EntriesBound { Entries }
@@ -33,8 +32,7 @@
 //!         pub fn admit(&self, count: u64) -> Result<(), ExhaustedLimit<EntriesBound>> {
 //!             if count <= self.admitted { return Ok(()); }
 //!             let counts = LimitCounts::new(count, self.admitted);
-//!             let refusal = Performed::<BudgetRefused, _, _>::record(&EntriesAuthority::witness(), counts);
-//!             Err(ExhaustedLimit::refused(EntriesBound::Entries, refusal))
+//!             Err(EntriesAuthority::refuse(EntriesBound::Entries, counts))
 //!         }
 //!     }
 //! }
@@ -49,8 +47,11 @@
 //! specific, with no catch-all, so a reviewer sees that lie.
 
 mod exhausted_limit;
+mod limit_authority;
 
 pub use exhausted_limit::{BudgetRefused, ExhaustedLimit, LimitCounts, LimitDimension};
+#[doc(hidden)]
+pub use limit_authority::__limit_authority;
 
 use crate::facade::ResponsibilityArea;
 

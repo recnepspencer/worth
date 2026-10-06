@@ -4,7 +4,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::BTreeSet;
-use worth_store_physical_format::PersistedRecordIdentity;
 
 use super::{
     protocol::{Compatibility, Outcome},
@@ -130,7 +129,16 @@ pub(super) fn family(value: &str) -> Option<worth_foundational::PhysicalArtifact
     })
 }
 
-pub(super) fn record(value: &str) -> Result<PersistedRecordIdentity, Denial> {
+/// The logical record a selected row joins on, read independently of the
+/// runtime codec: a nonzero allocation epoch and a nonzero ordinal, ordered
+/// epoch first.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub(super) struct SelectedRecordIdentity {
+    allocation_epoch: [u8; 16],
+    ordinal: u64,
+}
+
+pub(super) fn record(value: &str) -> Result<SelectedRecordIdentity, Denial> {
     if !lower_hex(value, 48) {
         return Err(Denial::InvalidRecordIdentity);
     }
@@ -138,11 +146,15 @@ pub(super) fn record(value: &str) -> Result<PersistedRecordIdentity, Denial> {
     for (index, pair) in value.as_bytes().chunks_exact(2).enumerate() {
         raw[index] = (hex_digit(pair[0]) << 4) | hex_digit(pair[1]);
     }
-    PersistedRecordIdentity::new(
-        raw[..16].try_into().expect("fixed record epoch"),
-        u64::from_le_bytes(raw[16..].try_into().expect("fixed record ordinal")),
-    )
-    .ok_or(Denial::InvalidRecordIdentity)
+    let allocation_epoch: [u8; 16] = raw[..16].try_into().expect("fixed record epoch");
+    let ordinal = u64::from_le_bytes(raw[16..].try_into().expect("fixed record ordinal"));
+    if allocation_epoch == [0; 16] || ordinal == 0 {
+        return Err(Denial::InvalidRecordIdentity);
+    }
+    Ok(SelectedRecordIdentity {
+        allocation_epoch,
+        ordinal,
+    })
 }
 
 fn lower_hex(value: &str, length: usize) -> bool {

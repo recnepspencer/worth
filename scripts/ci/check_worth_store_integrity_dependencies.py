@@ -16,13 +16,19 @@ CRATES = WORKSPACE / "crates"
 OBSERVER = CRATES / "worth-store-offline-integrity-observer"
 RUNTIME_INTEGRITY = CRATES / "worth-store-physical-integrity"
 LOWER_INTEGRITY_DEPENDENCIES = {"worth-foundational", "worth-store-physical-format"}
-# Runtime integrity owns budgets (the release-custody head walk) whose refusals
-# are sealed `ExhaustedLimit`s; minting one needs the worth-proof law substrate.
-# The observer owns no budget and stays on the lower set.
-RUNTIME_INTEGRITY_DEPENDENCIES = LOWER_INTEGRITY_DEPENDENCIES | {"worth-proof"}
+# C.9: "the final normal dependency set of `worth-store-physical-integrity` is
+# exactly `worth-foundational` and `worth-store-physical-format`". Its walk
+# budget mints sealed limits through foundational's `limit_authority!`.
+RUNTIME_INTEGRITY_DEPENDENCIES = LOWER_INTEGRITY_DEPENDENCIES
 # Wire encoding/decoding is not a shared physical parser or authority lane.
 # Keep this exact allowlist: no runtime codecs, validators, or owner dependencies.
 OBSERVER_DEPENDENCIES = LOWER_INTEGRITY_DEPENDENCIES | {"serde", "serde_json"}
+# C.9 requires the walk to detect "a hard link that aliases a visited file
+# where the host supports it", and the observer "has no dependency on runtime
+# integrity, recovery runtime, Store, maintenance, operations, or repair". With
+# unsafe code forbidden, Windows file identity needs one OS adapter crate; it is
+# admitted only on the Windows target table and never as a parser or authority.
+OBSERVER_HOST_ADAPTERS = {"cfg(windows)": {"file-id"}}
 # Each owner mints expected limits for other crates' tests behind its
 # `test-support` feature. Only dev-dependencies and test-only features may
 # enable it: a production edge would let any crate mint an owner's limit.
@@ -103,7 +109,25 @@ def main() -> int:
         )
 
     with (OBSERVER / "Cargo.toml").open("rb") as source:
-        observer_dependencies = all_dependencies(tomllib.load(source))
+        observer_document = tomllib.load(source)
+    observer_targets = observer_document.get("target", {})
+    for target, adapters in OBSERVER_HOST_ADAPTERS.items():
+        found = set(observer_targets.get(target, {}).get("dependencies", {}))
+        if found != adapters:
+            violations.append(
+                f"{OBSERVER.name} [target.'{target}'.dependencies] must be exactly "
+                f"{sorted(adapters)}, found {sorted(found)}"
+            )
+    observer_dependencies = all_dependencies(
+        {
+            **observer_document,
+            "target": {
+                target: tables
+                for target, tables in observer_targets.items()
+                if target not in OBSERVER_HOST_ADAPTERS or set(tables) != {"dependencies"}
+            },
+        }
+    )
     if observer_dependencies != OBSERVER_DEPENDENCIES:
         violations.append(
             f"{OBSERVER.name} dependencies of every kind must be exactly "

@@ -2,10 +2,9 @@
 //! limits. A leaf module, because the authority's declaring module and its
 //! descendants can mint.
 
-use worth_foundational::{BudgetRefused, ExhaustedLimit, LimitCounts, LimitDimension};
-use worth_proof::Performed;
+use worth_foundational::{ExhaustedLimit, LimitCounts, LimitDimension};
 
-worth_proof::authority_marker!(pub FilesystemObservationBudgetAuthority);
+worth_foundational::limit_authority!(pub FilesystemObservationBudgetAuthority);
 
 /// What a filesystem observation ran out of:
 /// - reads: the artifacts one observation may read;
@@ -87,11 +86,7 @@ impl FilesystemObservationAllowance {
 
     fn refuse(self, observed: u64) -> ExceededFilesystemObservationBound {
         let counts = LimitCounts::new(observed, self.admitted);
-        let refusal = Performed::<BudgetRefused, _, _>::record(
-            &FilesystemObservationBudgetAuthority::witness(),
-            counts,
-        );
-        ExhaustedLimit::refused(self.bound, refusal)
+        FilesystemObservationBudgetAuthority::refuse(self.bound, counts)
     }
 }
 

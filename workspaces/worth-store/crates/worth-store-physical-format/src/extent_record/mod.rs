@@ -3,6 +3,7 @@ mod counters;
 mod denials;
 mod durable_extent;
 mod membership;
+mod payload_digest;
 #[cfg(test)]
 mod tests;
 
@@ -15,3 +16,4 @@ pub use durable_extent::{
     EXTENT_CHUNK_METADATA_BYTES,
 };
 pub use membership::*;
+pub use payload_digest::{extent_payload_digest, ExtentPayloadDigestCalculator};

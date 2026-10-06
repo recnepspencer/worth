@@ -60,7 +60,9 @@ fn derived_index_repair_denies_before_any_current_owner_effect() {
         super::RepairReadinessDenial::StoreDerivedIndexRebuildRequired
     ));
     assert_eq!(std::fs::read(&target).unwrap(), b"damaged layout");
-    assert!(repair_handles(&authority, &control).is_empty());
+    // The denial precedes authorization consumption and the repair journal, so
+    // the fresh control history stays empty: no transition, hence no handle.
+    assert_eq!(control.observe_selection_coordinates().unwrap(), None);
 }
 
 #[test]

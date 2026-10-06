@@ -2,10 +2,9 @@
 //! module, because the authority's declaring module and its descendants can
 //! mint.
 
-use worth_foundational::{BudgetRefused, ExhaustedLimit, LimitCounts, LimitDimension};
-use worth_proof::Performed;
+use worth_foundational::{ExhaustedLimit, LimitCounts, LimitDimension};
 
-worth_proof::authority_marker!(pub HeadReplayBudgetAuthority);
+worth_foundational::limit_authority!(pub HeadReplayBudgetAuthority);
 
 /// Effect bytes bound the frames a claim carries. Heap bytes bound what the
 /// replay holds at once beyond what its caller already does.
@@ -54,9 +53,7 @@ impl HeadReplayAllowance {
             return Ok(needed);
         }
         let counts = LimitCounts::new(needed, self.admitted);
-        let refusal =
-            Performed::<BudgetRefused, _, _>::record(&HeadReplayBudgetAuthority::witness(), counts);
-        Err(ExhaustedLimit::refused(self.bound, refusal))
+        Err(HeadReplayBudgetAuthority::refuse(self.bound, counts))
     }
 }
 

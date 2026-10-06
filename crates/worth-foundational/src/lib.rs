@@ -52,5 +52,7 @@ mod responsibilities;
 mod transitions;
 mod values;
 
+#[doc(hidden)]
+pub use budget_limits::__limit_authority;
 pub use facade::*;
 pub use physical_integrity_observation::*;

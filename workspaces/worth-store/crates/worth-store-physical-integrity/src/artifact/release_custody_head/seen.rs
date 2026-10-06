@@ -1,4 +1,4 @@
-use sha2::{Digest, Sha256};
+use std::hash::{DefaultHasher, Hash, Hasher};
 
 /// Flat, precharged duplicate detector. Hashing chooses a probe start only;
 /// exact generation/block equality decides membership. A full probe is bounded
@@ -21,12 +21,9 @@ impl SeenHeadBlocks {
     }
 
     pub(super) fn insert(&mut self, key: (u64, u64)) -> Option<bool> {
-        let mut hasher = Sha256::new();
-        hasher.update(key.0.to_le_bytes());
-        hasher.update(key.1.to_le_bytes());
-        let digest: [u8; 32] = hasher.finalize().into();
-        let mut slot =
-            (u64::from_le_bytes(digest[..8].try_into().unwrap()) as usize) % self.slots.len();
+        let mut hasher = DefaultHasher::new();
+        key.hash(&mut hasher);
+        let mut slot = (hasher.finish() as usize) % self.slots.len();
         for _ in 0..self.slots.len() {
             match self.slots[slot] {
                 Some(existing) if existing == key => return Some(false),

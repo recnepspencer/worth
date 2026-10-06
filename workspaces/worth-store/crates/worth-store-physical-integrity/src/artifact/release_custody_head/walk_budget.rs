@@ -2,10 +2,9 @@
 //! limits. A leaf module, because the authority's declaring module and its
 //! descendants can mint.
 
-use worth_foundational::{BudgetRefused, ExhaustedLimit, LimitCounts, LimitDimension};
-use worth_proof::Performed;
+use worth_foundational::{ExhaustedLimit, LimitCounts, LimitDimension};
 
-worth_proof::authority_marker!(pub ReleaseCustodyHeadWalkBudgetAuthority);
+worth_foundational::limit_authority!(pub ReleaseCustodyHeadWalkBudgetAuthority);
 
 /// What a release-custody head walk ran out of. Nodes bound the blocks the
 /// walk admits; resident bytes bound what it holds at once.
@@ -53,11 +52,9 @@ impl ReleaseCustodyHeadWalkAllowance {
             return Ok(());
         }
         let counts = LimitCounts::new(observed, self.admitted);
-        let refusal = Performed::<BudgetRefused, _, _>::record(
-            &ReleaseCustodyHeadWalkBudgetAuthority::witness(),
-            counts,
-        );
-        Err(ExhaustedLimit::refused(self.bound, refusal))
+        Err(ReleaseCustodyHeadWalkBudgetAuthority::refuse(
+            self.bound, counts,
+        ))
     }
 }
 

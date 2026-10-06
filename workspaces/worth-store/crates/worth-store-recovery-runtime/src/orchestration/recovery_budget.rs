@@ -5,13 +5,13 @@
 //! each count recovery admits) refuses through one allowance here, with its
 //! own counts.
 
-use worth_foundational::{BudgetRefused, ExhaustedLimit, LimitCounts, LimitDimension};
+use worth_foundational::{ExhaustedLimit, LimitCounts, LimitDimension};
 use worth_proof::Performed;
 use worth_store::physical_runtime::{GrantOverrun, ObservedRecoveryArtifact, ReadGrant};
 
 use crate::entry::{PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDimension};
 
-worth_proof::authority_marker!(pub RecoveryBudgetAuthority);
+worth_foundational::limit_authority!(pub RecoveryBudgetAuthority);
 
 impl LimitDimension for PhysicalRecoveryLimitDimension {
     type Authority = RecoveryBudgetAuthority;
@@ -72,9 +72,7 @@ impl RecoveryAllowance {
             return Ok(needed);
         }
         let counts = LimitCounts::new(needed, self.admitted);
-        let refusal =
-            Performed::<BudgetRefused, _, _>::record(&RecoveryBudgetAuthority::witness(), counts);
-        Err(ExhaustedLimit::refused(self.dimension, refusal))
+        Err(RecoveryBudgetAuthority::refuse(self.dimension, counts))
     }
 
     /// `needed` past the allowance, as the limit a block reports; `None`

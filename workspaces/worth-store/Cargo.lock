@@ -1712,7 +1712,6 @@ dependencies = [
  "sha2",
  "trybuild",
  "worth-foundational",
- "worth-proof",
  "worth-store-physical-format",
 ]
 
@@ -1766,7 +1765,6 @@ version = "0.1.0"
 dependencies = [
  "sha2",
  "worth-foundational",
- "worth-proof",
  "worth-store-physical-format",
  "worth-store-physical-integrity",
  "worth-store-wal",

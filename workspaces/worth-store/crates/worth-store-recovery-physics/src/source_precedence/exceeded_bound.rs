@@ -2,10 +2,9 @@
 //! limits. A leaf module, because the authority's declaring module and its
 //! descendants can mint.
 
-use worth_foundational::{BudgetRefused, ExhaustedLimit, LimitCounts, LimitDimension};
-use worth_proof::Performed;
+use worth_foundational::{ExhaustedLimit, LimitCounts, LimitDimension};
 
-worth_proof::authority_marker!(pub RootHistoryBudgetAuthority);
+worth_foundational::limit_authority!(pub RootHistoryBudgetAuthority);
 
 /// Entries bound how many routes, segments, free entries or records one
 /// inventory view or one step may hold. Scratch bytes bound what a check may
@@ -100,11 +99,7 @@ impl RootHistoryAllowance {
 
     fn refuse(self, observed: u64) -> ExceededRootHistoryBound {
         let counts = LimitCounts::new(observed, self.admitted);
-        let refusal = Performed::<BudgetRefused, _, _>::record(
-            &RootHistoryBudgetAuthority::witness(),
-            counts,
-        );
-        ExhaustedLimit::refused(self.bound, refusal)
+        RootHistoryBudgetAuthority::refuse(self.bound, counts)
     }
 }
 

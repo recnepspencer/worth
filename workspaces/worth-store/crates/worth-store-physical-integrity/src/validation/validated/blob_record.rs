@@ -1,5 +1,4 @@
-use sha2::{Digest, Sha256};
-use worth_store_physical_format::BlobRecordV1;
+use worth_store_physical_format::{blob_record_v1_validation_digest, BlobRecordV1};
 
 use super::super::{
     PhysicalArtifactScope, PhysicalIntegrityValidationDigest, PhysicalIntegrityValidationMechanism,
@@ -27,7 +26,9 @@ impl<'media> IntegrityValidatedBlobRecord<'media> {
         let validation_record = PhysicalIntegrityValidationRecord::from_validated_scope(
             scope,
             PhysicalIntegrityValidationDigest::sha256(scope.exact_blob_record_scope_digest()),
-            PhysicalIntegrityValidationDigest::sha256(Sha256::digest(inspected.bytes()).into()),
+            PhysicalIntegrityValidationDigest::sha256(blob_record_v1_validation_digest(
+                inspected.bytes(),
+            )),
             PhysicalIntegrityValidationMechanism::Sha256V1,
         )?;
         Some(Self {
