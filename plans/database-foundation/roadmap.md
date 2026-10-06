@@ -107,13 +107,13 @@ names:
 - aftermath.
 
 The database adds one concept: **where the application lives.** The call below
-is a sketch; D.2 designs the real one.
+is a sketch; [the D.2 note](d2-application-home.md) gives the real one.
 
 ```rust
 let app = application_installation::program(validated, declaration, contributions)
     .roster(successors)                  // optional
-    .home(ApplicationHome::at(path))     // or ApplicationHome::memory()
-    .open()?;                            // a new home starts empty; an existing one resumes
+    .open(ApplicationHome::at(path))?;   // or ApplicationHome::memory(); a new home starts
+                                         // empty, an existing one resumes
 ```
 
 - **One open call; the home is a value.** These collapse into one builder:
