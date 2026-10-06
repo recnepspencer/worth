@@ -18,9 +18,7 @@ use crate::symbols::data::{Symbol, SymbolTableSnapshot};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DurableBitSet {
-    #[serde(default)]
     pub words: Vec<u64>,
-    #[serde(default)]
     pub sparse_words: Vec<(u64, u64)>,
 }
 
@@ -68,7 +66,6 @@ impl RecordArenaCheckpointKind for RelationCheckpointImageKind {
     deserialize = "K::MetaImage: Deserialize<'de>, K::ExtraImage: Deserialize<'de>"
 ))]
 pub struct RecordArenaCheckpointImage<K: RecordArenaCheckpointKind> {
-    #[serde(default)]
     pub slots: Vec<u64>,
     pub generations: Vec<u32>,
     pub lifecycle: Vec<RecordLifecycleState>,
@@ -77,7 +74,6 @@ pub struct RecordArenaCheckpointImage<K: RecordArenaCheckpointKind> {
     pub created_at: Vec<VersionId>,
     pub retired_at: Vec<Option<VersionId>>,
     pub aspect_versions: Vec<BTreeMap<Symbol, u64>>,
-    #[serde(default)]
     pub field_revisions: Vec<Option<BTreeMap<(Symbol, Symbol), RelationalFieldRevision>>>,
     pub extra: Vec<K::ExtraImage>,
     pub diagnostics_enrichment: Vec<BTreeMap<Symbol, String>>,
@@ -86,7 +82,6 @@ pub struct RecordArenaCheckpointImage<K: RecordArenaCheckpointKind> {
     pub snapshot_pins: Vec<u32>,
     pub live_bitset: DurableBitSet,
     pub reclaimable_bitset: DurableBitSet,
-    #[serde(default)]
     pub free_list: Vec<u64>,
     #[serde(skip)]
     pub marker: PhantomData<K>,
@@ -140,7 +135,6 @@ pub struct DurableAdjacencyEntry {
 /// recovered owner artifact without duplicating authoritative partitions.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DurableBranchRootImage {
-    #[serde(default)]
     pub(crate) format_version: u16,
     pub commit_id: CommitId,
     pub partition_images: Vec<PartitionCheckpointImage>,
@@ -148,9 +142,7 @@ pub struct DurableBranchRootImage {
     /// branch target remains the canonical root identity; this digest prevents
     /// recovery from accepting different reconstructive bytes under it.
     pub partition_image_digest: [u8; 32],
-    #[serde(default)]
     pub(crate) schema_carrier_digest: [u8; 32],
-    #[serde(default)]
     pub(crate) root_image_digest: [u8; 32],
 }
 
@@ -203,16 +195,12 @@ pub(crate) struct DurablePendingRecordReservation {
     pub(crate) origin: DurableRecordReservationOrigin,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct DurableRecordIdentityState {
     pub(crate) schema_version: u16,
-    #[serde(default)]
     pub(crate) generation_high_water: Vec<DurableRecordGenerationHighWater>,
-    #[serde(default)]
     pub(crate) reusable_slots: Vec<DurableReusableRecordSlot>,
-    #[serde(default)]
     pub(crate) append_frontiers: Vec<DurableRecordSlotFrontier>,
-    #[serde(default)]
     pub(crate) pending_reservations: Vec<DurablePendingRecordReservation>,
 }
 
@@ -283,13 +271,11 @@ pub(crate) fn branch_root_image_digest(
 pub struct DurableCheckpoint {
     pub coverage: CheckpointCoverage,
     pub(crate) branch_cells: Vec<RelationalBranchCellCheckpoint>,
+    /// Names deleted branches can never reuse, sorted, within the live bound.
+    pub(crate) retired_branch_names: Vec<crate::history::data::BranchId>,
     pub(crate) branch_roots: Vec<DurableBranchRootImage>,
     pub(crate) branch_root_schema_images: Vec<super::DurableBranchRootSchemaImage>,
     pub(crate) record_identity: DurableRecordIdentityState,
-    /// Version-zero migration fields retained only for decoding old images.
-    pub(crate) record_generation_high_water: Vec<DurableRecordGenerationHighWater>,
-    pub(crate) reusable_record_slots: Vec<DurableReusableRecordSlot>,
-    pub(crate) record_slot_frontiers: Vec<DurableRecordSlotFrontier>,
     pub(crate) envelopes: Vec<PositionedCanonicalCommit>,
     pub partition_images: Vec<PartitionCheckpointImage>,
     pub aspect_contracts: Vec<PortableAspectContract>,

@@ -7,12 +7,17 @@ use crate::history::data::PositionedCanonicalCommit;
 use super::local_store::DurableCheckpointFile;
 use super::persisted_canonical_commit::{PersistedCanonicalCommit, PersistedCheckpointCommitRef};
 
+#[cfg(test)]
+mod image_refusal_tests;
+mod native_format;
 mod partition_aliases;
 mod section_accounting;
 #[cfg(test)]
 #[path = "persisted_checkpoint_tests.rs"]
 mod tests;
 
+pub(super) use native_format::undecodable_checkpoint;
+use native_format::{readmit_native_checkpoint_format, NATIVE_CHECKPOINT_FORMAT_VERSION};
 use partition_aliases::{
     readmit_partition_aliases, CheckpointBranchRootRefs, PartitionAliasPlan, RootPartitionAliases,
     PARTITION_DELTA_FORMAT_VERSION,
@@ -83,12 +88,10 @@ impl Serialize for PersistedDurableCheckpointRef<'_> {
         let DurableCheckpoint {
             coverage,
             branch_cells,
+            retired_branch_names,
             branch_roots,
             branch_root_schema_images,
             record_identity,
-            record_generation_high_water,
-            reusable_record_slots,
-            record_slot_frontiers,
             envelopes,
             partition_images,
             aspect_contracts,
@@ -104,12 +107,21 @@ impl Serialize for PersistedDurableCheckpointRef<'_> {
         // partitions retain their independently readmitted image.
         let aliases = PartitionAliasPlan::for_checkpoint(self.checkpoint)
             .map_err(serde::ser::Error::custom)?;
-        let mut fields = serializer.serialize_struct("PersistedDurableCheckpoint", 21)?;
+        let mut fields = serializer.serialize_struct("PersistedDurableCheckpoint", 19)?;
+        fields.serialize_field("native_format", &NATIVE_CHECKPOINT_FORMAT_VERSION)?;
         fields.serialize_field("coverage", coverage)?;
         fields.serialize_field(
             "branch_cells",
             &MeasuredValue {
                 value: branch_cells,
+                section: NativeSection::BranchCells,
+                recorder: self.recorder,
+            },
+        )?;
+        fields.serialize_field(
+            "retired_branch_names",
+            &MeasuredValue {
+                value: retired_branch_names,
                 section: NativeSection::BranchCells,
                 recorder: self.recorder,
             },
@@ -135,9 +147,6 @@ impl Serialize for PersistedDurableCheckpointRef<'_> {
             },
         )?;
         fields.serialize_field("record_identity", record_identity)?;
-        fields.serialize_field("record_generation_high_water", record_generation_high_water)?;
-        fields.serialize_field("reusable_record_slots", reusable_record_slots)?;
-        fields.serialize_field("record_slot_frontiers", record_slot_frontiers)?;
         fields.serialize_field(
             "envelopes",
             &MeasuredValue {
@@ -188,10 +197,6 @@ impl Serialize for PersistedDurableCheckpointRef<'_> {
         fields.serialize_field("runtime_name", runtime_name)?;
         fields.serialize_field("partition_alias_format", &PARTITION_DELTA_FORMAT_VERSION)?;
         fields.serialize_field(
-            "branch_root_partition_aliases",
-            &[] as &[crate::history::data::CommitId],
-        )?;
-        fields.serialize_field(
             "branch_root_partition_aliases_v2",
             &MeasuredValue {
                 value: &aliases.roots,
@@ -216,104 +221,39 @@ impl Serialize for CheckpointEnvelopeRefs<'_> {
     }
 }
 
+/// The checkpoint wire image. This build writes every field, so an image
+/// missing one is refused at decode; only `native_format` may be absent, which
+/// is how an image from before the format field is recognized and refused.
 #[derive(Serialize, Deserialize)]
 struct PersistedDurableCheckpoint {
+    #[serde(default)]
+    native_format: u16,
     coverage: crate::durability::data::CheckpointCoverage,
-    #[serde(default)]
     branch_cells: Vec<crate::branch::RelationalBranchCellCheckpoint>,
-    #[serde(default)]
+    retired_branch_names: Vec<crate::history::data::BranchId>,
     branch_roots: Vec<crate::durability::data::DurableBranchRootImage>,
-    #[serde(default)]
     branch_root_schema_images: Vec<crate::durability::data::DurableBranchRootSchemaImage>,
-    #[serde(default)]
     record_identity: crate::durability::data::DurableRecordIdentityState,
-    #[serde(default)]
-    record_generation_high_water: Vec<crate::durability::data::DurableRecordGenerationHighWater>,
-    #[serde(default)]
-    reusable_record_slots: Vec<crate::durability::data::DurableReusableRecordSlot>,
-    #[serde(default)]
-    record_slot_frontiers: Vec<crate::durability::data::DurableRecordSlotFrontier>,
     envelopes: Vec<PersistedCanonicalCommit>,
     partition_images: Vec<crate::durability::data::PartitionCheckpointImage>,
     aspect_contracts: Vec<worth_foundational::facade::PortableAspectContract>,
     lineage: crate::lineage::data::LineageCheckpointArtifact,
     index_definitions: Vec<crate::indexes::data::DerivedIndexDefinition>,
-    #[serde(default)]
     derived_index_artifacts: crate::indexes::data::DerivedIndexArtifacts,
-    #[serde(default)]
+    #[serde(deserialize_with = "Option::deserialize")]
     derived_index_checkpoint:
         Option<crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts>,
-    #[serde(default)]
     derived_index_checkpoint_format: u16,
     symbol_table: crate::symbols::data::SymbolTableSnapshot,
     runtime_name: String,
-    #[serde(default, skip_serializing_if = "is_zero_u16")]
     partition_alias_format: u16,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    branch_root_partition_aliases: Vec<crate::history::data::CommitId>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     branch_root_partition_aliases_v2: Vec<RootPartitionAliases>,
 }
 
-fn is_zero_u16(value: &u16) -> bool {
-    *value == 0
-}
-
 impl PersistedDurableCheckpointFile {
-    #[cfg(test)]
-    pub(super) fn from_checkpoint(checkpoint: DurableCheckpoint) -> Self {
-        let DurableCheckpoint {
-            coverage,
-            branch_cells,
-            branch_roots,
-            branch_root_schema_images,
-            record_identity,
-            record_generation_high_water,
-            reusable_record_slots,
-            record_slot_frontiers,
-            envelopes,
-            partition_images,
-            aspect_contracts,
-            lineage,
-            index_definitions,
-            derived_index_artifacts,
-            derived_index_checkpoint,
-            derived_index_checkpoint_format,
-            symbol_table,
-            runtime_name,
-        } = checkpoint;
-        Self {
-            checkpoint: PersistedDurableCheckpoint {
-                coverage,
-                branch_cells,
-                branch_roots,
-                branch_root_schema_images,
-                record_identity,
-                record_generation_high_water,
-                reusable_record_slots,
-                record_slot_frontiers,
-                envelopes: envelopes
-                    .iter()
-                    .map(PersistedCanonicalCommit::from_checkpoint_positioned)
-                    .collect(),
-                partition_images,
-                aspect_contracts,
-                lineage,
-                index_definitions,
-                derived_index_artifacts,
-                derived_index_checkpoint,
-                derived_index_checkpoint_format,
-                symbol_table,
-                runtime_name,
-                partition_alias_format: 0,
-                branch_root_partition_aliases: Vec::new(),
-                branch_root_partition_aliases_v2: Vec::new(),
-            },
-        }
-    }
-
     pub(super) fn readmit(self) -> Result<DurableCheckpointFile, DurabilityError> {
         let mut checkpoint = self.checkpoint;
+        readmit_native_checkpoint_format(checkpoint.native_format)?;
         readmit_partition_aliases(&mut checkpoint)?;
         if !crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::supports_outer_format(
             checkpoint.derived_index_checkpoint_format,
@@ -344,12 +284,10 @@ impl PersistedDurableCheckpointFile {
             checkpoint: DurableCheckpoint {
                 coverage: checkpoint.coverage,
                 branch_cells: checkpoint.branch_cells,
+                retired_branch_names: checkpoint.retired_branch_names,
                 branch_roots: checkpoint.branch_roots,
                 branch_root_schema_images: checkpoint.branch_root_schema_images,
                 record_identity: checkpoint.record_identity,
-                record_generation_high_water: checkpoint.record_generation_high_water,
-                reusable_record_slots: checkpoint.reusable_record_slots,
-                record_slot_frontiers: checkpoint.record_slot_frontiers,
                 envelopes,
                 partition_images: checkpoint.partition_images,
                 aspect_contracts: checkpoint.aspect_contracts,

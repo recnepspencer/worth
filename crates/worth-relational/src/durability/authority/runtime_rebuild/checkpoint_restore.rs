@@ -53,7 +53,7 @@ fn prepare_checkpoint_state(
     validate_checkpoint_lineage_artifact(checkpoint)?;
     let symbols = prepare_symbols(restored, checkpoint);
     let record_identity = prepare_record_identity(checkpoint)?;
-    let branch_root_images = restore_branch_root_images(restored, checkpoint, work)?;
+    let branch_root_images = restore_branch_root_images(checkpoint, work)?;
     let partitions = prepare_partitions(restored, checkpoint, &branch_root_images, work)?;
     let history = prepare_history(restored, checkpoint, branch_root_images, &symbols, work)?;
     let lineage = prepare_lineage(restored, checkpoint);
@@ -156,6 +156,7 @@ fn prepare_history(
     history
         .restore_branch_cells(
             &checkpoint.branch_cells,
+            &checkpoint.retired_branch_names,
             &mut branch_roots.partitions,
             &branch_roots.schema_authorities,
             &restored.config.schema.registry,

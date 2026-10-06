@@ -4,7 +4,6 @@ use std::sync::Arc;
 use crate::durability::data::{
     DurabilityError, DurableBranchRootImage, DurableBranchRootSchemaImage, DurableCheckpoint,
 };
-use crate::runtime::RelationalRuntime;
 
 type ReadmittedCarrier = (
     DurableBranchRootSchemaImage,
@@ -45,13 +44,9 @@ impl RootSchemaReadmissionCatalog {
 
     pub(super) fn readmit_root(
         &mut self,
-        restored: &RelationalRuntime,
         image: &DurableBranchRootImage,
         envelope: &crate::history::data::CanonicalCommitEnvelope,
     ) -> Result<Arc<crate::branch::RelationalBranchRootSchemaAuthority>, DurabilityError> {
-        if image.format_version == 0 {
-            return self.readmit_legacy_root(restored, image, envelope);
-        }
         validate_root_image_integrity(image)?;
         if let Some(authority) = self.admitted.get(&image.schema_carrier_digest) {
             if !authority.matches(&envelope.schema_authority)
@@ -64,28 +59,6 @@ impl RootSchemaReadmissionCatalog {
             return Ok(Arc::clone(authority));
         }
         self.readmit_new_carrier(image, envelope)
-    }
-
-    fn readmit_legacy_root(
-        &mut self,
-        restored: &RelationalRuntime,
-        image: &DurableBranchRootImage,
-        envelope: &crate::history::data::CanonicalCommitEnvelope,
-    ) -> Result<Arc<crate::branch::RelationalBranchRootSchemaAuthority>, DurabilityError> {
-        let allocation_id = self.issue_authority_id()?;
-        crate::branch::RelationalBranchRootSchemaAuthority::readmit_exact(
-            allocation_id,
-            restored.config.schema.registry.clone(),
-            active_contracts(&restored.schema_contract_runtime.aspect_contract_plans),
-            &envelope.schema_authority,
-            envelope.descriptor_semantics_version,
-        )
-        .ok_or_else(|| {
-            schema_mismatch(format!(
-                "legacy branch-root image `{}` has no exact live schema authority",
-                image.commit_id.0
-            ))
-        })
     }
 
     fn readmit_new_carrier(
@@ -163,28 +136,6 @@ fn validate_root_image_integrity(image: &DurableBranchRootImage) -> Result<(), D
             image.commit_id.0
         )))
     }
-}
-
-fn active_contracts(
-    plans: &crate::schema::data::AspectContractPlanCatalog,
-) -> Vec<worth_foundational::facade::AspectContract> {
-    let mut contracts = BTreeMap::new();
-    for binding in plans
-        .entity_plans
-        .values()
-        .chain(plans.relation_plans.values())
-        .flat_map(|plan| &plan.executable_bindings)
-    {
-        contracts.insert(
-            (
-                binding.contract.key().clone(),
-                binding.contract.identity(),
-                binding.contract.revision(),
-            ),
-            binding.contract.clone(),
-        );
-    }
-    contracts.into_values().collect()
 }
 
 fn corrupt_checkpoint(detail: String) -> DurabilityError {

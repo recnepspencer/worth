@@ -12,7 +12,6 @@ use crate::identity::data::PartitionId;
 
 use super::PersistedDurableCheckpoint;
 
-pub(super) const PARTITION_ALIAS_FORMAT_VERSION: u16 = 1;
 pub(super) const PARTITION_DELTA_FORMAT_VERSION: u16 = 2;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -137,49 +136,15 @@ impl Serialize for CheckpointBranchRootRef<'_> {
     }
 }
 
+/// Rebuild every branch root's full partition images from the wire deltas.
+/// This build writes only the delta format, so any other is refused.
 pub(super) fn readmit_partition_aliases(
     checkpoint: &mut PersistedDurableCheckpoint,
 ) -> Result<(), crate::durability::data::DurabilityError> {
-    match checkpoint.partition_alias_format {
-        0 if checkpoint.branch_root_partition_aliases.is_empty()
-            && checkpoint.branch_root_partition_aliases_v2.is_empty() =>
-        {
-            Ok(())
-        }
-        PARTITION_ALIAS_FORMAT_VERSION
-            if checkpoint.branch_root_partition_aliases_v2.is_empty() =>
-        {
-            readmit_whole_root_aliases(checkpoint)
-        }
-        PARTITION_DELTA_FORMAT_VERSION if checkpoint.branch_root_partition_aliases.is_empty() => {
-            readmit_partition_deltas(checkpoint)
-        }
-        _ => Err(corrupt("unsupported checkpoint partition alias format")),
+    if checkpoint.partition_alias_format != PARTITION_DELTA_FORMAT_VERSION {
+        return Err(corrupt("unsupported checkpoint partition alias format"));
     }
-}
-
-fn readmit_whole_root_aliases(
-    checkpoint: &mut PersistedDurableCheckpoint,
-) -> Result<(), crate::durability::data::DurabilityError> {
-    let aliases = &checkpoint.branch_root_partition_aliases;
-    let mut pending = aliases.iter().copied().collect::<BTreeSet<_>>();
-    if pending.len() != aliases.len() {
-        return Err(corrupt("duplicate branch-root partition alias"));
-    }
-    for root in &mut checkpoint.branch_roots {
-        if pending.remove(&root.commit_id) {
-            if !root.partition_images.is_empty() {
-                return Err(corrupt(
-                    "branch-root partition alias carries an inline image",
-                ));
-            }
-            root.partition_images = checkpoint.partition_images.clone();
-        }
-    }
-    if !pending.is_empty() {
-        return Err(corrupt("branch-root partition alias names missing root"));
-    }
-    Ok(())
+    readmit_partition_deltas(checkpoint)
 }
 
 fn readmit_partition_deltas(

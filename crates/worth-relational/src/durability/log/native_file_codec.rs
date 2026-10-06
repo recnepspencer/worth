@@ -7,7 +7,8 @@ use crate::durability::data::{DurabilityError, RecoveryFailureClass};
 
 use super::local_store::{DurableCheckpointFile, DurableSegmentFile, DurableStoreManifestFile};
 use super::persisted_checkpoint::{
-    CaptureSectionRecorder, PersistedDurableCheckpointFile, PersistedDurableCheckpointFileRef,
+    undecodable_checkpoint, CaptureSectionRecorder, PersistedDurableCheckpointFile,
+    PersistedDurableCheckpointFileRef,
 };
 
 pub(crate) fn read_store_manifest_file(
@@ -35,7 +36,7 @@ pub(crate) fn write_segment_file(
 }
 
 pub(crate) fn read_checkpoint_file(path: &Path) -> Result<DurableCheckpointFile, DurabilityError> {
-    read_native_file::<PersistedDurableCheckpointFile>(path)?.readmit()
+    decode_checkpoint(&fs::read(path).map_err(super::local_store::io_error)?)
 }
 
 pub(crate) fn write_checkpoint_file(
@@ -78,12 +79,7 @@ pub(crate) fn encode_checkpoint(
 
 pub(crate) fn decode_checkpoint(bytes: &[u8]) -> Result<DurableCheckpointFile, DurabilityError> {
     rmp_serde::from_slice::<PersistedDurableCheckpointFile>(bytes)
-        .map_err(|error| {
-            DurabilityError::new(
-                RecoveryFailureClass::CorruptCheckpoint,
-                format!("failed to decode native checkpoint: {error}"),
-            )
-        })?
+        .map_err(|error| undecodable_checkpoint(bytes, error))?
         .readmit()
 }
 

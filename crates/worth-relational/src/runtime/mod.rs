@@ -60,7 +60,6 @@ pub use state::{
 pub(crate) use crate::storage::overlay::{PartitionAccess, WorkingState};
 pub use construction::RelationalRuntimeForkDenial;
 pub(crate) use construction::RuntimeExtensions;
-pub use state::RelationalRuntime;
 pub(crate) use state::RelationalRuntimeState;
 pub(crate) use state::{
     readmit_positioned_canonical_commit, AdmittedRelationalRuntimeOperation,
@@ -76,14 +75,15 @@ pub(crate) use state::{
     RelationalCanonicalPublicationRoutes, RelationalDiagnosticArtifactStore,
     RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
     RelationalPreparationOwnerBinding, RelationalPreparationRuntime,
-    RelationalRuntimeConfigurationBinding, RelationalRuntimeConfigurationSnapshot,
-    RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding, ReplayRetentionState,
-    RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem, SchemaContractRuntimeSubsystem,
-    SnapshotHandleBinding, StorageSubsystem, ValidatedLineageEventBatch, VisibilityResidency,
-    VisibilitySubsystem,
+    RelationalRuntimeAdmissionPosture, RelationalRuntimeConfigurationBinding,
+    RelationalRuntimeConfigurationSnapshot, RelationalRuntimeOwnerBinding,
+    RelationalRuntimePublicationBinding, ReplayRetentionState, RuntimeInstrumentation,
+    RuntimeServices, RuntimeSubsystem, SchemaContractRuntimeSubsystem, SnapshotHandleBinding,
+    StorageSubsystem, ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
 };
 pub(crate) use state::{
     DeferredRelationalSettlement, PendingRelationalPublicationSettlement,
     PerformedRelationalSettlement, RelationalPendingSettlementReservation,
     RelationalSettlementClaim, RelationalSettlementReservationDenial, ReservedRelationalSettlement,
 };
+pub use state::{RelationalRuntime, RelationalRuntimeSealDenial, RelationalRuntimeSealOutcome};

@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 
 use crate::durability::data::{CheckpointRestoreWork, DurabilityError, DurableCheckpoint};
 use crate::history::data::CommitId;
-use crate::runtime::RelationalRuntime;
 
 use super::partition_images::{
     reject_duplicate_partition_images, restore_unique_partition_images_with_schema,
@@ -17,7 +16,6 @@ pub(super) struct RestoredBranchRootImages {
 }
 
 pub(super) fn restore_branch_root_images(
-    restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
     work: &mut CheckpointRestoreWork,
 ) -> Result<RestoredBranchRootImages, DurabilityError> {
@@ -58,7 +56,7 @@ pub(super) fn restore_branch_root_images(
             )));
         }
         work.root_images_verified += 1;
-        let schema_authority = schema_catalog.readmit_root(restored, image, envelope)?;
+        let schema_authority = schema_catalog.readmit_root(image, envelope)?;
         let root_contracts = crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog::from_contracts(
             schema_authority.retained_aspect_contracts(),
         )?;

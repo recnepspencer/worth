@@ -13,6 +13,7 @@ impl HistorySubsystem {
     pub(crate) fn restore_branch_cells(
         &mut self,
         checkpoints: &[RelationalBranchCellCheckpoint],
+        retired_branch_names: &[crate::history::data::BranchId],
         root_partitions: &mut std::collections::BTreeMap<
             CommitId,
             std::collections::BTreeMap<
@@ -116,8 +117,7 @@ impl HistorySubsystem {
         if !cells.contains_key(&self.main_branch) {
             return Err("durable checkpoint omitted the configured main branch cell".to_owned());
         }
-        self.branch_cells.restore_all(cells);
-        self.branch_cells.clear_retired_names();
+        self.restore_branch_registry(cells, retired_branch_names)?;
         self.rebuild_checkpoint_catalog(checkpoints)?;
         self.try_reset_retention_owner(self.runtime_instance_id)
             .map_err(|denial| {

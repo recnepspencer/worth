@@ -660,6 +660,11 @@ One milestone switches Relational's durability, so two paths never coexist.
   - publish is a root compare-and-swap;
   - settlement uses the fate port;
   - branch reference cells are named roots.
+- **Branch deletion is a durable fact.** Dropping a branch's root and retiring
+  its name happen in one Store batch, so a deleted branch never comes back and
+  its name is never reused, including after a crash or a reopen. Today's
+  local-file mode loses a deletion made after the last checkpoint; the
+  Relational test that pins that gap is deleted with the mode.
 - **The pending-settlement record** is written in the same batch as the head
   move.
 - **Warm copies** are stamped with a generation and updated from the committed
@@ -679,6 +684,8 @@ One milestone switches Relational's durability, so two paths never coexist.
   seeded test comparing warm and cold reads after random commits, evictions and
   rewarms.
 - *A head moved without a settlement record.* One constructor builds both.
+- *A deleted branch that comes back.* The root drop and the name retirement are
+  one batch, with a crash test at each edge.
 - *Recovered pending settlements* break the settlement registry's "bounded by
   construction" proof. The proof is restated to cover entries rebuilt at open.
 

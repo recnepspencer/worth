@@ -11,6 +11,7 @@ use crate::runtime::RelationalRuntime;
 pub(super) struct CapturedCheckpointBasis {
     pub(super) latest_commit: Option<RelationalCommitReceipt>,
     pub(super) branch_cells: Vec<crate::branch::RelationalBranchCellCheckpoint>,
+    pub(super) retired_branch_names: Vec<crate::history::data::BranchId>,
     pub(super) branch_roots: Vec<RelationalBranchRootCheckpoint>,
     pub(super) record_identity: CapturedRecordIdentity,
     pub(super) envelopes: Vec<PositionedCanonicalCommit>,
@@ -79,6 +80,9 @@ impl CapturedCheckpointBasis {
             })
             .collect::<Result<Vec<_>, _>>()?;
         let branch_cells = runtime.history().branch_cells_snapshot();
+        // Deletion retires a name before it removes the cell, so reading the
+        // retired set after the cells never loses a concurrently deleted name.
+        let retired_branch_names = runtime.history.retired_branch_names_checkpoint();
         let root_bases = branch_roots
             .iter()
             .map(|root| root.commit_id())
@@ -110,6 +114,7 @@ impl CapturedCheckpointBasis {
                 .last()
                 .map(|positioned| positioned.envelope().commit.clone()),
             branch_cells,
+            retired_branch_names,
             branch_roots,
             record_identity: CapturedRecordIdentity {
                 generation_high_water: runtime.record_identity.generation_snapshot(),

@@ -134,8 +134,60 @@ impl RelationalBranchReferenceRegistry {
         Ok(())
     }
 
-    pub(crate) fn clear_retired_names(&self) {
-        self.write().retired_names.clear();
+    pub(crate) fn retired_names_checkpoint(&self) -> Vec<BranchId> {
+        let mut names = self
+            .read()
+            .retired_names
+            .iter()
+            .cloned()
+            .collect::<Vec<_>>();
+        names.sort();
+        names
+    }
+
+    /// Replace the cells and the retired-name set with one durable image,
+    /// refusing any image the live registry could never have produced. The
+    /// image is judged whole before anything is installed.
+    ///
+    /// The image does not carry a cell's lifecycle posture; the retired names
+    /// do. A carried cell whose name is retired was waiting on its active
+    /// operations when the image was captured, so it comes back deleting: a
+    /// retired name never names a live branch.
+    pub(crate) fn restore_checkpoint(
+        &self,
+        cells: BTreeMap<BranchId, RelationalBranchReferenceCell>,
+        retired_names: &[BranchId],
+        maximum_names: usize,
+        main_branch: &BranchId,
+    ) -> Result<(), String> {
+        if retired_names.len() > maximum_names {
+            return Err(format!(
+                "durable checkpoint retires {} branch names beyond the bound of {maximum_names}",
+                retired_names.len()
+            ));
+        }
+        let mut retired = HashSet::with_capacity(retired_names.len());
+        for branch_id in retired_names {
+            if branch_id == main_branch {
+                return Err(format!(
+                    "durable checkpoint retires the main branch name `{}`",
+                    branch_id.0
+                ));
+            }
+            if !retired.insert(branch_id.clone()) {
+                return Err(format!(
+                    "duplicate durable retired branch name `{}`",
+                    branch_id.0
+                ));
+            }
+        }
+        for cell in retired.iter().filter_map(|branch_id| cells.get(branch_id)) {
+            cell.publication_cell().enter_state().mark_deleting();
+        }
+        let mut state = self.write();
+        state.cells = cells.into_iter().collect();
+        state.retired_names = retired;
+        Ok(())
     }
 
     pub(crate) fn reserve_fork_target(

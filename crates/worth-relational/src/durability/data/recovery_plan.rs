@@ -94,7 +94,8 @@ pub struct RecoveryPlan {
     pub verification_plan: RecoveryVerificationPlan,
     pub descriptor_semantics_version: DescriptorSemanticsVersion,
     pub restore_authoritative_envelope_commit_ids: Vec<CommitId>,
-    pub(crate) persisted_tail_error: Option<super::DurabilityError>,
+    /// Why the persisted store cannot be recovered at all, when it cannot.
+    pub(crate) persisted_terminal_error: Option<super::DurabilityError>,
     pub(crate) commit_strategy_executors:
         crate::commit_strategies::FrozenCommitStrategyExecutorRegistry,
 }
@@ -187,7 +188,7 @@ impl RecoveryPlan {
             verification_plan: RecoveryVerificationPlan::from_mode(verification_mode),
             descriptor_semantics_version,
             restore_authoritative_envelope_commit_ids,
-            persisted_tail_error: None,
+            persisted_terminal_error: None,
             commit_strategy_executors:
                 crate::commit_strategies::FrozenCommitStrategyExecutorRegistry::default(),
         }
@@ -205,11 +206,11 @@ impl RecoveryPlan {
         self
     }
 
-    pub(crate) fn with_persisted_tail_error(
+    pub(crate) fn with_persisted_terminal_error(
         mut self,
         error: Option<super::DurabilityError>,
     ) -> Self {
-        self.persisted_tail_error = error;
+        self.persisted_terminal_error = error;
         self
     }
 

@@ -158,7 +158,7 @@ fn validate_reported_parity(
 }
 
 fn validate_integrity(plan: &RecoveryPlan) -> Result<(), DurabilityError> {
-    if let Some(error) = plan.persisted_tail_error.as_ref() {
+    if let Some(error) = plan.persisted_terminal_error.as_ref() {
         return Err(error.clone());
     }
     if plan.integrity_report.corrupt_segment_id.is_some() {

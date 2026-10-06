@@ -1,7 +1,16 @@
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 #[cfg(test)]
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Condvar, Mutex};
+
+use super::RelationalRuntimeSealDenial;
+
+/// Admission is stopped and the owner is waiting for admitted operations.
+const CLOSING: usize = 1 << (usize::BITS - 2);
+/// Admission is stopped for good with nothing in flight.
+const CLOSED: usize = 1 << (usize::BITS - 1);
+const STOPPED: usize = CLOSING | CLOSED;
+const IN_FLIGHT: usize = !STOPPED;
 
 /// Drop-governed lifecycle authority shared by every independently borrowable
 /// service issued by one Relational runtime.
@@ -16,10 +25,24 @@ pub(crate) struct RelationalRuntimeOwnerBinding {
     lifecycle: Arc<RelationalRuntimeLifecycle>,
 }
 
+/// Where one runtime owner's admission stands.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum RelationalRuntimeAdmissionPosture {
+    Open,
+    Closing,
+    Closed,
+}
+
 #[derive(Debug)]
 struct RelationalRuntimeLifecycle {
-    accepting_operations: AtomicBool,
-    in_flight: AtomicUsize,
+    /// The stop bits and the in-flight operation count, in one word.
+    ///
+    /// Every transition is a single atomic step on this word, so an admission
+    /// and a stop can never each miss the other: an admission's increment
+    /// returns the stop bits it raced, a seal exchanges the whole word and so
+    /// changes nothing when any operation is in flight, and a release's
+    /// decrement returns whether a draining owner is waiting on it.
+    word: AtomicUsize,
     close_wait: Mutex<()>,
     close_ready: Condvar,
     #[cfg(test)]
@@ -36,8 +59,7 @@ impl RelationalRuntimeOwner {
         Self {
             binding: RelationalRuntimeOwnerBinding {
                 lifecycle: Arc::new(RelationalRuntimeLifecycle {
-                    accepting_operations: AtomicBool::new(true),
-                    in_flight: AtomicUsize::new(0),
+                    word: AtomicUsize::new(0),
                     close_wait: Mutex::new(()),
                     close_ready: Condvar::new(),
                     #[cfg(test)]
@@ -59,9 +81,7 @@ impl RelationalRuntimeOwnerBinding {
     /// module tree: a narrow service carries this binding to admit work and can
     /// never use it to close the runtime it borrows.
     pub(in crate::runtime) fn close(&self) {
-        self.lifecycle
-            .accepting_operations
-            .store(false, Ordering::Release);
+        self.lifecycle.word.fetch_or(CLOSING, Ordering::SeqCst);
         #[cfg(test)]
         self.acknowledge_test_close_start();
         let mut wait = self
@@ -69,21 +89,45 @@ impl RelationalRuntimeOwnerBinding {
             .close_wait
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        while self.lifecycle.in_flight.load(Ordering::Acquire) != 0 {
+        while self.lifecycle.word.load(Ordering::SeqCst) & IN_FLIGHT != 0 {
             wait = self
                 .lifecycle
                 .close_ready
                 .wait(wait)
                 .unwrap_or_else(|poisoned| poisoned.into_inner());
         }
+        // The drain is over and this owner was its only waiter: close is
+        // reached once, through the owner's exclusive handle. Setting the
+        // closed bit before clearing the drain bit keeps admission stopped
+        // throughout, and with the drain bit gone an admission denied by a
+        // closed owner returns without taking the drain lock.
+        self.lifecycle.word.fetch_or(CLOSED, Ordering::SeqCst);
+        self.lifecycle.word.fetch_and(!CLOSING, Ordering::SeqCst);
+    }
+
+    /// Stop admission for good, in place, only when nothing is in flight.
+    ///
+    /// Unlike [`Self::close`] this never waits. The whole word is exchanged in
+    /// one step, so a refused attempt changes nothing: admission was never
+    /// stopped, and no concurrent admission is denied because of it.
+    ///
+    /// Seal and close are both owner authority reached through the owner's
+    /// exclusive handle, so the exchange can only fail on operations in flight.
+    pub(in crate::runtime) fn try_seal(&self) -> Result<(), RelationalRuntimeSealDenial> {
+        self.lifecycle
+            .word
+            .compare_exchange(0, CLOSED, Ordering::SeqCst, Ordering::SeqCst)
+            .map(drop)
+            .map_err(|_| RelationalRuntimeSealDenial::AdmissionsActive)
     }
 
     pub(crate) fn admit(&self) -> Option<AdmittedRelationalRuntimeOperation> {
-        if !self.lifecycle.accepting_operations.load(Ordering::Acquire) {
-            return None;
-        }
-        self.lifecycle.in_flight.fetch_add(1, Ordering::AcqRel);
-        if !self.lifecycle.accepting_operations.load(Ordering::Acquire) {
+        let before = self.lifecycle.word.fetch_add(1, Ordering::SeqCst);
+        debug_assert!(
+            before & IN_FLIGHT < IN_FLIGHT,
+            "runtime operation admission overflow"
+        );
+        if before & STOPPED != 0 {
             release_operation(&self.lifecycle);
             return None;
         }
@@ -92,12 +136,20 @@ impl RelationalRuntimeOwnerBinding {
         })
     }
 
-    /// Observe whether this owner still accepts work without admitting any.
+    /// Observe where this owner's admission stands without admitting any work.
     ///
     /// This is descriptive state only. It carries no close authority and does
-    /// not increment or otherwise participate in the in-flight drain.
-    pub(crate) fn accepts_operations(&self) -> bool {
-        self.lifecycle.accepting_operations.load(Ordering::Acquire)
+    /// not increment or otherwise participate in the in-flight drain. A sealed
+    /// owner answers closed while its state is still alive.
+    pub(crate) fn admission_posture(&self) -> RelationalRuntimeAdmissionPosture {
+        let word = self.lifecycle.word.load(Ordering::SeqCst);
+        if word & CLOSED != 0 {
+            RelationalRuntimeAdmissionPosture::Closed
+        } else if word & CLOSING != 0 {
+            RelationalRuntimeAdmissionPosture::Closing
+        } else {
+            RelationalRuntimeAdmissionPosture::Open
+        }
     }
 
     #[cfg(test)]
@@ -130,10 +182,17 @@ impl Drop for AdmittedRelationalRuntimeOperation {
     }
 }
 
+/// Return one admission, and wake a draining owner when it was the last.
+///
+/// A refused admission returns its own increment through here too, so a drain
+/// that saw that increment is always woken once it is gone.
 fn release_operation(lifecycle: &RelationalRuntimeLifecycle) {
-    let previous = lifecycle.in_flight.fetch_sub(1, Ordering::AcqRel);
-    debug_assert!(previous > 0, "runtime operation admission underflow");
-    if previous == 1 && !lifecycle.accepting_operations.load(Ordering::Acquire) {
+    let before = lifecycle.word.fetch_sub(1, Ordering::SeqCst);
+    debug_assert!(
+        before & IN_FLIGHT > 0,
+        "runtime operation admission underflow"
+    );
+    if before & IN_FLIGHT == 1 && before & CLOSING != 0 {
         let _wait = lifecycle
             .close_wait
             .lock()

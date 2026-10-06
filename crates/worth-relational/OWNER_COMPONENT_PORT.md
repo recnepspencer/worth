@@ -340,6 +340,37 @@ When the owning runtime closes settlement admission, it drains every pending
 record exactly once. A later repair then answers
 `DeferredPublicationSettlementError::OwnerUnavailable` rather than a receipt.
 
+## In-place seal
+
+`RelationalRuntime::try_seal` seals the owner without waiting. It is one atomic
+step on the owner's lifecycle word. With any admitted operation in flight the
+call is refused as `RelationalRuntimeSealDenial::AdmissionsActive` and nothing
+changes: admission was never stopped, so a refused seal denies no concurrent
+admission. On a handle that is itself an admitted operation rather than the
+owner, the call is refused as `RelationalRuntimeSealDenial::NotOwner`.
+
+Otherwise admission stops for good and the owner is committed as sealed before
+pending settlement drains, exactly once, as it does at close. A sealed owner
+reports `RelationalOwnerLifecycleObservation::Closed` even while another handle
+keeps the runtime alive, and every port that admits through the owner answers
+`OwnerUnavailable`. A second call answers
+`RelationalRuntimeSealOutcome::AlreadySealed`, and dropping a sealed owner closes
+nothing again.
+
+A sealed owner still serves reads of published state and denies everything that
+would move it:
+
+- A transaction opened before the seal commits to
+  `TransactionCommitError::PublicationDenied` carrying
+  `RelationalPublicationDenial::OwnerUnavailable`; the branch head does not move.
+- The owner's own `fork_branch` is denied as
+  `RelationalForkDenial::OwnerUnavailable`.
+- `native_checkpoint()` succeeds. Capturing the image reads published state and
+  admits nothing, so a close path can seal first and capture afterwards.
+- `RelationalRuntime::fork()` succeeds. It reads published state and produces an
+  independent runtime that is open.
+- Snapshots taken before the seal keep reading.
+
 ## Cancellation contract
 
 Before Relational linearization, cancellation or timeout returns a typed
@@ -391,6 +422,25 @@ unsettled settlements. While any remain, the owner returns
 `active_operation_count()`. That outcome also marks the branch `Deleting` and
 reserves its retired name, so new transaction admission is denied as `Deleting`
 and publication is denied as `RelationalPublicationDenial::Deleting`.
+
+A retired name is never reused within one runtime, across a native checkpoint
+restore, or across a runtime fork. The native checkpoint carries the retired set,
+so a restored owner still refuses a fork into it as `RetiredTarget`, and the same
+bound on retired names holds after restore. The image does not carry a branch's
+lifecycle posture: a carried branch whose name is retired was waiting on its
+active operations at capture, and it is restored `Deleting`. An image that
+retires the main branch, repeats a name, or exceeds the bound is refused.
+
+In today's persisted mode retirement is durable only through a checkpoint. The
+segment log does not record it, so a persisted store reopened from a checkpoint
+and its log tail brings back a branch deleted after that checkpoint, with its
+name free again. That holds until Database Foundation D.9, where retirement
+becomes a durable fact and this mode is deleted.
+
+A native checkpoint states its format. An image of any other format, or one that
+states none, is refused as `RecoveryFailureClass::UnsupportedCheckpointFormat`
+and is never migrated. A persisted store falls back to an older checkpoint past a
+corrupt one, and never past one of an unsupported format.
 
 Admitted observations, pinned snapshots, and external component-retention leases
 are not active operations and do not delay deletion. A composition owner that releases every

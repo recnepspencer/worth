@@ -161,7 +161,7 @@ fn worth_query_9_16_1_1_metadata_lineage_tail_preserves_lineage_semantics() {
         plan.tail_commit_count(),
         3,
         "legacy metadata fixture read error: {:?}",
-        plan.persisted_tail_error
+        plan.persisted_terminal_error
     );
     assert_eq!(
         plan.tail_log[2].envelope().authority_kind(),
@@ -228,7 +228,7 @@ fn worth_query_9_16_1_1_rejected_correspondence_is_typed_unsupported() {
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
     let tail_error = plan
-        .persisted_tail_error
+        .persisted_terminal_error
         .as_ref()
         .expect("unsupported legacy lineage is explicit");
     assert_eq!(

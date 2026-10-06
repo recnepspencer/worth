@@ -1,3 +1,7 @@
+mod owner_seal;
+mod retired_names;
+mod sealed_owner_surface;
+
 use crate::branch::RelationalForkDenial;
 use crate::history::data::BranchId;
 use crate::tests::support::{create_entity_outcome, runtime_with_test_schema};

@@ -17,6 +17,24 @@ impl HistorySubsystem {
             .reserve_name_retirement(branch_id, MAX_RETIRED_BRANCH_NAMES)
     }
 
+    pub(crate) fn retired_branch_names_checkpoint(&self) -> Vec<BranchId> {
+        self.branch_cells.retired_names_checkpoint()
+    }
+
+    /// Install the branch cells and retired names of one durable checkpoint.
+    pub(super) fn restore_branch_registry(
+        &self,
+        cells: std::collections::BTreeMap<BranchId, crate::branch::RelationalBranchReferenceCell>,
+        retired_names: &[BranchId],
+    ) -> Result<(), String> {
+        self.branch_cells.restore_checkpoint(
+            cells,
+            retired_names,
+            MAX_RETIRED_BRANCH_NAMES,
+            &self.main_branch,
+        )
+    }
+
     #[cfg(test)]
     fn fill_retired_branch_name_capacity_for_test(&self) {
         let mut ordinal = 0_u64;

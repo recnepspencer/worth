@@ -304,7 +304,6 @@ impl HistorySubsystem {
         self.set_runtime_instance_id(runtime_instance_id);
         self.phase4_costs = RelationalPhase4ReferenceCostOwner::default();
         self.branch_population_scans = Arc::new(AtomicU64::new(0));
-        self.branch_cells.clear_retired_names();
     }
 
     pub(crate) fn branch_cell(

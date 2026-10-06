@@ -14,6 +14,9 @@ pub enum RecoveryFailureClass {
     ProfileMismatch,
     RuntimeNameMismatch,
     CorruptCheckpoint,
+    /// The checkpoint is an intact image of a format this build does not read.
+    /// It is refused outright: recovery never falls back past it.
+    UnsupportedCheckpointFormat,
     CorruptSegment,
     UnsupportedLegacySemantics,
     MissingAuthoritativeParentClosure,
@@ -207,6 +210,7 @@ impl DurabilityError {
                 ErrorOperation::WriteDurableStore
             }
             RecoveryFailureClass::CorruptCheckpoint
+            | RecoveryFailureClass::UnsupportedCheckpointFormat
             | RecoveryFailureClass::CorruptSegment
             | RecoveryFailureClass::UnsupportedLegacySemantics
             | RecoveryFailureClass::MissingAuthoritativeParentClosure

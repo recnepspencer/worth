@@ -1,4 +1,4 @@
-use crate::durability::data::{DurabilityError, DurableCheckpoint};
+use crate::durability::data::{DurabilityError, DurableCheckpoint, DurableRecordIdentityState};
 use crate::history::data::RecordAllocationClass;
 use crate::runtime::RecordIdentitySubsystem;
 
@@ -7,9 +7,9 @@ pub(super) fn prepare_record_identity(
 ) -> Result<RecordIdentitySubsystem, DurabilityError> {
     let authority = RecordIdentitySubsystem::default();
     let durable = durable_record_identity(checkpoint)?;
-    restore_record_generation_high_water(&authority, checkpoint, durable.generation_high_water)?;
+    restore_record_generation_high_water(&authority, checkpoint, &durable.generation_high_water)?;
     restore_record_slot_allocator(&authority, checkpoint, durable)?;
-    restore_pending_reservations(&authority, durable.pending_reservations)?;
+    restore_pending_reservations(&authority, &durable.pending_reservations)?;
     Ok(authority)
 }
 
@@ -99,7 +99,7 @@ fn observe_arena_generations(
 fn restore_record_slot_allocator(
     authority: &RecordIdentitySubsystem,
     checkpoint: &DurableCheckpoint,
-    identity: DurableRecordIdentityRef<'_>,
+    identity: &DurableRecordIdentityState,
 ) -> Result<(), DurabilityError> {
     for image in checkpoint.partition_images.iter().chain(
         checkpoint
@@ -122,17 +122,14 @@ fn restore_record_slot_allocator(
             image.relation_arena.generations.len(),
         )?;
     }
-    for entry in identity.append_frontiers {
+    for entry in &identity.append_frontiers {
         authority.restore_frontier(
             durable_record_class(entry.class),
             entry.partition_id,
             checked_slot(entry.next_slot, "record slot frontier")?,
         );
     }
-    if identity.legacy && identity.reusable_slots.is_empty() {
-        return restore_legacy_reusable_slots(authority, &checkpoint.partition_images);
-    }
-    for entry in identity.reusable_slots {
+    for entry in &identity.reusable_slots {
         authority.restore_reusable(
             durable_record_class(entry.class),
             entry.partition_id,
@@ -142,47 +139,18 @@ fn restore_record_slot_allocator(
     Ok(())
 }
 
-#[derive(Clone, Copy)]
-pub(super) struct DurableRecordIdentityRef<'a> {
-    pub(super) generation_high_water:
-        &'a [crate::durability::data::DurableRecordGenerationHighWater],
-    reusable_slots: &'a [crate::durability::data::DurableReusableRecordSlot],
-    append_frontiers: &'a [crate::durability::data::DurableRecordSlotFrontier],
-    pending_reservations: &'a [crate::durability::data::DurablePendingRecordReservation],
-    legacy: bool,
-}
-
-pub(super) fn durable_record_identity(
+/// The checkpoint's record identity state, refused unless this build wrote it.
+fn durable_record_identity(
     checkpoint: &DurableCheckpoint,
-) -> Result<DurableRecordIdentityRef<'_>, DurabilityError> {
-    match checkpoint.record_identity.schema_version {
-        0 => Ok(DurableRecordIdentityRef {
-            generation_high_water: &checkpoint.record_generation_high_water,
-            reusable_slots: &checkpoint.reusable_record_slots,
-            append_frontiers: &checkpoint.record_slot_frontiers,
-            pending_reservations: &[],
-            legacy: true,
-        }),
-        1 => Ok(DurableRecordIdentityRef {
-            generation_high_water: &checkpoint.record_identity.generation_high_water,
-            reusable_slots: &checkpoint.record_identity.reusable_slots,
-            append_frontiers: &checkpoint.record_identity.append_frontiers,
-            pending_reservations: &[],
-            legacy: false,
-        }),
-        crate::durability::data::DurableRecordIdentityState::CURRENT_SCHEMA_VERSION => {
-            Ok(DurableRecordIdentityRef {
-                generation_high_water: &checkpoint.record_identity.generation_high_water,
-                reusable_slots: &checkpoint.record_identity.reusable_slots,
-                append_frontiers: &checkpoint.record_identity.append_frontiers,
-                pending_reservations: &checkpoint.record_identity.pending_reservations,
-                legacy: false,
-            })
-        }
-        version => Err(corrupt_checkpoint(format!(
-            "unsupported durable record identity schema version {version}"
-        ))),
+) -> Result<&DurableRecordIdentityState, DurabilityError> {
+    let identity = &checkpoint.record_identity;
+    if identity.schema_version != DurableRecordIdentityState::CURRENT_SCHEMA_VERSION {
+        return Err(corrupt_checkpoint(format!(
+            "unsupported durable record identity schema version {}",
+            identity.schema_version
+        )));
     }
+    Ok(identity)
 }
 
 fn restore_arena_frontier(
@@ -203,29 +171,6 @@ fn restore_arena_frontier(
         partition_id,
         checked_slot(next_slot, "record slot frontier")?,
     );
-    Ok(())
-}
-
-fn restore_legacy_reusable_slots(
-    authority: &RecordIdentitySubsystem,
-    images: &[crate::durability::data::PartitionCheckpointImage],
-) -> Result<(), DurabilityError> {
-    for image in images {
-        for &slot in &image.entity_arena.free_list {
-            authority.restore_reusable(
-                RecordAllocationClass::Entity,
-                image.partition_id,
-                checked_slot(slot, "legacy reusable record slot")?,
-            );
-        }
-        for &slot in &image.relation_arena.free_list {
-            authority.restore_reusable(
-                RecordAllocationClass::Relation,
-                image.partition_id,
-                checked_slot(slot, "legacy reusable record slot")?,
-            );
-        }
-    }
     Ok(())
 }
 

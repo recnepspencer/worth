@@ -1,19 +1,21 @@
 mod runtime_state;
 mod subsystems;
 
-pub use runtime_state::RelationalRuntime;
 pub(crate) use runtime_state::RelationalRuntimeState;
 pub(crate) use runtime_state::{
     AdmittedRelationalRuntimeOperation, RelationalCandidateRegistrationDenial,
     RelationalPreparationOwnerBinding, RelationalPreparationRuntime,
-    RelationalRuntimeConfiguration, RelationalRuntimeConfigurationBinding,
-    RelationalRuntimeConfigurationSnapshot, RelationalRuntimeOwnerBinding,
-    RelationalRuntimePublicationBinding,
+    RelationalRuntimeAdmissionPosture, RelationalRuntimeConfiguration,
+    RelationalRuntimeConfigurationBinding, RelationalRuntimeConfigurationSnapshot,
+    RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding,
 };
 pub(crate) use runtime_state::{
     DeferredRelationalSettlement, PendingRelationalPublicationSettlement,
     PerformedRelationalSettlement, RelationalPendingSettlementReservation,
     RelationalSettlementClaim, RelationalSettlementReservationDenial, ReservedRelationalSettlement,
+};
+pub use runtime_state::{
+    RelationalRuntime, RelationalRuntimeSealDenial, RelationalRuntimeSealOutcome,
 };
 pub(in crate::runtime) use runtime_state::{
     RelationalRuntimeOwner, RelationalRuntimePublicationOwner,

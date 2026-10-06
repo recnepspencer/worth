@@ -1,19 +1,15 @@
 use std::sync::Weak;
 
-use crate::runtime::{RelationalRuntime, RelationalRuntimeOwnerBinding, RelationalRuntimeState};
+use crate::runtime::{
+    RelationalRuntime, RelationalRuntimeAdmissionPosture, RelationalRuntimeOwnerBinding,
+    RelationalRuntimeState,
+};
 
 /// Weak entry to the exact runtime state and its real operation-admission gate.
 #[derive(Debug, Clone)]
 pub(super) struct RelationalOwnerServiceBinding {
     state: Weak<RelationalRuntimeState>,
     lifecycle: RelationalRuntimeOwnerBinding,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum RelationalOwnerServiceLifecyclePosture {
-    Open,
-    Closing,
-    Closed,
 }
 
 impl RelationalOwnerServiceBinding {
@@ -24,14 +20,12 @@ impl RelationalOwnerServiceBinding {
         Self { state, lifecycle }
     }
 
-    pub(super) fn lifecycle_posture(&self) -> RelationalOwnerServiceLifecyclePosture {
-        if self.lifecycle.accepts_operations() {
-            return RelationalOwnerServiceLifecyclePosture::Open;
-        }
-        match self.state.upgrade() {
-            Some(_state) => RelationalOwnerServiceLifecyclePosture::Closing,
-            None => RelationalOwnerServiceLifecyclePosture::Closed,
-        }
+    /// The owner's admission posture, read from the owner's own lifecycle.
+    ///
+    /// Whether the state is still alive says nothing here: a sealed owner is
+    /// closed while its state lives on, and answers closed.
+    pub(super) fn lifecycle_posture(&self) -> RelationalRuntimeAdmissionPosture {
+        self.lifecycle.admission_posture()
     }
 
     pub(super) fn admitted_runtime(&self) -> Option<RelationalRuntime> {

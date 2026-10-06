@@ -1,4 +1,6 @@
-use super::{RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding};
+use super::{
+    RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding, RelationalRuntimeSealDenial,
+};
 
 /// The right, and the obligation, to finish one Relational runtime owner.
 ///
@@ -53,6 +55,48 @@ impl RelationalRuntimeCloseAuthority {
     pub(super) fn close(&self) {
         self.lifecycle.close();
         self.publication.close();
+        crate::indexes::purge_index_query_scratch_hints(self.runtime_instance_id);
+    }
+
+    /// Seal the owner's admission in place without waiting.
+    ///
+    /// Admission stops for good only when nothing is in flight; an outstanding
+    /// admission is refused and admission was never stopped. Publication
+    /// settlement is still owed its resolution, and only this authority can
+    /// give it: the owner records the returned seal as its tenure, which takes
+    /// this authority out, and spends it through
+    /// [`Self::resolve_sealed_publication`].
+    pub(super) fn try_seal(&self) -> Result<RelationalRuntimeSeal, RelationalRuntimeSealDenial> {
+        self.lifecycle.try_seal()?;
+        Ok(RelationalRuntimeSeal {
+            runtime_instance_id: self.runtime_instance_id,
+        })
+    }
+
+    /// Resolve remaining publication settlement with typed owner-loss
+    /// accounting, as at close, and spend this authority doing it.
+    ///
+    /// Taking the authority by value is what makes the resolution happen once:
+    /// a sealed owner no longer holds anything that could resolve it again. The
+    /// owner already records the seal when this runs, so a panic here unwinds
+    /// through a sealed owner, whose drop closes nothing.
+    pub(super) fn resolve_sealed_publication(self) {
+        self.publication.close();
+    }
+}
+
+/// A runtime owner sealed in place: admission is stopped for good with nothing
+/// in flight, and the close authority is spent.
+#[derive(Debug)]
+pub(in crate::runtime) struct RelationalRuntimeSeal {
+    runtime_instance_id: u64,
+}
+
+impl RelationalRuntimeSeal {
+    /// Finish a sealed owner on drop. Admission and publication were closed by
+    /// the seal, so neither is closed again; only this runtime's query scratch
+    /// hints, which reads after the seal may still warm, are purged.
+    pub(super) fn finish(&self) {
         crate::indexes::purge_index_query_scratch_hints(self.runtime_instance_id);
     }
 }

@@ -1,8 +1,9 @@
-use super::owner_binding::{RelationalOwnerServiceBinding, RelationalOwnerServiceLifecyclePosture};
+use super::owner_binding::RelationalOwnerServiceBinding;
 use crate::branch::{
     ArchivedRelationalBranch, RelationalBranchArchiveDenial, RelationalBranchDeleteDenial,
     RelationalBranchDeletionOutcome, RelationalBranchIdentity,
 };
+use crate::runtime::RelationalRuntimeAdmissionPosture;
 
 /// Descriptive lifecycle posture of the runtime owner behind a service port.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -47,13 +48,11 @@ impl RelationalBranchLifecyclePort {
 
     pub fn owner_lifecycle_observation(&self) -> RelationalOwnerLifecycleObservation {
         match self.owner.lifecycle_posture() {
-            RelationalOwnerServiceLifecyclePosture::Open => {
-                RelationalOwnerLifecycleObservation::Open
-            }
-            RelationalOwnerServiceLifecyclePosture::Closing => {
+            RelationalRuntimeAdmissionPosture::Open => RelationalOwnerLifecycleObservation::Open,
+            RelationalRuntimeAdmissionPosture::Closing => {
                 RelationalOwnerLifecycleObservation::Closing
             }
-            RelationalOwnerServiceLifecyclePosture::Closed => {
+            RelationalRuntimeAdmissionPosture::Closed => {
                 RelationalOwnerLifecycleObservation::Closed
             }
         }

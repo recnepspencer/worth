@@ -101,8 +101,9 @@ let app = application_installation::declaration(declaration, configuration, limi
     of the guard. So close also seals Relational's own owner lifecycle in place, through a new
     non-blocking Relational call, `try_seal` (today only `Drop` closes, and
     `RelationalRuntimeOwnerBinding::close` drains and blocks, `owner_lifecycle.rs:61-79`).
-    `try_seal` stops admission, checks `in_flight`, and if any admission remains it restores
-    admission and refuses with `AdmissionsActive`, which Query's `close` reports as its own
+    `try_seal` is one compare-and-swap on a lifecycle word holding the state and the in-flight
+    count; if any admission remains it changes nothing (no concurrent admission is ever denied by
+    a refused seal) and refuses with `AdmissionsActive`, which Query's `close` reports as its own
     in-flight refusal, so close never hangs on an admitted runtime carried out of a closure. It
     reaches close authority through the owner tenure (`runtime_state/mod.rs:97-107`,
     `close_authority.rs:53-57`) via the `&mut` Query holds under its mutex. After a seal, every
@@ -244,7 +245,7 @@ so every record row covers the root branch only, and `ForkedBranches` covers the
 |---|---|---|---|
 | `GraphRecords` (root): records, versions, adjacency, aspects, schema images, identity allocator, symbols, lineage, index definitions | Relational, `R/durability/data/checkpoint_images.rs:283` | Resumed | D.9 |
 | `ForkedBranches`: every non-root branch and its records | Relational cells restored, World unaware | Absent | D.10 |
-| `BranchLifecycle`: Live, Archived, Deleting | `R/branch/reference_checkpoint.rs:94` forces Live | Absent | D.9 |
+| `BranchLifecycle`: Live, Archived, Deleting | the image carries no posture: restore gives Live (`R/branch/reference_checkpoint.rs:94`), or Deleting for a cell whose name is retired | Absent | D.9 |
 | `PendingSettlements` | Relational settlement registry; close refuses until drained | Absent | D.9 |
 | `IdempotencyRecords` (root), probed by retry | rows `E/schema_layout/provider_idempotency.rs`; retry answers `CommittedReceiptNotRetained` (`E/provider/idempotency/snapshot_resolution.rs:225`, `E/application_attempt/idempotency_resolution/denial.rs:30-34`) | Absent | D.10 |
 | `DispatchOutbox` (root), probed by correlation | rows co-committed; correlation reads memory, `E/provider/committed_dispatch_outbox/correlation.rs:14-33` | Absent | D.10 |
@@ -319,9 +320,11 @@ minutes is split by target and filter first. The old constructors live from D.2.
 - **D.2.1 Relational: retired names and in-place seal.** Its own slice: another workspace, a
   native format bump, and the preconditions for ordinal recovery and the close gate. The durable
   checkpoint carries `retired_names`; restore restores them; older images are refused. The owner
-  gains a non-blocking `try_seal` (stop admission; refuse with `AdmissionsActive` and restore
-  admission if any admission is in flight; otherwise settle publication), and `Drop` after it
-  skips explicitly. Tests: delete a branch, checkpoint, restore, fork into its name is
+  gains a non-blocking `try_seal`: one compare-and-swap on a single lifecycle word that holds the
+  state and the in-flight count, so a refusal (`AdmissionsActive`, or `NotOwner` on an admitted
+  handle) changes nothing; on success the tenure is sealed, then publication resolves once, and
+  `Drop` after it skips explicitly. In today's persisted local-file mode a retirement is durable
+  only through a checkpoint; roadmap D.9 makes it a durable fact and deletes that mode. Tests: delete a branch, checkpoint, restore, fork into its name is
   `RetiredTarget`; the bound holds after restore; `try_seal` with an admission held refuses and
   admission still works; after a seal a retained owner service port is denied with
   `OwnerUnavailable`, a retained snapshot still reads, and a late snapshot release does not

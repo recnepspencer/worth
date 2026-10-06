@@ -24,7 +24,13 @@ pub(super) fn persisted_recovery_plan(
         return empty_persisted_recovery_plan(runtime, verification_mode);
     };
 
-    let selected_checkpoint = select_latest_readable_checkpoint(&store);
+    let selected_checkpoint = match select_latest_readable_checkpoint(&store) {
+        Ok(selected) => selected,
+        Err(unsupported) => {
+            return empty_persisted_recovery_plan(runtime, verification_mode)
+                .with_persisted_terminal_error(Some(unsupported));
+        }
+    };
     let checkpoint_position = selected_checkpoint
         .checkpoint
         .as_ref()
@@ -55,7 +61,7 @@ pub(super) fn persisted_recovery_plan(
         .iter()
         .map(|entry| entry.envelope().commit.commit_id)
         .collect();
-    let persisted_tail_error = verified_tail.terminal_error.clone();
+    let persisted_terminal_error = verified_tail.terminal_error.clone();
 
     RecoveryPlan::new(
         runtime.runtime_config().clone(),
@@ -84,7 +90,7 @@ pub(super) fn persisted_recovery_plan(
         descriptor_semantics_version,
         restore_authoritative_envelope_commit_ids,
     )
-    .with_persisted_tail_error(persisted_tail_error)
+    .with_persisted_terminal_error(persisted_terminal_error)
     .with_commit_strategy_executors(runtime.commit_strategy_executor_registry().clone())
 }
 
@@ -135,27 +141,38 @@ fn empty_persisted_recovery_plan(
     .with_commit_strategy_executors(runtime.commit_strategy_executor_registry().clone())
 }
 
+/// Select the newest checkpoint this build can read.
+///
+/// An unreadable or corrupt checkpoint is skipped for the one before it. A
+/// checkpoint of another format is not: the store was written by another build,
+/// so falling back would recover an older state as if it were the latest.
 fn select_latest_readable_checkpoint(
     store: &crate::durability::data::DurableStore,
-) -> SelectedPersistedCheckpoint {
+) -> Result<SelectedPersistedCheckpoint, crate::durability::data::DurabilityError> {
     let mut skipped_corrupt_checkpoints = Vec::new();
     for manifest in store.checkpoints.iter().rev() {
         match read_checkpoint_file(&manifest.path) {
             Ok(file) => {
-                return SelectedPersistedCheckpoint {
+                return Ok(SelectedPersistedCheckpoint {
                     checkpoint: Some(file.checkpoint),
                     manifest: Some(manifest.clone()),
                     skipped_corrupt_checkpoints,
-                };
+                });
+            }
+            Err(error)
+                if error.class
+                    == crate::durability::data::RecoveryFailureClass::UnsupportedCheckpointFormat =>
+            {
+                return Err(error);
             }
             Err(_) => skipped_corrupt_checkpoints.push(manifest.checkpoint_id),
         }
     }
-    SelectedPersistedCheckpoint {
+    Ok(SelectedPersistedCheckpoint {
         checkpoint: None,
         manifest: None,
         skipped_corrupt_checkpoints,
-    }
+    })
 }
 
 fn read_verified_tail_log(

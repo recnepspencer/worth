@@ -4,6 +4,7 @@ mod configuration;
 mod core_access;
 mod merge_authority;
 mod owner_lifecycle;
+mod owner_seal;
 mod partition_edition_access;
 mod preparation_runtime;
 mod publication_lifecycle;
@@ -18,15 +19,19 @@ use super::{
     StorageSubsystem, VisibilitySubsystem,
 };
 
-pub(in crate::runtime) use close_authority::RelationalRuntimeCloseAuthority;
+pub(in crate::runtime) use close_authority::{
+    RelationalRuntimeCloseAuthority, RelationalRuntimeSeal,
+};
 pub(crate) use configuration::{
     RelationalRuntimeConfiguration, RelationalRuntimeConfigurationBinding,
     RelationalRuntimeConfigurationSnapshot,
 };
 pub(in crate::runtime) use owner_lifecycle::RelationalRuntimeOwner;
 pub(crate) use owner_lifecycle::{
-    AdmittedRelationalRuntimeOperation, RelationalRuntimeOwnerBinding,
+    AdmittedRelationalRuntimeOperation, RelationalRuntimeAdmissionPosture,
+    RelationalRuntimeOwnerBinding,
 };
+pub use owner_seal::{RelationalRuntimeSealDenial, RelationalRuntimeSealOutcome};
 pub(crate) use preparation_runtime::RelationalPreparationOwnerBinding;
 pub(crate) use preparation_runtime::RelationalPreparationRuntime;
 pub(in crate::runtime) use publication_lifecycle::RelationalRuntimePublicationOwner;
@@ -158,12 +163,18 @@ impl Drop for RelationalRuntime {
     /// The close therefore never depends on which field is declared first, and
     /// never runs against a half-released runtime.
     ///
+    /// A sealed owner skips both closes explicitly: its seal already stopped
+    /// admission with nothing in flight and resolved publication settlement,
+    /// so it neither waits nor resolves settlement a second time.
+    ///
     /// An operation handle reaches this too, and does nothing: it carries an
     /// admission rather than close authority, so releasing it is exactly what
     /// lets a waiting owner finish.
     fn drop(&mut self) {
-        if let Some(close) = self.tenure.close_authority() {
-            close.close();
+        match &self.tenure {
+            RelationalRuntimeTenure::Owner(close) => close.close(),
+            RelationalRuntimeTenure::Sealed(seal) => seal.finish(),
+            RelationalRuntimeTenure::Admitted(_) => {}
         }
     }
 }

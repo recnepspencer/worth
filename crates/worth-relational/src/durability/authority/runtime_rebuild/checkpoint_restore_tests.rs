@@ -21,7 +21,7 @@ fn equal_exact_root_reuses_the_readmitted_partition_substrate() {
 
     let mut restored = persisted_runtime_with_test_schema();
     let mut work = crate::durability::data::CheckpointRestoreWork::default();
-    let roots = restore_branch_root_images(&mut restored, &checkpoint, &mut work).unwrap();
+    let roots = restore_branch_root_images(&checkpoint, &mut work).unwrap();
     let mirror = prepare_partitions(&mut restored, &checkpoint, &roots, &mut work).unwrap();
     let root = roots.partitions.get(&committed.commit.commit_id).unwrap();
     assert!(shares_first_generation(&mirror, root));
@@ -148,7 +148,7 @@ fn divergent_sibling_is_not_reused_as_the_storage_mirror() {
 
     let mut restored = persisted_runtime_with_test_schema();
     let mut work = crate::durability::data::CheckpointRestoreWork::default();
-    let roots = restore_branch_root_images(&mut restored, &checkpoint, &mut work).unwrap();
+    let roots = restore_branch_root_images(&checkpoint, &mut work).unwrap();
     let mirror = prepare_partitions(&mut restored, &checkpoint, &roots, &mut work).unwrap();
     let main_root = roots.partitions.get(&main_commit.commit.commit_id).unwrap();
     let sibling_root = roots
@@ -217,7 +217,7 @@ fn divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse() {
 
     let mut restored = persisted_runtime_with_test_schema();
     let mut work = crate::durability::data::CheckpointRestoreWork::default();
-    let roots = restore_branch_root_images(&mut restored, &checkpoint, &mut work).unwrap();
+    let roots = restore_branch_root_images(&checkpoint, &mut work).unwrap();
     let mirror = prepare_partitions(&mut restored, &checkpoint, &roots, &mut work).unwrap();
     let root_commit = checkpoint.branch_roots[0].commit_id;
     let root = roots.partitions.get(&root_commit).unwrap();
@@ -283,7 +283,7 @@ fn equal_image_cannot_bypass_global_contract_readmission() {
 
     let mut restored = persisted_runtime_with_test_schema();
     let mut work = crate::durability::data::CheckpointRestoreWork::default();
-    let roots = restore_branch_root_images(&mut restored, &checkpoint, &mut work).unwrap();
+    let roots = restore_branch_root_images(&checkpoint, &mut work).unwrap();
     let error = prepare_partitions(&mut restored, &checkpoint, &roots, &mut work).unwrap_err();
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("aspect readmission denied"));

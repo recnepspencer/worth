@@ -1,4 +1,6 @@
-use super::{AdmittedRelationalRuntimeOperation, RelationalRuntimeCloseAuthority};
+use super::{
+    AdmittedRelationalRuntimeOperation, RelationalRuntimeCloseAuthority, RelationalRuntimeSeal,
+};
 
 /// Why one Relational runtime handle is allowed to exist.
 ///
@@ -11,6 +13,10 @@ use super::{AdmittedRelationalRuntimeOperation, RelationalRuntimeCloseAuthority}
 pub(in crate::runtime) enum RelationalRuntimeTenure {
     /// The constructing owner. Closes this runtime's lifecycles on drop.
     Owner(RelationalRuntimeCloseAuthority),
+    /// The owner after an in-place seal. Admission is closed and the close
+    /// authority was taken out and spent resolving publication, so drop closes
+    /// neither again.
+    Sealed(RelationalRuntimeSeal),
     /// One admitted operation borrowing the owner's state. Closes nothing, and
     /// releases its admission when the operation's handle goes away.
     Admitted(
@@ -28,13 +34,14 @@ impl RelationalRuntimeTenure {
     /// The authority to close this runtime, if this tenure carries it.
     ///
     /// Only the owner's tenure does. An admitted operation gets `None`, which
-    /// is what keeps a service from finishing the runtime it borrowed.
+    /// is what keeps a service from finishing the runtime it borrowed. A sealed
+    /// owner gets `None` too: its seal already spent that authority.
     pub(in crate::runtime) const fn close_authority(
         &self,
     ) -> Option<&RelationalRuntimeCloseAuthority> {
         match self {
             Self::Owner(close) => Some(close),
-            Self::Admitted(_) => None,
+            Self::Sealed(_) | Self::Admitted(_) => None,
         }
     }
 }

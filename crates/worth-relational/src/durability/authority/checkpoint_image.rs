@@ -15,6 +15,7 @@ impl CapturedCheckpointBasis {
         let CapturedCheckpointBasis {
             latest_commit,
             branch_cells,
+            retired_branch_names,
             branch_roots,
             record_identity,
             envelopes,
@@ -56,12 +57,10 @@ impl CapturedCheckpointBasis {
                 up_to_version: latest_commit.map(|commit| commit.version_id),
             },
             branch_cells,
+            retired_branch_names,
             branch_roots,
             branch_root_schema_images,
             record_identity,
-            record_generation_high_water: Vec::new(),
-            reusable_record_slots: Vec::new(),
-            record_slot_frontiers: Vec::new(),
             envelopes,
             partition_images: partitions
                 .into_iter()
