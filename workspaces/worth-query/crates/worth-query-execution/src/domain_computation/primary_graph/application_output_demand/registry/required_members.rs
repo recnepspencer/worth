@@ -112,7 +112,14 @@ impl DemandRegistryState {
         }
         let mut retired_source = None;
         if let Some(record) = self.records.get_mut(key) {
-            retired_source = record.readmission_source.take();
+            // A reusable cached Ready keeps its original admitted source, funded
+            // by that source's existing ticket, until the cache row is reclaimed.
+            let reusable = matches!(&record.state, super::DemandState::Output(output)
+                if matches!(output.advancement, super::WorthQueryOutputAdvancement::Idle)
+                    && record.has_cached_ready());
+            if !reusable {
+                retired_source = record.readmission_source.take();
+            }
             if let Some(membership) = &record.work_membership {
                 membership.set_required(false);
             }

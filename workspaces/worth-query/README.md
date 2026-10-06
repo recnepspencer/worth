@@ -40,11 +40,15 @@ still reads a pending output, its native read carries the exact settlement and
 selected source basis into the required wave. An initial producer without an
 accepted consumer output uses the same handoff: the requested chain must become
 Current before the caller retries its frozen disclosure. A requested chain never
-settles or promotes its parent demand. When that identity resolves to a
-retained required row, the wave refreshes it and resumes the consumer; otherwise
-the original read denial remains. Its `readmission_failure()` diagnostic distinguishes
-basis, settlement, lineage and required-owner lookup misses without changing the
-typed denial kind or recovery posture. A child's native content stays child evidence; neither
+settles or promotes its parent demand. A reusable cached Ready keeps its original
+admitted source and installed producer under the source's existing capacity ticket
+until eviction. An exact failed read can claim that cached row temporarily and use
+the ordinary installed-executor wave. Caller-owned custody survives disclosure
+retry and Pending, then releases after actual caller settlement, refusal or close.
+No source is reconstructed from an output identity. If the source or exact row is
+absent, the original read denial remains. Its `readmission_failure()` diagnostic
+distinguishes basis, settlement, lineage and required-owner lookup misses without
+changing the typed denial kind or recovery posture. A child's native content stays child evidence; neither
 this disclosure nor the scheduling handoff certifies an output Current. This
 proof covers native read refusals; it does not establish recovery when native
 publication is Current but managed readiness delivery is still deferred.

@@ -29,10 +29,12 @@ where
     };
     // A packet is scheduling evidence for exactly the native basis that issued it.
     let (shared, positioned) = selection::select_required_basis(runtime, branch, admission)?;
-    let upstream =
-        runtime
-            .output_demands
-            .requested_ready_readmission(&requested, &positioned, admission)?;
+    let upstream = runtime.output_demands.requested_ready_readmission(
+        &requested,
+        &positioned,
+        admission,
+        &mut demand.required_continuations.requested,
+    )?;
     let (anchor_ready, shared, positioned) = match upstream {
         PendingUpstream::Ready(ready) => (ready, shared, positioned),
         PendingUpstream::Held(head) => {

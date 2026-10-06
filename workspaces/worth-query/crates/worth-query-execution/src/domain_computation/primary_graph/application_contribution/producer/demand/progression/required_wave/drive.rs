@@ -291,7 +291,8 @@ where
                         // This wave consumes the scheduling packet; a recorded stop
                         // must not retain a native basis that later waves cannot use.
                         if let Some(requested) = stop.requested_output.take() {
-                            match runtime.output_demands.requested_ready_readmission(
+                            match custody.requested_readmission(
+                                &runtime.output_demands,
                                 &requested,
                                 &wave.positioned,
                                 admission,

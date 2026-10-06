@@ -52,7 +52,7 @@ where
         FamilySourceQuery<Schema, Family>: 'static,
     {
         for _ in 0..2 {
-            if let CallerPass::Answer(advance) = self.advance_caller_pass(
+            let result = self.advance_caller_pass(
                 demand,
                 principal,
                 request_scope,
@@ -60,8 +60,19 @@ where
                 &mut disclosure,
                 commit_authority.clone(),
                 request_admission,
-            )? {
-                return Ok(advance);
+            );
+            match result {
+                Ok(CallerPass::Answer(advance)) => {
+                    if matches!(advance, WorthQueryOutputDemandAdvance::Settled(_)) {
+                        demand.required_continuations.requested.clear();
+                    }
+                    return Ok(advance);
+                }
+                Ok(CallerPass::RetryDisclosure) => {}
+                Err(stop) => {
+                    demand.required_continuations.requested.clear();
+                    return Err(stop);
+                }
             }
         }
         // The second pass made progress that needs another source disclosure.

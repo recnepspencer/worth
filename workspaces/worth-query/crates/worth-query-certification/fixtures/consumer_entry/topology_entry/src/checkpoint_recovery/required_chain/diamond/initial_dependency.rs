@@ -3,20 +3,31 @@ use super::*;
 
 #[test]
 fn an_initial_consumer_refreshes_the_pending_output_it_actually_reads() {
-    journey(false, false);
+    journey(false, false, false);
 }
 
 #[test]
 fn an_initial_consumer_does_not_certify_a_cancelled_decision() {
-    journey(true, false);
+    journey(true, false, false);
 }
 
 #[test]
-fn an_initial_read_of_a_closed_dependency_reports_its_actual_denial() {
-    journey(false, true);
+fn a_cancelled_initial_consumer_releases_and_retries_its_cached_dependency() {
+    journey(true, true, false);
 }
 
-fn journey(cancel_decision: bool, close_dependencies: bool) {
+#[test]
+fn an_initial_consumer_readmits_the_cached_dependency_it_actually_reads() {
+    journey(false, true, false);
+}
+
+#[test]
+#[cfg(feature = "test-output-delivery-faults")]
+fn a_cached_read_keeps_custody_while_another_demand_delivers_its_pending_child() {
+    journey(false, true, true);
+}
+
+fn journey(cancel_decision: bool, close_dependencies: bool, delay_child: bool) {
     let _guard = checkpoint_recovery_test_guard();
     take_decisions("diamond-join");
     let profile =
@@ -50,18 +61,26 @@ fn journey(cancel_decision: bool, close_dependencies: bool) {
     crate::producer::reset_provider_contacts();
     if close_dependencies {
         drop((left, right));
-        let stopped = join.advance(&request);
-        assert!(
-            matches!(&stopped,
-            Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial))
-                if denial.kind() == WorthQueryOutputDemandDenialKind::ProducerUnavailable
-                    && denial.readmission_failure() == Some("requested demand lineage has no retained required owner")),
-            "{:?}",
-            stopped.as_ref().err()
-        );
-        assert_eq!(output_lengths!(request, ["diamond-left"]), [2]);
+    }
+    #[cfg(feature = "test-output-delivery-faults")]
+    if delay_child {
+        application.delay_next_output_readiness_delivery_for_test();
+        assert!(matches!(
+            join.advance(&request).unwrap(),
+            WorthQueryApplicationOutputDemandProgress::Pending
+        ));
         assert!(take_decisions("diamond-join").is_empty());
-        return;
+        assert_eq!(output_lengths!(request, ["diamond-left"]), [6]);
+        crate::producer::reset_provider_contacts();
+        // A distinct authentic caller delivers the already performed child.
+        // The initial consumer's temporary claim must survive its Pending.
+        let mut delivered = request
+            .demand(PlanarOutputDemand::new("diamond-left"))
+            .start_in_program::<program::ChainProgram, program::ChainRoot>(&application)
+            .unwrap();
+        settle!(delivered, request);
+        assert_eq!(crate::producer::provider_contacts(), 0);
+        drop(delivered);
     }
     if cancel_decision {
         let cancellation = authentication::WorthQueryCancellationSource::new();
@@ -112,7 +131,7 @@ fn journey(cancel_decision: bool, close_dependencies: bool) {
             0,
             "the completed child is reused after cancellation"
         );
-    } else {
+    } else if !delay_child {
         assert!(crate::producer::provider_contacts() > 0);
     }
     let repeated = settle!(join, request);

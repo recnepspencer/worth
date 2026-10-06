@@ -73,6 +73,7 @@ impl WorthQueryOutputDemandRegistry {
         requested: &crate::domain_computation::primary_graph::invariant_projection::RequestedOutputRead,
         selected: &worth_relational::facade::runtime::PositionedRelationalSnapshot,
         admission: &mut InvalidationEditAdmission,
+        claims: &mut RequestedOutputReadClaims,
     ) -> Result<PendingUpstream, WorthQueryOutputDemandDenial> {
         admission
             .charge_external_work(selected.branch_id().0.len() as u64 + 4)
@@ -84,14 +85,19 @@ impl WorthQueryOutputDemandRegistry {
         }
         let upstream = self.pending_identity_readmission(requested.identity(), admission)?;
         if let PendingUpstream::Held(head) = &upstream {
-            // A cached row with no required owner has no continuation to resume.
-            // An initial failed read cannot turn it into indefinitely held work.
+            // A cached Ready can be readmitted only from its actual retained source.
+            // The caller keeps its temporary required claim through disclosure retry.
             let state = self
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             charge_required_key_lookup(&state, head, admission)?;
             if !state.required_keys.contains(head) {
+                drop(state);
+                if let Some((ready, claim)) = self.claim_cached_requested_ready(head, admission)? {
+                    claims.retain(claim);
+                    return Ok(PendingUpstream::Ready(ready));
+                }
                 return Ok(PendingUpstream::Unavailable(
                     ReadmissionUnavailable::NoRequiredOwner,
                 ));

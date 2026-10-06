@@ -148,6 +148,7 @@ where
         };
         debug_assert!(typed.required_continuations.entries.is_empty());
         debug_assert!(typed.required_continuations.capacity.is_none());
+        debug_assert!(typed.required_continuations.requested.is_empty());
         Ok(Some(typed))
     }
 }
