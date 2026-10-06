@@ -15,14 +15,12 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationIdempotencyBinding,
 };
 
-#[test]
-fn indexed_postcommit_rebase_preserves_the_native_denial_and_fact_ordinal() {
-    let world = installed_authorization_world(true);
+fn committed_indexed_facts(world: &AuthorizationWorld) -> Vec<WorthQueryApplicationObservedFact> {
     let request = live_scope();
-    let principal = crate::domain_computation::primary_graph::tests::application_attempt::authenticated_principal(&world, &request);
+    let principal = crate::domain_computation::primary_graph::tests::application_attempt::authenticated_principal(world, &request);
     let account =
         crate::domain_computation::primary_graph::tests::application_attempt::resolved_account(
-            &world, "open", &request,
+            world, "open", &request,
         );
     let operation = world
         .application
@@ -78,7 +76,13 @@ fn indexed_postcommit_rebase_preserves_the_native_denial_and_fact_ordinal() {
         .checkpoint_facts_for_receipt(&receipt)
         .unwrap()
         .0;
-    let mut facts = facts.to_vec();
+    facts.to_vec()
+}
+
+#[test]
+fn indexed_postcommit_rebase_preserves_the_native_denial_and_fact_ordinal() {
+    let world = installed_authorization_world(true);
+    let mut facts = committed_indexed_facts(&world);
     let mut ordinal = facts
         .iter()
         .position(|fact| {
@@ -119,4 +123,99 @@ fn indexed_postcommit_rebase_preserves_the_native_denial_and_fact_ordinal() {
         ),
         "the native denial and its actual nonzero ordinal must survive rebase: {outcome:?}"
     );
+}
+
+#[test]
+fn sparse_indexed_rebase_spends_examined_rows_and_keeps_complete_dependencies() {
+    let world = installed_authorization_world(true);
+    let committed = committed_indexed_facts(&world);
+    let selected_value =
+        StringApplicationValueBinding::encode(&"pending-membership".to_owned()).unwrap();
+    let retained = committed
+        .iter()
+        .find(|fact| {
+            matches!(
+                fact,
+                WorthQueryApplicationObservedFact::IndexedEntitySelection { value, .. }
+                if *value == selected_value
+            )
+        })
+        .unwrap();
+    let WorthQueryApplicationObservedFact::IndexedEntitySelection {
+        index_id,
+        entity_kind,
+        locator,
+        value,
+        ..
+    } = retained
+    else {
+        unreachable!()
+    };
+    let selected = world.selected_product();
+    let graph = world.application.runtime.primary_graph().unwrap();
+    let observed = graph.integration_handle().with_runtime(|runtime| {
+        let snapshot = selected.application_basis().snapshot_handle();
+        let observed = crate::domain_computation::primary_graph::application_attempt::observe_indexed_entity_selection(
+            runtime, snapshot, *index_id, *entity_kind, locator.clone(), value.clone(), 100_001,
+        ).expect("the installed index supplies a genuine complete sparse observation");
+        assert!(matches!(&observed,
+            WorthQueryApplicationObservedFact::IndexedEntitySelection { candidates, .. }
+            if candidates.len() == 1
+        ));
+        let original = vec![observed.clone(), observed.clone()];
+        let outcome = rebase(runtime, snapshot,
+            PreparedSourceFactRebase::admit(original.clone()).unwrap(),
+            &BTreeSet::new(), true, 4, None);
+        let RebasedSourceFacts::Exact(facts) = outcome else {
+            panic!("two native one-row probes fit four work units: {outcome:?}");
+        };
+        assert_eq!(facts.as_ref(), original.as_slice(), "retain the original limits and dependencies");
+        for fact in facts.iter() {
+            assert_eq!(fact.source_currentness_in(runtime, snapshot, 2), Ok((true, 2)));
+        }
+        let denied = rebase(runtime, snapshot,
+            PreparedSourceFactRebase::admit(original.clone()).unwrap(),
+            &BTreeSet::new(), true, 2, None);
+        assert_eq!(denied, RebasedSourceFacts::VerificationRequired {
+            reason: RebaseVerificationReason::IndexedSelectionFactDenied(
+                1, IndexedSelectionReobserveDenial::WorkBudgetExceeded),
+            facts: original.into(),
+        }, "exhaustion must preserve the complete original fact set without certification");
+        observed
+    });
+    let (second_account, _) = account_note(&world, "account-2");
+    set_note(
+        &world,
+        second_account,
+        locator.clone(),
+        "pending-membership",
+    );
+    let selected = world.selected_product();
+    graph.integration_handle().with_runtime(|runtime| {
+        let snapshot = selected.application_basis().snapshot_handle();
+        assert_eq!(
+            observed.source_currentness_in(runtime, snapshot, 2),
+            Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)
+        );
+        let denied = rebase(
+            runtime,
+            snapshot,
+            PreparedSourceFactRebase::admit(vec![observed.clone()]).unwrap(),
+            &BTreeSet::new(),
+            true,
+            2,
+            None,
+        );
+        assert_eq!(
+            denied,
+            RebasedSourceFacts::VerificationRequired {
+                reason: RebaseVerificationReason::IndexedSelectionFactDenied(
+                    0,
+                    IndexedSelectionReobserveDenial::WorkBudgetExceeded
+                ),
+                facts: vec![observed].into(),
+            },
+            "a narrowed overflowing probe must not certify a partial posting"
+        );
+    });
 }

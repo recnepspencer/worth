@@ -111,26 +111,20 @@ impl PreparedFactRebase {
                     None => Ok(Self::Keep),
                 }
             }
-            Fact::IndexedEntitySelection {
-                candidate_limit, ..
-            } => {
+            Fact::IndexedEntitySelection { .. } => {
                 // The selection is observed again at the committed snapshot,
                 // so it names the members this commit itself published.
-                let observed = candidate_limit
-                    .checked_add(1)
-                    .and_then(|work| indexed_rebase_work.checked_sub(work))
-                    .map(|remaining| {
-                        *indexed_rebase_work = remaining;
-                        reobserve_indexed_entity_selection(fact, runtime, snapshot)
-                    });
-                match observed {
-                    Some(Ok(observed)) => Ok(Self::Replace(observed)),
-                    Some(Err(denial)) if producer_output => {
+                match reobserve_indexed_entity_selection(
+                    fact,
+                    runtime,
+                    snapshot,
+                    indexed_rebase_work,
+                ) {
+                    Ok(observed) => Ok(Self::Replace(observed)),
+                    Err(denial) if producer_output => {
                         Err(RebaseVerificationReason::IndexedSelectionDenied(denial))
                     }
-                    Some(Err(_)) => Ok(Self::Keep),
-                    None if producer_output => Err(unavailable),
-                    None => Ok(Self::Keep),
+                    Err(_) => Ok(Self::Keep),
                 }
             }
             Fact::RetiredOutputEntity { .. } => Ok(Self::Keep),

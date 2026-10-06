@@ -135,7 +135,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 ),
                 Some(crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason::IndexedSelectionFactDenied(ordinal, denial)) => WorthQueryOutputDemandDenial::new(
                     error.kind(),
-                    format!("{}; native indexed selection denied: {denial:?}; fact: {}", error.subject(),
+                    format!("{}; indexed selection reobservation denied: {denial:?}; fact: {}", error.subject(),
                         read.facts.get(ordinal).map_or_else(|| "unavailable retained fact".into(), |fact| fact.locator_identity())),
                 ),
                 Some(reason) => WorthQueryOutputDemandDenial::new(
