@@ -54,13 +54,7 @@ where
         .graph
         .source_owner
         .invalidation_owner
-        .read_admission(
-            runtime
-                .runtime
-                .application_query_resource_profile()
-                .maximum_work()
-                .get(),
-        );
+        .request_admission();
     // Schema and installed-query getters, limit headers, the three bounded
     // minimum operands, and the callback's retained-source argument precede
     // the Query owner's one-shot execution allowance.
