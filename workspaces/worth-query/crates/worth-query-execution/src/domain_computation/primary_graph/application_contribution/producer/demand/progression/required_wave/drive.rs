@@ -323,7 +323,9 @@ where
                                     continue 'required;
                                 }
                                 PendingUpstream::Held(head) => resume_held!('required, head),
-                                PendingUpstream::Unavailable => {}
+                                PendingUpstream::Unavailable(reason) => {
+                                    stop.readmission_failure = Some(reason.diagnostic())
+                                }
                             }
                         }
                         stopped!('required, selected.key(), stop)

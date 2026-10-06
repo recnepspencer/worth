@@ -283,7 +283,7 @@ where
             Ok(match upstream {
                 PendingUpstream::Ready(ready) => RequiredWaveStep::Upstream(ready),
                 PendingUpstream::Held(head) => RequiredWaveStep::Held(head),
-                PendingUpstream::Unavailable => RequiredWaveStep::Pending,
+                PendingUpstream::Unavailable(_) => RequiredWaveStep::Pending,
             })
         }
         RequiredCueProgress::PendingUnresolved => Ok(RequiredWaveStep::Pending),

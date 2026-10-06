@@ -54,7 +54,8 @@ fn journey(cancel_decision: bool, close_dependencies: bool) {
         assert!(
             matches!(&stopped,
             Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial))
-                if denial.kind() == WorthQueryOutputDemandDenialKind::ProducerUnavailable),
+                if denial.kind() == WorthQueryOutputDemandDenialKind::ProducerUnavailable
+                    && denial.readmission_failure() == Some("requested demand lineage has no retained required owner")),
             "{:?}",
             stopped.as_ref().err()
         );

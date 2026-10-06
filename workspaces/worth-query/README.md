@@ -42,7 +42,9 @@ accepted consumer output uses the same handoff: the requested chain must become
 Current before the caller retries its frozen disclosure. A requested chain never
 settles or promotes its parent demand. When that identity resolves to a
 retained required row, the wave refreshes it and resumes the consumer; otherwise
-the original read denial remains. A child's native content stays child evidence; neither
+the original read denial remains. Its `readmission_failure()` diagnostic distinguishes
+basis, settlement, lineage and required-owner lookup misses without changing the
+typed denial kind or recovery posture. A child's native content stays child evidence; neither
 this disclosure nor the scheduling handoff certifies an output Current. This
 proof covers native read refusals; it does not establish recovery when native
 publication is Current but managed readiness delivery is still deferred.

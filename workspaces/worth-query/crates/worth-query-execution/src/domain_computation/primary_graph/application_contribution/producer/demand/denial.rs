@@ -11,6 +11,7 @@ pub struct WorthQueryOutputDemandDenial {
     pub(super) kind: WorthQueryOutputDemandDenialKind,
     pub(super) subject: std::borrow::Cow<'static, str>,
     pub(super) domain_reason: Option<&'static str>,
+    pub(in crate::domain_computation::primary_graph) readmission_failure: Option<&'static str>,
     pub(in crate::domain_computation::primary_graph) requested_output:
         Option<crate::domain_computation::primary_graph::invariant_projection::RequestedOutputRead>,
     pub(in crate::domain_computation::primary_graph) recovery_posture:
@@ -32,6 +33,12 @@ impl WorthQueryOutputDemandDenial {
         self.domain_reason
     }
 
+    /// Why an exact failed native read could not join retained required work.
+    /// Diagnostic only; this does not change the denial kind or retry posture.
+    pub const fn readmission_failure(&self) -> Option<&'static str> {
+        self.readmission_failure
+    }
+
     pub const fn recovery_posture(&self) -> WorthQueryOutputDemandRecoveryPosture {
         self.recovery_posture
     }
@@ -44,6 +51,7 @@ impl WorthQueryOutputDemandDenial {
             kind,
             subject: subject.into(),
             domain_reason: None,
+            readmission_failure: None,
             requested_output: None,
             recovery_posture: kind.default_recovery_posture(),
         }

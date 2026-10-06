@@ -57,7 +57,10 @@ where
                 }
             }
         }
-        PendingUpstream::Unavailable => return Ok(None),
+        PendingUpstream::Unavailable(reason) => {
+            stop.readmission_failure = Some(reason.diagnostic());
+            return Ok(None);
+        }
     };
     let wave = RequiredWaveSelection {
         shared,
