@@ -264,6 +264,10 @@ pub(super) fn sample_limit(
         | StoreRecoveryBindingSampleDenial::InvalidCheckpointSecurityBinding
         | StoreRecoveryBindingSampleDenial::InvalidCheckpointBinding
         | StoreRecoveryBindingSampleDenial::InvalidWalMember
-        | StoreRecoveryBindingSampleDenial::ConflictingOperationEvidence => None,
+        | StoreRecoveryBindingSampleDenial::ConflictingOperationEvidence
+        | StoreRecoveryBindingSampleDenial::GenerationZeroWithoutAbsentCheckpoint
+        | StoreRecoveryBindingSampleDenial::GenerationZeroPolicyUnavailable
+        | StoreRecoveryBindingSampleDenial::GenerationZeroExtentCopy
+        | StoreRecoveryBindingSampleDenial::GenerationZeroResidueCleanup => None,
     }
 }

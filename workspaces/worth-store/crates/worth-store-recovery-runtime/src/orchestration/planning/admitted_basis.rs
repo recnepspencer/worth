@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use worth_store::physical_runtime::{
-    PhysicalRecoveryFreshnessPort, StoreRecoveryBindingFreshnessSample,
+    PhysicalRecoveryFreshnessPort, StoreRecoveryBindingFreshnessSample, StoreRecoverySamplingBasis,
 };
 use worth_store_physical_format::{
     PhysicalRecordFormatDeclaration, PhysicalRecoveryProjectionDecodeLimits,
@@ -36,17 +36,30 @@ pub(super) struct AdmittedPlanningBasis {
 pub(super) fn admit(
     context: PlanningContext,
 ) -> Result<(PlanningContext, AdmittedPlanningBasis), PhysicalRecoveryOutcome> {
-    let Some(checkpoint) = context.selection.checkpoint() else {
-        return Err(context.block(
-            PhysicalRecoveryBlockKind::Checkpoint,
-            "phase-4-requires-selected-checkpoint",
-            None,
-        ));
+    // Selection admitted no checkpoint only over the authenticated absent
+    // arm, whose witness keys the generation-zero basis; its policy is the
+    // configured declaration.
+    let basis = match (
+        context.selection.checkpoint(),
+        context.coordination.absent_checkpoint(),
+        context.authority.durability,
+    ) {
+        (Some(checkpoint), _, _) => StoreRecoverySamplingBasis::Checkpoint(checkpoint.checkpoint()),
+        (None, Some(absent), Some(declaration)) => {
+            StoreRecoverySamplingBasis::GenerationZero(absent, declaration)
+        }
+        (None, _, _) => {
+            return Err(context.block(
+                PhysicalRecoveryBlockKind::Checkpoint,
+                "generation-zero-requires-durability-declaration",
+                None,
+            ))
+        }
     };
     let sample = match PhysicalRecoveryFreshnessPort::sample_binding(
         context.coordination.owner(),
         &context.authority.media,
-        checkpoint.checkpoint(),
+        basis,
         context
             .integrity
             .admitted_wal()

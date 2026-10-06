@@ -15,6 +15,7 @@ pub(super) fn rebind_selected_custody(
     crate::progression::NamespaceDurableState<CustodyState>,
     crate::progression::NamespaceDurableState,
 > {
+    // Store's generation-zero root and SHA check in construction guards this early return.
     if matches!(&state.custody, PlanningCustody::NoCheckpoint)
         && state.verified_selected_tier_custody.is_none()
     {

@@ -134,18 +134,21 @@ pub(super) fn verify(
         }
         Ok(CheckpointReleasePosture::Absent) => {
             let (next, has_release) = selected_has_release(context, basis)?;
-            if has_release {
-                Err(next.redo_block(basis.planning_counters(), None))
-            } else {
-                if !matches!(&basis.custody, PlanningCustody::Unresolved) {
-                    return Err(next.redo_block(basis.planning_counters(), None));
-                }
-                basis.custody = PlanningCustody::NoCheckpoint;
-                Ok(next)
+            if !absent_posture_admits(has_release, &basis.custody) {
+                return Err(next.redo_block(basis.planning_counters(), None));
             }
+            basis.custody = PlanningCustody::NoCheckpoint;
+            Ok(next)
         }
         _ => Err(context.redo_block(basis.planning_counters(), None)),
     }
+}
+
+/// Without checkpoint release certificates, whether or not a checkpoint was
+/// selected, no selected release has authority: a routed V3 or released V2
+/// descriptor, or a custody already resolved, denies.
+fn absent_posture_admits(has_release: bool, custody: &PlanningCustody) -> bool {
+    !has_release && matches!(custody, PlanningCustody::Unresolved)
 }
 
 fn pending_replay_matches(basis: &ResolvedPlanningBasis) -> bool {

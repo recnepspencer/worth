@@ -28,8 +28,13 @@ pub(crate) fn finish_recovery_after_cleanup(
     let store = state.authority.media.store_identity();
     let session_identity = state.authority.session.identity();
     let recovery_effects = state.authority.media.recovery_effect_count();
-    let crate::entry::AdmittedPlatformAuthority { media, session, .. } = state.authority;
-    let mut coordination = state.coordination.into_owner();
+    let crate::entry::AdmittedPlatformAuthority {
+        media,
+        session,
+        durability,
+        ..
+    } = state.authority;
+    let (mut coordination, absent_checkpoint) = state.coordination.into_parts();
     let resident_admission = retained.ok_or(
         worth_store::physical_runtime::PhysicalRecoveryRejoinResidentAdmissionDenial::SizeOverflow,
     ).and_then(|bytes| coordination.admit_rejoin_resident_bytes(bytes));
@@ -190,11 +195,37 @@ pub(crate) fn finish_recovery_after_cleanup(
                 tier,
             )
         }
-        (crate::progression::CustodyState::NoCheckpoint, None) => worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct(
-            coordination,
-            media,
-            closed_cleanup,
-        ),
+        // Before the first checkpoint the seal rejoins the generation-zero
+        // basis under the absence witness and configured declaration; a
+        // selected checkpoint without release certificates constructs
+        // without custody.
+        (crate::progression::CustodyState::NoCheckpoint, None) => match (absent_checkpoint, durability) {
+            (Some(absent), Some(declaration)) => {
+                #[cfg(feature = "certification-test-authority")]
+                if crate::certification::enabled() {
+                    worth_store::physical_runtime::PhysicalRecoveryConstructionPort::certification_construct_generation_zero_with_rejoin_pause(
+                        coordination, media, closed_cleanup, declaration, absent,
+                        crate::certification::take_rejoin_pause(),
+                    )
+                } else {
+                    worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_generation_zero(
+                        coordination, media, closed_cleanup, declaration, absent,
+                    )
+                }
+                #[cfg(not(feature = "certification-test-authority"))]
+                worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_generation_zero(
+                    coordination, media, closed_cleanup, declaration, absent,
+                )
+            }
+            (Some(_), None) => Err(
+                worth_store::physical_runtime::RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch,
+            ),
+            (None, _) => worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct(
+                coordination,
+                media,
+                closed_cleanup,
+            ),
+        },
         _ => Err(
             worth_store::physical_runtime::RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch,
         ),

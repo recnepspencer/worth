@@ -12,7 +12,7 @@ impl RecoveryPublicationPlan {
     }
     pub const fn checkpoint_identity(
         &self,
-    ) -> worth_store_physical_format::PhysicalCheckpointIdentity {
+    ) -> Option<worth_store_physical_format::PhysicalCheckpointIdentity> {
         self.checkpoint
     }
     pub const fn source_generation(&self) -> u64 {
@@ -89,7 +89,7 @@ impl RecoveryPublicationExpectation {
     }
     pub const fn checkpoint_identity(
         &self,
-    ) -> worth_store_physical_format::PhysicalCheckpointIdentity {
+    ) -> Option<worth_store_physical_format::PhysicalCheckpointIdentity> {
         self.checkpoint
     }
     pub const fn source_generation(&self) -> u64 {

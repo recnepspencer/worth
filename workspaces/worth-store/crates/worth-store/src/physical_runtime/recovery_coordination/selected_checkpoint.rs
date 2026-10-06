@@ -23,6 +23,27 @@ pub(in crate::physical_runtime) enum RecoveryCheckpointOwnership {
     Present(SharedRecoveryCheckpoint),
 }
 
+/// Proof that one recovery coordination observed `checkpoint.current` absent,
+/// never damaged or rejected: the only key to the generation-zero basis.
+/// Minted once per coordination, by its absent installation; neither cloned
+/// nor constructible elsewhere.
+#[derive(Debug)]
+pub struct AbsentCheckpointWitness {
+    store: worth_store_physical_format::store_namespace::StableStoreIdentity,
+    runtime: crate::physical_runtime::RuntimeIdentity,
+}
+
+impl AbsentCheckpointWitness {
+    /// Whether this witness was minted by `coordination`, the only owner whose
+    /// selection it proves absent.
+    pub(in crate::physical_runtime) fn binds(
+        &self,
+        coordination: &PhysicalRecoveryCoordination,
+    ) -> bool {
+        self.store == coordination.store && self.runtime == coordination.runtime_identity()
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SelectedCheckpointInstallationDenial {
     AlreadyInstalled,
@@ -74,7 +95,7 @@ impl PhysicalRecoveryCoordination {
     pub fn install_absent_checkpoint(
         &mut self,
         observed: ObservedRecoveryArtifact,
-    ) -> Result<(), SelectedCheckpointInstallationDenial> {
+    ) -> Result<AbsentCheckpointWitness, SelectedCheckpointInstallationDenial> {
         use SelectedCheckpointInstallationDenial as Denial;
         if !matches!(
             self.checkpoint_selection,
@@ -90,7 +111,10 @@ impl PhysicalRecoveryCoordination {
             return Err(Denial::InvalidAbsence);
         }
         self.checkpoint_selection = RecoveryCheckpointSelection::Absent;
-        Ok(())
+        Ok(AbsentCheckpointWitness {
+            store: self.store,
+            runtime: self.runtime_identity(),
+        })
     }
 
     pub fn checkpoint(&self) -> Option<&SharedRecoveryCheckpoint> {

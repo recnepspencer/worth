@@ -22,7 +22,7 @@ mod page_source;
 
 pub(super) fn plan_identity(
     store: StableStoreIdentity,
-    checkpoint: PhysicalCheckpointIdentity,
+    checkpoint: Option<PhysicalCheckpointIdentity>,
     selection: &PhysicalSourceSelection,
     freshness: &StoreRecoveryBindingFreshnessSample,
     fates: &ReconciledOperationFates,
@@ -35,7 +35,7 @@ pub(super) fn plan_identity(
     let mut digest = Sha256::new();
     digest.update(b"worth.store.recovery.execution-plan.v2");
     digest.update(store.bytes());
-    digest.update(checkpoint.sequence().get().to_le_bytes());
+    digest.update(basis_sequence(checkpoint.map(|checkpoint| checkpoint.sequence())).to_le_bytes());
     digest.update(staging.source_generation.to_le_bytes());
     digest.update(staging.staging_generation.to_le_bytes());
     digest.update(selection.wal_tail().frame_count().to_le_bytes());
@@ -149,6 +149,12 @@ pub(super) fn plan_identity(
         hash_artifact(&mut digest, *artifact);
     }
     Ok(digest.finalize().into())
+}
+
+/// Checkpoint sequences are nonzero, so zero names the generation-zero basis
+/// and no plan before the first checkpoint shares a sequence-1 plan identity.
+fn basis_sequence(checkpoint: Option<std::num::NonZeroU64>) -> u64 {
+    checkpoint.map_or(0, std::num::NonZeroU64::get)
 }
 
 pub(super) fn bind_publication_candidates(
@@ -320,5 +326,19 @@ fn hash_base_placement(digest: &mut Sha256, placement: CurrentPhysicalRecordPlac
             digest.update(extent.extent_generation().to_le_bytes());
             digest.update(extent.payload_bytes().to_le_bytes());
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::num::NonZeroU64;
+
+    use super::*;
+
+    #[test]
+    fn generation_zero_basis_never_shares_the_first_checkpoints_sequence() {
+        assert_eq!(basis_sequence(None), 0);
+        assert_eq!(basis_sequence(NonZeroU64::new(1)), 1);
+        assert_ne!(basis_sequence(None), basis_sequence(NonZeroU64::new(1)));
     }
 }

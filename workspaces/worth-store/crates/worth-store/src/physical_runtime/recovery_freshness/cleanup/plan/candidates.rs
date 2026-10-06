@@ -106,7 +106,7 @@ fn admit_terminal_bindings(
         super::super::super::binding::CheckpointCoveredMembers::Sample,
         context.coordination,
         context.media,
-        context.checkpoint,
+        super::super::super::StoreRecoverySamplingBasis::Checkpoint(context.checkpoint),
         wal_frames,
         maximum_operations,
         admitted_bytes,

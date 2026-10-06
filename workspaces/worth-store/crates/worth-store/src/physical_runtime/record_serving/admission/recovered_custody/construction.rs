@@ -10,7 +10,7 @@ impl RecoveredPhysicalCheckpointCustody {
         store: StableStoreIdentity,
         recovery_allocation: crate::physical_runtime::PhysicalRecoveryAllocationAdmission,
         root: DurablePhysicalRootManifest,
-        verified: VerifiedSelectedNoReleaseCustody,
+        verified: RecoveredNoReleaseCustody,
         tier: Option<VerifiedSelectedTierEpochCustody>,
         selected_wal: crate::physical_runtime::recovery_construction::SelectedWalMediaFingerprint,
         selected_controls: crate::physical_runtime::recovery_construction::SelectedControlMediaFingerprint,

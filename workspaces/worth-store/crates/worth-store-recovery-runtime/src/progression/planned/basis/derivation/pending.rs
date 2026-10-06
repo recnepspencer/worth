@@ -2,7 +2,7 @@ use super::super::staging_cost::preflight_staging_cost;
 use super::super::*;
 
 pub(super) struct PendingProjectionBasis<'plan> {
-    pub(super) checkpoint: PhysicalCheckpointIdentity,
+    pub(super) checkpoint: Option<PhysicalCheckpointIdentity>,
     pub(super) source_generation: u64,
     pub(super) staging_generation: u64,
     pub(super) projections: Vec<&'plan worth_store_recovery_physics::PhysicalRedoProjection>,
@@ -21,10 +21,7 @@ pub(super) fn admit<'plan>(
 ) -> Result<PendingProjectionBasis<'plan>, ExecutionBasisDenial> {
     let checkpoint = selection
         .checkpoint()
-        .ok_or(ExecutionBasisDenial::Invalid)?
-        .checkpoint()
-        .source()
-        .identity();
+        .map(|checkpoint| checkpoint.checkpoint().source().identity());
     let source_generation = selection.root().selected().selector().root_generation();
     let staging_generation = source_generation
         .checked_add(1)

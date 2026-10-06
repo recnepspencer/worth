@@ -1,8 +1,8 @@
 //! Selected positive no-release marker; never inferred from an empty roster.
 
-use worth_store_physical_format::ReleaseCheckpointNoReleaseV1;
 #[cfg(feature = "recovery-runtime-owner")]
-use worth_store_recovery_physics::VerifiedSelectedNoReleaseCustody;
+use crate::physical_runtime::record_serving::RecoveredNoReleaseCustody;
+use worth_store_physical_format::ReleaseCheckpointNoReleaseV1;
 
 use super::{
     ReleaseLedgerState, SelectedNoReleaseMarkerBasis, SelectedReleaseCustodyLedger,
@@ -12,9 +12,17 @@ use super::{
 impl ReleaseLedgerState {
     #[cfg(feature = "recovery-runtime-owner")]
     pub(in crate::physical_runtime::durability::publication::current_root_owner) fn from_verified_no_release(
-        verified: &VerifiedSelectedNoReleaseCustody,
+        verified: &RecoveredNoReleaseCustody,
     ) -> Self {
-        Self::from_selected_no_release(verified.marker(), verified.marker_payload_sha256())
+        match verified.selected() {
+            Some(claim) => {
+                Self::from_selected_no_release(claim.marker(), claim.marker_payload_sha256())
+            }
+            // Before the first checkpoint no release was ever selected: the
+            // verified generation-zero basis is the trusted genesis lineage,
+            // exactly as a clean reopen of the same media admits it.
+            None => Self::Selected(SelectedReleaseCustodyLedger::trusted_genesis()),
+        }
     }
 
     /// The one selected-marker ledger, whether C8 or clean reopen verified it.

@@ -1,6 +1,7 @@
 use sha2::{Digest, Sha256};
 use worth_store::physical_runtime::{
     AdmittedPhysicalRecordFormat, AdmittedPhysicalRecordResidencyPolicy,
+    ConfiguredPhysicalDurabilityDeclaration,
 };
 use worth_store_physical_format::PhysicalRecordFormatDeclaration;
 
@@ -17,6 +18,9 @@ pub struct PhysicalRecoveryStaticConfiguration {
     identity: [u8; 32],
     record_format: PhysicalRecordFormatDeclaration,
     residency_policy: AdmittedPhysicalRecordResidencyPolicy,
+    /// The durability policy the store was opened under. Recovery before the
+    /// first checkpoint needs it: no checkpoint carries the policy then.
+    durability: Option<ConfiguredPhysicalDurabilityDeclaration>,
 }
 
 impl PhysicalRecoveryStaticConfiguration {
@@ -31,7 +35,7 @@ impl PhysicalRecoveryStaticConfiguration {
         let residency_policy = AdmittedPhysicalRecordResidencyPolicy::canonical(
             AdmittedPhysicalRecordFormat::admit(record_format),
         );
-        Self::from_policy(record_format, residency_policy)
+        Self::from_policy(record_format, residency_policy, None)
     }
 
     /// Bind a policy admitted for exactly this configured physical format.
@@ -47,21 +51,43 @@ impl PhysicalRecoveryStaticConfiguration {
                 },
             );
         }
-        Ok(Self::from_policy(self.record_format, policy))
+        Ok(Self::from_policy(
+            self.record_format,
+            policy,
+            self.durability,
+        ))
+    }
+
+    /// Declare the durability policy the store's WAL was written under, so
+    /// recovery can admit the generation-zero basis before any checkpoint.
+    pub fn with_durability_declaration(
+        self,
+        declaration: ConfiguredPhysicalDurabilityDeclaration,
+    ) -> Self {
+        Self::from_policy(self.record_format, self.residency_policy, Some(declaration))
     }
 
     fn from_policy(
         record_format: PhysicalRecordFormatDeclaration,
         residency_policy: AdmittedPhysicalRecordResidencyPolicy,
+        durability: Option<ConfiguredPhysicalDurabilityDeclaration>,
     ) -> Self {
         let mut digest = Sha256::new();
-        digest.update(b"worth.store.physical.recovery.configuration@1");
+        digest.update(b"worth.store.physical.recovery.configuration@2");
         digest.update(record_format.canonical_identity_bytes());
         digest.update(residency_policy.canonical_identity_bytes());
+        match durability {
+            Some(declaration) => {
+                digest.update([1]);
+                digest.update(declaration.declaration_identity());
+            }
+            None => digest.update([0]),
+        }
         Self {
             identity: digest.finalize().into(),
             record_format,
             residency_policy,
+            durability,
         }
     }
 
@@ -75,6 +101,10 @@ impl PhysicalRecoveryStaticConfiguration {
 
     pub(crate) const fn residency_policy(&self) -> AdmittedPhysicalRecordResidencyPolicy {
         self.residency_policy
+    }
+
+    pub(crate) const fn durability(&self) -> Option<ConfiguredPhysicalDurabilityDeclaration> {
+        self.durability
     }
 }
 

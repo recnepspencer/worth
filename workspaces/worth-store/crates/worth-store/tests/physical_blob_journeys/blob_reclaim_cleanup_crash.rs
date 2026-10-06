@@ -24,12 +24,26 @@ use super::{
     fixture::{admitted_blob_scope, placement, serving_from_initialization, serving_from_open},
 };
 
-const ROLE: &str = "crash-reclaim-cleanup-selector";
+pub(super) const SELECTOR_ROLE: &str = "crash-reclaim-cleanup-selector";
+pub(super) const INTENT_ROLE: &str = "crash-reclaim-cleanup-intent";
 const SCOPE: &str = "c11.blob.reclaim.cleanup-selector.scope";
 
 #[test]
 fn selected_v2_cleanup_without_completed_reopens_and_retires_exact_metadata_once() {
-    let world = kill_at(ROLE, Duration::from_secs(240));
+    assert_cleanup_reopens_and_retires_exact_metadata_once(SELECTOR_ROLE);
+}
+
+/// The cleanup Intent is WAL-durable above the checkpoint's covered end and
+/// the selected root is still its source, so recovery must replay it.
+#[test]
+#[ignore = "C.11 remainder: C8 rebuilds the segment and free-space manifests the writer's \
+            cleanup plan keeps, so the replayed root never matches the Intent's root SHA"]
+fn durable_v2_cleanup_intent_above_the_checkpoint_replays_and_retires_exact_metadata_once() {
+    assert_cleanup_reopens_and_retires_exact_metadata_once(INTENT_ROLE);
+}
+
+fn assert_cleanup_reopens_and_retires_exact_metadata_once(role: &'static str) {
+    let world = kill_at(role, Duration::from_secs(240));
     let metadata = fs::read(
         world
             .root
@@ -47,8 +61,8 @@ fn selected_v2_cleanup_without_completed_reopens_and_retires_exact_metadata_once
     let reserved = identity(&metadata[24..]);
     assert_ne!(manifest, reserved);
 
-    // The independent C8 executable must finish the typed cleanup Intent
-    // whose selected selector was synced before the child was killed.
+    // The independent C8 executable must finish the typed cleanup Intent,
+    // whether or not its selected selector was synced before the kill.
     recover_closed_store(&world.root);
     let serving = serving_from_open(&world.root);
     let selected = selected_blob_records(&serving);
@@ -101,7 +115,7 @@ fn selected_v2_cleanup_without_completed_reopens_and_retires_exact_metadata_once
     reopened.close();
 }
 
-pub(super) fn child(root: &Path) {
+pub(super) fn child(root: &Path, role: &str) {
     let serving = serving_from_initialization(root);
     establish_recovery_frontier(&serving);
     let scope = admitted_blob_scope(SCOPE);
@@ -226,7 +240,11 @@ pub(super) fn child(root: &Path) {
         .iter()
         .any(|(record, _)| manifest.dropped().contains(&persisted(*record))));
 
-    let gate = serving.pause_physical_mutation_at(PhysicalMutationCheckpoint::AfterRootReplacement);
+    let gate = serving.pause_physical_mutation_at(match role {
+        SELECTOR_ROLE => PhysicalMutationCheckpoint::AfterRootReplacement,
+        INTENT_ROLE => PhysicalMutationCheckpoint::AfterWalDurability,
+        _ => panic!("unknown cleanup crash seam: {role}"),
+    });
     let marker = marker_path(root);
     thread::scope(|workers| {
         workers.spawn(|| {
@@ -241,7 +259,7 @@ pub(super) fn child(root: &Path) {
                     return;
                 }
             }
-            panic!("cleanup selector never reached namespace-synced seam");
+            panic!("cleanup never reached its {role} seam");
         });
         let _ = serving
             .blobs()
@@ -249,7 +267,7 @@ pub(super) fn child(root: &Path) {
             .reclaim(request(token, &scope))
             .unwrap()
             .wait();
-        panic!("cleanup escaped selected-root gate before process kill");
+        panic!("cleanup escaped its {role} gate before process kill");
     });
 }
 

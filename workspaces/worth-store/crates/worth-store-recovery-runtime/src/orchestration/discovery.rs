@@ -205,6 +205,7 @@ pub(crate) fn discover_sources(
         _world_binding,
         limits,
         record_format,
+        durability,
     } = authority;
     let mut discovery = media
         .bounded_discovery(UNCOUNTED_READS, declaration.observation_bytes)
@@ -229,6 +230,7 @@ pub(crate) fn discover_sources(
         _world_binding,
         limits,
         record_format,
+        durability,
     };
     match result {
         Ok(observed) => Ok(DiscoveryMaterial {

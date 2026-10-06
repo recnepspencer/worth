@@ -37,6 +37,14 @@ pub(super) fn observe_wal<'frame, Frame: RecoveryWalFrameInput + 'frame>(
             ClassifiedWalPayload::Retirement(record) => {
                 observe_retirement(storage, ordinal, range, record)?
             }
+            // Reclaim and maintenance recovery are not admitted before the
+            // first checkpoint: their frames deny rather than replay.
+            ClassifiedWalPayload::ExtentCopy(_) if source.is_generation_zero() => {
+                return Err(storage.failure(Denial::GenerationZeroExtentCopy));
+            }
+            ClassifiedWalPayload::BlobManifestResidueCleanup(_) if source.is_generation_zero() => {
+                return Err(storage.failure(Denial::GenerationZeroResidueCleanup));
+            }
             ClassifiedWalPayload::ExtentCopy(bytes) => {
                 observe_copy(storage, range, bytes, maximum_operations)?
             }

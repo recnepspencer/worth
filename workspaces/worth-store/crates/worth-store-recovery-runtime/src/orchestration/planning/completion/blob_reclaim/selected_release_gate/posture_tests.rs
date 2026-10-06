@@ -11,7 +11,23 @@ use worth_store_physical_format::{
     ReleaseCheckpointNoReleaseV1, ReleasedDropWalFateWitnessV1,
 };
 
-use super::{checkpoint_records_posture as classify, CheckpointReleasePosture as Posture};
+use super::{
+    absent_posture_admits, checkpoint_records_posture as classify,
+    CheckpointReleasePosture as Posture,
+};
+use crate::progression::PlanningCustody;
+
+#[test]
+fn absent_release_posture_denies_any_selected_release() {
+    // A routed V2 released descriptor, or a checkpoint without release
+    // certificates, reaches this posture with a selected release to deny.
+    assert!(!absent_posture_admits(true, &PlanningCustody::Unresolved));
+    assert!(absent_posture_admits(false, &PlanningCustody::Unresolved));
+    assert!(!absent_posture_admits(
+        false,
+        &PlanningCustody::NoCheckpoint
+    ));
+}
 
 #[test]
 fn positive_no_release_is_exclusive_and_malformed_frames_are_rejected() {

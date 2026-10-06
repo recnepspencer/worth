@@ -1,12 +1,16 @@
 use crate::entry::{record_coordinator_created, PhysicalRecoveryLimits};
 use worth_store::physical_runtime::{
-    AdmittedPhysicalRecordResidencyPolicy, AdmittedRecoveryFilesystemMedia,
-    PhysicalRecoveryCoordination, PhysicalRecoveryCoordinationAdmissionError,
-    PhysicalRecoveryCoordinationCapacity, PhysicalRecoveryRegisteredSessionAuthority,
+    AbsentCheckpointWitness, AdmittedPhysicalRecordResidencyPolicy,
+    AdmittedRecoveryFilesystemMedia, PhysicalRecoveryCoordination,
+    PhysicalRecoveryCoordinationAdmissionError, PhysicalRecoveryCoordinationCapacity,
+    PhysicalRecoveryRegisteredSessionAuthority,
 };
 
 pub(crate) struct RecoveryCoordination {
     owner: PhysicalRecoveryCoordination,
+    /// Held from the absent installation to construction: the one key to the
+    /// generation-zero basis, never re-derived from selection state.
+    absent_checkpoint: Option<AbsentCheckpointWitness>,
 }
 
 impl RecoveryCoordination {
@@ -28,7 +32,20 @@ impl RecoveryCoordination {
         .expect("admitted recovery limits are nonzero and fit the platform");
         let owner = session.admit_coordination(media, capacity, residency_policy, yieldpoint)?;
         record_coordinator_created();
-        Ok(Self { owner })
+        Ok(Self {
+            owner,
+            absent_checkpoint: None,
+        })
+    }
+
+    /// Keeps the witness the owner minted when it installed the absence.
+    pub(crate) fn retain_absent_checkpoint(&mut self, absent: AbsentCheckpointWitness) {
+        debug_assert!(self.absent_checkpoint.is_none());
+        self.absent_checkpoint = Some(absent);
+    }
+
+    pub(crate) const fn absent_checkpoint(&self) -> Option<&AbsentCheckpointWitness> {
+        self.absent_checkpoint.as_ref()
     }
 
     pub(crate) fn is_ready(&self) -> bool {
@@ -152,5 +169,14 @@ impl RecoveryCoordination {
 
     pub(crate) fn into_owner(self) -> PhysicalRecoveryCoordination {
         self.owner
+    }
+
+    pub(crate) fn into_parts(
+        self,
+    ) -> (
+        PhysicalRecoveryCoordination,
+        Option<AbsentCheckpointWitness>,
+    ) {
+        (self.owner, self.absent_checkpoint)
     }
 }

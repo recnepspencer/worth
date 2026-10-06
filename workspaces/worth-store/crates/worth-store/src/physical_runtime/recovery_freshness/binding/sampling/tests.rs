@@ -18,6 +18,7 @@ use worth_proof::TransitionOutcome;
 use worth_store_physical_format::*;
 use worth_store_physical_integrity::*;
 
+mod generation_zero;
 mod native_owner;
 
 const ORIGINAL: u64 = 16 * 1024;
@@ -25,7 +26,7 @@ const ORIGINAL: u64 = 16 * 1024;
 fn with_owner(
     run: impl FnOnce(
         &mut PhysicalRecoveryCoordination,
-        &AdmittedRecoveryFilesystemMedia,
+        AdmittedRecoveryFilesystemMedia,
         super::super::StoreRecoveryOperationEvidence,
     ),
 ) {
@@ -96,7 +97,7 @@ fn with_owner(
             None,
         )
         .unwrap();
-    run(&mut coordination, &media, evidence);
+    run(&mut coordination, media, evidence);
 }
 
 fn with_empty_checkpoint<R>(

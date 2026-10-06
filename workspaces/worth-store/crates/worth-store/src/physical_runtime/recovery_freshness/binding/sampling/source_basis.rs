@@ -9,12 +9,34 @@ use super::allocation::StoreRecoveryBindingSampleAllocationDenial;
 use super::storage::SamplingStorage;
 use crate::physical_runtime::durability::PhysicalBindingDecodingContext;
 use crate::physical_runtime::{
-    PhysicalDurabilityPolicyIdentity, PhysicalIdempotencyPolicy, PhysicalRecoveryCoordination,
+    AbsentCheckpointWitness, AdmittedPhysicalDurabilityPolicy,
+    ConfiguredPhysicalDurabilityDeclaration, PhysicalDurabilityPolicyIdentity,
+    PhysicalIdempotencyPolicy, PhysicalRecoveryCoordination,
 };
+use sha2::{Digest, Sha256};
 use std::num::NonZeroU64;
+use worth_proof::TransitionOutcome;
 use worth_store_physical_backend::AdmittedRecoveryFilesystemMedia;
 use worth_store_physical_format::store_namespace::StableStoreIdentity;
 use worth_store_physical_integrity::VerifiedCheckpointFacts;
+use worth_store_wal::WAL_ORIGIN;
+
+const GENERATION_ZERO_BASIS_DOMAIN: &[u8] = b"worth.store.recovery.generation-zero-basis@1";
+
+/// What a binding sample starts from.
+#[derive(Clone, Copy)]
+pub enum StoreRecoverySamplingBasis<'checkpoint> {
+    /// The selected checkpoint: its covered evidence and security binding.
+    Checkpoint(&'checkpoint VerifiedCheckpointFacts),
+    /// Recovery observed no checkpoint at all: the empty generation-zero
+    /// basis, keyed by the sampled coordination's own absence witness, whose
+    /// policy is the configured declaration admitted over this media. Every
+    /// WAL binding must carry that policy's identity.
+    GenerationZero(
+        &'checkpoint AbsentCheckpointWitness,
+        ConfiguredPhysicalDurabilityDeclaration,
+    ),
+}
 
 pub(super) struct SamplingSource<'coordination> {
     pub(super) store: StableStoreIdentity,
@@ -23,14 +45,15 @@ pub(super) struct SamplingSource<'coordination> {
     pub(super) context: PhysicalBindingDecodingContext,
     pub(super) sealed_basis_digest: [u8; 32],
     pub(super) policy_identity: [u8; 32],
-    pub(super) basis: &'coordination StoreRecoveryCheckpointBindingBasis,
+    /// `None` only for the generation-zero basis, which owns no evidence.
+    pub(super) basis: Option<&'coordination StoreRecoveryCheckpointBindingBasis>,
     pub(super) evidence: &'coordination [StoreRecoveryOperationEvidence],
 }
 
 pub(super) fn validate_source<'coordination>(
     coordination: &'coordination PhysicalRecoveryCoordination,
     media: &AdmittedRecoveryFilesystemMedia,
-    checkpoint: &VerifiedCheckpointFacts,
+    basis: StoreRecoverySamplingBasis<'_>,
     maximum_operations: u64,
 ) -> Result<SamplingSource<'coordination>, StoreRecoveryBindingSampleFailure> {
     let freshness = coordination.freshness();
@@ -38,6 +61,22 @@ pub(super) fn validate_source<'coordination>(
     if !freshness.matches_media_generation(media.media_generation()) {
         return Err(empty_failure(Denial::FreshnessMediaMismatch));
     }
+    match basis {
+        StoreRecoverySamplingBasis::Checkpoint(checkpoint) => {
+            checkpoint_source(coordination, media, checkpoint, maximum_operations)
+        }
+        StoreRecoverySamplingBasis::GenerationZero(absent, declaration) => {
+            generation_zero_source(coordination, media, absent, declaration)
+        }
+    }
+}
+
+fn checkpoint_source<'coordination>(
+    coordination: &'coordination PhysicalRecoveryCoordination,
+    media: &AdmittedRecoveryFilesystemMedia,
+    checkpoint: &VerifiedCheckpointFacts,
+    maximum_operations: u64,
+) -> Result<SamplingSource<'coordination>, StoreRecoveryBindingSampleFailure> {
     let source = checkpoint.source();
     let store = media.store_identity();
     if source.identity().store_identity() != store {
@@ -64,12 +103,64 @@ pub(super) fn validate_source<'coordination>(
         context,
         sealed_basis_digest: security.digest(),
         policy_identity: security.policy_identity(),
-        basis,
+        basis: Some(basis),
         evidence,
     })
 }
 
+/// Only this coordination's absence witness admits the empty basis; nothing
+/// before the canonical WAL origin is covered.
+fn generation_zero_source<'coordination>(
+    coordination: &'coordination PhysicalRecoveryCoordination,
+    media: &AdmittedRecoveryFilesystemMedia,
+    absent: &AbsentCheckpointWitness,
+    declaration: ConfiguredPhysicalDurabilityDeclaration,
+) -> Result<SamplingSource<'coordination>, StoreRecoveryBindingSampleFailure> {
+    if !absent.binds(coordination) {
+        return Err(empty_failure(Denial::GenerationZeroWithoutAbsentCheckpoint));
+    }
+    let policy = generation_zero_policy(media, declaration)
+        .ok_or_else(|| empty_failure(Denial::GenerationZeroPolicyUnavailable))?;
+    let store = media.store_identity();
+    let identity = policy.identity();
+    let mut digest = Sha256::new();
+    digest.update(GENERATION_ZERO_BASIS_DOMAIN);
+    digest.update(identity.bytes());
+    Ok(SamplingSource {
+        store,
+        generation: 0,
+        cutoff: WAL_ORIGIN.lsn().get(),
+        context: PhysicalBindingDecodingContext::new(
+            store,
+            identity,
+            PhysicalIdempotencyPolicy::from_recovery_binding(
+                policy.idempotency_policy().retention().get(),
+            ),
+        ),
+        sealed_basis_digest: digest.finalize().into(),
+        policy_identity: identity.bytes(),
+        basis: None,
+        evidence: &[],
+    })
+}
+
+fn generation_zero_policy(
+    media: &AdmittedRecoveryFilesystemMedia,
+    declaration: ConfiguredPhysicalDurabilityDeclaration,
+) -> Option<AdmittedPhysicalDurabilityPolicy> {
+    let basis = media.physical_durability_admission_basis().ok()?;
+    match declaration.admit(basis).into_raw() {
+        TransitionOutcome::Success(policy) => Some(policy),
+        _ => None,
+    }
+}
+
 impl SamplingSource<'_> {
+    /// Only the generation-zero basis owns no checkpoint binding.
+    pub(super) const fn is_generation_zero(&self) -> bool {
+        self.basis.is_none()
+    }
+
     pub(super) fn allocation_failure(
         &self,
         cause: StoreRecoveryBindingSampleAllocationDenial,

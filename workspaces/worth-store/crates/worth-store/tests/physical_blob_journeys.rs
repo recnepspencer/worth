@@ -132,7 +132,9 @@ fn c11_blob_child_role() {
         | "crash-reclaim-reservation"
         | "crash-reclaim-reservation-aged"
         | "crash-reclaim-wal" => blob_reclaim_crash::child(&root, &role),
-        "crash-reclaim-cleanup-selector" => blob_reclaim_cleanup_crash::child(&root),
+        blob_reclaim_cleanup_crash::SELECTOR_ROLE | blob_reclaim_cleanup_crash::INTENT_ROLE => {
+            blob_reclaim_cleanup_crash::child(&root, &role)
+        }
         "crash-released-first-wal" | "crash-released-tier-first-wal" => {
             blob_reclaim_released_crash::child(&root, &role)
         }

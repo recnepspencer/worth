@@ -1,7 +1,4 @@
-use worth_store_wal::{
-    LogSequenceNumber, WalLsnRange, WalSegmentArtifactIdentity, WalSegmentGeneration, WalSegmentId,
-    WalSegmentInspection,
-};
+use worth_store_wal::{WalLsnRange, WalSegmentArtifactIdentity, WalSegmentInspection};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::physical_runtime::durability) struct PhysicalWalSegmentInventoryEntry {
@@ -124,13 +121,7 @@ impl PhysicalWalSegmentInventory {
         let Some(first) = self.entries.first() else {
             return false;
         };
-        first.identity.segment()
-            == WalSegmentId::new(1).expect("the canonical first WAL segment is nonzero")
-            && first.identity.generation()
-                == WalSegmentGeneration::new(1)
-                    .expect("the canonical first WAL generation is nonzero")
-            && first.lsn_range.start()
-                == LogSequenceNumber::new(LogSequenceNumber::GENESIS.get() + 1)
+        worth_store_wal::WAL_ORIGIN.begins(first.identity, first.lsn_range.start())
     }
 
     pub(in crate::physical_runtime::durability::wal) fn entries(

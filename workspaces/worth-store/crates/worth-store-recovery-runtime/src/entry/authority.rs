@@ -3,9 +3,9 @@ use std::path::PathBuf;
 use worth_proof::AuthorityWitness;
 use worth_store::physical_runtime::{
     AdmittedPhysicalRecordResidencyPolicy, AdmittedRecoveryFilesystemMedia,
-    PhysicalRecoveryFreshnessPort, PhysicalRecoveryRegisteredSessionAuthority,
-    QualifiedPhysicalBackendProfile, QualifiedRecoveryFilesystemMedia,
-    RecoveryFilesystemQualificationError,
+    ConfiguredPhysicalDurabilityDeclaration, PhysicalRecoveryFreshnessPort,
+    PhysicalRecoveryRegisteredSessionAuthority, QualifiedPhysicalBackendProfile,
+    QualifiedRecoveryFilesystemMedia, RecoveryFilesystemQualificationError,
 };
 use worth_store_physical_format::PhysicalRecordFormatDeclaration;
 
@@ -30,6 +30,7 @@ pub struct PhysicalRecoveryPlatformAuthority {
     limits: PhysicalRecoveryLimits,
     record_format: PhysicalRecordFormatDeclaration,
     residency_policy: AdmittedPhysicalRecordResidencyPolicy,
+    durability: Option<ConfiguredPhysicalDurabilityDeclaration>,
 }
 
 #[cfg(test)]
@@ -258,6 +259,7 @@ impl PhysicalRecoveryPlatformAuthority {
         );
         let record_format = configuration.record_format();
         let residency_policy = configuration.residency_policy();
+        let durability = configuration.durability();
         Ok(Self {
             _witness: PhysicalRecoveryPlatformMarker::witness(),
             media,
@@ -267,6 +269,7 @@ impl PhysicalRecoveryPlatformAuthority {
             limits,
             record_format,
             residency_policy,
+            durability,
         })
     }
 
@@ -320,6 +323,7 @@ impl PhysicalRecoveryPlatformAuthority {
             record_format,
             binding,
             residency_policy,
+            durability,
             ..
         } = self;
         let recovery_effects = media.recovery_effect_count();
@@ -333,6 +337,7 @@ impl PhysicalRecoveryPlatformAuthority {
                         _world_binding: world_binding,
                         limits,
                         record_format,
+                        durability,
                     },
                     registered_session,
                     residency_policy,
@@ -361,6 +366,7 @@ pub(crate) struct AdmittedPlatformAuthority {
     pub(crate) _world_binding: AdmittedRecoveryWorldBinding,
     pub(crate) limits: PhysicalRecoveryLimits,
     pub(crate) record_format: PhysicalRecordFormatDeclaration,
+    pub(crate) durability: Option<ConfiguredPhysicalDurabilityDeclaration>,
 }
 
 pub(crate) struct AdmittedPlatformAdmission {

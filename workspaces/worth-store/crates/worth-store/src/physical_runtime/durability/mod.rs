@@ -35,7 +35,8 @@ mod wal;
 pub(in crate::physical_runtime) use wal::DurableMaintenanceReceipt;
 
 pub use admission::{
-    AdmittedPhysicalDurabilityPolicy, CheckpointMemoryLimit, GroupCommitDelay, GroupCommitLimit,
+    AdmittedPhysicalDurabilityPolicy, CheckpointMemoryLimit,
+    ConfiguredPhysicalDurabilityDeclaration, GroupCommitDelay, GroupCommitLimit,
     IdempotencyRetentionGenerations, LiveIdempotencyBindingLimit, PendingUnresolvedMutationLimit,
     PhysicalCheckpointPolicy, PhysicalCheckpointStartDeferred, PhysicalCheckpointStartDenial,
     PhysicalCheckpointStartFailure, PhysicalCheckpointStartOutcome,

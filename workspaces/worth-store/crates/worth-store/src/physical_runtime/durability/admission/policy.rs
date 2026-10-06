@@ -18,6 +18,7 @@ use super::{
 mod identity;
 
 use identity::policy_identity;
+pub use identity::ConfiguredPhysicalDurabilityDeclaration;
 
 pub type PhysicalDurabilityPolicyAdmissionOutcome = ProofOutcome<
     AdmittedPhysicalDurabilityPolicy,
@@ -165,21 +166,26 @@ pub struct IdempotencyMissing;
 #[doc(hidden)]
 pub struct CheckpointMissing;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct GroupPolicy {
     limit: GroupCommitLimit,
     delay: GroupCommitDelay,
 }
 
 #[doc(hidden)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct GroupConfigured(GroupPolicy);
 #[doc(hidden)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WalConfigured(PhysicalWalPolicy);
 #[doc(hidden)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct IdempotencyConfigured(PhysicalIdempotencyPolicy);
 #[doc(hidden)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct CheckpointConfigured(PhysicalCheckpointPolicy);
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct PhysicalDurabilityDeclarationBuilder<Group, Wal, Idempotency, Checkpoint> {
     group: Group,
     wal: Wal,

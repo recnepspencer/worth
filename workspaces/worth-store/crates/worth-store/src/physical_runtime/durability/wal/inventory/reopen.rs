@@ -335,7 +335,10 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
     Ok(ReopenedPhysicalWalInventory {
         record_format,
         copy_obligations,
-        checkpoint_cutoff: cutoff.lsn().map_or(0, |lsn| lsn.get()),
+        checkpoint_cutoff: cutoff
+            .lsn()
+            .unwrap_or(worth_store_wal::WAL_ORIGIN.lsn())
+            .get(),
         frontier: WalAppendFrontier::observed(
             active.segment(),
             active.generation(),

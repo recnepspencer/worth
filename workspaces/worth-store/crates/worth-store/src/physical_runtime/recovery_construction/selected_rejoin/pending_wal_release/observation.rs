@@ -88,7 +88,7 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
     let sample = PhysicalRecoveryFreshnessPort::sample_binding(
         coordination,
         &media,
-        claim.checkpoint(),
+        crate::physical_runtime::StoreRecoverySamplingBasis::Checkpoint(claim.checkpoint()),
         IntegrityAdmittedRecoveryWalFrameView::from_frames(inventory.frames()),
         MAX_DISCOVERY_ENTRIES,
         wal_inventory::MAX_WAL_BYTES,

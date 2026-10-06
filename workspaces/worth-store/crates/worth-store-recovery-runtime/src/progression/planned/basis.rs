@@ -175,7 +175,7 @@ pub struct RecoveryStagingRedoStep {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RecoveryPublicationPlan {
     store: StableStoreIdentity,
-    checkpoint: PhysicalCheckpointIdentity,
+    checkpoint: Option<PhysicalCheckpointIdentity>,
     source_generation: u64,
     staging_generation: u64,
     actions: Box<[RecoveryPublicationAction]>,
@@ -192,7 +192,7 @@ pub struct RecoveryPublicationPlan {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RecoveryPublicationExpectation {
     store: StableStoreIdentity,
-    checkpoint: PhysicalCheckpointIdentity,
+    checkpoint: Option<PhysicalCheckpointIdentity>,
     source_generation: u64,
     staging_generation: u64,
     plan_identity: [u8; 32],

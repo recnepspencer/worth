@@ -70,7 +70,7 @@ pub use reopen::{
     PhysicalRecoveryFreshReopenOutcome, PhysicalRecoveryFreshReopenStage,
 };
 pub(in crate::physical_runtime) use selected_checkpoint::RecoveryCheckpointOwnership;
-pub use selected_checkpoint::SelectedCheckpointInstallationDenial;
+pub use selected_checkpoint::{AbsentCheckpointWitness, SelectedCheckpointInstallationDenial};
 pub use shared_checkpoint::{SharedCheckpointAdmissionDenial, SharedRecoveryCheckpoint};
 pub use source_read_allocation::PhysicalRecoveryReadAllocation;
 pub use staging::{

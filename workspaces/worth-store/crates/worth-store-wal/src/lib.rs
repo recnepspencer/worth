@@ -61,8 +61,8 @@ pub use security_metadata::{
 };
 pub use wal_topology::{
     LogSequenceNumber, ReplayCursor, ReplayCursorSegment, WalFrameOrderingProof, WalLsnRange,
-    WalSegmentGeneration, WalSegmentId, WalSegmentScanRecord, WalTopologyDenial,
-    WalTopologyDenialKind, WalTopologyScan,
+    WalOrigin, WalSegmentGeneration, WalSegmentId, WalSegmentScanRecord, WalTopologyDenial,
+    WalTopologyDenialKind, WalTopologyScan, WAL_ORIGIN,
 };
 
 pub const PHYSICAL_MUTATION_ATTEMPT_BINDING_DOMAIN: &[u8] =

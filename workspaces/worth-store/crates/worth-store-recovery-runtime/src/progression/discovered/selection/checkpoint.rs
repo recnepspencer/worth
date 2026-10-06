@@ -1,6 +1,7 @@
 use worth_store::physical_runtime::{
-    ObservedRecoveryArtifact, PhysicalRecoveryCoordination, SelectedCheckpointInstallationDenial,
-    SharedRecoveryCheckpoint, StoreRecoveryCheckpointBindingBasis,
+    AbsentCheckpointWitness, ObservedRecoveryArtifact, PhysicalRecoveryCoordination,
+    SelectedCheckpointInstallationDenial, SharedRecoveryCheckpoint,
+    StoreRecoveryCheckpointBindingBasis,
 };
 use worth_store_recovery_physics::{PhysicalCheckpointBase, SelectedPhysicalRoot};
 
@@ -29,17 +30,20 @@ pub(in crate::progression::discovered) enum CheckpointInstallation {
 }
 
 impl CheckpointInstallation {
+    /// Installs into the owner; an absence also yields its witness.
     pub(in crate::progression::discovered) fn install(
         self,
         coordination: &mut PhysicalRecoveryCoordination,
-    ) -> Result<(), SelectedCheckpointInstallationDenial> {
+    ) -> Result<Option<AbsentCheckpointWitness>, SelectedCheckpointInstallationDenial> {
         match self {
-            Self::Absent(observed) => coordination.install_absent_checkpoint(observed),
+            Self::Absent(observed) => coordination.install_absent_checkpoint(observed).map(Some),
             Self::Selected {
                 base,
                 shared,
                 binding,
-            } => coordination.install_selected_checkpoint(base, shared, binding),
+            } => coordination
+                .install_selected_checkpoint(base, shared, binding)
+                .map(|()| None),
         }
     }
 }

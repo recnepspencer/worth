@@ -154,10 +154,10 @@ fn retained_dispositions(
     selection: &PhysicalSourceSelection,
     base: &RecoveryBaseImagePlan,
     publication: &RecoveryPublicationExpectation,
-    checkpoint: PhysicalCheckpointIdentity,
+    checkpoint: Option<PhysicalCheckpointIdentity>,
 ) -> Vec<RecoveryCleanupDisposition> {
     let mut dispositions = retained_record_dispositions(base, publication);
-    dispositions.push(checkpoint_disposition(selection, checkpoint));
+    dispositions.extend(checkpoint.map(|checkpoint| checkpoint_disposition(selection, checkpoint)));
     dispositions.extend(retained_wal_dispositions(selection));
     dispositions
 }
