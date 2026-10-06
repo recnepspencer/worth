@@ -159,8 +159,10 @@ Today there are three open paths. Two are `initialize_record_store` and
 `WorthStoreRecovery::recover` in the recovery crate, which exports about 80
 public types. Part II gets one entry and a narrow set of ports.
 
-The slice starts with a design note of under 80 lines, reviewed before any code.
-The note decides:
+The slice starts with a design note, reviewed before any code. The reviewed
+note is the "Design" section of [physical-runtime-facade.md](physical-runtime-facade.md)
+(2026-10-06), and it governs where it is more specific than this list. The note
+decides:
 
 - **The facade's home.** By default it is a new facade crate above
   `worth-store` and `worth-store-recovery-runtime` that exports
@@ -169,7 +171,8 @@ The note decides:
 - **The entry.** `WorthStorePhysicalRuntime::open(configuration)` either
   initializes an empty location, or recovers and rejoins an existing one. It
   returns Serving or a typed refusal. The three current paths become internal
-  to the entry.
+  to the entry. They live in other crates, so they move behind a `facade-owner`
+  feature that only the facade crate enables.
 - **The ports.** Every handle is owned and `'static`, not borrowed from the
   runtime: today `PhysicalBlobFacade<'runtime>` and `PhysicalLayoutAccess<'_>`
   borrow it, which blocks handoff between tasks. The note states `Send` and
@@ -178,15 +181,15 @@ The note decides:
   - **submission:** carries an identity, an incarnation fence, an exact scope
     and a durability request, and consumes a capacity reservation;
   - **capacity:** a pre-effect reservation and pressure evidence;
-  - **fate:** the post-reopen fate of an operation, looked up by its
-    idempotency identity;
+  - **fate:** the post-reopen fate of an operation, looked up by a token the
+    caller persists, since a fresh process cannot rebuild the idempotency key;
   - **negotiation:** over the rows in slice 3;
   - **lifecycle:** drain, then close.
 - **Fate arms.** Live fate is `NoEffect | Completed | Indeterminate`
-  (PF Decision Lock 19). After reopen, fate is either completed, proven no
-  effect, or outside the retention window. Today's `Unresolved` arm
-  (`closeout/operation_fates/fact.rs`) must map to one of these or be shown
-  unreachable, and the note says whether `Indeterminate` can survive a reopen.
+  (PF Decision Lock 19). After reopen, fate has the same arms, or the token is
+  outside the retention window. `Indeterminate` can survive a reopen where redo
+  cannot rebuild the WAL group. Today's `Unresolved` arm
+  (`closeout/operation_fates/fact.rs`) must never cross the facade.
 - **Durable-state discovery.** Record append takes bare bytes. Reads go by
   `PhysicalRecordId` or scan from the start. The only keyed lookup is the blob
   catalog. A fresh process needs a bounded way to find Part II's durable
@@ -215,11 +218,12 @@ The note decides:
 
 Bug classes:
 
-- **A second open path.** The old entry points become crate-private.
+- **A second open path.** The old entry points sit behind the `facade-owner`
+  feature, and slice 7's fence stops anything else enabling it.
 - **A reservation leaked or spent twice.** The reservation is a
   `LinearResource` that the submission consumes.
 - **Fate lost across reopen.** Fate is a sealed `TransitionOutcome`-shaped
-  value bound to the idempotency identity.
+  value bound to the caller's persisted token.
 - **A submission without a fence.** The submission type cannot be built without
   an incarnation fence.
 
@@ -245,7 +249,8 @@ The slice:
 
 - **Derive each row from the port set.** A row is `Present` exactly when a
   facade port, or the entry and its configured policy, exposes it. Records,
-  recovery, WAL and checkpoint, and media are `Present`.
+  recovery, WAL and checkpoint, and media are `Present`. The WAL and checkpoint
+  row also carries the guaranteed retry window, the configured minimum.
 - **These rows are `Absent`:**
   - blob ingest and read;
   - blob release, abandoned-ingest reclaim and expiry;
@@ -296,7 +301,9 @@ built only from a coverage set that names every root family present.
 Today one director serializes all record preparation behind a single mutex, and
 there is one root chain. Slice 2's design note records two lists:
 
-- what may stay shared: WAL group commit and root publication;
+- what may stay shared: WAL group commit, root publication, the checkpoint
+  worker, and short locks on space allocation and the idempotency registry,
+  never held across a pause point or I/O;
 - what must not be shared: preparation of submissions on disjoint scope.
 
 The test proves the posture with held work, not by counting handles:
@@ -338,7 +345,8 @@ Milestone 1's requirement.
 - **The C.7 and C.8 crash matrices** run green on the current tree.
 - **A Milestone-3-shaped tail.** Commit K submissions above the checkpoint,
   where K is the default retained-tail limit, using every operation kind the
-  ports expose. Recover it under the default limit profile. Operation counts at
+  ports expose. The journey uses a `test-support` setting that turns
+  Store-owned checkpoint cadence off, so the tail can form. Recover it under the default limit profile. Operation counts at
   K and at 2K must scale linearly. If they do not, or a record-only tail reaches
   the ordered-history walk, the linear-walk rework moves into this slice.
 
