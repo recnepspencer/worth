@@ -1,7 +1,14 @@
-# Worth Store Physical Runtime Facade
+# D.5 Physical Runtime Facade
+
+> Reviewed 2026-10-06 for the fast track, which the [Database Foundation
+> Roadmap](roadmap.md) replaced. Still governing: home, entry, fence, token
+> identity, fate arms, capacity, checkpoint cadence and retry window, and the
+> concurrency owners. Replaced: "Discovery: a named anchor" and the record ports
+> become D.4's root table and a tree port, and anchor locks become per-root
+> preparation. The first D.5 slice revises this note to match.
 
 ## Design
-Slice 2 of the fast-track plan. `S/` is `workspaces/worth-store/crates/worth-store/src/physical_runtime/`.
+Originally slice 2 of the fast track. `S/` is `workspaces/worth-store/crates/worth-store/src/physical_runtime/`.
 - **Home.** New crate `worth-store-physical-runtime`, above `worth-store` and `worth-store-recovery-runtime`, exports
   only `WorthStorePhysicalRuntime` and the ports. The old entries live in other crates, so `initialize_record_store`,
   `open_record_store` and `WorthStoreRecovery::recover` move behind a `facade-owner` feature; tests use `test-support`.

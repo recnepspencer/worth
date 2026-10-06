@@ -399,7 +399,8 @@ compact, and stream within declared resident-memory and allocation ceilings.
 
 ### Must Preserve
 
-- Store does not replace `worth-relational`'s in-memory runtime arenas
+- Store holds `worth-relational`'s committed truth only through Relational's own
+  storage port, implemented by a binding crate (Database Foundation D.7 and D.8)
 - semantic reconstruction may allocate domain objects at admitted boundaries,
   but physical storage cannot require full-store domain allocation
 
@@ -1285,22 +1286,18 @@ Part II Milestone 1 may begin only when:
 
 - the Aspect-Native Workspace Gate is closed, proving JSON is confined to
   terminal projection or hostile/readmission boundaries
-- C.13 is closed on the
-  [fast track](physical-reconstruction-fast-track-to-runtime-integration.md)
-  and its sealed handoff names the physical facade ports Milestone 1 consumes.
-  C.11 and C.12 stay open; each remaining item is named debt with an owner and
-  the Part II milestone it returns before
+- the [Database Foundation Roadmap](../database-foundation/roadmap.md) is closed through D.10.
+  It supersedes C.11, C.12 and C.13; each remaining item is named debt in its
+  Deferred Work table with an owner and a return point
 - `S.0` through `S.9`, including `S.4.5`, `S.5.1`, and `S.7.1`, are
   implemented or explicitly scoped with named, non-platform-grade debt
 - every deferred physical capability reports `Absent` through capability
   negotiation and is listed with its owner and the milestone that brings it
   back
 - a fresh store reopens after every crash point declared by the C.7 and C.8
-  crash matrices and the C.11 seams named in
-  [fast track](physical-reconstruction-fast-track-to-runtime-integration.md)
-  slice 6, and the C.13 journey reproduces this through the facade, including
-  before the first checkpoint. The blob-ingest, publication, drop, rebuild and
-  LSM seams return with their capabilities
+  crash matrices and the Database Foundation crash matrices (D.4, D.6, D.9 and
+  D.10), including before the first checkpoint. The blob-ingest, publication,
+  drop, rebuild and LSM seams return with their capabilities
 - the Physical Database Roadmap workspace crates expose the typed source,
   claim, handoff, and certification contracts required by Milestone 1
 

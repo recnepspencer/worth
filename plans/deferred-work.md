@@ -126,32 +126,42 @@ needs an accelerator.
 
 ## Worth Store
 
-Deferred on 2026-10-05 so that runtime integration (Part II Milestone 1) can
-start on the C.13 facade handoff. Until each item lands, its capability
-reports `Absent` and no facade port reaches it.
+Deferred on 2026-10-06 by the
+[Database Foundation Roadmap](database-foundation/roadmap.md), which supersedes
+C.11, C.12 and C.13. Until each item lands, its capability reports `Absent` and
+no facade port reaches it. That roadmap's "Deferred Work" table holds every
+item with its owner and return point.
 
 ### C.11 remainder
-
-Spec: [physical-reconstruction-fast-track-to-runtime-integration.md](worth-store/physical-reconstruction-fast-track-to-runtime-integration.md),
-"Deferred Work". Deferred on 2026-10-06. C.13 takes only the C.11 items that
-Part II Milestones 1 to 3 need:
-
-- recovery before the first checkpoint;
-- truthful capability rows;
-- honest observer coverage;
-- the record-path crash seams.
 
 Deferred:
 
 - facade ports for blob ingest and read, maintenance, relocation and layout
   rebuild;
 - the linear ordered-history walk and the release rejoin rework;
-- the rest of Phase 6, which is release, retirement and tier movement;
-- Phase 7;
-- the Phase 8 matrix and heavy lane.
+- the rest of Phase 6, which is release, retirement and tier movement,
+  redesigned for many roots after D.11;
+- Phase 7, including the LSM layout class;
+- the Phase 8 matrix and heavy lane;
+- replay of a manifest-residue cleanup Intent killed before its root
+  publication. C8 blocks with `RedoPlanning`: closeout rebuilds the segment
+  and free-space manifests that the writer's `plan_manifest_residue_cleanup`
+  keeps, so the candidate root never matches the Intent's root SHA. The
+  ignored `durable_v2_cleanup_intent_above_the_checkpoint_replays_...` test
+  in `physical_blob_journeys` is the repro. Once it passes, it also kills the
+  `covered_end` guard in recovery runtime `blob_reclaim/manifest_residue.rs`
+  in the MAX direction;
+- killing tests for two checkpoint-present covered-frame guards. One is the
+  covered unpublished manifest-residue Intent guard in recovery runtime
+  `blob_reclaim/manifest_residue.rs` (the 0 direction): no test yet writes a
+  checkpoint cutover between the Intent append and its root publication,
+  then kills.
+  The other is the covered orphan extent-copy Resolved skip in
+  `source_copy/wal_evidence.rs`: no world yet retires the Intent's WAL
+  segment under a checkpoint covering both frames (accept), or offers an
+  uncovered orphan (deny).
 
-Each returns before the Part II milestone named in the spec's table. The
-earliest is Milestone 4, for the linear ordered-history walk.
+Each returns at the point named in the roadmap's table.
 
 ### S.10, S.11 and S.12
 
@@ -169,7 +179,7 @@ Each returns when its consuming milestone is next.
 ### C.12 formal protocol rebinding
 
 Spec: [physical-foundation-reconstruction-roadmap.md](worth-store/physical-foundation-reconstruction-roadmap.md),
-C.12. It grants no runtime authority and changes no facade or format. Until
+C.12, superseded as a plan by the Database Foundation Roadmap. It grants no runtime authority and changes no facade or format. Until
 it closes, no claim cites an S.9 model as evidence about the executable owners.
 It returns before Runtime Integration Milestone 19.
 
@@ -178,6 +188,7 @@ It returns before Runtime Integration Milestone 19.
 Spec: [physical-foundation-reconstruction-roadmap.md](worth-store/physical-foundation-reconstruction-roadmap.md),
 C.13 "Deferred To S.12". The store is at least eight times the memory budget,
 with concurrent maintenance, crash and corruption injection, and offline
-verification. C.13 keeps the facade tests, the facade concurrency test, the
-focused owner regressions and a crash-and-reopen journey. Returns with S.12,
+verification. Database Foundation D.6 keeps the facade tests, the facade
+concurrency test, the focused owner regressions and a crash-and-reopen
+journey. Returns with S.12,
 before Runtime Integration Milestone 14.

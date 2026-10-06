@@ -31,10 +31,12 @@ Physical Database Roadmap S.9 implementation state reopened
   -> C.8 fresh-process recovery and reopen
   -> C.9 physical integrity, corruption localization, and offline truth
   -> C.10 stable reads, scheduled I/O, and maintenance interference
-  -> C.11 layout, index, and native blob adoption
-  -> C.13 physical facade integration and runtime-integration entry
-  -> Runtime And Query Integration Roadmap Milestone 1
+  -> C.11, C.12 and C.13 superseded by the Database Foundation Roadmap
 ```
+
+> **Superseded (2026-10-06).** The [Database Foundation Roadmap](../database-foundation/roadmap.md)
+> supersedes C.11, C.12 and C.13. Their sections below stay as design reference,
+> not as plans. Every open item is in that roadmap's Deferred Work table.
 
 C.12 (formal protocol rebinding) does not gate runtime integration. It grants
 no runtime authority and changes no facade or format, so it runs before Runtime
@@ -43,10 +45,7 @@ evidence about the executable owners. S.10, S.11 and S.12 run before the
 Part II milestones that consume them (see the Physical Database Roadmap
 position section). Work deferred out of C.13 is recorded with its
 owner and returning milestone in the C.13 entry below and in
-`plans/deferred-work.md`. C.11 does not close before C.13. The
-[fast track to runtime integration](physical-reconstruction-fast-track-to-runtime-integration.md)
-names the C.11 items C.13 needs, and defers every other C.11 item with its
-owner and the Part II milestone it returns before.
+`plans/deferred-work.md`.
 
 The `C.*` labels are reconstruction sequence numbers used only in planning,
 specification, evidence, and closeout. Production modules, types, functions,
@@ -1648,9 +1647,8 @@ derive or decide them.
 
 ### Closeout Gate
 
-The [fast track to runtime integration](physical-reconstruction-fast-track-to-runtime-integration.md)
-takes the items C.13 needs out of this gate. The rest of the gate is deferred,
-and the fast track lists each deferred item with its owner and return point.
+Superseded by the [Database Foundation Roadmap](../database-foundation/roadmap.md); this gate is design
+reference only.
 
 `C.11` closes only when every retained S.8/S.7 access and blob mechanism runs
 through the one reconstructed platform with bounded memory, recoverable
@@ -1725,8 +1723,8 @@ replication transition is promoted in advance of its production owner.
 
 ## C.13: Physical Facade Integration And Runtime-Integration Entry
 
-Engineering specification:
-[fast track to runtime integration](physical-reconstruction-fast-track-to-runtime-integration.md).
+Superseded by the [Database Foundation Roadmap](../database-foundation/roadmap.md), milestones D.1 to
+D.6.
 
 ### Goal
 
@@ -1841,7 +1839,7 @@ implementation:
 - `physical-reconstruction-c10-isolation-and-io-coordination.md`
 - `physical-reconstruction-c11-layout-index-and-native-blob-adoption.md`
 - `physical-reconstruction-c12-formal-owner-rebinding.md`
-- `physical-reconstruction-fast-track-to-runtime-integration.md` (C.13 and the C.11 items it needs)
+- `../database-foundation/roadmap.md` (supersedes C.11, C.12 and C.13)
 
 C.3 through C.13 specs, including C.5.1, inherit the Non-Fake Physical
 Acceptance Test Contract,
@@ -1934,8 +1932,7 @@ boundary, not a certification receipt.
   cannot publish unchecked bytes.
 - C.10 precedes C.11 closeout so index and blob rewrite/reclaim use real stable
   reads and scheduled I/O.
-- C.13 needs only the C.11 items named in the fast track. The rest of C.11
-  closes later, each item before the Part II milestone that consumes it.
+- The Database Foundation Roadmap supersedes C.11, C.12 and C.13.
 - C.12 follows the executable transitions it models and runs before Runtime
   Integration Milestone 19.
 - C.13 is the facade handoff into Runtime Integration Milestone 1. The program
@@ -1977,7 +1974,7 @@ This roadmap is complete only when Worth Store can honestly say:
 
 Formal rebinding (C.12) completes this standard later, before Runtime
 Integration Milestone 19. The C.11 items deferred by the
-[fast track](physical-reconstruction-fast-track-to-runtime-integration.md) complete it before the Part II
+[Database Foundation Roadmap](../database-foundation/roadmap.md) complete it before the
 milestones named there. S.10 operational recovery may begin once C.13
 closes. The later runtime-integration
 roadmap can subsequently build the existing Worth runtime on top of this
