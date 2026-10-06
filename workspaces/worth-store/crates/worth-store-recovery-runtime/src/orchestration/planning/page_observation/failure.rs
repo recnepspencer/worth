@@ -140,7 +140,9 @@ impl PageObservationFailure {
 mod tests {
     use super::*;
     use crate::orchestration::reader_limit::refused_past;
-    use worth_store::physical_runtime::{FilesystemObservationBound, RecoveryDiscoveryArtifact};
+    use worth_store::physical_runtime::{
+        ArtifactDamage, FilesystemObservationBound, RecoveryDiscoveryArtifact,
+    };
 
     #[test]
     fn only_the_readers_exhausted_observation_bytes_are_a_limit() {
@@ -178,10 +180,14 @@ mod tests {
             // The reader counts no reads: a refused read is past every count.
             refused_past(FilesystemObservationBound::Reads, 1, 0),
             // The artifact outgrew the ceiling of its own read.
-            refused_past(FilesystemObservationBound::RequestedBytes, 65_537, 65_536),
-            RecoveryDiscoveryFailure::InvalidAddress {
+            RecoveryDiscoveryFailure::Damage(ArtifactDamage::PastCeiling {
                 artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint,
-            },
+                length: 65_537,
+                ceiling: 65_536,
+            }),
+            RecoveryDiscoveryFailure::Damage(ArtifactDamage::InvalidAddress {
+                artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint,
+            }),
         ] {
             assert_eq!(
                 PageObservationFailure::media(target, failure.clone()),

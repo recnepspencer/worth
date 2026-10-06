@@ -2,7 +2,10 @@
 //! source-tree blocks while the bounded discovery cursor is still live.
 
 use crate::orchestration::recovery_budget::RecoveryAllowance;
-use worth_store::physical_runtime::{BoundedRecoveryFilesystemDiscovery, RecoveryDiscoveryFailure};
+use worth_store::physical_runtime::{
+    ArtifactCeiling, BoundedRecoveryFilesystemDiscovery, PageAddress, ReadGrant,
+    RecoveryDiscoveryFailure, UnchargedRead,
+};
 use worth_store_physical_format::{DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration};
 use worth_store_recovery_physics::{
     AdmittedRootStepMemberView, SelectedReleaseHeadReplayDenial,
@@ -56,9 +59,18 @@ pub(super) fn admit_addressed_member(
         format,
         maximum_effect_bytes,
         maximum_effect_bytes,
-        |reference, maximum| {
+        // Each block is one page; physics passes a page as its maximum.
+        |reference, _page| {
+            let address = PageAddress::ReleaseCustodyHeadBlock {
+                generation: reference.generation(),
+                block: reference.block(),
+            };
             discovery
-                .read_release_custody_head_block(reference.generation(), reference.block(), maximum)
+                .read(
+                    ArtifactCeiling::page(format, address),
+                    ReadGrant::ceiling_only(),
+                )
+                .observed()
                 .map_err(|failure| unread.keep(failure))?
                 .bytes()
                 .map(<[u8]>::to_vec)
@@ -90,7 +102,9 @@ pub(super) fn bind_edge(
 
 #[cfg(test)]
 mod tests {
-    use worth_store::physical_runtime::{FilesystemObservationBound, RecoveryDiscoveryArtifact};
+    use worth_store::physical_runtime::{
+        ArtifactDamage, FilesystemObservationBound, RecoveryDiscoveryArtifact,
+    };
 
     use super::*;
     use crate::entry::PhysicalRecoveryLimitDimension::{ObservationBytes, StagingBytes};
@@ -120,9 +134,11 @@ mod tests {
             Some(recovery_limit_for_test(ObservationBytes, 65_541, 65_540).into()),
         );
         let mut damaged = Unread::default();
-        damaged.keep(RecoveryDiscoveryFailure::InvalidAddress {
-            artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint,
-        });
+        damaged.keep(RecoveryDiscoveryFailure::Damage(
+            ArtifactDamage::InvalidAddress {
+                artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint,
+            },
+        ));
         assert_eq!(
             damaged.verdict(Denial::Read, STAGING),
             WalkFailure::Unverified

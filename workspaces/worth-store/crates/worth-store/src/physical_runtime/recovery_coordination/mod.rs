@@ -44,7 +44,7 @@ pub(in crate::physical_runtime::recovery_coordination) use effect::{
     RecoveryCleanupRemovalBinding, RecoveryCleanupRemovalSettlement, RecoveryCleanupRemovalTarget,
 };
 pub use funded_observation::{
-    FundedRecoveryObservation, PhysicalRecoveryObservationAllocationDenial,
+    FundedReadOutcome, FundedRecoveryObservation, PhysicalRecoveryObservationAllocationDenial,
 };
 pub use funded_wal_read::{
     FundedRecoveryWalObservations, FundedRecoveryWalReadFailure, RecoveryWalArtifactView,

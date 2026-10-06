@@ -1,4 +1,5 @@
 use worth_proof::TransitionOutcome;
+use worth_store::physical_runtime::{ArtifactCeiling, PageAddress, ReadGrant, UnchargedRead};
 use worth_store::physical_runtime::{
     FilesystemAccessPosture, FilesystemMediaAdmission, PhysicalRuntimeAdmission, PhysicalStore,
     QualifiedRecoveryFilesystemMedia,
@@ -35,7 +36,17 @@ fn segment_membership_projection_bounds_leaf_entries_and_branch_children() {
         };
         let path = write_node(root.path(), "segment-manifests", artifact, &bytes);
         let source = discovery
-            .read_segment_membership_block(reference.generation(), reference.block(), 4096)
+            .read(
+                ArtifactCeiling::page(
+                    format,
+                    PageAddress::SegmentMembershipBlock {
+                        generation: reference.generation(),
+                        block: reference.block(),
+                    },
+                ),
+                ReadGrant::ceiling_only(),
+            )
+            .observed()
             .unwrap();
         for (remaining, capacity) in [(0, 8), (1, 8), (2, 8), (1, 1)] {
             let mut trace = RecoveryIntegrityIngressTrace::default();
@@ -73,7 +84,17 @@ fn segment_membership_projection_bounds_leaf_entries_and_branch_children() {
         damaged[44] ^= 1;
         std::fs::write(path, damaged).unwrap();
         let source = discovery
-            .read_segment_membership_block(reference.generation(), reference.block(), 4096)
+            .read(
+                ArtifactCeiling::page(
+                    format,
+                    PageAddress::SegmentMembershipBlock {
+                        generation: reference.generation(),
+                        block: reference.block(),
+                    },
+                ),
+                ReadGrant::ceiling_only(),
+            )
+            .observed()
             .unwrap();
         let mut trace = RecoveryIntegrityIngressTrace::default();
         assert!(matches!(
@@ -116,7 +137,17 @@ fn free_space_projection_bounds_leaf_entries_and_branch_children() {
         };
         let path = write_node(root.path(), "free-space", artifact, &bytes);
         let source = discovery
-            .read_free_space_membership_block(reference.generation(), reference.block(), 4096)
+            .read(
+                ArtifactCeiling::page(
+                    format,
+                    PageAddress::FreeSpaceMembershipBlock {
+                        generation: reference.generation(),
+                        block: reference.block(),
+                    },
+                ),
+                ReadGrant::ceiling_only(),
+            )
+            .observed()
             .unwrap();
         for (remaining, capacity) in [(0, 8), (1, 8), (2, 8), (1, 1)] {
             let mut trace = RecoveryIntegrityIngressTrace::default();
@@ -154,7 +185,17 @@ fn free_space_projection_bounds_leaf_entries_and_branch_children() {
         damaged[44] ^= 1;
         std::fs::write(path, damaged).unwrap();
         let source = discovery
-            .read_free_space_membership_block(reference.generation(), reference.block(), 4096)
+            .read(
+                ArtifactCeiling::page(
+                    format,
+                    PageAddress::FreeSpaceMembershipBlock {
+                        generation: reference.generation(),
+                        block: reference.block(),
+                    },
+                ),
+                ReadGrant::ceiling_only(),
+            )
+            .observed()
             .unwrap();
         let mut trace = RecoveryIntegrityIngressTrace::default();
         assert!(matches!(

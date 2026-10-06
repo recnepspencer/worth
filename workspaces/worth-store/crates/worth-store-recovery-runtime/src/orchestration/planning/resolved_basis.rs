@@ -4,8 +4,7 @@ use worth_store_recovery_physics::{
     PhysicalRedoTargetIdentity, ReconciledOperationFates, RecoveryPlanningCounters,
 };
 
-use crate::entry::{PhysicalRecoveryLimitDimension, PhysicalRecoveryOutcome};
-use crate::orchestration::recovery_budget::RecoveryAllowance;
+use crate::entry::PhysicalRecoveryOutcome;
 
 use super::admitted_basis::AdmittedPlanningBasis;
 use super::context::PlanningContext;
@@ -98,29 +97,6 @@ pub(super) fn resolve(
         .limits
         .observation_bytes
         .saturating_sub(context.counters.bytes_observed);
-    if remaining_observation_bytes == 0 {
-        let planning_counters = counters::after_fates(
-            &admitted.sample,
-            &admitted.fates,
-            PhysicalRedoPlanCounters::default(),
-            0,
-            0,
-        );
-        // T2: a read grant charges the read's length; until then the least
-        // next read.
-        let limit = RecoveryAllowance::declared(
-            &context.limits,
-            PhysicalRecoveryLimitDimension::ObservationBytes,
-        )
-        .spent()
-        .map(Into::into);
-        return Err(context.page_block(
-            planning_counters,
-            "selected-source-inventory",
-            limit,
-            None,
-        ));
-    }
     let selected_wal = context
         .integrity
         .admitted_wal()

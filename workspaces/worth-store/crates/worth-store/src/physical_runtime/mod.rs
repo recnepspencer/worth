@@ -231,7 +231,7 @@ pub use recovery_coordination::{
     ClosedPhysicalRecoveryCleanup, CompletedPhysicalRecoveryCleanupFreshnessRead,
     CompletedPhysicalRecoveryCleanupRemoval, CompletedPhysicalRecoveryFreshReopen,
     CompletedPhysicalRecoveryPublicationCandidate, CompletedPhysicalRecoveryPublicationCommand,
-    CompletedPhysicalRecoveryStagingCommand, FundedRecoveryObservation,
+    CompletedPhysicalRecoveryStagingCommand, FundedReadOutcome, FundedRecoveryObservation,
     FundedRecoveryWalObservations, FundedRecoveryWalReadFailure, PerformedRecoveryPhysicalEffect,
     PhysicalRecoveryCleanupAdmissionDenial, PhysicalRecoveryCleanupAdmissionDenialKind,
     PhysicalRecoveryCleanupCommandStage, PhysicalRecoveryCleanupFreshnessReadDenial,
@@ -338,19 +338,22 @@ pub use work::{
 pub use worth_store_physical_backend::filesystem_observation_limit_for_test;
 #[cfg(feature = "recovery-runtime-owner")]
 pub use worth_store_physical_backend::{
-    AdmittedRecoveryFilesystemMedia, ArtifactTreeFailureKind,
+    AdmittedRecoveryFilesystemMedia, AllocatedReadFailure, AllocatedReadOutcome, ArtifactCeiling,
+    ArtifactDamage, ArtifactReadOutcome, ArtifactTreeFailureKind,
     ArtifactTreeListingAllocationBoundary, ArtifactTreePathAllocationBoundary,
     BoundedRecoveryFilesystemDiscovery, CompletedRecoveryStagingWrite,
     CompletedScheduledRecoveryReopenRead, CompletedScheduledRecoveryStagingWrite,
     DeniedScheduledRecoveryReopenRead, ExceededFilesystemObservationBound, FilesystemAccessPosture,
-    FilesystemObservationBound, IndeterminateRecoveryStagingWrite, MediaOwnerIdentity,
-    ObservedRecoveryArtifact, ObservedWalArtifact, PhysicalRecoveryMediaGeneration,
-    QualifiedPhysicalBackendProfile, QualifiedRecoveryFilesystemMedia,
-    RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact, RecoveryDiscoveryCount,
-    RecoveryDiscoveryCounters, RecoveryDiscoveryFailure, RecoveryFilesystemQualificationError,
-    RecoveryReopenReadOutcome, RecoveryRootProtocolPublicationDenial,
-    RecoveryRootProtocolPublicationPlan, RecoveryStagingIndeterminatePhysical,
-    RecoveryStagingWriteDisposition, RecoveryStagingWriteOutcome, RecoveryWalObservationIdentity,
+    FilesystemObservationBound, FixedArtifact, GrantOverrun, GrantedRead, GrantedReadStop,
+    IndeterminateRecoveryStagingWrite, MediaOwnerIdentity, ObservedRecoveryArtifact,
+    ObservedWalArtifact, PageAddress, PhysicalRecoveryMediaGeneration,
+    QualifiedPhysicalBackendProfile, QualifiedRecoveryFilesystemMedia, ReadGrant, ReadGranted,
+    ReadRefusal, RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact,
+    RecoveryDiscoveryCount, RecoveryDiscoveryCounters, RecoveryDiscoveryFailure,
+    RecoveryFilesystemQualificationError, RecoveryReopenReadOutcome,
+    RecoveryRootProtocolPublicationDenial, RecoveryRootProtocolPublicationPlan,
+    RecoveryStagingIndeterminatePhysical, RecoveryStagingWriteDisposition,
+    RecoveryStagingWriteOutcome, RecoveryWalObservationIdentity, Uncharged, UnchargedRead,
 };
 
 pub use work::PhysicalEffectRecoveryObligation;

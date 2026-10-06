@@ -6,7 +6,6 @@
 use worth_store::physical_runtime::{
     ExceededFilesystemObservationBound, FilesystemObservationBound, RecoveryDiscoveryFailure,
 };
-use worth_store_physical_format::PhysicalRecordFormatDeclaration;
 
 use super::recovery_budget::{ExceededRecoveryLimit, RecoveryAllowance};
 use crate::entry::{PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDimension};
@@ -18,13 +17,6 @@ use crate::entry::{PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDimens
 /// bound the reads.
 pub(crate) const UNCOUNTED_READS: u64 = u64::MAX;
 
-/// The ceiling of one read of an extent arena: its manifest and each of its
-/// chunk frames fit one page. A frame past it is the frame's own damage; the
-/// reader's allowance is the only budget, and it says when it ran out.
-pub(crate) fn extent_page_ceiling(format: PhysicalRecordFormatDeclaration) -> u64 {
-    u64::from(format.page_size().bytes())
-}
-
 /// The observation bytes a reader was handed ran out, in the reader's own
 /// counts: from its first byte, against what it was handed. Every other
 /// refusal is not a limit of the reader: requested bytes are the ceiling of
@@ -35,12 +27,13 @@ pub(crate) struct ReaderBytes(ExceededFilesystemObservationBound);
 impl ReaderBytes {
     pub(crate) fn of(failure: &RecoveryDiscoveryFailure) -> Option<Self> {
         match failure {
-            RecoveryDiscoveryFailure::Limit(past)
-                if past.dimension() == FilesystemObservationBound::ObservationBytes =>
-            {
-                Some(Self(*past))
-            }
-            _ => None,
+            RecoveryDiscoveryFailure::Limit(past) => match past.dimension() {
+                FilesystemObservationBound::ObservationBytes => Some(Self(*past)),
+                FilesystemObservationBound::Reads
+                | FilesystemObservationBound::Entries
+                | FilesystemObservationBound::RequestedBytes => None,
+            },
+            RecoveryDiscoveryFailure::Damage(_) => None,
         }
     }
 
@@ -57,12 +50,12 @@ impl ReaderBytes {
     }
 }
 
-/// The most one whole-artifact read may return: the artifact's own ceiling,
-/// from the parent that declares its length or else from its format, and
-/// what is left of a budget the caller put under the read.
+/// What one stream read may return: what is left of the caller's budget.
+/// Nothing declares a ceiling for the checkpoint stream or a WAL file, so
+/// only that budget bounds them. T2b: the stream readers take a grant, and
+/// this goes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct ReadCeiling {
-    artifact: u64,
     budget: u64,
     budget_left: u64,
 }
@@ -72,66 +65,35 @@ pub(crate) struct ReadCeiling {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct OversizedArtifact;
 
-/// What a read met when the reader refused it for its own ceiling.
+/// The caller's budget ended at a stream read. `observed` counts from that
+/// budget's first byte to this read's last.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum PastCeiling {
-    /// The artifact is larger than its own ceiling: damage.
-    Artifact,
-    /// The artifact may fit its ceiling, and the caller's budget ended first.
-    /// `observed` counts from that budget's first byte to this read's last.
-    Budget { observed: u64, admitted: u64 },
+pub(crate) struct PastBudget {
+    pub(crate) observed: u64,
+    pub(crate) admitted: u64,
 }
 
 impl ReadCeiling {
-    pub(crate) const fn of_artifact(artifact: u64) -> Self {
-        Self::within(artifact, u64::MAX, u64::MAX)
-    }
-
     /// `budget_left` of the caller's `budget` may still be read.
-    pub(crate) const fn within(artifact: u64, budget: u64, budget_left: u64) -> Self {
+    pub(crate) const fn of_budget_alone(budget: u64, budget_left: u64) -> Self {
         Self {
-            artifact,
             budget,
             budget_left,
         }
     }
 
-    /// An artifact nothing declares a ceiling for: neither a parent nor its
-    /// format bounds the checkpoint stream, nor a WAL file. Only the caller's
-    /// budget does.
-    pub(crate) const fn of_budget_alone(budget: u64, budget_left: u64) -> Self {
-        Self::within(u64::MAX, budget, budget_left)
-    }
-
     /// The byte limit to hand the reader.
     pub(crate) const fn requested(self) -> u64 {
-        if self.budget_left < self.artifact {
-            self.budget_left
-        } else {
-            self.artifact
-        }
+        self.budget_left
     }
 
-    /// `None` where the reader did not refuse the read for this ceiling.
-    /// The reader reports the artifact's length, or one byte past what it
-    /// was asked for where it cannot tell: only a length within the
-    /// artifact's own ceiling leaves the caller's budget as what ended.
-    pub(crate) const fn passed(self, failure: &RecoveryDiscoveryFailure) -> Option<PastCeiling> {
-        let RecoveryDiscoveryFailure::Limit(past) = failure else {
-            return None;
-        };
-        if !matches!(past.dimension(), FilesystemObservationBound::RequestedBytes) {
-            return None;
+    /// The budget's own counts at a read refused for its requested bytes.
+    pub(crate) const fn passed(self, past: &ExceededFilesystemObservationBound) -> PastBudget {
+        PastBudget {
+            observed: (self.budget.saturating_sub(self.budget_left))
+                .saturating_add(past.observed()),
+            admitted: self.budget,
         }
-        Some(if past.observed() > self.artifact {
-            PastCeiling::Artifact
-        } else {
-            PastCeiling::Budget {
-                observed: (self.budget.saturating_sub(self.budget_left))
-                    .saturating_add(past.observed()),
-                admitted: self.budget,
-            }
-        })
     }
 }
 
@@ -152,7 +114,7 @@ pub(crate) fn refused_past(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use worth_store::physical_runtime::RecoveryDiscoveryArtifact;
+    use worth_store::physical_runtime::{ArtifactDamage, RecoveryDiscoveryArtifact};
     use FilesystemObservationBound as Bound;
 
     const PAGE: u64 = 65_536;
@@ -182,72 +144,37 @@ mod tests {
             refused(9, Bound::Reads),
             refused(9, Bound::Entries),
             refused(9, Bound::RequestedBytes),
-            RecoveryDiscoveryFailure::InvalidAddress {
+            RecoveryDiscoveryFailure::Damage(ArtifactDamage::InvalidAddress {
                 artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint,
-            },
+            }),
         ] {
             assert_eq!(ReaderBytes::of(&failure), None);
         }
     }
 
     #[test]
-    fn the_reader_is_asked_for_the_smaller_of_the_ceiling_and_the_budget() {
-        assert_eq!(ReadCeiling::of_artifact(PAGE).requested(), PAGE);
-        assert_eq!(
-            ReadCeiling::within(PAGE, 9 * PAGE, PAGE - 1).requested(),
-            PAGE - 1
-        );
-        assert_eq!(ReadCeiling::within(PAGE, 9 * PAGE, PAGE).requested(), PAGE);
-        assert_eq!(
-            ReadCeiling::within(PAGE, 9 * PAGE, PAGE + 1).requested(),
-            PAGE
-        );
+    fn a_stream_is_asked_for_what_is_left_of_its_budget() {
         assert_eq!(ReadCeiling::of_budget_alone(9 * PAGE, 5).requested(), 5);
+        assert_eq!(ReadCeiling::of_budget_alone(PAGE, PAGE).requested(), PAGE);
     }
 
     #[test]
-    fn an_artifact_past_its_own_ceiling_is_damage_under_any_budget() {
-        let requested = Bound::RequestedBytes;
+    fn a_refused_stream_counts_what_its_budget_had_already_given() {
+        let RecoveryDiscoveryFailure::Limit(past) = refused(PAGE, Bound::RequestedBytes) else {
+            unreachable!("a real refusal is a limit");
+        };
         for left in [3 * PAGE, PAGE, 1] {
-            let ceiling = ReadCeiling::within(PAGE, 3 * PAGE, left);
             assert_eq!(
-                ceiling.passed(&refused(PAGE + 1, requested)),
-                Some(PastCeiling::Artifact),
-            );
-            // A whole page fits the artifact's ceiling, so the budget ended,
-            // and the report counts what the budget had already given.
-            assert_eq!(
-                ceiling.passed(&refused(PAGE, requested)),
-                Some(PastCeiling::Budget {
+                ReadCeiling::of_budget_alone(3 * PAGE, left).passed(&past),
+                PastBudget {
                     observed: 3 * PAGE - left + PAGE,
                     admitted: 3 * PAGE,
-                }),
+                },
             );
         }
         assert_eq!(
-            ReadCeiling::of_artifact(PAGE).passed(&refused(PAGE + 1, requested)),
-            Some(PastCeiling::Artifact),
+            ReadCeiling::of_budget_alone(PAGE, 2).passed(&past).observed,
+            2 * PAGE - 2,
         );
-        assert_eq!(
-            ReadCeiling::of_budget_alone(PAGE, 2).passed(&refused(u64::MAX, requested)),
-            Some(PastCeiling::Budget {
-                observed: u64::MAX,
-                admitted: PAGE,
-            }),
-        );
-    }
-
-    #[test]
-    fn a_refusal_for_anything_but_the_ceiling_passes_none() {
-        let ceiling = ReadCeiling::within(PAGE, PAGE, 1);
-        for failure in [
-            refused(PAGE + 1, Bound::ObservationBytes),
-            refused(PAGE + 1, Bound::Reads),
-            RecoveryDiscoveryFailure::InvalidAddress {
-                artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint,
-            },
-        ] {
-            assert_eq!(ceiling.passed(&failure), None);
-        }
     }
 }

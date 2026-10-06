@@ -92,10 +92,7 @@ pub(super) fn verify_initial(
     {
         return Err(context.redo_block(basis.planning_counters(), None));
     }
-    let remaining_bytes = match remaining_observation(&context, basis) {
-        Ok(remaining_bytes) => remaining_bytes,
-        Err(failure) => return Err(unobserved(context, basis, failure)),
-    };
+    let remaining_bytes = remaining_observation(&context, basis);
     let Some(mut selected_routes_digest) =
         SelectedRouteTranscript::new(descriptor.source_root_generation(), source_routes.len())
     else {
@@ -109,7 +106,7 @@ pub(super) fn verify_initial(
             crate::orchestration::reader_limit::UNCOUNTED_READS,
             remaining_bytes,
         )
-        .expect("nonzero selected release limits");
+        .expect("a reader that counts no reads opens on any byte bound");
     let mut scratch = 0;
     // Every read of the scan fails the same way: with the limit it met, or
     // with nothing where what it read did not verify.

@@ -3,7 +3,7 @@
 
 use sha2::{Digest, Sha256};
 
-use worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery;
+use worth_store_physical_backend::{BoundedRecoveryFilesystemDiscovery, PageAddress};
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest,
     ManifestBlockReference, PhysicalInventoryTranscriptBuilderV1, PhysicalRecordFormatDeclaration,
@@ -172,12 +172,15 @@ fn verify_inner<S: RouteWalkStorage>(
         }
         // This output is retained; admit its next slot before any page read.
         storage.grow_vec_geometrically(&mut slices, 1)?;
+        let address = PageAddress::RootRoutingBlock {
+            generation: reference.generation(),
+            block: reference.block(),
+        };
         let artifact = RecordArtifactFile::RootRoutingBlock {
             generation: reference.generation(),
             block: reference.block(),
         };
-        let page_bytes = u64::from(format.page_size().bytes());
-        let frame = storage.read_page(discovery, artifact, page_bytes)?;
+        let frame = storage.read_page(discovery, format, address)?;
         let bytes = frame.bytes().ok_or(Denial::MissingRoute)?;
         // Framing/count preflight grants no route authority; the borrowed
         // Integrity entry below still checks every semantic and root binding.

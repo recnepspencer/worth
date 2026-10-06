@@ -45,6 +45,7 @@ impl WalVerifiedRecoveredCustodyEvidence {
     pub(in crate::physical_runtime) fn verify_selected_media_for_serving(
         self,
         media: &QualifiedFilesystemMedia,
+        format: PhysicalRecordFormatDeclaration,
         window: &mut PhysicalRecoveryReadAllocation<'_>,
     ) -> Result<FundedMediaVerifiedRecoveredCustodyEvidence, RecordBootstrapDenial> {
         if let Some(checkpoint) = self.evidence.checkpoint_ownership.checkpoint() {
@@ -73,11 +74,11 @@ impl WalVerifiedRecoveredCustodyEvidence {
         if !required_heads_present {
             return Err(RecordBootstrapDenial::RecoveredHeadWitnessPostureMismatch);
         }
-        if !controls.verify_funded_heads_for_serving(media, window)? {
+        if !controls.verify_funded_heads_for_serving(media, format, window)? {
             return Err(RecordBootstrapDenial::RecoveredCheckpointCustodyMismatch);
         }
         if self.evidence.historical_release.is_some()
-            && !controls.verify_funded_completed_raw_for_serving(media, window)?
+            && !controls.verify_funded_completed_raw_for_serving(media, format, window)?
         {
             return Err(RecordBootstrapDenial::RecoveredCheckpointCustodyMismatch);
         }

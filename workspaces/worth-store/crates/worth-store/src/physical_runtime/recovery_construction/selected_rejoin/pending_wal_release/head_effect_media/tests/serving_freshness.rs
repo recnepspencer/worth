@@ -50,7 +50,7 @@ fn moved_effect_witness_alone_detects_changed_serving_frame_and_balances_reads()
     let before = observer.snapshot().for_dimension(scope);
     assert_eq!(before.active_units(), charge);
     assert!(fingerprint
-        .verify_funded_heads_for_serving(&media, &mut serving)
+        .verify_funded_heads_for_serving(&media, format, &mut serving)
         .unwrap());
     let path = paths.first().unwrap();
     let original = std::fs::read(path).unwrap();
@@ -59,12 +59,12 @@ fn moved_effect_witness_alone_detects_changed_serving_frame_and_balances_reads()
     changed[offset] ^= 0x40;
     std::fs::write(path, &changed).unwrap();
     assert!(!fingerprint
-        .verify_funded_heads_for_serving(&media, &mut serving)
+        .verify_funded_heads_for_serving(&media, format, &mut serving)
         .unwrap());
     assert_eq!(std::fs::read(path).unwrap(), changed);
     std::fs::write(path, original).unwrap();
     assert!(fingerprint
-        .verify_funded_heads_for_serving(&media, &mut serving)
+        .verify_funded_heads_for_serving(&media, format, &mut serving)
         .unwrap());
     let after = observer.snapshot().for_dimension(scope);
     assert_eq!(after.active_units(), charge);

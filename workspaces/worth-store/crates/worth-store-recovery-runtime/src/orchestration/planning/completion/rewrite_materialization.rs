@@ -1,5 +1,5 @@
 use sha2::{Digest, Sha256};
-use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
+use worth_store::physical_runtime::{BoundedRecoveryFilesystemDiscovery, ReadGrant, UnchargedRead};
 use worth_store_physical_format::{
     decode_data_frame_page_lsn, encode_data_frame_page_lsn, inspect_inline_page,
     inspect_inline_page_records, restamp_inline_page_generation, CurrentPhysicalRecordPlacement,
@@ -62,14 +62,11 @@ pub(super) fn install(
     let format = context.authority.record_format;
     // Whole generations are read here: they cost the observation bytes the
     // earlier phases left, and the phases after are left what these leave.
-    let remaining_bytes = match remaining_observation(&context, basis) {
-        Ok(remaining_bytes) => remaining_bytes,
-        Err(failure) => return Err(unobserved(context, basis, failure)),
-    };
+    let remaining_bytes = remaining_observation(&context, basis);
     let media = context.authority.media;
     let mut discovery = media
         .bounded_discovery(UNCOUNTED_READS, remaining_bytes)
-        .expect("admitted nonzero recovery limits create a bounded planning reader");
+        .expect("a reader that counts no reads opens on any byte bound");
     let built = (|| {
         let mut applying = Vec::new();
         for admission in current {
@@ -170,8 +167,9 @@ fn prove_published_rewrite(
             rewrite.source_generation(),
             rewrite.source_offset(),
             rewrite.source_length(),
-            u64::from(page_bytes),
+            ReadGrant::ceiling_only(),
         )
+        .observed()
         .map_err(discovery_failure)?
         .into_bytes()
         .ok_or(HistoricalFailure::Invalid)?;
@@ -194,8 +192,9 @@ fn prove_published_rewrite(
             rewrite.destination_generation(),
             rewrite.destination_offset(),
             rewrite.destination_length(),
-            u64::from(page_bytes),
+            ReadGrant::ceiling_only(),
         )
+        .observed()
         .map_err(discovery_failure)?
         .into_bytes()
         .ok_or(HistoricalFailure::Invalid)?;
@@ -280,8 +279,9 @@ fn project_rewrite(
             rewrite.source_generation(),
             rewrite.source_offset(),
             rewrite.source_length(),
-            page_bytes,
+            ReadGrant::ceiling_only(),
         )
+        .observed()
         .map_err(discovery_failure)?
         .into_bytes()
         .ok_or(HistoricalFailure::Invalid)?;

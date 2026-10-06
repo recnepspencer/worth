@@ -1,6 +1,7 @@
 //! Observes checkpoint-source custody independently of the newer selected
 //! post-WAL root. Only the joined controls claim leaves this boundary.
 
+use worth_store::physical_runtime::{ArtifactCeiling, PageAddress, ReadGrant, UnchargedRead};
 use worth_store_physical_integrity::{ReleaseCustodyHeadWalkBound, ReleaseCustodyHeadWalkDenial};
 use worth_store_recovery_physics::{
     PhysicsBound, SelectedCustodyDenial, SelectedHeadRosterAdmissionDenial,
@@ -33,13 +34,7 @@ pub(super) fn admit(
     mut context: PlanningContext,
     basis: &mut ResolvedPlanningBasis,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
-    let remaining_bytes = match remaining_observation(&context, basis) {
-        Ok(remaining_bytes) => remaining_bytes,
-        Err(failure) => {
-            let limit = failure.limit(&context.limits, &basis.observed_pages.manifest_budget);
-            return Err(block(context, basis, Denial::ObservationByteLimit, limit));
-        }
-    };
+    let remaining_bytes = remaining_observation(&context, basis);
     let mut resident = match resident_basis::seed(&context, basis) {
         Ok(resident) => resident,
         Err(limit) => {
@@ -57,7 +52,7 @@ pub(super) fn admit(
             crate::orchestration::reader_limit::UNCOUNTED_READS,
             remaining_bytes,
         )
-        .expect("positive V2 checkpoint-source bounds");
+        .expect("a reader that counts no reads opens on any byte bound");
     let mut scratch = 0;
     let claim = observe(
         &mut discovery,
@@ -129,7 +124,11 @@ fn observe(
         .charge_root()
         .map_err(|_| Denial::ManifestEntryLimit)?;
     let observed = discovery
-        .read_root_manifest(generation, u64::from(format.page_size().bytes()))
+        .read(
+            ArtifactCeiling::page(format, PageAddress::RootManifest { generation }),
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
         .map_err(|failure| Denial::SourceRootRead {
             generation,
             failure,
@@ -178,12 +177,21 @@ fn observe(
         format,
         maximum_heads,
         memory,
-        |reference, maximum| {
+        // The walker refuses a block longer than what it has left itself.
+        |reference, _walk_remaining| {
             resident
                 .transient(u64::from(format.page_size().bytes()))
                 .map_err(|_| ReadDenial::ResidentBoundExceeded { reference })?;
+            let address = PageAddress::ReleaseCustodyHeadBlock {
+                generation: reference.generation(),
+                block: reference.block(),
+            };
             let observed = discovery
-                .read_release_custody_head_block(reference.generation(), reference.block(), maximum)
+                .read(
+                    ArtifactCeiling::page(format, address),
+                    ReadGrant::ceiling_only(),
+                )
+                .observed()
                 .map_err(|failure| ReadDenial::Media { reference, failure })?;
             let bytes = observed
                 .bytes()

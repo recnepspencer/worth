@@ -2,11 +2,12 @@
 
 use sha2::{Digest, Sha256};
 use worth_store_physical_backend::{
-    AdmittedRecoveryFilesystemMedia, BoundedRecoveryFilesystemDiscovery,
+    AdmittedRecoveryFilesystemMedia, ArtifactCeiling, BoundedRecoveryFilesystemDiscovery,
+    FixedArtifact, PageAddress, ReadGrant, UnchargedRead,
 };
 use worth_store_physical_format::{
     checkpoint_stream_encoded_digest, maximum_current_root_entries, DurableFreeSpaceManifestHeader,
-    DurablePhysicalRootManifest, DurableRootSelector, RootSelectorRole, ROOT_SELECTOR_BYTES,
+    DurablePhysicalRootManifest, DurableRootSelector, RootSelectorRole,
 };
 use worth_store_recovery_physics::VerifiedSelectedNoReleaseCustody;
 
@@ -132,9 +133,12 @@ fn observe_selection(
     claim: &VerifiedSelectedNoReleaseCustody,
 ) -> Result<Selection, Denial> {
     let format = reopen.format();
-    let page_limit = u64::from(format.page_size().bytes());
     let selector_bytes = discovery
-        .read_current_selector(ROOT_SELECTOR_BYTES as u64)
+        .read(
+            ArtifactCeiling::fixed(FixedArtifact::CurrentRootSelector),
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
         .map_err(Denial::Discovery)?
         .into_bytes()
         .ok_or(Denial::MissingSelector)?;
@@ -149,7 +153,16 @@ fn observe_selection(
         return Err(Denial::RootBinding);
     }
     let root_bytes = discovery
-        .read_root_manifest(selector.root_generation(), page_limit)
+        .read(
+            ArtifactCeiling::page(
+                format,
+                PageAddress::RootManifest {
+                    generation: selector.root_generation(),
+                },
+            ),
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
         .map_err(Denial::Discovery)?
         .into_bytes()
         .ok_or(Denial::MissingRoot)?;
@@ -167,7 +180,16 @@ fn observe_selection(
         return Err(Denial::RootBinding);
     }
     let free_bytes = discovery
-        .read_free_space_manifest(root.generation(), page_limit)
+        .read(
+            ArtifactCeiling::page(
+                format,
+                PageAddress::FreeSpaceManifest {
+                    generation: root.generation(),
+                },
+            ),
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
         .map_err(Denial::Discovery)?
         .into_bytes()
         .ok_or(Denial::MissingFrame)?;
@@ -193,7 +215,16 @@ fn observe_selection(
     }
     let source = claim.checkpoint().source().root();
     let source_root_bytes = discovery
-        .read_root_manifest(source.generation(), page_limit)
+        .read(
+            ArtifactCeiling::page(
+                format,
+                PageAddress::RootManifest {
+                    generation: source.generation(),
+                },
+            ),
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
         .map_err(Denial::Discovery)?
         .into_bytes()
         .ok_or(Denial::MissingRoot)?;

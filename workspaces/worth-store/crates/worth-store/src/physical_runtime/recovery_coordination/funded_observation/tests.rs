@@ -30,7 +30,13 @@ fn actual_read_grants_outlive_the_exclusive_window_and_release_with_bytes() {
     window.reserve_total(7).unwrap();
     let checkpoint = window.read_checkpoint(&mut discovery, 4096).unwrap();
     let root = window
-        .read_checkpoint_source_root(&mut discovery, 7, 4096)
+        .read_checkpoint_source_root(
+            &mut discovery,
+            PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
+            7,
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
         .unwrap();
     assert_eq!(checkpoint.observed().bytes(), Some(&[37; 64][..]));
     assert_eq!(root.observed().bytes(), Some(&[19; 48][..]));

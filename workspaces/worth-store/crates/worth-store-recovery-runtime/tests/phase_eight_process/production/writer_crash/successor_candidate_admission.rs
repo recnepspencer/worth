@@ -1,4 +1,6 @@
-use worth_store::physical_runtime::{FilesystemObservationBound, RecoveryDiscoveryFailure};
+use worth_store::physical_runtime::{
+    ArtifactDamage, FilesystemObservationBound, RecoveryDiscoveryArtifact, RecoveryDiscoveryFailure,
+};
 use worth_store_physical_format::RecordArtifactFile;
 use worth_store_recovery_runtime::{
     PhysicalRecoveryLimitDimension, PhysicalRecoveryOutcome, PhysicalRecoveryPlanningDenial,
@@ -139,9 +141,9 @@ fn assert_oversized_candidate_is_damage_before_its_read(world: &ProcessWorld, ge
         PhysicalRecoverySuccessorCandidateDenial::Discovery {
             artifact,
             generation: denial_generation,
-            failure: RecoveryDiscoveryFailure::Limit(past),
+            failure: RecoveryDiscoveryFailure::Damage(damage),
         },
-    )) = evidence.planning_denial
+    )) = &evidence.planning_denial
     else {
         panic!(
             "an oversized candidate root is damage: {:?}",
@@ -149,18 +151,18 @@ fn assert_oversized_candidate_is_damage_before_its_read(world: &ProcessWorld, ge
         )
     };
     assert_eq!(
-        (artifact, denial_generation),
+        (*artifact, *denial_generation),
         (RecordArtifactFile::RootManifest { generation }, generation)
     );
     // The length is the file's and the ceiling the root's own, under every
     // budget of this recovery.
     assert_eq!(
-        (past.dimension(), past.observed(), past.admitted()),
-        (
-            FilesystemObservationBound::RequestedBytes,
-            RESIDENT_LIMIT,
-            page
-        )
+        damage,
+        &ArtifactDamage::PastCeiling {
+            artifact: RecoveryDiscoveryArtifact::Record(*artifact),
+            length: RESIDENT_LIMIT,
+            ceiling: page,
+        }
     );
     assert_eq!(blocked.cause().limit(), None, "damage names no limit");
     let counters = evidence.planning_counters.unwrap();

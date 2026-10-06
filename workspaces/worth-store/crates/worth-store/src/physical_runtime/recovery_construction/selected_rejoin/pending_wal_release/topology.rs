@@ -1,7 +1,7 @@
 //! Streaming, integrity-validated free and segment membership rewalk. Route
 //! leaves are streamed by `tier::routes`; no whole inventory map is retained.
 
-use worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery;
+use worth_store_physical_backend::{BoundedRecoveryFilesystemDiscovery, PageAddress};
 use worth_store_physical_format::{
     DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest,
     FreeSpaceMembershipBlockScopeIdentity, PhysicalInventoryTranscriptBuilderV1,
@@ -191,12 +191,15 @@ fn observe_segments(
             return Err(Denial::BoundExceeded);
         }
         storage.grow_vec_geometrically(slices, 1)?;
+        let address = PageAddress::SegmentMembershipBlock {
+            generation: reference.generation(),
+            block: reference.block(),
+        };
         let artifact = RecordArtifactFile::SegmentMembershipBlock {
             generation: reference.generation(),
             block: reference.block(),
         };
-        let frame =
-            storage.read_page(discovery, artifact, u64::from(format.page_size().bytes()))?;
+        let frame = storage.read_page(discovery, format, address)?;
         let bytes = frame.bytes().ok_or(Denial::MissingFrame)?;
         let identity = SegmentMembershipBlockScopeIdentity::new(tree, reference);
         let range =
@@ -277,12 +280,15 @@ fn observe_free(
             return Err(Denial::BoundExceeded);
         }
         storage.grow_vec_geometrically(slices, 1)?;
+        let address = PageAddress::FreeSpaceMembershipBlock {
+            generation: reference.generation(),
+            block: reference.block(),
+        };
         let artifact = RecordArtifactFile::FreeSpaceMembershipBlock {
             generation: reference.generation(),
             block: reference.block(),
         };
-        let frame =
-            storage.read_page(discovery, artifact, u64::from(format.page_size().bytes()))?;
+        let frame = storage.read_page(discovery, format, address)?;
         let bytes = frame.bytes().ok_or(Denial::MissingFrame)?;
         let identity = FreeSpaceMembershipBlockScopeIdentity::new(tree, reference);
         let range =

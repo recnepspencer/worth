@@ -12,7 +12,7 @@ mod resident_memory;
 mod resolved_basis;
 mod selected_source_inventory;
 #[cfg(test)]
-mod selected_world_fixture;
+pub(super) mod selected_world_fixture;
 mod successor_candidate_observation;
 
 use crate::entry::PhysicalRecoveryOutcome;

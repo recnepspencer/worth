@@ -7,38 +7,33 @@ use super::*;
 /// The failure a read or listing refused for, when it is the tree's.
 fn tree_failure(failure: &RecoveryDiscoveryFailure) -> Option<ArtifactTreeFailureKind> {
     match failure {
-        RecoveryDiscoveryFailure::Media { failure, .. } => Some(failure.kind()),
+        RecoveryDiscoveryFailure::Damage(ArtifactDamage::Media { failure, .. }) => {
+            Some(failure.kind())
+        }
         _ => None,
     }
 }
 
-/// A directory where a root artifact belongs: neither read of it is the
-/// requested-bytes limit its ceiling would name for an artifact one byte past.
+/// A directory where a root artifact belongs: neither read of it is a limit,
+/// however much its grant and the observation hold.
 #[test]
-fn a_whole_read_of_damaged_media_is_the_trees_failure_under_any_ceiling() {
+fn a_whole_read_of_damaged_media_is_the_trees_failure_under_any_grant() {
     let address = RecordArtifactFile::RootManifest { generation: 6 };
-    // The ceiling is all the reader holds, and less than it holds.
-    for (ceiling, reader) in [(6, 6), (6, 32)] {
+    for (granted, reader) in [(6, 6), (6, 32), (32, 6)] {
         let (_parent, _observer, mut discovery) = discovery(
             |root| std::fs::create_dir_all(record_path(root, address)).unwrap(),
             4,
             reader,
         );
-        let managed = discovery.read_root_manifest(6, ceiling).unwrap_err();
-        let kind = tree_failure(&managed);
+        let managed = stopped(&discovery.read(root_ceiling(6), grant(granted)));
         assert!(
-            kind.is_some_and(|kind| kind != ArtifactTreeFailureKind::Absent),
-            "addressed read under ceiling {ceiling} with {reader} bytes: {managed:?}",
+            matches!(managed, Some(Stop::Media(kind)) if kind != ArtifactTreeFailureKind::Absent),
+            "addressed read under grant {granted} with {reader} bytes: {managed:?}",
         );
-        let allocated = discovery.read_record_artifact_with_allocator(address, ceiling, |_| {
+        let allocated = discovery.read_with_allocator(root_ceiling(6), grant(granted), |_| {
             Ok::<_, DeniedAllocation>(Vec::new())
         });
-        match &allocated {
-            Err(RecoveryDiscoveryAllocationFailure::Discovery(failure)) => {
-                assert_eq!(tree_failure(failure), kind, "{allocated:?}");
-            }
-            _ => panic!("allocated read of damaged media: {allocated:?}"),
-        }
+        assert_eq!(stopped(&allocated), managed, "{allocated:?}");
         assert_eq!(discovery.counters().bytes_read, 0);
     }
 }
@@ -56,10 +51,10 @@ fn a_wal_directory_that_is_not_one_is_the_trees_failure() {
     assert!(
         matches!(
             &managed,
-            RecoveryDiscoveryFailure::Media {
+            RecoveryDiscoveryFailure::Damage(ArtifactDamage::Media {
                 artifact: RecoveryDiscoveryArtifact::WalDirectory,
                 ..
-            }
+            })
         ),
         "{managed:?}",
     );

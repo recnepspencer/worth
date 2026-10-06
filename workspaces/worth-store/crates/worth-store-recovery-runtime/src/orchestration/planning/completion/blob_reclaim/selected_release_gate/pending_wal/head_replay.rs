@@ -1,6 +1,8 @@
 //! Admit the exact C.9 effect against actual selected head-path media.
 
-use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
+use worth_store::physical_runtime::{
+    ArtifactCeiling, BoundedRecoveryFilesystemDiscovery, PageAddress, ReadGrant, UnchargedRead,
+};
 use worth_store_recovery_physics::{
     HeadReplayBound, ImmutablePhysicalRedoPlan, PhysicalRedoProjection, PhysicalSourceSelection,
     SelectedReleaseHeadReplayDenial, VerifiedSelectedReleaseHeadReplayV14,
@@ -52,9 +54,18 @@ pub(super) fn admit(
         selected,
         staging.admitted(),
         resident.remaining(),
-        |reference, maximum| {
+        // Each block is one page; physics passes a page as its maximum.
+        |reference, _page| {
+            let address = PageAddress::ReleaseCustodyHeadBlock {
+                generation: reference.generation(),
+                block: reference.block(),
+            };
             discovery
-                .read_release_custody_head_block(reference.generation(), reference.block(), maximum)
+                .read(
+                    ArtifactCeiling::page(format, address),
+                    ReadGrant::ceiling_only(),
+                )
+                .observed()
                 .map_err(|failure| unread = Some(discovery_failure(failure)))?
                 .bytes()
                 .map(<[u8]>::to_vec)

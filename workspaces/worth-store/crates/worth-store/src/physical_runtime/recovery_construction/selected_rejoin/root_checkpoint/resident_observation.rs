@@ -1,9 +1,10 @@
 //! Resident-admitted reads for the independent V2 root/checkpoint observation.
 
-use worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery;
-use worth_store_physical_format::{
-    DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration, RecordArtifactFile,
+use worth_store_physical_backend::{
+    ArtifactCeiling, BoundedRecoveryFilesystemDiscovery, FixedArtifact, PageAddress, ReadGrant,
+    UnchargedRead,
 };
+use worth_store_physical_format::{DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration};
 
 use super::{
     certificate_stream, observe_parts, Denial, ObservedCheckpointSourceRoot, ObservedRootCheckpoint,
@@ -41,39 +42,34 @@ impl<'a, 'b> RootCheckpointReader<'a, 'b> {
         self.discovery.store_identity()
     }
 
-    pub(super) fn selector(&mut self, limit: u64) -> Result<Vec<u8>, Denial> {
-        match self.resident.as_deref_mut() {
-            Some(resident) => read_record(
-                self.discovery,
-                resident,
-                RecordArtifactFile::CurrentRootSelector,
-                limit,
-                Denial::MissingSelector,
-            ),
-            None => self
-                .discovery
-                .read_current_selector(limit)
-                .map_err(Denial::Discovery)?
-                .into_bytes()
-                .ok_or(Denial::MissingSelector),
-        }
+    pub(super) fn selector(&mut self) -> Result<Vec<u8>, Denial> {
+        self.read(
+            ArtifactCeiling::fixed(FixedArtifact::CurrentRootSelector),
+            Denial::MissingSelector,
+        )
     }
 
-    pub(super) fn root(&mut self, generation: u64, limit: u64) -> Result<Vec<u8>, Denial> {
+    pub(super) fn root(
+        &mut self,
+        format: PhysicalRecordFormatDeclaration,
+        generation: u64,
+    ) -> Result<Vec<u8>, Denial> {
+        self.read(
+            ArtifactCeiling::page(format, PageAddress::RootManifest { generation }),
+            Denial::MissingRoot,
+        )
+    }
+
+    fn read(&mut self, ceiling: ArtifactCeiling, missing: Denial) -> Result<Vec<u8>, Denial> {
         match self.resident.as_deref_mut() {
-            Some(resident) => read_record(
-                self.discovery,
-                resident,
-                RecordArtifactFile::RootManifest { generation },
-                limit,
-                Denial::MissingRoot,
-            ),
+            Some(resident) => read_record(self.discovery, resident, ceiling, missing),
             None => self
                 .discovery
-                .read_root_manifest(generation, limit)
+                .read(ceiling, ReadGrant::ceiling_only())
+                .observed()
                 .map_err(Denial::Discovery)?
                 .into_bytes()
-                .ok_or(Denial::MissingRoot),
+                .ok_or(missing),
         }
     }
 
@@ -155,16 +151,17 @@ impl<'a, 'b> RootCheckpointReader<'a, 'b> {
 fn read_record(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     resident: &mut StoreRejoinResidentLedger,
-    address: RecordArtifactFile,
-    limit: u64,
+    ceiling: ArtifactCeiling,
     missing: Denial,
 ) -> Result<Vec<u8>, Denial> {
     let mut charged = 0;
-    let result = discovery.read_record_artifact_with_allocator(address, limit, |length| {
-        let bytes = resident.reserve_bytes(length)?;
-        charged = resident.vector_bytes(&bytes)?;
-        Ok(bytes)
-    });
+    let result = discovery
+        .read_with_allocator(ceiling, ReadGrant::ceiling_only(), |length| {
+            let bytes = resident.reserve_bytes(length)?;
+            charged = resident.vector_bytes(&bytes)?;
+            Ok(bytes)
+        })
+        .observed();
     let observed = match result {
         Ok(observed) => observed,
         Err(error) => {

@@ -4,7 +4,7 @@
 use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
 use super::resident_basis;
 use crate::orchestration::planning::completion::historical_publication::{
-    remaining_observation, unobserved, HistoricalFailure,
+    remaining_observation, HistoricalFailure,
 };
 use crate::orchestration::reader_limit::UNCOUNTED_READS;
 use crate::progression::PlanningCustody;
@@ -46,15 +46,12 @@ pub(super) fn admit(
     let Some(member) = member_fate::witness(&context, basis, projection) else {
         return Err(context.redo_block(basis.planning_counters(), None));
     };
-    let remaining_bytes = match remaining_observation(&context, basis) {
-        Ok(remaining_bytes) => remaining_bytes,
-        Err(failure) => return Err(unobserved(context, basis, failure)),
-    };
+    let remaining_bytes = remaining_observation(&context, basis);
     let mut discovery = context
         .authority
         .media
         .bounded_discovery(UNCOUNTED_READS, remaining_bytes)
-        .expect("positive pending-WAL control inspection bounds");
+        .expect("a reader that counts no reads opens on any byte bound");
     let format = context.authority.record_format;
     let mut scratch = 0;
     let controls = selected_controls::observe(

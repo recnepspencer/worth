@@ -137,16 +137,13 @@ fn scan_source(
 ) -> Result<(PlanningContext, Vec<PersistedRecordIdentity>), crate::entry::PhysicalRecoveryOutcome>
 {
     let selected = context.selection.page_facts().placements();
-    let remaining_bytes = match remaining_observation(&context, basis) {
-        Ok(remaining_bytes) => remaining_bytes,
-        Err(failure) => return Err(unobserved(context, basis, failure)),
-    };
+    let remaining_bytes = remaining_observation(&context, basis);
     let format = context.authority.record_format;
     let mut discovery = context
         .authority
         .media
         .bounded_discovery(UNCOUNTED_READS, remaining_bytes)
-        .expect("nonzero selected reclaim scan limits");
+        .expect("a reader that counts no reads opens on any byte bound");
     let descriptor_candidate_count = match kind {
         SourceInspectionKind::DropDescriptor { .. } => manifest.dropped().len(),
         SourceInspectionKind::ManifestResidue { .. } => 0,

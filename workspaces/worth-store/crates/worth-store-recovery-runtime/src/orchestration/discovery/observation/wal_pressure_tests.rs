@@ -5,6 +5,7 @@ use crate::entry::{
     PhysicalRecoveryLimitDeclaration, PhysicalRecoveryOpenRequest, PhysicalRecoveryOutcome,
     PhysicalRecoveryPlatformAuthority, PhysicalRecoveryStaticConfiguration,
 };
+use crate::orchestration::recovery_budget::RecoveryReadBudget;
 use crate::orchestration::RecoveryCoordination;
 use sha2::{Digest, Sha256};
 use std::{
@@ -96,7 +97,10 @@ fn run() {
     let mut discovery = media.bounded_discovery(8192, 64 << 20).unwrap();
     let mut counters = PhysicalRecoveryDiscoveryCounters::default();
     let mut trace = crate::integrity_ingress::RecoveryIntegrityIngressTrace::new();
-    let mut remaining_manifest = limits.declaration().manifest_bytes;
+    let mut remaining_manifest = RecoveryReadBudget::declared(
+        &limits.declaration(),
+        PhysicalRecoveryLimitDimension::ManifestBytes,
+    );
     // This is the real observation sub-boundary, not a substitute for root
     // selection or plan authority. The final retry below uses the full entry.
     let checkpoint = {

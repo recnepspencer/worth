@@ -3,8 +3,7 @@
 use worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery;
 use worth_store_physical_format::{
     decode_extent_chunk, DurableExtentManifest, DurableExtentRecordPlacement,
-    ExtentArenaFrameLayout, ExtentChunkCoordinate, PhysicalRecordFormatDeclaration,
-    RecordArtifactFile, DURABLE_EXTENT_FRAME_HEADER_BYTES, EXTENT_CHUNK_METADATA_BYTES,
+    ExtentArenaFrameLayout, ExtentChunkFrame, PhysicalRecordFormatDeclaration, RecordArtifactFile,
 };
 use worth_store_physical_integrity::{
     validate_extent_chunk_membership, validate_extent_manifest, ExtentChunkIntegrityValidation,
@@ -60,8 +59,7 @@ fn read_extent_inner<S: ExtentReadStorage>(
     slices: &mut Vec<SelectedArtifactSlice>,
     storage: &mut S,
 ) -> Result<(Vec<u8>, IntegrityValidatedSelectedExtentPayload), Denial> {
-    let page_limit = u64::from(format.page_size().bytes());
-    let observed = storage.read_manifest(discovery, placement, page_limit)?;
+    let observed = storage.read_manifest(discovery, placement)?;
     let manifest_bytes = observed.bytes().ok_or(Denial::MissingFrame)?;
     let arena_artifact = RecordArtifactFile::ExtentArena {
         arena: placement.arena_range().arena().get(),
@@ -111,25 +109,10 @@ fn read_extent_inner<S: ExtentReadStorage>(
         usize::try_from(placement.payload_bytes()).map_err(|_| Denial::BoundExceeded)?;
     let mut payload = storage.reserve_payload(payload_length)?;
     for ordinal in 1..=manifest.chunk_count() {
-        let coordinate = ExtentChunkCoordinate::new(
-            placement.record(),
-            manifest.extent_cell(),
-            manifest.logical_bytes(),
-            payload.len() as u64,
-            ordinal,
-        )
-        .ok_or(Denial::ControlFrame)?;
-        let length = (manifest.logical_bytes() as usize - payload.len())
-            .min(manifest.chunk_payload_capacity() as usize);
-        let frame_length = DURABLE_EXTENT_FRAME_HEADER_BYTES + EXTENT_CHUNK_METADATA_BYTES + length;
-        let relative = layout.chunk_offset(ordinal).ok_or(Denial::ControlFrame)?;
-        let frame = storage.read_chunk(
-            discovery,
-            placement,
-            relative,
-            u32::try_from(frame_length).map_err(|_| Denial::BoundExceeded)?,
-            page_limit,
-        )?;
+        let framed = ExtentChunkFrame::of(manifest, layout, ordinal).ok_or(Denial::ControlFrame)?;
+        let coordinate = framed.coordinate();
+        let relative = framed.offset();
+        let frame = storage.read_chunk(discovery, placement, relative, framed.length())?;
         let bytes = frame.bytes().ok_or(Denial::MissingFrame)?;
         let absolute = placement
             .arena_range()
@@ -145,7 +128,7 @@ fn read_extent_inner<S: ExtentReadStorage>(
             discovery.store_identity(),
             format,
             coordinate,
-            PhysicalByteRange::new(absolute, frame_length as u64)
+            PhysicalByteRange::new(absolute, u64::from(framed.length()))
                 .map_err(|_| Denial::ControlFrame)?,
             placement.arena_range(),
         );
@@ -158,7 +141,7 @@ fn read_extent_inner<S: ExtentReadStorage>(
         builder.append(&chunk, input).ok_or(Denial::ControlFrame)?;
         let (chunk_payload, chunk_format) =
             decode_extent_chunk(bytes, coordinate).map_err(|_| Denial::ControlFrame)?;
-        if chunk_format != format || chunk_payload.len() != length {
+        if chunk_format != format || chunk_payload.len() != framed.payload_bytes() as usize {
             return Err(Denial::ControlFrame);
         }
         payload.extend_from_slice(chunk_payload);

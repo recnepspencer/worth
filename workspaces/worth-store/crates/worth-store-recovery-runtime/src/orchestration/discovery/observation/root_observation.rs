@@ -12,7 +12,6 @@ use worth_store_recovery_physics::{
 };
 
 use crate::entry::{
-    PhysicalRecoveryBlockKind as PhysicalRecoveryBlock,
     PhysicalRecoveryLimitDimension as Dimension, PhysicalRecoveryLimits,
     PhysicalRecoveryRootProtocolArtifact, PhysicalRecoverySourceDenial,
 };
@@ -24,8 +23,8 @@ use crate::progression::PhysicalRecoveryDiscoveryCounters;
 
 use super::counters::record_root_counters;
 use crate::orchestration::discovery::DiscoveryFailure;
-use crate::orchestration::reader_limit::{OversizedArtifact, ReadCeiling};
-use crate::orchestration::recovery_budget::RecoveryAllowance;
+use crate::orchestration::reader_limit::OversizedArtifact;
+use crate::orchestration::recovery_budget::RecoveryReadBudget;
 
 mod funded_read;
 pub(super) use funded_read::window_admission_failure;
@@ -34,7 +33,7 @@ use funded_read::FundedRootReads;
 pub(super) struct RootObservations {
     pub(super) current: PhysicalRootSlotObservation,
     pub(super) previous: PhysicalRootSlotObservation,
-    pub(super) remaining_manifest_bytes: u64,
+    pub(super) manifest_bytes: RecoveryReadBudget,
     pub(super) denials: Vec<PhysicalRecoverySourceDenial>,
 }
 
@@ -43,11 +42,6 @@ struct RootObservationScope {
     role: RootSelectorRole,
     store: worth_store_physical_format::store_namespace::StableStoreIdentity,
     format: PhysicalRecordFormatDeclaration,
-}
-
-struct ManifestByteBudget<'a> {
-    remaining: &'a mut u64,
-    whole: RecoveryAllowance,
 }
 
 pub(super) fn observe_root_slots(
@@ -61,7 +55,7 @@ pub(super) fn observe_root_slots(
     let mut reads = FundedRootReads::new(allocation, declaration);
     let current_source = reads.read_selector(discovery, RootSelectorRole::Current)?;
     let store = discovery.store_identity();
-    let mut remaining_manifest_bytes = declaration.manifest_bytes;
+    let mut manifest_bytes = RecoveryReadBudget::declared(&declaration, Dimension::ManifestBytes);
     let (current, current_denial) = observe_root_slot(
         discovery,
         RootObservationScope {
@@ -70,10 +64,7 @@ pub(super) fn observe_root_slots(
             format: expected_format,
         },
         current_source,
-        ManifestByteBudget {
-            remaining: &mut remaining_manifest_bytes,
-            whole: RecoveryAllowance::declared(&declaration, Dimension::ManifestBytes),
-        },
+        &mut manifest_bytes,
         counters,
         &mut reads,
     )?;
@@ -91,10 +82,7 @@ pub(super) fn observe_root_slots(
             format: expected_format,
         },
         previous_source,
-        ManifestByteBudget {
-            remaining: &mut remaining_manifest_bytes,
-            whole: RecoveryAllowance::declared(&declaration, Dimension::ManifestBytes),
-        },
+        &mut manifest_bytes,
         counters,
         &mut reads,
     )
@@ -105,7 +93,7 @@ pub(super) fn observe_root_slots(
     Ok(RootObservations {
         current,
         previous,
-        remaining_manifest_bytes,
+        manifest_bytes,
         denials,
     })
 }
@@ -114,7 +102,7 @@ fn observe_root_slot(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     scope: RootObservationScope,
     selector_source: Result<ObservedRecoveryArtifact, OversizedArtifact>,
-    budget: ManifestByteBudget<'_>,
+    budget: &mut RecoveryReadBudget,
     counters: &mut PhysicalRecoveryDiscoveryCounters,
     reads: &mut FundedRootReads<'_, '_>,
 ) -> Result<
@@ -207,7 +195,7 @@ fn read_and_admit_addressed_root(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     scope: RootObservationScope,
     selector: DurableRootSelector,
-    budget: ManifestByteBudget<'_>,
+    budget: &mut RecoveryReadBudget,
     counters: &mut PhysicalRecoveryDiscoveryCounters,
     reads: &mut FundedRootReads<'_, '_>,
 ) -> Result<
@@ -231,34 +219,15 @@ fn read_and_admit_addressed_root(
             Some(root_protocol_denial(root_artifact, rejection)),
         )
     };
-    // A root manifest is one page of the format its selector declares.
-    let ceiling = ReadCeiling::within(
-        u64::from(selector.format().page_size().bytes()),
-        budget.whole.admitted(),
-        *budget.remaining,
-    );
-    let root_source = match reads.read_root(discovery, scope.role, generation, ceiling)? {
-        Ok(root_source) => root_source,
-        Err(OversizedArtifact) => {
-            return Ok(Err(rejected(
-                RecoveryIntegrityIngressRejection::NonCanonicalEncoding,
-            )));
-        }
-    };
-    let observed_bytes = root_source.bytes().map_or(0, |bytes| bytes.len() as u64);
-    // The read was asked for no more than was left. T2: a read grant charges
-    // what it returns.
-    *budget.remaining = budget
-        .remaining
-        .checked_sub(observed_bytes)
-        .ok_or_else(|| {
-            super::super::refused_beside(
-                budget.whole,
-                observed_bytes,
-                *budget.remaining,
-                PhysicalRecoveryBlock::MediaObservation,
-            )
-        })?;
+    let root_source =
+        match reads.read_root(discovery, scope.role, selector.format(), generation, budget)? {
+            Ok(root_source) => root_source,
+            Err(OversizedArtifact) => {
+                return Ok(Err(rejected(
+                    RecoveryIntegrityIngressRejection::NonCanonicalEncoding,
+                )));
+            }
+        };
     if root_source.bytes().is_some() {
         reads.reserve_canonical_scratch(root_artifact)?;
     }

@@ -10,7 +10,7 @@ use crate::physical_runtime::{PhysicalPublicationEffect, PhysicalWorkSettlementE
 use sha2::Digest;
 use worth_store_physical_format::{
     encode_data_frame_page_lsn, prepare_extent_chunk, DurableFrameKind, ExtentArenaFrameLayout,
-    ExtentChunkCoordinate, PhysicalPageLsn, RecordArtifactFile, RecordFrameCoordinate,
+    ExtentChunkFrame, PhysicalPageLsn, RecordArtifactFile, RecordFrameCoordinate,
 };
 
 impl RecordPublicationDirector {
@@ -22,6 +22,7 @@ impl RecordPublicationDirector {
         let format = self.format.declaration();
         let range = intent.destination().arena_range();
         let layout = ExtentArenaFrameLayout::new(format, intent.alignment()).ok_or_else(damaged)?;
+        let manifest = intent.destination_manifest(format).ok_or_else(damaged)?;
         if copy.pending.is_none() {
             let Some(payload) = copy
                 .cursor
@@ -38,16 +39,14 @@ impl RecordPublicationDirector {
                 copy.phase = CopyPhase::Manifest;
                 return Ok(());
             };
-            let chunk = ExtentChunkCoordinate::new(
-                intent.destination().record(),
-                intent.destination().extent_cell(),
-                intent.destination().payload_bytes(),
-                copy.completed,
-                copy.next_ordinal,
-            )
-            .ok_or_else(damaged)?;
-            let mut frame =
-                prepare_extent_chunk(format, chunk, payload.len()).map_err(|_| damaged())?;
+            let chunk = ExtentChunkFrame::of(manifest, layout, copy.next_ordinal)
+                .filter(|chunk| {
+                    chunk.coordinate().logical_offset() == copy.completed
+                        && chunk.payload_bytes() as usize == payload.len()
+                })
+                .ok_or_else(damaged)?;
+            let mut frame = prepare_extent_chunk(format, chunk.coordinate(), payload.len())
+                .map_err(|_| damaged())?;
             frame.payload_mut().copy_from_slice(payload);
             copy.digest.update(payload);
             copy.completed += payload.len() as u64;
@@ -58,15 +57,19 @@ impl RecordPublicationDirector {
                 PhysicalPageLsn::new(copy.durable.as_ref().ok_or_else(damaged)?.interval().2),
             )
             .map_err(|_| damaged())?;
-            let offset = range.offset()
-                + layout.manifest_stride()
-                + u64::from(copy.next_ordinal - 1) * layout.chunk_stride();
+            if bytes.len() != chunk.length() as usize {
+                return Err(damaged());
+            }
+            let offset = range
+                .offset()
+                .checked_add(chunk.offset())
+                .ok_or_else(damaged)?;
             let coordinate = RecordFrameCoordinate::new(
                 RecordArtifactFile::ExtentArena {
                     arena: range.arena().get(),
                 },
                 offset,
-                bytes.len() as u32,
+                chunk.length(),
             )
             .ok_or_else(damaged)?;
             copy.pending = Some((coordinate, bytes));

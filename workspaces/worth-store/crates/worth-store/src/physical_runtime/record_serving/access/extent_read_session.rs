@@ -1,8 +1,7 @@
 use std::ops::Range;
 use worth_store_physical_format::{
-    DurableExtentManifest, ExtentChunkCoordinate, PhysicalRecordFormatDeclaration,
-    RecordArtifactFile, RecordFrameCoordinate, DURABLE_EXTENT_FRAME_HEADER_BYTES,
-    EXTENT_CHUNK_METADATA_BYTES,
+    DurableExtentManifest, ExtentArenaFrameLayout, ExtentChunkFrame,
+    PhysicalRecordFormatDeclaration, RecordArtifactFile, RecordFrameCoordinate,
 };
 use worth_store_physical_integrity::IntegrityValidatedExtentMembership;
 
@@ -50,8 +49,7 @@ impl ExtentReadFailure {
 #[derive(Clone, Copy)]
 struct ExtentChunkReadPlan {
     completed: u64,
-    payload_bytes: usize,
-    frame_bytes: usize,
+    chunk: ExtentChunkFrame,
 }
 
 pub(in crate::physical_runtime::record_serving) struct ExtentReadState {
@@ -62,9 +60,9 @@ pub(in crate::physical_runtime::record_serving) struct ExtentReadState {
     integrity_membership: IntegrityValidatedExtentMembership,
     store: worth_store_physical_format::store_namespace::StableStoreIdentity,
     format: PhysicalRecordFormatDeclaration,
+    layout: ExtentArenaFrameLayout,
     next_ordinal: u32,
     logical_offset: u64,
-    artifact_offset: u64,
     frame: Option<super::super::residency::frame_loading::LoadedPhysicalFrame>,
     payload: Range<usize>,
     payload_offset: usize,
@@ -88,15 +86,10 @@ impl ExtentReadState {
             integrity_membership,
             store,
             format,
+            layout: ExtentArenaFrameLayout::new(format, manifest.alignment())
+                .expect("admitted extent arena geometry"),
             next_ordinal: 1,
             logical_offset: 0,
-            artifact_offset: arena_range.offset()
-                + worth_store_physical_format::ExtentArenaFrameLayout::new(
-                    format,
-                    manifest.alignment(),
-                )
-                .expect("admitted extent arena geometry")
-                .manifest_stride(),
             frame: None,
             payload: 0..0,
             payload_offset: 0,
@@ -156,7 +149,7 @@ impl ExtentReadState {
         observation: &mut RecordReadObservation,
         identity: RecordReadIdentity,
     ) -> Result<(), ExtentReadFailure> {
-        let plan = self.plan_chunk_read();
+        let plan = self.plan_chunk_read().map_err(ExtentReadFailure::Global)?;
         self.frame = None;
         let frame = self
             .load_planned_chunk(allocation, plan, observation, identity)
@@ -166,17 +159,18 @@ impl ExtentReadState {
             .map_err(ExtentReadFailure::Global)
     }
 
-    fn plan_chunk_read(&self) -> ExtentChunkReadPlan {
-        let payload_bytes = (self.manifest.logical_bytes() - self.logical_offset)
-            .min(u64::from(self.manifest.chunk_payload_capacity()))
-            as usize;
-        let frame_bytes =
-            DURABLE_EXTENT_FRAME_HEADER_BYTES + EXTENT_CHUNK_METADATA_BYTES + payload_bytes;
-        ExtentChunkReadPlan {
-            completed: self.delivered_bytes(),
-            payload_bytes,
-            frame_bytes,
-        }
+    /// The next chunk's frame, as the manifest and its layout place it.
+    fn plan_chunk_read(&self) -> Result<ExtentChunkReadPlan, RecordStreamFailure> {
+        let completed = self.delivered_bytes();
+        let chunk = ExtentChunkFrame::of(self.manifest, self.layout, self.next_ordinal)
+            .filter(|chunk| chunk.coordinate().logical_offset() == self.logical_offset)
+            .ok_or_else(|| {
+                RecordStreamFailure::during_read(
+                    RecordStreamFailureKind::ArtifactDamaged,
+                    completed,
+                )
+            })?;
+        Ok(ExtentChunkReadPlan { completed, chunk })
     }
 
     fn load_planned_chunk(
@@ -186,24 +180,27 @@ impl ExtentReadState {
         observation: &mut RecordReadObservation,
         identity: RecordReadIdentity,
     ) -> Result<LoadedPhysicalFrame, RecordStreamFailure> {
-        let coordinate = RecordFrameCoordinate::new(
-            self.artifact,
-            self.artifact_offset,
-            plan.frame_bytes as u32,
-        )
-        .ok_or_else(|| {
+        let damaged = || {
             RecordStreamFailure::during_read(
                 RecordStreamFailureKind::ArtifactDamaged,
                 plan.completed,
             )
-        })?;
+        };
+        let artifact_offset = self
+            .arena_range
+            .offset()
+            .checked_add(plan.chunk.offset())
+            .ok_or_else(damaged)?;
+        let coordinate =
+            RecordFrameCoordinate::new(self.artifact, artifact_offset, plan.chunk.length())
+                .ok_or_else(damaged)?;
         let frame = self
             .artifacts
             .load_exact(
                 allocation,
                 self.artifact,
-                self.artifact_offset,
-                plan.frame_bytes as u32,
+                artifact_offset,
+                plan.chunk.length(),
                 super::super::residency::frame_loading::ExactFrameSourceExtent::ArenaRange(
                     self.arena_range,
                 ),
@@ -223,22 +220,7 @@ impl ExtentReadState {
         plan: ExtentChunkReadPlan,
         observation: &mut RecordReadObservation,
     ) -> Result<(LoadedPhysicalFrame, Range<usize>), ExtentReadFailure> {
-        let coordinate = match ExtentChunkCoordinate::new(
-            self.manifest.record(),
-            self.manifest.extent_cell(),
-            self.manifest.logical_bytes(),
-            self.logical_offset,
-            self.next_ordinal,
-        ) {
-            Some(coordinate) => coordinate,
-            None => {
-                frame.reject_projection_failure();
-                return Err(ExtentReadFailure::Global(RecordStreamFailure::during_read(
-                    RecordStreamFailureKind::ArtifactDamaged,
-                    plan.completed,
-                )));
-            }
-        };
+        let coordinate = plan.chunk.coordinate();
         let context = self.artifacts.resident_admission_context().ok_or_else(|| {
             ExtentReadFailure::Global(RecordStreamFailure::during_read(
                 RecordStreamFailureKind::ArtifactDamaged,
@@ -282,7 +264,7 @@ impl ExtentReadState {
             }
         };
         observation.check_generation(true);
-        if admitted.payload.len() != plan.payload_bytes {
+        if admitted.payload.len() != plan.chunk.payload_bytes() as usize {
             frame.reject_projection_failure();
             return Err(ExtentReadFailure::Global(RecordStreamFailure::during_read(
                 RecordStreamFailureKind::FormatMismatch,
@@ -298,7 +280,7 @@ impl ExtentReadState {
         payload: Range<usize>,
         plan: ExtentChunkReadPlan,
     ) -> Result<(), RecordStreamFailure> {
-        let next_logical_offset = self.logical_offset + plan.payload_bytes as u64;
+        let next_logical_offset = self.logical_offset + u64::from(plan.chunk.payload_bytes());
         let next_ordinal = if next_logical_offset < self.manifest.logical_bytes() {
             let Some(next_ordinal) = self.next_ordinal.checked_add(1) else {
                 frame.reject_projection_failure();
@@ -314,12 +296,6 @@ impl ExtentReadState {
         self.payload = payload;
         self.payload_offset = 0;
         self.frame = Some(frame);
-        self.artifact_offset += worth_store_physical_format::ExtentArenaFrameLayout::new(
-            self.format,
-            self.manifest.alignment(),
-        )
-        .expect("admitted extent arena geometry")
-        .chunk_stride();
         self.logical_offset = next_logical_offset;
         self.next_ordinal = next_ordinal;
         Ok(())

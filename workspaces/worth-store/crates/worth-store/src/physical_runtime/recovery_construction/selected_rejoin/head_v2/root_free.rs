@@ -1,6 +1,8 @@
 //! V2 root/free observations and their selected-media fingerprint slices.
 
-use worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery;
+use worth_store_physical_backend::{
+    ArtifactCeiling, BoundedRecoveryFilesystemDiscovery, PageAddress, ReadGrant, UnchargedRead,
+};
 use worth_store_physical_format::{
     DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration,
     RecordArtifactFile,
@@ -20,13 +22,17 @@ pub(super) fn read_header(
     resident: &mut StoreRejoinResidentLedger,
 ) -> Result<(DurableFreeSpaceManifestHeader, Vec<u8>), Denial> {
     let bytes = discovery
-        .read_record_artifact_with_allocator(
-            RecordArtifactFile::FreeSpaceManifest {
-                generation: root.generation(),
-            },
-            u64::from(format.page_size().bytes()),
+        .read_with_allocator(
+            ArtifactCeiling::page(
+                format,
+                PageAddress::FreeSpaceManifest {
+                    generation: root.generation(),
+                },
+            ),
+            ReadGrant::ceiling_only(),
             |count| resident.reserve_bytes(count),
         )
+        .observed()
         .map_err(discovery_allocation_denial)?
         .into_bytes()
         .ok_or(Denial::MissingFrame)?;

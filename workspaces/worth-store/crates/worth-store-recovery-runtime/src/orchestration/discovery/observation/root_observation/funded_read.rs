@@ -2,23 +2,24 @@
 //! Projections and diagnostic vectors leave this temporary-buffer boundary unfunded.
 
 use worth_store::physical_runtime::{
-    BoundedRecoveryFilesystemDiscovery, ObservedRecoveryArtifact, PhysicalRecoveryReadAllocation,
-    PhysicalRecoveryRejoinResidentAdmissionDenial, PhysicalRecoveryRejoinResidentDenial,
-    RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryFailure,
+    ArtifactCeiling, BoundedRecoveryFilesystemDiscovery, FixedArtifact, GrantedRead,
+    GrantedReadStop, ObservedRecoveryArtifact, PageAddress, PhysicalRecoveryReadAllocation,
+    PhysicalRecoveryRejoinResidentAdmissionDenial, PhysicalRecoveryRejoinResidentDenial, ReadGrant,
+    RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryFailure, UnchargedRead,
 };
 use worth_store_physical_format::{
-    DurablePhysicalRootManifest, RecordArtifactFile, RootSelectorRole, ROOT_SELECTOR_BYTES,
+    DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration, RootSelectorRole,
 };
 
 use crate::entry::{
-    PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDimension as Dimension,
-    PhysicalRecoveryRootProtocolArtifact as Artifact, PhysicalRecoverySourceDenial,
-    PhysicalRecoverySourceReadAllocationBoundary as Boundary,
+    PhysicalRecoveryLimitDeclaration, PhysicalRecoveryRootProtocolArtifact as Artifact,
+    PhysicalRecoverySourceDenial, PhysicalRecoverySourceReadAllocationBoundary as Boundary,
     PhysicalRecoverySourceReadAllocationDenial as Cause,
 };
 use crate::orchestration::discovery::source_memory::source_allocation;
-use crate::orchestration::discovery::{refused_read, DiscoveryFailure};
-use crate::orchestration::reader_limit::{OversizedArtifact, ReadCeiling};
+use crate::orchestration::discovery::{past_grant, unread, DiscoveryFailure};
+use crate::orchestration::reader_limit::OversizedArtifact;
+use crate::orchestration::recovery_budget::RecoveryReadBudget;
 
 /// The inner `Err` is the artifact found larger than its own ceiling.
 pub(super) type RootRead =
@@ -44,50 +45,66 @@ impl<'window, 'owner> FundedRootReads<'window, 'owner> {
         }
     }
 
+    /// A selector is its fixed frame; no budget is spent on it beyond the
+    /// observation's own bytes.
     pub(super) fn read_selector(
         &mut self,
         discovery: &mut BoundedRecoveryFilesystemDiscovery,
         role: RootSelectorRole,
     ) -> RootRead {
-        let address = match role {
-            RootSelectorRole::Current => RecordArtifactFile::CurrentRootSelector,
-            RootSelectorRole::Previous => RecordArtifactFile::PreviousRootSelector,
+        let fixed = match role {
+            RootSelectorRole::Current => FixedArtifact::CurrentRootSelector,
+            RootSelectorRole::Previous => FixedArtifact::PreviousRootSelector,
         };
         let artifact = super::selector_artifact(role);
-        let ceiling = ReadCeiling::of_artifact(ROOT_SELECTOR_BYTES as u64);
         let limits = self.limits;
-        match discovery.read_record_artifact_with_allocator(
-            address,
-            ceiling.requested(),
-            |length| self.allocate(length),
-        ) {
+        match discovery
+            .read_with_allocator(
+                ArtifactCeiling::fixed(fixed),
+                ReadGrant::ceiling_only(),
+                |length| self.allocate(length),
+            )
+            .observed()
+        {
             Ok(observed) => Ok(Ok(observed)),
             Err(failure) => refused(&limits, artifact, failure, |failure| {
-                refused_read(failure, ceiling, &limits, Dimension::ObservationBytes)
+                unread(failure, &limits)
             })
             .map(Err),
         }
     }
 
+    /// A root manifest is one page of the format its selector declares, and
+    /// spends recovery's manifest bytes.
     pub(super) fn read_root(
         &mut self,
         discovery: &mut BoundedRecoveryFilesystemDiscovery,
         role: RootSelectorRole,
+        format: PhysicalRecordFormatDeclaration,
         generation: u64,
-        ceiling: ReadCeiling,
+        budget: &mut RecoveryReadBudget,
     ) -> RootRead {
         let artifact = super::root_artifact(role, generation);
         let limits = self.limits;
-        match discovery.read_record_artifact_with_allocator(
-            RecordArtifactFile::RootManifest { generation },
-            ceiling.requested(),
-            |length| self.allocate(length),
-        ) {
-            Ok(observed) => Ok(Ok(observed)),
-            Err(failure) => refused(&limits, artifact, failure, |failure| {
-                refused_read(failure, ceiling, &limits, Dimension::ManifestBytes)
-            })
-            .map(Err),
+        match discovery
+            .read_with_allocator(
+                ArtifactCeiling::page(format, PageAddress::RootManifest { generation }),
+                budget.grant(),
+                |length| self.allocate(length),
+            )
+            .granted()
+        {
+            Ok(observed) => {
+                budget.charge(&observed);
+                Ok(Ok(observed))
+            }
+            Err(GrantedReadStop::PastGrant(overrun)) => Err(past_grant(budget, overrun)),
+            Err(GrantedReadStop::Unread(failure)) => {
+                refused(&limits, artifact, failure, |failure| {
+                    unread(failure, &limits)
+                })
+                .map(Err)
+            }
         }
     }
 

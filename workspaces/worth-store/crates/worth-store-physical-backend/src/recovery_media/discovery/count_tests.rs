@@ -23,7 +23,7 @@ fn observation(entries: u64, reads: u64, bytes: u64, spent: u64) -> FilesystemOb
 }
 
 fn overflow(count: RecoveryDiscoveryCount) -> Result<(), RecoveryDiscoveryFailure> {
-    Err(RecoveryDiscoveryFailure::CountOverflow(count))
+    Err(RecoveryDiscoveryFailure::overflow(count))
 }
 
 fn limit(

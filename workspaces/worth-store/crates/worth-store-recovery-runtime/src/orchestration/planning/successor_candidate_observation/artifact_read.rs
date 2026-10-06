@@ -1,10 +1,12 @@
-use worth_store::physical_runtime::{BoundedRecoveryFilesystemDiscovery, ObservedRecoveryArtifact};
+use worth_store::physical_runtime::{
+    ArtifactCeiling, BoundedRecoveryFilesystemDiscovery, GrantedRead, GrantedReadStop,
+    ObservedRecoveryArtifact, PageAddress,
+};
 use worth_store_physical_format::{PhysicalRecordFormatDeclaration, RecordArtifactFile};
 
 use super::artifact_generation;
 use super::resident::memory_failure;
 use crate::entry::PhysicalRecoverySuccessorCandidateDenial;
-use crate::orchestration::reader_limit::{PastCeiling, ReadCeiling};
 use crate::progression::{
     PlanningMemoryDenial, PlanningResidentAllowance, RecoveryObservedCandidateArtifact,
 };
@@ -25,27 +27,19 @@ pub(super) fn read(
     format: PhysicalRecordFormatDeclaration,
     allowance: &mut PlanningResidentAllowance,
 ) -> Result<ObservedRecoveryArtifact, PhysicalRecoverySuccessorCandidateDenial> {
-    let ceiling = ReadCeiling::within(
-        u64::from(format.page_size().bytes()),
-        allowance.used().saturating_add(allowance.remaining()),
-        allowance.remaining(),
-    );
-    let requested = ceiling.requested();
-    let result = match artifact {
-        RecordArtifactFile::RootManifest { generation } => {
-            discovery.read_root_manifest(generation, requested)
-        }
+    let address = match artifact {
+        RecordArtifactFile::RootManifest { generation } => PageAddress::RootManifest { generation },
         RecordArtifactFile::RootRoutingBlock { generation, block } => {
-            discovery.read_root_routing_block(generation, block, requested)
+            PageAddress::RootRoutingBlock { generation, block }
         }
         RecordArtifactFile::SegmentMembershipBlock { generation, block } => {
-            discovery.read_segment_membership_block(generation, block, requested)
+            PageAddress::SegmentMembershipBlock { generation, block }
         }
         RecordArtifactFile::FreeSpaceManifest { generation } => {
-            discovery.read_free_space_manifest(generation, requested)
+            PageAddress::FreeSpaceManifest { generation }
         }
         RecordArtifactFile::FreeSpaceMembershipBlock { generation, block } => {
-            discovery.read_free_space_membership_block(generation, block, requested)
+            PageAddress::FreeSpaceMembershipBlock { generation, block }
         }
         _ => {
             return Err(PhysicalRecoverySuccessorCandidateDenial::InvalidArtifact {
@@ -54,7 +48,13 @@ pub(super) fn read(
             });
         }
     };
-    match result {
+    let read = discovery
+        .read(
+            ArtifactCeiling::page(format, address),
+            allowance.grant_read(),
+        )
+        .granted();
+    match read {
         Ok(observed) => {
             let retained = observed.owned_heap_bytes().ok_or_else(|| {
                 memory_failure(
@@ -67,25 +67,18 @@ pub(super) fn read(
                 .map_err(|failure| memory_failure(artifact, failure))?;
             Ok(observed)
         }
-        Err(failure) => Err(match ceiling.passed(&failure) {
-            // The reader counted from the window's first byte.
-            Some(PastCeiling::Budget { observed, .. }) => {
-                allowance.refuse(observed);
-                memory_failure(
-                    artifact,
-                    PlanningMemoryDenial::RecoveryMemoryBytes { observed },
-                )
-            }
-            // Past its own ceiling the artifact is damage, as is every
-            // refusal that is not the reader's own limit.
-            Some(PastCeiling::Artifact) | None => {
-                PhysicalRecoverySuccessorCandidateDenial::Discovery {
-                    artifact,
-                    generation: artifact_generation(artifact),
-                    failure,
-                }
-            }
-        }),
+        Err(GrantedReadStop::PastGrant(overrun)) => {
+            Err(memory_failure(artifact, allowance.refuse_read(overrun)))
+        }
+        // Past its own ceiling the artifact is damage, as is every refusal
+        // that is not the window's own.
+        Err(GrantedReadStop::Unread(failure)) => {
+            Err(PhysicalRecoverySuccessorCandidateDenial::Discovery {
+                artifact,
+                generation: artifact_generation(artifact),
+                failure,
+            })
+        }
     }
 }
 

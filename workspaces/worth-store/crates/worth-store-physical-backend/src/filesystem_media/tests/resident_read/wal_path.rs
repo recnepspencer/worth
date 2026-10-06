@@ -201,7 +201,7 @@ fn unqualified_path_profile_denies_before_address_admission_or_payload() {
     assert!(matches!(
         discovery.read_wal_artifacts_with_storage(segments(4), 32, &mut storage),
         Err(RecoveryDiscoveryAllocationFailure::Discovery(
-            RecoveryDiscoveryFailure::InvalidAddress { .. }
+            RecoveryDiscoveryFailure::Damage(ArtifactDamage::InvalidAddress { .. })
         ))
     ));
     assert!(census.borrow().calls.is_empty());

@@ -1,6 +1,8 @@
 use std::collections::{BTreeSet, VecDeque};
 
-use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
+use worth_store::physical_runtime::{
+    ArtifactCeiling, BoundedRecoveryFilesystemDiscovery, GrantedRead, GrantedReadStop, PageAddress,
+};
 use worth_store_physical_format::{
     ManifestBlockReference, PhysicalRootRoutingBlock, PhysicalTreeIdentity,
 };
@@ -13,8 +15,8 @@ use crate::entry::{
     PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDimension,
 };
 use crate::orchestration::discovery::DiscoveryFailure;
-use crate::orchestration::reader_limit::{OversizedArtifact, ReadCeiling};
-use crate::orchestration::recovery_budget::RecoveryAllowance;
+use crate::orchestration::reader_limit::OversizedArtifact;
+use crate::orchestration::recovery_budget::{RecoveryAllowance, RecoveryReadBudget};
 
 pub(crate) enum ManifestFactsState {
     Unavailable,
@@ -33,7 +35,7 @@ pub(crate) struct ManifestFactsDiscovery {
 /// current and previous roots; `limits` holds the whole of each.
 pub(super) struct ManifestObservationBudget<'a> {
     pub limits: PhysicalRecoveryLimitDeclaration,
-    pub remaining_bytes: &'a mut u64,
+    pub bytes: &'a mut RecoveryReadBudget,
     pub remaining_entries: &'a mut u64,
     pub blocks_read: &'a mut u64,
 }
@@ -125,50 +127,32 @@ fn observe_manifest_block(
     >,
     DiscoveryFailure,
 > {
-    let page_bytes = u64::from(root.selector().format().page_size().bytes());
-    // A routing block is one page of its root's format.
-    let ceiling = ReadCeiling::within(
-        page_bytes,
-        budget.limits.manifest_bytes,
-        *budget.remaining_bytes,
+    // A routing block is one page of its root's format, and spends
+    // recovery's manifest bytes.
+    let ceiling = ArtifactCeiling::page(
+        root.selector().format(),
+        PageAddress::RootRoutingBlock {
+            generation: reference.generation(),
+            block: reference.block(),
+        },
     );
-    let artifact = match discovery.read_root_routing_block(
-        reference.generation(),
-        reference.block(),
-        ceiling.requested(),
-    ) {
+    let artifact = match discovery.read(ceiling, budget.bytes.grant()).granted() {
         Ok(artifact) => artifact,
-        Err(failure) => {
-            let OversizedArtifact = super::discovery::refused_read(
-                failure,
-                ceiling,
-                &budget.limits,
-                PhysicalRecoveryLimitDimension::ManifestBytes,
-            )?;
+        Err(GrantedReadStop::PastGrant(overrun)) => {
+            return Err(super::discovery::past_grant(budget.bytes, overrun));
+        }
+        Err(GrantedReadStop::Unread(failure)) => {
+            let OversizedArtifact = super::discovery::unread(failure, &budget.limits)?;
             return Ok(Err(PhysicalManifestObservationDenial::Integrity {
                 reference,
                 denial: crate::entry::PhysicalRecoveryRootProtocolDenial::NonCanonicalEncoding,
             }));
         }
     };
-    let observed_bytes = artifact.bytes().map_or(0, |bytes| bytes.len() as u64);
+    budget.bytes.charge(&artifact);
     if artifact.bytes().is_some() {
         *budget.blocks_read += 1;
     }
-    *budget.remaining_bytes = budget
-        .remaining_bytes
-        .checked_sub(observed_bytes)
-        .ok_or_else(|| {
-            super::discovery::refused_beside(
-                RecoveryAllowance::declared(
-                    &budget.limits,
-                    PhysicalRecoveryLimitDimension::ManifestBytes,
-                ),
-                observed_bytes,
-                *budget.remaining_bytes,
-                PhysicalRecoveryBlock::MediaObservation,
-            )
-        })?;
     match admit_manifest_block(
         &artifact,
         discovery.store_identity(),
@@ -284,3 +268,6 @@ impl ManifestFactsDiscovery {
         &self.integrity_trace
     }
 }
+
+#[cfg(test)]
+mod tests;

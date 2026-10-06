@@ -1,7 +1,7 @@
 //! Actual selected directory reads shared by pending and completed release joins.
 //! WAL metadata names the source; integrity admission supplies its exact bytes.
 
-use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
+use worth_store::physical_runtime::{BoundedRecoveryFilesystemDiscovery, ReadGrant, UnchargedRead};
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, PhysicalRecordFormatDeclaration, RecordArtifactFile,
     SelectedRecordContentClass, MAX_DERIVED_FAMILY_ROOTS,
@@ -80,8 +80,9 @@ pub(super) fn read(
                     selected.entry.data_generation(),
                     offset,
                     page_bytes,
-                    u64::from(page_bytes),
+                    ReadGrant::ceiling_only(),
                 )
+                .observed()
                 .map_err(Denial::ManifestRead)?;
             let scope = PhysicalArtifactScope::inline_page(
                 discovery.store_identity(),

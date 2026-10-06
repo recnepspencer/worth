@@ -71,8 +71,10 @@ fn classify_read_failure(
             }
         }
         // A count past every count is no limit: the media observation stops.
+        // T2b: a WAL file past its declared length is that file's damage.
         RecoveryWalReadFailureView::Discovery(
-            RecoveryWalDiscoveryFailureView::Media { .. }
+            RecoveryWalDiscoveryFailureView::PastCeiling { .. }
+            | RecoveryWalDiscoveryFailureView::Media { .. }
             | RecoveryWalDiscoveryFailureView::InvalidAddress { .. }
             | RecoveryWalDiscoveryFailureView::CountOverflow(_),
         ) => DiscoveryFailure::from(PhysicalRecoveryBlockKind::MediaObservation),

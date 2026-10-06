@@ -1,13 +1,15 @@
 //! Fresh current selector/checkpoint and ordinary selected root observations.
 
 use sha2::{Digest, Sha256};
-use worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery;
+use worth_store_physical_backend::{
+    ArtifactCeiling, BoundedRecoveryFilesystemDiscovery, FixedArtifact, PageAddress,
+};
 use worth_store_physical_format::{
     checkpoint_stream_encoded_digest, decode_checkpoint_certificate, maximum_current_root_entries,
     CheckpointCertificateKind, DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest,
-    DurableRootSelector, PhysicalCheckpointSource, RecordArtifactFile,
-    ReleaseCheckpointCertificateV1, RootSelectorRole, CHECKPOINT_STREAM_HEADER_RECORD_BYTES,
-    RELEASE_CHECKPOINT_NO_RELEASE_WIRE_BYTES, ROOT_SELECTOR_BYTES,
+    DurableRootSelector, PhysicalCheckpointSource, ReleaseCheckpointCertificateV1,
+    RootSelectorRole, CHECKPOINT_STREAM_HEADER_RECORD_BYTES,
+    RELEASE_CHECKPOINT_NO_RELEASE_WIRE_BYTES,
 };
 use worth_store_recovery_physics::VerifiedOrderedHistoricalReleaseCustody;
 
@@ -72,13 +74,11 @@ pub(super) fn observe(
         return Err(Denial::BoundExceeded);
     }
     let format = reopen.format();
-    let page_limit = u64::from(format.page_size().bytes());
     let selector = funded_record(
         discovery,
         window,
         resident,
-        RecordArtifactFile::CurrentRootSelector,
-        ROOT_SELECTOR_BYTES as u64,
+        ArtifactCeiling::fixed(FixedArtifact::CurrentRootSelector),
     )?;
     let selector_bytes = selector.observed().bytes().ok_or(Denial::MissingSelector)?;
     let decoded = DurableRootSelector::decode(selector_bytes).map_err(|_| Denial::RootBinding)?;
@@ -95,10 +95,12 @@ pub(super) fn observe(
         discovery,
         window,
         resident,
-        RecordArtifactFile::RootManifest {
-            generation: decoded.root_generation(),
-        },
-        page_limit,
+        ArtifactCeiling::page(
+            format,
+            PageAddress::RootManifest {
+                generation: decoded.root_generation(),
+            },
+        ),
     )?;
     let root_bytes = root.observed().bytes().ok_or(Denial::MissingRoot)?;
     let (manifest, root_format) =
@@ -123,10 +125,12 @@ pub(super) fn observe(
         discovery,
         window,
         resident,
-        RecordArtifactFile::FreeSpaceManifest {
-            generation: manifest.generation(),
-        },
-        page_limit,
+        ArtifactCeiling::page(
+            format,
+            PageAddress::FreeSpaceManifest {
+                generation: manifest.generation(),
+            },
+        ),
     )?;
     let free_bytes = free.observed().bytes().ok_or(Denial::MissingFrame)?;
     let free_header = tier::selection::validate_selected_free_header(
@@ -198,10 +202,12 @@ pub(super) fn observe(
         discovery,
         window,
         resident,
-        RecordArtifactFile::RootManifest {
-            generation: source.root().generation(),
-        },
-        page_limit,
+        ArtifactCeiling::page(
+            format,
+            PageAddress::RootManifest {
+                generation: source.root().generation(),
+            },
+        ),
     )?;
     let checkpoint_source_bytes = checkpoint_source
         .observed()
@@ -246,11 +252,10 @@ fn funded_record(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     window: &mut PhysicalRecoveryReadAllocation<'_>,
     resident: &mut StoreRejoinResidentLedger,
-    artifact: RecordArtifactFile,
-    limit: u64,
+    ceiling: ArtifactCeiling,
 ) -> Result<FundedRecoveryObservation, Denial> {
     let observation = window
-        .read_record(discovery, artifact, limit)
+        .read_record(discovery, ceiling)
         .map_err(read_denial)?;
     resident
         .retain(

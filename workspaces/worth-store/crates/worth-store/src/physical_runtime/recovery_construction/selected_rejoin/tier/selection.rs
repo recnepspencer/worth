@@ -1,13 +1,16 @@
 //! The tier claim is compared to one Store-qualified selected-media read.
 
 use sha2::{Digest, Sha256};
-use worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery;
+use worth_store_physical_backend::{
+    ArtifactCeiling, BoundedRecoveryFilesystemDiscovery, FixedArtifact, PageAddress, ReadGrant,
+    UnchargedRead,
+};
 use worth_store_physical_format::{
     checkpoint_stream_encoded_digest, decode_checkpoint_certificate, maximum_current_root_entries,
     store_namespace::StableStoreIdentity, CheckpointCertificateKind, DurableArtifactCrc32c,
     DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest, DurableRootSelector,
     FreeSpaceHeaderScopeIdentity, PhysicalGeneration, PhysicalRecordFormatDeclaration,
-    PhysicalTreeIdentity, RootSelectorRole, TierEpochCheckpointCertificateV1, ROOT_SELECTOR_BYTES,
+    PhysicalTreeIdentity, RootSelectorRole, TierEpochCheckpointCertificateV1,
 };
 use worth_store_physical_integrity::{
     validate_free_space_header, FreeSpaceHeaderIntegrityValidation, PhysicalArtifactScope,
@@ -62,9 +65,12 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn obser
     checkpoint: &worth_store_physical_integrity::VerifiedCheckpointStream,
 ) -> Result<ObservedTierSelection, Denial> {
     let format = reopen.format();
-    let page_limit = u64::from(format.page_size().bytes());
     let selector_bytes = discovery
-        .read_current_selector(ROOT_SELECTOR_BYTES as u64)
+        .read(
+            ArtifactCeiling::fixed(FixedArtifact::CurrentRootSelector),
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
         .map_err(Denial::Discovery)?
         .into_bytes()
         .ok_or(Denial::MissingSelector)?;
@@ -79,7 +85,16 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn obser
         return Err(Denial::RootBinding);
     }
     let root_bytes = discovery
-        .read_root_manifest(selector.root_generation(), page_limit)
+        .read(
+            ArtifactCeiling::page(
+                format,
+                PageAddress::RootManifest {
+                    generation: selector.root_generation(),
+                },
+            ),
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
         .map_err(Denial::Discovery)?
         .into_bytes()
         .ok_or(Denial::MissingRoot)?;
@@ -97,7 +112,16 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn obser
         return Err(Denial::RootBinding);
     }
     let free_bytes = discovery
-        .read_free_space_manifest(root.generation(), page_limit)
+        .read(
+            ArtifactCeiling::page(
+                format,
+                PageAddress::FreeSpaceManifest {
+                    generation: root.generation(),
+                },
+            ),
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
         .map_err(Denial::Discovery)?
         .into_bytes()
         .ok_or(Denial::MissingFrame)?;
@@ -187,7 +211,16 @@ fn checkpoint_source_root(
 ) -> Result<Vec<u8>, Denial> {
     let source = claim.checkpoint().source().root();
     let bytes = discovery
-        .read_root_manifest(source.generation(), u64::from(format.page_size().bytes()))
+        .read(
+            ArtifactCeiling::page(
+                format,
+                PageAddress::RootManifest {
+                    generation: source.generation(),
+                },
+            ),
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
         .map_err(Denial::Discovery)?
         .into_bytes()
         .ok_or(Denial::MissingRoot)?;

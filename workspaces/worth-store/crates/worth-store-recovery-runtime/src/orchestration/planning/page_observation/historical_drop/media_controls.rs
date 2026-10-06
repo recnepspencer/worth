@@ -1,7 +1,9 @@
 //! Bounded selected-media reads used by historical release classification.
 
 use crate::orchestration::recovery_budget::RecoveryAllowance;
-use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
+use worth_store::physical_runtime::{
+    ArtifactCeiling, BoundedRecoveryFilesystemDiscovery, PageAddress, ReadGrant, UnchargedRead,
+};
 use worth_store_physical_format::{
     BlobRecordKind, CurrentPhysicalRecordPlacement, PersistedRecordIdentity,
     PhysicalRecordFormatDeclaration, SelectedRecordContentClass, BLOB_CONTROL_FRAME_MAX_BYTES,
@@ -90,7 +92,12 @@ pub(in crate::orchestration::planning::page_observation) fn source_root(
     WalkFailure,
 > {
     let root_unit = budget.charge_root()?;
-    let source = discovery.read_root_manifest(generation, u64::from(format.page_size().bytes()))?;
+    let source = discovery
+        .read(
+            ArtifactCeiling::page(format, PageAddress::RootManifest { generation }),
+            ReadGrant::ceiling_only(),
+        )
+        .observed()?;
     let admitted = admit_addressed_root(
         RecoveryArtifactNamespaceJoin::from_canonical(&source),
         discovery.store_identity(),

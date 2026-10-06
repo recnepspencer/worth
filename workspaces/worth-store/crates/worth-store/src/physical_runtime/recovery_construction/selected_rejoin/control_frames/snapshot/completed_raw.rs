@@ -117,6 +117,7 @@ impl FundedCompletedHistoricalRawSlices {
         &self,
         slices: &[SelectedArtifactSlice],
         media: &QualifiedFilesystemMedia,
+        format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
         window: &mut PhysicalRecoveryReadAllocation<'_>,
     ) -> Result<bool, RecordBootstrapDenial> {
         if !self.matching_owner(window) {
@@ -133,7 +134,7 @@ impl FundedCompletedHistoricalRawSlices {
             .bounded_record_observation(slices.len() as u64, bytes)
             .map_err(RecordBootstrapDenial::RecoveredHeadObservationUnavailable)?;
         for slice in slices {
-            if !slice.matches_funded_serving_media(&mut observation, window)? {
+            if !slice.matches_funded_serving_media(&mut observation, format, window)? {
                 return Ok(false);
             }
         }

@@ -86,20 +86,6 @@ fn only_a_candidate_reader_out_of_its_own_budget_names_a_limit() {
 }
 
 #[test]
-fn a_candidate_attempt_with_no_observation_bytes_left_names_that_limit() {
-    // No reader opens on nothing: every admitted byte was already observed.
-    let denial = PhysicalRecoverySuccessorCandidateDenial::ObservationBytesExhausted {
-        artifact: RecordArtifactFile::RootManifest { generation: 9 },
-        generation: 9,
-    };
-    assert_eq!(
-        candidate_limit(&limits(), &denial, &budget(), &window()),
-        // T2: short of the least next read.
-        observation_bytes(10_001, 10_000),
-    );
-}
-
-#[test]
 fn a_candidate_out_of_memory_or_entries_names_that_limit_with_its_counts() {
     let artifact = RecordArtifactFile::RootManifest { generation: 9 };
     // Handed 1,000 of recovery's memory, the candidate needed 1,001. The

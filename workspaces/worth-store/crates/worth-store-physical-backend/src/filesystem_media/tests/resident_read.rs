@@ -1,15 +1,20 @@
 use std::cell::Cell;
 
-use worth_store_physical_format::{ExtentArenaId, ExtentArenaRange, RecordArtifactFile};
+use worth_proof::TransitionOutcome;
+use worth_store_physical_format::{
+    ExtentArenaId, ExtentArenaRange, PhysicalRecordFormatDeclaration, RecordArtifactFile,
+};
 
 use super::super::{
     namespace_identity_admission, recovery_qualification, ArtifactTreeFailureKind,
     FilesystemMediaAdmissionAuthority, FilesystemMediaOwner, MediaCounterObserver,
 };
+use crate::recovery_media::grant_for_test::grant;
 use crate::recovery_media::{
-    AdmittedRecoveryFilesystemMedia, BoundedRecoveryFilesystemDiscovery,
-    FilesystemObservationBound, RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact,
-    RecoveryDiscoveryFailure,
+    AdmittedRecoveryFilesystemMedia, AllocatedReadFailure, ArtifactCeiling, ArtifactDamage,
+    BoundedRecoveryFilesystemDiscovery, FilesystemObservationBound, ObservedRecoveryArtifact,
+    PageAddress, ReadGrant, ReadRefusal, RecoveryDiscoveryAllocationFailure,
+    RecoveryDiscoveryArtifact, RecoveryDiscoveryFailure, UnchargedRead,
 };
 
 #[derive(Debug, PartialEq, Eq)]
@@ -30,18 +35,8 @@ fn named(failure: &RecoveryDiscoveryFailure) -> Option<(FilesystemObservationBou
     }
 }
 
-/// An allocated read's refusal, named as [`named`] names it.
-fn allocated_named<E>(
-    result: &Result<
-        crate::recovery_media::ObservedRecoveryArtifact,
-        RecoveryDiscoveryAllocationFailure<E>,
-    >,
-) -> Option<(FilesystemObservationBound, u64, u64)> {
-    match result {
-        Err(RecoveryDiscoveryAllocationFailure::Discovery(failure)) => named(failure),
-        _ => None,
-    }
-}
+mod stops;
+use stops::{format, page, root_ceiling, stopped, uncharged, Stop};
 
 fn discovery(
     prepare: impl FnOnce(&std::path::Path),
@@ -96,10 +91,11 @@ fn whole_reads_allocate_after_observed_length_and_preserve_c4_counters() {
         32,
     );
     let record = discovery
-        .read_record_artifact_with_allocator(address, 8, |length| {
+        .read_with_allocator(root_ceiling(1), uncharged(), |length| {
             assert_eq!(length, 4);
             Ok::<_, DeniedAllocation>(vec![0; length])
         })
+        .observed()
         .unwrap();
     assert_eq!(record.bytes(), Some(&b"root"[..]));
     let checkpoint = discovery
@@ -114,68 +110,37 @@ fn whole_reads_allocate_after_observed_length_and_preserve_c4_counters() {
     assert_eq!(discovery.counters().fixed_slots_read, 0);
 }
 
-/// A whole artifact longer than the ceiling its caller named passed that
-/// ceiling, however few bytes the reader has left. Only an artifact within
-/// its ceiling runs the reader out of bytes.
-#[test]
-fn a_whole_artifact_past_its_ceiling_is_never_the_readers_own_limit() {
-    use FilesystemObservationBound::{ObservationBytes, RequestedBytes};
-    let address = RecordArtifactFile::RootManifest { generation: 6 };
-    // Seven bytes on media, read under (ceiling, reader bytes).
-    for (ceiling, reader, refused) in [
-        (6, 32, (RequestedBytes, 7, 6)),
-        (6, 4, (RequestedBytes, 7, 6)),
-        (6, 6, (RequestedBytes, 7, 6)),
-        (7, 6, (ObservationBytes, 7, 6)),
-        (8, 4, (ObservationBytes, 7, 4)),
-    ] {
-        let (_parent, _observer, mut discovery) = discovery(
-            |root| write_root_artifact(root, address, b"present"),
-            4,
-            reader,
-        );
-        assert_eq!(
-            discovery
-                .read_root_manifest(6, ceiling)
-                .err()
-                .as_ref()
-                .and_then(named),
-            Some(refused),
-            "addressed read under ceiling {ceiling} with {reader} bytes",
-        );
-        let allocated = discovery.read_record_artifact_with_allocator(address, ceiling, |_| {
-            Ok::<_, DeniedAllocation>(Vec::new())
-        });
-        assert_eq!(
-            allocated_named(&allocated),
-            Some(refused),
-            "allocated read under ceiling {ceiling} with {reader} bytes: {allocated:?}",
-        );
-        assert_eq!(discovery.counters().bytes_read, 0);
-    }
-}
-
 #[test]
 fn allocation_denial_is_typed_and_precedes_successful_data_read() {
-    for address in [
-        RecordArtifactFile::RootManifest { generation: 2 },
-        RecordArtifactFile::ReleaseCustodyHeadBlock {
-            generation: 2,
-            block: 1,
-        },
+    let head = PageAddress::ReleaseCustodyHeadBlock {
+        generation: 2,
+        block: 1,
+    };
+    for (address, ceiling) in [
+        (
+            RecordArtifactFile::RootManifest { generation: 2 },
+            root_ceiling(2),
+        ),
+        (
+            RecordArtifactFile::ReleaseCustodyHeadBlock {
+                generation: 2,
+                block: 1,
+            },
+            ArtifactCeiling::page(format(), head),
+        ),
     ] {
         // This is the allocator/read boundary, not head grammar or custody
         // admission: the observed length must be available before bytes are read.
         let (_parent, observer, mut discovery) =
             discovery(|root| write_root_artifact(root, address, b"present"), 2, 32);
         let reads_before = observer.snapshot().positioned_read_attempts();
-        let result = discovery.read_record_artifact_with_allocator(address, 16, |length| {
+        let result = discovery.read_with_allocator(ceiling, uncharged(), |length| {
             assert_eq!(length, 7);
             Err::<Vec<u8>, _>(DeniedAllocation)
         });
         assert!(matches!(
             result,
-            Err(RecoveryDiscoveryAllocationFailure::Allocation {
+            TransitionOutcome::Failed(AllocatedReadFailure::Allocation {
                 artifact: RecoveryDiscoveryArtifact::Record(observed),
                 offset: 0,
                 requested: 7,
@@ -191,33 +156,36 @@ fn allocation_denial_is_typed_and_precedes_successful_data_read() {
 #[test]
 fn limits_and_absence_precede_allocator_callback() {
     let present = RecordArtifactFile::RootManifest { generation: 3 };
-    let absent = RecordArtifactFile::RootManifest { generation: 4 };
     let (_parent, _observer, mut discovery) =
         discovery(|root| write_root_artifact(root, present, b"present"), 2, 32);
     let calls = Cell::new(0);
-    let too_small = discovery.read_record_artifact_with_allocator(present, 3, |_| {
+    let past_grant = discovery.read_with_allocator(root_ceiling(3), grant(3), |_| {
         calls.set(calls.get() + 1);
         Ok::<_, DeniedAllocation>(Vec::new())
     });
     assert_eq!(
-        allocated_named(&too_small),
-        Some((FilesystemObservationBound::RequestedBytes, 7, 3))
+        stopped(&past_grant),
+        Some(Stop::PastGrant {
+            granted: 3,
+            length: 7
+        })
     );
     let absent_read = discovery
-        .read_record_artifact_with_allocator(absent, 16, |_| {
+        .read_with_allocator(root_ceiling(4), uncharged(), |_| {
             calls.set(calls.get() + 1);
             Ok::<_, DeniedAllocation>(Vec::new())
         })
+        .observed()
         .unwrap();
     assert_eq!(absent_read.bytes(), None);
-    let no_entries = discovery.read_record_artifact_with_allocator(present, 16, |_| {
+    let no_entries = discovery.read_with_allocator(root_ceiling(3), uncharged(), |_| {
         calls.set(calls.get() + 1);
         Ok::<_, DeniedAllocation>(Vec::new())
     });
     // Two reads were admitted, and the third is past them.
     assert_eq!(
-        allocated_named(&no_entries),
-        Some((FilesystemObservationBound::Reads, 3, 2))
+        stopped(&no_entries),
+        Some(Stop::Observation(FilesystemObservationBound::Reads, 3, 2))
     );
     assert_eq!(calls.get(), 0);
 }
@@ -235,35 +203,34 @@ fn range_read_checks_file_bounds_then_exact_buffer_before_data_read() {
         32,
     );
     let range = discovery
-        .read_record_range_with_allocator(address, 2, 3, 8, |length| {
+        .read_record_range_with_allocator(address, 2, 3, uncharged(), |length| {
             assert_eq!(length, 3);
             Ok::<_, DeniedAllocation>(vec![0; length])
         })
+        .observed()
         .unwrap();
     assert_eq!(range.offset(), 2);
     assert_eq!(range.bytes(), Some(&b"cde"[..]));
     assert_eq!(discovery.counters().bytes_read, 3);
 
     let calls = Cell::new(0);
-    let outside = discovery.read_record_range_with_allocator(address, 7, 3, 8, |_| {
+    let outside = discovery.read_record_range_with_allocator(address, 7, 3, uncharged(), |_| {
         calls.set(calls.get() + 1);
         Ok::<_, DeniedAllocation>(vec![0; 3])
     });
-    assert!(matches!(
-        outside,
-        Err(RecoveryDiscoveryAllocationFailure::Discovery(
-            RecoveryDiscoveryFailure::Media { failure, .. }
-        )) if failure.kind() == ArtifactTreeFailureKind::Damaged
-    ));
+    assert_eq!(
+        stopped(&outside),
+        Some(Stop::Media(ArtifactTreeFailureKind::Damaged))
+    );
     assert_eq!(calls.get(), 0);
 
-    let wrong = discovery.read_record_range_with_allocator(address, 1, 4, 8, |length| {
+    let wrong = discovery.read_record_range_with_allocator(address, 1, 4, uncharged(), |length| {
         calls.set(calls.get() + 1);
         Ok::<_, DeniedAllocation>(vec![0; length - 1])
     });
     assert!(matches!(
         wrong,
-        Err(RecoveryDiscoveryAllocationFailure::BufferLengthMismatch {
+        TransitionOutcome::Failed(AllocatedReadFailure::BufferLengthMismatch {
             artifact: RecoveryDiscoveryArtifact::Record(observed_artifact),
             offset: 1,
             requested: 4,
@@ -276,7 +243,7 @@ fn range_read_checks_file_bounds_then_exact_buffer_before_data_read() {
 }
 
 #[test]
-fn absent_and_over_limit_ranges_never_allocate() {
+fn absent_and_over_grant_ranges_never_allocate() {
     let present = RecordArtifactFile::ExtentArena { arena: 10 };
     let absent = RecordArtifactFile::ExtentArena { arena: 11 };
     let (_parent, _observer, mut discovery) = discovery(
@@ -290,19 +257,23 @@ fn absent_and_over_limit_ranges_never_allocate() {
     );
     let calls = Cell::new(0);
     let absent_read = discovery
-        .read_record_range_with_allocator(absent, 0, 2, 4, |_| {
+        .read_record_range_with_allocator(absent, 0, 2, uncharged(), |_| {
             calls.set(calls.get() + 1);
             Ok::<_, DeniedAllocation>(vec![0; 2])
         })
+        .observed()
         .unwrap();
     assert_eq!(absent_read.bytes(), None);
-    let oversized = discovery.read_record_range_with_allocator(present, 0, 5, 4, |_| {
+    let oversized = discovery.read_record_range_with_allocator(present, 0, 5, grant(4), |_| {
         calls.set(calls.get() + 1);
         Ok::<_, DeniedAllocation>(vec![0; 5])
     });
     assert_eq!(
-        allocated_named(&oversized),
-        Some((FilesystemObservationBound::RequestedBytes, 5, 4))
+        stopped(&oversized),
+        Some(Stop::PastGrant {
+            granted: 4,
+            length: 5
+        })
     );
     assert_eq!(calls.get(), 0);
     assert_eq!(discovery.counters().bytes_read, 0);
@@ -325,14 +296,20 @@ fn extent_relative_range_is_admitted_before_allocator_or_positioned_read() {
     let reads_before = observer.snapshot().positioned_read_attempts();
     let calls = Cell::new(0);
     for (relative, length) in [(4, 2), (u64::MAX, 2)] {
-        let denied = discovery.read_extent_range_with_allocator(range, relative, length, 8, |_| {
-            calls.set(calls.get() + 1);
-            Ok::<_, DeniedAllocation>(Vec::new())
-        });
+        let denied = discovery.read_extent_range_with_allocator(
+            range,
+            relative,
+            length,
+            uncharged(),
+            |_| {
+                calls.set(calls.get() + 1);
+                Ok::<_, DeniedAllocation>(Vec::new())
+            },
+        );
         assert!(matches!(
             denied,
-            Err(RecoveryDiscoveryAllocationFailure::Discovery(
-                RecoveryDiscoveryFailure::InvalidAddress {
+            TransitionOutcome::Failed(AllocatedReadFailure::Damage(
+                ArtifactDamage::InvalidAddress {
                     artifact: RecoveryDiscoveryArtifact::Record(observed),
                 }
             )) if observed == artifact
@@ -344,11 +321,12 @@ fn extent_relative_range_is_admitted_before_allocator_or_positioned_read() {
     assert_eq!(discovery.counters().addressed_artifacts_read, 0);
 
     let observed = discovery
-        .read_extent_range_with_allocator(range, 1, 3, 8, |length| {
+        .read_extent_range_with_allocator(range, 1, 3, uncharged(), |length| {
             calls.set(calls.get() + 1);
             assert_eq!(length, 3);
             Ok::<_, DeniedAllocation>(vec![0; length])
         })
+        .observed()
         .unwrap();
     assert_eq!(
         observed.artifact(),
@@ -365,6 +343,7 @@ fn extent_relative_range_is_admitted_before_allocator_or_positioned_read() {
     assert_eq!(discovery.counters().addressed_artifacts_read, 1);
 }
 
+mod ceiling_grant;
 mod damage;
 mod range_refusal;
 mod record_storage;

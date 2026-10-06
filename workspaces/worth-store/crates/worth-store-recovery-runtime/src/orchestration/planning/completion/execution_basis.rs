@@ -287,10 +287,6 @@ fn candidate_limit(
         Candidate::Discovery { failure, .. } => {
             super::historical_publication::discovery_failure(failure.clone()).limit(limits, budget)
         }
-        // Every byte recovery admitted was observed before this reader.
-        Candidate::ObservationBytesExhausted { .. } => {
-            super::historical_publication::HistoricalFailure::ObservationSpent.limit(limits, budget)
-        }
         Candidate::ManifestEntryLimit { .. } => budget.refused().map(Into::into),
         Candidate::Allocation { .. }
         | Candidate::MissingArtifact { .. }

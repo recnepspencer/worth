@@ -52,8 +52,6 @@ pub(super) fn only_a_limit(denial: &Planning) -> bool {
         // Every cost denial is a limit the plan's cost ran past.
         Planning::Cost(_) => true,
         Planning::SuccessorCandidate(Candidate::Discovery { failure, .. }) => reader(failure),
-        // Every observation byte recovery admitted was read before this one.
-        Planning::SuccessorCandidate(Candidate::ObservationBytesExhausted { .. }) => true,
         Planning::SelectedReleaseHead(denial) => head(denial),
         _ => false,
     }

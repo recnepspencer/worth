@@ -235,6 +235,8 @@ mod placement_observation;
 mod recovery_durability;
 #[cfg(feature = "recovery-runtime-owner")]
 mod recovery_media;
+#[cfg(feature = "recovery-runtime-owner")]
+pub mod recovery_read_compile_fail;
 mod recovery_staging;
 mod storage_boundary_control;
 pub(crate) use execution::queue::BackendQueueExecutionAuthority;

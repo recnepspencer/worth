@@ -2,8 +2,11 @@
 //! whether their caller uses the carried resident ledger or completed native
 //! backing; both observe the same verified page and entry sequence.
 
-use worth_store_physical_backend::{BoundedRecoveryFilesystemDiscovery, ObservedRecoveryArtifact};
-use worth_store_physical_format::RecordArtifactFile;
+use worth_store_physical_backend::{
+    ArtifactCeiling, BoundedRecoveryFilesystemDiscovery, ObservedRecoveryArtifact, PageAddress,
+    ReadGrant, UnchargedRead,
+};
+use worth_store_physical_format::{PhysicalRecordFormatDeclaration, RecordArtifactFile};
 
 use crate::physical_runtime::recovery_construction::selected_rejoin::{
     resident::{
@@ -25,11 +28,12 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) trait Ro
     /// Format consumed and dropped a caller-funded Vec; release its measured
     /// capacity only after that constructor returns.
     fn release_consumed_bytes(&mut self, bytes: u64) -> Result<(), Denial>;
+    /// Reads one page-sized artifact whole, under the page its format declares.
     fn read_page(
         &mut self,
         discovery: &mut BoundedRecoveryFilesystemDiscovery,
-        artifact: RecordArtifactFile,
-        limit: u64,
+        format: PhysicalRecordFormatDeclaration,
+        address: PageAddress,
     ) -> Result<ObservedRecoveryArtifact, Denial>;
     fn read_page_range(
         &mut self,
@@ -72,15 +76,16 @@ impl RouteWalkStorage for () {
     fn read_page(
         &mut self,
         discovery: &mut BoundedRecoveryFilesystemDiscovery,
-        artifact: RecordArtifactFile,
-        limit: u64,
+        format: PhysicalRecordFormatDeclaration,
+        address: PageAddress,
     ) -> Result<ObservedRecoveryArtifact, Denial> {
-        discovery.read_record_artifact_with_allocator(artifact, limit, |length| {
+        let ceiling = ArtifactCeiling::page(format, address);
+        discovery.read_with_allocator(ceiling, ReadGrant::ceiling_only(), |length| {
             let mut bytes = Vec::new();
             bytes.try_reserve_exact(length).map_err(|_| Denial::BoundExceeded)?;
             bytes.resize(length, 0);
             Ok(bytes)
-        }).map_err(|failure| match failure {
+        }).observed().map_err(|failure| match failure {
             worth_store_physical_backend::RecoveryDiscoveryAllocationFailure::Discovery(cause) => Denial::Discovery(cause),
             worth_store_physical_backend::RecoveryDiscoveryAllocationFailure::Allocation { cause, .. } => cause,
             worth_store_physical_backend::RecoveryDiscoveryAllocationFailure::BufferLengthMismatch {
@@ -99,12 +104,12 @@ impl RouteWalkStorage for () {
         offset: u64,
         length: u32,
     ) -> Result<ObservedRecoveryArtifact, Denial> {
-        discovery.read_record_range_with_allocator(artifact, offset, length, u64::from(length), |size| {
+        discovery.read_record_range_with_allocator(artifact, offset, length, ReadGrant::ceiling_only(), |size| {
             let mut bytes = Vec::new();
             bytes.try_reserve_exact(size).map_err(|_| Denial::BoundExceeded)?;
             bytes.resize(size, 0);
             Ok(bytes)
-        }).map_err(|failure| match failure {
+        }).observed().map_err(|failure| match failure {
             worth_store_physical_backend::RecoveryDiscoveryAllocationFailure::Discovery(cause) => Denial::Discovery(cause),
             worth_store_physical_backend::RecoveryDiscoveryAllocationFailure::Allocation { cause, .. } => cause,
             worth_store_physical_backend::RecoveryDiscoveryAllocationFailure::BufferLengthMismatch {
@@ -145,14 +150,18 @@ impl RouteWalkStorage for StoreRejoinResidentLedger {
     fn read_page(
         &mut self,
         discovery: &mut BoundedRecoveryFilesystemDiscovery,
-        artifact: RecordArtifactFile,
-        limit: u64,
+        format: PhysicalRecordFormatDeclaration,
+        address: PageAddress,
     ) -> Result<ObservedRecoveryArtifact, Denial> {
-        self.transient(limit).map_err(Denial::Resident)?;
+        self.transient(u64::from(format.page_size().bytes()))
+            .map_err(Denial::Resident)?;
         discovery
-            .read_record_artifact_with_allocator(artifact, limit, |length| {
-                self.reserve_bytes(length)
-            })
+            .read_with_allocator(
+                ArtifactCeiling::page(format, address),
+                ReadGrant::ceiling_only(),
+                |length| self.reserve_bytes(length),
+            )
+            .observed()
             .map_err(discovery_allocation_denial)
     }
     fn discard_frame(&mut self, frame: ObservedRecoveryArtifact) -> Result<(), Denial> {
@@ -171,9 +180,14 @@ impl RouteWalkStorage for StoreRejoinResidentLedger {
         self.transient(u64::from(length))
             .map_err(Denial::Resident)?;
         discovery
-            .read_record_range_with_allocator(artifact, offset, length, u64::from(length), |size| {
-                self.reserve_bytes(size)
-            })
+            .read_record_range_with_allocator(
+                artifact,
+                offset,
+                length,
+                ReadGrant::ceiling_only(),
+                |size| self.reserve_bytes(size),
+            )
+            .observed()
             .map_err(discovery_allocation_denial)
     }
     fn overflow(&self) -> Denial {

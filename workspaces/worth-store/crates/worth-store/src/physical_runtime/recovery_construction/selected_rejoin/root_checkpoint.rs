@@ -4,7 +4,7 @@ use worth_store_physical_format::{
     checkpoint_stream_encoded_digest, maximum_current_root_entries,
     store_namespace::StableStoreIdentity, DurablePhysicalRootManifest, DurableRootSelector,
     PhysicalCheckpointSource, PhysicalRecordFormatDeclaration, ReleaseCheckpointCertificateV1,
-    RootSelectorRole, ROOT_SELECTOR_BYTES,
+    RootSelectorRole,
 };
 use worth_store_physical_integrity::{VerifiedCheckpointFacts, VerifiedCheckpointStream};
 use worth_store_recovery_physics::{
@@ -163,10 +163,7 @@ impl ObservedRootCheckpoint {
                 bytes: reader.clone_bytes(&self.root_bytes)?,
             }
         } else {
-            let bytes = reader.root(
-                source_basis.generation(),
-                u64::from(self.selector.format().page_size().bytes()),
-            )?;
+            let bytes = reader.root(self.selector.format(), source_basis.generation())?;
             let (source_root, source_format) = DurablePhysicalRootManifest::decode(
                 &bytes,
                 maximum_current_root_entries(self.selector.format()),
@@ -204,7 +201,7 @@ fn observe_parts(
     {
         return Err(Denial::RootBinding);
     }
-    let selector_bytes = reader.selector(ROOT_SELECTOR_BYTES as u64)?;
+    let selector_bytes = reader.selector()?;
     let selector = DurableRootSelector::decode(&selector_bytes).map_err(|_| Denial::RootBinding)?;
     if selector.encode() != selector_bytes.as_slice()
         || selector.store_identity() != expected_store
@@ -214,10 +211,7 @@ fn observe_parts(
     {
         return Err(Denial::RootBinding);
     }
-    let root_bytes = reader.root(
-        selector.root_generation(),
-        format.page_size().bytes() as u64,
-    )?;
+    let root_bytes = reader.root(format, selector.root_generation())?;
     let (root, decoded_format) =
         DurablePhysicalRootManifest::decode(&root_bytes, expected_root.node_capacity())
             .map_err(|_| Denial::RootBinding)?;

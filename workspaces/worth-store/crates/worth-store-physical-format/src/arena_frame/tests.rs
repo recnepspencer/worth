@@ -175,3 +175,29 @@ fn fully_occupied_extent_arena_root_has_no_free_tree() {
         root
     );
 }
+
+#[test]
+fn a_chunk_frame_is_its_manifests_chunk_at_its_layouts_offset() {
+    let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
+    let record = PersistedRecordIdentity::new([4; 16], 1).unwrap();
+    let extent = PhysicalGenerationAuthority::for_canonical_physical_format()
+        .record_extent_cell(PhysicalExtentId::from_raw(3).unwrap())
+        .with_extent_generation(PhysicalGeneration::from_raw(1).unwrap());
+    let overhead = DURABLE_EXTENT_FRAME_HEADER_BYTES + EXTENT_CHUNK_METADATA_BYTES;
+    let capacity = 16_384 - overhead as u64;
+    let logical = 2 * capacity + 5;
+    let manifest =
+        DurableExtentManifest::new(format, record, extent, logical, 16_384, 3, 4096).unwrap();
+    let layout = ExtentArenaFrameLayout::new(format, 4096).unwrap();
+    let full = ExtentChunkFrame::of(manifest, layout, 2).unwrap();
+    assert_eq!(full.offset(), layout.chunk_offset(2).unwrap());
+    assert_eq!(full.length(), 16_384);
+    assert_eq!(full.coordinate().logical_offset(), capacity);
+    let last = ExtentChunkFrame::of(manifest, layout, 3).unwrap();
+    assert_eq!(last.payload_bytes(), 5);
+    assert_eq!(last.length(), overhead as u32 + 5);
+    assert_eq!(last.coordinate().logical_offset(), 2 * capacity);
+    assert_eq!(last.coordinate().record(), record);
+    assert!(ExtentChunkFrame::of(manifest, layout, 0).is_none());
+    assert!(ExtentChunkFrame::of(manifest, layout, 4).is_none());
+}

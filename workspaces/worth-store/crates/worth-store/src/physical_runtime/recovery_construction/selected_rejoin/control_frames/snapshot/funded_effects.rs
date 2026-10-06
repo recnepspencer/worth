@@ -190,6 +190,7 @@ impl FundedHeadEffectSlices {
     pub(super) fn verify_serving_media(
         &self,
         media: &QualifiedFilesystemMedia,
+        format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
         window: &mut PhysicalRecoveryReadAllocation<'_>,
     ) -> Result<bool, RecordBootstrapDenial> {
         if !self.matching_owner(window) {
@@ -207,7 +208,7 @@ impl FundedHeadEffectSlices {
             .bounded_record_observation(self.slices.len() as u64, bytes)
             .map_err(RecordBootstrapDenial::RecoveredHeadObservationUnavailable)?;
         for slice in &self.slices {
-            if !slice.matches_funded_serving_media(&mut observation, window)? {
+            if !slice.matches_funded_serving_media(&mut observation, format, window)? {
                 return Ok(false);
             }
         }

@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
+use worth_store::physical_runtime::{BoundedRecoveryFilesystemDiscovery, ReadGrant, UnchargedRead};
 use worth_store_physical_format::{
     DurableInlineRecordPlacement, PhysicalRecordFormatDeclaration, RecordArtifactFile,
     RecordFrameCoordinate,
@@ -61,13 +61,15 @@ pub(crate) fn observe_inline(
 ) -> Result<RecoveryPageObservation, PageObservationFailure> {
     let plan = plan_inline_observation(placement, target, format, entries)?;
     let page = required_observed(
-        discovery.read_segment_range(
-            placement.segment().get(),
-            plan.selected.entry.data_generation(),
-            plan.offset,
-            plan.page_bytes,
-            u64::from(plan.page_bytes),
-        ),
+        discovery
+            .read_segment_range(
+                placement.segment().get(),
+                plan.selected.entry.data_generation(),
+                plan.offset,
+                plan.page_bytes,
+                ReadGrant::ceiling_only(),
+            )
+            .observed(),
         Some(target.identity()),
         plan.artifact,
     )?;

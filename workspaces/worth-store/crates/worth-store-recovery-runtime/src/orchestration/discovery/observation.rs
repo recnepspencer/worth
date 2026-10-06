@@ -1,5 +1,7 @@
-use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
-use worth_store_physical_format::{PhysicalRecordFormatDeclaration, BOOTSTRAP_CATALOG_BYTES};
+use worth_store::physical_runtime::{
+    ArtifactCeiling, BoundedRecoveryFilesystemDiscovery, FixedArtifact, ReadGrant, UnchargedRead,
+};
+use worth_store_physical_format::PhysicalRecordFormatDeclaration;
 use worth_store_recovery_physics::{
     PhysicalRecoveryResidue, PhysicalRootSelectorDenial, PhysicalRootSlotObservation,
 };
@@ -15,12 +17,10 @@ use crate::integrity_ingress::{
 use crate::progression::PhysicalRecoveryDiscoveryCounters;
 
 use super::super::manifest_facts::{observe_manifest_facts, ManifestObservationBudget};
-use super::super::reader_limit::{OversizedArtifact, ReadCeiling};
+use super::super::reader_limit::OversizedArtifact;
 use super::super::recovery_budget::RecoveryAllowance;
 use super::super::ManifestFactsDiscovery;
-use super::{
-    refused_read, BootstrapDiscovery, CheckpointDiscovery, DiscoveryFailure, WalDiscovery,
-};
+use super::{unread, BootstrapDiscovery, CheckpointDiscovery, DiscoveryFailure, WalDiscovery};
 
 mod checkpoint;
 mod counters;
@@ -96,14 +96,14 @@ pub(super) fn observe_all(
             discovery,
             limits,
             record_format,
-            &mut roots.remaining_manifest_bytes,
+            &mut roots.manifest_bytes,
             counters,
             ingress_trace,
             &mut allocation,
         )
     }
     .map_err(&preserve_manifest_observations)?;
-    counters.manifest_bytes = declaration.manifest_bytes - roots.remaining_manifest_bytes;
+    counters.manifest_bytes = roots.manifest_bytes.spent();
     record_checkpoint_counters(counters, &checkpoint);
     let (wal, residue, wal_entries) = observe_wal(discovery, coordination, limits, counters)
         .map_err(&preserve_manifest_observations)?;
@@ -157,16 +157,16 @@ fn observe_fallback_anchor(
     {
         return Ok(BootstrapDiscovery::NotRequired);
     }
-    let ceiling = ReadCeiling::of_artifact(BOOTSTRAP_CATALOG_BYTES as u64);
-    let artifact = match discovery.read_bootstrap_catalog(ceiling.requested()) {
+    let artifact = match discovery
+        .read(
+            ArtifactCeiling::fixed(FixedArtifact::BootstrapCatalog),
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
+    {
         Ok(artifact) => artifact,
         Err(failure) => {
-            let OversizedArtifact = refused_read(
-                failure,
-                ceiling,
-                limits,
-                PhysicalRecoveryLimitDimension::ObservationBytes,
-            )?;
+            let OversizedArtifact = unread(failure, limits)?;
             // A catalog is its fixed frame and nothing more.
             return Ok(BootstrapDiscovery::Rejected(
                 RecoveryIntegrityIngressRejection::NonCanonicalEncoding,
@@ -254,12 +254,12 @@ fn observe_root_manifest_facts(
         &roots.current,
         ManifestObservationBudget {
             limits: declaration,
-            remaining_bytes: &mut roots.remaining_manifest_bytes,
+            bytes: &mut roots.manifest_bytes,
             remaining_entries: &mut remaining_manifest_entries,
             blocks_read: &mut manifest_blocks,
         },
     );
-    counters.manifest_bytes = declaration.manifest_bytes - roots.remaining_manifest_bytes;
+    counters.manifest_bytes = roots.manifest_bytes.spent();
     counters.manifest_entries = declaration.manifest_entries - remaining_manifest_entries;
     counters.manifest_blocks = manifest_blocks;
     let current_manifest_facts = current_manifest_facts_result?;
@@ -268,12 +268,12 @@ fn observe_root_manifest_facts(
         &roots.previous,
         ManifestObservationBudget {
             limits: declaration,
-            remaining_bytes: &mut roots.remaining_manifest_bytes,
+            bytes: &mut roots.manifest_bytes,
             remaining_entries: &mut remaining_manifest_entries,
             blocks_read: &mut manifest_blocks,
         },
     );
-    counters.manifest_bytes = declaration.manifest_bytes - roots.remaining_manifest_bytes;
+    counters.manifest_bytes = roots.manifest_bytes.spent();
     counters.manifest_entries = declaration.manifest_entries - remaining_manifest_entries;
     counters.manifest_blocks = manifest_blocks;
     let previous_manifest_facts = match previous_manifest_facts_result {

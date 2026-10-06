@@ -4,7 +4,7 @@
 use std::collections::{BTreeSet, VecDeque};
 use std::convert::Infallible;
 
-use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
+use worth_store::physical_runtime::{BoundedRecoveryFilesystemDiscovery, PageAddress};
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration,
     PhysicalTreeIdentity, RecordArtifactFile,
@@ -131,14 +131,11 @@ pub(in crate::orchestration::planning) fn observe_routes_held<H: RoutesHold>(
             return Err(invalid(artifact).into());
         }
         hold.trace_slot(trace).map_err(RoutesFailure::Held)?;
-        let observed = super::required_source(
-            discovery.read_root_routing_block(
-                reference.generation(),
-                reference.block(),
-                u64::from(format.page_size().bytes()),
-            ),
-            None,
-        )?;
+        let address = PageAddress::RootRoutingBlock {
+            generation: reference.generation(),
+            block: reference.block(),
+        };
+        let observed = super::required_source(super::read_page(discovery, format, address), None)?;
         let projected = crate::integrity_ingress::projection::root_routing_block(
             &observed,
             discovery.store_identity(),

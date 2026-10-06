@@ -209,23 +209,25 @@ impl SelectedControlMediaFingerprint {
     pub(in crate::physical_runtime) fn verify_funded_heads_for_serving(
         &self,
         media: &QualifiedFilesystemMedia,
+        format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
         window: &mut crate::physical_runtime::PhysicalRecoveryReadAllocation<'_>,
     ) -> Result<bool, crate::physical_runtime::record_serving::RecordBootstrapDenial> {
-        if !self.heads.verify_serving_media(media, window)? {
+        if !self.heads.verify_serving_media(media, format, window)? {
             return Ok(false);
         }
         self.effects.as_ref().map_or(Ok(true), |effects| {
-            effects.verify_serving_media(media, window)
+            effects.verify_serving_media(media, format, window)
         })
     }
 
     pub(in crate::physical_runtime) fn verify_funded_completed_raw_for_serving(
         &self,
         media: &QualifiedFilesystemMedia,
+        format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
         window: &mut crate::physical_runtime::PhysicalRecoveryReadAllocation<'_>,
     ) -> Result<bool, crate::physical_runtime::record_serving::RecordBootstrapDenial> {
         match &self.completed_raw {
-            Some(backing) => backing.verify_serving_media(&self.slices, media, window),
+            Some(backing) => backing.verify_serving_media(&self.slices, media, format, window),
             None => Ok(!self.has_completed_history_head_walks()),
         }
     }

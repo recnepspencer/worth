@@ -3,11 +3,11 @@
 //! does an artifact that outgrew the ceiling of its own read.
 
 use worth_store::physical_runtime::{
-    FilesystemObservationBound, RecoveryDiscoveryArtifact, RecoveryDiscoveryFailure,
+    ArtifactDamage, FilesystemObservationBound, RecoveryDiscoveryArtifact, RecoveryDiscoveryFailure,
 };
 
 use super::*;
-use crate::entry::PhysicalRecoverySelectedRecordReadDenial;
+use crate::entry::{PhysicalRecoveryLimitDimension, PhysicalRecoverySelectedRecordReadDenial};
 use crate::orchestration::reader_limit::refused_past;
 use crate::orchestration::recovery_budget::recovery_limit_for_test;
 use PhysicalRecoveryLimitDimension::{ManifestEntries, ObservationBytes, StagingBytes};
@@ -85,11 +85,6 @@ fn an_exhausted_limit_is_reported_with_recovery_s_own_counts() {
         HistoricalFailure::Limit(PageLimit::Recovery(staging)).limit(&limits, &budget),
         Some(staging.into()),
     );
-    // T2: a phase with nothing left to observe is short of the least read.
-    assert_eq!(
-        HistoricalFailure::ObservationSpent.limit(&limits, &budget),
-        named(ObservationBytes, 10_001, 10_000),
-    );
 }
 
 #[test]
@@ -102,10 +97,14 @@ fn only_a_reader_out_of_its_own_bytes_is_a_limit() {
         // A phase's reader counts no reads.
         refused_past(FilesystemObservationBound::Reads, 2, 1),
         // The artifact outgrew the ceiling of its own read.
-        outgrown(FilesystemObservationBound::RequestedBytes),
-        RecoveryDiscoveryFailure::InvalidAddress {
+        RecoveryDiscoveryFailure::Damage(ArtifactDamage::PastCeiling {
             artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint,
-        },
+            length: 65_537,
+            ceiling: 65_536,
+        }),
+        RecoveryDiscoveryFailure::Damage(ArtifactDamage::InvalidAddress {
+            artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint,
+        }),
     ] {
         assert_eq!(discovery_failure(damage), HistoricalFailure::Invalid);
     }
@@ -131,13 +130,6 @@ fn a_page_observation_out_of_a_limit_stays_that_limit() {
         }),
         HistoricalFailure::Invalid,
     );
-}
-
-#[test]
-fn a_phase_starting_with_no_observation_bytes_left_has_met_that_limit() {
-    assert_eq!(left_to_observe(9), Ok(9));
-    assert_eq!(left_to_observe(1), Ok(1));
-    assert_eq!(left_to_observe(0), Err(HistoricalFailure::ObservationSpent));
 }
 
 #[test]

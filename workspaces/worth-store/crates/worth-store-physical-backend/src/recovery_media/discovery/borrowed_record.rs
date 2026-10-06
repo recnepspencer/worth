@@ -1,6 +1,11 @@
 //! Addressed record reads borrowed from one qualified live media owner.
 //! This read-only surface cannot finish, promote, or extract that owner.
 
+use worth_foundational::LimitDimension;
+
+use super::super::ceiling::ArtifactCeiling;
+use super::super::grant::ReadGrant;
+use super::super::refusal::AllocatedReadOutcome;
 use super::media_backing::BorrowedMediaBacking;
 use super::{
     DiscoveryMediaBacking, FilesystemObservation, ObservedRecoveryArtifact,
@@ -22,7 +27,7 @@ impl QualifiedFilesystemMedia {
         maximum_entries: u64,
         maximum_bytes: u64,
     ) -> Result<BorrowedRecordFilesystemObservation<'_>, RecoveryFilesystemQualificationError> {
-        if maximum_entries == 0 || maximum_bytes == 0 {
+        if maximum_entries == 0 {
             return Err(RecoveryFilesystemQualificationError::InvalidDiscoveryLimit);
         }
         Ok(BorrowedRecordFilesystemObservation {
@@ -70,26 +75,28 @@ impl BorrowedRecordFilesystemObservation<'_> {
             .read_current_checkpoint_with_storage(byte_limit, storage)
     }
 
-    pub fn read_record_artifact_with_storage<S: ArtifactTreeReadAllocator>(
+    pub fn read_with_storage<D: LimitDimension, S: ArtifactTreeReadAllocator>(
         &mut self,
-        address: RecordArtifactFile,
-        byte_limit: u64,
+        ceiling: ArtifactCeiling,
+        grant: ReadGrant<D>,
         storage: &mut S,
-    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryAllocationFailure<S::Denial>> {
-        self.observation
-            .read_record_artifact_with_storage(address, byte_limit, storage)
+    ) -> AllocatedReadOutcome<D, S::Denial> {
+        self.observation.read_with_storage(ceiling, grant, storage)
     }
 
-    pub fn read_record_artifact_range_with_storage<S: ArtifactTreeReadAllocator>(
+    pub fn read_record_artifact_range_with_storage<
+        D: LimitDimension,
+        S: ArtifactTreeReadAllocator,
+    >(
         &mut self,
         address: RecordArtifactFile,
         offset: u64,
         length: u32,
-        byte_limit: u64,
+        grant: ReadGrant<D>,
         storage: &mut S,
-    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryAllocationFailure<S::Denial>> {
+    ) -> AllocatedReadOutcome<D, S::Denial> {
         self.observation
-            .read_record_artifact_range_with_storage(address, offset, length, byte_limit, storage)
+            .read_record_artifact_range_with_storage(address, offset, length, grant, storage)
     }
 }
 

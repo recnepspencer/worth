@@ -96,7 +96,7 @@ impl<M: super::super::DiscoveryMediaBacking> FilesystemObservation<M> {
                     byte_limit.saturating_sub(remaining_wal_bytes),
                 )
                 .map_or(
-                    RecoveryDiscoveryFailure::CountOverflow(RecoveryDiscoveryCount::WalBytesRead),
+                    RecoveryDiscoveryFailure::overflow(RecoveryDiscoveryCount::WalBytesRead),
                     RecoveryDiscoveryFailure::Limit,
                 )
                 .into())

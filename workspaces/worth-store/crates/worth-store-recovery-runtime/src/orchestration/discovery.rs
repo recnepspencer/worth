@@ -1,23 +1,23 @@
-use worth_store::physical_runtime::{FilesystemObservationBound, RecoveryDiscoveryFailure};
 use worth_store_recovery_physics::PhysicalBootstrapFallbackAnchor;
 use worth_store_recovery_physics::{PhysicalRecoveryResidue, PhysicalRootSlotObservation};
 
 use crate::entry::{
     AdmittedPlatformAuthority, PhysicalRecoveryBlockCause, PhysicalRecoveryBlockEvidence,
-    PhysicalRecoveryBlockKind as PhysicalRecoveryBlock, PhysicalRecoveryLimitDeclaration,
-    PhysicalRecoveryLimitDimension, PhysicalRecoveryMediaObservationFailure,
+    PhysicalRecoveryBlockKind as PhysicalRecoveryBlock, PhysicalRecoveryLimitDimension,
     PhysicalRecoverySourceDenial,
 };
 
-use super::reader_limit::{OversizedArtifact, PastCeiling, ReadCeiling, UNCOUNTED_READS};
+use super::reader_limit::UNCOUNTED_READS;
 use super::recovery_budget::{ExceededRecoveryLimit, RecoveryAllowance};
 use super::{ManifestFactsDiscovery, RecoveryCoordination};
 
 mod observation;
+mod read_refusal;
 pub(super) mod source_memory;
 mod wal;
 
 use observation::observe_all;
+pub(super) use read_refusal::{past_grant, refused_beside, refused_read, unread};
 pub(crate) use wal::AdmittedWalInventory;
 
 pub(crate) struct DiscoveryMaterial {
@@ -150,6 +150,12 @@ impl DiscoveryFailure {
         })
     }
 
+    /// Why discovery stopped, as a test reads it.
+    #[cfg(test)]
+    pub(super) const fn cause(&self) -> PhysicalRecoveryBlockCause {
+        self.cause
+    }
+
     fn of(cause: PhysicalRecoveryBlockCause) -> Self {
         Self {
             cause,
@@ -261,100 +267,6 @@ pub(crate) fn discover_sources(
             ))
         }
     }
-}
-
-/// A read the reader refused. `Ok` is an artifact larger than its own
-/// ceiling: damage, which the caller words for the artifact it read. `Err`
-/// blocks discovery. `budget_dimension` names the caller's budget that
-/// narrowed `ceiling`. Discovery's reader was handed all of recovery's
-/// observation bytes, so its counts are recovery's.
-pub(super) fn refused_read(
-    failure: RecoveryDiscoveryFailure,
-    ceiling: ReadCeiling,
-    limits: &PhysicalRecoveryLimitDeclaration,
-    budget_dimension: PhysicalRecoveryLimitDimension,
-) -> Result<OversizedArtifact, DiscoveryFailure> {
-    let past = match failure {
-        RecoveryDiscoveryFailure::Limit(past) => past,
-        RecoveryDiscoveryFailure::Media { artifact, failure } => {
-            return Err(media_observation(
-                artifact,
-                PhysicalRecoveryMediaObservationFailure::Backend {
-                    kind: failure.kind(),
-                    io_kind: failure.io_kind(),
-                },
-            ))
-        }
-        RecoveryDiscoveryFailure::InvalidAddress { artifact } => {
-            return Err(media_observation(
-                artifact,
-                PhysicalRecoveryMediaObservationFailure::InvalidAddress,
-            ))
-        }
-        // A count past every count is no limit and names no artifact.
-        RecoveryDiscoveryFailure::CountOverflow(_) => {
-            return Err(DiscoveryFailure::from(
-                PhysicalRecoveryBlock::MediaObservation,
-            ))
-        }
-    };
-    let (dimension, observed, admitted) = match past.dimension() {
-        FilesystemObservationBound::ObservationBytes => (
-            PhysicalRecoveryLimitDimension::ObservationBytes,
-            past.observed(),
-            past.admitted(),
-        ),
-        FilesystemObservationBound::RequestedBytes => {
-            match ceiling.passed(&RecoveryDiscoveryFailure::Limit(past)) {
-                Some(PastCeiling::Budget { observed, admitted }) => {
-                    (budget_dimension, observed, admitted)
-                }
-                Some(PastCeiling::Artifact) | None => return Ok(OversizedArtifact),
-            }
-        }
-        // Discovery's main reader counts no reads or entries: each count
-        // limit counts its own before the read, so a refused count is past
-        // every count, and no limit can state it. A WAL listing counts its
-        // entries, and its caller reads them as WAL segments first.
-        FilesystemObservationBound::Reads | FilesystemObservationBound::Entries => {
-            return Err(DiscoveryFailure::from(
-                PhysicalRecoveryBlock::MediaObservation,
-            ));
-        }
-    };
-    Err(refused_beside(
-        RecoveryAllowance::declared(limits, dimension),
-        observed,
-        admitted,
-        PhysicalRecoveryBlock::MediaObservation,
-    ))
-}
-
-/// `observed` refused by the `remaining` a caller was handed of the `whole`
-/// allowance: the rest was spent before it. `phase` ran out of the whole;
-/// counts that do not cross it name no limit, and `phase` failed.
-pub(super) fn refused_beside(
-    whole: RecoveryAllowance,
-    observed: u64,
-    remaining: u64,
-    phase: PhysicalRecoveryBlock,
-) -> DiscoveryFailure {
-    whole.beside(observed, remaining).map_or_else(
-        || DiscoveryFailure::from(phase),
-        |limit| DiscoveryFailure::limit(phase, limit),
-    )
-}
-
-/// A read that failed for the media, not for any count.
-fn media_observation(
-    artifact: worth_store::physical_runtime::RecoveryDiscoveryArtifact,
-    failure: PhysicalRecoveryMediaObservationFailure,
-) -> DiscoveryFailure {
-    let mut blocked = DiscoveryFailure::from(PhysicalRecoveryBlock::MediaObservation);
-    blocked
-        .source_denials
-        .push(PhysicalRecoverySourceDenial::MediaObservation { artifact, failure });
-    blocked
 }
 
 fn discovery_artifact_context(cause: PhysicalRecoveryBlockCause) -> &'static str {

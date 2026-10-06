@@ -4,11 +4,12 @@
 use std::num::NonZeroU64;
 
 use sha2::{Digest, Sha256};
+use worth_store::physical_runtime::{ReadGrant, UnchargedRead};
 use worth_store_physical_format::{
     decode_extent_chunk, BlobAbandonmentReasonV1, BlobRecordV1, BlobSessionAbandonedV1,
     BlobSessionDeclarationV1, CurrentPhysicalRecordPlacement, DurableExtentManifest,
-    ExtentArenaFrameLayout, ExtentChunkCoordinate, PersistedPhysicalRecoveryOperation,
-    BLOB_RECORD_HEADER_BYTES, DURABLE_EXTENT_FRAME_HEADER_BYTES, EXTENT_CHUNK_METADATA_BYTES,
+    ExtentArenaFrameLayout, ExtentChunkFrame, PersistedPhysicalRecoveryOperation,
+    BLOB_RECORD_HEADER_BYTES,
 };
 use worth_store_physical_integrity::{PhysicalArtifactScope, PhysicalByteRange};
 
@@ -113,10 +114,10 @@ fn read_selected_declaration(
     {
         return Err(HistoricalFailure::Invalid);
     }
-    let limit = u64::from(format.page_size().bytes());
     budget.consume(1)?;
     let observed = discovery
-        .read_extent_manifest(placement.arena_range(), limit)
+        .read_extent_manifest(placement.arena_range(), ReadGrant::ceiling_only())
+        .observed()
         .map_err(historical_publication::discovery_failure)?;
     let bytes = observed.bytes().ok_or(HistoricalFailure::Invalid)?;
     let manifest_range =
@@ -152,23 +153,16 @@ fn read_selected_declaration(
         .filter(|layout| layout.admits(placement.arena_range(), 1))
         .ok_or(HistoricalFailure::Invalid)?;
     drop(observed);
-    let coordinate = ExtentChunkCoordinate::new(
-        manifest.record(),
-        manifest.extent_cell(),
-        manifest.logical_bytes(),
-        0,
-        1,
-    )
-    .ok_or(HistoricalFailure::Invalid)?;
-    let relative = layout.chunk_offset(1).ok_or(HistoricalFailure::Invalid)?;
-    let frame_length = u32::try_from(
-        DURABLE_EXTENT_FRAME_HEADER_BYTES as u64
-            + EXTENT_CHUNK_METADATA_BYTES as u64
-            + manifest.logical_bytes(),
-    )
-    .map_err(|_| HistoricalFailure::Invalid)?;
+    let chunk = ExtentChunkFrame::of(manifest, layout, 1).ok_or(HistoricalFailure::Invalid)?;
+    let (coordinate, relative, frame_length) = (chunk.coordinate(), chunk.offset(), chunk.length());
     let frame = discovery
-        .read_extent_range(placement.arena_range(), relative, frame_length, limit)
+        .read_extent_range(
+            placement.arena_range(),
+            relative,
+            frame_length,
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
         .map_err(historical_publication::discovery_failure)?;
     let absolute = placement
         .arena_range()

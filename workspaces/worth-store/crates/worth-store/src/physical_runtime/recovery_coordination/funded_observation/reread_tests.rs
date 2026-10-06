@@ -87,10 +87,14 @@ fn borrowed_checkpoint_denies_payload_before_read_then_retains_exact_native_back
 fn borrowed_head_reread_denies_native_address_backing_then_retries_and_retains_bytes() {
     let (root, runtime, coordination) = world();
     let media = runtime.record_serving_media();
-    let address = RecordArtifactFile::ReleaseCustodyHeadBlock {
-        generation: 7,
-        block: 2,
-    };
+    let ceiling = ArtifactCeiling::page(
+        PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
+        PageAddress::ReleaseCustodyHeadBlock {
+            generation: 7,
+            block: 2,
+        },
+    );
+    let address = ceiling.file();
     let directory = root.path().join("store/families/records/roots");
     std::fs::create_dir_all(&directory).unwrap();
     let path = directory.join(address.file_name());
@@ -105,7 +109,7 @@ fn borrowed_head_reread_denies_native_address_backing_then_retries_and_retains_b
     let mut observation = media.bounded_record_observation(4, 4096).unwrap();
     let before = observer.snapshot();
     let failure = window
-        .read_serving_record(&mut observation, address, 4096)
+        .read_serving_record(&mut observation, ceiling)
         .unwrap_err();
     let RecoveryDiscoveryAllocationFailure::Allocation {
         artifact: RecoveryDiscoveryArtifact::Record(observed),
@@ -145,10 +149,10 @@ fn borrowed_head_reread_denies_native_address_backing_then_retries_and_retains_b
     drop(held);
 
     let whole = window
-        .read_serving_record(&mut observation, address, 4096)
+        .read_serving_record(&mut observation, ceiling)
         .unwrap();
     let range = window
-        .read_serving_record_range(&mut observation, address, 9, 11, 4096)
+        .read_serving_record_range(&mut observation, address, 9, 11)
         .unwrap();
     assert_eq!(whole.observed().bytes(), Some(input.as_slice()));
     assert_eq!(range.observed().bytes(), Some(&input[9..20]));

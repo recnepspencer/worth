@@ -79,6 +79,18 @@ impl ArtifactTreeReadAllocator for Storage {
         Ok(vec![0; length])
     }
 }
+/// The ceiling of the head block the storage tests read.
+#[cfg(windows)]
+fn head_ceiling() -> ArtifactCeiling {
+    ArtifactCeiling::page(
+        format(),
+        PageAddress::ReleaseCustodyHeadBlock {
+            generation: 7,
+            block: 3,
+        },
+    )
+}
+
 pub(super) fn storage(deny_path: Option<Boundary>, deny_payload: bool) -> Storage {
     Storage {
         census: Rc::new(RefCell::new(Census::default())),
@@ -104,14 +116,12 @@ fn record_path_and_open_denials_precede_payload_then_same_discovery_retries() {
             discovery(|root| write_root_artifact(root, address, b"head"), 8, 64);
         let mut storage = storage(Some(boundary), false);
         let before = observer.snapshot();
-        let failure = discovery
-            .read_record_artifact_with_storage(address, 16, &mut storage)
-            .unwrap_err();
+        let failure = discovery.read_with_storage(head_ceiling(), uncharged(), &mut storage);
         assert!(
-            matches!(failure, RecoveryDiscoveryAllocationFailure::Allocation {
+            matches!(failure, TransitionOutcome::Failed(AllocatedReadFailure::Allocation {
             artifact: RecoveryDiscoveryArtifact::Record(observed), offset: 0,
             requested, cause: StorageDenied::Path(actual),
-        } if observed == address && requested > 0 && actual == boundary)
+        }) if observed == address && requested > 0 && actual == boundary)
         );
         assert_eq!(storage.census.borrow().active, [0; 4]);
         assert_eq!(storage.census.borrow().payload_calls, 0);
@@ -139,7 +149,8 @@ fn record_path_and_open_denials_precede_payload_then_same_discovery_retries() {
             );
         }
         let observed = discovery
-            .read_record_artifact_with_storage(address, 16, &mut storage)
+            .read_with_storage(head_ceiling(), uncharged(), &mut storage)
+            .observed()
             .unwrap();
         assert_eq!(observed.bytes(), Some(&b"head"[..]));
         assert_eq!(
@@ -173,16 +184,20 @@ fn overflowing_record_range_precedes_rejecting_storage_and_same_discovery_retrie
     let mut storage = storage(Some(Boundary::DirectoryAddress), false);
     let before = observer.snapshot();
     let discovery_before = discovery.counters();
-    let failure = discovery
-        .read_record_artifact_range_with_storage(address, u64::MAX, 1, 16, &mut storage)
-        .unwrap_err();
+    let failure = discovery.read_record_artifact_range_with_storage(
+        address,
+        u64::MAX,
+        1,
+        uncharged(),
+        &mut storage,
+    );
     assert!(matches!(
         failure,
-        RecoveryDiscoveryAllocationFailure::Discovery(
-            RecoveryDiscoveryFailure::InvalidAddress {
+        TransitionOutcome::Failed(AllocatedReadFailure::Damage(
+            ArtifactDamage::InvalidAddress {
                 artifact: RecoveryDiscoveryArtifact::Record(actual)
             }
-        ) if actual == address
+        )) if actual == address
     ));
     assert_eq!(storage.census.borrow().path_calls, 0);
     assert_eq!(storage.census.borrow().payload_calls, 0);
@@ -194,22 +209,22 @@ fn overflowing_record_range_precedes_rejecting_storage_and_same_discovery_retrie
         "no address, open or read attempt"
     );
 
-    let failure = discovery
-        .read_record_artifact_range_with_storage(address, 2, 3, 16, &mut storage)
-        .unwrap_err();
+    let failure =
+        discovery.read_record_artifact_range_with_storage(address, 2, 3, uncharged(), &mut storage);
     assert!(matches!(
         failure,
-        RecoveryDiscoveryAllocationFailure::Allocation {
+        TransitionOutcome::Failed(AllocatedReadFailure::Allocation {
             cause: StorageDenied::Path(Boundary::DirectoryAddress),
             ..
-        }
+        })
     ));
     assert_eq!(storage.census.borrow().path_calls, 1);
     assert_eq!(storage.census.borrow().payload_calls, 0);
     assert_eq!(discovery.counters(), discovery_before);
     assert_eq!(observer.snapshot(), before);
     let observed = discovery
-        .read_record_artifact_range_with_storage(address, 2, 3, 16, &mut storage)
+        .read_record_artifact_range_with_storage(address, 2, 3, uncharged(), &mut storage)
+        .observed()
         .unwrap();
     assert_eq!(observed.bytes(), Some(&b"cde"[..]));
     assert_eq!(observed.offset(), 2);
@@ -239,20 +254,20 @@ fn record_payload_denial_and_backed_range_preserve_exact_read_semantics() {
     );
     let mut storage = storage(None, true);
     let before = observer.snapshot().positioned_read_attempts();
-    let failure = discovery
-        .read_record_artifact_range_with_storage(address, 2, 3, 16, &mut storage)
-        .unwrap_err();
+    let failure =
+        discovery.read_record_artifact_range_with_storage(address, 2, 3, uncharged(), &mut storage);
     assert!(
-        matches!(failure, RecoveryDiscoveryAllocationFailure::Allocation {
+        matches!(failure, TransitionOutcome::Failed(AllocatedReadFailure::Allocation {
         artifact: RecoveryDiscoveryArtifact::Record(observed), offset: 2,
         requested: 3, cause: StorageDenied::Payload,
-    } if observed == address)
+    }) if observed == address)
     );
     assert_eq!(storage.census.borrow().active, [0; 4]);
     assert_eq!(observer.snapshot().positioned_read_attempts(), before);
     assert_eq!(discovery.counters().bytes_read, 0);
     let observed = discovery
-        .read_record_artifact_range_with_storage(address, 2, 3, 16, &mut storage)
+        .read_record_artifact_range_with_storage(address, 2, 3, uncharged(), &mut storage)
+        .observed()
         .unwrap();
     assert_eq!(observed.bytes(), Some(&b"cde"[..]));
     assert_eq!(observed.offset(), 2);
@@ -290,11 +305,12 @@ fn checkpoint_and_fixed_slot_backed_reads_preserve_success_absence_and_counters(
         .unwrap();
     assert_eq!(checkpoint.bytes(), Some(&b"checkpoint"[..]));
     let absent = discovery
-        .read_record_artifact_with_storage(
-            RecordArtifactFile::PreviousRootSelector,
-            16,
+        .read_with_storage(
+            ArtifactCeiling::fixed(crate::recovery_media::FixedArtifact::PreviousRootSelector),
+            uncharged(),
             &mut storage,
         )
+        .observed()
         .unwrap();
     assert_eq!(absent.bytes(), None);
     let missing = discovery
@@ -302,9 +318,10 @@ fn checkpoint_and_fixed_slot_backed_reads_preserve_success_absence_and_counters(
             RecordArtifactFile::RootManifest { generation: 99 },
             1,
             3,
-            16,
+            uncharged(),
             &mut storage,
         )
+        .observed()
         .unwrap();
     assert_eq!(missing.bytes(), None);
     assert_eq!(missing.offset(), 1);
@@ -325,9 +342,9 @@ fn unqualified_record_storage_rejects_before_address_or_payload_callbacks() {
     assert!(matches!(
         result,
         Err(RecoveryDiscoveryAllocationFailure::Discovery(
-            RecoveryDiscoveryFailure::InvalidAddress {
+            RecoveryDiscoveryFailure::Damage(ArtifactDamage::InvalidAddress {
                 artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint
-            }
+            })
         ))
     ));
     assert_eq!(storage.census.borrow().path_calls, 0);

@@ -1,14 +1,13 @@
 use sha2::{Digest, Sha256};
-use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
+use worth_store::physical_runtime::{BoundedRecoveryFilesystemDiscovery, ReadGrant, UnchargedRead};
 use worth_store_physical_format::{
     decode_extent_chunk, encode_data_frame_page_lsn, prepare_extent_chunk,
     CurrentPhysicalRecordPlacement, DurableExtentManifest, DurableExtentRecordPlacement,
-    DurableFrameKind, ExtentArenaFrameLayout, ExtentChunkCoordinate,
-    PersistedPhysicalDataFrameSubject, PersistedPhysicalRecoveryFrame,
-    PersistedPhysicalRecoveryManifest, PersistedPhysicalRecoveryProjection,
-    PersistedPhysicalRecoveryRootState, PhysicalGeneration, PhysicalGenerationAuthority,
-    PhysicalPageLsn, PhysicalRecordFormatDeclaration, PhysicalRewriteRedo, RecordArtifactFile,
-    RecordFrameCoordinate,
+    DurableFrameKind, ExtentArenaFrameLayout, ExtentChunkFrame, PersistedPhysicalDataFrameSubject,
+    PersistedPhysicalRecoveryFrame, PersistedPhysicalRecoveryManifest,
+    PersistedPhysicalRecoveryProjection, PersistedPhysicalRecoveryRootState, PhysicalGeneration,
+    PhysicalGenerationAuthority, PhysicalPageLsn, PhysicalRecordFormatDeclaration,
+    PhysicalRewriteRedo, RecordArtifactFile, RecordFrameCoordinate,
 };
 use worth_store_recovery_physics::{
     PhysicalRedoProjection, PhysicalRewriteAdmission, PhysicalSourceSelection,
@@ -16,7 +15,6 @@ use worth_store_recovery_physics::{
 
 use super::super::historical_publication::{discovery_failure, HistoricalFailure};
 use super::decode_record;
-use crate::orchestration::reader_limit::extent_page_ceiling;
 
 /// The selected extent placement an extent rewrite redo names, if any.
 ///
@@ -70,15 +68,19 @@ pub(super) fn prove(
     let layout = ExtentArenaFrameLayout::new(format, manifest.alignment())
         .ok_or(HistoricalFailure::Invalid)?;
     for (ordinal, frame) in (1_u32..).zip(frames) {
+        let chunk =
+            ExtentChunkFrame::of(manifest, layout, ordinal).ok_or(HistoricalFailure::Invalid)?;
+        if frame.len() != chunk.length() as usize {
+            return Err(HistoricalFailure::Invalid);
+        }
         let observed = discovery
             .read_extent_range(
                 placement.arena_range(),
-                layout
-                    .chunk_offset(ordinal)
-                    .ok_or(HistoricalFailure::Invalid)?,
-                frame.len() as u32,
-                extent_page_ceiling(format),
+                chunk.offset(),
+                chunk.length(),
+                ReadGrant::ceiling_only(),
             )
+            .observed()
             .map_err(discovery_failure)?
             .into_bytes()
             .ok_or(HistoricalFailure::Invalid)?;
@@ -121,28 +123,25 @@ pub(super) fn project(
     let mut persisted = Vec::with_capacity(frames.len());
     let layout =
         ExtentArenaFrameLayout::new(format, arena.alignment()).ok_or(HistoricalFailure::Invalid)?;
-    let mut completed = 0_u64;
-    let capacity = u64::from(manifest.chunk_payload_capacity());
     for (ordinal, bytes) in (1_u32..).zip(frames.iter()) {
-        let coordinate = chunk_coordinate(manifest, completed, ordinal)?;
-        let length = u32::try_from(bytes.len()).map_err(|_| HistoricalFailure::Invalid)?;
+        let chunk =
+            ExtentChunkFrame::of(manifest, layout, ordinal).ok_or(HistoricalFailure::Invalid)?;
+        if bytes.len() != chunk.length() as usize {
+            return Err(HistoricalFailure::Invalid);
+        }
         persisted.push(
             PersistedPhysicalRecoveryFrame::new(
-                PersistedPhysicalDataFrameSubject::ExtentChunk(coordinate),
+                PersistedPhysicalDataFrameSubject::ExtentChunk(chunk.coordinate()),
                 RecordFrameCoordinate::new(
                     artifact,
-                    arena.destination().offset()
-                        + layout
-                            .chunk_offset(ordinal)
-                            .ok_or(HistoricalFailure::Invalid)?,
-                    length,
+                    arena.destination().offset() + chunk.offset(),
+                    chunk.length(),
                 )
                 .ok_or(HistoricalFailure::Invalid)?,
                 bytes,
             )
             .ok_or(HistoricalFailure::Invalid)?,
         );
-        completed += (manifest.logical_bytes() - completed).min(capacity);
     }
     let manifest_file = PersistedPhysicalRecoveryManifest::new(
         RecordFrameCoordinate::new(artifact, arena.destination().offset(), 104)
@@ -193,7 +192,8 @@ fn read_generation(
     placement: DurableExtentRecordPlacement,
 ) -> Result<(DurableExtentManifest, Vec<u8>), HistoricalFailure> {
     let manifest_bytes = discovery
-        .read_extent_manifest(placement.arena_range(), extent_page_ceiling(format))
+        .read_extent_manifest(placement.arena_range(), ReadGrant::ceiling_only())
+        .observed()
         .map_err(discovery_failure)?
         .into_bytes()
         .ok_or(HistoricalFailure::Invalid)?;
@@ -223,26 +223,21 @@ fn read_generation(
     }
     let mut payload = Vec::with_capacity(rewrite.source_length() as usize);
     for ordinal in 1..=manifest.chunk_count() {
-        let coordinate = chunk_coordinate(manifest, payload.len() as u64, ordinal)?;
-        let length = (manifest.logical_bytes() as usize - payload.len())
-            .min(manifest.chunk_payload_capacity() as usize);
-        let frame_length = manifest.maximum_frame_bytes() as usize
-            - manifest.chunk_payload_capacity() as usize
-            + length;
+        let chunk =
+            ExtentChunkFrame::of(manifest, layout, ordinal).ok_or(HistoricalFailure::Invalid)?;
         let frame = discovery
             .read_extent_range(
                 placement.arena_range(),
-                layout
-                    .chunk_offset(ordinal)
-                    .ok_or(HistoricalFailure::Invalid)?,
-                frame_length as u32,
-                extent_page_ceiling(format),
+                chunk.offset(),
+                chunk.length(),
+                ReadGrant::ceiling_only(),
             )
+            .observed()
             .map_err(discovery_failure)?
             .into_bytes()
             .ok_or(HistoricalFailure::Invalid)?;
-        let (chunk, chunk_format) =
-            decode_extent_chunk(&frame, coordinate).map_err(|_| HistoricalFailure::Invalid)?;
+        let (chunk, chunk_format) = decode_extent_chunk(&frame, chunk.coordinate())
+            .map_err(|_| HistoricalFailure::Invalid)?;
         if chunk_format != format {
             return Err(HistoricalFailure::Invalid);
         }
@@ -274,6 +269,10 @@ fn encode_successor(
             + worth_store_physical_format::EXTENT_CHUNK_METADATA_BYTES);
     let chunks =
         u32::try_from(payload.len().div_ceil(capacity)).map_err(|_| HistoricalFailure::Invalid)?;
+    let alignment = rewrite
+        .extent_arena()
+        .ok_or(HistoricalFailure::Invalid)?
+        .alignment();
     let manifest = DurableExtentManifest::new(
         format,
         placement.record(),
@@ -281,18 +280,18 @@ fn encode_successor(
         payload.len() as u64,
         format.page_size().bytes(),
         chunks,
-        rewrite
-            .extent_arena()
-            .ok_or(HistoricalFailure::Invalid)?
-            .alignment(),
+        alignment,
     )
     .ok_or(HistoricalFailure::Invalid)?;
+    let layout =
+        ExtentArenaFrameLayout::new(format, alignment).ok_or(HistoricalFailure::Invalid)?;
     let mut frames = Vec::with_capacity(chunks as usize);
     let mut completed = 0_usize;
     for ordinal in 1..=chunks {
-        let length = (payload.len() - completed).min(capacity);
-        let coordinate = chunk_coordinate(manifest, completed as u64, ordinal)?;
-        let mut chunk = prepare_extent_chunk(format, coordinate, length)
+        let framed =
+            ExtentChunkFrame::of(manifest, layout, ordinal).ok_or(HistoricalFailure::Invalid)?;
+        let length = framed.payload_bytes() as usize;
+        let mut chunk = prepare_extent_chunk(format, framed.coordinate(), length)
             .map_err(|_| HistoricalFailure::Invalid)?;
         chunk
             .payload_mut()
@@ -308,19 +307,4 @@ fn encode_successor(
         completed += length;
     }
     Ok((frames, manifest))
-}
-
-fn chunk_coordinate(
-    manifest: DurableExtentManifest,
-    offset: u64,
-    ordinal: u32,
-) -> Result<ExtentChunkCoordinate, HistoricalFailure> {
-    ExtentChunkCoordinate::new(
-        manifest.record(),
-        manifest.extent_cell(),
-        manifest.logical_bytes(),
-        offset,
-        ordinal,
-    )
-    .ok_or(HistoricalFailure::Invalid)
 }

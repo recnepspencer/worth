@@ -146,9 +146,8 @@ impl<M: super::DiscoveryMediaBacking> FilesystemObservation<M> {
             self.parts
                 .artifact_tree()
                 .directory_exists(directory.get())
-                .map_err(|failure| RecoveryDiscoveryFailure::Media {
-                    artifact: directory_context.clone(),
-                    failure,
+                .map_err(|failure| {
+                    RecoveryDiscoveryFailure::media(directory_context.clone(), failure)
                 })?
         };
         if !exists {
@@ -252,7 +251,7 @@ impl<M> FilesystemObservation<M> {
     /// Counts the WAL bytes one read returned, for the caller.
     pub(super) fn count_wal_bytes(&mut self, bytes: u64) -> Result<(), RecoveryDiscoveryFailure> {
         self.counters.wal_bytes_read = self.counters.wal_bytes_read.checked_add(bytes).ok_or(
-            RecoveryDiscoveryFailure::CountOverflow(RecoveryDiscoveryCount::WalBytesRead),
+            RecoveryDiscoveryFailure::overflow(RecoveryDiscoveryCount::WalBytesRead),
         )?;
         Ok(())
     }
@@ -260,7 +259,7 @@ impl<M> FilesystemObservation<M> {
     /// Counts one more issued WAL observation.
     pub(super) fn count_wal_observation(&mut self) -> Result<(), RecoveryDiscoveryFailure> {
         self.wal_observations_issued = self.wal_observations_issued.checked_add(1).ok_or(
-            RecoveryDiscoveryFailure::CountOverflow(RecoveryDiscoveryCount::WalObservations),
+            RecoveryDiscoveryFailure::overflow(RecoveryDiscoveryCount::WalObservations),
         )?;
         Ok(())
     }
@@ -280,10 +279,7 @@ fn listing_refused(
             .err()
     });
     refused.map_or(
-        RecoveryDiscoveryFailure::Media {
-            artifact: RecoveryDiscoveryArtifact::WalDirectory,
-            failure,
-        },
+        RecoveryDiscoveryFailure::media(RecoveryDiscoveryArtifact::WalDirectory, failure),
         RecoveryDiscoveryFailure::Limit,
     )
 }
@@ -337,10 +333,8 @@ mod tests {
             ArtifactTreeFailure::recovery_damaged(),
             ArtifactTreeFailure::recovery_denial(),
         ] {
-            let tree = RecoveryDiscoveryFailure::Media {
-                artifact: RecoveryDiscoveryArtifact::WalDirectory,
-                failure,
-            };
+            let tree =
+                RecoveryDiscoveryFailure::media(RecoveryDiscoveryArtifact::WalDirectory, failure);
             assert_eq!(listing_refused(failure, NonZeroU64::MIN), tree);
             assert_eq!(
                 map_listing_failure::<Infallible>(

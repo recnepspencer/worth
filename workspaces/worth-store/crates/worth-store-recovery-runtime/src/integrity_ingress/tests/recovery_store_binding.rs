@@ -1,4 +1,5 @@
 use worth_proof::TransitionOutcome;
+use worth_store::physical_runtime::{ArtifactCeiling, PageAddress, ReadGrant, UnchargedRead};
 use worth_store::physical_runtime::{
     FilesystemAccessPosture, FilesystemMediaAdmission, PhysicalRuntimeAdmission, PhysicalStore,
     QualifiedRecoveryFilesystemMedia,
@@ -40,7 +41,13 @@ fn checksum_valid_root_bytes_cannot_relabel_their_c4_store_locator_or_offset() {
         .admit_persisted_store()
         .unwrap();
     let mut discovery = media.bounded_discovery(1, 4096).unwrap();
-    let observed = discovery.read_root_manifest(1, 4096).unwrap();
+    let observed = discovery
+        .read(
+            ArtifactCeiling::page(format, PageAddress::RootManifest { generation: 1 }),
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
+        .unwrap();
     let range = PhysicalByteRange::new(0, bytes.len() as u64).unwrap();
     let wrong_locator = PhysicalArtifactScope::root_manifest(store_a, format, 2, range).unwrap();
     assert!(matches!(

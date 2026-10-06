@@ -6,10 +6,11 @@ use super::SelectedMediaRejoinDenial as Denial;
 use crate::physical_runtime::{
     PhysicalRecoveryAllocationAdmission, PhysicalRecoveryReadAllocation,
 };
-use worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery;
+use worth_store_physical_backend::{
+    ArtifactCeiling, BoundedRecoveryFilesystemDiscovery, PageAddress, ReadGrant, UnchargedRead,
+};
 use worth_store_physical_format::{
-    DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration, RecordArtifactFile,
-    ReleaseCustodyHeadEntryV1,
+    DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration, ReleaseCustodyHeadEntryV1,
 };
 
 mod backing;
@@ -111,13 +112,20 @@ pub(super) fn observe_with_resident(
         recovery_allocation.byte_limit(),
         window,
         resident,
-        |reference, remaining, storage| {
-            let artifact = RecordArtifactFile::ReleaseCustodyHeadBlock {
+        // The page is the read's ceiling; the walker refuses a frame past
+        // its own remaining bytes once it sees the frame's length.
+        |reference, _remaining, storage| {
+            let address = PageAddress::ReleaseCustodyHeadBlock {
                 generation: reference.generation(),
                 block: reference.block(),
             };
             discovery
-                .read_record_artifact_with_storage(artifact, remaining, storage)
+                .read_with_storage(
+                    ArtifactCeiling::page(format, address),
+                    ReadGrant::ceiling_only(),
+                    storage,
+                )
+                .observed()
                 .map_err(storage::read_denial)?
                 .into_bytes()
                 .ok_or(Denial::MissingFrame)

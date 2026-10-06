@@ -21,7 +21,7 @@ impl QualifiedFilesystemMedia {
         maximum_entries: u64,
         maximum_bytes: u64,
     ) -> Result<BorrowedWalFilesystemObservation<'_>, RecoveryFilesystemQualificationError> {
-        if maximum_entries == 0 || maximum_bytes == 0 {
+        if maximum_entries == 0 {
             return Err(RecoveryFilesystemQualificationError::InvalidDiscoveryLimit);
         }
         let incarnation = self

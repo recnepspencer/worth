@@ -1,5 +1,6 @@
 use super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
 use crate::orchestration::source_copy::SourceCopyCursor;
+use worth_store::physical_runtime::{ReadGrant, UnchargedRead};
 use worth_store_physical_format::{CurrentPhysicalRecordPlacement, RecordFrameCoordinate};
 use worth_store_recovery_physics::RecoveryOperationFate;
 #[path = "source_copy/wal_evidence.rs"]
@@ -106,8 +107,8 @@ pub(super) fn verify(
     let mut discovery = context
         .authority
         .media
-        .bounded_discovery(reads.max(1), total_io_bytes.max(1))
-        .expect("checked nonzero limits; an admitted reader cannot reject object size");
+        .bounded_discovery(reads.max(1), total_io_bytes)
+        .expect("a reader admitted a read opens on any byte bound");
     let result = (|| {
         for copy in &copies {
             let recipe = copy.recipe();
@@ -148,7 +149,8 @@ pub(super) fn verify(
             }
             let source = intent.source().arena_range();
             let observed = discovery
-                .read_extent_manifest(source, byte_limit)
+                .read_extent_manifest(source, ReadGrant::ceiling_only())
+                .observed()
                 .map_err(|_| ())?;
             let mut cursor = SourceCopyCursor::open(
                 store,
@@ -164,8 +166,9 @@ pub(super) fn verify(
                         source,
                         coordinate.offset() - source.offset(),
                         coordinate.length(),
-                        byte_limit,
+                        ReadGrant::ceiling_only(),
                     )
+                    .observed()
                     .map_err(|_| ())?;
                 let (destination, bytes) =
                     cursor.transform(&observed, &mut context.integrity_trace)?;
@@ -175,7 +178,6 @@ pub(super) fn verify(
                         intent.destination().arena_range(),
                         destination,
                         &bytes,
-                        byte_limit,
                     )?;
                 }
             }
@@ -186,7 +188,6 @@ pub(super) fn verify(
                     intent.destination().arena_range(),
                     destination,
                     &bytes,
-                    byte_limit,
                 )?;
             }
         }
@@ -224,15 +225,15 @@ fn compare(
     range: worth_store_physical_format::ExtentArenaRange,
     coordinate: RecordFrameCoordinate,
     expected: &[u8],
-    limit: u64,
 ) -> Result<(), ()> {
     let observed = discovery
         .read_extent_range(
             range,
             coordinate.offset() - range.offset(),
             coordinate.length(),
-            limit,
+            ReadGrant::ceiling_only(),
         )
+        .observed()
         .map_err(|_| ())?;
     if observed.bytes() == Some(expected) {
         Ok(())

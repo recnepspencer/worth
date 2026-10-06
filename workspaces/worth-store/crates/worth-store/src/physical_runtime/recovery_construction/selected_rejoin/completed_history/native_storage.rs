@@ -3,12 +3,13 @@
 
 use worth_store_buffer_pool::OperationAllocationGrant;
 use worth_store_physical_backend::{
-    ArtifactTreePathAllocationBoundary, ArtifactTreePathAllocator, ArtifactTreeReadAllocator,
-    ArtifactTreeStorageAllocator, ObservedRecoveryArtifact, RecoveryDiscoveryAllocationFailure,
+    ArtifactCeiling, ArtifactTreePathAllocationBoundary, ArtifactTreePathAllocator,
+    ArtifactTreeReadAllocator, ArtifactTreeStorageAllocator, ObservedRecoveryArtifact, PageAddress,
+    ReadGrant, RecoveryDiscoveryAllocationFailure, UnchargedRead,
 };
-use worth_store_physical_format::RecordArtifactFile;
 use worth_store_physical_format::{
-    DurableExtentRecordPlacement, EXTENT_ARENA_MANIFEST_FRAME_BYTES,
+    DurableExtentRecordPlacement, PhysicalRecordFormatDeclaration, RecordArtifactFile,
+    EXTENT_ARENA_MANIFEST_FRAME_BYTES,
 };
 
 use super::super::{
@@ -245,11 +246,16 @@ impl RouteWalkStorage for HistoricalWalkStorage<'_, '_> {
     fn read_page(
         &mut self,
         discovery: &mut worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery,
-        artifact: RecordArtifactFile,
-        limit: u64,
+        format: PhysicalRecordFormatDeclaration,
+        address: PageAddress,
     ) -> Result<ObservedRecoveryArtifact, Denial> {
         discovery
-            .read_record_artifact_with_storage(artifact, limit, self)
+            .read_with_storage(
+                ArtifactCeiling::page(format, address),
+                ReadGrant::ceiling_only(),
+                self,
+            )
+            .observed()
             .map_err(read_denial)
     }
     fn read_page_range(
@@ -264,9 +270,10 @@ impl RouteWalkStorage for HistoricalWalkStorage<'_, '_> {
                 artifact,
                 offset,
                 length,
-                u64::from(length),
+                ReadGrant::ceiling_only(),
                 self,
             )
+            .observed()
             .map_err(read_denial)
     }
     fn discard_frame(&mut self, frame: ObservedRecoveryArtifact) -> Result<(), Denial> {
@@ -296,14 +303,12 @@ impl ExtentReadStorage for HistoricalWalkStorage<'_, '_> {
         &mut self,
         discovery: &mut worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery,
         placement: DurableExtentRecordPlacement,
-        page_limit: u64,
     ) -> Result<ObservedRecoveryArtifact, Denial> {
         self.read_extent_range(
             discovery,
             placement,
             0,
             EXTENT_ARENA_MANIFEST_FRAME_BYTES as u32,
-            page_limit,
         )
     }
     fn read_chunk(
@@ -312,9 +317,8 @@ impl ExtentReadStorage for HistoricalWalkStorage<'_, '_> {
         placement: DurableExtentRecordPlacement,
         relative: u64,
         length: u32,
-        page_limit: u64,
     ) -> Result<ObservedRecoveryArtifact, Denial> {
-        self.read_extent_range(discovery, placement, relative, length, page_limit)
+        self.read_extent_range(discovery, placement, relative, length)
     }
     fn discard_frame(&mut self, frame: ObservedRecoveryArtifact) -> Result<(), Denial> {
         RouteWalkStorage::discard_frame(self, frame)
@@ -328,7 +332,6 @@ impl HistoricalWalkStorage<'_, '_> {
         placement: DurableExtentRecordPlacement,
         relative: u64,
         length: u32,
-        page_limit: u64,
     ) -> Result<ObservedRecoveryArtifact, Denial> {
         let range = placement.arena_range();
         let end = relative
@@ -348,9 +351,10 @@ impl HistoricalWalkStorage<'_, '_> {
                 },
                 offset,
                 length,
-                page_limit,
+                ReadGrant::ceiling_only(),
                 self,
             )
+            .observed()
             .map_err(read_denial)
     }
 }

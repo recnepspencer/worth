@@ -1,4 +1,4 @@
-use super::super::{refused_read, CheckpointDiscovery, DiscoveryFailure};
+use super::super::{past_grant, refused_read, unread, CheckpointDiscovery, DiscoveryFailure};
 use crate::entry::{
     PhysicalRecoveryBlockKind, PhysicalRecoveryCheckpointIntegrityDenial,
     PhysicalRecoveryLimitDimension, PhysicalRecoveryLimits, PhysicalRecoveryRootProtocolArtifact,
@@ -9,10 +9,11 @@ use crate::integrity_ingress::{
     RecoveryIntegrityIngressRejection, RecoveryIntegrityIngressTrace,
 };
 use crate::orchestration::reader_limit::{OversizedArtifact, ReadCeiling};
-use crate::orchestration::recovery_budget::RecoveryAllowance;
+use crate::orchestration::recovery_budget::{RecoveryAllowance, RecoveryReadBudget};
 use crate::progression::PhysicalRecoveryDiscoveryCounters;
 use worth_store::physical_runtime::{
-    BoundedRecoveryFilesystemDiscovery, PhysicalRecoveryReadAllocation,
+    BoundedRecoveryFilesystemDiscovery, GrantedRead, GrantedReadStop,
+    PhysicalRecoveryReadAllocation,
 };
 use worth_store_physical_format::PhysicalRecordFormatDeclaration;
 
@@ -42,7 +43,7 @@ pub(super) fn observe_checkpoint(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     limits: PhysicalRecoveryLimits,
     record_format: PhysicalRecordFormatDeclaration,
-    remaining_manifest_bytes: &mut u64,
+    manifest_bytes: &mut RecoveryReadBudget,
     counters: &mut PhysicalRecoveryDiscoveryCounters,
     ingress_trace: &mut RecoveryIntegrityIngressTrace,
     allocation: &mut PhysicalRecoveryReadAllocation<'_>,
@@ -82,46 +83,32 @@ pub(super) fn observe_checkpoint(
         ) {
             Ok(Some(projection)) => {
                 let generation = projection.checkpoint.facts().source().root().generation();
-                // A root manifest is one page of the declared format.
-                let ceiling = ReadCeiling::within(
-                    u64::from(record_format.page_size().bytes()),
-                    declaration.manifest_bytes,
-                    *remaining_manifest_bytes,
-                );
-                let source_root = allocation
-                    .read_checkpoint_source_root(discovery, generation, ceiling.requested())
-                    .map_err(|failure| {
-                        oversized_source_root(
+                // The source root is one page of the declared format, and
+                // spends recovery's manifest bytes.
+                let source_root = match allocation
+                    .read_checkpoint_source_root(
+                        discovery,
+                        record_format,
+                        generation,
+                        manifest_bytes.grant(),
+                    )
+                    .granted()
+                {
+                    Ok(source_root) => source_root,
+                    Err(GrantedReadStop::PastGrant(overrun)) => {
+                        return Err(past_grant(manifest_bytes, overrun).with_integrity_trace(trace));
+                    }
+                    Err(GrantedReadStop::Unread(failure)) => {
+                        return Err(oversized_source_root(
                             generation,
                             allocation::refused(&declaration, failure, |failure| {
-                                refused_read(
-                                    failure,
-                                    ceiling,
-                                    &declaration,
-                                    PhysicalRecoveryLimitDimension::ManifestBytes,
-                                )
+                                unread(failure, &declaration)
                             }),
                         )
-                        .with_integrity_trace(trace.clone())
-                    })?;
-                let bytes = source_root
-                    .observed()
-                    .bytes()
-                    .map_or(0, |bytes| bytes.len() as u64);
-                // The read was asked for no more than was left. T2: a read grant
-                // charges what it returns.
-                *remaining_manifest_bytes =
-                    remaining_manifest_bytes.checked_sub(bytes).ok_or_else(|| {
-                        super::super::refused_beside(
-                            RecoveryAllowance::declared(
-                                &declaration,
-                                PhysicalRecoveryLimitDimension::ManifestBytes,
-                            ),
-                            bytes,
-                            *remaining_manifest_bytes,
-                            PhysicalRecoveryBlockKind::MediaObservation,
-                        )
-                    })?;
+                        .with_integrity_trace(trace));
+                    }
+                };
+                manifest_bytes.charge(source_root.observed());
                 CheckpointDiscovery::Admitted {
                     projection,
                     source_root,

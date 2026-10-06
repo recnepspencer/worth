@@ -1,6 +1,8 @@
 //! C.9-validated selected routing path for one release control record.
 
-use worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery;
+use worth_store_physical_backend::{
+    ArtifactCeiling, BoundedRecoveryFilesystemDiscovery, PageAddress, ReadGrant, UnchargedRead,
+};
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, PersistedRecordIdentity, PhysicalRecordFormatDeclaration,
     PhysicalTreeIdentity, RecordArtifactFile, RootRoutingBlockScopeIdentity,
@@ -28,11 +30,17 @@ pub(super) fn selected_route(
     }
     loop {
         let frame = discovery
-            .read_root_routing_block(
-                reference.generation(),
-                reference.block(),
-                u64::from(format.page_size().bytes()),
+            .read(
+                ArtifactCeiling::page(
+                    format,
+                    PageAddress::RootRoutingBlock {
+                        generation: reference.generation(),
+                        block: reference.block(),
+                    },
+                ),
+                ReadGrant::ceiling_only(),
             )
+            .observed()
             .map_err(Denial::Discovery)?;
         let bytes = frame.bytes().ok_or(Denial::MissingRoute)?;
         slices.push(

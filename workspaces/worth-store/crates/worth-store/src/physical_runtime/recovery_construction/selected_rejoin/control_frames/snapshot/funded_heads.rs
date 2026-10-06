@@ -61,6 +61,7 @@ impl SelectedHeadMediaWitness {
     pub(super) fn verify_serving_media(
         &self,
         media: &QualifiedFilesystemMedia,
+        format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
         window: &mut PhysicalRecoveryReadAllocation<'_>,
     ) -> Result<bool, RecordBootstrapDenial> {
         let mut entries = 0_u64;
@@ -86,7 +87,7 @@ impl SelectedHeadMediaWitness {
             .map_err(RecordBootstrapDenial::RecoveredHeadObservationUnavailable)?;
         for heads in self.components() {
             for slice in heads.slices() {
-                if !slice.matches_funded_serving_media(&mut observation, window)? {
+                if !slice.matches_funded_serving_media(&mut observation, format, window)? {
                     return Ok(false);
                 }
             }
@@ -99,19 +100,19 @@ impl SelectedArtifactSlice {
     pub(super) fn matches_funded_serving_media(
         &self,
         media: &mut worth_store_physical_backend::BorrowedRecordFilesystemObservation<'_>,
+        format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
         window: &mut PhysicalRecoveryReadAllocation<'_>,
     ) -> Result<bool, RecordBootstrapDenial> {
         use sha2::{Digest, Sha256};
         let observation = if self.whole_file {
-            window.read_serving_record(media, self.artifact, u64::from(self.length))
+            // A whole slice was read under its format's ceiling; an artifact
+            // with none was never read whole.
+            let ceiling =
+                worth_store_physical_backend::ArtifactCeiling::of_record(format, self.artifact)
+                    .ok_or(RecordBootstrapDenial::RecoveredCheckpointCustodyMismatch)?;
+            window.read_serving_record(media, ceiling)
         } else {
-            window.read_serving_record_range(
-                media,
-                self.artifact,
-                self.offset,
-                self.length,
-                u64::from(self.length),
-            )
+            window.read_serving_record_range(media, self.artifact, self.offset, self.length)
         }
         .map_err(RecordBootstrapDenial::RecoveredHeadRead)?;
         let Some(bytes) = observation.observed().bytes() else {

@@ -2,11 +2,12 @@
 //! A borrowed C8 replay is a comparison target, never a media observation.
 
 use worth_store_physical_backend::{
-    BoundedRecoveryFilesystemDiscovery, RecoveryDiscoveryAllocationFailure,
+    ArtifactCeiling, BoundedRecoveryFilesystemDiscovery, PageAddress,
+    RecoveryDiscoveryAllocationFailure,
 };
 use worth_store_physical_format::{
     DurablePhysicalRootManifest, PersistedReleaseCustodyHeadEffectV1,
-    PhysicalRecordFormatDeclaration, RecordArtifactFile, ReleaseCustodyHeadBlockReferenceV1,
+    PhysicalRecordFormatDeclaration, ReleaseCustodyHeadBlockReferenceV1,
     ReleaseCustodyHeadMutationV1,
 };
 use worth_store_recovery_physics::VerifiedSelectedReleaseHeadReplayV14;
@@ -119,7 +120,7 @@ fn observe_effect_nodes(
             window,
             path.reference(),
             path.frame(),
-            page,
+            format,
             &mut slices,
         )?;
     }
@@ -129,7 +130,7 @@ fn observe_effect_nodes(
             window,
             write.reference(),
             write.frame(),
-            page,
+            format,
             &mut slices,
         )?;
     }
@@ -170,15 +171,19 @@ fn witness_node(
     window: &mut PhysicalRecoveryReadAllocation<'_>,
     reference: ReleaseCustodyHeadBlockReferenceV1,
     expected: &[u8],
-    page: u64,
+    format: PhysicalRecordFormatDeclaration,
     slices: &mut FundedHeadEffectSlices,
 ) -> Result<(), Denial> {
-    let artifact = RecordArtifactFile::ReleaseCustodyHeadBlock {
-        generation: reference.generation(),
-        block: reference.block(),
-    };
+    let ceiling = ArtifactCeiling::page(
+        format,
+        PageAddress::ReleaseCustodyHeadBlock {
+            generation: reference.generation(),
+            block: reference.block(),
+        },
+    );
+    let artifact = ceiling.file();
     let observed = window
-        .read_record(discovery, artifact, page)
+        .read_record(discovery, ceiling)
         .map_err(read_denial)?;
     let bytes = observed.observed().bytes().ok_or(Denial::MissingFrame)?;
     if bytes != expected {

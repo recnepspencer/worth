@@ -2,7 +2,9 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery;
+use worth_store_physical_backend::{
+    ArtifactCeiling, BoundedRecoveryFilesystemDiscovery, PageAddress, ReadGrant, UnchargedRead,
+};
 use worth_store_physical_format::{
     arena_tier_at_epoch, BlobRecordKind, CurrentPhysicalRecordPlacement,
     DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest,
@@ -174,11 +176,17 @@ fn verify_inner(
             return Err(Denial::RoutingFrame);
         }
         let frame = discovery
-            .read_root_routing_block(
-                reference.generation(),
-                reference.block(),
-                u64::from(format.page_size().bytes()),
+            .read(
+                ArtifactCeiling::page(
+                    format,
+                    PageAddress::RootRoutingBlock {
+                        generation: reference.generation(),
+                        block: reference.block(),
+                    },
+                ),
+                ReadGrant::ceiling_only(),
             )
+            .observed()
             .map_err(Denial::Discovery)?;
         let bytes = frame.bytes().ok_or(Denial::MissingRoute)?;
         let range =

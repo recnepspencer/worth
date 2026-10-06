@@ -1,12 +1,13 @@
-use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
-use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
+use worth_store::physical_runtime::{
+    ArtifactCeiling, BoundedRecoveryFilesystemDiscovery, ObservedRecoveryArtifact, PageAddress,
+    ReadGrant, RecoveryDiscoveryFailure, UnchargedRead,
+};
 use worth_store_physical_format::{
-    DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest, FreeSpaceKey,
-    PhysicalFreeSpaceMembershipBlock, PhysicalRecordFormatDeclaration,
-    PhysicalSegmentMembershipBlock, PhysicalTreeIdentity, RecordArtifactFile,
-    RecordFreeSpaceManifestEntry, SegmentManifestBlockReference,
+    DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest, PhysicalFreeSpaceMembershipBlock,
+    PhysicalRecordFormatDeclaration, PhysicalSegmentMembershipBlock, PhysicalTreeIdentity,
+    RecordArtifactFile, RecordFreeSpaceManifestEntry,
 };
 
 use super::manifest_entry_budget::{ManifestEntryBudget, RootUnit};
@@ -23,8 +24,11 @@ type SelectedSegmentTopologyObservation = (
 #[path = "selected_source_inventory/routes.rs"]
 mod routes;
 pub(super) use routes::{observe_routes_held, observe_routes_with_budget, RoutesFailure};
+#[path = "selected_source_inventory/canonical.rs"]
+mod canonical;
 #[path = "selected_source_inventory/resident.rs"]
 mod resident;
+use canonical::{canonical_free_entries, routing_identity};
 pub(in crate::orchestration::planning) use resident::{ResidentAllowance, ResidentTraceDenial};
 
 #[cfg(test)]
@@ -151,11 +155,21 @@ impl InventorySegments {
     }
 }
 
-/// The ceiling of every read here. A free-space manifest and a membership
-/// block are each at most one page of the format, so a larger one is damage:
-/// no budget of the caller's stands in for the artifact's own ceiling.
-fn one_page(format: PhysicalRecordFormatDeclaration) -> u64 {
-    u64::from(format.page_size().bytes())
+/// One page of `format` at `address`, the read every page here makes. A
+/// free-space manifest and a membership block are each at most one page, so
+/// a larger one is damage: no budget of the caller's stands in for the
+/// artifact's own ceiling.
+fn read_page(
+    discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    format: PhysicalRecordFormatDeclaration,
+    address: PageAddress,
+) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryFailure> {
+    discovery
+        .read(
+            ArtifactCeiling::page(format, address),
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
 }
 
 fn read_free_space_header(
@@ -168,7 +182,13 @@ fn read_free_space_header(
         generation: root.generation(),
     };
     let source = required_source(
-        discovery.read_free_space_manifest(root.generation(), one_page(format)),
+        read_page(
+            discovery,
+            format,
+            PageAddress::FreeSpaceManifest {
+                generation: root.generation(),
+            },
+        ),
         None,
     )?;
     crate::integrity_ingress::projection::free_space_header(
@@ -206,10 +226,13 @@ fn read_segment_pages(
             return Err(invalid(artifact));
         }
         let source = required_source(
-            discovery.read_segment_membership_block(
-                reference.generation(),
-                reference.block(),
-                one_page(format),
+            read_page(
+                discovery,
+                format,
+                PageAddress::SegmentMembershipBlock {
+                    generation: reference.generation(),
+                    block: reference.block(),
+                },
             ),
             None,
         )?;
@@ -276,10 +299,13 @@ fn read_free_entries(
             return Err(invalid(artifact));
         }
         let source = required_source(
-            discovery.read_free_space_membership_block(
-                reference.generation(),
-                reference.block(),
-                one_page(format),
+            read_page(
+                discovery,
+                format,
+                PageAddress::FreeSpaceMembershipBlock {
+                    generation: reference.generation(),
+                    block: reference.block(),
+                },
             ),
             None,
         )?;
@@ -310,50 +336,6 @@ fn read_free_entries(
         }));
     }
     Ok((entries, artifacts, topology))
-}
-
-/// Arena ownership is keyed by offset as well as arena id. Several disjoint
-/// free runs in one arena are legal; duplicates, overlaps and uncoalesced
-/// touching runs are not.
-fn canonical_free_entries(entries: &mut [RecordFreeSpaceManifestEntry]) -> bool {
-    entries.sort_unstable_by_key(|entry| FreeSpaceKey::from(*entry));
-    entries.windows(2).all(|pair| {
-        let left = pair[0];
-        let right = pair[1];
-        FreeSpaceKey::from(left) < FreeSpaceKey::from(right)
-            && match (left.arena_free_range(), right.arena_free_range()) {
-                (Some(left), Some(right)) if left.arena() == right.arena() => {
-                    left.end() < right.offset()
-                }
-                _ => true,
-            }
-    })
-}
-
-fn routing_identity(
-    root: &DurablePhysicalRootManifest,
-    format: PhysicalRecordFormatDeclaration,
-    reference: SegmentManifestBlockReference,
-    entry: worth_store_physical_format::RecordSegmentPageManifestEntry,
-) -> [u8; 32] {
-    let mut digest = Sha256::new();
-    digest.update(b"worth.store.recovery.segment-page-routing.v1");
-    digest.update(root.encode(format));
-    digest.update(reference.generation().to_le_bytes());
-    digest.update(reference.block().to_le_bytes());
-    digest.update(reference.level().to_le_bytes());
-    digest.update(reference.checksum().to_le_bytes());
-    digest.update(reference.first().segment().get().to_le_bytes());
-    digest.update(reference.first().page().get().to_le_bytes());
-    digest.update(reference.last().segment().get().to_le_bytes());
-    digest.update(reference.last().page().get().to_le_bytes());
-    digest.update(entry.page_cell().segment_id().get().to_le_bytes());
-    digest.update(entry.page().get().to_le_bytes());
-    digest.update(entry.page_generation().to_le_bytes());
-    digest.update(entry.data_generation().to_le_bytes());
-    digest.update(entry.data_page_count().to_le_bytes());
-    digest.update(entry.frame_index().to_le_bytes());
-    digest.finalize().into()
 }
 
 const fn invalid(artifact: RecordArtifactFile) -> PageObservationFailure {

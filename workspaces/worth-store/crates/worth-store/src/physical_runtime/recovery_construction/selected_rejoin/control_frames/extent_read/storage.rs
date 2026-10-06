@@ -1,6 +1,8 @@
 //! Allocation/read port for the one selected-extent membership predicate.
 
-use worth_store_physical_backend::{BoundedRecoveryFilesystemDiscovery, ObservedRecoveryArtifact};
+use worth_store_physical_backend::{
+    BoundedRecoveryFilesystemDiscovery, ObservedRecoveryArtifact, ReadGrant, UnchargedRead,
+};
 use worth_store_physical_format::DurableExtentRecordPlacement;
 
 use super::{Denial, SelectedArtifactSlice};
@@ -15,7 +17,6 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) trait Ex
         &mut self,
         discovery: &mut BoundedRecoveryFilesystemDiscovery,
         placement: DurableExtentRecordPlacement,
-        page_limit: u64,
     ) -> Result<ObservedRecoveryArtifact, Denial>;
     fn read_chunk(
         &mut self,
@@ -23,7 +24,6 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) trait Ex
         placement: DurableExtentRecordPlacement,
         relative: u64,
         length: u32,
-        page_limit: u64,
     ) -> Result<ObservedRecoveryArtifact, Denial>;
     fn discard_frame(&mut self, frame: ObservedRecoveryArtifact) -> Result<(), Denial>;
 }
@@ -39,10 +39,10 @@ impl ExtentReadStorage for () {
         &mut self,
         discovery: &mut BoundedRecoveryFilesystemDiscovery,
         placement: DurableExtentRecordPlacement,
-        page_limit: u64,
     ) -> Result<ObservedRecoveryArtifact, Denial> {
         discovery
-            .read_extent_manifest(placement.arena_range(), page_limit)
+            .read_extent_manifest(placement.arena_range(), ReadGrant::ceiling_only())
+            .observed()
             .map_err(Denial::Discovery)
     }
     fn read_chunk(
@@ -51,10 +51,15 @@ impl ExtentReadStorage for () {
         placement: DurableExtentRecordPlacement,
         relative: u64,
         length: u32,
-        page_limit: u64,
     ) -> Result<ObservedRecoveryArtifact, Denial> {
         discovery
-            .read_extent_range(placement.arena_range(), relative, length, page_limit)
+            .read_extent_range(
+                placement.arena_range(),
+                relative,
+                length,
+                ReadGrant::ceiling_only(),
+            )
+            .observed()
             .map_err(Denial::Discovery)
     }
     fn discard_frame(&mut self, frame: ObservedRecoveryArtifact) -> Result<(), Denial> {
@@ -75,12 +80,14 @@ impl ExtentReadStorage for StoreRejoinResidentLedger {
         &mut self,
         discovery: &mut BoundedRecoveryFilesystemDiscovery,
         placement: DurableExtentRecordPlacement,
-        page_limit: u64,
     ) -> Result<ObservedRecoveryArtifact, Denial> {
         discovery
-            .read_extent_manifest_with_allocator(placement.arena_range(), page_limit, |length| {
-                self.reserve_bytes(length)
-            })
+            .read_extent_manifest_with_allocator(
+                placement.arena_range(),
+                ReadGrant::ceiling_only(),
+                |length| self.reserve_bytes(length),
+            )
+            .observed()
             .map_err(discovery_allocation_denial)
     }
     fn read_chunk(
@@ -89,16 +96,16 @@ impl ExtentReadStorage for StoreRejoinResidentLedger {
         placement: DurableExtentRecordPlacement,
         relative: u64,
         length: u32,
-        page_limit: u64,
     ) -> Result<ObservedRecoveryArtifact, Denial> {
         discovery
             .read_extent_range_with_allocator(
                 placement.arena_range(),
                 relative,
                 length,
-                page_limit,
+                ReadGrant::ceiling_only(),
                 |length| self.reserve_bytes(length),
             )
+            .observed()
             .map_err(discovery_allocation_denial)
     }
     fn discard_frame(&mut self, frame: ObservedRecoveryArtifact) -> Result<(), Denial> {

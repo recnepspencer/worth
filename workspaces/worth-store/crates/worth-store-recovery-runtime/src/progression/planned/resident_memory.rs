@@ -1,6 +1,21 @@
 //! One allocation window for physical recovery planning. Observation and image
 //! construction carry the same live storage and peak; neither resets admission.
 
+use worth_foundational::LimitDimension;
+use worth_proof::Performed;
+use worth_store::physical_runtime::{GrantOverrun, ReadGrant};
+
+worth_proof::authority_marker!(pub(crate) PlanningResidentAuthority);
+
+/// The bytes a planning window may hold: the one dimension it grants reads
+/// from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct PlanningResidentBytes;
+
+impl LimitDimension for PlanningResidentBytes {
+    type Authority = PlanningResidentAuthority;
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum PlanningMemoryDenial {
     RecoveryMemoryBytes {
@@ -33,6 +48,7 @@ impl PlanningResidentAllowance {
         Ok(window)
     }
 
+    #[cfg(test)]
     pub(crate) const fn used(&self) -> u64 {
         self.used
     }
@@ -59,6 +75,31 @@ impl PlanningResidentAllowance {
         }
         self.peak = self.peak.max(observed);
         Ok(())
+    }
+
+    /// What is left of the window, granted to one read.
+    pub(crate) fn grant_read(&self) -> ReadGrant<PlanningResidentBytes> {
+        ReadGrant::granted(
+            PlanningResidentBytes,
+            Performed::record(&PlanningResidentAuthority::witness(), self.remaining()),
+        )
+    }
+
+    /// A read past its grant, as this window's denial: what the window held
+    /// beside the grant, plus the read's real length.
+    pub(crate) fn refuse_read(
+        &mut self,
+        overrun: GrantOverrun<PlanningResidentBytes>,
+    ) -> PlanningMemoryDenial {
+        let Some(observed) = self
+            .maximum
+            .checked_sub(overrun.granted())
+            .and_then(|held| held.checked_add(overrun.length()))
+        else {
+            return Self::overflow();
+        };
+        self.refuse(observed);
+        PlanningMemoryDenial::RecoveryMemoryBytes { observed }
     }
 
     /// Records that a charge against this window needed `observed` in all.

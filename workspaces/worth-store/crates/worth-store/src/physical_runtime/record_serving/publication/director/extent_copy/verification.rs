@@ -5,8 +5,8 @@ use crate::physical_runtime::record_serving::{
 };
 use sha2::Digest;
 use worth_store_physical_format::{
-    ExtentArenaFrameLayout, ExtentChunkCoordinate, PhysicalPageLsn, RecordArtifactFile,
-    RecordFrameCoordinate, DURABLE_EXTENT_FRAME_HEADER_BYTES, EXTENT_CHUNK_METADATA_BYTES,
+    ExtentArenaFrameLayout, ExtentChunkFrame, PhysicalPageLsn, RecordArtifactFile,
+    RecordFrameCoordinate,
 };
 use worth_store_physical_integrity::{
     validate_extent_arena_frame, ExtentArenaFrameExpectation, ExtentArenaFrameIntegrityValidation,
@@ -69,25 +69,19 @@ impl RecordPublicationDirector {
         }
         let layout = ExtentArenaFrameLayout::new(self.format.declaration(), intent.alignment())
             .ok_or_else(damaged)?;
-        let expected_payload = (manifest.logical_bytes() - copy.completed)
-            .min(u64::from(manifest.chunk_payload_capacity()))
-            as usize;
-        let length =
-            DURABLE_EXTENT_FRAME_HEADER_BYTES + EXTENT_CHUNK_METADATA_BYTES + expected_payload;
-        let offset = range.offset()
-            + layout.manifest_stride()
-            + u64::from(copy.next_ordinal - 1) * layout.chunk_stride();
+        let chunk = ExtentChunkFrame::of(manifest, layout, copy.next_ordinal)
+            .filter(|chunk| chunk.coordinate().logical_offset() == copy.completed)
+            .ok_or_else(damaged)?;
+        let expected_payload = chunk.payload_bytes() as usize;
+        let offset = range
+            .offset()
+            .checked_add(chunk.offset())
+            .ok_or_else(damaged)?;
         let frame =
-            RecordFrameCoordinate::new(artifact, offset, length as u32).ok_or_else(damaged)?;
-        let scope_range = PhysicalByteRange::new(offset, length as u64).map_err(|_| damaged())?;
-        let coordinate = ExtentChunkCoordinate::new(
-            manifest.record(),
-            manifest.extent_cell(),
-            manifest.logical_bytes(),
-            copy.completed,
-            copy.next_ordinal,
-        )
-        .ok_or_else(damaged)?;
+            RecordFrameCoordinate::new(artifact, offset, chunk.length()).ok_or_else(damaged)?;
+        let scope_range =
+            PhysicalByteRange::new(offset, u64::from(chunk.length())).map_err(|_| damaged())?;
+        let coordinate = chunk.coordinate();
         let membership = copy.verified_membership.ok_or_else(damaged)?;
         let intent_lsn = copy.durable.as_ref().ok_or_else(damaged)?.interval().2;
         let scope = PhysicalArtifactScope::extent_chunk(

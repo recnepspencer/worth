@@ -1,8 +1,8 @@
 use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
-    FilesystemAccessPosture, FilesystemMediaAdmission, FilesystemObservationBound,
+    ArtifactDamage, FilesystemAccessPosture, FilesystemMediaAdmission, FilesystemObservationBound,
     PhysicalRuntimeAdmission, PhysicalStore, QualifiedRecoveryFilesystemMedia,
-    RecoveryDiscoveryFailure,
+    RecoveryDiscoveryArtifact, RecoveryDiscoveryFailure,
 };
 use worth_store_physical_format::{
     DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration, RecordArtifactFile,
@@ -41,8 +41,11 @@ fn present_root_reports_exact_resident_crossing_without_reading_bytes() {
         .admit_persisted_store()
         .unwrap();
     let mut discovery = media.bounded_discovery(2, 4096).unwrap();
-    let admitted = fixture.bytes.len() as u64 - 1;
-    let mut resident = PlanningResidentAllowance::new(0, admitted).unwrap();
+    // The window already holds `HELD`, and has one byte less than the root
+    // left beside it.
+    const HELD: u64 = 100;
+    let admitted = HELD + fixture.bytes.len() as u64 - 1;
+    let mut resident = PlanningResidentAllowance::new(HELD, admitted).unwrap();
     let artifact = RecordArtifactFile::RootManifest {
         generation: GENERATION,
     };
@@ -56,11 +59,13 @@ fn present_root_reports_exact_resident_crossing_without_reading_bytes() {
             generation: GENERATION,
         }
     ));
-    // The window holds the need it refused, against the `admitted` it has.
+    // The window holds the need it refused, what it held plus the root's
+    // real length, against the `admitted` it has.
     assert_eq!(
         (resident.refused(), resident.maximum()),
-        (Some(fixture.bytes.len() as u64), admitted)
+        (Some(HELD + fixture.bytes.len() as u64), admitted)
     );
+    assert_eq!(resident.used(), HELD);
     assert_eq!(discovery.counters().bytes_read, 0);
     discovery.finish();
 }
@@ -123,23 +128,20 @@ fn a_root_past_its_page_is_damage_whatever_resident_space_is_left() {
     for resident_space in [16, page, 2 * page] {
         let mut resident = PlanningResidentAllowance::new(0, resident_space).unwrap();
         let denial = read(&mut discovery, artifact, format(), &mut resident).unwrap_err();
-        let past = match &denial {
-            PhysicalRecoverySuccessorCandidateDenial::Discovery {
-                failure: RecoveryDiscoveryFailure::Limit(past),
-                ..
-            } => Some((past.dimension(), past.observed(), past.admitted())),
-            _ => None,
-        };
-        // The reader names the read it refused: one asked for the page or
-        // the resident space left, whichever is smaller.
+        // The ceiling is checked before the grant: the root is damaged at
+        // its real length, whatever the window has left.
         assert_eq!(
-            past,
-            Some((
-                FilesystemObservationBound::RequestedBytes,
-                page + 1,
-                resident_space.min(page)
-            )),
-            "{resident_space} resident bytes: {denial:?}",
+            denial,
+            PhysicalRecoverySuccessorCandidateDenial::Discovery {
+                artifact,
+                generation: GENERATION,
+                failure: RecoveryDiscoveryFailure::Damage(ArtifactDamage::PastCeiling {
+                    artifact: RecoveryDiscoveryArtifact::Record(artifact),
+                    length: page + 1,
+                    ceiling: page,
+                }),
+            },
+            "{resident_space} resident bytes",
         );
         assert_eq!(resident.used(), 0);
     }

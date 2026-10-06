@@ -86,7 +86,7 @@ pub(super) fn observe_selected_pages(
             crate::orchestration::reader_limit::UNCOUNTED_READS,
             maximum_bytes,
         )
-        .expect("admitted nonzero recovery limits create a bounded planning reader");
+        .expect("a reader that counts no reads opens on any byte bound");
     let mut integrity = crate::integrity_ingress::RecoveryIntegrityIngressTrace::new();
     let mut manifest_budget = super::manifest_entry_budget::ManifestEntryBudget::declared(
         limits,

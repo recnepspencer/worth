@@ -2,6 +2,7 @@ use super::*;
 use worth_store_buffer_pool::{
     PhysicalOperationAllocationScope as Scope, PhysicalResidencyDimension,
 };
+use worth_store_physical_backend::UnchargedRead;
 
 mod fixture;
 
@@ -175,7 +176,15 @@ fn actual_absence_is_required_and_other_absent_locator_cannot_install_it() {
         .allocation_events()
         .snapshot();
     let mut discovery = media.bounded_discovery(3, 8192).unwrap();
-    let wrong = discovery.read_current_selector(4096).unwrap();
+    let wrong = discovery
+        .read(
+            worth_store_physical_backend::ArtifactCeiling::fixed(
+                worth_store_physical_backend::FixedArtifact::CurrentRootSelector,
+            ),
+            worth_store_physical_backend::ReadGrant::ceiling_only(),
+        )
+        .observed()
+        .unwrap();
     assert_eq!(
         coordination.install_absent_checkpoint(wrong),
         Err(Denial::InvalidAbsence)

@@ -1,16 +1,11 @@
-use std::num::NonZeroU64;
-
 use worth_store::physical_runtime::AdmittedRecoveryFilesystemMedia;
-use worth_store_physical_format::{
-    DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration, RecordArtifactFile,
-};
+use worth_store_physical_format::{DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration};
 
 use crate::entry::PhysicalRecoverySuccessorCandidateDenial;
 use crate::progression::PlanningResidentAllowance;
 use crate::progression::RecoveryObservedSuccessorCandidate;
 
 use super::materialization::CandidateMaterialization;
-use super::root_manifest::successor_generation;
 use super::{observe_bounded, ManifestEntryBudget};
 
 pub(in crate::orchestration::planning) struct SuccessorCandidateObservationAttempt {
@@ -25,43 +20,9 @@ pub(in crate::orchestration::planning) struct SuccessorCandidateObservationAttem
         crate::entry::PhysicalRecoveryRootProtocolCounters,
 }
 
-/// The attempt recovery makes with no observation bytes left. No reader
-/// opens on nothing, so none read or counted anything: the candidate root
-/// it would have read is the artifact recovery could not observe.
-fn out_of_observation_bytes(
-    media: AdmittedRecoveryFilesystemMedia,
-    selected: &DurablePhysicalRootManifest,
-) -> (
-    AdmittedRecoveryFilesystemMedia,
-    SuccessorCandidateObservationAttempt,
-) {
-    (
-        media,
-        SuccessorCandidateObservationAttempt {
-            result: Err(exhausted(selected)),
-            artifact_reads: 0,
-            bytes_read: 0,
-            peak_materialization_bytes: 0,
-            root_protocol_counters: Default::default(),
-        },
-    )
-}
-
-/// The successor root a reader with bytes would have read first, or the
-/// denial that reader would have met before reading anything.
-fn exhausted(selected: &DurablePhysicalRootManifest) -> PhysicalRecoverySuccessorCandidateDenial {
-    match successor_generation(selected) {
-        Ok(generation) => PhysicalRecoverySuccessorCandidateDenial::ObservationBytesExhausted {
-            artifact: RecordArtifactFile::RootManifest { generation },
-            generation,
-        },
-        Err(denial) => denial,
-    }
-}
-
 /// The candidate after `selected`, observed with the `remaining_bytes`
-/// recovery has left. With none left no reader opens, not even to find the
-/// candidate absent.
+/// recovery has left. None left refuses nothing yet: an absent candidate
+/// costs no bytes, and a present one is refused with its real length.
 pub(in crate::orchestration::planning) fn observe(
     media: AdmittedRecoveryFilesystemMedia,
     selected: &DurablePhysicalRootManifest,
@@ -74,15 +35,12 @@ pub(in crate::orchestration::planning) fn observe(
     AdmittedRecoveryFilesystemMedia,
     SuccessorCandidateObservationAttempt,
 ) {
-    let Some(maximum_bytes) = NonZeroU64::new(remaining_bytes) else {
-        return out_of_observation_bytes(media, selected);
-    };
     let mut discovery = media
         .bounded_discovery(
             crate::orchestration::reader_limit::UNCOUNTED_READS,
-            maximum_bytes.get(),
+            remaining_bytes,
         )
-        .expect("remaining recovery observation limits are nonzero");
+        .expect("a reader that counts no reads opens on any byte bound");
     let mut materialization = CandidateMaterialization::default();
     let mut root_protocol_counters = crate::entry::PhysicalRecoveryRootProtocolCounters::default();
     let result = observe_bounded(
@@ -125,24 +83,6 @@ mod tests {
             .unwrap()
     }
 
-    #[test]
-    fn an_attempt_with_no_bytes_left_names_the_successor_root_it_could_not_read() {
-        assert_eq!(
-            exhausted(&root_at(8)),
-            PhysicalRecoverySuccessorCandidateDenial::ObservationBytesExhausted {
-                artifact: RecordArtifactFile::RootManifest { generation: 9 },
-                generation: 9,
-            }
-        );
-        // The last generation has no successor, with bytes left or without.
-        assert_eq!(
-            exhausted(&root_at(u64::MAX)),
-            super::super::denial::invalid(RecordArtifactFile::RootManifest {
-                generation: u64::MAX,
-            })
-        );
-    }
-
     /// A store with no root after `root_at(6)`: an absent candidate.
     fn absent_candidate() -> (tempfile::TempDir, AdmittedRecoveryFilesystemMedia) {
         use worth_proof::TransitionOutcome;
@@ -169,10 +109,10 @@ mod tests {
         (directory, media)
     }
 
-    /// Finding the candidate absent costs no bytes, yet with none left no
-    /// reader opens to find it: the attempt is out of observation bytes.
+    /// Finding the candidate absent costs no bytes, so it is found absent
+    /// with none left as with many.
     #[test]
-    fn with_no_bytes_left_no_reader_opens_even_for_an_absent_candidate() {
+    fn an_absent_candidate_is_found_absent_with_no_bytes_left() {
         let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
         let attempt = |remaining| {
             let (_directory, media) = absent_candidate();
@@ -189,6 +129,6 @@ mod tests {
             (attempt.result, attempt.artifact_reads, attempt.bytes_read)
         };
         assert_eq!(attempt(4096), (Ok(None), 0, 0));
-        assert_eq!(attempt(0), (Err(exhausted(&root_at(6))), 0, 0));
+        assert_eq!(attempt(0), (Ok(None), 0, 0));
     }
 }

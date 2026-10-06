@@ -1,10 +1,9 @@
 //! Read one selected control through its exact C.9 extent membership.
 
-use worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery;
+use worth_store_physical_backend::{BoundedRecoveryFilesystemDiscovery, ReadGrant, UnchargedRead};
 use worth_store_physical_format::{
     decode_extent_chunk, DurableExtentManifest, DurableExtentRecordPlacement,
-    ExtentArenaFrameLayout, ExtentChunkCoordinate, PhysicalRecordFormatDeclaration,
-    RecordArtifactFile, DURABLE_EXTENT_FRAME_HEADER_BYTES, EXTENT_CHUNK_METADATA_BYTES,
+    ExtentArenaFrameLayout, ExtentChunkFrame, PhysicalRecordFormatDeclaration, RecordArtifactFile,
 };
 use worth_store_physical_integrity::{
     validate_extent_chunk_membership, validate_extent_manifest, ExtentChunkIntegrityValidation,
@@ -36,9 +35,9 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn read_
     if placement.payload_bytes() == 0 || placement.payload_bytes() > maximum {
         return Err(Denial::BoundExceeded);
     }
-    let page_limit = u64::from(format.page_size().bytes());
     let observed = discovery
-        .read_extent_manifest(placement.arena_range(), page_limit)
+        .read_extent_manifest(placement.arena_range(), ReadGrant::ceiling_only())
+        .observed()
         .map_err(Denial::Discovery)?;
     let manifest_bytes = observed.bytes().ok_or(Denial::MissingFrame)?;
     let scope = PhysicalArtifactScope::extent_manifest(
@@ -105,25 +104,17 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn read_
         usize::try_from(placement.payload_bytes()).map_err(|_| Denial::BoundExceeded)?,
     );
     for ordinal in 1..=manifest.chunk_count() {
-        let coordinate = ExtentChunkCoordinate::new(
-            placement.record(),
-            manifest.extent_cell(),
-            manifest.logical_bytes(),
-            payload.len() as u64,
-            ordinal,
-        )
-        .ok_or(Denial::ControlFrame)?;
-        let length = (manifest.logical_bytes() as usize - payload.len())
-            .min(manifest.chunk_payload_capacity() as usize);
-        let frame_length = DURABLE_EXTENT_FRAME_HEADER_BYTES + EXTENT_CHUNK_METADATA_BYTES + length;
-        let relative = layout.chunk_offset(ordinal).ok_or(Denial::ControlFrame)?;
+        let framed = ExtentChunkFrame::of(manifest, layout, ordinal).ok_or(Denial::ControlFrame)?;
+        let coordinate = framed.coordinate();
+        let relative = framed.offset();
         let frame = discovery
             .read_extent_range(
                 placement.arena_range(),
                 relative,
-                u32::try_from(frame_length).map_err(|_| Denial::BoundExceeded)?,
-                page_limit,
+                framed.length(),
+                ReadGrant::ceiling_only(),
             )
+            .observed()
             .map_err(Denial::Discovery)?;
         let bytes = frame.bytes().ok_or(Denial::MissingFrame)?;
         let absolute = placement
@@ -135,7 +126,7 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn read_
             discovery.store_identity(),
             format,
             coordinate,
-            PhysicalByteRange::new(absolute, frame_length as u64)
+            PhysicalByteRange::new(absolute, u64::from(framed.length()))
                 .map_err(|_| Denial::ControlFrame)?,
             placement.arena_range(),
         );
@@ -152,7 +143,7 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn read_
         builder.append(&chunk, input).ok_or(Denial::ControlFrame)?;
         let (chunk_payload, chunk_format) =
             decode_extent_chunk(bytes, coordinate).map_err(|_| Denial::ControlFrame)?;
-        if chunk_format != format || chunk_payload.len() != length {
+        if chunk_format != format || chunk_payload.len() != framed.payload_bytes() as usize {
             return Err(Denial::ControlFrame);
         }
         payload.extend_from_slice(chunk_payload);

@@ -1,7 +1,9 @@
 //! Bounded addressed-root and targeted routing evidence for historical
 //! publications. A later selected generation alone is never publication proof.
 
-use worth_store::physical_runtime::RecoveryDiscoveryFailure;
+use worth_store::physical_runtime::{
+    ArtifactCeiling, PageAddress, ReadGrant, RecoveryDiscoveryFailure, UnchargedRead,
+};
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DurablePhysicalRootManifest, ManifestBlockReference,
     PhysicalTreeIdentity,
@@ -16,9 +18,7 @@ pub(super) use route_inventory::{
     observe_all_routes, observe_all_routes_of_root, RootRouteInventory,
 };
 
-use crate::entry::{
-    PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure,
-};
+use crate::entry::{PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitFailure};
 use crate::integrity_ingress::{admit_addressed_root, RecoveryArtifactNamespaceJoin};
 use crate::orchestration::planning::{
     context::PlanningContext,
@@ -27,7 +27,6 @@ use crate::orchestration::planning::{
     resolved_basis::ResolvedPlanningBasis,
 };
 use crate::orchestration::reader_limit::{ReaderBytes, UNCOUNTED_READS};
-use crate::orchestration::recovery_budget::RecoveryAllowance;
 
 /// Why a completion phase could not observe history: failed verification,
 /// or one of recovery's limits.
@@ -39,8 +38,6 @@ pub(in crate::orchestration::planning) enum HistoricalFailure {
     /// A public denial that names the manifest entry limit without counts:
     /// the phase's budget refused, and holds them.
     ManifestEntries,
-    /// The phase had no observation bytes left to open its reader with.
-    ObservationSpent,
     /// A count the phase kept passed every count, so no limit can state it.
     CountOverflow,
 }
@@ -57,12 +54,6 @@ impl HistoricalFailure {
             Self::Invalid | Self::CountOverflow => None,
             Self::Limit(limit) => limit.in_recovery(limits),
             Self::ManifestEntries => budget.refused().map(Into::into),
-            Self::ObservationSpent => RecoveryAllowance::declared(
-                limits,
-                PhysicalRecoveryLimitDimension::ObservationBytes,
-            )
-            .spent()
-            .map(Into::into),
         }
     }
 }
@@ -117,21 +108,21 @@ pub(in crate::orchestration::planning) fn unobserved(
     context.redo_block(basis.planning_counters(), limit)
 }
 
-/// The observation bytes left to a completion phase, or the limit that has
-/// already run out.
+/// The observation bytes left to a completion phase. None left refuses
+/// nothing yet: the phase's first read past them is refused, with its real
+/// length.
 pub(in crate::orchestration::planning) fn remaining_observation(
     context: &PlanningContext,
     basis: &ResolvedPlanningBasis,
-) -> Result<u64, HistoricalFailure> {
-    let remaining_bytes = context
+) -> u64 {
+    context
         .limits
         .observation_bytes
         .saturating_sub(context.counters.bytes_observed)
         .saturating_sub(basis.observed_pages.bytes_read)
         .saturating_sub(basis.observed_pages.candidate_bytes_read)
         .saturating_sub(basis.observed_pages.source_copy_bytes_read)
-        .saturating_sub(basis.observed_pages.historical_publication_bytes_read);
-    left_to_observe(remaining_bytes)
+        .saturating_sub(basis.observed_pages.historical_publication_bytes_read)
 }
 
 /// Charges what a completion phase's reader read, once it has finished, to
@@ -149,17 +140,6 @@ pub(in crate::orchestration::planning) fn charge_reader(
         .saturating_add(counters.bytes_read);
 }
 
-/// A phase cannot open its reader with no observation bytes left, so it has
-/// met that limit. Entries are refused where they are charged: a phase that
-/// charges none is refused none.
-fn left_to_observe(bytes: u64) -> Result<u64, HistoricalFailure> {
-    if bytes == 0 {
-        Err(HistoricalFailure::ObservationSpent)
-    } else {
-        Ok(bytes)
-    }
-}
-
 pub(super) fn observe<R>(
     mut context: PlanningContext,
     basis: &mut ResolvedPlanningBasis,
@@ -174,20 +154,21 @@ pub(super) fn observe<R>(
         &mut u64,
     ) -> Result<R, HistoricalFailure>,
 ) -> Result<(PlanningContext, R), crate::entry::PhysicalRecoveryOutcome> {
-    let remaining_bytes = match remaining_observation(&context, basis) {
-        Ok(remaining_bytes) => remaining_bytes,
-        Err(failure) => return Err(unobserved(context, basis, failure)),
-    };
+    let remaining_bytes = remaining_observation(&context, basis);
     let format = context.authority.record_format;
     let store = context.authority.media.store_identity();
     let media = context.authority.media;
     let mut discovery = media
         .bounded_discovery(UNCOUNTED_READS, remaining_bytes)
-        .expect("admitted nonzero historical publication observation limits");
+        .expect("a reader that counts no reads opens on any byte bound");
     let mut callback_scratch = 0;
     let result = (|| {
         let root_source = discovery
-            .read_root_manifest(generation, u64::from(format.page_size().bytes()))
+            .read(
+                ArtifactCeiling::page(format, PageAddress::RootManifest { generation }),
+                ReadGrant::ceiling_only(),
+            )
+            .observed()
             .map_err(discovery_failure)?;
         let admitted = admit_addressed_root(
             RecoveryArtifactNamespaceJoin::from_canonical(&root_source),
@@ -256,12 +237,16 @@ pub(super) fn find_route(
             return Err(HistoricalFailure::Invalid);
         }
         previous_level = Some(current.level());
+        let address = PageAddress::RootRoutingBlock {
+            generation: current.generation(),
+            block: current.block(),
+        };
         let observed = discovery
-            .read_root_routing_block(
-                current.generation(),
-                current.block(),
-                u64::from(format.page_size().bytes()),
+            .read(
+                ArtifactCeiling::page(format, address),
+                ReadGrant::ceiling_only(),
             )
+            .observed()
             .map_err(discovery_failure)?;
         let tree =
             PhysicalTreeIdentity::new(root.tree_identity()).ok_or(HistoricalFailure::Invalid)?;

@@ -1,5 +1,7 @@
 //! Published-root custody rebind and the sole planning-to-final state conversion.
 
+use worth_store::physical_runtime::{ArtifactCeiling, PageAddress, ReadGrant, UnchargedRead};
+
 use crate::entry::PhysicalRecoveryPublicationSettlement;
 use crate::progression::{CustodyState, PlanningCustody};
 
@@ -232,8 +234,17 @@ fn observed_published_free_header(
         .bounded_discovery(1, byte_limit)
         .expect("the admitted tier header has a positive exact read bound");
     let header = (|| {
+        // The page ceiling bounds the file; the discovery's byte bound
+        // holds it to the header's exact encoding.
+        let address = PageAddress::FreeSpaceManifest {
+            generation: root.generation(),
+        };
         let source = discovery
-            .read_free_space_manifest(root.generation(), byte_limit)
+            .read(
+                ArtifactCeiling::page(format, address),
+                ReadGrant::ceiling_only(),
+            )
+            .observed()
             .ok()?;
         let header = crate::integrity_ingress::projection::free_space_header(
             &source,

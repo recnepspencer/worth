@@ -1,21 +1,25 @@
 mod admitted;
+mod ceiling;
 #[cfg(all(feature = "recovery-runtime-owner", feature = "store-runtime-owner"))]
 mod checkpoint_residue;
 #[cfg(feature = "store-runtime-owner")]
 mod cleanup;
 mod discovery;
 mod generation;
+mod grant;
 mod profile;
 #[cfg(feature = "recovery-runtime-owner")]
 mod publication;
 mod qualification;
 mod qualified;
+mod refusal;
 #[cfg(feature = "recovery-runtime-owner")]
 mod reopen;
 #[cfg(feature = "recovery-runtime-owner")]
 mod staging;
 
 pub use admitted::{AdmittedRecoveryFilesystemMedia, RecoveryMediaHandleObservation};
+pub use ceiling::{ArtifactCeiling, FixedArtifact, PageAddress};
 #[cfg(all(feature = "recovery-runtime-owner", feature = "store-runtime-owner"))]
 pub use checkpoint_residue::ObservedRecoveryCheckpointArtifact;
 #[cfg(feature = "store-runtime-owner")]
@@ -26,7 +30,7 @@ pub use cleanup::{
     BackendRecoveryCleanupArtifactRevalidationProgress, BackendRecoveryCleanupRemovalDenialCause,
     BackendRecoveryCleanupRemovalOutcome, BackendRecoveryCleanupRemovalRequest,
 };
-#[cfg(any(test, feature = "test-support"))]
+#[cfg(feature = "test-support")]
 pub use discovery::filesystem_observation_limit_for_test;
 pub use discovery::{
     BorrowedRecordFilesystemObservation, BorrowedWalFilesystemObservation,
@@ -38,11 +42,18 @@ pub use discovery::{
     RecoveryWalReadStorage, RecoveryWalSelectionMismatch,
 };
 pub use generation::PhysicalRecoveryMediaGeneration;
+#[cfg(test)]
+pub(crate) use grant::for_test as grant_for_test;
+pub use grant::{GrantOverrun, ReadGrant, ReadGranted, Uncharged, UnchargedReadAuthority};
 pub use profile::QualifiedPhysicalBackendProfile;
 #[cfg(feature = "recovery-runtime-owner")]
 pub use publication::{RecoveryRootProtocolPublicationDenial, RecoveryRootProtocolPublicationPlan};
 pub use qualification::RecoveryFilesystemQualificationError;
 pub use qualified::QualifiedRecoveryFilesystemMedia;
+pub use refusal::{
+    AllocatedReadFailure, AllocatedReadOutcome, ArtifactDamage, ArtifactReadOutcome, GrantedRead,
+    GrantedReadStop, ReadRefusal, UnchargedRead,
+};
 #[cfg(feature = "recovery-runtime-owner")]
 pub use reopen::{
     CompletedScheduledRecoveryReopenRead, DeniedScheduledRecoveryReopenRead,

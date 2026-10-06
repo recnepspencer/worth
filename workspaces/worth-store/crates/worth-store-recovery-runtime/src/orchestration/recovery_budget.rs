@@ -7,6 +7,7 @@
 
 use worth_foundational::{BudgetRefused, ExhaustedLimit, LimitCounts, LimitDimension};
 use worth_proof::Performed;
+use worth_store::physical_runtime::{GrantOverrun, ObservedRecoveryArtifact, ReadGrant};
 
 use crate::entry::{PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDimension};
 
@@ -92,13 +93,66 @@ impl RecoveryAllowance {
         let held = self.admitted.checked_sub(admitted)?;
         self.admit(observed.checked_add(held)?).err()
     }
+}
 
-    /// The whole allowance is spent and a phase needs to read again: the
-    /// least next read is one more byte. `None` where the allowance is every
-    /// count. T2: a read grant charges the read's length; until then the
-    /// least next read.
-    pub(super) fn spent(self) -> Option<ExceededRecoveryLimit> {
-        self.admit(self.admitted.checked_add(1)?).err()
+/// What is left of one byte budget recovery declared, shared by the reads that
+/// spend it. Each read is granted what is left and charged what it returned,
+/// so the reads together never pass the whole, and one that would is refused
+/// with the budget's own counts.
+#[derive(Debug, PartialEq, Eq)]
+pub(super) struct RecoveryReadBudget {
+    whole: RecoveryAllowance,
+    spent: u64,
+}
+
+impl RecoveryReadBudget {
+    pub(super) const fn declared(
+        limits: &PhysicalRecoveryLimitDeclaration,
+        dimension: PhysicalRecoveryLimitDimension,
+    ) -> Self {
+        Self {
+            whole: RecoveryAllowance::declared(limits, dimension),
+            spent: 0,
+        }
+    }
+
+    /// The bytes granted reads returned.
+    pub(super) const fn spent(&self) -> u64 {
+        self.spent
+    }
+
+    /// What is left, granted to one read.
+    pub(super) fn grant(&self) -> ReadGrant<PhysicalRecoveryLimitDimension> {
+        let left = self
+            .whole
+            .admitted
+            .checked_sub(self.spent)
+            .expect("a budget charges no read past what it granted");
+        ReadGrant::granted(
+            self.whole.dimension,
+            Performed::record(&RecoveryBudgetAuthority::witness(), left),
+        )
+    }
+
+    /// Charges what a granted read returned. The read returned no more than
+    /// its grant, which was what was left.
+    pub(super) fn charge(&mut self, observed: &ObservedRecoveryArtifact) {
+        let bytes = observed.bytes().map_or(0, |bytes| bytes.len() as u64);
+        self.spent = self
+            .spent
+            .checked_add(bytes)
+            .filter(|spent| *spent <= self.whole.admitted)
+            .expect("a granted read returns no more than its grant");
+    }
+
+    /// A read past its grant, as this budget's limit: what the budget had
+    /// spent beside the grant, plus the read's real length. `None` where that
+    /// passes every count.
+    pub(super) fn refuse(
+        &self,
+        overrun: GrantOverrun<PhysicalRecoveryLimitDimension>,
+    ) -> Option<ExceededRecoveryLimit> {
+        self.whole.beside(overrun.length(), overrun.granted())
     }
 }
 
@@ -128,6 +182,10 @@ pub(crate) fn recovery_limit_for_test(
         .admit(observed)
         .expect_err("a need past the ceiling")
 }
+
+#[cfg(test)]
+#[path = "recovery_budget/read_budget_tests.rs"]
+mod read_budget_tests;
 
 #[cfg(test)]
 mod tests {
@@ -198,14 +256,5 @@ mod tests {
         assert_eq!(whole.beside(170, 160), None);
         // A moved count past every count is no limit.
         assert_eq!(whole.beside(u64::MAX, 60), None);
-    }
-
-    #[test]
-    fn a_spent_allowance_is_short_of_the_least_next_read() {
-        assert_eq!(
-            allowance(ObservationBytes, 40).spent().map(named),
-            Some((ObservationBytes, 41, 40))
-        );
-        assert_eq!(allowance(ObservationBytes, u64::MAX).spent(), None);
     }
 }

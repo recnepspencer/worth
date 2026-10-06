@@ -3,8 +3,9 @@
 use std::{ffi::OsStr, sync::Arc};
 
 use worth_store_physical_backend::{
-    ArtifactTreeFailure, ExceededFilesystemObservationBound, RecoveryDiscoveryAllocationFailure,
-    RecoveryDiscoveryArtifact, RecoveryDiscoveryCount, RecoveryDiscoveryFailure,
+    ArtifactDamage, ArtifactTreeFailure, ExceededFilesystemObservationBound,
+    RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact, RecoveryDiscoveryCount,
+    RecoveryDiscoveryFailure,
 };
 use worth_store_physical_format::RecordArtifactFile;
 
@@ -39,6 +40,12 @@ pub enum RecoveryWalDiscoveryFailureView<'a> {
     Limit(ExceededFilesystemObservationBound),
     /// A count past every count: no ceiling admits it, so no limit states it.
     CountOverflow(RecoveryDiscoveryCount),
+    /// The artifact is longer than the ceiling its format declares.
+    PastCeiling {
+        artifact: RecoveryWalArtifactView<'a>,
+        length: u64,
+        ceiling: u64,
+    },
     Media {
         artifact: RecoveryWalArtifactView<'a>,
         failure: &'a ArtifactTreeFailure,
@@ -109,20 +116,7 @@ fn view(failure: &RawWalReadFailure) -> RecoveryWalReadFailureView<'_> {
                 RecoveryDiscoveryFailure::Limit(past) => {
                     RecoveryWalDiscoveryFailureView::Limit(*past)
                 }
-                RecoveryDiscoveryFailure::CountOverflow(count) => {
-                    RecoveryWalDiscoveryFailureView::CountOverflow(*count)
-                }
-                RecoveryDiscoveryFailure::Media { artifact, failure } => {
-                    RecoveryWalDiscoveryFailureView::Media {
-                        artifact: artifact_view(artifact),
-                        failure,
-                    }
-                }
-                RecoveryDiscoveryFailure::InvalidAddress { artifact } => {
-                    RecoveryWalDiscoveryFailureView::InvalidAddress {
-                        artifact: artifact_view(artifact),
-                    }
-                }
+                RecoveryDiscoveryFailure::Damage(damage) => damage_view(damage),
             })
         }
         RawWalReadFailure::Allocation {
@@ -150,6 +144,32 @@ fn view(failure: &RawWalReadFailure) -> RecoveryWalReadFailureView<'_> {
     }
 }
 
+fn damage_view(damage: &ArtifactDamage) -> RecoveryWalDiscoveryFailureView<'_> {
+    match damage {
+        ArtifactDamage::PastCeiling {
+            artifact,
+            length,
+            ceiling,
+        } => RecoveryWalDiscoveryFailureView::PastCeiling {
+            artifact: artifact_view(artifact),
+            length: *length,
+            ceiling: *ceiling,
+        },
+        ArtifactDamage::Media { artifact, failure } => RecoveryWalDiscoveryFailureView::Media {
+            artifact: artifact_view(artifact),
+            failure,
+        },
+        ArtifactDamage::InvalidAddress { artifact } => {
+            RecoveryWalDiscoveryFailureView::InvalidAddress {
+                artifact: artifact_view(artifact),
+            }
+        }
+        ArtifactDamage::CountOverflow(count) => {
+            RecoveryWalDiscoveryFailureView::CountOverflow(*count)
+        }
+    }
+}
+
 fn artifact_view(artifact: &RecoveryDiscoveryArtifact) -> RecoveryWalArtifactView<'_> {
     match artifact {
         RecoveryDiscoveryArtifact::Record(record) => RecoveryWalArtifactView::Record(*record),
@@ -161,13 +181,17 @@ fn artifact_view(artifact: &RecoveryDiscoveryArtifact) -> RecoveryWalArtifactVie
 
 pub(super) fn filename_capacity(failure: &RawWalReadFailure) -> usize {
     let artifact = match failure {
-        RawWalReadFailure::Discovery(
-            RecoveryDiscoveryFailure::Media { artifact, .. }
-            | RecoveryDiscoveryFailure::InvalidAddress { artifact },
-        )
+        RawWalReadFailure::Discovery(RecoveryDiscoveryFailure::Damage(
+            ArtifactDamage::PastCeiling { artifact, .. }
+            | ArtifactDamage::Media { artifact, .. }
+            | ArtifactDamage::InvalidAddress { artifact },
+        ))
         | RawWalReadFailure::Allocation { artifact, .. }
         | RawWalReadFailure::BufferLengthMismatch { artifact, .. } => Some(artifact),
-        RawWalReadFailure::Discovery(_) => None,
+        RawWalReadFailure::Discovery(
+            RecoveryDiscoveryFailure::Limit(_)
+            | RecoveryDiscoveryFailure::Damage(ArtifactDamage::CountOverflow(_)),
+        ) => None,
     };
     match artifact {
         Some(RecoveryDiscoveryArtifact::WalArtifact(name)) => name.capacity(),

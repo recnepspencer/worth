@@ -2,7 +2,9 @@
 //! C.10 may already have retired.
 
 use std::collections::VecDeque;
-use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
+use worth_store::physical_runtime::{
+    ArtifactCeiling, BoundedRecoveryFilesystemDiscovery, PageAddress, ReadGrant, UnchargedRead,
+};
 use worth_store_physical_format::{
     DurableInlineRecordPlacement, DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration,
     PhysicalRewriteRedo, PhysicalTreeIdentity, RecordSegmentPageManifestEntry,
@@ -171,12 +173,16 @@ fn collect(
         {
             continue;
         }
+        let address = PageAddress::SegmentMembershipBlock {
+            generation: reference.generation(),
+            block: reference.block(),
+        };
         let observed = discovery
-            .read_segment_membership_block(
-                reference.generation(),
-                reference.block(),
-                u64::from(format.page_size().bytes()),
+            .read(
+                ArtifactCeiling::page(format, address),
+                ReadGrant::ceiling_only(),
             )
+            .observed()
             .map_err(discovery_failure)?;
         let tree =
             PhysicalTreeIdentity::new(root.tree_identity()).ok_or(HistoricalFailure::Invalid)?;

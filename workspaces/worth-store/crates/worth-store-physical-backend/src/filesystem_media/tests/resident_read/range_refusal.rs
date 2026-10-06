@@ -1,6 +1,6 @@
-//! A range is refused by the rule a whole artifact is: one longer than the
-//! ceiling its caller named passed that ceiling, however few bytes the reader
-//! has left, and only one within its ceiling runs the reader out of bytes.
+//! A range is its own real length, so every bound is decided before anything
+//! is opened: past the caller's grant is that budget's, and only a range the
+//! grant admits runs the observation out of bytes.
 
 use super::record_storage::storage;
 use super::*;
@@ -20,90 +20,121 @@ fn arena_discovery(reader: u64) -> (tempfile::TempDir, BoundedRecoveryFilesystem
     (parent, discovery)
 }
 
-fn discovered<E: std::fmt::Debug>(
-    failure: RecoveryDiscoveryAllocationFailure<E>,
-) -> RecoveryDiscoveryFailure {
-    match failure {
-        RecoveryDiscoveryAllocationFailure::Discovery(failure) => failure,
-        other => panic!("refused before any allocation: {other:?}"),
+/// Where the three range readers stopped for `length` bytes under a grant of
+/// `granted`, or no grant.
+fn stops(
+    discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    length: u32,
+    granted: Option<u64>,
+) -> [Option<Stop>; 3] {
+    let range = ExtentArenaRange::new(ExtentArenaId::new(10).unwrap(), 2, 8).unwrap();
+    let allocate = |bytes| Ok::<_, DeniedAllocation>(vec![0; bytes]);
+    let mut storage = storage(None, false);
+    match granted {
+        None => [
+            stopped(&discovery.read_extent_range(range, 0, length, uncharged())),
+            stopped(&discovery.read_record_range_with_allocator(
+                ARENA,
+                2,
+                length,
+                uncharged(),
+                allocate,
+            )),
+            stopped(&discovery.read_record_artifact_range_with_storage(
+                ARENA,
+                2,
+                length,
+                uncharged(),
+                &mut storage,
+            )),
+        ],
+        Some(bytes) => [
+            stopped(&discovery.read_extent_range(range, 0, length, grant(bytes))),
+            stopped(&discovery.read_record_range_with_allocator(
+                ARENA,
+                2,
+                length,
+                grant(bytes),
+                allocate,
+            )),
+            stopped(&discovery.read_record_artifact_range_with_storage(
+                ARENA,
+                2,
+                length,
+                grant(bytes),
+                &mut storage,
+            )),
+        ],
     }
 }
 
-/// The three range readers' refusals of `length` bytes under `ceiling`.
-fn refusals(
-    discovery: &mut BoundedRecoveryFilesystemDiscovery,
-    length: u32,
-    ceiling: u64,
-) -> [Option<RecoveryDiscoveryFailure>; 3] {
-    let range = ExtentArenaRange::new(ExtentArenaId::new(10).unwrap(), 2, 8).unwrap();
-    let addressed = discovery.read_extent_range(range, 0, length, ceiling);
-    let allocated =
-        discovery.read_record_range_with_allocator(ARENA, 2, length, ceiling, |bytes| {
-            Ok::<_, DeniedAllocation>(vec![0; bytes])
-        });
-    let stored = discovery.read_record_artifact_range_with_storage(
-        ARENA,
-        2,
-        length,
-        ceiling,
-        &mut storage(None, false),
-    );
-    [
-        addressed.err(),
-        allocated.err().map(discovered),
-        stored.err().map(discovered),
-    ]
+/// What the storage reader meets on a platform whose path storage is never
+/// qualified.
+fn stored(stop: Option<Stop>) -> Option<Stop> {
+    if cfg!(windows) {
+        stop
+    } else {
+        Some(Stop::InvalidAddress)
+    }
 }
 
-/// The three refusals' bounds and counts; `None` for a read that passed or a
-/// refusal that is not a limit.
-fn named_refusals(
-    discovery: &mut BoundedRecoveryFilesystemDiscovery,
-    length: u32,
-    ceiling: u64,
-) -> [Option<(FilesystemObservationBound, u64, u64)>; 3] {
-    refusals(discovery, length, ceiling).map(|failure| failure.as_ref().and_then(named))
+fn each(stop: Option<Stop>) -> [Option<Stop>; 3] {
+    [stop.clone(), stop.clone(), stored(stop)]
 }
 
 #[test]
-fn a_range_past_its_ceiling_is_never_the_readers_own_limit() {
-    use FilesystemObservationBound::{ObservationBytes, RequestedBytes};
-    // A range of seven bytes, asked under (ceiling, reader bytes).
-    for (ceiling, reader, refused) in [
-        (6, 32, (RequestedBytes, 7, 6)),
-        (6, 4, (RequestedBytes, 7, 6)),
-        (6, 6, (RequestedBytes, 7, 6)),
-        (7, 6, (ObservationBytes, 7, 6)),
-        (8, 4, (ObservationBytes, 7, 4)),
-    ] {
+fn a_range_exactly_at_its_grant_reads_and_one_past_names_its_length() {
+    let (_parent, mut discovery) = arena_discovery(64);
+    assert_eq!(stops(&mut discovery, 7, Some(7)), each(None));
+    assert_eq!(
+        stops(&mut discovery, 7, Some(6)),
+        each(Some(Stop::PastGrant {
+            granted: 6,
+            length: 7
+        })),
+    );
+    assert_eq!(
+        discovery.counters().bytes_read,
+        if cfg!(windows) { 21 } else { 14 }
+    );
+}
+
+/// A range the grant admits, refused by the observation's bytes, is the
+/// observation's limit with the backend's own counts; a grant never stands
+/// in for the observation.
+#[test]
+fn a_range_within_its_grant_past_the_observation_is_the_observations() {
+    use FilesystemObservationBound::ObservationBytes;
+    for (granted, reader) in [(Some(7), 6), (None, 6), (Some(8), 4), (None, 0)] {
         let (_parent, mut discovery) = arena_discovery(reader);
         assert_eq!(
-            named_refusals(&mut discovery, 7, ceiling),
-            [Some(refused); 3],
-            "ceiling {ceiling} with {reader} reader bytes",
+            stops(&mut discovery, 7, granted),
+            each(Some(Stop::Observation(ObservationBytes, 7, reader))),
+            "grant {granted:?} with {reader} observation bytes",
         );
         assert_eq!(discovery.counters().bytes_read, 0);
     }
 }
 
 #[test]
-fn a_range_within_its_ceiling_counts_the_bytes_the_reader_already_gave() {
-    let (_parent, mut discovery) = arena_discovery(9);
-    assert_eq!(refusals(&mut discovery, 3, 8), [None, None, None]);
-    // Nine bytes are spent; one more passes the reader's nine, not the ceiling.
-    let refused = Some((FilesystemObservationBound::ObservationBytes, 10, 9));
-    assert_eq!(named_refusals(&mut discovery, 1, 8), [refused; 3]);
+fn a_range_counts_the_bytes_the_observation_already_gave() {
+    let (_parent, mut discovery) = arena_discovery(if cfg!(windows) { 9 } else { 6 });
+    assert_eq!(stops(&mut discovery, 3, None), each(None));
+    let spent = if cfg!(windows) { 9 } else { 6 };
+    let refused = Some(Stop::Observation(
+        FilesystemObservationBound::ObservationBytes,
+        spent + 1,
+        spent,
+    ));
+    assert_eq!(stops(&mut discovery, 1, None), each(refused));
 }
 
 #[test]
 fn an_empty_range_addresses_nothing() {
     let (_parent, mut discovery) = arena_discovery(32);
-    let invalid = Some(RecoveryDiscoveryFailure::InvalidAddress {
-        artifact: RecoveryDiscoveryArtifact::Record(ARENA),
-    });
     assert_eq!(
-        refusals(&mut discovery, 0, 8),
-        [invalid.clone(), invalid.clone(), invalid],
+        stops(&mut discovery, 0, None),
+        each(Some(Stop::InvalidAddress))
     );
     assert_eq!(discovery.counters().addressed_artifacts_read, 0);
 }

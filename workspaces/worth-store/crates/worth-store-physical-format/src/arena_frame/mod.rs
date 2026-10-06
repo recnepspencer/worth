@@ -1,6 +1,8 @@
+mod chunk_frame;
 mod geometry;
 mod range;
 
+pub use chunk_frame::ExtentChunkFrame;
 pub use geometry::ExtentArenaFrameLayout;
 pub use range::{ExtentArenaId, ExtentArenaRange};
 

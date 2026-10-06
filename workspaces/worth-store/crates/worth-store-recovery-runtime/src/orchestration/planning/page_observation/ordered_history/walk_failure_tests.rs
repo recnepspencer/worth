@@ -5,7 +5,9 @@ use crate::entry::PhysicalRecoveryLimitDimension::{
 };
 use crate::orchestration::reader_limit::refused_past;
 use crate::orchestration::recovery_budget::{allowance_for_test, recovery_limit_for_test};
-use worth_store::physical_runtime::{FilesystemObservationBound, RecoveryDiscoveryArtifact};
+use worth_store::physical_runtime::{
+    ArtifactDamage, FilesystemObservationBound, RecoveryDiscoveryArtifact,
+};
 use worth_store_recovery_physics::{
     test_support::{
         head_replay_limit_for_test, physics_limit_for_test, root_history_limit_for_test,
@@ -44,10 +46,14 @@ fn a_failed_read_is_a_limit_only_when_the_reader_ran_out_of_observation_bytes() 
         // The walk's readers count no reads: a refused read is damage.
         refused_past(FilesystemObservationBound::Reads, 1, 0),
         // A root or routing block larger than one page is damaged media.
-        oversized(FilesystemObservationBound::RequestedBytes),
-        RecoveryDiscoveryFailure::InvalidAddress {
+        RecoveryDiscoveryFailure::Damage(ArtifactDamage::PastCeiling {
             artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint,
-        },
+            length: 65_537,
+            ceiling: 65_536,
+        }),
+        RecoveryDiscoveryFailure::Damage(ArtifactDamage::InvalidAddress {
+            artifact: RecoveryDiscoveryArtifact::CurrentCheckpoint,
+        }),
     ] {
         assert_eq!(WalkFailure::from(damage), WalkFailure::Unverified);
     }

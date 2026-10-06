@@ -61,26 +61,24 @@ impl SourceCopyCursor {
         if self.ordinal > self.manifest.chunk_count() {
             return Ok(None);
         }
-        let payload = (self.manifest.logical_bytes() - self.logical_offset)
-            .min(u64::from(self.manifest.chunk_payload_capacity()));
-        let length = u32::try_from(
-            payload + (DURABLE_EXTENT_FRAME_HEADER_BYTES + EXTENT_CHUNK_METADATA_BYTES) as u64,
-        )
-        .map_err(|_| ())?;
+        let frame = self.source_frame()?;
         let range = self.recipe.intent().source().arena_range();
-        let offset = ExtentArenaFrameLayout::new(self.format, self.manifest.alignment())
-            .ok_or(())?
-            .chunk_offset(self.ordinal)
-            .ok_or(())?;
         RecordFrameCoordinate::new(
             RecordArtifactFile::ExtentArena {
                 arena: range.arena().get(),
             },
-            range.offset() + offset,
-            length,
+            range.offset() + frame.offset(),
+            frame.length(),
         )
         .map(Some)
         .ok_or(())
+    }
+
+    /// The source chunk this cursor reads next.
+    fn source_frame(&self) -> Result<ExtentChunkFrame, ()> {
+        let layout =
+            ExtentArenaFrameLayout::new(self.format, self.manifest.alignment()).ok_or(())?;
+        ExtentChunkFrame::of(self.manifest, layout, self.ordinal).ok_or(())
     }
 
     pub(crate) fn transform(
@@ -94,14 +92,7 @@ impl SourceCopyCursor {
         let source_coordinate = self.source_coordinate()?.ok_or(())?;
         let intent = self.recipe.intent();
         let source = intent.source();
-        let chunk = ExtentChunkCoordinate::new(
-            source.record(),
-            source.extent_cell(),
-            source.payload_bytes(),
-            self.logical_offset,
-            self.ordinal,
-        )
-        .ok_or(())?;
+        let chunk = self.source_frame()?.coordinate();
         let scope = PhysicalArtifactScope::extent_chunk(
             self.store,
             self.format,

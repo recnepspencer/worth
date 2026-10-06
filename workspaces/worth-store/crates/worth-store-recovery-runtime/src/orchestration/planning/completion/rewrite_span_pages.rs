@@ -1,4 +1,4 @@
-use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
+use worth_store::physical_runtime::{BoundedRecoveryFilesystemDiscovery, ReadGrant, UnchargedRead};
 use worth_store_physical_format::{
     decode_data_frame_page_lsn, encode_data_frame_page_lsn, inspect_inline_page,
     restamp_inline_page_generation, CurrentPhysicalRecordPlacement, DurableFrameKind,
@@ -159,8 +159,8 @@ pub(super) fn span_entries(
     Ok(found)
 }
 
-/// Reads one admitted span. A span is admitted up to `SPAN_LIMIT`, so that
-/// is this read's ceiling; the reader's allowance is the only budget.
+/// Reads one admitted span, exactly its `length` bytes. A span is admitted up
+/// to `SPAN_LIMIT`; the reader's allowance is the only budget.
 pub(super) fn read_span(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     segment: u64,
@@ -169,7 +169,14 @@ pub(super) fn read_span(
     length: u32,
 ) -> Result<Vec<u8>, HistoricalFailure> {
     let bytes = discovery
-        .read_segment_range(segment, generation, offset, length, SPAN_LIMIT)
+        .read_segment_range(
+            segment,
+            generation,
+            offset,
+            length,
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
         .map_err(discovery_failure)?
         .into_bytes()
         .ok_or(HistoricalFailure::Invalid)?;

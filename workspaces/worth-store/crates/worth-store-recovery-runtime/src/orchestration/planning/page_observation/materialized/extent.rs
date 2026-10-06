@@ -1,10 +1,10 @@
 use std::collections::BTreeMap;
 
 use sha2::{Digest, Sha256};
-use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
+use worth_store::physical_runtime::{BoundedRecoveryFilesystemDiscovery, ReadGrant, UnchargedRead};
 use worth_store_physical_format::{
     DurableExtentManifest, DurableExtentRecordPlacement, ExtentArenaFrameLayout,
-    ExtentChunkCoordinate, PhysicalRecordFormatDeclaration, RecordArtifactFile,
+    ExtentChunkCoordinate, ExtentChunkFrame, PhysicalRecordFormatDeclaration, RecordArtifactFile,
     RecordFrameCoordinate,
 };
 use worth_store_physical_integrity::{
@@ -15,7 +15,6 @@ use worth_store_recovery_physics::{
 };
 
 use super::{super::PageObservationFailure, observed::required_observed};
-use crate::orchestration::reader_limit::extent_page_ceiling;
 
 pub(crate) struct RecoveryExtentManifest {
     manifest: DurableExtentManifest,
@@ -63,7 +62,9 @@ fn admit_manifest_once(
         arena: placement.arena_range().arena().get(),
     };
     let observed = required_observed(
-        discovery.read_extent_manifest(placement.arena_range(), extent_page_ceiling(format)),
+        discovery
+            .read_extent_manifest(placement.arena_range(), ReadGrant::ceiling_only())
+            .observed(),
         Some(target.identity()),
         artifact,
     )?;
@@ -116,12 +117,14 @@ fn admit_chunk(
     let manifest = admitted.manifest;
     let plan = plan_chunk_observation(placement, target, manifest, format)?;
     let frame = required_observed(
-        discovery.read_extent_range(
-            placement.arena_range(),
-            plan.offset,
-            plan.length,
-            extent_page_ceiling(format),
-        ),
+        discovery
+            .read_extent_range(
+                placement.arena_range(),
+                plan.offset,
+                plan.length,
+                ReadGrant::ceiling_only(),
+            )
+            .observed(),
         Some(target.identity()),
         plan.artifact,
     )?;
@@ -160,40 +163,23 @@ fn plan_chunk_observation(
     format: PhysicalRecordFormatDeclaration,
 ) -> Result<ExtentChunkObservationPlan, PageObservationFailure> {
     let chunk = target_chunk(target, manifest)?;
-    let logical_offset = u64::from(chunk - 1) * u64::from(manifest.chunk_payload_capacity());
-    let payload = (manifest.logical_bytes() - logical_offset)
-        .min(u64::from(manifest.chunk_payload_capacity()));
-    let length = u32::try_from(
-        worth_store_physical_format::DURABLE_EXTENT_FRAME_HEADER_BYTES as u64
-            + worth_store_physical_format::EXTENT_CHUNK_METADATA_BYTES as u64
-            + payload,
-    )
-    .map_err(|_| PageObservationFailure::InvalidTarget(target.identity()))?;
-    let offset = ExtentArenaFrameLayout::new(format, manifest.alignment())
-        .and_then(|layout| layout.chunk_offset(chunk))
+    let frame = ExtentArenaFrameLayout::new(format, manifest.alignment())
+        .and_then(|layout| ExtentChunkFrame::of(manifest, layout, chunk))
         .ok_or(PageObservationFailure::InvalidTarget(target.identity()))?;
     require_chunk_coordinate(
         target,
         manifest,
-        logical_offset,
-        placement.arena_range().offset() + offset,
-        length,
+        frame.coordinate().logical_offset(),
+        placement.arena_range().offset() + frame.offset(),
+        frame.length(),
     )?;
-    let coordinate = ExtentChunkCoordinate::new(
-        manifest.record(),
-        manifest.extent_cell(),
-        manifest.logical_bytes(),
-        logical_offset,
-        chunk,
-    )
-    .ok_or(PageObservationFailure::InvalidPage(target.identity()))?;
     Ok(ExtentChunkObservationPlan {
         artifact: RecordArtifactFile::ExtentArena {
             arena: placement.arena_range().arena().get(),
         },
-        coordinate,
-        offset,
-        length,
+        coordinate: frame.coordinate(),
+        offset: frame.offset(),
+        length: frame.length(),
     })
 }
 

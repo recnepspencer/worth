@@ -2,7 +2,7 @@
 //! to the complete semantic transcript carried by a checked C.8 chain edge.
 
 use sha2::{Digest, Sha256};
-use worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery;
+use worth_store_physical_backend::{BoundedRecoveryFilesystemDiscovery, PageAddress};
 use worth_store_physical_format::{
     DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest, PhysicalInventoryTranscriptV1,
     PhysicalRecordFormatDeclaration, RecordArtifactFile,
@@ -73,14 +73,10 @@ fn observe_inner<S: RouteWalkStorage>(
     storage: &mut S,
     record_headers: bool,
 ) -> Result<AddressedRoot, Denial> {
-    let maximum = u64::from(format.page_size().bytes());
     let mut slices =
         storage.reserve_vec::<SelectedArtifactSlice>(usize::from(record_headers) * 2)?;
-    let root_frame = storage.read_page(
-        discovery,
-        RecordArtifactFile::RootManifest { generation },
-        maximum,
-    )?;
+    let root_frame =
+        storage.read_page(discovery, format, PageAddress::RootManifest { generation })?;
     let root_bytes = root_frame.bytes().ok_or(Denial::MissingRoot)?;
     let (root, observed_format) = DurablePhysicalRootManifest::decode(root_bytes, node_capacity)
         .map_err(|_| Denial::RootBinding)?;
@@ -111,8 +107,8 @@ fn observe_inner<S: RouteWalkStorage>(
     }
     let free_frame = storage.read_page(
         discovery,
-        RecordArtifactFile::FreeSpaceManifest { generation },
-        maximum,
+        format,
+        PageAddress::FreeSpaceManifest { generation },
     )?;
     let free_bytes = free_frame.bytes().ok_or(Denial::MissingFrame)?;
     let free_sha256 = Sha256::digest(free_bytes).into();

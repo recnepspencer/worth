@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, num::NonZeroU64};
 
 use worth_store_physical_format::{
-    append_inline_records_owned, prepare_extent_chunk, ExtentChunkCoordinate, InlineRecordAppend,
+    append_inline_records_owned, prepare_extent_chunk, ExtentChunkFrame, InlineRecordAppend,
     PersistedRecordIdentity,
 };
 
@@ -149,27 +149,18 @@ fn materialize_extent(
         .get(&extent.manifest.record())
         .copied()
         .ok_or_else(invalid_plan)?;
-    let transfer = extent.manifest.chunk_payload_capacity() as usize;
     let mut completed = 0_u64;
     let layout = worth_store_physical_format::ExtentArenaFrameLayout::new(
         format.declaration(),
         extent.manifest.alignment(),
     )
     .ok_or_else(invalid_plan)?;
-    let mut artifact_offset = extent.range.offset() + layout.manifest_stride();
     for ordinal in 1..=extent.manifest.chunk_count() {
-        let expected =
-            usize::try_from((extent.manifest.logical_bytes() - completed).min(transfer as u64))
-                .map_err(|_| invalid_plan())?;
-        let coordinate = ExtentChunkCoordinate::new(
-            extent.manifest.record(),
-            extent.manifest.extent_cell(),
-            extent.manifest.logical_bytes(),
-            completed,
-            ordinal,
-        )
-        .ok_or_else(invalid_plan)?;
-        let mut frame = prepare_extent_chunk(format.declaration(), coordinate, expected)
+        let chunk = ExtentChunkFrame::of(extent.manifest, layout, ordinal)
+            .filter(|chunk| chunk.coordinate().logical_offset() == completed)
+            .ok_or_else(invalid_plan)?;
+        let expected = chunk.payload_bytes() as usize;
+        let mut frame = prepare_extent_chunk(format.declaration(), chunk.coordinate(), expected)
             .map_err(|_| invalid_plan())?;
         read_exact_source(
             &mut *extent.source,
@@ -180,12 +171,19 @@ fn materialize_extent(
         let bytes = frame.seal();
         observation.observe_scratch(bytes.len());
         observation.observe_transfer(bytes.len());
-        let length = u32::try_from(bytes.len()).map_err(|_| invalid_plan())?;
+        if bytes.len() != chunk.length() as usize {
+            return Err(invalid_plan());
+        }
+        let artifact_offset = extent
+            .range
+            .offset()
+            .checked_add(chunk.offset())
+            .ok_or_else(invalid_plan)?;
         let target = PhysicalDataFrameIdentity::extent_chunk(
-            coordinate,
+            chunk.coordinate(),
             extent.artifact,
             artifact_offset,
-            length,
+            chunk.length(),
             extent.range,
         )
         .ok_or_else(invalid_plan)?;
@@ -200,9 +198,6 @@ fn materialize_extent(
             .map_err(|_| invalid_plan())?,
         );
         completed = completed.saturating_add(expected as u64);
-        artifact_offset = artifact_offset
-            .checked_add(layout.chunk_stride())
-            .ok_or_else(invalid_plan)?;
     }
     reject_trailing_source(&mut *extent.source, completed)?;
     Ok(())

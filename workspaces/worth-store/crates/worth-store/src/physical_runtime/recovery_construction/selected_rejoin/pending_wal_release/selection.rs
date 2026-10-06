@@ -1,11 +1,15 @@
 //! Actual selected-root, checkpoint, and pre-redo source observations.
 
 use sha2::{Digest, Sha256};
-use worth_store_physical_backend::BoundedRecoveryFilesystemDiscovery;
+use worth_store_physical_backend::{
+    ArtifactCeiling, BoundedRecoveryFilesystemDiscovery, FixedArtifact, PageAddress, ReadGrant,
+    UnchargedRead,
+};
 use worth_store_physical_format::{
     checkpoint_stream_encoded_digest, decode_checkpoint_certificate, maximum_current_root_entries,
     CheckpointCertificateKind, DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest,
-    DurableRootSelector, ReleaseCheckpointCertificateV1, RootSelectorRole, ROOT_SELECTOR_BYTES,
+    DurableRootSelector, PhysicalRecordFormatDeclaration, ReleaseCheckpointCertificateV1,
+    RootSelectorRole,
 };
 use worth_store_recovery_physics::VerifiedPendingWalReleaseCustody;
 
@@ -69,7 +73,6 @@ pub(super) fn observe(
     checkpoint: &worth_store_physical_integrity::VerifiedCheckpointStream,
 ) -> Result<Selection, Denial> {
     let format = reopen.format();
-    let page_limit = u64::from(format.page_size().bytes());
     let published = claim.published_root().ok_or(Denial::RootBinding)?;
     let published_digest = claim.published_root_sha256().ok_or(Denial::RootBinding)?;
     if published != reopen.root()
@@ -79,7 +82,11 @@ pub(super) fn observe(
         return Err(Denial::RootBinding);
     }
     let selector_bytes = discovery
-        .read_current_selector(ROOT_SELECTOR_BYTES as u64)
+        .read(
+            ArtifactCeiling::fixed(FixedArtifact::CurrentRootSelector),
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
         .map_err(Denial::Discovery)?
         .into_bytes()
         .ok_or(Denial::MissingSelector)?;
@@ -93,11 +100,7 @@ pub(super) fn observe(
     {
         return Err(Denial::RootBinding);
     }
-    let root_bytes = discovery
-        .read_root_manifest(published.generation(), page_limit)
-        .map_err(Denial::Discovery)?
-        .into_bytes()
-        .ok_or(Denial::MissingRoot)?;
+    let root_bytes = root_page(discovery, format, published.generation())?;
     let (root, root_format) =
         DurablePhysicalRootManifest::decode(&root_bytes, published.node_capacity())
             .map_err(|_| Denial::RootBinding)?;
@@ -109,11 +112,7 @@ pub(super) fn observe(
     {
         return Err(Denial::RootBinding);
     }
-    let free_bytes = discovery
-        .read_free_space_manifest(root.generation(), page_limit)
-        .map_err(Denial::Discovery)?
-        .into_bytes()
-        .ok_or(Denial::MissingFrame)?;
+    let free_bytes = free_page(discovery, format, root.generation())?;
     let free = tier::selection::validate_selected_free_header(
         &free_bytes,
         discovery.store_identity(),
@@ -224,11 +223,7 @@ pub(super) fn observe(
         _ => return Err(Denial::CheckpointBinding),
     }
     let checkpoint_source = claim.checkpoint().source().root();
-    let checkpoint_source_bytes = discovery
-        .read_root_manifest(checkpoint_source.generation(), page_limit)
-        .map_err(Denial::Discovery)?
-        .into_bytes()
-        .ok_or(Denial::MissingRoot)?;
+    let checkpoint_source_bytes = root_page(discovery, format, checkpoint_source.generation())?;
     let (checkpoint_source_root, checkpoint_source_format) = DurablePhysicalRootManifest::decode(
         &checkpoint_source_bytes,
         maximum_current_root_entries(format),
@@ -250,11 +245,8 @@ pub(super) fn observe(
     {
         return Err(Denial::CheckpointBinding);
     }
-    let checkpoint_source_free_bytes = discovery
-        .read_free_space_manifest(checkpoint_source.generation(), page_limit)
-        .map_err(Denial::Discovery)?
-        .into_bytes()
-        .ok_or(Denial::MissingFrame)?;
+    let checkpoint_source_free_bytes =
+        free_page(discovery, format, checkpoint_source.generation())?;
     let checkpoint_source_free = tier::selection::validate_selected_free_header(
         &checkpoint_source_free_bytes,
         discovery.store_identity(),
@@ -276,11 +268,7 @@ pub(super) fn observe(
         }
     }
     let source = claim.source_root();
-    let source_bytes = discovery
-        .read_root_manifest(source.generation(), page_limit)
-        .map_err(Denial::Discovery)?
-        .into_bytes()
-        .ok_or(Denial::MissingRoot)?;
+    let source_bytes = root_page(discovery, format, source.generation())?;
     let (source_root, source_format) =
         DurablePhysicalRootManifest::decode(&source_bytes, source.node_capacity())
             .map_err(|_| Denial::RootBinding)?;
@@ -291,11 +279,7 @@ pub(super) fn observe(
     {
         return Err(Denial::RootBinding);
     }
-    let source_free_bytes = discovery
-        .read_free_space_manifest(source.generation(), page_limit)
-        .map_err(Denial::Discovery)?
-        .into_bytes()
-        .ok_or(Denial::MissingFrame)?;
+    let source_free_bytes = free_page(discovery, format, source.generation())?;
     let source_free = tier::selection::validate_selected_free_header(
         &source_free_bytes,
         discovery.store_identity(),
@@ -327,6 +311,47 @@ pub(super) fn observe(
         source_root,
         source_free,
     })
+}
+
+/// The root manifest of `generation`: one page of `format` at most.
+fn root_page(
+    discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    format: PhysicalRecordFormatDeclaration,
+    generation: u64,
+) -> Result<Vec<u8>, Denial> {
+    read_page(discovery, format, PageAddress::RootManifest { generation })?
+        .ok_or(Denial::MissingRoot)
+}
+
+/// The free-space manifest of `generation`: one page of `format` at most.
+fn free_page(
+    discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    format: PhysicalRecordFormatDeclaration,
+    generation: u64,
+) -> Result<Vec<u8>, Denial> {
+    read_page(
+        discovery,
+        format,
+        PageAddress::FreeSpaceManifest { generation },
+    )?
+    .ok_or(Denial::MissingFrame)
+}
+
+/// One page of `format` at `address`, bounded by its ceiling alone: its
+/// bytes, or none where it is absent.
+fn read_page(
+    discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    format: PhysicalRecordFormatDeclaration,
+    address: PageAddress,
+) -> Result<Option<Vec<u8>>, Denial> {
+    discovery
+        .read(
+            ArtifactCeiling::page(format, address),
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
+        .map(|observed| observed.into_bytes())
+        .map_err(Denial::Discovery)
 }
 
 fn no_release_roster_matches(

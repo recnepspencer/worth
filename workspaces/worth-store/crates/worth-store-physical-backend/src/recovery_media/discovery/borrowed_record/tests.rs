@@ -5,8 +5,12 @@ use crate::filesystem_media::{
     ArtifactTreeStorageAllocator, FilesystemAccessPosture, FilesystemMediaOwner,
     FilesystemQualificationRequest, MediaOperationRole,
 };
-use crate::recovery_media::{RecoveryDiscoveryArtifact, RecoveryDiscoveryFailure};
+use crate::recovery_media::{
+    ArtifactCeiling, ArtifactDamage, PageAddress, ReadGrant, RecoveryDiscoveryArtifact,
+    UnchargedRead,
+};
 use worth_proof::TransitionOutcome;
+use worth_store_physical_format::PhysicalRecordFormatDeclaration;
 
 #[derive(Default)]
 struct Storage {
@@ -46,10 +50,10 @@ fn borrowed_record_range_overflow_denies_before_address_or_payload_allocation() 
     };
     assert!(matches!(
         observation.read_record_artifact_range_with_storage(
-            address, u64::MAX, 2, 64, &mut storage,
+            address, u64::MAX, 2, ReadGrant::ceiling_only(), &mut storage,
         ),
-        Err(RecoveryDiscoveryAllocationFailure::Discovery(
-            RecoveryDiscoveryFailure::InvalidAddress {
+        TransitionOutcome::Failed(crate::recovery_media::AllocatedReadFailure::Damage(
+            ArtifactDamage::InvalidAddress {
                 artifact: RecoveryDiscoveryArtifact::Record(observed),
             },
         )) if observed == address
@@ -61,10 +65,9 @@ fn borrowed_record_range_overflow_denies_before_address_or_payload_allocation() 
         media.bounded_record_observation(0, 64),
         Err(RecoveryFilesystemQualificationError::InvalidDiscoveryLimit)
     ));
-    assert!(matches!(
-        media.bounded_record_observation(2, 0),
-        Err(RecoveryFilesystemQualificationError::InvalidDiscoveryLimit)
-    ));
+    // An observation admitted no bytes is an observation every read
+    // refuses with its real length.
+    assert!(media.bounded_record_observation(2, 0).is_ok());
 }
 
 #[cfg(windows)]
@@ -88,23 +91,34 @@ fn borrowed_record_reads_preserve_actual_head_bytes_ranges_and_absence() {
     let mut observation = media.bounded_record_observation(4, 128).unwrap();
     assert_eq!(observation.store_identity(), media.store_identity());
     let mut storage = Storage::default();
+    let head = |block| {
+        ArtifactCeiling::page(
+            PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
+            PageAddress::ReleaseCustodyHeadBlock {
+                generation: 7,
+                block,
+            },
+        )
+    };
     let whole = observation
-        .read_record_artifact_with_storage(address, 128, &mut storage)
+        .read_with_storage(head(2), ReadGrant::ceiling_only(), &mut storage)
+        .observed()
         .unwrap();
     assert_eq!(whole.bytes(), Some(input.as_slice()));
     let range = observation
-        .read_record_artifact_range_with_storage(address, 7, 9, 128, &mut storage)
+        .read_record_artifact_range_with_storage(
+            address,
+            7,
+            9,
+            ReadGrant::ceiling_only(),
+            &mut storage,
+        )
+        .observed()
         .unwrap();
     assert_eq!(range.bytes(), Some(&input[7..16]));
     let absent = observation
-        .read_record_artifact_with_storage(
-            RecordArtifactFile::ReleaseCustodyHeadBlock {
-                generation: 7,
-                block: 3,
-            },
-            128,
-            &mut storage,
-        )
+        .read_with_storage(head(3), ReadGrant::ceiling_only(), &mut storage)
+        .observed()
         .unwrap();
     assert!(absent.bytes().is_none());
     assert_eq!(observation.counters().bytes_read, input.len() as u64 + 9);

@@ -11,6 +11,7 @@ use worth_store::physical_runtime::{
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration,
 };
+use worth_store_recovery_physics::PhysicalRootSourceCandidate;
 use worth_store_test_support::harness::physical_residency::{
     canonical_physical_mutation_acknowledgment, PhysicalResidencyStoreWorld,
 };
@@ -21,31 +22,33 @@ use crate::entry::{
     PhysicalRecoveryStaticConfiguration,
 };
 
-pub(super) struct SelectedWorld {
+pub(in crate::orchestration) struct SelectedWorld {
     authority: AdmittedPlatformAuthority,
     coordination: crate::orchestration::RecoveryCoordination,
-    root: DurablePhysicalRootManifest,
+    candidate: PhysicalRootSourceCandidate,
     pub(super) placements: Vec<CurrentPhysicalRecordPlacement>,
     retained: worth_store_test_support::TemporaryDirectory,
 }
 
 /// What a test reads of a selected world through one bounded reader.
-pub(super) struct SelectedSource<'a> {
-    pub(super) discovery: &'a mut BoundedRecoveryFilesystemDiscovery,
+pub(in crate::orchestration) struct SelectedSource<'a> {
+    pub(in crate::orchestration) discovery: &'a mut BoundedRecoveryFilesystemDiscovery,
     pub(super) root: &'a DurablePhysicalRootManifest,
+    /// The selected root with the selector that named it.
+    pub(in crate::orchestration) candidate: &'a PhysicalRootSourceCandidate,
     pub(super) placements: &'a [CurrentPhysicalRecordPlacement],
-    pub(super) format: PhysicalRecordFormatDeclaration,
+    pub(in crate::orchestration) format: PhysicalRecordFormatDeclaration,
     /// The store directory.
     pub(super) store: &'a Path,
 }
 
 impl SelectedWorld {
     /// Reads the world, then lets go of it the way a refused recovery does.
-    pub(super) fn read<T>(self, read: impl FnOnce(SelectedSource<'_>) -> T) -> T {
+    pub(in crate::orchestration) fn read<T>(self, read: impl FnOnce(SelectedSource<'_>) -> T) -> T {
         let Self {
             authority,
             coordination,
-            root,
+            candidate,
             placements,
             retained,
         } = self;
@@ -58,7 +61,8 @@ impl SelectedWorld {
         let mut discovery = media.bounded_discovery(64, 1024 * 1024).unwrap();
         let read = read(SelectedSource {
             discovery: &mut discovery,
-            root: &root,
+            root: candidate.manifest(),
+            candidate: &candidate,
             placements: &placements,
             format: PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
             store: retained.path(),
@@ -71,7 +75,7 @@ impl SelectedWorld {
     }
 }
 
-pub(super) fn selected_world(name: &str, segment_pages: u32) -> SelectedWorld {
+pub(in crate::orchestration) fn selected_world(name: &str, segment_pages: u32) -> SelectedWorld {
     let world = PhysicalResidencyStoreWorld::initialize_for_recovery_with_segment_pages(
         name,
         segment_pages,
@@ -99,7 +103,7 @@ pub(super) fn selected_world(name: &str, segment_pages: u32) -> SelectedWorld {
     SelectedWorld {
         authority,
         coordination,
-        root: selection.root().selected().manifest().clone(),
+        candidate: selection.root().selected().clone(),
         placements: selection.page_facts().placements().to_vec(),
         retained,
     }

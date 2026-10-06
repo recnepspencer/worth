@@ -1,11 +1,10 @@
 //! Bounded C.5 extent read for a selected reclaim control record.
 
-use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
+use worth_store::physical_runtime::{BoundedRecoveryFilesystemDiscovery, ReadGrant, UnchargedRead};
 use worth_store_physical_format::{
     decode_extent_chunk, CurrentPhysicalRecordPlacement, DurableExtentManifest,
-    ExtentArenaFrameLayout, ExtentChunkCoordinate, PersistedRecordIdentity,
-    PhysicalRecordFormatDeclaration, DURABLE_EXTENT_FRAME_HEADER_BYTES,
-    EXTENT_CHUNK_METADATA_BYTES,
+    ExtentArenaFrameLayout, ExtentChunkFrame, PersistedRecordIdentity,
+    PhysicalRecordFormatDeclaration,
 };
 use worth_store_physical_integrity::{
     IntegrityValidatedSelectedExtentPayload, PhysicalArtifactScope, PhysicalByteRange,
@@ -195,7 +194,8 @@ fn read_impl(
             .map_err(|_| PhysicalRecoverySelectedRecordReadDenial::ResidentBoundExceeded)?;
     }
     let observed = discovery
-        .read_extent_manifest(placement.arena_range(), page_limit)
+        .read_extent_manifest(placement.arena_range(), ReadGrant::ceiling_only())
+        .observed()
         .map_err(PhysicalRecoverySelectedRecordReadDenial::ManifestRead)?;
     let bytes = observed
         .bytes()
@@ -258,20 +258,12 @@ fn read_impl(
             .map_err(|_| PhysicalRecoverySelectedRecordReadDenial::ResidentBoundExceeded)?;
     }
     for ordinal in 1..=manifest.chunk_count() {
-        let coordinate = ExtentChunkCoordinate::new(
-            record,
-            manifest.extent_cell(),
-            manifest.logical_bytes(),
-            payload.len() as u64,
-            ordinal,
-        )
-        .ok_or(PhysicalRecoverySelectedRecordReadDenial::InvalidPayload)?;
-        let length = (manifest.logical_bytes() as usize - payload.len())
-            .min(manifest.chunk_payload_capacity() as usize);
-        let frame_length = DURABLE_EXTENT_FRAME_HEADER_BYTES + EXTENT_CHUNK_METADATA_BYTES + length;
-        let relative = layout
-            .chunk_offset(ordinal)
+        let chunk_frame = ExtentChunkFrame::of(manifest, layout, ordinal)
             .ok_or(PhysicalRecoverySelectedRecordReadDenial::InvalidPayload)?;
+        let coordinate = chunk_frame.coordinate();
+        let length = chunk_frame.payload_bytes() as usize;
+        let frame_length = chunk_frame.length() as usize;
+        let relative = chunk_frame.offset();
         if let Some(ledger) = resident.as_deref_mut() {
             ledger
                 .trace_slots(trace, 1)
@@ -284,10 +276,10 @@ fn read_impl(
             .read_extent_range(
                 placement.arena_range(),
                 relative,
-                u32::try_from(frame_length)
-                    .map_err(|_| PhysicalRecoverySelectedRecordReadDenial::InvalidPayload)?,
-                page_limit,
+                chunk_frame.length(),
+                ReadGrant::ceiling_only(),
             )
+            .observed()
             .map_err(
                 |failure| PhysicalRecoverySelectedRecordReadDenial::ChunkRead { ordinal, failure },
             )?;
