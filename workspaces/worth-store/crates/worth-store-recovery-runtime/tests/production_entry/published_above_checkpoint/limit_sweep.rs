@@ -255,7 +255,7 @@ fn every_limit_under_the_need_of_published_objects_is_reported_as_that_limit() {
 }
 
 #[test]
-#[ignore = "release-limit-sweeps: release and reclaim report Absent until Part II M12/M15"]
+#[ignore = "release-limit-sweeps: release and reclaim report Absent until Part II Milestone 15"]
 fn every_limit_under_the_need_of_a_historical_release_is_reported_as_that_limit() {
     assert_limits_are_reported_as_limits(
         released_world,
@@ -265,7 +265,7 @@ fn every_limit_under_the_need_of_a_historical_release_is_reported_as_that_limit(
 }
 
 #[test]
-#[ignore = "release-limit-sweeps: release and reclaim report Absent until Part II M12/M15"]
+#[ignore = "release-limit-sweeps: release and reclaim report Absent until Part II Milestone 15"]
 fn every_limit_under_the_need_of_a_release_above_a_checkpoint_head_is_reported_as_that_limit() {
     assert_limits_are_reported_as_limits(
         pending_successor_above_history::terminal_successor_of_a_checkpoint_head,
@@ -275,7 +275,7 @@ fn every_limit_under_the_need_of_a_release_above_a_checkpoint_head_is_reported_a
 }
 
 #[test]
-#[ignore = "release-limit-sweeps: release and reclaim report Absent until Part II M12/M15"]
+#[ignore = "release-limit-sweeps: release and reclaim report Absent until Part II Milestone 15"]
 fn every_limit_under_the_need_of_a_certified_release_is_reported_as_that_limit() {
     assert_limits_are_reported_as_limits(
         worlds::certified_release,
@@ -285,7 +285,7 @@ fn every_limit_under_the_need_of_a_certified_release_is_reported_as_that_limit()
 }
 
 #[test]
-#[ignore = "release-limit-sweeps: release and reclaim report Absent until Part II M12/M15"]
+#[ignore = "release-limit-sweeps: release and reclaim report Absent until Part II Milestone 15"]
 fn every_limit_under_the_need_of_completed_history_is_reported_as_that_limit() {
     assert_limits_are_reported_as_limits(
         worlds::completed_history,
@@ -295,7 +295,7 @@ fn every_limit_under_the_need_of_completed_history_is_reported_as_that_limit() {
 }
 
 #[test]
-#[ignore = "release-limit-sweeps: release and reclaim report Absent until Part II M12/M15"]
+#[ignore = "release-limit-sweeps: release and reclaim report Absent until Part II Milestone 15"]
 fn every_limit_under_the_need_of_a_pending_tier_release_is_reported_as_that_limit() {
     assert_limits_are_reported_as_limits(
         tier_release_pending_wal::kill_producer_after_descriptor_wal,
@@ -323,7 +323,7 @@ fn every_limit_under_the_need_of_a_killed_copy_is_reported_as_that_limit() {
 }
 
 #[test]
-#[ignore = "release-limit-sweeps: release and reclaim report Absent until Part II M12/M15"]
+#[ignore = "release-limit-sweeps: release and reclaim report Absent until Part II Milestone 15"]
 fn every_limit_under_the_need_of_a_pending_successor_is_reported_as_that_limit() {
     assert_limits_are_reported_as_limits(
         pending_successor_above_history::ordered_release_above_a_head_checkpoint,

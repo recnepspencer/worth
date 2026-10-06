@@ -43,8 +43,10 @@ evidence about the executable owners. S.10, S.11 and S.12 run before the
 Part II milestones that consume them (see the Physical Database Roadmap
 position section). Work deferred out of C.13 is recorded with its
 owner and returning milestone in the C.13 entry below and in
-`plans/deferred-work.md`. C.11 closes on its full closeout gate, including
-the heavy lane and full matrix, before C.13; nothing in it is deferred.
+`plans/deferred-work.md`. C.11 does not close before C.13. The
+[fast track to runtime integration](physical-reconstruction-fast-track-to-runtime-integration.md)
+names the C.11 items C.13 needs, and defers every other C.11 item with its
+owner and the Part II milestone it returns before.
 
 The `C.*` labels are reconstruction sequence numbers used only in planning,
 specification, evidence, and closeout. Production modules, types, functions,
@@ -1646,6 +1648,10 @@ derive or decide them.
 
 ### Closeout Gate
 
+The [fast track to runtime integration](physical-reconstruction-fast-track-to-runtime-integration.md)
+takes the items C.13 needs out of this gate. The rest of the gate is deferred,
+and the fast track lists each deferred item with its owner and return point.
+
 `C.11` closes only when every retained S.8/S.7 access and blob mechanism runs
 through the one reconstructed platform with bounded memory, recoverable
 publication, and destroy/rebuild honesty for derived structures. Physical
@@ -1718,6 +1724,9 @@ owner cases remain explicit, and no modeled branch, semantic commit, Query, or
 replication transition is promoted in advance of its production owner.
 
 ## C.13: Physical Facade Integration And Runtime-Integration Entry
+
+Engineering specification:
+[fast track to runtime integration](physical-reconstruction-fast-track-to-runtime-integration.md).
 
 ### Goal
 
@@ -1832,7 +1841,7 @@ implementation:
 - `physical-reconstruction-c10-isolation-and-io-coordination.md`
 - `physical-reconstruction-c11-layout-index-and-native-blob-adoption.md`
 - `physical-reconstruction-c12-formal-owner-rebinding.md`
-- `physical-reconstruction-c13-platform-integration-and-s10-entry.md`
+- `physical-reconstruction-fast-track-to-runtime-integration.md` (C.13 and the C.11 items it needs)
 
 C.3 through C.13 specs, including C.5.1, inherit the Non-Fake Physical
 Acceptance Test Contract,
@@ -1925,10 +1934,12 @@ boundary, not a certification receipt.
   cannot publish unchecked bytes.
 - C.10 precedes C.11 closeout so index and blob rewrite/reclaim use real stable
   reads and scheduled I/O.
+- C.13 needs only the C.11 items named in the fast track. The rest of C.11
+  closes later, each item before the Part II milestone that consumes it.
 - C.12 follows the executable transitions it models and runs before Runtime
   Integration Milestone 19.
-- C.13 closes the program and is the facade handoff into Runtime Integration
-  Milestone 1.
+- C.13 is the facade handoff into Runtime Integration Milestone 1. The program
+  closes later, when the deferred C.11 items and C.12 close.
 
 ## Completion Standard
 
@@ -1965,7 +1976,9 @@ This roadmap is complete only when Worth Store can honestly say:
   another vocabulary claim, and every deferred capability reports `Absent`
 
 Formal rebinding (C.12) completes this standard later, before Runtime
-Integration Milestone 19. S.10 operational recovery may begin once C.13
+Integration Milestone 19. The C.11 items deferred by the
+[fast track](physical-reconstruction-fast-track-to-runtime-integration.md) complete it before the Part II
+milestones named there. S.10 operational recovery may begin once C.13
 closes. The later runtime-integration
 roadmap can subsequently build the existing Worth runtime on top of this
 physical platform without inheriting a fake database boundary.

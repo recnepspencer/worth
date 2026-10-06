@@ -1285,16 +1285,22 @@ Part II Milestone 1 may begin only when:
 
 - the Aspect-Native Workspace Gate is closed, proving JSON is confined to
   terminal projection or hostile/readmission boundaries
-- the Physical Foundation Reconstruction Roadmap is closed through C.13 and its
-  sealed handoff names the physical facade ports Milestone 1 consumes
+- C.13 is closed on the
+  [fast track](physical-reconstruction-fast-track-to-runtime-integration.md)
+  and its sealed handoff names the physical facade ports Milestone 1 consumes.
+  C.11 and C.12 stay open; each remaining item is named debt with an owner and
+  the Part II milestone it returns before
 - `S.0` through `S.9`, including `S.4.5`, `S.5.1`, and `S.7.1`, are
   implemented or explicitly scoped with named, non-platform-grade debt
 - every deferred physical capability reports `Absent` through capability
   negotiation and is listed with its owner and the milestone that brings it
   back
-- a fresh store reopens after every crash point declared by the C.7, C.8 and
-  C.11 crash matrices, and the C.13 journey reproduces this through the facade,
-  including before the first checkpoint
+- a fresh store reopens after every crash point declared by the C.7 and C.8
+  crash matrices and the C.11 seams named in
+  [fast track](physical-reconstruction-fast-track-to-runtime-integration.md)
+  slice 6, and the C.13 journey reproduces this through the facade, including
+  before the first checkpoint. The blob-ingest, publication, drop, rebuild and
+  LSM seams return with their capabilities
 - the Physical Database Roadmap workspace crates expose the typed source,
   claim, handoff, and certification contracts required by Milestone 1
 
@@ -1330,8 +1336,10 @@ Part II may claim platform readiness, and Milestone 19 may close, only when:
 ## Relationship To Runtime And Query Integration
 
 - Runtime Integration Milestones 1 through 3 must consume `S.4`, `S.5`, `S.6`,
-  `S.8`, and `S.9` rather than manufacturing durability, stable-read,
-  concurrency, or access-path guarantees above the physical layer.
+  and `S.8` through the C.13 facade rather than manufacturing durability,
+  stable-read, concurrency, or access-path guarantees above the physical layer.
+  They rely on the executable owners that `S.9` models; until C.12 rebinds those
+  models, no Milestone 1 to 3 claim cites an `S.9` model as evidence.
 - Runtime Integration Milestone 8 must consume `S.10` recovery and operational
   evidence for bootstrap, PITR, rollback, and readmission.
 - Runtime Integration Milestones 4 and 9 must lower persistent Query access
