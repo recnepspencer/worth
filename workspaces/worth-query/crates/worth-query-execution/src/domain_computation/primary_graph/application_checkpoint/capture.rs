@@ -83,6 +83,22 @@ where
                         .output_lineage
                         .lock()
                         .unwrap_or_else(std::sync::PoisonError::into_inner);
+                    // Native prior custody is required; cached reuse facts are
+                    // best effort. Admit the locators before optional encoding
+                    // can consume this checkpoint's remaining allowance.
+                    let priors = lineage
+                        .checkpoint_prior_outputs(
+                            self.runtime.authority_identity().as_u64(),
+                            &self.installed_schema.binding_identity(),
+                            occurrence,
+                            lease.observation().reference_generation().get(),
+                            &mut admission,
+                        )
+                        .map_err(|_| {
+                            native_priors::capture_denial(
+                                "checkpoint native output heads cannot be selected",
+                            )
+                        })?;
                     for (identity, source, _) in &mut accepted {
                         let Some(source) = source else {
                             continue;
@@ -106,19 +122,6 @@ where
                             0
                         };
                     }
-                    let priors = lineage
-                        .checkpoint_prior_outputs(
-                            self.runtime.authority_identity().as_u64(),
-                            &self.installed_schema.binding_identity(),
-                            occurrence,
-                            lease.observation().reference_generation().get(),
-                            &mut admission,
-                        )
-                        .map_err(|_| {
-                            native_priors::capture_denial(
-                                "checkpoint native output heads cannot be selected",
-                            )
-                        })?;
                     let accepted_outputs = native_priors::merge(
                         &lineage,
                         accepted

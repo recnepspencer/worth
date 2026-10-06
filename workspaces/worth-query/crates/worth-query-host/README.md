@@ -94,6 +94,9 @@ producer must read and revalidate its inputs before current delivery. Capturing 
 stored output does not establish that it is current. Family publication order
 selects the active output, so an older Initial row cannot displace its Preserve
 successor or a distinct output family.
+Capture admits the required native prior locators before best-effort reuse facts.
+If those optional facts exhaust their remaining allowance, the checkpoint retains
+prior custody and the output starts fresh after reopening.
 
 A family read rejects an older candidate when its own recorded facts or native
 output witness prove it changed, even if its upstream is pending. Unchanged own
