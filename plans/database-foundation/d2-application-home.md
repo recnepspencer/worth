@@ -77,15 +77,26 @@ let app = application_installation::declaration(declaration, configuration, limi
   contribution patterns move binding-scope authority into the runtime
   (`conditional_contribution.rs:99-118`); `facade.rs:236` `retain_primary_graph_integration_handle`
   is public. A uniqueness check would refuse close forever. Instead one Query lifecycle gate:
-  - `close` refuses while admissions are active, otherwise seals the gate in the same step (no
-    admission slips between check and seal), then tears down;
-  - a later admission gets `WorthQueryHandleDenial::Closed`, never a dead runtime.
+  - `close` refuses while an admission is in flight;
+  - a later admission gets `WorthQueryHandleDenial::Closed`, never a dead runtime;
+  - an admission that arrives while close is deciding waits, then proceeds if close refused or
+    gets `Closed` if it succeeded. No admission is ever denied by a close that was refused.
 
-  No existing gate fits: Relational's `RelationalRuntimeOwnerBinding` is `pub(crate)`
-  (`R/runtime/state/runtime_state/owner_lifecycle.rs:15`) and `WorthQueryProductActivationGate`
-  (`D/execution_runtime/product_world/activation/gate.rs`) is product-activation specific with a
-  capacity reservation. The new gate copies Relational's shape: an accepting flag, an in-flight
-  count, an `admit()` guard, a seal on close.
+  The gate is the source owner's own mutex, not a second counter. The cell becomes a two-state
+  value under that mutex, open with the runtime or closed. An admission is a lock that finds it
+  open. `close` takes the lock without waiting (a held lock is the in-flight refusal), does every
+  step that can refuse while holding it, and only then stores the closed state.
+- **Close is one decision, in this order,** all under the source owner's lock:
+  1. hold Relational admission (`try_hold_admission`, below); a refusal is the in-flight refusal;
+  2. capture the closing image through the hold; a capture error refuses close;
+  3. seal the hold; an unsettled or in-flight publication refuses close;
+  4. store the closed state and build the home.
+
+  Every refusal happens before the seal, releases the hold, and hands back a runtime that works.
+  Nothing can change between the capture and the seal, because the hold admits nothing. Sealing
+  first would leave a sealed runtime behind a refused close; capturing first without the hold would
+  let a carried Relational port publish between the capture and the seal, and the seal would then
+  drain that settlement as owner loss.
 - **Where the gate sits.** `WorthQueryRelationalSourceOwner` (`D/execution_runtime/product_world/
   source_owner.rs:21-28`) is the one cell holding `Arc<Mutex<RelationalRuntime>>`. Its
   `with_runtime`, `with_runtime_mut` and `with_runtime_mut_unwind_isolated` (`:76-107`) admit
@@ -98,14 +109,21 @@ let app = application_installation::declaration(declaration, configuration, limi
     (`worth-query/src/runtime/backend/primary_graph_runtime.rs:53-58`, `relational_owner.rs:20-21`,
     `bridge_backed/relational_execution.rs:150,164`), so `pub(crate)` would break a real user. Its
     closure can still carry Relational-minted handles (owner service ports, retention leases) out
-    of the guard. So close also seals Relational's own owner lifecycle in place, through a new
-    non-blocking Relational call, `try_seal` (today only `Drop` closes, and
-    `RelationalRuntimeOwnerBinding::close` drains and blocks, `owner_lifecycle.rs:61-79`).
-    `try_seal` is one compare-and-swap on a lifecycle word holding the state and the in-flight
-    count; if any admission remains it changes nothing (no concurrent admission is ever denied by
-    a refused seal) and refuses with `AdmissionsActive`, which Query's `close` reports as its own
-    in-flight refusal, so close never hangs on an admitted runtime carried out of a closure. It
-    reaches close authority through the owner tenure (`runtime_state/mod.rs:97-107`,
+    of the guard. So close also seals Relational's own owner lifecycle in place, in two typed
+    steps on one lifecycle word that holds the state and the in-flight count (today only `Drop`
+    closes, and `RelationalRuntimeOwnerBinding::close` drains and blocks,
+    `owner_lifecycle.rs:61-79`):
+    - `try_hold_admission` is one compare-and-swap from open-and-idle to held. If any admission is
+      in flight it changes nothing and refuses with `AdmissionsActive`, which Query's `close`
+      reports as its own in-flight refusal, so close never hangs on an admitted runtime carried
+      out of a closure. While the hold lives, a new admission waits; it is neither admitted nor
+      denied. The owner reads through the hold.
+    - The hold then either seals or is released. `seal` refuses, and releases, when a publication
+      is in flight or unsettled (the checkpoint admission's own condition,
+      `checkpoint_admission.rs:31-72`), so a seal never drains a live settlement. Dropping the
+      hold, including on unwind, releases it and the waiting admissions proceed.
+
+    Both reach close authority through the owner tenure (`runtime_state/mod.rs:97-107`,
     `close_authority.rs:53-57`) via the `&mut` Query holds under its mutex. After a seal, every
     service that admits through Relational's owner binding denies with `OwnerUnavailable`
     (`R/branch/fork.rs:93-96`), even while a stray `Arc` keeps the runtime alive. `Drop` after a
@@ -315,20 +333,17 @@ Each lands green with one implementer and one fresh reviewer. The root `Cargo.to
 `.../worth-query-certification/fixtures/consumer_entry/Cargo.toml`, BM
 `workspaces/worth-query-bank-world/Cargo.toml`, UM `workspaces/worth-ui/Cargo.toml`, BC
 `tools/boundary-check/Cargo.toml` (config `tools/boundary-check/config/road1.toml`). A step over 5
-minutes is split by target and filter first. The old constructors live from D.2.2 to D.2.7 only.
+minutes is split by target and filter first. The old constructors live from D.2.2 to D.2.8 only.
 
-- **D.2.1 Relational: retired names and in-place seal.** Its own slice: another workspace, a
-  native format bump, and the preconditions for ordinal recovery and the close gate. The durable
-  checkpoint carries `retired_names`; restore restores them; older images are refused. The owner
-  gains a non-blocking `try_seal`: one compare-and-swap on a single lifecycle word that holds the
-  state and the in-flight count, so a refusal (`AdmissionsActive`, or `NotOwner` on an admitted
-  handle) changes nothing; on success the tenure is sealed, then publication resolves once, and
-  `Drop` after it skips explicitly. In today's persisted local-file mode a retirement is durable
-  only through a checkpoint; roadmap D.9 makes it a durable fact and deletes that mode. Tests: delete a branch, checkpoint, restore, fork into its name is
-  `RetiredTarget`; the bound holds after restore; `try_seal` with an admission held refuses and
-  admission still works; after a seal a retained owner service port is denied with
-  `OwnerUnavailable`, a retained snapshot still reads, and a late snapshot release does not
-  panic. Root workspace:
+- **D.2.1 Relational: retired names and the lifecycle word.** Its own slice: another workspace, a
+  native format bump, and the preconditions for ordinal recovery and close. The durable checkpoint
+  carries `retired_names`; restore restores them; older images are refused. The owner's state and
+  in-flight count live in one lifecycle word, so a stop and an admission can never each miss the
+  other. In today's persisted local-file mode a retirement is durable only through a checkpoint;
+  roadmap D.9 makes it a durable fact and deletes that mode. Tests: delete a branch, checkpoint,
+  restore, fork into its name is `RetiredTarget`; the bound holds after restore; after a seal a
+  retained owner service port is denied with `OwnerUnavailable`, a retained snapshot still reads,
+  and a late snapshot release does not panic. Root workspace:
   `cargo test -p worth-relational --lib tests::branch`, then each new test by exact name.
 - **D.2.2 Open call and renames.** Home, both builders, `OpenPlan`, phased refusal, entry mismatch,
   `opening` (on the program runtime; when a recorded revision is both rostered and the adoption
@@ -346,56 +361,69 @@ minutes is split by target and filter first. The old constructors live from D.2.
   --all-targets`, FX `-p worth-query-consumer-root -p worth-query-topology-entry --all-targets
   --all-features`, UM `-p worth-ui-query-binding --all-targets` (`cargo check`). BC run.
   Bank-server gate.
-- **D.2.3 Close gate and ordinal recovery.** The lifecycle gate at the source owner's
-  `with_runtime*`, which becomes fallible at every call site; `close` on the three runtimes,
-  returning the home; the revocable product source token; the bridge source behind
-  `test-primary-graph-faults`; Relational's `try_seal` at close. Relational gains one public read
-  of live and retired branch names (root workspace, `-p worth-relational`), and open recovers the
-  product-branch ordinal from it; `u64::MAX` is `IdentityExhausted`. Tests: fork, delete the
+- **D.2.3 Relational: admission hold, seal, and branch names.** `crates/worth-relational` only.
+  `try_hold_admission` and the hold's `seal` replace the one-step `try_seal` (section 1): a held
+  owner admits nothing and denies nothing, `seal` refuses and releases on an in-flight or unsettled
+  publication, and a dropped hold releases. One public read of live and retired branch names.
+  Tests: a hold with an admission in flight refuses and admission still works; an admission that
+  arrives during a hold waits, then proceeds after a release and is denied `OwnerUnavailable` after
+  a seal; a checkpoint is captured through a hold; `seal` with a deferred settlement refuses, the
+  settlement is still pending with no owner-loss release, and it settles afterward; a hold dropped
+  on unwind releases; the D.2.1 seal tests, moved to the two steps; the name read returns live and
+  retired names after a delete and after a restore. Root workspace:
+  `cargo test -p worth-relational --lib tests::branch`, then each new test by exact name.
+- **D.2.4 Close and ordinal recovery.** The source owner's cell becomes open-or-closed under its
+  mutex and `with_runtime*` becomes fallible at every call site; `close` on the three runtimes,
+  in the order of section 1, returning the home; the revocable product source token; the bridge
+  source behind `test-primary-graph-faults`. Open recovers the product-branch ordinal from
+  Relational's live and retired names; `u64::MAX` is `IdentityExhausted`. Tests: fork, delete the
   highest branch, close, reopen, fork again gets a fresh ordinal; a deferred settlement via
-  `fail_next_durable_append_for_test` refuses close; close refuses during an in-flight admission;
-  a retained integration handle is denied with `Closed` after close; a retained invariant
-  projection snapshot's `field()` returns `Closed` after close and its drop is a no-op; a product
-  runtime installed from the source token is denied after close; the workflow runtime closes and
-  reopens. QM `-p worth-query-execution --lib application_home`, `--lib primary_graph::tests`; QM
-  `-p worth-query-host --test temporal_conditional_operation`; the D.2.2 compile list again,
-  because the gate changes every `with_runtime*` caller. BC run.
-- **D.2.4 Host and execution tests.** `worth-query-host/tests/temporal_conditional_operation/
+  `fail_next_durable_append_for_test` refuses close and the runtime still works; close refuses
+  during an in-flight admission; a retained integration handle is denied with `Closed` after
+  close; a retained invariant projection snapshot's `field()` returns `Closed` after close and its
+  drop is a no-op; a product runtime installed from the source token is denied after close; the
+  workflow runtime closes and reopens. QM `-p worth-query-execution --lib application_home`,
+  `--lib primary_graph::tests`; QM `-p worth-query-host --test temporal_conditional_operation`;
+  the D.2.2 compile list again, because every `with_runtime*` caller changes. BC run.
+- **D.2.5 Host and execution tests.** `worth-query-host/tests/temporal_conditional_operation/
   contribution_installation*`, `publication_limit.rs`; execution's
   `E/tests/restored_first_commit.rs`, `E/tests/retired_index_checkpoint.rs`,
   `E/tests/application_attempt/optional_output_role/indexed_selection.rs`, and the second restore
   path `E/tests/fixture/world_installation.rs:88-118`, which moves to `open(home)`. QM `-p
   worth-query-host --test temporal_conditional_operation`, QM `-p worth-query-execution --lib
   primary_graph::tests`.
-- **D.2.5 Certification fixtures.** consumer_root (`application_invariant_acceptance/*`) and
+- **D.2.6 Certification fixtures.** consumer_root (`application_invariant_acceptance/*`) and
   topology_entry (`src/checkpoint_recovery.rs` module root, `checkpoint_recovery/*`,
   `required_chain/*`, `reuse_opt_out*`). Its checkpoint modules are gated behind its four existing
   features, so FX `-p worth-query-consumer-root`, then FX `-p worth-query-topology-entry --features
   test-invalidation-equivalence,test-output-delivery-faults,test-query-execution-observer,
   test-world-operation-control,test-durability-faults`.
-- **D.2.6 Certification tests and examples.** `tests/application_graph/` modules `adoption`,
+- **D.2.7 Certification tests and examples.** `tests/application_graph/` modules `adoption`,
   `document_retention_model/host`, `producer_predicate_checkpoint`, `restored_*`;
   `tests/program_example_authority.rs`; `examples/product_workflow_support/application.rs`. QM
   `-p worth-query-certification --test application_graph -- <module>` per module, `--test
   program_example_authority`, `--examples`.
-- **D.2.7 Bank, UI, deletion.** `bank-server/src/identity_runtime/installation.rs` moves to the
+- **D.2.8 Bank, UI, deletion.** `bank-server/src/identity_runtime/installation.rs` moves to the
   builder and the runtime authority accessor; `src/bank_projection/tests.rs`;
   `worth-ui-query-binding/src/product_projection/application_runtime.rs`. A bank reopen test (open,
   commit, close, reopen, read principals and invariants). Then delete the eight constructors and the
-  public checkpoint surface; refresh `facades.toml`. BM `-p bank-server`, UM `-p
+  public checkpoint surface. Application publication becomes an internal phase that only the
+  builder can reach: the direct routes in `E/application_runtime/publication_entry.rs:35,63,88,117`
+  and `E/conditional_operation/installation.rs:339` leave the public facade, and their fixture
+  callers move to the builder. Refresh `facades.toml`. BM `-p bank-server`, UM `-p
   worth-ui-query-binding`, QM `-p worth-query-host`, QM `-p worth-query-execution --lib`, QM `-p
   worth-query-certification --all-targets` (check), FX both packages `--all-targets
   --all-features`, BC run. Bank-server gate.
-- **D.2.8 Inventory and rows.** `WorthQueryReopenItem`, postures, `capabilities`, behavior probes
+- **D.2.9 Inventory and rows.** `WorthQueryReopenItem`, postures, `capabilities`, behavior probes
   for every row, the three postures folded, the ordinal audit (section 6). QM
   `-p worth-query-execution --lib reopen_inventory`, QM `-p worth-query-publication`, QM
   `-p worth-query-host`, BM `-p bank-server`; `facades.toml` refresh; bank-server gate.
-- **D.2.9 Docs and reconciliation.** Section 7. QM `-p worth-query-host --doc`, QM
+- **D.2.10 Docs and reconciliation.** Section 7. QM `-p worth-query-host --doc`, QM
   `-p worth-query-certification --examples`.
 
 ## 6. Bug classes and contracts
 
-- *A second installation path.* D.2.7 deletes the constructors; the `application_installation`
+- *A second installation path.* D.2.8 deletes the constructors; the `application_installation`
   snapshot entry pins its exports; the seam never builds a runtime.
 - *A reopen that silently drops state, or a partial resume reported as resumed.* One exhaustive
   row source and a behavior probe per row (`Resumed` iff `Survived`); record rows are root-scoped,
@@ -408,7 +436,7 @@ minutes is split by target and filter first. The old constructors live from D.2.
   everything built on it is gated by construction (multi-site): close seals it, a retained handle
   gets `Closed`, close refuses while an admission is in flight. The raw escapes are revocable
   (product source token), test-only (bridge source), or covered by Relational's non-blocking
-  `try_seal` (owner-admitting handles carried out of a `with_runtime` closure; carried snapshots
+  hold and seal (owner-admitting handles carried out of a `with_runtime` closure; carried snapshots
   stay frozen reads).
 - *Seed or adoption on the wrong start; the wrong entry kind; per-open authority in a seed hook.*
   `HomeStart`, `opening()`, the typed entry mismatch, the runtime accessor; a test per arm and the
@@ -416,7 +444,7 @@ minutes is split by target and filter first. The old constructors live from D.2.
 - *An ordinal reused across reopen.* Ordinals are written into authoritative state: the
   product-branch ordinal names Relational branches, so it is recovered at open from live and
   retired names (checkpointed from D.2.1), exhausts as `IdentityExhausted` rather than wrapping,
-  and has the delete-highest-then-reopen test. D.2.8 audits every other counter for the same (the
+  and has the delete-highest-then-reopen test. D.2.9 audits every other counter for the same (the
   mutation partition first); any that reaches authoritative state is recovered the same way in
   that slice, the rest are Absent rows.
 - *`at(path)` doing real work.* Refused before any filesystem call; the test asserts the path does
