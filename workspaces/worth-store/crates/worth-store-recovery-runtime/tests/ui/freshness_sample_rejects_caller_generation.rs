@@ -4,12 +4,12 @@ use worth_store::physical_runtime::{
 
 fn substitute_generation(
     media: &worth_store::physical_runtime::AdmittedRecoveryFilesystemMedia,
-    checkpoint: &worth_store_physical_integrity::VerifiedCheckpointFacts,
+    basis: worth_store::physical_runtime::StoreRecoverySamplingBasis<'_>,
 ) {
     let _ = PhysicalRecoveryFreshnessPort::sample_binding(
         7_u64,
         media,
-        checkpoint,
+        basis,
         IntegrityAdmittedRecoveryWalFrameView::from_frames(&[]),
         1,
         1,

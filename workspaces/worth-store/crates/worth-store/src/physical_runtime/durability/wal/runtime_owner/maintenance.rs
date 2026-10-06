@@ -32,7 +32,11 @@ impl PhysicalWalRuntimeOwner {
         };
         if let Some(record) = extent_copy {
             let mut projected = state.copy_obligations.clone();
-            let start = state.frontier.last_lsn_end().map_or(1, |lsn| lsn.get());
+            let start = state
+                .frontier
+                .last_lsn_end()
+                .unwrap_or(worth_store_wal::WAL_ORIGIN.lsn())
+                .get();
             super::super::copy_obligation::observe_copy_record(
                 &mut projected,
                 record,
@@ -46,7 +50,7 @@ impl PhysicalWalRuntimeOwner {
         let start = state
             .frontier
             .last_lsn_end()
-            .unwrap_or(LogSequenceNumber::new(LogSequenceNumber::GENESIS.get() + 1));
+            .unwrap_or(worth_store_wal::WAL_ORIGIN.lsn());
         let end = LogSequenceNumber::new(start.get().checked_add(1).ok_or(())?);
         let range = worth_store_wal::WalLsnRange::new(start, end).map_err(|_| ())?;
         let planned = worth_store_wal::plan_wal_frame_append(

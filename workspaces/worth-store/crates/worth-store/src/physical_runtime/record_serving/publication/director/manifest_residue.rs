@@ -175,6 +175,11 @@ impl RecordPublicationDirector {
         self.root_owner
             .publication_admission()
             .note_sealed_publication(segment, generation, growth_bytes);
+        // The Intent is WAL-durable and the selected root is unchanged.
+        // Certification can kill here to prove C8 replays the typed Intent.
+        self.mutations.reach_checkpoint(
+            crate::physical_runtime::durability::PhysicalMutationCheckpoint::AfterWalDurability,
+        );
         if !admitted.mark_effect_started() {
             transition.require_inspection();
             pending

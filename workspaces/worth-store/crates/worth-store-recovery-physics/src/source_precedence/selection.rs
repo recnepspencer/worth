@@ -3,6 +3,9 @@ use super::{
     SelectedPhysicalPageFacts, SelectedPhysicalRoot, SelectedPhysicalWalTail,
 };
 
+#[cfg(test)]
+mod tests;
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct PhysicalSourceSelection {
     root: SelectedPhysicalRoot,
@@ -30,9 +33,61 @@ pub struct PhysicalSourceSelectionTrace {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PhysicalSourceSelectionDenial {
-    WalRequiresCheckpoint,
+    /// No checkpoint is selected, and the WAL does not retain the canonical
+    /// origin: its first segment is not the origin segment and generation, or
+    /// it is empty under a root some mutation published.
+    WalOmitsCanonicalOrigin,
+    /// No checkpoint is selected, yet the root anchors a tier epoch, which
+    /// only a checkpoint publishes.
+    TierAnchorRequiresCheckpoint,
     CompactionRequiresCheckpoint,
     WalCheckpointBasisMismatch,
+}
+
+/// The WAL basis recovery admits its tail over: the selected checkpoint's
+/// tail frontier and compaction cutoff, or, before the first checkpoint, the
+/// canonical WAL origin with no cutoff.
+pub fn checkpoint_wal_basis(checkpoint: Option<&PhysicalCheckpointBase>) -> (u64, Option<u64>) {
+    checkpoint.map_or(
+        (worth_store_wal::WAL_ORIGIN.lsn().get(), None),
+        |checkpoint| {
+            (
+                checkpoint.wal_tail_begin_lsn(),
+                Some(
+                    checkpoint
+                        .checkpoint()
+                        .compaction_cutover()
+                        .wal_cutoff_lsn_exclusive(),
+                ),
+            )
+        },
+    )
+}
+
+/// Before the first checkpoint the generation-zero basis is the only source:
+/// the root anchors no tier epoch, the WAL is whole from the canonical origin
+/// (or empty under the first root), and no compaction product exists.
+fn admit_generation_zero(
+    root: &SelectedPhysicalRoot,
+    wal_tail: &SelectedPhysicalWalTail,
+    compaction: Option<SelectedCompactionProduct>,
+) -> Result<(), PhysicalSourceSelectionDenial> {
+    let manifest = root.selected().manifest();
+    if manifest.tier_epoch_anchor().is_some() {
+        return Err(PhysicalSourceSelectionDenial::TierAnchorRequiresCheckpoint);
+    }
+    let retains_origin = match wal_tail.segments().first() {
+        Some(first) => worth_store_wal::WAL_ORIGIN
+            .begins(first.identity(), first.inspection().lsn_range().start()),
+        None => manifest.generation() == 1,
+    };
+    if !retains_origin || !wal_tail.checkpoint_covered().is_empty() {
+        return Err(PhysicalSourceSelectionDenial::WalOmitsCanonicalOrigin);
+    }
+    if compaction.is_some() {
+        return Err(PhysicalSourceSelectionDenial::CompactionRequiresCheckpoint);
+    }
+    Ok(())
 }
 
 pub fn select_physical_recovery_sources(
@@ -44,24 +99,10 @@ pub fn select_physical_recovery_sources(
     compaction: Option<SelectedCompactionProduct>,
     residue: Vec<PhysicalRecoveryResidue>,
 ) -> Result<PhysicalSourceSelection, PhysicalSourceSelectionDenial> {
-    if checkpoint.is_none() && !wal_tail.segments().is_empty() {
-        return Err(PhysicalSourceSelectionDenial::WalRequiresCheckpoint);
+    if checkpoint.is_none() {
+        admit_generation_zero(&root, &wal_tail, compaction)?;
     }
-    if checkpoint.is_none() && compaction.is_some() {
-        return Err(PhysicalSourceSelectionDenial::CompactionRequiresCheckpoint);
-    }
-    let expected_wal_basis = checkpoint.as_ref().map_or((0, None), |checkpoint| {
-        (
-            checkpoint.wal_tail_begin_lsn(),
-            Some(
-                checkpoint
-                    .checkpoint()
-                    .compaction_cutover()
-                    .wal_cutoff_lsn_exclusive(),
-            ),
-        )
-    });
-    if wal_tail.admitted_checkpoint_basis() != expected_wal_basis {
+    if wal_tail.admitted_checkpoint_basis() != checkpoint_wal_basis(checkpoint.as_ref()) {
         return Err(PhysicalSourceSelectionDenial::WalCheckpointBasisMismatch);
     }
     let trace = PhysicalSourceSelectionTrace {
@@ -127,6 +168,14 @@ impl PhysicalSourceSelection {
 
     pub const fn checkpoint(&self) -> Option<&PhysicalCheckpointBase> {
         self.checkpoint.as_ref()
+    }
+
+    /// Exclusive end of the WAL prefix the basis already covers: the selected
+    /// checkpoint's compaction cutoff, or the canonical origin before the first
+    /// checkpoint, where no frame is covered.
+    pub fn covered_wal_end_exclusive(&self) -> u64 {
+        let (frontier, cutoff) = checkpoint_wal_basis(self.checkpoint.as_ref());
+        cutoff.unwrap_or(frontier)
     }
 
     pub const fn wal_tail(&self) -> &SelectedPhysicalWalTail {

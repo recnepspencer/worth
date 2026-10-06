@@ -23,6 +23,7 @@ mod wal_frame_input;
 mod wal_frame_view;
 mod wal_payload;
 pub use sampling::allocation::StoreRecoveryBindingSampleAllocationDenial;
+pub use sampling::StoreRecoverySamplingBasis;
 pub use wal_frame_view::IntegrityAdmittedRecoveryWalFrameView;
 
 #[cfg(test)]
@@ -106,6 +107,16 @@ pub enum StoreRecoveryBindingSampleDenial {
     OperationBindingLimit,
     RedoByteLimit,
     RecoveryMemoryLimit,
+    /// The generation-zero basis was asked for with an absence witness minted
+    /// by another recovery coordination.
+    GenerationZeroWithoutAbsentCheckpoint,
+    /// The configured durability declaration did not admit over this media.
+    GenerationZeroPolicyUnavailable,
+    /// Reclaim and maintenance recovery need a checkpoint basis: an extent
+    /// copy in a generation-zero tail is denied before any effect.
+    GenerationZeroExtentCopy,
+    /// As above, for a manifest-residue cleanup frame.
+    GenerationZeroResidueCleanup,
 }
 
 /// Which WAL members the checkpoint already covers are sampled.

@@ -19,6 +19,8 @@ use crate::operation_reconciliation::{ReconciledOperationFates, RecoveryOperatio
 
 #[path = "release_custody/head_v2.rs"]
 mod head_v2;
+#[cfg(test)]
+pub(super) use head_v2::tests::admitted_compaction_product;
 #[path = "release_custody/retained_storage.rs"]
 mod retained_storage;
 #[path = "release_custody/roster.rs"]

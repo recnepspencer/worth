@@ -41,12 +41,7 @@ pub(super) fn verify(
     basis: &mut ResolvedPlanningBasis,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     let observation_count = basis.sample.blob_manifest_residue_cleanups().len();
-    let checkpoint_cutoff = context.selection.checkpoint().map(|checkpoint| {
-        checkpoint
-            .checkpoint()
-            .compaction_cutover()
-            .wal_cutoff_lsn_exclusive()
-    });
+    let covered_end = context.selection.covered_wal_end_exclusive();
     for index in 0..observation_count {
         let (range, observed, completed) = basis.sample.blob_manifest_residue_cleanups()[index];
         let intent: BlobManifestResidueCleanup = observed.into();
@@ -85,10 +80,14 @@ pub(super) fn verify(
             return Err(context.redo_block(basis.planning_counters(), None));
         }
         if selected_generation == intent.source_root_generation()
-            && checkpoint_cutoff.is_none_or(|cutoff| range.start().get() < cutoff)
+            && range.start().get() < covered_end
         {
-            // A covered or unbounded interval cannot independently prove an
-            // unpublished maintenance intent eligible for replay.
+            // A covered interval cannot independently prove an
+            // unpublished maintenance intent eligible for replay. Only a
+            // checkpoint cutover between the Intent append and its root
+            // publication, then a kill, could write one; no writer
+            // exclusion is proven, so this fails closed and its killing
+            // test is a C.11 remainder. Generation zero covers nothing.
             return Err(context.redo_block(basis.planning_counters(), None));
         }
         if selected_generation > intent.source_root_generation() {

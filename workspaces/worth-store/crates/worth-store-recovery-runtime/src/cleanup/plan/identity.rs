@@ -12,7 +12,7 @@ use crate::cleanup::{
 
 pub(super) fn plan_identity(
     publication: &RecoveryPublicationExpectation,
-    checkpoint: PhysicalCheckpointIdentity,
+    checkpoint: Option<PhysicalCheckpointIdentity>,
     candidates: &[RecoveryCleanupEligibility],
     dispositions: &[RecoveryCleanupDisposition],
 ) -> [u8; 32] {
@@ -20,8 +20,19 @@ pub(super) fn plan_identity(
     digest.update(b"worth.store.recovery.cleanup-plan.v1");
     digest.update(publication.plan_identity());
     digest.update(publication.recovered_root().generation().to_le_bytes());
-    digest.update(checkpoint.store_identity().bytes());
-    digest.update(checkpoint.sequence().get().to_le_bytes());
+    // Checkpoint sequences are nonzero, so zero names the generation-zero basis.
+    digest.update(
+        checkpoint
+            .map_or(publication.store_identity(), |checkpoint| {
+                checkpoint.store_identity()
+            })
+            .bytes(),
+    );
+    digest.update(
+        checkpoint
+            .map_or(0, |checkpoint| checkpoint.sequence().get())
+            .to_le_bytes(),
+    );
     digest.update((candidates.len() as u64).to_le_bytes());
     for candidate in candidates {
         hash_wal(

@@ -159,7 +159,7 @@ fn native_sample_owner_funds_all_retained_capacities_and_releases_scratch_then_r
                 ),
                 sealed_basis_digest: facts.source().security_binding().unwrap().digest(),
                 policy_identity: [7; 32],
-                basis: &basis,
+                basis: Some(&basis),
                 evidence: &[],
             };
             let before_finish = observer.snapshot().for_dimension(dimension);

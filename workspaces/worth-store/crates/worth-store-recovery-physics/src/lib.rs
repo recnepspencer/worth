@@ -47,8 +47,8 @@ pub use redo_replay::{
     VerifiedSelectedReleaseHeadReplayV14, VerifiedSelectedTerminalHeadRetirementReplay,
 };
 pub use source_precedence::{
-    admit_physical_page_facts, admit_physical_wal_tail, classify_admitted_wal_segment,
-    decide_ordered_root_step_basis, is_retirement_prefix,
+    admit_physical_page_facts, admit_physical_wal_tail, checkpoint_wal_basis,
+    classify_admitted_wal_segment, decide_ordered_root_step_basis, is_retirement_prefix,
     observe_structured_physical_root_candidate, select_current_previous_root,
     select_physical_recovery_sources, AddressedCheckpointBatchControl,
     AddressedReleaseHeadControlV2, AddressedReleasedControlDenial, AdmittedWalFrameRejectionKind,

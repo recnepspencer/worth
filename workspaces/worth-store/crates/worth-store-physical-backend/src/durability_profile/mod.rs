@@ -15,7 +15,7 @@ pub use barrier_receipt::{
 pub use barrier_receipt::{
     BackendDurabilityBarrierDenial, BackendDurabilityBarrierDenialKind, WalDurabilityBarrierReceipt,
 };
-#[cfg(feature = "store-runtime-owner")]
+#[cfg(any(feature = "store-runtime-owner", feature = "recovery-runtime-owner"))]
 pub(crate) use physical_admission_basis::QualifiedDurabilityBasisInput;
 pub use physical_admission_basis::{
     PhysicalDurabilityAdmissionBasis, PhysicalDurabilityAdmissionIdentity,

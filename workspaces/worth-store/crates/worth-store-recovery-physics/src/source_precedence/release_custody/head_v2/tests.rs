@@ -8,6 +8,12 @@ use source::{
     admitted_source_with_cutoff, record_format,
 };
 
+/// A compaction product admitted from a real verified checkpoint, for
+/// selection tests that need one without that checkpoint.
+pub(crate) fn admitted_compaction_product() -> crate::SelectedCompactionProduct {
+    crate::SelectedCompactionProduct::admit(admitted_source().selected.checkpoint().unwrap())
+}
+
 #[test]
 fn v2_roster_and_rooted_walk_share_one_admission_budget_before_head_read() {
     let source = admitted_source();

@@ -83,6 +83,16 @@ impl AdmittedRecoveryFilesystemMedia {
         self.parts.execution_capability.require(kind, evidence)
     }
 
+    /// Derives the durability admission basis ordinary open derives from this
+    /// media, for a durability policy declared before any checkpoint exists.
+    #[cfg(feature = "recovery-runtime-owner")]
+    pub fn physical_durability_admission_basis(
+        &self,
+    ) -> Result<crate::PhysicalDurabilityAdmissionBasis, crate::BackendCapabilityAdmissionDenial>
+    {
+        self.parts.physical_durability_admission_basis()
+    }
+
     #[cfg(feature = "recovery-runtime-owner")]
     pub fn mutation_owner_observation(&self) -> crate::MutationOwnerObservation {
         self.parts.owner.mutation_owner()

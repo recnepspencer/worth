@@ -29,6 +29,11 @@ mod head_v2;
 #[cfg(feature = "recovery-runtime-owner")]
 #[path = "recovered_custody/media_freshness.rs"]
 mod media_freshness;
+#[path = "recovered_custody/no_release.rs"]
+mod no_release;
+pub(in crate::physical_runtime) use no_release::{
+    GenerationZeroNoReleaseCustody, RecoveredNoReleaseCustody,
+};
 #[cfg(feature = "recovery-runtime-owner")]
 #[path = "recovered_custody/pending.rs"]
 mod pending;
@@ -53,7 +58,7 @@ pub(in crate::physical_runtime) struct RecoveredCheckpointCustodyEvidence {
     #[cfg(feature = "recovery-runtime-owner")]
     root: DurablePhysicalRootManifest,
     head_v2: Option<VerifiedSelectedReleaseHeadCustodyV2>,
-    no_release: Option<VerifiedSelectedNoReleaseCustody>,
+    no_release: Option<RecoveredNoReleaseCustody>,
     pending_wal_release: Option<VerifiedPendingWalReleaseCustody>,
     effective_release_heads: Option<VerifiedEffectiveReleaseHeadRosterV14>,
     historical_release: Option<VerifiedOrderedHistoricalReleaseCustody>,
@@ -218,7 +223,12 @@ impl RecoveredCheckpointCustodyEvidence {
                 .head_v2
                 .as_ref()
                 .map(|claim| claim.checkpoint())
-                .or_else(|| self.no_release.as_ref().map(|claim| claim.checkpoint()))
+                .or_else(|| {
+                    self.no_release
+                        .as_ref()
+                        .and_then(RecoveredNoReleaseCustody::selected)
+                        .map(|claim| claim.checkpoint())
+                })
                 .or_else(|| {
                     self.pending_wal_release
                         .as_ref()
@@ -240,57 +250,11 @@ impl RecoveredCheckpointCustodyEvidence {
         Ok(())
     }
 
-    #[cfg(feature = "recovery-runtime-owner")]
-    fn verify_no_release(
-        &self,
-        verified: &VerifiedSelectedNoReleaseCustody,
-        store: StableStoreIdentity,
-        root: &DurablePhysicalRootManifest,
-        actual_sha256: [u8; 32],
-    ) -> Result<(), RecoveredCheckpointCustodyDenial> {
-        let marker = verified.marker();
-        let stream = self.checkpoint_stream(verified.checkpoint())?;
-        let source = stream.source();
-        if verified.selected_root() != root
-            || verified.selected_root_sha256() != actual_sha256
-            || source.identity().store_identity() != store
-            || source.root().generation() > root.generation()
-            || marker.checkpoint() != source.identity()
-            || marker.root_generation() != source.root().generation()
-            || marker.root_sha256() != verified.checkpoint_source_root_sha256()
-            || <[u8; 32]>::from(Sha256::digest(marker.encode())) != verified.marker_payload_sha256()
-        {
-            return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
-        }
-        let mut selected = 0;
-        for frame in stream.certificate_records() {
-            let (kind, payload) = decode_checkpoint_certificate(frame)
-                .map_err(|_| RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch)?;
-            if kind == CheckpointCertificateKind::ReleasedDrop {
-                let ReleaseCheckpointCertificateV1::NoRelease(value) =
-                    ReleaseCheckpointCertificateV1::decode(payload).map_err(|_| {
-                        RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch
-                    })?
-                else {
-                    return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
-                };
-                if value != marker || payload != marker.encode() {
-                    return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
-                }
-                selected += 1;
-            }
-        }
-        if selected != 1 {
-            return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
-        }
-        Ok(())
-    }
-
     pub(in crate::physical_runtime) fn verified_basis(
         &self,
     ) -> (
         Option<&VerifiedSelectedReleaseHeadCustodyV2>,
-        Option<&VerifiedSelectedNoReleaseCustody>,
+        Option<&RecoveredNoReleaseCustody>,
         Option<&VerifiedPendingWalReleaseCustody>,
         Option<&VerifiedEffectiveReleaseHeadRosterV14>,
         Option<&VerifiedOrderedHistoricalReleaseCustody>,

@@ -12,7 +12,8 @@ pub(crate) fn request_with_memory(
     request_with_configuration(
         root,
         recovery_memory_bytes,
-        PhysicalRecoveryStaticConfiguration::current(),
+        PhysicalRecoveryStaticConfiguration::current()
+            .with_durability_declaration(serving_durability(NonZeroU64::new(16 << 20).unwrap())),
     )
 }
 

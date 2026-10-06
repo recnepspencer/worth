@@ -4,10 +4,11 @@ use worth_store_physical_format::{
 };
 use worth_store_recovery_physics::{
     VerifiedEffectiveReleaseHeadRosterV14, VerifiedOrderedHistoricalReleaseCustody,
-    VerifiedPendingWalReleaseCustody, VerifiedSelectedNoReleaseCustody,
-    VerifiedSelectedReleaseHeadCustodyV2, VerifiedSelectedTierEpochCustody,
+    VerifiedPendingWalReleaseCustody, VerifiedSelectedReleaseHeadCustodyV2,
+    VerifiedSelectedTierEpochCustody,
 };
 
+use crate::physical_runtime::record_serving::RecoveredNoReleaseCustody;
 use crate::physical_runtime::{CompletedPhysicalRecoveryFreshReopen, RuntimeIdentity};
 
 pub struct RecoveredPhysicalRuntimeCore {
@@ -22,7 +23,7 @@ pub struct RecoveredPhysicalRuntimeCore {
     pub(super) media: AdmittedRecoveryFilesystemMedia,
     pub(super) reopen: CompletedPhysicalRecoveryFreshReopen,
     pub(super) head_v2_custody: Option<VerifiedSelectedReleaseHeadCustodyV2>,
-    pub(super) no_release_custody: Option<VerifiedSelectedNoReleaseCustody>,
+    pub(super) no_release_custody: Option<RecoveredNoReleaseCustody>,
     pub(super) pending_wal_release_custody: Option<VerifiedPendingWalReleaseCustody>,
     pub(super) effective_release_heads: Option<VerifiedEffectiveReleaseHeadRosterV14>,
     pub(super) historical_release_custody: Option<VerifiedOrderedHistoricalReleaseCustody>,
@@ -257,7 +258,9 @@ impl RecoveredPhysicalRuntimeCore {
         } = self;
         drop(media);
         drop(reopen);
-        checkpoint_ownership.checkpoint()?;
+        // Ownership agrees with custody by construction: the generation-zero
+        // custody is minted only under this coordination's absence witness,
+        // and every other custody requires the selected checkpoint.
         match (head_v2_custody, no_release_custody, pending_wal_release_custody, historical_release_custody, tier_custody, effective_release_heads) {
             (None, Some(no_release), None, None, tier, None) => Some(
                 crate::physical_runtime::RecoveredPhysicalCheckpointCustody::from_verified_no_release(

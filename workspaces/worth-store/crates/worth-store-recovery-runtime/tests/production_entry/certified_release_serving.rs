@@ -179,16 +179,41 @@ pub(super) fn open_serving_with_seal_expect_mismatch(
     let _ = open_serving_inner(root, Some(seal), Some(worth_store::physical_runtime::RecordBootstrapDenial::RecoveredCheckpointCustodyMismatch), true);
 }
 
+/// Requires Serving open under `seal` to deny with a reason `expected` admits.
+pub(super) fn open_serving_with_seal_expect_denial(
+    root: &Path,
+    seal: worth_store::physical_runtime::RecoveredPhysicalCheckpointCustody,
+    expected: ExpectedServingDenial,
+) {
+    let _ = open_serving_inner_with_wal_segment_bytes(
+        root,
+        Some(seal),
+        Some(&expected),
+        true,
+        NonZeroU64::new(16 << 20).unwrap(),
+    );
+}
+
+pub(super) type ExpectedServingDenial =
+    fn(&worth_store::physical_runtime::RecordBootstrapDenial) -> bool;
+
+/// Which Serving denial an open must end in, if any.
+type ServingDenialCheck<'check> =
+    &'check dyn Fn(&worth_store::physical_runtime::RecordBootstrapDenial) -> bool;
+
 fn open_serving_inner(
     root: &Path,
     seal: Option<worth_store::physical_runtime::RecoveredPhysicalCheckpointCustody>,
     expected_denial: Option<worth_store::physical_runtime::RecordBootstrapDenial>,
     require_checkpoint: bool,
 ) -> Option<worth_store::physical_runtime::ServingPhysicalRuntime> {
+    let equals = expected_denial.map(|expected| {
+        move |denial: &worth_store::physical_runtime::RecordBootstrapDenial| *denial == expected
+    });
     open_serving_inner_with_wal_segment_bytes(
         root,
         seal,
-        expected_denial,
+        equals.as_ref().map(|check| check as ServingDenialCheck<'_>),
         require_checkpoint,
         NonZeroU64::new(16 << 20).unwrap(),
     )
@@ -197,7 +222,7 @@ fn open_serving_inner(
 fn open_serving_inner_with_wal_segment_bytes(
     root: &Path,
     seal: Option<worth_store::physical_runtime::RecoveredPhysicalCheckpointCustody>,
-    expected_denial: Option<worth_store::physical_runtime::RecordBootstrapDenial>,
+    expected_denial: Option<ServingDenialCheck<'_>>,
     require_checkpoint: bool,
     wal_segment_bytes: NonZeroU64,
 ) -> Option<worth_store::physical_runtime::ServingPhysicalRuntime> {
@@ -218,36 +243,20 @@ fn open_serving_inner_with_wal_segment_bytes(
     )
 }
 
-fn open_serving_inner_with_format(
-    root: &Path,
-    seal: Option<worth_store::physical_runtime::RecoveredPhysicalCheckpointCustody>,
-    expected_denial: Option<worth_store::physical_runtime::RecordBootstrapDenial>,
-    require_checkpoint: bool,
+/// The durability policy these worlds serve under, which recovery before the
+/// first checkpoint must be configured with.
+pub(super) fn serving_durability(
     wal_segment_bytes: NonZeroU64,
-    format: worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
-    policy: Option<worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy>,
-) -> Option<worth_store::physical_runtime::ServingPhysicalRuntime> {
+) -> worth_store::physical_runtime::ConfiguredPhysicalDurabilityDeclaration {
     use std::num::NonZeroU32;
     use worth_store::physical_runtime::{
-        CheckpointMemoryLimit, FilesystemAccessPosture, FilesystemMediaAdmission, GroupCommitDelay,
-        GroupCommitLimit, IdempotencyRetentionGenerations, LiveIdempotencyBindingLimit,
-        PendingUnresolvedMutationLimit, PhysicalCheckpointPolicy, PhysicalDurabilityDeclaration,
-        PhysicalIdempotencyPolicy, PhysicalRecordAccessPolicy, PhysicalRecordOpen,
-        PhysicalRuntimeAdmission, PhysicalStore, PhysicalWalPolicy, RetainedWalTailLimit,
-        WalSegmentByteLimit, WalSegmentInventoryLimit,
+        CheckpointMemoryLimit, GroupCommitDelay, GroupCommitLimit, IdempotencyRetentionGenerations,
+        LiveIdempotencyBindingLimit, PendingUnresolvedMutationLimit, PhysicalCheckpointPolicy,
+        PhysicalDurabilityDeclaration, PhysicalIdempotencyPolicy, PhysicalWalPolicy,
+        RetainedWalTailLimit, WalSegmentByteLimit, WalSegmentInventoryLimit,
     };
 
-    let access = PhysicalRecordAccessPolicy::builder().admit(format).unwrap();
-    let runtime = PhysicalStore::admit(PhysicalRuntimeAdmission::new(root).unwrap()).unwrap();
-    let TransitionOutcome::Success(media) = runtime
-        .try_admit_filesystem_media(FilesystemMediaAdmission::production(
-            FilesystemAccessPosture::CoordinatedServiceAccount,
-        ))
-        .into_raw()
-    else {
-        panic!("serving media after C8 must admit")
-    };
-    let TransitionOutcome::Success(durability) = PhysicalDurabilityDeclaration::builder()
+    PhysicalDurabilityDeclaration::builder()
         .group_commit(
             GroupCommitLimit::new(NonZeroU32::new(32).unwrap()),
             GroupCommitDelay::new(NonZeroU64::new(1).unwrap()),
@@ -265,6 +274,33 @@ fn open_serving_inner_with_format(
             CheckpointMemoryLimit::new(NonZeroU64::new(16 << 20).unwrap()),
             RetainedWalTailLimit::new(NonZeroU64::new(64 << 20).unwrap()),
         ))
+}
+
+fn open_serving_inner_with_format(
+    root: &Path,
+    seal: Option<worth_store::physical_runtime::RecoveredPhysicalCheckpointCustody>,
+    expected_denial: Option<ServingDenialCheck<'_>>,
+    require_checkpoint: bool,
+    wal_segment_bytes: NonZeroU64,
+    format: worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    policy: Option<worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy>,
+) -> Option<worth_store::physical_runtime::ServingPhysicalRuntime> {
+    use worth_store::physical_runtime::{
+        FilesystemAccessPosture, FilesystemMediaAdmission, PhysicalRecordAccessPolicy,
+        PhysicalRecordOpen, PhysicalRuntimeAdmission, PhysicalStore,
+    };
+
+    let access = PhysicalRecordAccessPolicy::builder().admit(format).unwrap();
+    let runtime = PhysicalStore::admit(PhysicalRuntimeAdmission::new(root).unwrap()).unwrap();
+    let TransitionOutcome::Success(media) = runtime
+        .try_admit_filesystem_media(FilesystemMediaAdmission::production(
+            FilesystemAccessPosture::CoordinatedServiceAccount,
+        ))
+        .into_raw()
+    else {
+        panic!("serving media after C8 must admit")
+    };
+    let TransitionOutcome::Success(durability) = serving_durability(wal_segment_bytes)
         .admit(media.physical_durability_admission_basis().unwrap())
         .into_raw()
     else {
@@ -284,7 +320,11 @@ fn open_serving_inner_with_format(
         let TransitionOutcome::Denied(denial) = opened else {
             panic!("post-seal selected-media substitution must deny at Serving open")
         };
-        assert_eq!(denial.reason(), expected_denial);
+        assert!(
+            expected_denial(&denial.reason()),
+            "unexpected Serving denial: {:?}",
+            denial.reason()
+        );
         return None;
     }
     let serving = match opened {

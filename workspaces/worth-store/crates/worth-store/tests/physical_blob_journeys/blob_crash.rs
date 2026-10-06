@@ -182,9 +182,10 @@ pub(super) fn child(root: &Path, role: &str) {
 pub(super) fn establish_recovery_frontier(
     serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
 ) {
-    // C8 source selection requires a bounded checkpoint/WAL frontier. The
-    // bootstrap root has no checkpoint and its first WAL LSN is 1, so publish
-    // one ordinary seed record before checkpointing, as in the C8 crash lane.
+    // Recovery before the first checkpoint denies reclaim and maintenance
+    // frames, so these worlds checkpoint before any blob effect. A fresh
+    // root has no durable WAL source to checkpoint, so one seed record
+    // comes first.
     let submission = serving.record_submission();
     let key = submission
         .issue_idempotency_key(PhysicalMutationIdempotencyMaterial::new([0xc0; 32]))

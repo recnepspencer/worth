@@ -11,11 +11,19 @@ impl RecoveredCheckpointCustodyEvidence {
     ) -> Result<(), crate::physical_runtime::record_serving::RecordBootstrapDenial> {
         use crate::physical_runtime::record_serving::RecordBootstrapDenial as Denial;
         const MAX_CHECKPOINT_BYTES: u64 = 256 << 20;
+        if let Some(RecoveredNoReleaseCustody::GenerationZero(_)) = &self.no_release {
+            return self.verify_funded_absent_checkpoint(media, window);
+        }
         let selected = self
             .head_v2
             .as_ref()
             .map(|claim| claim.checkpoint())
-            .or_else(|| self.no_release.as_ref().map(|claim| claim.checkpoint()))
+            .or_else(|| {
+                self.no_release
+                    .as_ref()
+                    .and_then(RecoveredNoReleaseCustody::selected)
+                    .map(|claim| claim.checkpoint())
+            })
             .or_else(|| {
                 self.pending_wal_release
                     .as_ref()
@@ -46,6 +54,28 @@ impl RecoveredCheckpointCustodyEvidence {
         if bytes.len() as u64 != length
             || <[u8; 32]>::from(Sha256::digest(bytes)) != selected.encoded_digest()
         {
+            return Err(Denial::RecoveredCheckpointCustodyMismatch);
+        }
+        Ok(())
+    }
+
+    /// Before the first checkpoint, Serving opens only while `checkpoint.current`
+    /// is still absent: a stream that appeared since recovery is not this basis.
+    /// This media re-read is the check; the custody's in-memory ownership is
+    /// Absent by construction.
+    fn verify_funded_absent_checkpoint(
+        &self,
+        media: &QualifiedFilesystemMedia,
+        window: &mut crate::physical_runtime::PhysicalRecoveryReadAllocation<'_>,
+    ) -> Result<(), crate::physical_runtime::record_serving::RecordBootstrapDenial> {
+        use crate::physical_runtime::record_serving::RecordBootstrapDenial as Denial;
+        let mut observation = media
+            .bounded_record_observation(1, 1)
+            .map_err(Denial::RecoveredCheckpointObservationUnavailable)?;
+        let observed = window
+            .read_serving_checkpoint(&mut observation, 0)
+            .map_err(Denial::RecoveredCheckpointRead)?;
+        if observed.observed().bytes().is_some() {
             return Err(Denial::RecoveredCheckpointCustodyMismatch);
         }
         Ok(())

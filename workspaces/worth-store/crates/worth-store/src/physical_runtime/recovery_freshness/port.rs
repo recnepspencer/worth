@@ -1,11 +1,11 @@
 use worth_store_physical_backend::{
     AdmittedRecoveryFilesystemMedia, QualifiedRecoveryFilesystemMedia,
 };
-use worth_store_physical_integrity::VerifiedCheckpointFacts;
 
 use super::{
     binding, IntegrityAdmittedRecoveryWalFrameView, PhysicalRecoveryFreshnessAuthority,
     StoreRecoveryBindingFreshnessSample, StoreRecoveryBindingSampleFailure,
+    StoreRecoverySamplingBasis,
 };
 
 /// The sole Store-owned construction port for recovery freshness authority.
@@ -34,7 +34,7 @@ impl PhysicalRecoveryFreshnessPort {
     pub fn sample_binding<'frame>(
         coordination: &crate::physical_runtime::PhysicalRecoveryCoordination,
         media: &AdmittedRecoveryFilesystemMedia,
-        checkpoint: &VerifiedCheckpointFacts,
+        basis: StoreRecoverySamplingBasis<'_>,
         wal_frames: IntegrityAdmittedRecoveryWalFrameView<'frame>,
         maximum_operation_bindings: u64,
         maximum_redo_bytes: u64,
@@ -44,7 +44,7 @@ impl PhysicalRecoveryFreshnessPort {
             binding::CheckpointCoveredMembers::Skip,
             coordination,
             media,
-            checkpoint,
+            basis,
             wal_frames.iter(),
             maximum_operation_bindings,
             maximum_redo_bytes,

@@ -67,6 +67,9 @@ pub use admission::residency_policy::{
 };
 pub use admission::RecoveredPhysicalCheckpointCustody;
 pub(in crate::physical_runtime) use admission::VerifiedRecoveredCheckpointCustody;
+pub(in crate::physical_runtime) use admission::{
+    GenerationZeroNoReleaseCustody, RecoveredNoReleaseCustody,
+};
 pub use arena::{
     ArenaAllocationDenial, ArenaEvacuationThreshold, ExtentArenaCapacity, ExtentArenaPolicyDenial,
 };
