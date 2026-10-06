@@ -22,7 +22,7 @@ type Preconditions = TypedMutationPreconditions<Schema, TouchAccountOperation, A
 pub(super) type Program =
     WorthQueryApplicationEffectProgram<Schema, TouchAccountOperation, Input, Account>;
 
-pub(in crate::domain_computation::primary_graph::tests) fn admitted_operation(
+pub(in crate::domain_computation::primary_graph) fn admitted_operation(
     world: &World,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, u64>,
     account: &WorthQueryApplicationEntityIdentity<Schema, Account>,
