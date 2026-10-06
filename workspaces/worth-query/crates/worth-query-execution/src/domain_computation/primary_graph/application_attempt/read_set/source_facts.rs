@@ -35,17 +35,21 @@ pub(super) fn merge_source_facts(
     dependent: Vec<WorthQueryApplicationObservedFact>,
     operation: &str,
 ) -> Result<Vec<WorthQueryApplicationObservedFact>, WorthQueryApplicationAttemptDenial> {
-    let mut merged = BTreeMap::new();
+    let mut merged: BTreeMap<_, WorthQueryApplicationObservedFact> = BTreeMap::new();
     for fact in admitted.into_iter().chain(dependent) {
         let locator = fact.dependency_key();
-        if merged
-            .insert(locator.clone(), fact.clone())
-            .is_some_and(|existing| existing != fact)
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch,
-                format!("{operation}: source facts conflict at {locator:?}"),
-            ));
+        match merged.entry(locator) {
+            std::collections::btree_map::Entry::Vacant(entry) => {
+                entry.insert(fact);
+            }
+            std::collections::btree_map::Entry::Occupied(mut entry) => {
+                if !entry.get_mut().merge_same_source_fact(fact) {
+                    return Err(denial(
+                        WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch,
+                        format!("{operation}: source facts conflict at {:?}", entry.key()),
+                    ));
+                }
+            }
         }
     }
     Ok(merged.into_values().collect())
