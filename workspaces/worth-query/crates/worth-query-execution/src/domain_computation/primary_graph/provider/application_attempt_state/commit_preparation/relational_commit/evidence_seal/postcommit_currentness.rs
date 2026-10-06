@@ -27,6 +27,8 @@ pub(super) enum RebasedSourceFacts {
 pub(in crate::domain_computation::primary_graph) enum RebaseVerificationReason {
     NativeRevisionUnavailable,
     NativeFactRevisionUnavailable(usize),
+    IndexedSelectionDenied(crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial),
+    IndexedSelectionFactDenied(usize, crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial),
     UnsupportedDecisionFact,
     AdmissionDenied(worth_relational::facade::mvcc::CompanionPreflightStop),
 }
@@ -204,6 +206,9 @@ fn rebase(
                 let reason = match reason {
                     RebaseVerificationReason::NativeRevisionUnavailable => {
                         RebaseVerificationReason::NativeFactRevisionUnavailable(ordinal)
+                    }
+                    RebaseVerificationReason::IndexedSelectionDenied(denial) => {
+                        RebaseVerificationReason::IndexedSelectionFactDenied(ordinal, denial)
                     }
                     reason => reason,
                 };

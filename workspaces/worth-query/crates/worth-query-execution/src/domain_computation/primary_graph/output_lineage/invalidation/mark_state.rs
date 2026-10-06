@@ -19,6 +19,8 @@ pub(super) struct FactPosting {
 pub(in crate::domain_computation::primary_graph) enum FullVerificationReason {
     NativeRevisionUnavailable,
     NativeFactRevisionUnavailable(usize),
+    IndexedSelectionDenied(crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial),
+    IndexedSelectionFactDenied(usize, crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial),
     UnsupportedFact,
     CheckpointRestore,
     ForeignSource,

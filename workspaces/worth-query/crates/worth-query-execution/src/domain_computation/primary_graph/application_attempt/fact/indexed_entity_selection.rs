@@ -1,11 +1,23 @@
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_relational::facade::identity::{EntityId, KindId};
 use worth_relational::facade::indexes::{
-    BoundedEntityFieldLookupOutcome, BoundedEntityFieldLookupRequest, BoundedIndexParityMode,
-    DerivedIndexDefinition, DerivedIndexId,
+    BoundedEntityFieldLookupDenialKind, BoundedEntityFieldLookupOutcome,
+    BoundedEntityFieldLookupRequest, BoundedIndexParityMode, DerivedIndexDefinition,
+    DerivedIndexId,
 };
 
 use super::WorthQueryApplicationObservedFact;
+
+#[cfg(test)]
+#[path = "indexed_entity_selection/denials_tests.rs"]
+mod denials_tests;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph) enum IndexedSelectionReobserveDenial {
+    UnexpectedFact,
+    Lookup(BoundedEntityFieldLookupDenialKind),
+    Overflow,
+}
 
 pub(in crate::domain_computation::primary_graph) fn observe_indexed_entity_selection(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
@@ -16,6 +28,27 @@ pub(in crate::domain_computation::primary_graph) fn observe_indexed_entity_selec
     value: AspectValue,
     candidate_limit: usize,
 ) -> Option<WorthQueryApplicationObservedFact> {
+    observe_checked(
+        runtime,
+        snapshot,
+        index_id,
+        entity_kind,
+        locator,
+        value,
+        candidate_limit,
+    )
+    .ok()
+}
+
+fn observe_checked(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    index_id: DerivedIndexId,
+    entity_kind: KindId,
+    locator: AspectFieldLocator,
+    value: AspectValue,
+    candidate_limit: usize,
+) -> Result<WorthQueryApplicationObservedFact, IndexedSelectionReobserveDenial> {
     let outcome = bounded_entity_field_selection(
         runtime,
         snapshot,
@@ -26,7 +59,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_indexed_entity_selec
         candidate_limit,
     )?;
     let definition = outcome.retain_definition();
-    Some(WorthQueryApplicationObservedFact::IndexedEntitySelection {
+    Ok(WorthQueryApplicationObservedFact::IndexedEntitySelection {
         index_id,
         definition,
         entity_kind,
@@ -57,7 +90,7 @@ pub(super) fn remains_equal(
         value,
         candidate_limit,
     )
-    .is_some_and(|current| {
+    .is_ok_and(|current| {
         current.retain_definition().as_ref() == definition.as_ref()
             && current.candidate_entity_ids() == expected
     })
@@ -71,7 +104,7 @@ fn bounded_entity_field_selection(
     locator: &AspectFieldLocator,
     value: &AspectValue,
     candidate_limit: usize,
-) -> Option<BoundedEntityFieldLookupOutcome> {
+) -> Result<BoundedEntityFieldLookupOutcome, IndexedSelectionReobserveDenial> {
     let request = BoundedEntityFieldLookupRequest::new(
         snapshot.clone(),
         index_id,
@@ -80,19 +113,23 @@ fn bounded_entity_field_selection(
         value.clone(),
         candidate_limit,
     )
-    .ok()?;
+    .map_err(|denial| IndexedSelectionReobserveDenial::Lookup(denial.kind()))?;
     let outcome = runtime
         .index_access()
         .execute_bounded_entity_field_lookup(request, BoundedIndexParityMode::Production)
-        .ok()?;
-    (!outcome.overflowed()).then_some(outcome)
+        .map_err(|denial| IndexedSelectionReobserveDenial::Lookup(denial.kind()))?;
+    if outcome.overflowed() {
+        Err(IndexedSelectionReobserveDenial::Overflow)
+    } else {
+        Ok(outcome)
+    }
 }
 
 pub(in crate::domain_computation::primary_graph) fn reobserve(
     fact: &WorthQueryApplicationObservedFact,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-) -> Option<WorthQueryApplicationObservedFact> {
+) -> Result<WorthQueryApplicationObservedFact, IndexedSelectionReobserveDenial> {
     let WorthQueryApplicationObservedFact::IndexedEntitySelection {
         index_id,
         entity_kind,
@@ -102,9 +139,9 @@ pub(in crate::domain_computation::primary_graph) fn reobserve(
         ..
     } = fact
     else {
-        return None;
+        return Err(IndexedSelectionReobserveDenial::UnexpectedFact);
     };
-    observe_indexed_entity_selection(
+    observe_checked(
         runtime,
         snapshot,
         *index_id,

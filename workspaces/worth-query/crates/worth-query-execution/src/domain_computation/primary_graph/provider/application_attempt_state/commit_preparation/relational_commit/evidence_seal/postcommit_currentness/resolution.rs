@@ -119,12 +119,16 @@ impl PreparedFactRebase {
                 let observed = candidate_limit
                     .checked_add(1)
                     .and_then(|work| indexed_rebase_work.checked_sub(work))
-                    .and_then(|remaining| {
+                    .map(|remaining| {
                         *indexed_rebase_work = remaining;
                         reobserve_indexed_entity_selection(fact, runtime, snapshot)
                     });
                 match observed {
-                    Some(observed) => Ok(Self::Replace(observed)),
+                    Some(Ok(observed)) => Ok(Self::Replace(observed)),
+                    Some(Err(denial)) if producer_output => {
+                        Err(RebaseVerificationReason::IndexedSelectionDenied(denial))
+                    }
+                    Some(Err(_)) => Ok(Self::Keep),
                     None if producer_output => Err(unavailable),
                     None => Ok(Self::Keep),
                 }

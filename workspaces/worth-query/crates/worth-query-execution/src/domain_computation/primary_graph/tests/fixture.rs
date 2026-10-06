@@ -137,7 +137,7 @@ mod handler_installation;
 mod operation_contracts;
 #[path = "fixture/optional_output_binding.rs"]
 mod optional_output_binding;
-pub(super) use optional_output_binding::{
+pub(in crate::domain_computation::primary_graph) use optional_output_binding::{
     OptionalCompanion, OptionalOutputInput, OptionalOutputMutationBinding, OptionalOutputOperation,
     OptionalOutputPlan, OptionalOutputs, OptionalSubject,
 };

@@ -19,6 +19,7 @@ pub(in crate::domain_computation::primary_graph) use adjacency::{
 pub(in crate::domain_computation::primary_graph) use dependency_key::WorthQueryApplicationFactStorageKey;
 pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::observe_indexed_entity_selection;
 pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::reobserve as reobserve_indexed_entity_selection;
+pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::IndexedSelectionReobserveDenial;
 pub(in crate::domain_computation::primary_graph) use source_currentness::WorthQuerySourceCurrentnessFailure;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]

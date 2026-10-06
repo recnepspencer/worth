@@ -342,6 +342,8 @@ impl WorthQueryApplicationOutputLineage {
                         super::provider::RebaseVerificationReason::NativeFactRevisionUnavailable(ordinal) => {
                             invalidation::FullVerificationReason::NativeFactRevisionUnavailable(ordinal)
                         }
+                        super::provider::RebaseVerificationReason::IndexedSelectionDenied(denial) => invalidation::FullVerificationReason::IndexedSelectionDenied(denial),
+                        super::provider::RebaseVerificationReason::IndexedSelectionFactDenied(ordinal, denial) => invalidation::FullVerificationReason::IndexedSelectionFactDenied(ordinal, denial),
                         super::provider::RebaseVerificationReason::UnsupportedDecisionFact => {
                             invalidation::FullVerificationReason::UnsupportedFact
                         }
