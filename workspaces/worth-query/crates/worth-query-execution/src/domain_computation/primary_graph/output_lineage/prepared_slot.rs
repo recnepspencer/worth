@@ -2,6 +2,7 @@
 
 mod cancellation;
 mod capacity;
+mod checkpoint_locator;
 mod preparation;
 mod recovery;
 pub(super) use capacity::{arc_bytes, denial, tree_insert_bytes, tree_work};
@@ -36,6 +37,7 @@ pub(in crate::domain_computation::primary_graph) struct PreparedOutputLineageSlo
     pub(super) prepared_input_reuse_key: Option<super::PreparedInputReuseKey>,
     pub(super) native_output_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     pub(super) actual_resources: Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>,
+    pub(super) native_prior_checkpoint: Option<super::native_prior_checkpoint::NativePriorCheckpointLocator>,
     filled: bool,
 }
 
@@ -148,6 +150,7 @@ impl PreparedOutputLineageSlot {
         let completed_handler_facts = self.completed_handler_facts.take();
         let completed_decision_reuse = self.completed_decision_reuse.take();
         let prepared_input_reuse_key = self.prepared_input_reuse_key.take();
+        let native_prior_checkpoint = self.native_prior_checkpoint.take();
         let retained_capacity = self
             .retained_capacity
             .take()
@@ -167,6 +170,7 @@ impl PreparedOutputLineageSlot {
                 completed_handler_facts,
                 completed_decision_reuse,
                 prepared_input_reuse_key,
+                native_prior_checkpoint,
                 retained_capacity,
             );
             (identity, displaced)

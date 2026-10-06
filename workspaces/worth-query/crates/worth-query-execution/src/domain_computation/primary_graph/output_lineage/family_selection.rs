@@ -5,10 +5,34 @@ use super::{
 };
 use std::{collections::BTreeSet, sync::Arc};
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
+mod checkpoint_priors;
 mod publication_heads;
+pub(in crate::domain_computation::primary_graph) use checkpoint_priors::NativePriorCheckpointOutput;
 use publication_heads::PublicationHeads;
 
 impl WorthQueryApplicationOutputLineage {
+    pub(in crate::domain_computation::primary_graph) fn checkpoint_family_role(
+        &self,
+        binding: Option<std::any::TypeId>,
+    ) -> Result<Option<(&str, &str)>, ()> {
+        let Some(binding) = binding else {
+            return Ok(None);
+        };
+        let mut found = None;
+        for (family, bindings) in &self.output_families {
+            for (candidate, role) in bindings {
+                if *candidate != binding {
+                    continue;
+                }
+                if found.is_some() {
+                    return Err(());
+                }
+                found = Some((family.as_str(), role.as_str()));
+            }
+        }
+        Ok(found)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn resolve_current_family(
         &self,
         runtime_authority: u64,

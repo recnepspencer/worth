@@ -210,6 +210,9 @@ fn prepare_lineage_slot(
         )
         .map_err(lineage_pending)?;
     if let Some(required) = required {
+        let (producer, source) = required.native_prior_checkpoint_input();
+        slot.retain_native_prior_checkpoint(producer, source, admission)
+            .map_err(lineage_pending)?;
         // Move already declared resources through the prepared owner record.
         // This also pays its final fixed-width copy before World publication.
         admission

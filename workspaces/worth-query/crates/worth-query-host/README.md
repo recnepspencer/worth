@@ -87,6 +87,14 @@ Its `require_current_output_demand` checks a direct root/dependent settlement;
 native source lineage at that same observation, including receipt-free checkpoint
 reuse. Read the descriptive fields through that retained request after admission.
 
+Checkpoint capture retains the selected native output's producer/source locator
+even when its cached Ready demand has been reclaimed. A locator without accepted
+source facts is prior-output custody only: after reopen the installed Preserve
+producer must read and revalidate its inputs before current delivery. Capturing a
+stored output does not establish that it is current. Family publication order
+selects the active output, so an older Initial row cannot displace its Preserve
+successor or a distinct output family.
+
 A family read rejects an older candidate when its own recorded facts or native
 output witness prove it changed, even if its upstream is pending. Unchanged own
 evidence still returns `PendingUpstream`; it never establishes upstream currentness.

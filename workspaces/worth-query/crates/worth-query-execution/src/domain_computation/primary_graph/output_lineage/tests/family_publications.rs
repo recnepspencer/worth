@@ -122,6 +122,7 @@ impl Court {
             .or_default();
         let slot = records.len();
         let recorded = RecordedOutput {
+            native_prior_checkpoint: None,
             _retained_capacity: None,
             performed_origin: None,
             consumed_outputs: Arc::from([]),

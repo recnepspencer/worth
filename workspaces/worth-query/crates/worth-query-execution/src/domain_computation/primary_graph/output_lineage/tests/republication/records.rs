@@ -56,6 +56,7 @@ pub(super) fn performed(
         )
         .unwrap();
     RecordedOutput {
+        native_prior_checkpoint: None,
         consumed_outputs: Arc::clone(consumed),
         completed_handler_facts: Some(boundary),
         completed_decision_reuse: Some(completed),

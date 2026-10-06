@@ -184,6 +184,7 @@ impl WorthQueryApplicationOutputLineage {
             |output| output.facts(),
         );
         let mut recorded = RecordedOutput {
+            native_prior_checkpoint: None,
             performed_origin: None,
             _retained_capacity: None,
             consumed_outputs: Arc::from([]),
@@ -314,6 +315,7 @@ impl WorthQueryApplicationOutputLineage {
             .or_default();
         let slot = records.len();
         let recorded = RecordedOutput {
+            native_prior_checkpoint: None,
             performed_origin: None,
             _retained_capacity: None,
             consumed_outputs: Arc::from([]),

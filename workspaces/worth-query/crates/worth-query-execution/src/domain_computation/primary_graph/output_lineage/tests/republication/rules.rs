@@ -185,6 +185,7 @@ fn a_republished_stable_alias_holds_the_performed_sequence() {
         stage.retain(
             suspended_generation,
             |row| RecordedOutput {
+                native_prior_checkpoint: None,
                 performed_origin: Some(Arc::clone(&origin)),
                 consumed_outputs: Arc::clone(&consumed),
                 prepared_input_reuse_key: Some(input_key(&selection, ALIAS_INPUT)),
@@ -262,6 +263,7 @@ fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
         stage.retain(
             alias_generation,
             |row| RecordedOutput {
+                native_prior_checkpoint: None,
                 performed_origin: Some(Arc::clone(&origin)),
                 consumed_outputs: Arc::clone(&consumed),
                 prepared_input_reuse_key: Some(input_key(&selection, ALIAS_INPUT)),

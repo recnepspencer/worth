@@ -5,6 +5,14 @@ use crate::domain_computation::primary_graph::{
 };
 
 impl PreparedPrerequisiteClaims {
+    /// Borrow the exact managed producer key; publication pays for its own copy.
+    pub(in crate::domain_computation::primary_graph) fn native_prior_checkpoint_input(
+        &self,
+    ) -> (&str, [u8; 32]) {
+        let key = self.context.key();
+        (&key.producer, key.source.checkpoint_identity().bytes())
+    }
+
     pub(in crate::domain_computation::primary_graph) fn take_actual_resources(
         &mut self,
     ) -> Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>{
