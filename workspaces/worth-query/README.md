@@ -37,7 +37,10 @@ following its previously consumed dependencies. Sealed child entity/field conten
 is excluded from the independent-fact check. Changed consumer fields or
 consumer-anchored membership can disclose a fresh decision that drops an old edge. If that fresh handler
 still reads a pending output, its native read carries the exact settlement and
-selected source basis into the required wave. When that identity resolves to a
+selected source basis into the required wave. An initial producer without an
+accepted consumer output uses the same handoff: the requested chain must become
+Current before the caller retries its frozen disclosure. A requested chain never
+settles or promotes its parent demand. When that identity resolves to a
 retained required row, the wave refreshes it and resumes the consumer; otherwise
 the original read denial remains. A child's native content stays child evidence; neither
 this disclosure nor the scheduling handoff certifies an output Current. This

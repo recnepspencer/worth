@@ -8,6 +8,7 @@ use super::super::super::RequiredFreshOutcome;
 use super::super::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryProducerOutputFamily,
 };
+use super::cycles::FrameRole;
 use super::queued::RequiredQueueFrames;
 use super::selection::committed_ready;
 use super::*;
@@ -70,6 +71,9 @@ where
     // The caller's outcome is decided; queue frames take the rest.
     macro_rules! finish_caller {
         ($label:lifetime, $outcome:expr) => {{
+            if wave.target == RequiredWaveTarget::Requested {
+                return Ok(Some($outcome));
+            }
             queue.finish_caller($outcome);
             stack.frames.clear();
             current = None;
@@ -132,8 +136,8 @@ where
         admission
             .charge_external_work(6)
             .map_err(|_| work_denial())?;
-        let selected = current.as_ref().unwrap_or(&wave.caller_ready);
-        if !queue.active() {
+        let selected = current.as_ref().unwrap_or(&wave.anchor_ready);
+        if wave.target == RequiredWaveTarget::Caller && !queue.active() {
             // A restored output the caller's own chain consumed takes the
             // caller's mode when no demand of it has advanced.
             selected.completion().advanced_in(commit_authority);
@@ -141,14 +145,15 @@ where
         admission
             .charge_external_work(3)
             .map_err(|_| work_denial())?;
-        let producer_contacts_in_this_demand = if current.is_none() {
-            // The first Ready settlement reports this demand's real contact.
-            // Successful discharge resets it, so later Clean certification
-            // reports no new producer contact.
-            demand.producer_contacts_in_this_demand
-        } else {
-            current_contacts
-        };
+        let producer_contacts_in_this_demand =
+            if current.is_none() && wave.target == RequiredWaveTarget::Caller {
+                // The first Ready settlement reports this demand's real contact.
+                // Successful discharge resets it, so later Clean certification
+                // reports no new producer contact.
+                demand.producer_contacts_in_this_demand
+            } else {
+                current_contacts
+            };
         // The typed executor may admit and execute Fresh inside this call.
         // Reserve its custody before dispatch, even if it returns Current.
         let custody = if queue.active() {
@@ -168,7 +173,8 @@ where
             request_scope,
             &wave,
             selected,
-            current.is_none().then_some(demand.installed_entry.as_ref()),
+            (current.is_none() && wave.target == RequiredWaveTarget::Caller)
+                .then_some(demand.installed_entry.as_ref()),
             resolved.as_ref(),
             producer_contacts_in_this_demand,
             installation.admission(),
@@ -191,14 +197,21 @@ where
             RequiredWaveStep::Current(settlement) => {
                 drop(slot);
                 runtime.output_demands.clear_required_stop(selected.key());
-                if stack.frames.is_empty()
+                if wave.target == RequiredWaveTarget::Requested
+                    && stack.frames.is_empty()
+                    && (current.is_none() || current_role == FrameRole::AnchorSuccessor)
+                {
+                    return Ok(Some(WorthQueryOutputDemandAdvance::Settled(settlement)));
+                }
+                if wave.target == RequiredWaveTarget::Caller
+                    && stack.frames.is_empty()
                     && !queue.active()
                     && super::current_handoff::finish_current_caller(
                         runtime,
                         demand,
-                        &wave.caller_ready,
+                        &wave.anchor_ready,
                         selected,
-                        current_role == FrameRole::CallerSuccessor,
+                        current_role == FrameRole::AnchorSuccessor,
                         current.is_none(),
                         admission,
                     )?
@@ -242,7 +255,7 @@ where
                 if super::cycles::upstream_cycles(
                     &upstream,
                     selected,
-                    &wave.caller_ready,
+                    &wave.anchor_ready,
                     &resolved_on_wave,
                     admission,
                 )? {
@@ -266,9 +279,9 @@ where
             RequiredWaveStep::Fresh(progress) => {
                 let successor_role = if stack.frames.is_empty()
                     && !queue.active()
-                    && (current.is_none() || current_role == FrameRole::CallerSuccessor)
+                    && (current.is_none() || current_role == FrameRole::AnchorSuccessor)
                 {
-                    FrameRole::CallerSuccessor
+                    FrameRole::AnchorSuccessor
                 } else {
                     FrameRole::Successor
                 };
@@ -287,7 +300,7 @@ where
                                     if super::cycles::upstream_cycles(
                                         &upstream,
                                         selected,
-                                        &wave.caller_ready,
+                                        &wave.anchor_ready,
                                         &resolved_on_wave,
                                         admission,
                                     )? {
@@ -380,14 +393,4 @@ where
             }
         }
     }
-}
-
-/// What the current frame is to this wave. A caller successor is a refresh
-/// of the caller's Ready, or of an earlier caller successor, reached with no
-/// stacked downstream outside queue work.
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum FrameRole {
-    Reached,
-    Successor,
-    CallerSuccessor,
 }

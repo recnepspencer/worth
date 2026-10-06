@@ -8,7 +8,7 @@ use super::*;
 pub(super) fn finish_current_caller<Schema, Family>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
-    caller_ready: &SelectedReadyReadmission,
+    anchor_ready: &SelectedReadyReadmission,
     selected: &SelectedReadyReadmission,
     continues_caller: bool,
     caller_current: bool,
@@ -27,7 +27,7 @@ where
         .required_continuations
         .promote_caller_successor::<Family>(
             &runtime.output_demands,
-            caller_ready,
+            anchor_ready,
             selected,
             continues_caller,
             admission,

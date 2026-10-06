@@ -41,7 +41,7 @@ where
         return Ok(None);
     };
     // A restored output takes its mode here, before any wave can select it.
-    wave.caller_ready.completion().advanced_in(commit_authority);
+    wave.anchor_ready.completion().advanced_in(commit_authority);
     // An Idle Ready is not itself a dirty required target. Genesis and full
     // verification cases retain the established output verifier once the
     // outputs they consumed are current. An authentic
@@ -57,7 +57,7 @@ where
         .resolve_required_settlement(
             runtime.runtime.authority_identity().as_u64(),
             &runtime.installed_schema.binding_identity(),
-            wave.caller_ready.completion(),
+            wave.anchor_ready.completion(),
             admission,
         );
     let candidate = match candidate {

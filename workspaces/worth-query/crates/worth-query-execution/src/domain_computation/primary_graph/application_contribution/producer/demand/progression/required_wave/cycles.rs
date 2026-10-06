@@ -12,3 +12,13 @@ pub(super) fn upstream_cycles(
         || upstream.same_record(caller, admission)?
         || resolved.contains(upstream))
 }
+
+/// What the current frame is to this wave. An anchor successor refreshes
+/// the anchor's Ready, or an earlier anchor successor, reached with no
+/// stacked downstream outside queue work.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum FrameRole {
+    Reached,
+    Successor,
+    AnchorSuccessor,
+}

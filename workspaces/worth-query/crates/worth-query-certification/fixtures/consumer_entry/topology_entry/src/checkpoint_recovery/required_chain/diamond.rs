@@ -126,6 +126,7 @@ macro_rules! output_lengths {
 }
 
 mod dropped_dependency;
+mod initial_dependency;
 
 #[test]
 fn a_diamond_output_settles_in_one_advance_after_both_roots_change() {

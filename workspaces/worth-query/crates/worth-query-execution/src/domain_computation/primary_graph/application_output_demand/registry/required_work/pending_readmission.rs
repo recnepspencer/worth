@@ -57,7 +57,20 @@ impl WorthQueryOutputDemandRegistry {
         if requested.selected() != selected {
             return Ok(PendingUpstream::Unavailable);
         }
-        self.pending_identity_readmission(requested.identity(), admission)
+        let upstream = self.pending_identity_readmission(requested.identity(), admission)?;
+        if let PendingUpstream::Held(head) = &upstream {
+            // A cached row with no required owner has no continuation to resume.
+            // An initial failed read cannot turn it into indefinitely held work.
+            let state = self
+                .state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            charge_required_key_lookup(&state, head, admission)?;
+            if !state.required_keys.contains(head) {
+                return Ok(PendingUpstream::Unavailable);
+            }
+        }
+        Ok(upstream)
     }
 
     fn pending_identity_readmission(

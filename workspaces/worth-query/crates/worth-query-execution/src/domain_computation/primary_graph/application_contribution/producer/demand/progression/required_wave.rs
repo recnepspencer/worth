@@ -29,16 +29,19 @@ use super::super::super::{
 use super::super::RequiredFreshProgress;
 use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
 
-/// The caller's exact Ready cell anchors the wave. `shared` and `positioned`
-/// retain one admitted Product/native basis for every dependency proof.
+/// A caller's Ready or an exactly requested upstream Ready anchors the wave.
+/// `shared` and `positioned` retain its admitted Product/native proof basis.
 pub(super) struct RequiredWaveSelection<'runtime, Schema> {
     pub(super) shared: SharedSelectedProductOperation<'runtime, Schema>,
     pub(super) positioned: PositionedRelationalSnapshot,
-    pub(super) caller_ready: SelectedReadyReadmission,
+    pub(super) anchor_ready: SelectedReadyReadmission,
     pub(super) branch: WorthQueryProductBranch,
+    pub(super) target: RequiredWaveTarget,
 }
 
 mod caller;
+mod requested;
+pub(super) use requested::advance_requested_output;
 mod current_handoff;
 mod cycles;
 mod drive;
@@ -52,6 +55,13 @@ pub(in crate::domain_computation::primary_graph) use resolved::{
 use selection::{reselect_required_wave, select_required_wave};
 
 pub(super) use caller::advance_required_before_caller;
+
+/// A requested upstream certifies only itself, never its initial consumer.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum RequiredWaveTarget {
+    Caller,
+    Requested,
+}
 
 /// A cue is only scheduling custody. A Current result comes from the exact
 /// accepted row, its installed producer, and the selected Product/native proof.
