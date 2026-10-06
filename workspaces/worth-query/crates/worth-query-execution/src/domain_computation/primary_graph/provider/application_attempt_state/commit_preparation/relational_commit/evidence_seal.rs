@@ -3,7 +3,7 @@
 mod postcommit_currentness;
 pub(in crate::domain_computation::primary_graph::provider) use postcommit_currentness::PreparedSourceFactRebase;
 pub(in crate::domain_computation::primary_graph) use postcommit_currentness::{
-    FailedRebase, OwnEffectOnReads, RebaseVerificationReason,
+    FactlessCurrentness, FailedRebase, OwnEffectOnReads, RebaseVerificationReason,
 };
 
 use super::commit_execution::WorthQueryCommittedApplicationSession;

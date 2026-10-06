@@ -40,8 +40,12 @@ pub(super) fn ready_currentness_denial(
             WorthQueryOutputDemandDenialKind::SchedulingDeferred
         }
         CurrentAcceptedStop::Closure(ConsumedOutputVerificationStop::Unavailable)
-        | CurrentAcceptedStop::Registration(SettlementRegistrationStop::Alignment(_)) => {
-            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
+        | CurrentAcceptedStop::Registration(
+            SettlementRegistrationStop::Alignment(_)
+            | SettlementRegistrationStop::SourceUnavailable,
+        ) => WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+        CurrentAcceptedStop::Registration(SettlementRegistrationStop::Foreign) => {
+            WorthQueryOutputDemandDenialKind::ForeignSettlement
         }
         CurrentAcceptedStop::Closure(ConsumedOutputVerificationStop::RetryCurrentness(_))
         | CurrentAcceptedStop::Registration(SettlementRegistrationStop::Edit(_)) => {

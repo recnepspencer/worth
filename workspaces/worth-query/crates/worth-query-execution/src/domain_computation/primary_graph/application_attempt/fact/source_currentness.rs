@@ -1,4 +1,4 @@
-use super::WorthQueryApplicationObservedFact;
+use super::{FactMovement, WorthQueryApplicationObservedFact};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQuerySourceCurrentnessFailure {
@@ -25,7 +25,32 @@ impl WorthQueryApplicationObservedFact {
         }
     }
 
+    /// The most comparing a source read can cost: its probe, and for a field
+    /// revision the liveness check that answers a probe that found nothing
+    /// (`unanswered_probe`).
+    pub(in crate::domain_computation::primary_graph) const fn most_source_comparison_work(
+        &self,
+    ) -> usize {
+        match self {
+            Self::SourceFieldRevision { .. } => 2,
+            _ => 1,
+        }
+    }
+
+    /// Whether the fact moved between the basis that read it and `snapshot`,
+    /// and the work the comparison did. A comparison that cannot answer is
+    /// its failure, never a movement.
     pub(in crate::domain_computation::primary_graph) fn source_currentness_in(
+        &self,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        maximum_work: usize,
+    ) -> Result<(FactMovement, usize), WorthQuerySourceCurrentnessFailure> {
+        let (equal, work) = self.comparison(runtime, snapshot, maximum_work)?;
+        Ok((FactMovement::from_equal(equal), work))
+    }
+
+    fn comparison(
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,

@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 use std::num::NonZeroUsize;
 use std::time::Duration;
+
+use crate::domain_computation::primary_graph::application_attempt::Movement;
 use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, LocatorAuthority};
 
 use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
@@ -134,6 +136,8 @@ fn root_path_guard_reads_its_pinned_truth_version() {
             fact.source_currentness_in(runtime, current.application_basis().snapshot_handle(), 1)
                 .unwrap()
                 .0
+                .movement()
+                == Movement::Unmoved
         }),
         "changed root-path guard must stale the selected source"
     );
@@ -159,6 +163,8 @@ fn root_path_guard_reads_its_pinned_truth_version() {
                 .source_currentness_in(runtime, reopened.application_basis().snapshot_handle(), 1)
                 .unwrap()
                 .0
+                .movement()
+                == Movement::Unmoved
         }),
         "a matching guard edit must stale an empty result-set observation"
     );
@@ -247,6 +253,8 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
         fact.source_currentness_in(runtime, current.application_basis().snapshot_handle(), 1)
             .unwrap()
             .0
+            .movement()
+            == Movement::Unmoved
     }));
     let matching = world
         .application
@@ -267,6 +275,8 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
         fact.source_currentness_in(runtime, reopened.application_basis().snapshot_handle(), 1)
             .unwrap()
             .0
+            .movement()
+            == Movement::Unmoved
     }));
     let reopened_result = world
         .application

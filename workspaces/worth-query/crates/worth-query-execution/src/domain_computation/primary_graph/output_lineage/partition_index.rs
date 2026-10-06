@@ -6,6 +6,7 @@ use std::sync::{Arc, OnceLock};
 mod admitted_lookup;
 mod family_heads;
 mod history_retirement;
+mod newest;
 mod preparation;
 mod stable_publication;
 pub(super) use stable_publication::PreparedStablePartitionLocator;
@@ -27,16 +28,25 @@ pub(super) struct OutputPartitionIndex {
 }
 
 impl OutputPartitionIndex {
+    fn generations(
+        &self,
+        source: &SemanticSource,
+        coordinate: ProductCoordinate,
+        partition: [u8; 32],
+    ) -> Option<&Generations> {
+        self.slots
+            .get(source)?
+            .get(&coordinate.occurrence)?
+            .get(&Some(partition))
+    }
+
     pub(super) fn has_address(
         &self,
         source: &SemanticSource,
         coordinate: ProductCoordinate,
         partition: [u8; 32],
     ) -> bool {
-        self.slots
-            .get(source)
-            .and_then(|occurrences| occurrences.get(&coordinate.occurrence))
-            .and_then(|partitions| partitions.get(&Some(partition)))
+        self.generations(source, coordinate, partition)
             .is_some_and(|generations| generations.contains_key(&coordinate.generation))
     }
 
@@ -132,37 +142,6 @@ impl OutputPartitionIndex {
             .and_then(|cell| cell.get().copied())
     }
 
-    pub(super) fn latest(
-        &self,
-        source: &SemanticSource,
-        coordinate: ProductCoordinate,
-        partition: [u8; 32],
-        maximum_work: usize,
-    ) -> Result<(Option<(u64, usize)>, usize), ()> {
-        let Some(generations) = self
-            .slots
-            .get(source)
-            .and_then(|occurrences| occurrences.get(&coordinate.occurrence))
-            .and_then(|partitions| partitions.get(&Some(partition)))
-        else {
-            return (maximum_work != 0).then_some((None, 1)).ok_or(());
-        };
-        let mut work = 0usize;
-        for (generation, slot) in generations.range(..=coordinate.generation).rev() {
-            work = work.checked_add(1).ok_or(())?;
-            if work > maximum_work {
-                return Err(());
-            }
-            if let Some(slot) = slot.get() {
-                return Ok((Some((*generation, *slot)), work));
-            }
-        }
-        if work == 0 {
-            work = 1;
-        }
-        (work <= maximum_work).then_some((None, work)).ok_or(())
-    }
-
     pub(super) fn retain_occurrences(
         &mut self,
         retained: &BTreeSet<ProductBranchIncarnation>,
@@ -210,9 +189,7 @@ impl WorthQueryApplicationOutputLineage {
         };
         let (generation, slot) = self
             .partition_index
-            .latest(source, below, partition, usize::MAX)
-            .ok()?
-            .0?;
+            .latest_unbudgeted(source, below, partition)?;
         let displaced = self.recorded_at_partition_slot(
             source,
             coordinate.occurrence,

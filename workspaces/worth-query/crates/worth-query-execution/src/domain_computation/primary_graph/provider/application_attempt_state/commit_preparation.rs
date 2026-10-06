@@ -18,8 +18,8 @@ pub(in crate::domain_computation::primary_graph::provider) use relational_commit
 pub(in crate::domain_computation::primary_graph::provider) use relational_commit::ManagedUnpublishedAttempt;
 pub(in crate::domain_computation::primary_graph) use relational_commit::RetainedTouchedRecords;
 pub(in crate::domain_computation::primary_graph) use relational_commit::{
-    OwnEffectOnReads, RebaseVerificationReason, WorthQueryMutationWorkCommitSeal,
-    WorthQueryPrimaryGraphCommittedApplication,
+    FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason,
+    WorthQueryMutationWorkCommitSeal, WorthQueryPrimaryGraphCommittedApplication,
 };
 
 pub(super) struct WorthQueryPreparedApplicationCommit {

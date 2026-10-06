@@ -2276,25 +2276,6 @@ before machinery for another lands.
   *Completed:* the courtroom above. Its oracle and seeded sequences run
   through one neutral fixture, the topology entry.
 
-- A field declared unique names at most one entity. *Completed:*
-  - The schema declares it once, on an equality-indexed field. Installation
-    refuses it without its index, and refuses a delegation whose child
-    identity field is not unique.
-  - Every program write of a unique field (create, update, optional patch)
-    lowers only when the decision holds that value's indexed selection with
-    no candidate but the written entity, and one program writes each value
-    at most once. An unavailable index is its own denial.
-  - Delegation appends its child id's absence when the application did not
-    read it, inside the operation's decision fact budget.
-  - An identity is never reused: re-delegating an existing child id is
-    denied whatever the grant's status, and a status may still change. A
-    delete frees its value, but a delete and a create of one value in one
-    program is denied.
-  - A merge looks up, at the target head, only the unique values it writes,
-    so its lookups are proportional to its own writes.
-  - Bootstrap seeds hold each unique value at most once. Test-backend seeds
-    bypass the law.
-
 Work admission and capacity follow these rules. *Completed.*
 
 - Work admission counts named operations and bounded comparison or
@@ -2319,12 +2300,12 @@ The next phase may trust that the touched graph alone decides what recomputes.
 
 ### Phase 6: Partitioned managed computations
 
-- Change the partitioned declaration as described, and re-baseline revision
+- **6.1** Change the partitioned declaration as described, and re-baseline revision
   digests. *Completed:* the key contract, the single computation partition,
   the determinism contract and the validation denial are declared, and the
   topology entry proves them through the public facade. No stored digest
   existed to re-baseline.
-- Make `DeterministicPartitioned` execute through the partitioned owner binding.
+- **6.2** Make `DeterministicPartitioned` execute through the partitioned owner binding.
   *Partly completed:* a partitioned owner installs and runs: key derivation,
   routing and gathering in `prepare`, every partition's kernel through the
   execution map, the reducer over the canonical tree, and `complete`. Every run
@@ -2344,7 +2325,7 @@ The next phase may trust that the touched graph alone decides what recomputes.
   a lease. The floating-point sum proof compares
   runs with each other; the comparison against the serial oracle
   (`certify_reduce`) needs a lease.
-- Route marks to computation partitions through the settlement row's routing
+- **6.3** Route marks to computation partitions through the settlement row's routing
   table, with item routing so `prepare` re-gathers only marked partitions.
   *Partly completed:* a producer's run retains its state on its record and the
   next run with an unchanged membership and keys gathers and computes only the
@@ -2389,30 +2370,76 @@ The next phase may trust that the touched graph alone decides what recomputes.
   operation's reader (`edit_admission.rs:193`, `operation_reader.rs:211-213`,
   `application_entry/mutation/execution.rs:133-147`,
   `authorization/operation_admission.rs:117-145`).
-- Retain the canonical tree in Query with eviction and branch sharing, and apply
-  encoding cutoff per partition. *Partly completed:* the tree is retained under
-  the lineage ledger and a recomputed partition with the same canonical bits
-  replaces nothing.
-- Close the decisions that are kept by convention. Factless currentness is one
+- **6.4** A field declared unique names at most one entity. *Completed:*
+  - The schema declares it once, on an equality-indexed field. Installation
+    refuses it without its index, and refuses a delegation whose child
+    identity field is not unique.
+  - Every program write of a unique field (create, update, optional patch)
+    lowers only when the decision holds that value's indexed selection with
+    no candidate but the written entity, and one program writes each value
+    at most once. An unavailable index is its own denial.
+  - Delegation appends its child id's absence when the application did not
+    read it, inside the operation's decision fact budget.
+  - An identity is never reused: re-delegating an existing child id is
+    denied whatever the grant's status, and a status may still change. A
+    delete frees its value, but a delete and a create of one value in one
+    program is denied.
+  - A merge looks up, at the target head, only the unique values it writes,
+    so its lookups are proportional to its own writes.
+  - Bootstrap seeds hold each unique value at most once. Test-backend seeds
+    bypass the law.
+- **6.5** Close the decisions that are kept by convention. Factless currentness is one
   closed answer, not an `Option<bool>` read two ways. A required settlement
   returns its request stop separately from its reasons to verify in full, so no
   catch-all can swallow a stop, and a foreign source is denied at every site.
   Whether a fact moved is one closed answer that only the comparison produces,
-  shared with partition reuse, never a `None` read as moved. Every work meter is
-  a reservation charged before the read it pays for, including the post-commit
-  rebase.
-- Carry the request lease into managed computations before membership edits.
+  shared with partition reuse, never a `None` read as moved.
+  *Completed:* whether a fact moved is `Unmoved` or `Moved`, minted only
+  by the source comparison, whose failure stays its own error. Partition reuse
+  compares only an observation taken through its comparator. The post-commit
+  rebase folds the reads it asks about into `Unmoved`, `Undecidable` or
+  `Moved`, and a receipt without facts answers `Current`, `Superseded` or
+  `Undecidable`. Only a comparison that cannot answer is undecidable; it is
+  granted the most it can cost, so it never fails for want of work. An
+  undecidable own effect is denied `RetainedBasisUnavailable` rather than
+  refreshed, because a recompute would meet the same comparison. A rebase
+  whose meter stops counts the reads it left as moved, so its commit is
+  superseded and refreshes; the refresh is a managed publication on the
+  request meter, which has no work ceiling, so it cannot stop the same way. An
+  indexed selection that the rebase's remaining width cannot pay for is a
+  typed work stop, not a kept read. A queue frame refused required custody
+  releases it without a lookup first (`end_refused`). The required-settlement lookup returns its
+  stops, admission and a foreign authority, outside its reasons, and all three
+  callers deny them before any effect. `FullVerificationReason` holds reasons
+  only: a foreign source is a currentness and stop value, an unpositioned
+  source snapshot is a stop, and a registration stopped after its World
+  effect records `RegistrationIncomplete`. The reasons no mark row answers for
+  are named once.
+  *Limitations:* an own effect whose comparison cannot answer stays denied
+  until a later publication on the branch supersedes the commit. The adjacency rebase still
+  reads a budget miss as an unavailable anchor, because its denial does not
+  tell the two apart. An interrupted consumed-output verification answers
+  `Unavailable` (`work_budget.rs:45`), not an interruption; carrying the
+  request lease owns that.
+- **6.6** Charge every work meter as a reservation before the read it pays for,
+  including the post-commit rebase, and say for each fresh edit admission
+  whether the request or platform housekeeping pays.
+- **6.7** Carry the request lease into managed computations before membership edits.
   Resource denials are one Query-owned denial converted from the execution
   authority's in one place, and partition identity lists are canonical and
   unique by type. The Components partitioner's retained edits take the lease.
   Before Phase 7 runs waves concurrently, readers, meters and registry guards
   are bound to their owning thread by type, and apply accepts only canonical
   order.
-- Maintain partitioner output incrementally and keep island identity stable.
+- **6.8** Maintain partitioner output incrementally and keep island identity stable.
   Retained structure equals what a fresh build of the current inputs produces;
   the differential test gains membership inserts, deletes, island merges and
   splits.
-- A neutral application proves the isolation and reuse courtroom with operation
+- **6.9** Retain the canonical tree in Query with eviction and branch sharing, and apply
+  encoding cutoff per partition. *Partly completed:* the tree is retained under
+  the lineage ledger and a recomputed partition with the same canonical bits
+  replaces nothing.
+- **6.10** A neutral application proves the isolation and reuse courtroom with operation
   counts.
 
 The next phase may trust that partition-granular reuse is exact.

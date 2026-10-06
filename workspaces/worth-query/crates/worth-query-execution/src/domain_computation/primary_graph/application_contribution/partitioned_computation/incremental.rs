@@ -50,16 +50,16 @@ use super::{
     WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
 };
 use crate::domain_computation::primary_graph::application_attempt::{
-    ComputationRead, WorthQueryApplicationFactKey,
+    ComputationRead, FactMovement, Movement, WorthQueryApplicationFactKey,
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader;
 
 type Reader<'reader, 'runtime, Schema, Operation> =
     WorthQueryApplicationOperationInvariantProjectionReader<'reader, 'runtime, Schema, Operation>;
 
-/// How a retained fact stands at this attempt's snapshot. Only the content
-/// comparison says `Unchanged`; a fact that cannot be observed marks its
-/// partition exactly as a changed one does.
+/// How a retained fact stands at this attempt's snapshot. Only the fact
+/// module's comparison says `Unchanged`; a fact that cannot be observed marks
+/// its partition exactly as a changed one does.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum KeyMovement {
     Unchanged,
@@ -153,8 +153,10 @@ where
     };
     for (key, fact, readers) in retained.facts.facts() {
         let movement = match reader.observe_retained(&COMPARATOR, key) {
-            Ok(observed) if observed == *fact => KeyMovement::Unchanged,
-            Ok(_) => KeyMovement::Changed,
+            Ok(observed) => match FactMovement::between(fact, &observed).movement() {
+                Movement::Unmoved => KeyMovement::Unchanged,
+                Movement::Moved => KeyMovement::Changed,
+            },
             Err(_) => KeyMovement::NotObservable,
         };
         if movement != KeyMovement::Unchanged {

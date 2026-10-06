@@ -115,6 +115,8 @@ impl SourceInvalidationOwner {
                 return Ok(true);
             }
             SettlementCurrentness::FullVerificationRequired(_) => {}
+            // A row read in another runtime is never re-established here.
+            SettlementCurrentness::Foreign => return Err(SettlementVerificationStop::Alignment),
             // Dirty and pending rows keep their own exact reverification.
             SettlementCurrentness::Dirty(_) | SettlementCurrentness::PendingUpstream(_) => {
                 return Ok(false)

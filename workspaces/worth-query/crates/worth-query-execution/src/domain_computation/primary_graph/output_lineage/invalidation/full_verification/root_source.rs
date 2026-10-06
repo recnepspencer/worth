@@ -18,9 +18,7 @@ impl FullVerificationImage<'_> {
             || origin.version_id() > self.selected.version_id()
             || origin.position() > self.selected.position()
         {
-            return Err(FullVerificationStop::Alignment(
-                FullVerificationReason::ForeignSource,
-            ));
+            return Err(FullVerificationStop::Foreign);
         }
         for fact in source.source_facts() {
             if !fact_is_current(fact, self.runtime, self.snapshot, admission)? {

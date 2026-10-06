@@ -309,14 +309,19 @@ where
                     &proposal,
                 )
             });
-            if let Ok(proposal_facts) = proposal_facts {
-                let replace = latest_occurrence
-                    .map(|prior| selected.occurrence() > prior)
-                    .unwrap_or(true);
-                if replace {
-                    latest_occurrence = Some(selected.occurrence());
-                    match_found = Some((selected, proposal_facts));
+            match proposal_facts {
+                Ok(proposal_facts) => {
+                    let replace = latest_occurrence
+                        .map(|prior| selected.occurrence() > prior)
+                        .unwrap_or(true);
+                    if replace {
+                        latest_occurrence = Some(selected.occurrence());
+                        match_found = Some((selected, proposal_facts));
+                    }
                 }
+                // This candidate's retained proposal is not the replayed one;
+                // another candidate's may be. None matching denies below.
+                Err(_mismatch) => {}
             }
         }
         let Some((selected, proposal_facts)) = match_found else {

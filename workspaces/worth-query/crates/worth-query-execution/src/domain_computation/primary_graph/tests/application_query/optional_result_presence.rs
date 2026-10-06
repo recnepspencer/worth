@@ -1,6 +1,8 @@
 use std::num::NonZeroUsize;
 use std::time::Duration;
 
+use crate::domain_computation::primary_graph::application_attempt::Movement;
+
 use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, LocatorAuthority};
 use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
 use worth_query_declaration::facade::application_schema::{
@@ -105,6 +107,8 @@ fn current(world: &AuthorizationWorld, fact: &WorthQueryApplicationObservedFact)
         fact.source_currentness_in(runtime, selected.application_basis().snapshot_handle(), 1)
             .unwrap()
             .0
+            .movement()
+            == Movement::Unmoved
     })
 }
 

@@ -281,17 +281,15 @@ impl WorthQueryApplicationOutputLineage {
         // publication than one already retained for this partition.
         if self
             .partition_index
-            .latest(
+            .latest_unbudgeted(
                 &source,
                 super::ProductCoordinate {
                     occurrence,
                     generation,
                 },
                 source_partition_identity,
-                usize::MAX,
             )
-            .map(|(selected, _)| selected.is_some())
-            .unwrap_or(true)
+            .is_some()
         {
             return;
         }

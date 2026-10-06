@@ -204,6 +204,8 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
                 .source_currentness_in(runtime, &after, 1)
                 .unwrap()
                 .0
+                .movement()
+                == Movement::Unmoved
         );
         assert!(!after_restore
             .get()

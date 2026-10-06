@@ -101,9 +101,7 @@ impl SourceInvalidationOwner {
             .ok_or(worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow)?;
         admission.charge_external_work(visits)?;
         if registration.read_basis != *selected {
-            return Err(SettlementRegistrationStop::Alignment(
-                super::FullVerificationReason::ForeignSource,
-            ));
+            return Err(SettlementRegistrationStop::Foreign);
         }
         let identity = Arc::clone(&registration.identity);
         let prepared = self.prepare_settlement_at_basis(
@@ -135,9 +133,7 @@ impl SourceInvalidationOwner {
             || !std::ptr::eq(selected, equality.selected())
             || !Arc::ptr_eq(&registration.identity, equality.successor())
         {
-            return Err(SettlementRegistrationStop::Alignment(
-                super::FullVerificationReason::ForeignSource,
-            ));
+            return Err(SettlementRegistrationStop::Foreign);
         }
         let identity = Arc::clone(&registration.identity);
         let prepared = self.prepare_settlement_at_basis(

@@ -16,7 +16,7 @@ mod recorded_source_identity;
 mod required_settlement;
 pub(in crate::domain_computation::primary_graph) use required_settlement::{
     AcceptedCurrentCandidate, BoundCurrentAcceptedOutput, CurrentAcceptedResult,
-    CurrentAcceptedStop,
+    CurrentAcceptedStop, RequiredSettlementStop,
 };
 mod resolution;
 mod resources;

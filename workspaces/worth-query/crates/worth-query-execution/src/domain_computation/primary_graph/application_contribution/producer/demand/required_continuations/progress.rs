@@ -147,18 +147,16 @@ where
     }
     /// End every entry. Whether one of them had published: its row answers
     /// Ready on its own, and the predecessor Ready it kept for the wave is
-    /// custody the next advance does not hold. `None`, with the entries
-    /// kept, when the request's work cannot pay for the lookups.
+    /// custody the next advance does not hold. The stop of a lookup the
+    /// request cannot pay for keeps the entries.
     pub(in super::super) fn end_all(
         &mut self,
         registry: &WorthQueryOutputDemandRegistry,
         admission: &mut InvalidationEditAdmission,
-    ) -> Option<bool> {
+    ) -> Result<bool, WorthQueryOutputDemandDenial> {
         let mut published = false;
         for entry in &self.entries {
-            let ready = registry
-                .interest_ready_readmission(entry.interest(), admission)
-                .ok()?;
+            let ready = registry.interest_ready_readmission(entry.interest(), admission)?;
             published |= ready.is_some_and(|ready| {
                 !ready
                     .completion()
@@ -166,21 +164,17 @@ where
             });
         }
         drop(self.take_all());
-        Some(published)
+        Ok(published)
     }
 
     /// A queue frame refused required custody does not wait holding it, as
     /// a caller does not: the refreshes this wave's frames carried end here.
     /// Each unpublished row goes back to the Ready it replaced, so every
-    /// wave that meets the same refusal leaves the same rows behind it.
-    pub(in super::super) fn end_refused(
-        &mut self,
-        registry: &WorthQueryOutputDemandRegistry,
-        stop: &WorthQueryOutputDemandDenial,
-        admission: &mut InvalidationEditAdmission,
-    ) {
+    /// wave that meets the same refusal leaves the same rows behind it. No
+    /// lookup precedes the end, so no request work can keep the entries.
+    pub(in super::super) fn end_refused(&mut self, stop: &WorthQueryOutputDemandDenial) {
         if refused_custody(stop) {
-            let _published = self.end_all(registry, admission);
+            drop(self.take_all());
         }
     }
 }

@@ -41,7 +41,7 @@ pub(super) fn carry_row(
     if *row.read_basis == *selected
         || matches!(
             aligned.currentness(identity),
-            SettlementCurrentness::FullVerificationRequired(_)
+            SettlementCurrentness::FullVerificationRequired(_) | SettlementCurrentness::Foreign
         )
     {
         return Ok(false);

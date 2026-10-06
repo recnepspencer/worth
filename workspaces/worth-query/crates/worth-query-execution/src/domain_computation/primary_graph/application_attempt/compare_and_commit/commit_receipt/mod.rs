@@ -139,21 +139,19 @@ impl WorthQueryApplicationCommitReceipt {
     }
 
     /// What a commit that kept no fact answers at `observation`, and `None`
-    /// for a commit that rebased: its facts answer. The commit is current
-    /// while its own effect moved none of its reads and its own publication
-    /// is still the one selected. One whose effect moved a read is superseded
-    /// at its own publication, as it is where its rebase succeeds.
+    /// for a commit that rebased: its facts answer. One whose effect moved a
+    /// read is superseded at its own publication, as it is where its rebase
+    /// succeeds.
     pub(in crate::domain_computation::primary_graph) fn currentness_without_facts_at(
         &self,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
-    ) -> Option<bool> {
-        use crate::domain_computation::primary_graph::provider::OwnEffectOnReads;
+    ) -> Option<crate::domain_computation::primary_graph::provider::FactlessCurrentness> {
         let own_effect = self.unrebased_own_effect?;
         Some(
-            own_effect == OwnEffectOnReads::Unmoved
-                && self
-                    .committed_product_publication
+            own_effect.at_own_publication(
+                self.committed_product_publication
                     .is_selected_at(observation),
+            ),
         )
     }
 

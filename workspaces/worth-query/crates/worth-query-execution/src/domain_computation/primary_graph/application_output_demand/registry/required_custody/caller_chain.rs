@@ -12,6 +12,8 @@
 //! other demand changes the refusal, and the caller's advance decides its
 //! stop: see the producer's `caller_custody`.
 
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+
 use super::super::refreshed_rejoin::{occurrence_rows, superseded};
 use super::super::{
     DemandRecord, DemandRegistryState, DemandState, WorthQueryOutputAdvancement,
@@ -21,13 +23,13 @@ use crate::domain_computation::primary_graph::output_lineage::invalidation::Inva
 
 impl WorthQueryOutputDemandRegistry {
     /// Whether a demand other than the caller of `key` holds custody its
-    /// next advance or close moves. `None` when the request's work cannot
-    /// pay for the walk.
+    /// next advance or close moves. The stop of a walk the request's work
+    /// cannot pay for establishes nothing.
     pub(in crate::domain_computation::primary_graph) fn another_demand_holds_custody(
         &self,
         key: &WorthQueryOutputDemandKey,
         admission: &mut InvalidationEditAdmission,
-    ) -> Option<bool> {
+    ) -> Result<bool, CompanionPreflightStop> {
         self.state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -38,14 +40,13 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn a_demand_holds_custody(
         &self,
         admission: &mut InvalidationEditAdmission,
-    ) -> Option<bool> {
+    ) -> Result<bool, CompanionPreflightStop> {
         let state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let rows = u64::try_from(state.records.len()).ok()?;
-        admission.charge_external_work(rows).ok()?;
-        Some(state.records.values().any(holds_custody))
+        admission.charge_external_work(count(state.records.len())?)?;
+        Ok(state.records.values().any(holds_custody))
     }
 }
 
@@ -55,11 +56,11 @@ impl DemandRegistryState {
         &self,
         key: &WorthQueryOutputDemandKey,
         admission: &mut InvalidationEditAdmission,
-    ) -> Option<bool> {
-        let rows = u64::try_from(self.records.len()).ok()?;
+    ) -> Result<bool, CompanionPreflightStop> {
+        let rows = count(self.records.len())?;
         // The chain's occurrences, each named by one of its rows. Rows of one
         // occurrence are contiguous, so each is visited once.
-        admission.charge_external_work(rows).ok()?;
+        admission.charge_external_work(rows)?;
         let mut chain = vec![key.clone()];
         let mut next = 0;
         while let Some(occurrence) = chain.get(next).cloned() {
@@ -72,9 +73,11 @@ impl DemandRegistryState {
                 }
             }
         }
-        let comparisons = rows.checked_mul(u64::try_from(chain.len()).ok()?)?;
-        admission.charge_external_work(comparisons).ok()?;
-        Some(self.records.iter().any(|(other, record)| {
+        let comparisons = rows
+            .checked_mul(count(chain.len())?)
+            .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
+        admission.charge_external_work(comparisons)?;
+        Ok(self.records.iter().any(|(other, record)| {
             let open = record.interests > usize::from(other == key);
             if chain.iter().any(|known| known.same_occurrence(other)) {
                 open && (superseded(record) || refreshing(record))
@@ -83,6 +86,11 @@ impl DemandRegistryState {
             }
         }))
     }
+}
+
+/// A count of rows as work units.
+fn count(rows: usize) -> Result<u64, CompanionPreflightStop> {
+    u64::try_from(rows).map_err(|_| CompanionPreflightStop::WorkCounterOverflow)
 }
 
 /// A demand is open on the row, or the registry keeps a successor for it.

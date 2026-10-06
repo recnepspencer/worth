@@ -115,7 +115,7 @@ pub(super) fn fact_is_current(
         .map_err(|_| ConsumedOutputVerificationStop::WorkExhausted)?
         .unwrap_or(0);
     charge_external(admission, prepaid)?;
-    let (current, work) = fact
+    let (movement, work) = fact
         .source_currentness_in(runtime, snapshot, available)
         .map_err(|failure| match failure {
             WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => {
@@ -126,5 +126,5 @@ pub(super) fn fact_is_current(
             }
         })?;
     charge_external(admission, work.saturating_sub(prepaid))?;
-    Ok(current)
+    Ok(movement.movement() == Movement::Unmoved)
 }

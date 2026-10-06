@@ -13,6 +13,7 @@ use crate::domain_computation::primary_graph::application_contribution::producer
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority as Authority;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
+use crate::domain_computation::primary_graph::provider::FactlessCurrentness;
 
 /// Check actual selected required work before the caller's ordinary Ready
 /// result can be accepted. The caller keeps the successors its own chain
@@ -64,19 +65,12 @@ where
             wave.caller_ready.completion(),
             admission,
         );
-    let candidate = match candidate {
-        Ok(candidate) => candidate,
-        Err(FullVerificationReason::MarkingAdmissionDenied(stop)) => {
-            return Err(admission_denial(stop));
-        }
-        Err(FullVerificationReason::ForeignSource) => {
-            return Err(denial(
-                WorthQueryOutputDemandDenialKind::ForeignSettlement,
-                "required caller accepted authority belongs to another source",
-            ));
-        }
-        Err(_) => None,
-    };
+    // A reason withholds the candidate: the caller's Ready is verified in
+    // full.
+    let candidate = candidate
+        .map_err(required_settlement_denial)?
+        .ok()
+        .flatten();
     let Some(candidate) = candidate else {
         return Ok(None);
     };
@@ -90,6 +84,9 @@ where
         .invalidation_owner
         .currentness(&wave.positioned, candidate.recorded_identity(), admission)
         .map_err(admission_denial)?;
+    if matches!(posture, SourceSettlementCurrentness::Foreign) {
+        return Err(foreign_denial());
+    }
     if matches!(
         posture,
         SourceSettlementCurrentness::FullVerificationRequired(_)
@@ -111,18 +108,32 @@ where
         });
         // A commit that kept no fact gives the verifier nothing to establish.
         // Superseded where the wave stands, it refreshes here as a row whose
-        // facts read stale does.
+        // facts read stale does, and so does one whose rebase its meter
+        // stopped. One whose rebase could not compare a read does not: its
+        // recompute would meet the same comparison, and its acceptance is
+        // denied instead.
         let observation = wave.shared.selected().product().observation();
         let superseded_without_facts = matches!(
             &wave.caller_ready.completion().authority,
             Authority::Committed(receipt)
-                if receipt.currentness_without_facts_at(observation) == Some(false)
+                if receipt.currentness_without_facts_at(observation)
+                    == Some(FactlessCurrentness::Superseded)
         );
         match pending {
             Ok(Some(_)) => {}
             Err(ConsumedOutputVerificationStop::WorkExhausted) => return Err(work_denial()),
-            Ok(None) | Err(_) if superseded_without_facts => {}
-            Ok(None) | Err(_) => return Ok(None),
+            Ok(None)
+            | Err(
+                ConsumedOutputVerificationStop::Unavailable
+                | ConsumedOutputVerificationStop::PendingUpstream
+                | ConsumedOutputVerificationStop::RetryCurrentness(_),
+            ) if superseded_without_facts => {}
+            Ok(None)
+            | Err(
+                ConsumedOutputVerificationStop::Unavailable
+                | ConsumedOutputVerificationStop::PendingUpstream
+                | ConsumedOutputVerificationStop::RetryCurrentness(_),
+            ) => return Ok(None),
         }
     }
     let mut queue = RequiredQueueFrames::new();

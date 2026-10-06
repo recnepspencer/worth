@@ -118,7 +118,9 @@ fn external_pair_and_adjacency_remain_current_after_owned_endpoint_retirement() 
 
 #[test]
 fn a_retired_entity_changes_each_revision_fact_read_without_its_entity_fact() {
-    use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure;
+    use crate::domain_computation::primary_graph::application_attempt::{
+        Movement, WorthQuerySourceCurrentnessFailure,
+    };
     let world = installed_authorization_world(true);
     let (entity, _, facts) = reads(&world, "account-1");
     let revisions = facts
@@ -145,14 +147,22 @@ fn a_retired_entity_changes_each_revision_fact_read_without_its_entity_fact() {
         })
     };
     for fact in &revisions {
-        assert!(probe(fact, 64).unwrap().0, "{fact:?}");
+        assert_eq!(
+            probe(fact, 64).unwrap().0.movement(),
+            Movement::Unmoved,
+            "{fact:?}"
+        );
     }
     delete(&world, entity);
     // Source facts are kept in canonical key order, so a revision fact can be
     // read before the lifecycle fact of the same entity. Each answers alone.
     for fact in &revisions {
-        let (current, work) = probe(fact, 64).unwrap();
-        assert!(!current, "a retired entity changed this fact: {fact:?}");
+        let (movement, work) = probe(fact, 64).unwrap();
+        assert_eq!(
+            movement.movement(),
+            Movement::Moved,
+            "a retired entity changed this fact: {fact:?}"
+        );
         assert_eq!(
             probe(fact, work - 1),
             Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded),

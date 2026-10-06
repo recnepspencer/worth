@@ -11,7 +11,9 @@ use worth_relational::facade::{
     snapshots::SnapshotHandle,
 };
 
-use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure;
+use crate::domain_computation::primary_graph::application_attempt::{
+    Movement, WorthQuerySourceCurrentnessFailure,
+};
 
 use super::super::RecordedSettlementIdentity;
 use super::{
@@ -41,7 +43,9 @@ impl From<CompanionPreflightStop> for SettlementVerificationStop {
 impl From<super::SettlementRegistrationStop> for SettlementVerificationStop {
     fn from(stop: super::SettlementRegistrationStop) -> Self {
         match stop {
-            super::SettlementRegistrationStop::Alignment(_) => Self::Alignment,
+            super::SettlementRegistrationStop::Alignment(_)
+            | super::SettlementRegistrationStop::Foreign
+            | super::SettlementRegistrationStop::SourceUnavailable => Self::Alignment,
             super::SettlementRegistrationStop::Admission(reason) => Self::Admission(reason),
             super::SettlementRegistrationStop::Edit(reason) => Self::Edit(reason),
         }
@@ -100,7 +104,7 @@ impl SourceInvalidationOwner {
             SettlementCurrentness::PendingUpstream(_) => {
                 return Err(SettlementVerificationStop::PendingUpstream)
             }
-            SettlementCurrentness::FullVerificationRequired(_) => {
+            SettlementCurrentness::FullVerificationRequired(_) | SettlementCurrentness::Foreign => {
                 return Err(SettlementVerificationStop::Alignment)
             }
         };
@@ -136,11 +140,11 @@ impl SourceInvalidationOwner {
                 .map_err(SettlementVerificationStop::SourceRead)?
                 .unwrap_or(0);
             admission.work(prepaid as u64)?;
-            let (current, work) = fact
+            let (movement, work) = fact
                 .source_currentness_in(runtime, snapshot, remaining)
                 .map_err(SettlementVerificationStop::SourceRead)?;
             admission.work(work.saturating_sub(prepaid) as u64)?;
-            if !current {
+            if movement.movement() == Movement::Moved {
                 return Ok(DirtyReverification::ChangedOrdinal(ordinal));
             }
         }

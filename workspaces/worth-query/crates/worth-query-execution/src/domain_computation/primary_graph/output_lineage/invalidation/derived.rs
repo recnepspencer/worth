@@ -33,6 +33,10 @@ pub(in crate::domain_computation::primary_graph) use prepared::{
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) enum SettlementRegistrationStop {
     Alignment(FullVerificationReason),
+    /// The registration's basis or equality belongs to another source.
+    Foreign,
+    /// The selected source snapshot cannot be positioned.
+    SourceUnavailable,
     Admission(CompanionPreflightStop),
     Edit(CompanionCellEditStop),
 }
@@ -42,6 +46,21 @@ pub(in crate::domain_computation::primary_graph) enum SourceSettlementCurrentnes
     Dirty(OrdSet<usize>),
     PendingUpstream(OrdSet<Arc<RecordedSettlementIdentity>>),
     FullVerificationRequired(FullVerificationReason),
+    /// The selected source belongs to another runtime. Marks here say nothing
+    /// about it, and no reader takes it as a reason to verify.
+    Foreign,
+}
+
+impl SourceSettlementCurrentness {
+    /// No mark row answers for the settlement here: the source is foreign, or
+    /// its reason is one of [`FullVerificationReason::no_row_answers`].
+    pub(in crate::domain_computation::primary_graph) const fn no_row_answers(&self) -> bool {
+        match self {
+            Self::Foreign => true,
+            Self::FullVerificationRequired(reason) => reason.no_row_answers(),
+            Self::Clean | Self::Dirty(_) | Self::PendingUpstream(_) => false,
+        }
+    }
 }
 
 /// Only consumed-output evidence may interpret the actor's certified equality
@@ -122,9 +141,7 @@ impl SourceInvalidationOwner {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<SourceSettlementCurrentness, CompanionPreflightStop> {
         if selected.runtime_instance_id() != self.runtime_instance_id {
-            return Ok(SourceSettlementCurrentness::FullVerificationRequired(
-                FullVerificationReason::ForeignSource,
-            ));
+            return Ok(SourceSettlementCurrentness::Foreign);
         }
         let Some(cell) = self.cell_for_read(selected, admission)? else {
             return Ok(SourceSettlementCurrentness::FullVerificationRequired(
@@ -143,18 +160,7 @@ impl SourceInvalidationOwner {
             }
         };
         admission.ordered_read(aligned.settlement_count())?;
-        Ok(match aligned.currentness(identity) {
-            SettlementCurrentness::Clean => SourceSettlementCurrentness::Clean,
-            SettlementCurrentness::Dirty(ordinals) => {
-                SourceSettlementCurrentness::Dirty(ordinals.clone())
-            }
-            SettlementCurrentness::PendingUpstream(edges) => {
-                SourceSettlementCurrentness::PendingUpstream(edges.clone())
-            }
-            SettlementCurrentness::FullVerificationRequired(reason) => {
-                SourceSettlementCurrentness::FullVerificationRequired(reason)
-            }
-        })
+        Ok(copy_currentness(aligned.currentness(identity)))
     }
 
     pub(in crate::domain_computation::primary_graph) fn consumed_output_currentness(
@@ -246,9 +252,7 @@ impl SourceInvalidationOwner {
     ) -> Result<PreparedSettlementRegistration, SettlementRegistrationStop> {
         let selected = &registration.read_basis;
         if selected.runtime_instance_id() != self.runtime_instance_id {
-            return Err(SettlementRegistrationStop::Alignment(
-                FullVerificationReason::ForeignSource,
-            ));
+            return Err(SettlementRegistrationStop::Foreign);
         }
         let cell = self.cell_for_read(selected, admission)?.ok_or(
             SettlementRegistrationStop::Alignment(FullVerificationReason::MissingSettlement),
@@ -359,5 +363,6 @@ fn copy_currentness(currentness: SettlementCurrentness<'_>) -> SourceSettlementC
         SettlementCurrentness::FullVerificationRequired(reason) => {
             SourceSettlementCurrentness::FullVerificationRequired(reason)
         }
+        SettlementCurrentness::Foreign => SourceSettlementCurrentness::Foreign,
     }
 }

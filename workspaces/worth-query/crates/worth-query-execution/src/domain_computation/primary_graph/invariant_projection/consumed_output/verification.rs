@@ -12,7 +12,9 @@ mod replaced;
 mod restored_root;
 mod work_budget;
 use crate::domain_computation::primary_graph::{
-    application_attempt::{WorthQueryApplicationObservedFact, WorthQuerySourceCurrentnessFailure},
+    application_attempt::{
+        Movement, WorthQueryApplicationObservedFact, WorthQuerySourceCurrentnessFailure,
+    },
     output_lineage::{
         invalidation::{
             ConsumedOutputCurrentness, DirtyReverification, FullVerificationReason,
@@ -312,6 +314,10 @@ impl ConsumedOutputEvidence {
                 }
                 SourceSettlementCurrentness::PendingUpstream(_) => {
                     return Err(ConsumedOutputVerificationStop::PendingUpstream);
+                }
+                // As for a foreign selection above.
+                SourceSettlementCurrentness::Foreign => {
+                    return Err(ConsumedOutputVerificationStop::Unavailable);
                 }
                 SourceSettlementCurrentness::Dirty(_)
                     if evidence.verification_requirement.is_none() =>

@@ -11,7 +11,7 @@ use worth_relational::facade::transactions::{
 
 use super::*;
 use crate::domain_computation::primary_graph::{
-    application_attempt::WorthQuerySourceCurrentnessFailure,
+    application_attempt::{FactMovement, Movement, WorthQuerySourceCurrentnessFailure},
     output_reuse::{compare_retained_output_dependencies, OutputDependencySelection},
     tests::fixture::{
         installed_authorization_world, live_scope, publish_relational_mutation, AccountIdentity,
@@ -207,29 +207,36 @@ fn a_failed_rebase_carries_out_what_its_effect_did_to_its_source_reads() {
     };
     let before = vec![source_read.clone(), unrebasable.clone()];
     let past = vec![unrebasable.clone(), source_read.clone()];
-    assert_eq!(own_effect(before.clone(), 64), OwnEffectOnReads::Unmoved);
-    assert_eq!(own_effect(past.clone(), 64), OwnEffectOnReads::Unmoved);
+    let unmoved = OwnEffectOnReads(OwnEffect::Unmoved);
+    let moved = OwnEffectOnReads(OwnEffect::Moved);
+    assert_eq!(own_effect(before.clone(), 64), unmoved);
+    assert_eq!(own_effect(past.clone(), 64), unmoved);
+    let stopped = own_effect(past.clone(), 1);
     assert_eq!(
-        own_effect(past.clone(), 1),
-        OwnEffectOnReads::Moved,
-        "a source read the walk was not admitted to decide counts as moved"
+        stopped, moved,
+        "a source read the walk's meter stopped it asking about counts as moved"
+    );
+    assert_eq!(
+        stopped.at_own_publication(true),
+        FactlessCurrentness::Superseded,
+        "at its own publication it refreshes on a later meter, never a Terminal denial"
     );
     assert_eq!(
         own_effect(vec![unrebasable], 0),
-        OwnEffectOnReads::Unmoved,
+        unmoved,
         "a denied walk that left no source read undecided moved none"
     );
 
     set_note(&world, entity, locator, "moved");
-    assert_eq!(own_effect(before, 64), OwnEffectOnReads::Moved);
+    assert_eq!(own_effect(before, 64), moved);
     assert_eq!(
         own_effect(past, 64),
-        OwnEffectOnReads::Moved,
+        moved,
         "a source read past the failure is still decided"
     );
 }
 
-fn account_note(
+pub(super) fn account_note(
     world: &AuthorizationWorld,
     key: &str,
 ) -> (
@@ -259,7 +266,7 @@ fn account_note(
     (entity, locator)
 }
 
-fn planned(locator: &AspectFieldLocator) -> AspectFieldLocator {
+pub(super) fn planned(locator: &AspectFieldLocator) -> AspectFieldLocator {
     AspectFieldLocator::new(
         LocatorAuthority::Planned,
         locator.aspect().aspect_key().clone(),
@@ -267,7 +274,7 @@ fn planned(locator: &AspectFieldLocator) -> AspectFieldLocator {
     )
 }
 
-fn rebase_at_current(
+pub(super) fn rebase_at_current(
     world: &AuthorizationWorld,
     facts: Vec<WorthQueryApplicationObservedFact>,
 ) -> Arc<[WorthQueryApplicationObservedFact]> {
@@ -285,7 +292,7 @@ fn rebase_result_at_current(
 }
 
 /// The rebase under an admission of `maximum_work_visits`.
-fn rebase_result_within(
+pub(super) fn rebase_result_within(
     world: &AuthorizationWorld,
     facts: Vec<WorthQueryApplicationObservedFact>,
     maximum_work_visits: u64,
@@ -317,7 +324,7 @@ fn rebase_result_within(
 }
 
 fn current(world: &AuthorizationWorld, fact: &WorthQueryApplicationObservedFact) -> bool {
-    currentness(world, fact).unwrap().0
+    currentness(world, fact).unwrap().0.movement() == Movement::Unmoved
 }
 
 fn output_selection(
@@ -346,7 +353,7 @@ fn output_selection(
 fn currentness(
     world: &AuthorizationWorld,
     fact: &WorthQueryApplicationObservedFact,
-) -> Result<(bool, usize), WorthQuerySourceCurrentnessFailure> {
+) -> Result<(FactMovement, usize), WorthQuerySourceCurrentnessFailure> {
     let selected = world.selected_product();
     world
         .application

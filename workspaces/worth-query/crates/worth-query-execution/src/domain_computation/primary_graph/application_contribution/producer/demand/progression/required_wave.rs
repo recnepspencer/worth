@@ -17,7 +17,7 @@ use crate::domain_computation::primary_graph::{
         PendingUpstream, SelectedReadyReadmission, WorthQueryOutputDemandInterest,
         WorthQueryOutputDemandKey, WorthQueryOutputDemandSettlement,
     },
-    output_lineage::invalidation::{FullVerificationReason, InvalidationEditAdmission},
+    output_lineage::{invalidation::InvalidationEditAdmission, RequiredSettlementStop},
     product_operation::SharedSelectedProductOperation,
     WorthQueryPrimaryGraphApplicationRuntime,
 };
@@ -214,19 +214,12 @@ where
             selected.completion(),
             admission,
         );
-    let candidate = match candidate {
-        Ok(candidate) => candidate,
-        Err(FullVerificationReason::MarkingAdmissionDenied(stop)) => {
-            return Err(admission_denial(stop));
-        }
-        Err(FullVerificationReason::ForeignSource) => {
-            return Err(denial(
-                WorthQueryOutputDemandDenialKind::ForeignSettlement,
-                "required output accepted authority belongs to another source",
-            ));
-        }
-        Err(_) => None,
-    };
+    // A reason withholds the candidate: the selected Ready is verified in
+    // full.
+    let candidate = candidate
+        .map_err(required_settlement_denial)?
+        .ok()
+        .flatten();
     admission
         .charge_external_work(1)
         .map_err(admission_denial)?;
@@ -312,6 +305,22 @@ fn denial(
     subject: &'static str,
 ) -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(kind, subject)
+}
+
+/// An exact accepted-row lookup runs before any effect, so its stop denies
+/// the request. Only its reasons withhold a candidate.
+fn required_settlement_denial(stop: RequiredSettlementStop) -> WorthQueryOutputDemandDenial {
+    match stop {
+        RequiredSettlementStop::Admission(stop) => admission_denial(stop),
+        RequiredSettlementStop::Foreign => foreign_denial(),
+    }
+}
+
+fn foreign_denial() -> WorthQueryOutputDemandDenial {
+    denial(
+        WorthQueryOutputDemandDenialKind::ForeignSettlement,
+        "required accepted authority belongs to another source",
+    )
 }
 
 fn admission_denial(stop: CompanionPreflightStop) -> WorthQueryOutputDemandDenial {

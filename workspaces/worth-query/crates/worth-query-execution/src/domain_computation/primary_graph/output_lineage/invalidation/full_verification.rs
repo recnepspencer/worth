@@ -18,7 +18,7 @@ use super::{
     FullVerificationReason, InvalidationEditAdmission, SourceInvalidationOwner,
 };
 use crate::domain_computation::primary_graph::{
-    application_attempt::WorthQuerySourceCurrentnessFailure,
+    application_attempt::{Movement, WorthQuerySourceCurrentnessFailure},
     output_lineage::{RecordedSettlementIdentity, SealedNativeOutputWitness},
     WorthQueryApplicationObservedFact,
 };
@@ -37,6 +37,10 @@ pub(in crate::domain_computation::primary_graph) enum FullVerificationDecision {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum FullVerificationStop {
     Alignment(FullVerificationReason),
+    /// The selected source or a row it reaches belongs to another source.
+    Foreign,
+    /// The selected source snapshot cannot be positioned.
+    SourceUnavailable,
     Admission(CompanionPreflightStop),
     SourceRead(WorthQuerySourceCurrentnessFailure),
     OutputEvidenceUnavailable,
@@ -80,17 +84,13 @@ impl SourceInvalidationOwner {
                 RelationalSnapshotPositionAdmissionStop::AccountingOverflow => {
                     FullVerificationStop::Admission(CompanionPreflightStop::WorkCounterOverflow)
                 }
-                RelationalSnapshotPositionAdmissionStop::Position(denial) => {
-                    FullVerificationStop::Alignment(
-                        FullVerificationReason::SelectedSourceUnavailable(denial),
-                    )
+                RelationalSnapshotPositionAdmissionStop::Position(_) => {
+                    FullVerificationStop::SourceUnavailable
                 }
             })?;
         admission.work(1 + selected.branch_id().0.len() as u64)?;
         if &actual != selected || selected.runtime_instance_id() != self.runtime_instance_id {
-            return Err(FullVerificationStop::Alignment(
-                FullVerificationReason::ForeignSource,
-            ));
+            return Err(FullVerificationStop::Foreign);
         }
         let cell =
             self.cell_for_read(selected, admission)?
@@ -198,9 +198,7 @@ impl FullVerificationImage<'_> {
                 || row.read_basis.version_id() > self.selected.version_id()
                 || row.read_basis.position() > self.selected.position()
             {
-                return Err(FullVerificationStop::Alignment(
-                    FullVerificationReason::ForeignSource,
-                ));
+                return Err(FullVerificationStop::Foreign);
             }
             for fact in row.facts.iter() {
                 if !fact_is_current(fact, self.runtime, self.snapshot, admission)? {
@@ -246,11 +244,11 @@ fn fact_is_current(
         .map_err(FullVerificationStop::SourceRead)?
         .unwrap_or(0);
     admission.work(prepaid as u64)?;
-    let (current, work) = fact
+    let (movement, work) = fact
         .source_currentness_in(runtime, snapshot, available)
         .map_err(FullVerificationStop::SourceRead)?;
     admission.work(work.saturating_sub(prepaid) as u64)?;
-    Ok(current)
+    Ok(movement.movement() == Movement::Unmoved)
 }
 
 fn reserve_pending(

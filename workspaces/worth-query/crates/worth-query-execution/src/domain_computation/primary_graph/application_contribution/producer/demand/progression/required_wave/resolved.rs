@@ -288,13 +288,10 @@ where
             progress.predecessor().completion(),
             admission,
         );
-    let predecessor = match predecessor {
+    let predecessor = match predecessor.map_err(required_settlement_denial)? {
         Ok(Some(predecessor)) => predecessor,
-        Ok(None) | Err(FullVerificationReason::ForeignSource) => return Ok(None),
-        Err(FullVerificationReason::MarkingAdmissionDenied(stop)) => {
-            return Err(admission_denial(stop));
-        }
-        Err(_) => return Ok(None),
+        // No exact predecessor row: this edge matches nothing.
+        Ok(None) | Err(_) => return Ok(None),
     };
     let identity_work = std::mem::size_of::<RecordedSettlementIdentity>()
         .checked_mul(2)

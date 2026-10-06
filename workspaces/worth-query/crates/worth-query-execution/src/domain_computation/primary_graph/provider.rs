@@ -5,7 +5,7 @@ pub(in crate::domain_computation::primary_graph::provider) use application_attem
 pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::ManagedUnpublishedAttempt;
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::RetainedTouchedRecords;
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::{
-    OwnEffectOnReads, RebaseVerificationReason,
+    FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason,
 };
 mod application_attempt_work;
 mod application_decision_fact;

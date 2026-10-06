@@ -125,15 +125,9 @@ impl SourceInvalidationOwner {
         let actual = runtime
             .read_truth()
             .positioned_snapshot(snapshot)
-            .map_err(|reason| {
-                SettlementRegistrationStop::Alignment(
-                    FullVerificationReason::SelectedSourceUnavailable(reason),
-                )
-            })?;
+            .map_err(|_| SettlementRegistrationStop::SourceUnavailable)?;
         if &actual != selected || selected.runtime_instance_id() != self.runtime_instance_id {
-            return Err(SettlementRegistrationStop::Alignment(
-                FullVerificationReason::ForeignSource,
-            ));
+            return Err(SettlementRegistrationStop::Foreign);
         }
         let cell = self.cell_for_read(selected, admission)?.ok_or(
             SettlementRegistrationStop::Alignment(FullVerificationReason::MissingSettlement),

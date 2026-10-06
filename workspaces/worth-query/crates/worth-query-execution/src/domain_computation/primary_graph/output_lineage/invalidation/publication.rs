@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use worth_relational::facade::{runtime::RelationalRuntime, snapshots::SnapshotHandle};
+use worth_relational::facade::{
+    mvcc::CompanionPreflightStop, runtime::RelationalRuntime, snapshots::SnapshotHandle,
+};
 
 use crate::domain_computation::primary_graph::provider::{
     RebaseVerificationReason, WorthQueryPrimaryGraphCommittedApplication,
@@ -19,10 +21,7 @@ pub(in crate::domain_computation::primary_graph) fn collect_consumed_output_upst
         Item = &'a crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence,
     >,
     admission: &mut super::InvalidationEditAdmission,
-) -> Result<
-    im::OrdSet<Arc<RecordedSettlementIdentity>>,
-    worth_relational::facade::mvcc::CompanionPreflightStop,
-> {
+) -> Result<im::OrdSet<Arc<RecordedSettlementIdentity>>, CompanionPreflightStop> {
     use super::admission::IndexAdmission;
     let mut upstream = im::OrdSet::new();
     for consumed in consumed_outputs {
@@ -34,8 +33,9 @@ pub(in crate::domain_computation::primary_graph) fn collect_consumed_output_upst
 }
 
 /// Successful World effect is already authoritative here. Failure to retain
-/// derived evidence records its typed full-verification requirement; it cannot
-/// turn that performed effect into a no-effect refusal. A commit whose facts
+/// derived evidence records its typed full-verification requirement, and a
+/// stop records that the registration is incomplete; neither can turn that
+/// performed effect into a no-effect refusal. A commit whose facts
 /// could not be rebased retains none, so no settlement is registered for it.
 pub(in crate::domain_computation::primary_graph) fn register_completed(
     owner: &SourceInvalidationOwner,
@@ -55,14 +55,14 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
     let read_basis = runtime
         .read_truth()
         .positioned_snapshot(snapshot)
-        .map_err(FullVerificationReason::SelectedSourceUnavailable)?;
+        .map_err(|_| registration_reason(SettlementRegistrationStop::SourceUnavailable))?;
     let output_witness = output_witness.ok_or(FullVerificationReason::NativeRevisionUnavailable)?;
     let output_facts = owner
         .prepare_performed_output_facts(output_witness, admission)
-        .map_err(FullVerificationReason::MarkingAdmissionDenied)?
+        .map_err(stopped)?
         .ok_or(FullVerificationReason::NativeRevisionUnavailable)?;
-    let upstream = collect_consumed_output_upstream(consumed_outputs, admission)
-        .map_err(FullVerificationReason::MarkingAdmissionDenied)?;
+    let upstream =
+        collect_consumed_output_upstream(consumed_outputs, admission).map_err(stopped)?;
     for consumed in consumed_outputs {
         // The reader compared a restored output in full at the basis it read.
         // That output gets its row first: a consumer registered over a missing
@@ -74,8 +74,7 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
             return Err(FullVerificationReason::MissingSettlement);
         }
     }
-    let stale_at_read_basis = own_effect_stale_ordinals(application, admission)
-        .map_err(FullVerificationReason::MarkingAdmissionDenied)?;
+    let stale_at_read_basis = own_effect_stale_ordinals(application, admission).map_err(stopped)?;
     owner
         .register_settlement(
             SettlementRegistration {
@@ -110,27 +109,29 @@ pub(in crate::domain_computation::primary_graph) fn register_republished(
     read_basis: worth_relational::facade::runtime::PositionedRelationalSnapshot,
     admission: &mut super::InvalidationEditAdmission,
 ) -> Result<(), FullVerificationReason> {
+    use super::SourceSettlementCurrentness as Currentness;
     use FullVerificationReason as Reason;
     let requirement = match owner
         .currentness(&read_basis, predecessor, admission)
-        .map_err(Reason::MarkingAdmissionDenied)?
+        .map_err(stopped)?
     {
-        super::SourceSettlementCurrentness::FullVerificationRequired(
-            reason @ (Reason::MissingSettlement
-            | Reason::CheckpointRestore
-            | Reason::ForeignSource
-            | Reason::DifferentBranch
-            | Reason::BeforeReadBasis),
-        ) => return Err(reason),
-        super::SourceSettlementCurrentness::FullVerificationRequired(reason) => reason,
-        _ => Reason::RetainedDeliveryGap,
+        // No row here continues into the republication's. A foreign source
+        // is a stop, so the registration is incomplete.
+        Currentness::Foreign => return Err(Reason::RegistrationIncomplete),
+        Currentness::FullVerificationRequired(reason) if reason.no_row_answers() => {
+            return Err(reason)
+        }
+        Currentness::FullVerificationRequired(reason) => reason,
+        Currentness::Clean | Currentness::Dirty(_) | Currentness::PendingUpstream(_) => {
+            Reason::RetainedDeliveryGap
+        }
     };
     let output_facts = owner
         .prepare_performed_output_facts(output_witness, admission)
-        .map_err(Reason::MarkingAdmissionDenied)?
+        .map_err(stopped)?
         .ok_or(Reason::NativeRevisionUnavailable)?;
-    let upstream = collect_consumed_output_upstream(consumed_outputs, admission)
-        .map_err(Reason::MarkingAdmissionDenied)?;
+    let upstream =
+        collect_consumed_output_upstream(consumed_outputs, admission).map_err(stopped)?;
     owner
         .register_settlement(
             SettlementRegistration {
@@ -155,7 +156,7 @@ impl From<RebaseVerificationReason> for FullVerificationReason {
         match reason {
             RebaseVerificationReason::NativeRevisionUnavailable => Self::NativeRevisionUnavailable,
             RebaseVerificationReason::UnsupportedDecisionFact => Self::UnsupportedFact,
-            RebaseVerificationReason::AdmissionDenied(stop) => Self::MarkingAdmissionDenied(stop),
+            RebaseVerificationReason::AdmissionDenied(stop) => stopped(stop),
         }
     }
 }
@@ -163,11 +164,17 @@ impl From<RebaseVerificationReason> for FullVerificationReason {
 fn registration_reason(stop: SettlementRegistrationStop) -> FullVerificationReason {
     match stop {
         SettlementRegistrationStop::Alignment(reason) => reason,
-        SettlementRegistrationStop::Admission(stop) => {
-            FullVerificationReason::MarkingAdmissionDenied(stop)
-        }
-        SettlementRegistrationStop::Edit(stop) => FullVerificationReason::DerivedEditPending(stop),
+        SettlementRegistrationStop::Foreign
+        | SettlementRegistrationStop::SourceUnavailable
+        | SettlementRegistrationStop::Admission(_)
+        | SettlementRegistrationStop::Edit(_) => FullVerificationReason::RegistrationIncomplete,
     }
+}
+
+/// An admission stop after the World effect cannot deny it. The row records
+/// that its registration is incomplete, never the stop itself.
+fn stopped(stop: CompanionPreflightStop) -> FullVerificationReason {
+    registration_reason(SettlementRegistrationStop::Admission(stop))
 }
 
 /// The registration reads at the post-effect snapshot, so no later delivery

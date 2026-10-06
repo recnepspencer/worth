@@ -9,6 +9,8 @@
 //! lineage settlement the Ready posted leaves with it, so the execution
 //! decides Fresh and never reuses the output it evicted.
 
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+
 use super::super::refreshed_rejoin::awaited_by_stale_owner;
 use super::super::{
     DemandRecord, DemandState, WorthQueryOutputAdvancement, WorthQueryOutputCheckpoint,
@@ -18,24 +20,27 @@ use crate::domain_computation::primary_graph::output_lineage::invalidation::Inva
 
 impl WorthQueryOutputDemandRegistry {
     /// Release the idle Ready of `interest`'s row when that interest alone
-    /// holds the row. Whether it did; `None` when the request's work cannot
-    /// pay for the walk.
+    /// holds the row. Whether it did; the stop of a walk the request's work
+    /// cannot pay for releases nothing.
     pub(in crate::domain_computation::primary_graph) fn release_joined_ready(
         &self,
         interest: &WorthQueryOutputDemandInterest,
         admission: &mut InvalidationEditAdmission,
-    ) -> Option<bool> {
+    ) -> Result<bool, CompanionPreflightStop> {
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let rows = u64::try_from(state.records.len()).ok()?;
-        admission.charge_external_work(rows.checked_add(4)?).ok()?;
+        let rows = u64::try_from(state.records.len())
+            .ok()
+            .and_then(|rows| rows.checked_add(4))
+            .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
+        admission.charge_external_work(rows)?;
         let key = &interest.key;
         if !state.records.get(key).is_some_and(only_joined)
             || awaited_by_stale_owner(&state.records, key)
         {
-            return Some(false);
+            return Ok(false);
         }
         let claims = state.release_record_prerequisites(key);
         let record = state.records.get_mut(key).expect("the row was checked");
@@ -48,7 +53,7 @@ impl WorthQueryOutputDemandRegistry {
         state.prune_completed_custody();
         drop(state);
         drop((ready, readmission, claims, retired));
-        Some(true)
+        Ok(true)
     }
 }
 

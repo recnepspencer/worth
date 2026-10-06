@@ -130,9 +130,7 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
         };
         let basis = &row.read_basis;
         if basis.runtime_instance_id() != self.selected.runtime_instance_id() {
-            return SettlementCurrentness::FullVerificationRequired(
-                FullVerificationReason::ForeignSource,
-            );
+            return SettlementCurrentness::Foreign;
         }
         if basis.branch_id() != self.selected.branch_id() {
             return SettlementCurrentness::FullVerificationRequired(
@@ -197,7 +195,9 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
         }
         admission.ordered_read(self.state.settlements.len())?;
         admission.ordered_read(self.retained.past.len())?;
-        if let SettlementCurrentness::FullVerificationRequired(_) = self.currentness(identity) {
+        if let SettlementCurrentness::FullVerificationRequired(_) | SettlementCurrentness::Foreign =
+            self.currentness(identity)
+        {
             return Ok(EqualOutputCurrentness::FullVerificationRequired);
         }
         let mut current = identity;
@@ -225,7 +225,8 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
                     SettlementCurrentness::Dirty(_) | SettlementCurrentness::PendingUpstream(_) => {
                         EqualOutputCurrentness::Pending
                     }
-                    SettlementCurrentness::FullVerificationRequired(_) => {
+                    SettlementCurrentness::FullVerificationRequired(_)
+                    | SettlementCurrentness::Foreign => {
                         EqualOutputCurrentness::FullVerificationRequired
                     }
                 });

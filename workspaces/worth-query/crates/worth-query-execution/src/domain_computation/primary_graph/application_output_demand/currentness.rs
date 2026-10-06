@@ -3,9 +3,11 @@ use std::num::NonZeroUsize;
 use worth_query_installation::facade::ApplicationSchema;
 
 use crate::domain_computation::primary_graph::{
-    application_attempt::WorthQuerySourceCurrentnessFailure, WorthQueryApplicationCommitReceipt,
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-    WorthQueryOutputDemandSettlement, WorthQuerySelectedProductOperation,
+    application_attempt::{Movement, WorthQuerySourceCurrentnessFailure},
+    provider::FactlessCurrentness,
+    WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial,
+    WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandSettlement,
+    WorthQuerySelectedProductOperation,
 };
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
@@ -164,20 +166,24 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     }
 }
 
-/// A settlement that retains no fact has nothing to compare. The commit of
-/// a failed rebase is current while its own publication is the one selected
-/// and its own effect moved none of its reads. It is superseded anywhere
-/// later, and at its own publication where its effect moved a read, which is
-/// what a commit that rebased answers there.
+/// A settlement that retains no fact has nothing to compare: the commit of a
+/// failed rebase answers for itself. One whose rebase could not compare a read
+/// it asked about is denied, never superseded: a recompute's own commit would
+/// meet the same comparison. A rebase its meter stopped counted the reads it
+/// left as moved, so that commit is superseded and refreshes. A settlement
+/// with neither facts nor such a commit is superseded.
 fn require_own_publication(
     receipt: Option<&WorthQueryApplicationCommitReceipt>,
     observation: &worth_runtime_world::facade::ProductBranchObservation,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
-    let own = receipt.and_then(|receipt| receipt.currentness_without_facts_at(observation));
-    if own == Some(true) {
-        Ok(())
-    } else {
-        Err(denial(WorthQueryOutputDemandDenialKind::Superseded))
+    match receipt.and_then(|receipt| receipt.currentness_without_facts_at(observation)) {
+        Some(FactlessCurrentness::Current) => Ok(()),
+        Some(FactlessCurrentness::Undecidable) => Err(denial(
+            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+        )),
+        Some(FactlessCurrentness::Superseded) | None => {
+            Err(denial(WorthQueryOutputDemandDenialKind::Superseded))
+        }
     }
 }
 
@@ -229,7 +235,7 @@ fn require_current_facts<'fact>(
     for fact in facts {
         let available = *remaining_work;
         let prepaid = prepay_exact_probe(fact, remaining_work)?;
-        let (current, work) = fact
+        let (movement, work) = fact
             .source_currentness_in(relational, snapshot, available)
             .map_err(|failure| match failure {
                 WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => {
@@ -241,7 +247,7 @@ fn require_current_facts<'fact>(
                 ),
             })?;
         *remaining_work -= work.saturating_sub(prepaid);
-        if !current {
+        if movement.movement() == Movement::Moved {
             return Err(denial_subject(
                 WorthQueryOutputDemandDenialKind::Superseded,
                 fact.locator_identity(),

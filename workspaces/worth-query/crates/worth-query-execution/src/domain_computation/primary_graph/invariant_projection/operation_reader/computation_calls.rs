@@ -17,8 +17,8 @@ use worth_relational::facade::identity::EntityId;
 use super::decision_reads::DecisionReadOutcome;
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
 use crate::domain_computation::primary_graph::application_attempt::{
-    observe_fact, ComputationRead, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact,
+    observe_fact, ComputationRead, ObservedRetained, WorthQueryApplicationAttemptDenial,
+    WorthQueryApplicationFactKey,
 };
 use crate::domain_computation::primary_graph::application_contribution::Comparator;
 use crate::domain_computation::primary_graph::invariant_projection::WorthQueryInvariantProjectionWork;
@@ -96,19 +96,21 @@ impl<Schema, Operation>
         true
     }
 
-    /// The fact `key` names at this projection's snapshot. Comparing a
-    /// retained fact charges nothing: a full run would not compare it.
+    /// The fact `key` names at this projection's snapshot, comparable only
+    /// with the fact retained under it. Comparing a retained fact charges
+    /// nothing: a full run would not compare it.
     pub(in crate::domain_computation::primary_graph) fn observe_retained(
         &self,
-        _: &Comparator,
+        comparator: &Comparator,
         key: &WorthQueryApplicationFactKey,
-    ) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
+    ) -> Result<ObservedRetained, WorthQueryApplicationAttemptDenial> {
         observe_fact(
             &*self.reader.runtime,
             self.reader.snapshot,
             self.reader.layout,
             key,
         )
+        .map(|observed| ObservedRetained::new(comparator, observed))
     }
 
     /// Enters a fact a carried call read as an ordinary admitted read of that

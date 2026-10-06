@@ -17,7 +17,7 @@ use super::super::{
 use super::{PreparedInputCutoffBasis, RetainedInputCutoffCandidate};
 use crate::domain_computation::primary_graph::{
     application_attempt::{
-        PreparedDecisionReuseContext, WorthQueryApplicationObservedFact,
+        Movement, PreparedDecisionReuseContext, WorthQueryApplicationObservedFact,
         WorthQuerySourceCurrentnessFailure,
     },
     application_contribution::MatchedRequiredPredecessors,
@@ -28,7 +28,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 /// What the cutoff does not verify: a row still in its checkpoint posture,
-/// and a settlement the owner holds no row for under the selected source.
+/// and a settlement no mark row answers for under the selected source.
 /// Selection asks this before it calls a live output exact, so the two
 /// cannot disagree about one row.
 pub(in crate::domain_computation::primary_graph) fn cutoff_declines(
@@ -36,16 +36,7 @@ pub(in crate::domain_computation::primary_graph) fn cutoff_declines(
     settlement: Option<&SourceSettlementCurrentness>,
 ) -> bool {
     requirement == Some(FullVerificationReason::CheckpointRestore)
-        || matches!(
-            settlement,
-            Some(SourceSettlementCurrentness::FullVerificationRequired(
-                FullVerificationReason::CheckpointRestore
-                    | FullVerificationReason::MissingSettlement
-                    | FullVerificationReason::ForeignSource
-                    | FullVerificationReason::DifferentBranch
-                    | FullVerificationReason::BeforeReadBasis
-            ))
-        )
+        || settlement.is_some_and(SourceSettlementCurrentness::no_row_answers)
 }
 
 /// A prior performed record and the exact native read basis checked for reuse.
@@ -195,6 +186,8 @@ impl RetainedInputCutoffCandidate {
                 return Err(InputCutoffVerificationStop::PendingUpstream);
             }
             SourceSettlementCurrentness::FullVerificationRequired(_) => verify_full_prefix = true,
+            // `cutoff_declines` declined it above.
+            SourceSettlementCurrentness::Foreign => return Ok(None),
         }
         let current = if verify_full_prefix {
             marked_facts_permit_reuse(facts.iter().take(count), runtime, snapshot, currentness)?
@@ -319,7 +312,7 @@ fn fact_is_current(
         .map_err(|_| InputCutoffVerificationStop::WorkExhausted)?
         .unwrap_or(0);
     admission.charge_external_work(prepaid as u64)?;
-    let (current, work) = match fact.source_currentness_in(runtime, snapshot, remaining) {
+    let (movement, work) = match fact.source_currentness_in(runtime, snapshot, remaining) {
         Ok(value) => value,
         Err(WorthQuerySourceCurrentnessFailure::Unavailable) => return Ok(false),
         Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) => {
@@ -327,7 +320,7 @@ fn fact_is_current(
         }
     };
     admission.charge_external_work(work.saturating_sub(prepaid) as u64)?;
-    Ok(current)
+    Ok(movement.movement() == Movement::Unmoved)
 }
 
 mod matched_roots;

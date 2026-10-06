@@ -48,24 +48,28 @@ where
         let Some(interest) = demand.interest.as_ref() else {
             return stop;
         };
-        let Some(published) = demand
+        match demand
             .required_continuations
             .end_all(&self.output_demands, admission)
-        else {
-            return stop;
-        };
-        if published
-            || self
-                .output_demands
-                .another_demand_holds_custody(interest.key(), admission)
-                != Some(false)
-            || (!demand.settled
-                && self
-                    .output_demands
-                    .release_joined_ready(interest, admission)
-                    != Some(false))
         {
-            return stop;
+            Ok(false) => {}
+            Ok(true) | Err(_) => return stop,
+        }
+        match self
+            .output_demands
+            .another_demand_holds_custody(interest.key(), admission)
+        {
+            Ok(false) => {}
+            Ok(true) | Err(_) => return stop,
+        }
+        if !demand.settled {
+            match self
+                .output_demands
+                .release_joined_ready(interest, admission)
+            {
+                Ok(false) => {}
+                Ok(true) | Err(_) => return stop,
+            }
         }
         stop.with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Terminal)
     }
@@ -78,10 +82,14 @@ where
     ) -> WorthQueryOutputDemandDenial {
         if stop.kind() != WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
             || stop.recovery_posture() != WorthQueryOutputDemandRecoveryPosture::Retryable
-            || self.output_demands.a_demand_holds_custody(admission) != Some(false)
         {
             return stop;
         }
-        stop.with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Terminal)
+        match self.output_demands.a_demand_holds_custody(admission) {
+            Ok(false) => {
+                stop.with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Terminal)
+            }
+            Ok(true) | Err(_) => stop,
+        }
     }
 }

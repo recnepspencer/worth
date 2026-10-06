@@ -4,6 +4,7 @@
 use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 use crate::domain_computation::primary_graph::application_output_demand::{
     ReadyCompletion, WorthQueryAcceptedOutputAuthority,
@@ -19,6 +20,36 @@ mod current_accepted;
 pub(in crate::domain_computation::primary_graph) use current_accepted::{
     BoundCurrentAcceptedOutput, CurrentAcceptedResult, CurrentAcceptedStop,
 };
+#[cfg(test)]
+mod tests;
+
+/// What ends an exact accepted-row lookup, before any effect. Each one denies
+/// the request; a reason only leaves the row uncertified.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph) enum RequiredSettlementStop {
+    Admission(CompanionPreflightStop),
+    /// The accepted authority belongs to another runtime or schema.
+    Foreign,
+}
+
+/// The lookup's two early ends, which `resolve_required_settlement` keeps
+/// apart.
+enum Unresolved {
+    Stop(RequiredSettlementStop),
+    Reason(FullVerificationReason),
+}
+
+impl From<CompanionPreflightStop> for Unresolved {
+    fn from(stop: CompanionPreflightStop) -> Self {
+        Self::Stop(RequiredSettlementStop::Admission(stop))
+    }
+}
+
+impl From<FullVerificationReason> for Unresolved {
+    fn from(reason: FullVerificationReason) -> Self {
+        Self::Reason(reason)
+    }
+}
 
 /// Only exact accepted authority resolution can mint this candidate. A prior
 /// partition lookup cannot substitute a newer row or certify current demand.
@@ -48,16 +79,35 @@ impl AcceptedCurrentCandidate {
 }
 
 impl WorthQueryApplicationOutputLineage {
+    /// The exact accepted row for `completion`. A stop is the outer error. A
+    /// reason the row cannot be certified exactly is the inner one, and the
+    /// reader then verifies the output in full.
+    #[allow(clippy::type_complexity)]
     pub(in crate::domain_computation::primary_graph) fn resolve_required_settlement(
         &self,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
         completion: &ReadyCompletion,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<Option<AcceptedCurrentCandidate>, FullVerificationReason> {
-        admission
-            .charge_external_work(2)
-            .map_err(FullVerificationReason::MarkingAdmissionDenied)?;
+    ) -> Result<
+        Result<Option<AcceptedCurrentCandidate>, FullVerificationReason>,
+        RequiredSettlementStop,
+    > {
+        match self.exact_required_settlement(runtime_authority, schema, completion, admission) {
+            Ok(candidate) => Ok(Ok(candidate)),
+            Err(Unresolved::Reason(reason)) => Ok(Err(reason)),
+            Err(Unresolved::Stop(stop)) => Err(stop),
+        }
+    }
+
+    fn exact_required_settlement(
+        &self,
+        runtime_authority: u64,
+        schema: &ApplicationSchemaBindingIdentity,
+        completion: &ReadyCompletion,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<Option<AcceptedCurrentCandidate>, Unresolved> {
+        admission.charge_external_work(2)?;
         let authority = &completion.authority;
         let (correspondence, scope, coordinate, source_identity, partition, dependency, key, pin) =
             match authority {
@@ -65,15 +115,15 @@ impl WorthQueryApplicationOutputLineage {
                     if receipt.principal_scope().runtime_authority() != runtime_authority
                         || receipt.principal_scope().binding_identity() != schema
                     {
-                        return Err(FullVerificationReason::ForeignSource);
+                        return Err(Unresolved::Stop(RequiredSettlementStop::Foreign));
                     }
                     let publication = receipt.committed_product_publication();
                     let idempotency = receipt.idempotency_binding();
                     let Some(source) = idempotency.source_identity() else {
-                        return Err(FullVerificationReason::NativeRevisionUnavailable);
+                        return Err(FullVerificationReason::NativeRevisionUnavailable.into());
                     };
                     let Some(partition) = idempotency.source_partition_identity() else {
-                        return Err(FullVerificationReason::UnsupportedFact);
+                        return Err(FullVerificationReason::UnsupportedFact.into());
                     };
                     (
                         receipt.output_correspondence(),
@@ -155,56 +205,43 @@ impl WorthQueryApplicationOutputLineage {
                 })
                 .map(|recorded| &recorded.settlement_identity)
                 .ok_or(FullVerificationReason::CheckpointRestore)?,
-            (None, _) => return Err(FullVerificationReason::NativeRevisionUnavailable),
+            (None, _) => return Err(FullVerificationReason::NativeRevisionUnavailable.into()),
         };
         if pin.source() != &source || pin.coordinate() != coordinate {
-            return Err(FullVerificationReason::NativeRevisionUnavailable);
+            return Err(FullVerificationReason::NativeRevisionUnavailable.into());
         }
         // The accepted coordinate chooses one row at each index level. Each
         // ordered descent is paid before the corresponding selected read.
-        admission
-            .charge_external_work(
-                super::prepared_slot::tree_work::<SemanticSource>(self.by_source.len()).ok_or(
-                    FullVerificationReason::MarkingAdmissionDenied(
-                        worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow,
-                    ),
-                )?,
-            )
-            .map_err(FullVerificationReason::MarkingAdmissionDenied)?;
+        admission.charge_external_work(
+            super::prepared_slot::tree_work::<SemanticSource>(self.by_source.len())
+                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
+        )?;
         let Some(occurrences) = self.by_source.get(&source) else {
-            return Err(FullVerificationReason::NativeRevisionUnavailable);
+            return Err(FullVerificationReason::NativeRevisionUnavailable.into());
         };
         admission
             .charge_external_work(
                 super::prepared_slot::tree_work::<
                     worth_runtime_world::facade::ProductBranchIncarnation,
                 >(occurrences.len())
-                .ok_or(FullVerificationReason::MarkingAdmissionDenied(
-                    worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow,
-                ))?,
-            )
-            .map_err(FullVerificationReason::MarkingAdmissionDenied)?;
+                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
+            )?;
         let Some(history) = occurrences.get(&coordinate.occurrence) else {
-            return Err(FullVerificationReason::NativeRevisionUnavailable);
+            return Err(FullVerificationReason::NativeRevisionUnavailable.into());
         };
-        admission
-            .charge_external_work(super::prepared_slot::tree_work::<u64>(history.len()).ok_or(
-                FullVerificationReason::MarkingAdmissionDenied(
-                    worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow,
-                ),
-            )?)
-            .map_err(FullVerificationReason::MarkingAdmissionDenied)?;
+        admission.charge_external_work(
+            super::prepared_slot::tree_work::<u64>(history.len())
+                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
+        )?;
         let Some(records) = history.get(&coordinate.generation) else {
-            return Err(FullVerificationReason::NativeRevisionUnavailable);
+            return Err(FullVerificationReason::NativeRevisionUnavailable.into());
         };
-        admission
-            .charge_external_work(12)
-            .map_err(FullVerificationReason::MarkingAdmissionDenied)?;
+        admission.charge_external_work(12)?;
         let Some(cell) = records.get(pin.slot()) else {
-            return Err(FullVerificationReason::NativeRevisionUnavailable);
+            return Err(FullVerificationReason::NativeRevisionUnavailable.into());
         };
         let Some(recorded) = cell.get() else {
-            return Err(FullVerificationReason::NativeRevisionUnavailable);
+            return Err(FullVerificationReason::NativeRevisionUnavailable.into());
         };
         if !Arc::ptr_eq(&recorded.settlement_identity, pin)
             || !std::ptr::eq(recorded.correspondence.as_ref(), correspondence)
@@ -214,7 +251,7 @@ impl WorthQueryApplicationOutputLineage {
             || recorded.idempotency_key_identity != key
             || recorded.correspondence.binding_type() != Some(output_binding)
         {
-            return Err(FullVerificationReason::NativeRevisionUnavailable);
+            return Err(FullVerificationReason::NativeRevisionUnavailable.into());
         }
         Ok(Some(AcceptedCurrentCandidate {
             selected: RetainedInputCutoffCandidate::from_exact_cell(Arc::clone(cell)),

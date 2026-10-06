@@ -1,7 +1,9 @@
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 use crate::domain_computation::primary_graph::{
-    application_attempt::{WorthQueryApplicationObservedFact, WorthQuerySourceCurrentnessFailure},
+    application_attempt::{
+        Movement, WorthQueryApplicationObservedFact, WorthQuerySourceCurrentnessFailure,
+    },
     output_lineage::{
         cutoff_declines,
         invalidation::{FullVerificationReason, InvalidationEditAdmission},
@@ -38,7 +40,7 @@ pub(in crate::domain_computation::primary_graph) fn compare_retained_output_depe
             return Err(work_denial());
         }
         *remaining_work -= prepaid;
-        let (current, work) = fact
+        let (movement, work) = fact
             .source_currentness_in(runtime, snapshot, available)
             .map_err(|failure| match failure {
                 WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => {
@@ -55,7 +57,7 @@ pub(in crate::domain_computation::primary_graph) fn compare_retained_output_depe
                 }
             })?;
         *remaining_work -= work.saturating_sub(prepaid);
-        if !current {
+        if movement.movement() == Movement::Moved {
             return Ok(OutputDependencySelection::FreshRequired);
         }
     }

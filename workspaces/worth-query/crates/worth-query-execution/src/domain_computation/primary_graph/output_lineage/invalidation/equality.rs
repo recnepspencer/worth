@@ -27,7 +27,7 @@ pub(super) fn certify(
     let successor = equality.successor();
     admission.work(2)?;
     if predecessor == successor || predecessor.source() != successor.source() {
-        return Err(missing(FullVerificationReason::ForeignSource));
+        return Err(SettlementRegistrationStop::Foreign);
     }
     admission.ordered_read(state.settlements.len())?;
     if !state.settlements.contains_key(predecessor) {

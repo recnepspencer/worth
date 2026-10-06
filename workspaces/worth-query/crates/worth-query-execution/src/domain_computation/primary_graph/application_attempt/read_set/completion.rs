@@ -136,4 +136,12 @@ impl<Schema, Operation, Input, Scope, Phase>
     ) -> Option<&SealedComputationFacts> {
         self.computation_facts.as_ref()
     }
+
+    /// The facts the decision read, for tests outside the attempt.
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) fn decision_facts(
+        &self,
+    ) -> &[super::WorthQueryApplicationObservedFact] {
+        &self.facts
+    }
 }

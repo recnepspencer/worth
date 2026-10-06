@@ -1,5 +1,5 @@
 use crate::domain_computation::primary_graph::{
-    application_attempt::WorthQueryApplicationObservedFact as Fact,
+    application_attempt::{Movement, WorthQueryApplicationObservedFact as Fact},
     tests::{
         application_attempt::{authenticated_principal, resolved_account},
         fixture::{
@@ -177,8 +177,10 @@ fn currentness(world: &AuthorizationWorld, fact: &Fact) -> (bool, usize) {
         .primary_provider
         .graph
         .with_runtime(|runtime| {
-            fact.source_currentness_in(runtime, selected.application_basis().snapshot_handle(), 3)
-                .unwrap()
+            let (movement, work) = fact
+                .source_currentness_in(runtime, selected.application_basis().snapshot_handle(), 3)
+                .unwrap();
+            (movement.movement() == Movement::Unmoved, work)
         })
 }
 

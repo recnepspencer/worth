@@ -1,6 +1,7 @@
 //! Recover the original output expectations, never expectations from a new head.
 
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::Movement;
 
 #[cfg(test)]
 mod tests;
@@ -37,10 +38,10 @@ impl SealedNativeOutputWitness {
                 _ => return Ok(false),
             };
             admission.charge_external_work(u64::try_from(work).map_err(|_| overflow())?)?;
-            let current = fact.source_currentness_in(relational, snapshot, work);
-            match current {
-                Ok((true, actual)) if actual <= work => {}
-                _ => return Ok(false),
+            match fact.source_currentness_in(relational, snapshot, work) {
+                Ok((movement, actual))
+                    if movement.movement() == Movement::Unmoved && actual <= work => {}
+                Ok(_) | Err(_) => return Ok(false),
             }
         }
         Ok(true)

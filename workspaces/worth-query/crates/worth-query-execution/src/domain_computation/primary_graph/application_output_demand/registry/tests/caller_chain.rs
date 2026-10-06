@@ -1,5 +1,6 @@
 use super::closed_retirement::ready;
 use super::*;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 fn superseded() -> DemandState {
     DemandState::Failed(WorthQueryOutputDemandDenial::new(
@@ -15,7 +16,7 @@ fn another_demand_holds_custody(
     upstream_state: DemandState,
     upstream_interests: usize,
     others: Vec<(WorthQueryOutputDemandKey, DemandRecord)>,
-) -> Option<bool> {
+) -> Result<bool, CompanionPreflightStop> {
     let registry = WorthQueryOutputDemandRegistry::default();
     let upstream = key_with_identity("upstream", 5, 1, 90);
     let dependent = key_with_identity("dependent", 5, 2, 50);
@@ -49,7 +50,7 @@ fn a_caller_alone_with_its_chain_waits_for_no_other_demand() {
     );
     assert_eq!(
         another_demand_holds_custody(ready(), 0, vec![cached]),
-        Some(false)
+        Ok(false)
     );
 }
 
@@ -61,7 +62,7 @@ fn a_demand_open_outside_the_chain_holds_custody_its_close_frees() {
     );
     assert_eq!(
         another_demand_holds_custody(ready(), 0, vec![open]),
-        Some(true)
+        Ok(true)
     );
 }
 
@@ -71,13 +72,13 @@ fn a_demand_open_on_a_chain_row_counts_only_while_that_row_is_stale_or_refreshin
     // on it.
     assert_eq!(
         another_demand_holds_custody(ready(), 1, Vec::new()),
-        Some(false)
+        Ok(false)
     );
     // A stale upstream its owner has yet to let go, and a refresh of the
     // upstream its owner has yet to finish.
     assert_eq!(
         another_demand_holds_custody(superseded(), 1, Vec::new()),
-        Some(true)
+        Ok(true)
     );
     let refresh = (
         key_with_identity("upstream", 6, 1, 91),
@@ -85,12 +86,12 @@ fn a_demand_open_on_a_chain_row_counts_only_while_that_row_is_stale_or_refreshin
     );
     assert_eq!(
         another_demand_holds_custody(superseded(), 0, vec![refresh]),
-        Some(true)
+        Ok(true)
     );
     // The stale upstream only the caller's own claim holds waits for nobody.
     assert_eq!(
         another_demand_holds_custody(superseded(), 0, Vec::new()),
-        Some(false)
+        Ok(false)
     );
 }
 
@@ -106,7 +107,7 @@ fn a_caller_yet_to_hold_a_row_waits_for_any_open_demand() {
         .insert(key.clone(), record(occurrence(), ready(), 0));
     assert_eq!(
         registry.a_demand_holds_custody(&mut record_admission()),
-        Some(false)
+        Ok(false)
     );
     registry
         .state
@@ -118,7 +119,7 @@ fn a_caller_yet_to_hold_a_row_waits_for_any_open_demand() {
         .interests = 1;
     assert_eq!(
         registry.a_demand_holds_custody(&mut record_admission()),
-        Some(true)
+        Ok(true)
     );
 }
 
@@ -136,8 +137,8 @@ fn a_walk_the_request_cannot_pay_for_establishes_nothing() {
         maximum_work_visits: 1,
         maximum_preparation_bytes: 0,
     });
-    assert_eq!(
+    assert!(matches!(
         registry.another_demand_holds_custody(&dependent, &mut short),
-        None
-    );
+        Err(CompanionPreflightStop::WorkExhausted { .. })
+    ));
 }

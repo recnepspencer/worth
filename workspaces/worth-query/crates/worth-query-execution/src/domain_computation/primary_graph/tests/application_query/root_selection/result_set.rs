@@ -128,6 +128,8 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
         fact.source_currentness_in(runtime, current.application_basis().snapshot_handle(), 1)
             .unwrap()
             .0
+            .movement()
+            == Movement::Unmoved
     }));
     let matching = world
         .application

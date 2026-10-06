@@ -7,6 +7,7 @@ mod dependency_key;
 mod entity_touch;
 mod indexed_entity_selection;
 mod locator_identity;
+mod movement;
 mod source_currentness;
 mod workflow_definition_predecessor;
 mod workflow_history_basis;
@@ -19,6 +20,9 @@ pub(in crate::domain_computation::primary_graph) use dependency_key::WorthQueryA
 pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::reobserve as reobserve_indexed_entity_selection;
 pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::{
     observe_indexed_candidates, observe_indexed_entity_selection, WorthQueryIndexedSelectionRefusal,
+};
+pub(in crate::domain_computation::primary_graph) use movement::{
+    FactMovement, Movement, ObservedRetained,
 };
 pub(in crate::domain_computation::primary_graph) use source_currentness::WorthQuerySourceCurrentnessFailure;
 

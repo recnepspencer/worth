@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+use crate::domain_computation::primary_graph::application_attempt::Movement;
+
 use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
 use worth_relational::facade::identity::PartitionId;
 use worth_relational::facade::symbols::ClientKey;
@@ -275,6 +277,8 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
             fact.source_currentness_in(runtime, current.application_basis().snapshot_handle(), 1)
                 .unwrap()
                 .0
+                .movement()
+                == Movement::Unmoved
         }),
         "same endpoints after relation ABA must stale even a merged adjacency fact"
     );
