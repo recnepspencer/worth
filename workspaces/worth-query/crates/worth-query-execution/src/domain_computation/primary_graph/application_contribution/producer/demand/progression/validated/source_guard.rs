@@ -102,7 +102,9 @@ where
                 return Err(denial)
             }
             OutputRowStage::Ready(completion) => Some(completion),
-            OutputRowStage::Stopped(_) | OutputRowStage::BeforeReady => None,
+            OutputRowStage::Stopped(_)
+            | OutputRowStage::BeforeReady
+            | OutputRowStage::Published => None,
         };
         let held = ready.as_ref().map(|completion| &completion.authority);
         if !demand.settled && !matches!(held, Some(Authority::Stable(_) | Authority::Restored(_))) {

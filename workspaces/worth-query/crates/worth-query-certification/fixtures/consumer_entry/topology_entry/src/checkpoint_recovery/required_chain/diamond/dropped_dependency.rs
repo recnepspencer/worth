@@ -3,32 +3,58 @@ use super::*;
 
 #[test]
 fn changed_own_output_can_drop_unresolved_consumed_dependencies() {
-    journey(true, false, false);
+    journey(true, ChildDelivery::Direct, false);
 }
 
 #[test]
 fn changed_own_decision_still_refreshes_the_dependency_it_reads() {
-    journey(false, false, false);
+    journey(false, ChildDelivery::Direct, false);
 }
 
 #[cfg(feature = "test-output-delivery-faults")]
 #[test]
 fn changed_decision_finishes_a_held_dependency_without_advancing_its_caller() {
-    journey(false, true, false);
+    journey(false, ChildDelivery::Held, false);
 }
 
 #[test]
 fn changed_decision_retries_after_cancellation_with_its_refreshed_child() {
-    journey(false, false, true);
+    journey(false, ChildDelivery::Direct, true);
 }
 
 #[cfg(feature = "test-output-delivery-faults")]
 #[test]
 fn changed_decision_retries_after_cancellation_with_a_held_child() {
-    journey(false, true, true);
+    journey(false, ChildDelivery::Held, true);
 }
 
-fn journey(drop_edges: bool, held_child: bool, cancel_decision: bool) {
+#[cfg(feature = "test-output-delivery-faults")]
+#[test]
+fn changed_decision_refreshes_a_child_superseded_before_readiness_delivery() {
+    journey(false, ChildDelivery::SupersededWhileHeld, false);
+}
+
+#[cfg(feature = "test-output-delivery-faults")]
+#[test]
+fn superseded_child_refresh_survives_cancellation_of_its_consumer() {
+    journey(false, ChildDelivery::SupersededWhileHeld, true);
+}
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum ChildDelivery {
+    Direct,
+    #[cfg(feature = "test-output-delivery-faults")]
+    Held,
+    #[cfg(feature = "test-output-delivery-faults")]
+    SupersededWhileHeld,
+}
+
+fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: bool) {
+    let held_child = child_delivery != ChildDelivery::Direct;
+    #[cfg(feature = "test-output-delivery-faults")]
+    let superseded_child = child_delivery == ChildDelivery::SupersededWhileHeld;
+    #[cfg(not(feature = "test-output-delivery-faults"))]
+    let superseded_child = false;
     let _guard = checkpoint_recovery_test_guard();
     take_decisions("diamond-join");
     let profile =
@@ -83,6 +109,14 @@ fn journey(drop_edges: bool, held_child: bool, cancel_decision: bool) {
             "the queue actually published the left refresh"
         );
     }
+    if superseded_child {
+        change_root!(request, application, "diamond-left", 7, 0x9176_3582_u64);
+        assert_eq!(
+            output_lengths!(request, ["diamond-left"]),
+            [6],
+            "the second source edit has not run the child producer"
+        );
+    }
     let _retained_root_interests = root_demands;
     let before = request
         .query(PlanarOutputRead {
@@ -112,6 +146,8 @@ fn journey(drop_edges: bool, held_child: bool, cancel_decision: bool) {
         take_decisions("diamond-join").is_empty(),
         "the source write cannot refresh the consumer"
     );
+    let latest_child = if superseded_child { 8 } else { 6 };
+    let prior_join = output_lengths!(request, ["diamond-join"]);
     crate::producer::reset_provider_contacts();
     if cancel_decision {
         let cancellation = authentication::WorthQueryCancellationSource::new();
@@ -131,11 +167,21 @@ fn journey(drop_edges: bool, held_child: bool, cancel_decision: bool) {
             "the decision meets the actual request cancellation: {:?}",
             stopped.as_ref().err()
         );
-        assert_eq!(take_decisions("diamond-join"), [[6, 51]]);
-        assert_eq!(output_lengths!(request, ["diamond-left"]), [6]);
+        assert_eq!(take_decisions("diamond-join"), [[latest_child, 51]]);
+        assert_eq!(output_lengths!(request, ["diamond-left"]), [latest_child]);
+        assert_eq!(
+            output_lengths!(request, ["diamond-join"]),
+            prior_join,
+            "the cancelled consumer did not publish"
+        );
+        if superseded_child {
+            assert!(
+                crate::producer::provider_contacts() > 0,
+                "the newer child source requires production before the consumer can decide"
+            );
+        }
         crate::producer::reset_provider_contacts();
     }
-    let prior_join = output_lengths!(request, ["diamond-join"]);
     let refreshed = if held_child {
         match join.advance(&request) {
             Ok(WorthQueryApplicationOutputDemandProgress::Settled(settled)) => settled,
@@ -177,7 +223,9 @@ fn journey(drop_edges: bool, held_child: bool, cancel_decision: bool) {
     } else {
         assert_eq!(
             take_decisions("diamond-join"),
-            if held_child {
+            if superseded_child {
+                vec![vec![8, 51]]
+            } else if held_child {
                 vec![vec![6, 51], vec![6, 51]]
             } else {
                 vec![vec![6, 51]]
@@ -190,6 +238,11 @@ fn journey(drop_edges: bool, held_child: bool, cancel_decision: bool) {
                 0,
                 "the completed or held child resumes without another producer decision"
             );
+        } else if superseded_child {
+            assert!(
+                crate::producer::provider_contacts() > 0,
+                "the current source requires new child production"
+            );
         } else if held_child {
             assert_eq!(
                 crate::producer::provider_contacts(),
@@ -199,7 +252,10 @@ fn journey(drop_edges: bool, held_child: bool, cancel_decision: bool) {
         } else {
             assert!(crate::producer::provider_contacts() > 0);
         }
-        assert_eq!(output_lengths!(request, ["diamond-left"]), [6]);
+        assert_eq!(
+            output_lengths!(request, ["diamond-left"]),
+            [if superseded_child { 8 } else { 6 }]
+        );
     }
     let repeated = settle!(join, request);
     assert_eq!(repeated.producer_contacts_in_this_demand(), 0);
