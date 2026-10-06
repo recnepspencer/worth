@@ -87,13 +87,14 @@ let app = application_installation::declaration(declaration, configuration, limi
   open. `close` takes the lock without waiting (a held lock is the in-flight refusal), does every
   step that can refuse while holding it, and only then stores the closed state.
 - **Close is one decision, in this order,** all under the source owner's lock:
-  1. hold Relational admission (`try_hold_admission`, below); a refusal is the in-flight refusal;
+  1. hold Relational admission (`try_hold_admission`, below); an admission in flight, an
+     unsettled or in-flight publication, or an outstanding prepared commit refuses close;
   2. capture the closing image through the hold; a capture error refuses close;
-  3. seal the hold; an unsettled or in-flight publication refuses close;
+  3. seal the hold, which cannot fail;
   4. store the closed state and build the home.
 
   Every refusal happens before the seal, releases the hold, and hands back a runtime that works.
-  Nothing can change between the capture and the seal, because the hold admits nothing. Sealing
+  Nothing can change between the capture and the seal, because a held owner is quiescent. Sealing
   first would leave a sealed runtime behind a refused close; capturing first without the hold would
   let a carried Relational port publish between the capture and the seal, and the seal would then
   drain that settlement as owner loss.
@@ -116,12 +117,15 @@ let app = application_installation::declaration(declaration, configuration, limi
     - `try_hold_admission` is one compare-and-swap from open-and-idle to held. If any admission is
       in flight it changes nothing and refuses with `AdmissionsActive`, which Query's `close`
       reports as its own in-flight refusal, so close never hangs on an admitted runtime carried
-      out of a closure. While the hold lives, a new admission waits; it is neither admitted nor
-      denied. The owner reads through the hold.
-    - The hold then either seals or is released. `seal` refuses, and releases, when a publication
-      is in flight or unsettled (the checkpoint admission's own condition,
-      `checkpoint_admission.rs:31-72`), so a seal never drains a live settlement. Dropping the
-      hold, including on unwind, releases it and the waiting admissions proceed.
+      out of a closure. Once held, it also refuses, and releases, when a publication is in flight
+      or unsettled (the checkpoint admission's own condition, `checkpoint_admission.rs:31-72`) or
+      a prepared commit candidate is outstanding (its `Drop` changes record-identity state the
+      image reads, `mvcc/publication/candidate.rs:296`). A hold that is returned is therefore
+      quiescent and stays so: while it lives, a new admission waits, neither admitted nor denied,
+      and nothing the image reads can change. The owner reads through the hold.
+    - The hold then either seals or is released. `seal` cannot fail, and never drains a live
+      settlement, because the hold proved there is none. Dropping the hold, including on unwind,
+      releases it and the waiting admissions proceed.
 
     Both reach close authority through the owner tenure (`runtime_state/mod.rs:97-107`,
     `close_authority.rs:53-57`) via the `&mut` Query holds under its mutex. After a seal, every
@@ -362,13 +366,14 @@ minutes is split by target and filter first. The old constructors live from D.2.
   --all-features`, UM `-p worth-ui-query-binding --all-targets` (`cargo check`). BC run.
   Bank-server gate.
 - **D.2.3 Relational: admission hold, seal, and branch names.** `crates/worth-relational` only.
-  `try_hold_admission` and the hold's `seal` replace the one-step `try_seal` (section 1): a held
-  owner admits nothing and denies nothing, `seal` refuses and releases on an in-flight or unsettled
-  publication, and a dropped hold releases. One public read of live and retired branch names.
+  `try_hold_admission` and the hold's `seal` replace the one-step `try_seal` (section 1): a hold
+  proves quiescence or refuses, a held owner admits nothing and denies nothing, `seal` cannot
+  fail, and a dropped hold releases. One public read of live and retired branch names.
   Tests: a hold with an admission in flight refuses and admission still works; an admission that
   arrives during a hold waits, then proceeds after a release and is denied `OwnerUnavailable` after
-  a seal; a checkpoint is captured through a hold; `seal` with a deferred settlement refuses, the
-  settlement is still pending with no owner-loss release, and it settles afterward; a hold dropped
+  a seal; a checkpoint is captured through a hold; a hold with a deferred settlement refuses, the
+  settlement is still pending with no owner-loss release, and it settles afterward; a hold with a
+  prepared candidate outstanding refuses and the candidate still publishes; a hold dropped
   on unwind releases; the D.2.1 seal tests, moved to the two steps; the name read returns live and
   retired names after a delete and after a restore. Root workspace:
   `cargo test -p worth-relational --lib tests::branch`, then each new test by exact name.
@@ -379,7 +384,7 @@ minutes is split by target and filter first. The old constructors live from D.2.
   Relational's live and retired names; `u64::MAX` is `IdentityExhausted`. Tests: fork, delete the
   highest branch, close, reopen, fork again gets a fresh ordinal; a deferred settlement via
   `fail_next_durable_append_for_test` refuses close and the runtime still works; close refuses
-  during an in-flight admission; a retained integration handle is denied with `Closed` after
+  during an in-flight admission and while a prepared commit is outstanding; a retained integration handle is denied with `Closed` after
   close; a retained invariant projection snapshot's `field()` returns `Closed` after close and its
   drop is a no-op; a product runtime installed from the source token is denied after close; the
   workflow runtime closes and reopens. QM `-p worth-query-execution --lib application_home`,
