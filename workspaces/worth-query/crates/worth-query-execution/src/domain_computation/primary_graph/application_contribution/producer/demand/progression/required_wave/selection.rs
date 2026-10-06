@@ -93,3 +93,17 @@ where
         branch,
     })
 }
+
+/// A committed Ready moved the wave past its selected position.
+pub(super) fn committed_ready(
+    ready: &SelectedReadyReadmission,
+    admission: &mut InvalidationEditAdmission,
+) -> Result<bool, WorthQueryOutputDemandDenial> {
+    admission
+        .charge_external_work(2)
+        .map_err(|_| work_denial())?;
+    Ok(matches!(
+        &ready.completion().authority,
+        crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Committed(_)
+    ))
+}

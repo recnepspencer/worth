@@ -51,6 +51,8 @@ pub enum WorthQueryCurrentOutputDenialKind {
 pub struct WorthQueryCurrentOutputDenial {
     kind: WorthQueryCurrentOutputDenialKind,
     subject: String,
+    pub(in crate::domain_computation::primary_graph) requested_output:
+        Option<super::super::RequestedOutputRead>,
 }
 
 impl WorthQueryCurrentOutputDenial {
@@ -66,6 +68,7 @@ impl WorthQueryCurrentOutputDenial {
         Self {
             kind,
             subject: subject.into(),
+            requested_output: None,
         }
     }
 }

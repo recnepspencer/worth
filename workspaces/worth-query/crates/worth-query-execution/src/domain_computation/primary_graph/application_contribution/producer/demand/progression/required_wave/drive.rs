@@ -9,6 +9,7 @@ use super::super::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryProducerOutputFamily,
 };
 use super::queued::RequiredQueueFrames;
+use super::selection::committed_ready;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
 
@@ -75,6 +76,46 @@ where
             current_role = FrameRole::Reached;
             resolved_on_wave.clear();
             continue $label
+        }};
+    }
+    // Both accepted dependencies and a fresh decision resume the exact held row.
+    macro_rules! resume_held {
+        ($label:lifetime, $head:expr) => {{
+            let head = $head;
+            let custody = if queue.active() {
+                &mut *frame_custody
+            } else {
+                &mut demand.required_continuations
+            };
+            match resume_held_upstream(
+                runtime,
+                principal,
+                request_scope,
+                wave.branch,
+                custody,
+                &head,
+                admission,
+            ) {
+                Ok(HeldUpstream::Ready(ready)) => {
+                    runtime.output_demands.clear_required_stop(&head);
+                    if committed_ready(&ready, admission)? {
+                        wave = reselect_required_wave(runtime, wave, admission)?;
+                        resolved_on_wave.clear();
+                        queue.wave_moved();
+                    }
+                    // Certify the same row again against the finished upstream.
+                    continue $label;
+                }
+                Ok(HeldUpstream::Unfinished) => {
+                    if queue.active() {
+                        hold_queue_frame!($label, None)
+                    }
+                    finish_caller!($label, WorthQueryOutputDemandAdvance::Pending)
+                }
+                // The Ready the superseded successor replaced answers again.
+                Ok(HeldUpstream::GaveBack) => continue $label,
+                Err(stop) => stopped!($label, &head, stop),
+            }
         }};
     }
     'required: loop {
@@ -198,10 +239,13 @@ where
             }
             RequiredWaveStep::Upstream(upstream) => {
                 drop(slot);
-                if upstream.same_record(selected, admission)?
-                    || upstream.same_record(&wave.caller_ready, admission)?
-                    || resolved_on_wave.contains(&upstream)
-                {
+                if super::cycles::upstream_cycles(
+                    &upstream,
+                    selected,
+                    &wave.caller_ready,
+                    &resolved_on_wave,
+                    admission,
+                )? {
                     if queue.active() {
                         hold_queue_frame!('required, None)
                     }
@@ -230,7 +274,45 @@ where
                 };
                 match slot.install(progress) {
                     RequiredFreshOutcome::Advanced => {}
-                    RequiredFreshOutcome::Refused(stop) => {
+                    RequiredFreshOutcome::Refused(mut stop) => {
+                        // This wave consumes the scheduling packet; a recorded stop
+                        // must not retain a native basis that later waves cannot use.
+                        if let Some(requested) = stop.requested_output.take() {
+                            match runtime.output_demands.requested_ready_readmission(
+                                &requested,
+                                &wave.positioned,
+                                admission,
+                            )? {
+                                PendingUpstream::Ready(upstream) => {
+                                    if super::cycles::upstream_cycles(
+                                        &upstream,
+                                        selected,
+                                        &wave.caller_ready,
+                                        &resolved_on_wave,
+                                        admission,
+                                    )? {
+                                        if queue.active() {
+                                            hold_queue_frame!('required, None)
+                                        }
+                                        finish_caller!('required, WorthQueryOutputDemandAdvance::Pending)
+                                    }
+                                    if let Some(downstream) = current.take() {
+                                        if !stack.push(downstream, admission)? {
+                                            if queue.active() {
+                                                hold_queue_frame!('required, None)
+                                            }
+                                            finish_caller!('required, WorthQueryOutputDemandAdvance::Pending)
+                                        }
+                                    }
+                                    current = Some(upstream);
+                                    current_contacts = 0;
+                                    current_role = FrameRole::Reached;
+                                    continue 'required;
+                                }
+                                PendingUpstream::Held(head) => resume_held!('required, head),
+                                PendingUpstream::Unavailable => {}
+                            }
+                        }
                         stopped!('required, selected.key(), stop)
                     }
                 }
@@ -288,40 +370,7 @@ where
             }
             RequiredWaveStep::Held(head) => {
                 drop(slot);
-                let custody = if queue.active() {
-                    &mut *frame_custody
-                } else {
-                    &mut demand.required_continuations
-                };
-                match resume_held_upstream(
-                    runtime,
-                    principal,
-                    request_scope,
-                    wave.branch,
-                    custody,
-                    &head,
-                    admission,
-                ) {
-                    Ok(HeldUpstream::Ready(ready)) => {
-                        runtime.output_demands.clear_required_stop(&head);
-                        if committed_ready(&ready, admission)? {
-                            wave = reselect_required_wave(runtime, wave, admission)?;
-                            resolved_on_wave.clear();
-                            queue.wave_moved();
-                        }
-                        // Certify the same row again against the finished upstream.
-                        continue 'required;
-                    }
-                    Ok(HeldUpstream::Unfinished) => {
-                        if queue.active() {
-                            hold_queue_frame!('required, None)
-                        }
-                        finish_caller!('required, WorthQueryOutputDemandAdvance::Pending)
-                    }
-                    // The Ready the superseded successor replaced answers again.
-                    Ok(HeldUpstream::GaveBack) => continue 'required,
-                    Err(stop) => stopped!('required, &head, stop),
-                }
+                resume_held!('required, head)
             }
             RequiredWaveStep::Pending => {
                 if queue.active() {
@@ -341,18 +390,4 @@ enum FrameRole {
     Reached,
     Successor,
     CallerSuccessor,
-}
-
-/// A committed Ready moved the wave past its selected position.
-fn committed_ready(
-    ready: &SelectedReadyReadmission,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<bool, WorthQueryOutputDemandDenial> {
-    admission
-        .charge_external_work(2)
-        .map_err(|_| work_denial())?;
-    Ok(matches!(
-        &ready.completion().authority,
-        crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Committed(_)
-    ))
 }

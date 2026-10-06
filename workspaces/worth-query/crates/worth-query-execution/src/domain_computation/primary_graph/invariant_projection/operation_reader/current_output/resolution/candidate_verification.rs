@@ -89,7 +89,7 @@ where
             if stop == ConsumedOutputVerificationStop::WorkExhausted {
                 self.reader.work_budget.mark_exceeded();
             }
-            WorthQueryCurrentOutputDenial::new(
+            let mut denial = WorthQueryCurrentOutputDenial::new(
                 match stop {
                     ConsumedOutputVerificationStop::WorkExhausted => {
                         WorthQueryCurrentOutputDenialKind::WorkBudgetExceeded
@@ -105,7 +105,63 @@ where
                     }
                 },
                 subject,
-            )
+            );
+            if stop == ConsumedOutputVerificationStop::PendingUpstream {
+                match self.retain_requested_output(candidate, selected, subject) {
+                    Ok(read) => denial.requested_output = Some(read),
+                    Err(stopped) => return stopped,
+                }
+            }
+            denial
         })
+    }
+    pub(super) fn retain_requested_output(
+        &mut self,
+        candidate: &WorthQueryCurrentOutputCandidate,
+        selected: &PositionedRelationalSnapshot,
+        subject: &str,
+    ) -> Result<
+        crate::domain_computation::primary_graph::invariant_projection::RequestedOutputRead,
+        WorthQueryCurrentOutputDenial,
+    > {
+        use crate::domain_computation::primary_graph::invariant_projection::RequestedOutputRead;
+        let before = self.reader.work_budget.remaining();
+        let mut admission = self.reader.invalidation_owner.read_admission(before);
+        let bytes = std::mem::size_of::<RequestedOutputRead>() as u64;
+        let result = admission
+            .charge_external_work(bytes + selected.branch_id().0.len() as u64)
+            .and_then(|_| {
+                self.reader.invalidation_owner.retain_consumed_output(
+                    &[],
+                    selected,
+                    bytes,
+                    &mut admission,
+                )
+            });
+        let charged = usize::try_from(admission.charged_work()).unwrap_or(usize::MAX);
+        self.reader.work_budget.consume(charged);
+        self.reader.work.record_output_lineage_selection(charged);
+        let capacity = result.map_err(|stop| {
+            let work =
+                matches!(stop,
+                worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. }
+                | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow);
+            if work {
+                self.reader.work_budget.mark_exceeded();
+            }
+            WorthQueryCurrentOutputDenial::new(
+                if work {
+                    WorthQueryCurrentOutputDenialKind::WorkBudgetExceeded
+                } else {
+                    WorthQueryCurrentOutputDenialKind::OutputUnavailable
+                },
+                subject,
+            )
+        })?;
+        Ok(RequestedOutputRead::new(
+            Arc::clone(&candidate.settlement_identity),
+            selected.clone(),
+            capacity,
+        ))
     }
 }

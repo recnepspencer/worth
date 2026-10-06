@@ -201,6 +201,7 @@ where
         let mut current = Vec::new();
         let mut retained_selected_native_root = None;
         let mut stale = false;
+        let mut requested_output = None;
         let mut obsolete = false;
         for candidate in resolution.candidates {
             self.require_current_output_budget(1, Family::IDENTITY)?;
@@ -272,9 +273,21 @@ where
                         obsolete = true;
                     } else {
                         stale = true;
+                        requested_output = Some(self.retain_requested_output(
+                            &candidate,
+                            &selected_native_root,
+                            Family::IDENTITY,
+                        )?);
                     }
                 }
-                ConsumedOutputVerification::ChangedUpstream => stale = true,
+                ConsumedOutputVerification::ChangedUpstream => {
+                    stale = true;
+                    requested_output = Some(self.retain_requested_output(
+                        &candidate,
+                        &selected_native_root,
+                        Family::IDENTITY,
+                    )?);
+                }
             }
         }
         if current.is_empty() && obsolete {
@@ -284,10 +297,12 @@ where
             ));
         }
         if current.is_empty() && stale {
-            return Err(WorthQueryCurrentOutputDenial::new(
+            let mut denial = WorthQueryCurrentOutputDenial::new(
                 WorthQueryCurrentOutputDenialKind::StaleSource,
                 Family::IDENTITY,
-            ));
+            );
+            denial.requested_output = requested_output;
+            return Err(denial);
         }
         self.reader
             .current_output_families

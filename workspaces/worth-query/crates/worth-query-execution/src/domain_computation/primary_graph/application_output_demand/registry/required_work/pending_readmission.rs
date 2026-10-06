@@ -40,13 +40,38 @@ impl WorthQueryOutputDemandRegistry {
         if pending.selected_root() != selected {
             return Ok(PendingUpstream::Unavailable);
         }
+        self.pending_identity_readmission(pending.identity(), admission)
+    }
+
+    /// A fresh handler actually requested this exact output on this wave.
+    /// It is scheduling evidence only; the reached row still certifies Current.
+    pub(in crate::domain_computation::primary_graph) fn requested_ready_readmission(
+        &self,
+        requested: &crate::domain_computation::primary_graph::invariant_projection::RequestedOutputRead,
+        selected: &worth_relational::facade::runtime::PositionedRelationalSnapshot,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<PendingUpstream, WorthQueryOutputDemandDenial> {
+        admission
+            .charge_external_work(selected.branch_id().0.len() as u64 + 4)
+            .map_err(|_| work_denial())?;
+        if requested.selected() != selected {
+            return Ok(PendingUpstream::Unavailable);
+        }
+        self.pending_identity_readmission(requested.identity(), admission)
+    }
+
+    fn pending_identity_readmission(
+        &self,
+        identity: &crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<PendingUpstream, WorthQueryOutputDemandDenial> {
         let state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let Some(key) = state
             .settlement_keys
-            .get_exact_admitted(pending.identity(), admission)?
+            .get_exact_admitted(identity, admission)?
         else {
             return Ok(PendingUpstream::Unavailable);
         };

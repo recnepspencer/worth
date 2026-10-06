@@ -30,14 +30,14 @@ impl ConsumedOutputEvidence {
         snapshot: &SnapshotHandle,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ConsumedOutputVerification>, ConsumedOutputVerificationStop> {
-        for (ordinal, fact) in evidence.source_facts.iter().enumerate() {
-            if !fact_is_current(fact, runtime, snapshot, admission)? {
-                return Ok(Some(if direct {
-                    ConsumedOutputVerification::ChangedDirectFact(ordinal)
-                } else {
-                    ConsumedOutputVerification::ChangedUpstream
-                }));
-            }
+        if let Some(ordinal) =
+            Self::first_changed_own_fact(evidence.source_facts, runtime, snapshot, admission)?
+        {
+            return Ok(Some(if direct {
+                ConsumedOutputVerification::ChangedDirectFact(ordinal)
+            } else {
+                ConsumedOutputVerification::ChangedUpstream
+            }));
         }
         if let Some(witness) = evidence.native_output_witness {
             let witness = witness
@@ -48,6 +48,58 @@ impl ConsumedOutputEvidence {
                 .map_err(map_admission_stop)?
             {
                 return Ok(Some(ConsumedOutputVerification::ChangedUpstream));
+            }
+        }
+        Ok(None)
+    }
+
+    /// A changed accepted consumer may disclose a new dependency set before
+    /// following its old pending edges. Consumed native content remains the
+    /// child's evidence; only a disjoint changed fact can reject those edges.
+    /// This comparison grants no currentness.
+    pub(in crate::domain_computation::primary_graph) fn own_evidence_is_current(
+        facts: &[WorthQueryApplicationObservedFact],
+        consumed: &[ConsumedOutputEvidence],
+        witness: &SealedNativeOutputWitness,
+        runtime: &RelationalRuntime,
+        snapshot: &SnapshotHandle,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<bool, ConsumedOutputVerificationStop> {
+        for fact in facts {
+            let mut child_content = false;
+            for child in consumed {
+                charge_external(admission, 1)?;
+                let witness = child
+                    .native_output_witness
+                    .as_ref()
+                    .and_then(|cell| cell.get())
+                    .ok_or(ConsumedOutputVerificationStop::Unavailable)?;
+                if witness
+                    .covers_content_fact(fact, admission)
+                    .map_err(map_admission_stop)?
+                {
+                    child_content = true;
+                    break;
+                }
+            }
+            if !child_content && !fact_is_current(fact, runtime, snapshot, admission)? {
+                return Ok(false);
+            }
+        }
+        witness
+            .unchanged_in(runtime, snapshot, admission)
+            .map_err(map_admission_stop)
+    }
+
+    fn first_changed_own_fact(
+        facts: &[WorthQueryApplicationObservedFact],
+        runtime: &RelationalRuntime,
+        snapshot: &SnapshotHandle,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<Option<usize>, ConsumedOutputVerificationStop> {
+        for (ordinal, fact) in facts.iter().enumerate() {
+            if !fact_is_current(fact, runtime, snapshot, admission)? {
+                return Ok(Some(ordinal));
             }
         }
         Ok(None)

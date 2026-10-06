@@ -178,6 +178,28 @@ impl RetainedInputCutoffCandidate {
             SourceSettlementCurrentness::Clean => {}
             SourceSettlementCurrentness::Dirty(ordinals) => dirty_prefix = Some(ordinals),
             SourceSettlementCurrentness::PendingUpstream(edges) => {
+                // Source input equality does not prove handler facts equal.
+                // A changed own decision may remove the old consumed edges.
+                match ConsumedOutputEvidence::own_evidence_is_current(
+                    &facts,
+                    self.consumed_outputs(),
+                    witness,
+                    runtime,
+                    snapshot,
+                    currentness,
+                ) {
+                    Ok(false) => return Ok(None),
+                    Ok(true) | Err(ConsumedOutputVerificationStop::Unavailable) => {}
+                    Err(ConsumedOutputVerificationStop::WorkExhausted) => {
+                        return Err(InputCutoffVerificationStop::WorkExhausted)
+                    }
+                    Err(ConsumedOutputVerificationStop::RetryCurrentness(_)) => {
+                        return Err(InputCutoffVerificationStop::CurrentnessRaced)
+                    }
+                    Err(ConsumedOutputVerificationStop::PendingUpstream) => {
+                        return Err(InputCutoffVerificationStop::PendingUpstream)
+                    }
+                }
                 if let Some(matched) = &matched_predecessors {
                     if matched_roots::consumed_roots(
                         self.consumed_outputs(),

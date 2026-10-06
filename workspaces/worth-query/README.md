@@ -32,6 +32,18 @@ handles, and pending cleanup are memory-resident. Process loss releases those
 capabilities. Restart durability belongs to Store and requires fresh owner
 readmission; Query does not serialize live authority.
 
+Required output progression rechecks native consumer decision facts before
+following its previously consumed dependencies. Sealed child entity/field content
+is excluded from the independent-fact check. Changed consumer fields or
+consumer-anchored membership can disclose a fresh decision that drops an old edge. If that fresh handler
+still reads a pending output, its native read carries the exact settlement and
+selected source basis into the required wave. When that identity resolves to a
+retained required row, the wave refreshes it and resumes the consumer; otherwise
+the original read denial remains. A child's native content stays child evidence; neither
+this disclosure nor the scheduling handoff certifies an output Current. This
+proof covers native read refusals; it does not establish recovery when native
+publication is Current but managed readiness delivery is still deferred.
+
 Use the smallest package that owns the change. Declaration work does not build
 installation, execution, publication, replay, or certification:
 

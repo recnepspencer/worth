@@ -1,4 +1,4 @@
-use super::denial::{denial, failed, request_authority_stop};
+use super::denial::{denial, failed, handler_execution_failed, request_authority_stop};
 use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
 use crate::domain_computation::primary_graph::{
     HandlerResult, WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
@@ -55,7 +55,7 @@ pub(super) fn completed_handler<Value, DomainDenial>(
                 domain_reason(&domain_denial),
             ))
         }
-        HandlerResult::ExecutionDenied(error) => Err(failed(identity, error)),
+        HandlerResult::ExecutionDenied(error) => Err(handler_execution_failed(identity, error)),
         HandlerResult::Cancelled => Err(denial(
             WorthQueryOutputDemandDenialKind::Cancelled,
             "producer cancelled",
