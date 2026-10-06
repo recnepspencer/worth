@@ -75,9 +75,8 @@ fn selected_source_inventory_is_charged_its_root_and_leaf_entries_and_no_block()
     assert_eq!(
         observe("allocation-entry-charge-short", need - 1).err(),
         Some(super::PageObservationFailure::Limit(
-            crate::orchestration::planning::page_observation::PageLimit::Recovery(
-                crate::orchestration::recovery_budget::recovery_limit_for_test(
-                    crate::entry::PhysicalRecoveryLimitDimension::ManifestEntries,
+            crate::orchestration::planning::page_observation::PageLimit::Entries(
+                crate::orchestration::planning::manifest_entry_budget::manifest_entry_limit_for_test(
                     need,
                     need - 1,
                 )

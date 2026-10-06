@@ -11,7 +11,7 @@ use worth_store_physical_integrity::{
     SelectedExtentPayloadBuilder,
 };
 
-use super::super::super::manifest_entry_budget::ManifestEntryBudget;
+use super::super::super::manifest_entry_budget::{EntryAdmission, ManifestEntryBudget};
 use super::super::super::selected_source_inventory::{ResidentAllowance, ResidentTraceDenial};
 use super::super::historical_publication::{self, HistoricalFailure};
 use crate::entry::PhysicalRecoverySelectedRecordReadDenial;
@@ -183,7 +183,7 @@ fn read_impl(
     let page_limit = u64::from(format.page_size().bytes());
     // Reading one record charges one entry, however many chunks hold it.
     budget
-        .consume(1)
+        .admit(1)
         .map_err(|_| PhysicalRecoverySelectedRecordReadDenial::ManifestEntryLimit)?;
     if let Some(ledger) = resident.as_deref_mut() {
         ledger

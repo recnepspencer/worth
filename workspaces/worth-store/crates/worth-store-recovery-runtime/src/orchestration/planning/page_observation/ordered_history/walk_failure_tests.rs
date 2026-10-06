@@ -1,7 +1,8 @@
 use super::*;
 use crate::entry::PhysicalRecoveryLimitDimension;
-use crate::entry::PhysicalRecoveryLimitDimension::{
-    ManifestEntries, ObservationBytes, StagingBytes,
+use crate::entry::PhysicalRecoveryLimitDimension::{ObservationBytes, StagingBytes};
+use crate::orchestration::planning::manifest_entry_budget::{
+    manifest_entry_limit_for_test, EntryAdmission,
 };
 use crate::orchestration::reader_limit::refused_past;
 use crate::orchestration::recovery_budget::{allowance_for_test, recovery_limit_for_test};
@@ -20,6 +21,10 @@ const STAGING: RecoveryAllowance = allowance_for_test(StagingBytes, 100);
 
 fn limit(dimension: PhysicalRecoveryLimitDimension, observed: u64, admitted: u64) -> WalkFailure {
     WalkFailure::recovery(recovery_limit_for_test(dimension, observed, admitted))
+}
+
+fn entries_past(observed: u64, admitted: u64) -> WalkFailure {
+    WalkFailure::entries(manifest_entry_limit_for_test(observed, admitted))
 }
 
 /// A reader handed 65,536 of recovery's 65,540 observation bytes needed
@@ -118,7 +123,7 @@ fn the_walks_scratch_states_the_whole_need() {
 
 #[test]
 fn a_bound_physics_ran_past_is_that_limit_with_what_it_needed() {
-    let mut budget = ManifestEntryBudget::new(10, 4);
+    let mut budget = ManifestEntryBudget::for_test(10, 4);
     let past =
         |bound, observed, admitted| Some(root_history_limit_for_test(bound, observed, admitted));
     assert_eq!(
@@ -137,11 +142,11 @@ fn a_bound_physics_ran_past_is_that_limit_with_what_it_needed() {
     let entries = past(RootHistoryBound::Entries, 11, 10);
     assert_eq!(
         WalkFailure::refused(entries, &mut budget, STAGING),
-        limit(ManifestEntries, 11, 10)
+        entries_past(11, 10)
     );
     assert_eq!(
         budget.refused(),
-        Some(recovery_limit_for_test(ManifestEntries, 11, 10))
+        Some(manifest_entry_limit_for_test(11, 10))
     );
 }
 
@@ -202,7 +207,7 @@ fn a_replay_bound_is_the_scratch_the_walk_needed_in_all() {
 #[test]
 fn a_control_record_the_walk_could_not_read_keeps_its_limit() {
     use PhysicalRecoverySelectedRecordReadDenial as Denial;
-    let mut budget = ManifestEntryBudget::new(10, 4);
+    let mut budget = ManifestEntryBudget::for_test(10, 4);
     // Handed 60 of the walk's 100 bytes, the ledger was asked for 70.
     let mut resident = ResidentAllowance::new(60);
     assert!(resident.bytes(70).is_err());
@@ -214,10 +219,10 @@ fn a_control_record_the_walk_could_not_read_keeps_its_limit() {
         unread(Denial::ManifestEntryLimit, &budget),
         WalkFailure::CountOverflow
     );
-    assert!(budget.charge(7).is_err());
+    assert!(budget.admit(7).is_err());
     assert_eq!(
         unread(Denial::ManifestEntryLimit, &budget),
-        limit(ManifestEntries, 11, 10)
+        entries_past(11, 10)
     );
     assert_eq!(
         unread(Denial::ResidentBoundExceeded, &budget),

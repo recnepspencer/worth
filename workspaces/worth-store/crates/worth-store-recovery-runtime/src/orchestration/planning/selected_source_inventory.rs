@@ -10,7 +10,7 @@ use worth_store_physical_format::{
     RecordArtifactFile, RecordFreeSpaceManifestEntry,
 };
 
-use super::manifest_entry_budget::{ManifestEntryBudget, RootUnit};
+use super::manifest_entry_budget::{pays_for, spend, ChargeToken, EntryAdmission};
 use super::page_observation::{required_source, PageObservationFailure};
 use crate::integrity_ingress::projection::MembershipProjectionFailure;
 use crate::progression::{RecoverySelectedSegmentPage, RecoverySelectedSourceInventory};
@@ -41,17 +41,19 @@ pub(super) fn observe(
     Result<RecoverySelectedSourceInventory, PageObservationFailure>,
     crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) {
-    let mut budget = ManifestEntryBudget::new(maximum_manifest_entries, 0);
+    use super::manifest_entry_budget::{ChargeTarget, ManifestEntryBudget, ROOT_ENTRY};
+    let mut budget = ManifestEntryBudget::for_test(maximum_manifest_entries, 0);
     let mut integrity_trace = crate::integrity_ingress::RecoveryIntegrityIngressTrace::default();
+    let target = ChargeTarget::root(root.generation());
     let inventory = budget
-        .charge_root()
+        .charge(ROOT_ENTRY, target)
         .map_err(PageObservationFailure::from)
-        .and_then(|root_unit| {
+        .and_then(|charge| {
             observe_with_budget(
                 discovery,
                 root,
                 format,
-                &root_unit,
+                charge,
                 &mut budget,
                 &mut integrity_trace,
             )
@@ -59,31 +61,36 @@ pub(super) fn observe(
     (inventory, integrity_trace)
 }
 
-/// The segment pages and free entries under `root`, each leaf entry charged.
-/// The root's own entry is charged where the root is read.
+/// The segment pages and free entries under `root`, each leaf entry admitted
+/// to `entries`. `charge`, for `root`, was charged before; the free-space
+/// tree is the root's last read, and spends it.
 pub(super) fn observe_with_budget(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     root: &DurablePhysicalRootManifest,
     format: PhysicalRecordFormatDeclaration,
-    root_unit: &RootUnit,
-    budget: &mut ManifestEntryBudget,
+    charge: ChargeToken,
+    entries: &mut impl EntryAdmission,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) -> Result<RecoverySelectedSourceInventory, PageObservationFailure> {
-    observe_headers(discovery, root, format, root_unit, integrity_trace)?
-        .observe_segments(discovery, root, format, budget, integrity_trace)?
-        .observe_free_entries(discovery, root, format, budget, integrity_trace)
+    let inventory = observe_headers(discovery, root, format, &charge, integrity_trace)?
+        .observe_segments(discovery, root, format, &charge, entries, integrity_trace)?
+        .observe_free_entries(discovery, root, format, &charge, entries, integrity_trace)?;
+    spend(charge, root.generation());
+    Ok(inventory)
 }
 
-/// The first read of an inventory: the free-space header `root` names.
+/// The first read of an inventory: the free-space header `root` names, paid
+/// for by the root's `charge`.
 pub(super) fn observe_headers(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     root: &DurablePhysicalRootManifest,
     format: PhysicalRecordFormatDeclaration,
-    _root_unit: &RootUnit,
+    charge: &ChargeToken,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) -> Result<InventoryHeaders, PageObservationFailure> {
-    read_free_space_header(discovery, root, format, integrity_trace)
-        .map(|free_space| InventoryHeaders { free_space })
+    pays_for(charge, root.generation());
+    let free_space = read_free_space_header(discovery, root, format, integrity_trace)?;
+    Ok(InventoryHeaders { free_space })
 }
 
 /// An inventory read as far as its headers, with no tree under them yet.
@@ -96,17 +103,20 @@ impl InventoryHeaders {
         &self.free_space
     }
 
-    /// Reads the segment tree, each page entry charged.
+    /// Reads the segment tree, paid for by the root's `charge`, each page
+    /// entry admitted to `entries`.
     pub(super) fn observe_segments(
         self,
         discovery: &mut BoundedRecoveryFilesystemDiscovery,
         root: &DurablePhysicalRootManifest,
         format: PhysicalRecordFormatDeclaration,
-        budget: &mut ManifestEntryBudget,
+        charge: &ChargeToken,
+        entries: &mut impl EntryAdmission,
         integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
     ) -> Result<InventorySegments, PageObservationFailure> {
+        pays_for(charge, root.generation());
         Ok(InventorySegments {
-            segments: read_segment_pages(discovery, root, format, budget, integrity_trace)?,
+            segments: read_segment_pages(discovery, root, format, entries, integrity_trace)?,
             free_space: self.free_space,
         })
     }
@@ -124,24 +134,32 @@ impl InventorySegments {
         self.segments.0.len()
     }
 
-    /// Reads the free-space tree, each entry charged.
+    /// Reads the free-space tree, paid for by the root's `charge`, each entry
+    /// admitted to `entries`.
     pub(super) fn observe_free_entries(
         self,
         discovery: &mut BoundedRecoveryFilesystemDiscovery,
         root: &DurablePhysicalRootManifest,
         format: PhysicalRecordFormatDeclaration,
-        budget: &mut ManifestEntryBudget,
+        charge: &ChargeToken,
+        entries: &mut impl EntryAdmission,
         integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
     ) -> Result<RecoverySelectedSourceInventory, PageObservationFailure> {
+        pays_for(charge, root.generation());
         let (segment_pages, segment_artifacts, segment_topology) = self.segments;
-        let (free_entries, free_artifacts, free_topology) =
-            read_free_entries(discovery, &self.free_space, format, budget, integrity_trace)?;
+        let (free_entries, free_artifacts, free_topology) = read_free_entries(
+            discovery,
+            &self.free_space,
+            format,
+            entries,
+            integrity_trace,
+        )?;
         let mut source_artifacts = BTreeSet::from([RecordArtifactFile::FreeSpaceManifest {
             generation: root.generation(),
         }]);
         source_artifacts.extend(segment_artifacts);
         source_artifacts.extend(free_artifacts);
-        Ok(RecoverySelectedSourceInventory {
+        let inventory = RecoverySelectedSourceInventory {
             free_space: self.free_space,
             segment_pages,
             segment_topology,
@@ -151,7 +169,8 @@ impl InventorySegments {
                 .into_iter()
                 .collect::<Vec<_>>()
                 .into_boxed_slice(),
-        })
+        };
+        Ok(inventory)
     }
 }
 
@@ -208,7 +227,7 @@ fn read_segment_pages(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     root: &DurablePhysicalRootManifest,
     format: PhysicalRecordFormatDeclaration,
-    budget: &mut ManifestEntryBudget,
+    budget: &mut impl EntryAdmission,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) -> Result<SelectedSegmentTopologyObservation, PageObservationFailure> {
     let mut pending = root.segment_root().into_iter().collect::<VecDeque<_>>();
@@ -251,7 +270,7 @@ fn read_segment_pages(
         .map_err(|failure| membership_failure(artifact, failure, budget))?;
         topology.insert((reference.generation(), reference.block()), block.clone());
         if let Some(entries) = block.entries() {
-            budget.consume(entries.len())?;
+            budget.admit(entries.len())?;
             for entry in entries {
                 let key = (entry.page_cell().segment_id().get(), entry.page().get());
                 let page = RecoverySelectedSegmentPage {
@@ -274,7 +293,7 @@ fn read_free_entries(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     header: &DurableFreeSpaceManifestHeader,
     format: PhysicalRecordFormatDeclaration,
-    budget: &mut ManifestEntryBudget,
+    budget: &mut impl EntryAdmission,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) -> Result<
     (
@@ -324,7 +343,7 @@ fn read_free_entries(
         .map_err(|failure| membership_failure(artifact, failure, budget))?;
         topology.insert((reference.generation(), reference.block()), block.clone());
         if let Some(found) = block.entries() {
-            budget.consume(found.len())?;
+            budget.admit(found.len())?;
             entries.extend_from_slice(found);
         } else if let Some(children) = block.children() {
             pending.extend(children.iter().copied());
@@ -348,7 +367,7 @@ const fn invalid(artifact: RecordArtifactFile) -> PageObservationFailure {
 fn membership_failure(
     artifact: RecordArtifactFile,
     failure: MembershipProjectionFailure,
-    budget: &mut ManifestEntryBudget,
+    budget: &mut impl EntryAdmission,
 ) -> PageObservationFailure {
     match failure {
         MembershipProjectionFailure::EntryLimit { observed } => {
@@ -364,6 +383,9 @@ fn membership_failure(
 #[cfg(test)]
 #[path = "selected_source_inventory/canonical_free_entry_tests.rs"]
 mod canonical_free_entry_tests;
+#[cfg(test)]
+#[path = "selected_source_inventory/charge_pins.rs"]
+mod charge_pins;
 #[cfg(test)]
 #[path = "selected_source_inventory/membership_limit_tests.rs"]
 mod membership_limit_tests;

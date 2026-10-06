@@ -9,11 +9,15 @@ use crate::entry::{
 use crate::orchestration::reader_limit::ReaderBytes;
 use crate::orchestration::recovery_budget::ExceededRecoveryLimit;
 
+use super::manifest_entry_budget::{EntriesStopped, ExceededManifestEntries};
+
 /// A limit page observation ran out of. It says nothing about the media.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum PageLimit {
     /// Refused by recovery's own allowance, in recovery's counts.
     Recovery(ExceededRecoveryLimit),
+    /// Refused by the walk's manifest-entry budget, in its counts.
+    Entries(ExceededManifestEntries),
     /// The observation bytes the reader was handed ran out, in its counts.
     Reader(ReaderBytes),
 }
@@ -28,6 +32,7 @@ impl PageLimit {
     ) -> Option<PhysicalRecoveryLimitFailure> {
         match self {
             Self::Recovery(limit) => Some(limit.into()),
+            Self::Entries(limit) => Some(limit.into()),
             Self::Reader(bytes) => bytes.in_recovery(limits).map(Into::into),
         }
     }
@@ -193,6 +198,15 @@ mod tests {
                 PageObservationFailure::media(target, failure.clone()),
                 PageObservationFailure::Media { target, failure },
             );
+        }
+    }
+}
+
+impl From<EntriesStopped> for PageObservationFailure {
+    fn from(stopped: EntriesStopped) -> Self {
+        match stopped {
+            EntriesStopped::Limit(limit) => Self::Limit(PageLimit::Entries(limit)),
+            EntriesStopped::CountOverflow => Self::CountOverflow,
         }
     }
 }

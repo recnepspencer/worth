@@ -20,7 +20,10 @@ mod named;
 
 /// What the first reopen needs where a checkpoint heads the released
 /// object: the release gate then replays the head path its roster holds.
-const HEADED_NEED: u64 = 90;
+/// Every root read costs one entry, found or not. Among them: the successor
+/// root the candidate probe finds absent (1), and the historical roots a
+/// blob record is looked up under (4).
+const HEADED_NEED: u64 = 95;
 
 /// The entries the two-chunk worlds admit.
 const SUFFICIENT_ENTRIES: u64 = 4096;

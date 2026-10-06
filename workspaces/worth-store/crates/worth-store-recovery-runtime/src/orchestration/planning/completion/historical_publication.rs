@@ -2,16 +2,20 @@
 //! publications. A later selected generation alone is never publication proof.
 
 use worth_store::physical_runtime::{
-    ArtifactCeiling, PageAddress, ReadGrant, RecoveryDiscoveryFailure, UnchargedRead,
+    ArtifactCeiling, BoundedRecoveryFilesystemDiscovery, PageAddress, ReadGrant,
+    RecoveryDiscoveryFailure, UnchargedRead,
 };
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DurablePhysicalRootManifest, ManifestBlockReference,
-    PhysicalTreeIdentity,
+    PhysicalRecordFormatDeclaration, PhysicalTreeIdentity,
 };
 
 #[cfg(test)]
 #[path = "historical_publication/failure_tests.rs"]
 mod failure_tests;
+#[cfg(test)]
+#[path = "historical_publication/root_charge_tests.rs"]
+mod root_charge_tests;
 #[path = "historical_publication/route_inventory.rs"]
 mod route_inventory;
 pub(super) use route_inventory::{
@@ -22,7 +26,10 @@ use crate::entry::{PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitFailur
 use crate::integrity_ingress::{admit_addressed_root, RecoveryArtifactNamespaceJoin};
 use crate::orchestration::planning::{
     context::PlanningContext,
-    manifest_entry_budget::{EntriesStopped, ManifestEntryBudget},
+    manifest_entry_budget::{
+        pays_for, spend, ChargeTarget, ChargeToken, EntriesStopped, EntryAdmission,
+        ManifestEntryBudget, ROOT_ENTRY,
+    },
     page_observation::{PageLimit, PageObservationFailure},
     resolved_basis::ResolvedPlanningBasis,
 };
@@ -81,7 +88,7 @@ impl From<PageObservationFailure> for HistoricalFailure {
 impl From<EntriesStopped> for HistoricalFailure {
     fn from(stopped: EntriesStopped) -> Self {
         match stopped {
-            EntriesStopped::Limit(limit) => Self::Limit(PageLimit::Recovery(limit)),
+            EntriesStopped::Limit(limit) => Self::Limit(PageLimit::Entries(limit)),
             EntriesStopped::CountOverflow => Self::CountOverflow,
         }
     }
@@ -140,8 +147,10 @@ pub(in crate::orchestration::planning) fn charge_reader(
         .saturating_add(counters.bytes_read);
 }
 
+/// The addressed root at `generation` and the route of `record` under it,
+/// handed to `validate`. The root's entry is spent once it is read.
 pub(super) fn observe<R>(
-    mut context: PlanningContext,
+    context: PlanningContext,
     basis: &mut ResolvedPlanningBasis,
     generation: u64,
     record: worth_store_physical_format::PersistedRecordIdentity,
@@ -154,34 +163,50 @@ pub(super) fn observe<R>(
         &mut u64,
     ) -> Result<R, HistoricalFailure>,
 ) -> Result<(PlanningContext, R), crate::entry::PhysicalRecoveryOutcome> {
+    observe_charged(
+        context,
+        basis,
+        generation,
+        record,
+        |discovery, root, route, charge, budget, trace, scratch| {
+            spend(charge, root.generation());
+            validate(discovery, root, route, budget, trace, scratch)
+        },
+    )
+}
+
+/// Charges the root at `generation` its one entry before reading it, then
+/// hands the token on with the root, for a walk under it that the same entry
+/// pays for.
+pub(super) fn observe_charged<R>(
+    mut context: PlanningContext,
+    basis: &mut ResolvedPlanningBasis,
+    generation: u64,
+    record: worth_store_physical_format::PersistedRecordIdentity,
+    validate: impl FnOnce(
+        &mut worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery,
+        &DurablePhysicalRootManifest,
+        Option<CurrentPhysicalRecordPlacement>,
+        ChargeToken,
+        &mut ManifestEntryBudget,
+        &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
+        &mut u64,
+    ) -> Result<R, HistoricalFailure>,
+) -> Result<(PlanningContext, R), crate::entry::PhysicalRecoveryOutcome> {
     let remaining_bytes = remaining_observation(&context, basis);
     let format = context.authority.record_format;
-    let store = context.authority.media.store_identity();
     let media = context.authority.media;
     let mut discovery = media
         .bounded_discovery(UNCOUNTED_READS, remaining_bytes)
         .expect("a reader that counts no reads opens on any byte bound");
     let mut callback_scratch = 0;
     let result = (|| {
-        let root_source = discovery
-            .read(
-                ArtifactCeiling::page(format, PageAddress::RootManifest { generation }),
-                ReadGrant::ceiling_only(),
-            )
-            .observed()
-            .map_err(discovery_failure)?;
-        let admitted = admit_addressed_root(
-            RecoveryArtifactNamespaceJoin::from_canonical(&root_source),
-            store,
+        let (root, charge) = charged_root(
+            &mut discovery,
+            &mut basis.observed_pages.manifest_budget,
             format,
             generation,
-        )
-        .map_err(|_| HistoricalFailure::Invalid)?;
-        let (root, observed_format) = admitted.project();
-        if observed_format != format || root.generation() != generation {
-            return Err(HistoricalFailure::Invalid);
-        }
-        drop(root_source);
+        )?;
         let route = find_route(
             &mut discovery,
             &root,
@@ -195,6 +220,7 @@ pub(super) fn observe<R>(
             &mut discovery,
             &root,
             route,
+            charge,
             &mut basis.observed_pages.manifest_budget,
             &mut context.integrity_trace,
             &mut callback_scratch,
@@ -216,6 +242,37 @@ pub(super) fn observe<R>(
     Ok((context, value))
 }
 
+/// The addressed root at `generation`, charged its one entry before it is
+/// read. The token goes on with the root, for the reads under it.
+fn charged_root(
+    discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    budget: &mut ManifestEntryBudget,
+    format: PhysicalRecordFormatDeclaration,
+    generation: u64,
+) -> Result<(DurablePhysicalRootManifest, ChargeToken), HistoricalFailure> {
+    let charge = budget.charge(ROOT_ENTRY, ChargeTarget::root(generation))?;
+    pays_for(&charge, generation);
+    let root_source = discovery
+        .read(
+            ArtifactCeiling::page(format, PageAddress::RootManifest { generation }),
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
+        .map_err(discovery_failure)?;
+    let admitted = admit_addressed_root(
+        RecoveryArtifactNamespaceJoin::from_canonical(&root_source),
+        discovery.store_identity(),
+        format,
+        generation,
+    )
+    .map_err(|_| HistoricalFailure::Invalid)?;
+    let (root, observed_format) = admitted.project();
+    if observed_format != format || root.generation() != generation {
+        return Err(HistoricalFailure::Invalid);
+    }
+    Ok((root, charge))
+}
+
 pub(super) fn find_route(
     discovery: &mut worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery,
     root: &DurablePhysicalRootManifest,
@@ -227,7 +284,7 @@ pub(super) fn find_route(
 ) -> Result<Option<CurrentPhysicalRecordPlacement>, HistoricalFailure> {
     // One lookup charges one entry, however many blocks its path crosses
     // and however many neighbors share its leaf.
-    budget.consume(1)?;
+    budget.admit(1)?;
     let mut reference = root
         .routing_root()
         .filter(|reference| reference.contains(record));

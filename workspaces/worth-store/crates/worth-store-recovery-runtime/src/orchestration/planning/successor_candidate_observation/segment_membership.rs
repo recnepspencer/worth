@@ -10,14 +10,16 @@ use super::materialization::CandidateMaterialization;
 use super::resident::{memory_failure, trace_slots};
 use super::tree_walk_resident::{segment_projection_scratch, VisitedNodes};
 use crate::entry::PhysicalRecoverySuccessorCandidateDenial;
-use crate::orchestration::planning::manifest_entry_budget::{ManifestEntryBudget, RootUnit};
+use crate::orchestration::planning::manifest_entry_budget::{
+    pays_for, ChargeToken, EntryAdmission, ManifestEntryBudget,
+};
 use crate::progression::{PlanningResidentAllowance, RecoveryObservedCandidateArtifact};
 
 pub(super) fn read(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     root: &DurablePhysicalRootManifest,
     format: PhysicalRecordFormatDeclaration,
-    _root_unit: &RootUnit,
+    charge: &ChargeToken,
     budget: &mut ManifestEntryBudget,
     artifacts: &mut Vec<RecoveryObservedCandidateArtifact>,
     referenced_artifacts: &mut Vec<RecordArtifactFile>,
@@ -25,6 +27,7 @@ pub(super) fn read(
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
     allowance: &mut PlanningResidentAllowance,
 ) -> Result<Vec<RecordSegmentPageManifestEntry>, PhysicalRecoverySuccessorCandidateDenial> {
+    pays_for(charge, root.generation());
     let mut pending = Vec::new();
     if let Some(reference) = root.segment_root() {
         let artifact = RecordArtifactFile::SegmentMembershipBlock {
@@ -62,7 +65,7 @@ pub(super) fn read(
             .retain(scratch)
             .map_err(|failure| memory_failure(artifact, failure))?;
         trace_slots(artifact, integrity_trace, allowance)?;
-        let source = read_artifact(discovery, artifact, format, allowance)?;
+        let source = read_artifact(discovery, artifact, format, charge, allowance)?;
         let tree =
             PhysicalTreeIdentity::new(root.tree_identity()).ok_or_else(|| invalid(artifact))?;
         let block = crate::integrity_ingress::projection::segment_membership_block(

@@ -23,7 +23,9 @@ pub(crate) use discovery::{
 };
 pub(crate) use handoff::finish_recovery_after_cleanup;
 pub(crate) use manifest_facts::{ManifestFactsDiscovery, ManifestFactsState};
-pub(crate) use planning::{plan_recovery, ValidatedManifestResidueCleanup};
+pub(crate) use planning::{
+    plan_recovery, ExceededManifestEntries, ValidatedManifestResidueCleanup,
+};
 pub(crate) use publication::publish_recovery;
 pub(crate) use recovery::recover;
 pub(crate) use reopen::reopen_recovery;

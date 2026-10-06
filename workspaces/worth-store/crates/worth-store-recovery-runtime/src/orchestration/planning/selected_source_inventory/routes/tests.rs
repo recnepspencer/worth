@@ -6,29 +6,35 @@ use worth_store_physical_format::{
     ManifestBlockReference, PersistedRecordIdentity, PhysicalRootRoutingBlock, RecordArtifactFile,
 };
 
-use super::super::{
-    ManifestEntryBudget, PageObservationFailure, ResidentAllowance, ResidentTraceDenial,
-};
+use super::super::{PageObservationFailure, ResidentAllowance, ResidentTraceDenial};
 use super::{observe_routes_held, observe_routes_with_budget, RoutesFailure};
 use crate::integrity_ingress::RecoveryIntegrityIngressTrace;
+use crate::orchestration::planning::manifest_entry_budget::{
+    ChargeTarget, ManifestEntryBudget, ROOT_ENTRY,
+};
 use crate::orchestration::planning::selected_world_fixture::{selected_world, SelectedSource};
 
 /// Entries no walk here comes near.
 const AMPLE: u64 = 4_096;
+
+/// The charge for a read of `root`.
+const fn of(root: &DurablePhysicalRootManifest) -> ChargeTarget {
+    ChargeTarget::root(root.generation())
+}
 
 /// How many records the walk of `root` routes.
 fn routed(
     source: &mut SelectedSource<'_>,
     root: &DurablePhysicalRootManifest,
 ) -> Result<u64, PageObservationFailure> {
-    let mut budget = ManifestEntryBudget::new(AMPLE, 0);
+    let mut budget = ManifestEntryBudget::for_test(AMPLE, 0);
     let mut trace = RecoveryIntegrityIngressTrace::default();
-    let root_unit = budget.charge_root()?;
+    let charge = budget.charge(ROOT_ENTRY, of(root))?;
     observe_routes_with_budget(
         source.discovery,
         root,
         source.format,
-        &root_unit,
+        charge,
         &mut budget,
         &mut trace,
     )
@@ -138,15 +144,15 @@ fn routes_their_holder_has_no_room_for_are_refused_as_held_and_never_as_an_entry
     selected_world("routes-held", 4).read(|source| {
         let root = source.root;
         let mut held = |maximum: u64| {
-            let mut budget = ManifestEntryBudget::new(AMPLE, 0);
+            let mut budget = ManifestEntryBudget::for_test(AMPLE, 0);
             let mut trace = RecoveryIntegrityIngressTrace::default();
             let mut resident = ResidentAllowance::new(maximum);
-            let root_unit = budget.charge_root().unwrap();
+            let charge = budget.charge(ROOT_ENTRY, of(root)).unwrap();
             let outcome = observe_routes_held(
                 source.discovery,
                 root,
                 source.format,
-                &root_unit,
+                charge,
                 &mut budget,
                 &mut trace,
                 &mut resident,
@@ -180,5 +186,26 @@ fn routes_their_holder_has_no_room_for_are_refused_as_held_and_never_as_an_entry
             ));
             assert_eq!(refused_at, None);
         }
+    });
+}
+
+/// A charge pays for the read of its own root: handed to a read of another,
+/// it is a programming error the read stops at.
+#[test]
+#[cfg(debug_assertions)]
+#[should_panic(expected = "a charge pays for the read of its own target")]
+fn a_charge_for_another_root_stops_the_routes_read() {
+    selected_world("routes-another-root", 4).read(|source| {
+        let mut budget = ManifestEntryBudget::for_test(AMPLE, 0);
+        let another = ChargeTarget::root(source.root.generation() + 1);
+        let charge = budget.charge(ROOT_ENTRY, another).unwrap();
+        let _ = observe_routes_with_budget(
+            source.discovery,
+            source.root,
+            source.format,
+            charge,
+            &mut budget,
+            &mut RecoveryIntegrityIngressTrace::default(),
+        );
     });
 }

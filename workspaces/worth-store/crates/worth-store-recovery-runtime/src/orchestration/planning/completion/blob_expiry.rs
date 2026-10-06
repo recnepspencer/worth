@@ -13,7 +13,7 @@ use worth_store_physical_format::{
 };
 use worth_store_physical_integrity::{PhysicalArtifactScope, PhysicalByteRange};
 
-use super::super::manifest_entry_budget::ManifestEntryBudget;
+use super::super::manifest_entry_budget::{EntryAdmission, ManifestEntryBudget};
 use super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
 use super::historical_publication::{self, HistoricalFailure};
 
@@ -114,7 +114,7 @@ fn read_selected_declaration(
     {
         return Err(HistoricalFailure::Invalid);
     }
-    budget.consume(1)?;
+    budget.admit(1)?;
     let observed = discovery
         .read_extent_manifest(placement.arena_range(), ReadGrant::ceiling_only())
         .observed()
@@ -279,12 +279,11 @@ mod tests {
             BlobAbandonmentReasonV1::ExplicitAbort,
         )
         .unwrap();
-        use crate::entry::PhysicalRecoveryLimitDimension::ManifestEntries;
+        use crate::orchestration::planning::manifest_entry_budget::manifest_entry_limit_for_test;
         use crate::orchestration::planning::page_observation::PageLimit;
-        use crate::orchestration::recovery_budget::recovery_limit_for_test;
         let read = |name: &str, observed: u64| {
             selected_world(name, 4).read(|source| {
-                let mut budget = ManifestEntryBudget::new(8, observed);
+                let mut budget = ManifestEntryBudget::for_test(8, observed);
                 let mut trace = Default::default();
                 let outcome = read_selected_declaration(
                     source.discovery,
@@ -304,8 +303,8 @@ mod tests {
         assert_eq!(
             read("declaration-read-none-left", 8),
             (
-                Err(HistoricalFailure::Limit(PageLimit::Recovery(
-                    recovery_limit_for_test(ManifestEntries, 9, 8)
+                Err(HistoricalFailure::Limit(PageLimit::Entries(
+                    manifest_entry_limit_for_test(9, 8)
                 ))),
                 0,
                 0

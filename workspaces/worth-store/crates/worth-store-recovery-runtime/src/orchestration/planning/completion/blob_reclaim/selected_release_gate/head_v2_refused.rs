@@ -53,6 +53,7 @@ pub(super) fn routes_denial(failure: RoutesFailure<ResidentTraceDenial>) -> Refu
 fn limit_denial(limit: PageLimit) -> Denial {
     match limit {
         PageLimit::Reader(_) => Denial::ObservationByteLimit,
+        PageLimit::Entries(_) => Denial::ManifestEntryLimit,
         PageLimit::Recovery(limit) => {
             use PhysicalRecoveryLimitDimension as Dimension;
             match limit.dimension() {

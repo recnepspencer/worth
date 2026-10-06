@@ -14,7 +14,10 @@ use worth_store_recovery_runtime::{
 /// What the first reopen of the frontier world needs. Fixed: about 140 root
 /// steps stand above its checkpoint, and each is charged what its member
 /// declares it wrote, whichever blocks the ingest landed in.
-const FRONTIER_NEED: u64 = 1000;
+/// Every root read costs one entry, found or not. Among them: the successor
+/// root the candidate probe finds absent (1), and the historical roots a
+/// blob record is looked up under (2).
+const FRONTIER_NEED: u64 = 1003;
 
 pub(super) fn recover(world: &PendingWalWorld, stage: &str) -> RecoveredPhysicalRuntimeHandoff {
     match WorthStoreRecovery::recover(world.recovery_request()) {

@@ -4,7 +4,7 @@
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{CurrentPhysicalRecordPlacement, PersistedRecordIdentity};
 
-use super::{observe, HistoricalFailure};
+use super::{observe_charged, HistoricalFailure};
 use crate::orchestration::planning::{
     context::PlanningContext, resolved_basis::ResolvedPlanningBasis,
     selected_source_inventory::observe_routes_with_budget,
@@ -73,12 +73,14 @@ fn observe_routes(
     crate::entry::PhysicalRecoveryOutcome,
 > {
     let format = context.authority.record_format;
-    observe(
+    // The root's own entry, charged before the root was read, pays for
+    // every routing block of its inventory.
+    observe_charged(
         context,
         basis,
         generation,
         anchor,
-        |discovery, root, anchor_route, budget, trace, scratch| {
+        |discovery, root, anchor_route, charge, budget, trace, scratch| {
             if anchor_route.is_none()
                 || root_frame_sha256.is_some_and(|expected| {
                     <[u8; 32]>::from(Sha256::digest(root.encode(format))) != expected
@@ -86,9 +88,8 @@ fn observe_routes(
             {
                 return Err(HistoricalFailure::Invalid);
             }
-            let root_unit = budget.charge_root()?;
             let entries =
-                observe_routes_with_budget(discovery, root, format, &root_unit, budget, trace)?;
+                observe_routes_with_budget(discovery, root, format, charge, budget, trace)?;
             if entries
                 .binary_search_by_key(&anchor, |placement| placement.record())
                 .is_err()

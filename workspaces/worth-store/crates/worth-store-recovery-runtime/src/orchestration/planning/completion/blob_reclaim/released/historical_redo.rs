@@ -54,21 +54,22 @@ pub(in crate::orchestration::planning::completion) fn verify_historical(
         return Err(context.redo_block(basis.planning_counters(), None));
     }
     let format = context.authority.record_format;
-    let (next, historical_source) = historical_publication::observe(
+    // The root's one entry, charged before it was read, pays for the
+    // inventory under it too.
+    let (next, historical_source) = historical_publication::observe_charged(
         context,
         basis,
         base.source_root_generation(),
         base.manifest_record(),
-        |discovery, root, route, budget, trace, _| {
+        |discovery, root, route, charge, budget, trace, _| {
             if route.is_none()
                 || Sha256::digest(root.encode(format)).as_slice()
                     != custody.source_root_frame_sha256()
             {
                 return Err(HistoricalFailure::Invalid);
             }
-            let root_unit = budget.charge_root()?;
             let inventory = selected_source_inventory::observe_with_budget(
-                discovery, root, format, &root_unit, budget, trace,
+                discovery, root, format, charge, budget, trace,
             )?;
             if <[u8; 32]>::from(Sha256::digest(inventory.free_space.encode(format)))
                 != custody.source_free_space_frame_sha256()
@@ -215,18 +216,17 @@ pub(in crate::orchestration::planning::completion) fn verify_historical(
         .observed_pages
         .historical_publication_peak_scratch_bytes
         .max(scratch_bytes);
-    let (next, candidate) = historical_publication::observe(
+    let (next, candidate) = historical_publication::observe_charged(
         context,
         basis,
         base.candidate_root_generation(),
         evidence.descriptor_record,
-        |discovery, root, route, budget, trace, _| {
+        |discovery, root, route, charge, budget, trace, _| {
             if route.is_none() {
                 return Err(HistoricalFailure::Invalid);
             }
-            let root_unit = budget.charge_root()?;
             let inventory = selected_source_inventory::observe_with_budget(
-                discovery, root, format, &root_unit, budget, trace,
+                discovery, root, format, charge, budget, trace,
             )?;
             Ok((root.clone(), inventory))
         },

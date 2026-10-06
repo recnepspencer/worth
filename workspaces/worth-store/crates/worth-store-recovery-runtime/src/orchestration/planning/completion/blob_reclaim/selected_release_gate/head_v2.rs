@@ -20,7 +20,9 @@ use crate::integrity_ingress::{admit_addressed_root, RecoveryArtifactNamespaceJo
 use crate::orchestration::planning::completion::historical_publication::{
     discovery_failure, remaining_observation, HistoricalFailure,
 };
-use crate::orchestration::planning::manifest_entry_budget::ManifestEntryBudget;
+use crate::orchestration::planning::manifest_entry_budget::{
+    pays_for, ChargeTarget, EntryAdmission, ManifestEntryBudget, ViewEntryCap, ROOT_ENTRY,
+};
 use crate::orchestration::planning::selected_source_inventory::{self, ResidentAllowance};
 use crate::progression::PlanningCustody;
 
@@ -120,9 +122,10 @@ fn observe(
                 .ok_or(Denial::WalkLimits)?,
         )
         .map_err(|_| Denial::ResidentBoundExceeded)?;
-    let root_unit = budget
-        .charge_root()
+    let charge = budget
+        .charge(ROOT_ENTRY, ChargeTarget::root(generation))
         .map_err(|_| Denial::ManifestEntryLimit)?;
+    pays_for(&charge, generation);
     let observed = discovery
         .read(
             ArtifactCeiling::page(format, PageAddress::RootManifest { generation }),
@@ -146,14 +149,14 @@ fn observe(
         return Err(Denial::SourceRootFormatMismatch.into());
     }
     let routes = selected_source_inventory::observe_routes_held(
-        discovery, &root, format, &root_unit, budget, trace, resident,
+        discovery, &root, format, charge, budget, trace, resident,
     )
     .map_err(routes_denial)?;
     // Walking the head roster is one lookup, however many blocks hold it.
-    budget.consume(1).map_err(|_| Denial::ManifestEntryLimit)?;
+    budget.admit(1).map_err(|_| Denial::ManifestEntryLimit)?;
     // The lookup is charged; the walk is admitted as one view, of no more
     // entries than recovery admits, whatever earlier phases left of them.
-    let entries = budget.admitted();
+    let entries = ViewEntryCap::of(budget).admitted();
     // Even an empty remainder must produce the same typed resident denial,
     // before constructing walker metadata or encoding the source root.
     resident

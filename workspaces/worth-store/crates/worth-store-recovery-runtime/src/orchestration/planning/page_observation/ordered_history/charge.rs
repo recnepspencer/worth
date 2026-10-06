@@ -5,6 +5,7 @@
 //! it does not depend on which blocks the records landed in.
 
 use std::cmp::Ordering;
+use std::num::NonZeroUsize;
 
 use worth_store_physical_format::{
     DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest, FreeSpaceKey,
@@ -15,10 +16,10 @@ use worth_store_recovery_physics::AdmittedRootStepMemberView;
 /// One for the step's result root, and for a WAL member its placements,
 /// segment updates, inline allocations and the records its directory drops.
 /// A retirement edge has no member; its free-space difference is charged once
-/// both sides are read.
-pub(super) fn step(member: Option<&AdmittedRootStepMemberView<'_>>) -> Option<usize> {
+/// both sides are read. Never nothing: the result root is always counted.
+pub(super) fn step(member: Option<&AdmittedRootStepMemberView<'_>>) -> Option<NonZeroUsize> {
     let Some(member) = member else {
-        return Some(1);
+        return Some(NonZeroUsize::MIN);
     };
     let projection = member.materialization();
     let dropped = match projection.operation() {
@@ -41,8 +42,8 @@ fn declared(
     segment_updates: usize,
     inline_allocations: usize,
     dropped: usize,
-) -> Option<usize> {
-    1_usize
+) -> Option<NonZeroUsize> {
+    NonZeroUsize::MIN
         .checked_add(placements)?
         .checked_add(segment_updates)?
         .checked_add(inline_allocations)?
@@ -151,6 +152,9 @@ mod tests {
 
     #[test]
     fn a_member_step_is_charged_one_and_everything_its_member_declares() {
+        let declared = |placements, segments, inline, dropped| {
+            declared(placements, segments, inline, dropped).map(NonZeroUsize::get)
+        };
         assert_eq!(declared(0, 0, 0, 0), Some(1));
         assert_eq!(declared(2, 0, 0, 0), Some(3));
         assert_eq!(declared(0, 3, 0, 0), Some(4));
@@ -162,7 +166,7 @@ mod tests {
 
     #[test]
     fn a_retirement_edge_without_a_member_is_charged_its_root() {
-        assert_eq!(step(None), Some(1));
+        assert_eq!(step(None), Some(NonZeroUsize::MIN));
     }
 
     fn free(owner: u64, first_unallocated: u64) -> RecordFreeSpaceManifestEntry {

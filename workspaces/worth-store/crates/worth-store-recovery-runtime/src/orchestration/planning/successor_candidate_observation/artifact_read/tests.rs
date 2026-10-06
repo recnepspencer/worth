@@ -10,9 +10,19 @@ use worth_store_physical_format::{
 
 use super::read;
 use crate::entry::PhysicalRecoverySuccessorCandidateDenial;
+use crate::orchestration::planning::manifest_entry_budget::{
+    ChargeTarget, ChargeToken, EntryAdmission, ManifestEntryBudget, ROOT_ENTRY,
+};
 use crate::progression::PlanningResidentAllowance;
 
 const GENERATION: u64 = 7;
+
+/// The candidate root's charge, which the wrapper reading its pages lends.
+fn paid() -> ChargeToken {
+    ManifestEntryBudget::for_test(1, 0)
+        .charge(ROOT_ENTRY, ChargeTarget::root(GENERATION))
+        .unwrap()
+}
 
 #[test]
 fn absent_optional_root_reads_with_zero_resident_space() {
@@ -26,7 +36,7 @@ fn absent_optional_root_reads_with_zero_resident_space() {
     let artifact = RecordArtifactFile::RootManifest {
         generation: GENERATION,
     };
-    let observed = read(&mut discovery, artifact, format(), &mut resident).unwrap();
+    let observed = read(&mut discovery, artifact, format(), &paid(), &mut resident).unwrap();
     assert!(observed.bytes().is_none());
     assert_eq!(resident.used(), 0);
     assert_eq!(discovery.counters().bytes_read, 0);
@@ -49,7 +59,7 @@ fn present_root_reports_exact_resident_crossing_without_reading_bytes() {
     let artifact = RecordArtifactFile::RootManifest {
         generation: GENERATION,
     };
-    let denial = read(&mut discovery, artifact, format(), &mut resident).unwrap_err();
+    let denial = read(&mut discovery, artifact, format(), &paid(), &mut resident).unwrap_err();
     assert!(matches!(
         denial,
         PhysicalRecoverySuccessorCandidateDenial::RecoveryMemoryBytes {
@@ -83,7 +93,7 @@ fn cumulative_discovery_limit_remains_a_discovery_denial() {
     let artifact = RecordArtifactFile::RootManifest {
         generation: GENERATION,
     };
-    let denial = read(&mut discovery, artifact, format(), &mut resident).unwrap_err();
+    let denial = read(&mut discovery, artifact, format(), &paid(), &mut resident).unwrap_err();
     let PhysicalRecoverySuccessorCandidateDenial::Discovery {
         artifact: RecordArtifactFile::RootManifest {
             generation: GENERATION,
@@ -127,7 +137,7 @@ fn a_root_past_its_page_is_damage_whatever_resident_space_is_left() {
     let mut discovery = media.bounded_discovery(4, 4 * page).unwrap();
     for resident_space in [16, page, 2 * page] {
         let mut resident = PlanningResidentAllowance::new(0, resident_space).unwrap();
-        let denial = read(&mut discovery, artifact, format(), &mut resident).unwrap_err();
+        let denial = read(&mut discovery, artifact, format(), &paid(), &mut resident).unwrap_err();
         // The ceiling is checked before the grant: the root is damaged at
         // its real length, whatever the window has left.
         assert_eq!(
@@ -162,11 +172,69 @@ fn sufficient_resident_space_retains_exact_canonical_root_bytes() {
     let artifact = RecordArtifactFile::RootManifest {
         generation: GENERATION,
     };
-    let observed = read(&mut discovery, artifact, format(), &mut resident).unwrap();
+    let observed = read(&mut discovery, artifact, format(), &paid(), &mut resident).unwrap();
     assert_eq!(observed.bytes(), Some(fixture.bytes.as_slice()));
     assert_eq!(observed.owned_heap_bytes(), Some(admitted));
     assert_eq!(resident.used(), admitted);
     discovery.finish();
+}
+
+/// The successor of `selected` probed under a budget with `left` entries.
+fn probe(
+    fixture: &Fixture,
+    left: u64,
+) -> (
+    super::super::attempt::SuccessorCandidateObservationAttempt,
+    u64,
+) {
+    let media = QualifiedRecoveryFilesystemMedia::qualify_existing(&fixture.root)
+        .unwrap()
+        .admit_persisted_store()
+        .unwrap();
+    let selected = DurablePhysicalRootManifest::builder(GENERATION - 1, 11, 4, 19)
+        .admit()
+        .unwrap();
+    let mut budget = ManifestEntryBudget::for_test(8, 8 - left);
+    let mut trace = crate::integrity_ingress::RecoveryIntegrityIngressTrace::default();
+    let mut resident = PlanningResidentAllowance::new(0, 1 << 20).unwrap();
+    let (_media, attempt) = super::super::attempt::observe(
+        media,
+        &selected,
+        format(),
+        &mut budget,
+        1 << 20,
+        &mut trace,
+        &mut resident,
+    );
+    (attempt, budget.remaining())
+}
+
+/// Looking costs the successor root its entry, found or not. An absent
+/// root spends it; with none left, the probe reads nothing.
+#[test]
+fn the_successor_root_is_charged_before_it_is_probed_and_an_absent_one_still_costs_its_entry() {
+    let absent = Fixture::new("successor-root-probe-absent", false);
+    let (attempt, left) = probe(&absent, 1);
+    assert_eq!(attempt.result, Ok(None));
+    assert_eq!(left, 0);
+    let limit = Err(
+        PhysicalRecoverySuccessorCandidateDenial::ManifestEntryLimit {
+            artifact: RecordArtifactFile::RootManifest {
+                generation: GENERATION,
+            },
+            generation: GENERATION,
+        },
+    );
+    for present in [false, true] {
+        let fixture = Fixture::new("successor-root-probe-refused", present);
+        let (attempt, _) = probe(&fixture, 0);
+        assert_eq!(attempt.result, limit, "present: {present}");
+        assert_eq!(
+            (attempt.artifact_reads, attempt.bytes_read),
+            (0, 0),
+            "present: {present}"
+        );
+    }
 }
 
 fn format() -> PhysicalRecordFormatDeclaration {

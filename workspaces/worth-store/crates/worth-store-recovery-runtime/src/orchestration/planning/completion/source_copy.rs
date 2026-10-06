@@ -1,4 +1,5 @@
 use super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
+use crate::orchestration::reader_limit::UNCOUNTED_READS;
 use crate::orchestration::source_copy::SourceCopyCursor;
 use worth_store::physical_runtime::{ReadGrant, UnchargedRead};
 use worth_store_physical_format::{CurrentPhysicalRecordPlacement, RecordFrameCoordinate};
@@ -59,9 +60,8 @@ pub(super) fn verify(
     let budget = copies
         .iter()
         .filter(|copy| !published_evidence.contains(&(copy.operation(), copy.publication_lsn())))
-        .try_fold((0_u64, 0_u64), |(reads, bytes), copy| {
+        .try_fold(0_u64, |bytes, copy| {
             let intent = copy.recipe().intent();
-            let frames = u64::from(intent.chunk_count()).checked_add(1)?;
             let source_root = copy.projection().source_root_generation();
             let comparisons = if selected > source_root { 2 } else { 1 };
             let frame_bytes = intent
@@ -74,12 +74,9 @@ pub(super) fn verify(
                             as u64,
                 )?
                 .checked_add(104)?;
-            Some((
-                reads.checked_add(frames.checked_mul(comparisons)?)?,
-                bytes.checked_add(frame_bytes.checked_mul(comparisons)?)?,
-            ))
+            bytes.checked_add(frame_bytes.checked_mul(comparisons)?)
         });
-    let Some((reads, total_io_bytes)) = budget else {
+    let Some(total_io_bytes) = budget else {
         return Err(context.redo_block(basis.planning_counters(), None));
     };
     let byte_limit = context
@@ -102,13 +99,14 @@ pub(super) fn verify(
     }
     let format = context.authority.record_format;
     let store = context.authority.media.store_identity();
-    // Charge bounded source/destination reads against the remaining aggregate
-    // observation budget; the frames are streamed, not retained as an object.
+    // The frames' bytes were refused above against what the earlier phases
+    // left of recovery's observation bytes; the copy keeps no count of its
+    // own. The frames are streamed, not retained as an object.
     let mut discovery = context
         .authority
         .media
-        .bounded_discovery(reads.max(1), total_io_bytes)
-        .expect("a reader admitted a read opens on any byte bound");
+        .bounded_discovery(UNCOUNTED_READS, total_io_bytes)
+        .expect("a reader that counts no reads opens on any byte bound");
     let result = (|| {
         for copy in &copies {
             let recipe = copy.recipe();

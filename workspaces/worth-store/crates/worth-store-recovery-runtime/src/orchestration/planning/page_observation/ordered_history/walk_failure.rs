@@ -8,7 +8,9 @@ use worth_store_recovery_physics::{
 };
 
 use crate::entry::PhysicalRecoverySelectedRecordReadDenial;
-use crate::orchestration::planning::manifest_entry_budget::{EntriesStopped, ManifestEntryBudget};
+use crate::orchestration::planning::manifest_entry_budget::{
+    EntriesStopped, ExceededManifestEntries, ManifestEntryBudget, ViewEntryCap,
+};
 use crate::orchestration::planning::page_observation::{PageLimit, PageObservationFailure};
 use crate::orchestration::planning::selected_source_inventory::ResidentAllowance;
 use crate::orchestration::recovery_budget::{ExceededRecoveryLimit, RecoveryAllowance};
@@ -36,7 +38,10 @@ impl WalkFailure {
         match exceeded {
             None => Self::Unverified,
             Some(past) => match past.dimension() {
-                RootHistoryBound::Entries => budget.refuse_view(past.observed()).into(),
+                RootHistoryBound::Entries => {
+                    let view = ViewEntryCap::of(budget).refuse(past.observed());
+                    budget.view_refused(view).into()
+                }
                 RootHistoryBound::ScratchBytes => {
                     Self::past_scratch(past.observed(), past.admitted(), staging)
                 }
@@ -130,7 +135,7 @@ impl WalkFailure {
         match denial {
             Denial::ManifestRead(failure) | Denial::ChunkRead { failure, .. } => failure.into(),
             Denial::ManifestEntryLimit => {
-                budget.refused().map_or(Self::CountOverflow, Self::recovery)
+                budget.refused().map_or(Self::CountOverflow, Self::entries)
             }
             Denial::ResidentBoundExceeded => Self::resident(resident, staging),
             Denial::InvalidRoute
@@ -161,6 +166,10 @@ impl WalkFailure {
 
     const fn recovery(limit: ExceededRecoveryLimit) -> Self {
         Self::Limit(PageLimit::Recovery(limit))
+    }
+
+    const fn entries(limit: ExceededManifestEntries) -> Self {
+        Self::Limit(PageLimit::Entries(limit))
     }
 
     /// Why the walk stopped short of a verdict, as observation reports it;

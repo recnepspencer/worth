@@ -3,13 +3,15 @@ use worth_store_physical_format::{
     DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration, RecordArtifactFile,
 };
 
-use super::manifest_entry_budget::ManifestEntryBudget;
+use super::manifest_entry_budget::{spend, ManifestEntryBudget};
 use crate::entry::PhysicalRecoverySuccessorCandidateDenial;
 use crate::progression::PlanningResidentAllowance;
 use crate::progression::RecoveryObservedSuccessorCandidate;
 
 mod artifact_read;
 mod attempt;
+#[cfg(test)]
+mod charge_pins;
 mod denial;
 mod free_space;
 mod materialization;
@@ -34,20 +36,24 @@ fn observe_bounded(
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
     allowance: &mut PlanningResidentAllowance,
 ) -> Result<Option<RecoveryObservedSuccessorCandidate>, PhysicalRecoverySuccessorCandidateDenial> {
+    let generation = root_manifest::successor_generation(selected)?;
+    let charge = denial::charge_successor_root(budget, generation)?;
     let Some(observed_root) = root_manifest::read(
         discovery,
-        selected,
+        generation,
         format,
+        &charge,
         materialization,
         root_protocol_counters,
         allowance,
     )?
     else {
+        // Looking was the absent root's one read: it spends the entry.
+        spend(charge, generation);
         return Ok(None);
     };
     let root = observed_root.manifest;
     let root_artifact = observed_root.artifact;
-    let root_unit = denial::charge_successor_root(budget, root_artifact)?;
     let mut artifacts = allowance
         .reserve(1)
         .map_err(|denial| resident::memory_failure(root_artifact, denial))?;
@@ -60,7 +66,7 @@ fn observe_bounded(
         discovery,
         &root,
         format,
-        &root_unit,
+        &charge,
         budget,
         &mut artifacts,
         &mut referenced_artifacts,
@@ -72,7 +78,7 @@ fn observe_bounded(
         discovery,
         &root,
         format,
-        &root_unit,
+        &charge,
         budget,
         &mut artifacts,
         &mut referenced_artifacts,
@@ -84,7 +90,7 @@ fn observe_bounded(
         discovery,
         &root,
         format,
-        &root_unit,
+        charge,
         budget,
         &mut artifacts,
         &mut referenced_artifacts,

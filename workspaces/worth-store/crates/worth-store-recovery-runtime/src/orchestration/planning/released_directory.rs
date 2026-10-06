@@ -9,7 +9,8 @@ use worth_store_physical_format::{
 use worth_store_physical_integrity::{PhysicalArtifactScope, PhysicalByteRange};
 
 use super::{
-    manifest_entry_budget::ManifestEntryBudget, selected_source_inventory::ResidentAllowance,
+    manifest_entry_budget::{EntryAdmission, ManifestEntryBudget},
+    selected_source_inventory::ResidentAllowance,
 };
 use crate::entry::PhysicalRecoverySelectedRecordReadDenial as Denial;
 use crate::integrity_ingress::RecoveryIntegrityIngressTrace;
@@ -69,7 +70,7 @@ pub(super) fn read(
                 segment: placement.segment().get(),
                 generation: selected.entry.data_generation(),
             };
-            budget.consume(1).map_err(|_| Denial::ManifestEntryLimit)?;
+            budget.admit(1).map_err(|_| Denial::ManifestEntryLimit)?;
             resident.trace_slots(trace, 1).map_err(Denial::from)?;
             resident
                 .transient(u64::from(page_bytes))

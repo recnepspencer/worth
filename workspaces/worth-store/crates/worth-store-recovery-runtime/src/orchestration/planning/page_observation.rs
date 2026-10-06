@@ -1,7 +1,6 @@
 use crate::orchestration::recovery_budget::RecoveryAllowance;
 use std::collections::BTreeMap;
 
-use worth_store::physical_runtime::AdmittedRecoveryFilesystemMedia;
 use worth_store::physical_runtime::{
     IntegrityAdmittedRecoveryWalFrameView, StoreRecoveryBindingFreshnessSample,
 };
@@ -23,11 +22,14 @@ mod materialized;
 mod ordered_history;
 mod selected_basis;
 mod tier_routes;
+mod walk_entry;
 
 use absent_target::{AbsentTarget, SelectedFrontier};
 pub(in crate::orchestration::planning) use allocation_truth::InlineAllocationTruth;
 pub(super) use failure::{PageLimit, PageObservationFailure};
+use manifest_entry_budget::{ChargeTarget, ManifestEntryBudget, ROOT_ENTRY};
 use materialized::{observe_extent, observe_inline, selected_inline_target};
+pub(super) use walk_entry::{manifest_entry_budget, observe_selected_pages};
 
 pub(super) struct PageObservationAttempt {
     pub(super) result: Result<ObservedPageBasis, PageObservationFailure>,
@@ -35,7 +37,7 @@ pub(super) struct PageObservationAttempt {
     pub(super) bytes_read: u64,
     pub(super) integrity: crate::integrity_ingress::RecoveryIntegrityIngressCounters,
     /// The manifest entries observation charged, whether or not it passed.
-    pub(super) manifest_budget: super::manifest_entry_budget::ManifestEntryBudget,
+    pub(super) manifest_budget: ManifestEntryBudget,
 }
 
 pub(super) struct ObservedPageBasis {
@@ -58,70 +60,6 @@ pub(super) struct TierEvidence<'a> {
     pub(super) selected_wal: IntegrityAdmittedRecoveryWalFrameView<'a>,
 }
 
-pub(super) fn observe_selected_pages(
-    media: AdmittedRecoveryFilesystemMedia,
-    tier_evidence: TierEvidence<'_>,
-    root_manifest: &DurablePhysicalRootManifest,
-    retained_fallback: Option<(
-        &DurablePhysicalRootManifest,
-        PhysicalRecordFormatDeclaration,
-    )>,
-    placements: &[CurrentPhysicalRecordPlacement],
-    admitted_redo: &worth_store_recovery_physics::AdmittedPhysicalRedoMembers,
-    format: PhysicalRecordFormatDeclaration,
-    limits: &crate::entry::PhysicalRecoveryLimitDeclaration,
-    maximum_manifest_entries: u64,
-    maximum_bytes: u64,
-    integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
-) -> (AdmittedRecoveryFilesystemMedia, PageObservationAttempt) {
-    let admitted_manifest_entries = limits.manifest_entries;
-    // The walk's scratch is recovery's staging bytes.
-    let staging = RecoveryAllowance::declared(
-        limits,
-        crate::entry::PhysicalRecoveryLimitDimension::StagingBytes,
-    );
-    let targets = admitted_redo.observation_targets();
-    let mut discovery = media
-        .bounded_discovery(
-            crate::orchestration::reader_limit::UNCOUNTED_READS,
-            maximum_bytes,
-        )
-        .expect("a reader that counts no reads opens on any byte bound");
-    let mut integrity = crate::integrity_ingress::RecoveryIntegrityIngressTrace::new();
-    let mut manifest_budget = super::manifest_entry_budget::ManifestEntryBudget::declared(
-        limits,
-        admitted_manifest_entries.saturating_sub(maximum_manifest_entries),
-    );
-    let result = observe(
-        &mut discovery,
-        tier_evidence,
-        root_manifest,
-        retained_fallback,
-        placements,
-        &targets,
-        admitted_redo,
-        format,
-        admitted_manifest_entries,
-        &mut manifest_budget,
-        staging,
-        &mut integrity,
-        integrity_trace,
-    );
-    let counters = discovery.counters();
-    let page_counters = integrity.counters();
-    integrity_trace.append(integrity);
-    (
-        discovery.finish(),
-        PageObservationAttempt {
-            result,
-            artifact_reads: counters.addressed_artifacts_read,
-            bytes_read: counters.bytes_read,
-            integrity: page_counters,
-            manifest_budget,
-        },
-    )
-}
-
 fn observe(
     discovery: &mut worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery,
     tier_evidence: TierEvidence<'_>,
@@ -135,17 +73,18 @@ fn observe(
     admitted_redo: &worth_store_recovery_physics::AdmittedPhysicalRedoMembers,
     format: PhysicalRecordFormatDeclaration,
     admitted_manifest_entries: u64,
-    budget: &mut super::manifest_entry_budget::ManifestEntryBudget,
+    budget: &mut ManifestEntryBudget,
     staging: RecoveryAllowance,
     integrity: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
     integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) -> Result<ObservedPageBasis, PageObservationFailure> {
-    let selected_unit = budget.charge_root()?;
+    let selected = ChargeTarget::root(root_manifest.generation());
+    let charge = budget.charge(ROOT_ENTRY, selected)?;
     let mut selected_source = super::selected_source_inventory::observe_with_budget(
         discovery,
         root_manifest,
         format,
-        &selected_unit,
+        charge,
         budget,
         integrity_trace,
     )?;
@@ -157,12 +96,13 @@ fn observe(
         tier_evidence,
     )?;
     if let Some((fallback, fallback_format)) = retained_fallback {
-        let fallback_unit = budget.charge_root()?;
+        let target = ChargeTarget::root(fallback.generation());
+        let charge = budget.charge(ROOT_ENTRY, target)?;
         let fallback_source = super::selected_source_inventory::observe_with_budget(
             discovery,
             fallback,
             fallback_format,
-            &fallback_unit,
+            charge,
             budget,
             integrity_trace,
         )?;

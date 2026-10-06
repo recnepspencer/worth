@@ -13,7 +13,7 @@ use worth_store_recovery_physics::{
     VerifiedSelectedReleaseHeadReplayV14,
 };
 
-use crate::orchestration::planning::manifest_entry_budget::ManifestEntryBudget;
+use crate::orchestration::planning::manifest_entry_budget::{EntryAdmission, ManifestEntryBudget};
 
 use super::walk_failure::WalkFailure;
 
@@ -50,7 +50,7 @@ pub(super) fn admit_addressed_member(
 ) -> Result<VerifiedSelectedReleaseHeadReplayV14, WalkFailure> {
     // Replaying one member's head path is one lookup, however many blocks
     // the path crosses.
-    budget.consume(1)?;
+    budget.admit(1)?;
     let mut unread = Unread::default();
     VerifiedSelectedReleaseHeadReplayV14::admit_addressed_member(
         member,

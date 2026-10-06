@@ -1,0 +1,10 @@
+error[E0624]: associated function `declared` is private
+  --> tests/ui/manifest_entry_budget_is_built_only_by_the_walk_entry.rs:10:34
+   |
+10 |     let _ = ManifestEntryBudget::declared(10, 0);
+   |                                  ^^^^^^^^ private associated function
+   |
+  ::: tests/ui/manifest_entry/../../../src/orchestration/planning/page_observation/walk_entry/manifest_entry_budget.rs
+   |
+   |     pub(super) const fn declared(admitted: u64, already_observed: u64) -> Self {
+   |     -------------------------------------------------------------------------- private associated function defined here

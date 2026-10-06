@@ -1,9 +1,12 @@
+use std::num::NonZeroUsize;
+
 use super::super::test_inventory::{inventory, root, root_at};
 use super::*;
-use crate::entry::PhysicalRecoveryLimitDimension::ManifestEntries;
+use crate::orchestration::planning::manifest_entry_budget::{
+    manifest_entry_limit_for_test, EntryAdmission,
+};
 use crate::orchestration::planning::page_observation::PageLimit;
 use crate::orchestration::planning::selected_world_fixture::{selected_world, SelectedSource};
-use crate::orchestration::recovery_budget::recovery_limit_for_test;
 
 /// What the member of the step under test declares.
 const STEP: u64 = 5;
@@ -47,14 +50,14 @@ fn step(
     selected: Observed<'_>,
     entries: u64,
 ) -> (Result<Option<u64>, WalkFailure>, u64, u64) {
-    let mut budget = ManifestEntryBudget::new(WHOLE, WHOLE - entries);
+    let mut budget = ManifestEntryBudget::for_test(WHOLE, WHOLE - entries);
     let before = world.discovery.counters().addressed_artifacts_read;
     let reread = charge_and_reread(
         world.discovery,
         &mut budget,
         &mut RecoveryIntegrityIngressTrace::default(),
         world.format,
-        STEP as usize,
+        NonZeroUsize::new(STEP as usize).unwrap(),
         source,
         selected,
     )
@@ -67,8 +70,8 @@ fn step(
 /// observed all but `need - 1` of its entries, and needed `need` more.
 fn short_of(need: u64) -> Result<Option<u64>, WalkFailure> {
     let observed = WHOLE - (need - 1) + need;
-    Err(WalkFailure::Limit(PageLimit::Recovery(
-        recovery_limit_for_test(ManifestEntries, observed, WHOLE),
+    Err(WalkFailure::Limit(PageLimit::Entries(
+        manifest_entry_limit_for_test(observed, WHOLE),
     )))
 }
 

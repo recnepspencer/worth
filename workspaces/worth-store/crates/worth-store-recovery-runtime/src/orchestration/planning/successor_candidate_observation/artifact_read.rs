@@ -7,6 +7,7 @@ use worth_store_physical_format::{PhysicalRecordFormatDeclaration, RecordArtifac
 use super::artifact_generation;
 use super::resident::memory_failure;
 use crate::entry::PhysicalRecoverySuccessorCandidateDenial;
+use crate::orchestration::planning::manifest_entry_budget::ChargeToken;
 use crate::progression::{
     PlanningMemoryDenial, PlanningResidentAllowance, RecoveryObservedCandidateArtifact,
 };
@@ -21,10 +22,15 @@ mod tests;
 /// in for that ceiling. The backend checks file length before allocating its
 /// exact-length byte vector; an absent optional artifact costs no resident
 /// bytes even when the window has no space left.
+///
+/// `_paid` is the charge of the candidate root whose page this is. One charge
+/// pays for every page of its root, so the wrapper that holds it lends it to
+/// each read, and the root's last read spends it.
 pub(super) fn read(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     artifact: RecordArtifactFile,
     format: PhysicalRecordFormatDeclaration,
+    _paid: &ChargeToken,
     allowance: &mut PlanningResidentAllowance,
 ) -> Result<ObservedRecoveryArtifact, PhysicalRecoverySuccessorCandidateDenial> {
     let address = match artifact {

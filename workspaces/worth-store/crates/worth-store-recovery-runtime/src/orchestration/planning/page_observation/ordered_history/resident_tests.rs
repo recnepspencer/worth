@@ -3,7 +3,8 @@
 
 use super::super::test_inventory;
 use super::*;
-use crate::entry::PhysicalRecoveryLimitDimension::{self, ManifestEntries, StagingBytes};
+use crate::entry::PhysicalRecoveryLimitDimension::{self, StagingBytes};
+use crate::orchestration::planning::manifest_entry_budget::manifest_entry_limit_for_test;
 use crate::orchestration::planning::page_observation::PageLimit;
 use crate::orchestration::recovery_budget::{allowance_for_test, recovery_limit_for_test};
 
@@ -20,12 +21,18 @@ fn record(ordinal: u64) -> PersistedRecordIdentity {
 }
 
 fn budget(admitted: u64) -> ManifestEntryBudget {
-    ManifestEntryBudget::new(admitted, 0)
+    ManifestEntryBudget::for_test(admitted, 0)
 }
 
 fn limit(dimension: PhysicalRecoveryLimitDimension, observed: u64, admitted: u64) -> WalkFailure {
     WalkFailure::Limit(PageLimit::Recovery(recovery_limit_for_test(
         dimension, observed, admitted,
+    )))
+}
+
+fn entries(observed: u64, admitted: u64) -> WalkFailure {
+    WalkFailure::Limit(PageLimit::Entries(manifest_entry_limit_for_test(
+        observed, admitted,
     )))
 }
 
@@ -46,7 +53,7 @@ fn a_segment_comparison_past_the_admitted_entries_is_that_limit() {
     assert!(scratch >= 5 * SEGMENT_WIDTH);
     for (source, result) in [(&larger, &smaller), (&smaller, &larger)] {
         let mut budget = budget(2);
-        let past = limit(ManifestEntries, 3, 2);
+        let past = entries(3, 2);
         assert_eq!(
             segment_pair_bounded(source, result, &mut budget, AMPLE, staging(AMPLE)).err(),
             Some(past),
@@ -54,7 +61,7 @@ fn a_segment_comparison_past_the_admitted_entries_is_that_limit() {
         assert_eq!(
             budget
                 .refused()
-                .map(PageLimit::Recovery)
+                .map(PageLimit::Entries)
                 .map(WalkFailure::Limit),
             Some(past)
         );
@@ -109,7 +116,7 @@ fn dropped_records_past_a_limit_name_it_and_a_repeat_is_unverified() {
     );
     assert_eq!(
         dropped_bounded(&manifest, &derived, &mut budget(2), AMPLE, staging(AMPLE)),
-        Err(limit(ManifestEntries, 3, 2)),
+        Err(entries(3, 2)),
     );
     let available = 3 * RECORD_WIDTH - 1;
     assert_eq!(

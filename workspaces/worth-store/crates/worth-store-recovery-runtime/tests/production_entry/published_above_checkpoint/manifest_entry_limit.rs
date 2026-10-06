@@ -19,12 +19,24 @@ pub(super) const IDLE_NEED: u64 = 166;
 
 /// What the released world needs: one release completed above the
 /// checkpoint and its successor pending.
-pub(super) const RELEASED_NEED: u64 = 168;
+/// Every root read costs one entry, found or not, and pays for the pages
+/// under it. Among them: the successor root the candidate probe finds absent
+/// (1); the historical roots a blob record is looked up under (3); the
+/// historical drop's result, source, retained-candidate and dropped-record
+/// roots (4); and the redo's source and candidate roots (2), once each, their
+/// inventories paid by the same entry.
+pub(super) const RELEASED_NEED: u64 = 176;
 
 /// What the first reopen needs where two releases completed above a
 /// checkpoint that heads the first of them, and its third batch is pending:
 /// the retirements among them differ in the free extents they leave.
-const ORDERED_NEED: u64 = 377;
+/// Every root read costs one entry, found or not, and pays for the pages
+/// under it. Among them: the successor root the candidate probe finds absent
+/// (1); the historical roots a blob record is looked up under (10); the two
+/// historical drops' result, source, retained-candidate and dropped-record
+/// roots (8); and their redos' source and candidate roots (4), once each,
+/// their inventories paid by the same entry.
+const ORDERED_NEED: u64 = 396;
 
 /// A release completed above the checkpoint: the walk runs for its drop,
 /// which then reads the source root it released from.

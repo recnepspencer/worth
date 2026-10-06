@@ -80,6 +80,18 @@ impl From<ExhaustedLimit<PhysicsBound>> for PhysicalRecoveryLimitFailure {
     }
 }
 
+impl From<crate::orchestration::ExceededManifestEntries> for PhysicalRecoveryLimitFailure {
+    /// The walk's entry budget is handed recovery's declared manifest
+    /// entries, in their own counts.
+    fn from(limit: crate::orchestration::ExceededManifestEntries) -> Self {
+        Self::of(
+            PhysicalRecoveryLimitDimension::ManifestEntries,
+            limit.observed(),
+            limit.admitted(),
+        )
+    }
+}
+
 /// Why a block stopped recovery. A limit says nothing about the media: the
 /// same media may recover under wider limits. Both name the phase that
 /// stopped: one ran out of a limit, the other's observation or check failed.

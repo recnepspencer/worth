@@ -18,7 +18,7 @@ use crate::integrity_ingress::{
 use crate::orchestration::planning::page_observation::ordered_history::{Verdict, WalkFailure};
 use crate::orchestration::planning::{
     completion::blob_reclaim::record,
-    manifest_entry_budget::{ManifestEntryBudget, RootUnit},
+    manifest_entry_budget::{pays_for, ChargeToken, ManifestEntryBudget},
     selected_source_inventory::ResidentAllowance,
 };
 
@@ -79,19 +79,14 @@ pub(in crate::orchestration::planning::page_observation) fn selected_control(
     WitnessedSelectedControlFrame::from_validated(bytes, witness).proven()
 }
 
+/// The root of `generation`, paid for by the root's `charge`.
 pub(in crate::orchestration::planning::page_observation) fn source_root(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     generation: u64,
     format: PhysicalRecordFormatDeclaration,
-    budget: &mut ManifestEntryBudget,
-) -> Result<
-    (
-        worth_store_physical_format::DurablePhysicalRootManifest,
-        RootUnit,
-    ),
-    WalkFailure,
-> {
-    let root_unit = budget.charge_root()?;
+    charge: &ChargeToken,
+) -> Result<worth_store_physical_format::DurablePhysicalRootManifest, WalkFailure> {
+    pays_for(charge, generation);
     let source = discovery
         .read(
             ArtifactCeiling::page(format, PageAddress::RootManifest { generation }),
@@ -107,6 +102,13 @@ pub(in crate::orchestration::planning::page_observation) fn source_root(
     .map_err(|_| WalkFailure::Unverified)?;
     let (root, observed_format) = admitted.project();
     (observed_format == format && root.generation() == generation)
-        .then_some((root, root_unit))
+        .then_some(root)
         .ok_or(WalkFailure::Unverified)
 }
+
+// The root's read takes its charge, lent: changed to take none, it no longer
+// coerces, and the crate's tests do not compile.
+#[cfg(test)]
+const _: () = {
+    let _: fn(_, _, _, &ChargeToken) -> _ = source_root;
+};

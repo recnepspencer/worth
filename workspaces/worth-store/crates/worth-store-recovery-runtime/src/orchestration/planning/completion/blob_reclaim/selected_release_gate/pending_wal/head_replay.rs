@@ -12,7 +12,7 @@ use crate::entry::{PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDimens
 use crate::orchestration::planning::completion::historical_publication::{
     discovery_failure, HistoricalFailure,
 };
-use crate::orchestration::planning::manifest_entry_budget::ManifestEntryBudget;
+use crate::orchestration::planning::manifest_entry_budget::{EntryAdmission, ManifestEntryBudget};
 use crate::orchestration::planning::page_observation::PageLimit;
 use crate::orchestration::planning::selected_source_inventory::ResidentAllowance;
 use crate::orchestration::recovery_budget::RecoveryAllowance;
@@ -45,7 +45,7 @@ pub(super) fn admit(
     resident.transient(peak).map_err(|_| INVALID)?;
     // Replaying one member's head path is one lookup, however many blocks
     // the path crosses.
-    budget.consume(1)?;
+    budget.admit(1)?;
     // Physics carries no reason across its reader, so the reader keeps it.
     let mut unread = None;
     let replay = VerifiedSelectedReleaseHeadReplayV14::admit_projection(

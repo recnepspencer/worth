@@ -15,7 +15,9 @@ use super::super::super::historical_publication::{discovery_failure, HistoricalF
 use crate::integrity_ingress::{
     projection::MembershipProjectionFailure, RecoveryIntegrityIngressTrace,
 };
-use crate::orchestration::planning::manifest_entry_budget::ManifestEntryBudget;
+use crate::orchestration::planning::manifest_entry_budget::{
+    EntryAdmission, ManifestEntryBudget, ViewEntryCap,
+};
 
 pub(super) struct SourceInlineSpan {
     placement: DurableInlineRecordPlacement,
@@ -166,7 +168,7 @@ fn collect(
     let mut pending = root.segment_root().into_iter().collect::<VecDeque<_>>();
     let mut found = vec![None; pages as usize];
     // One placement's pages are one lookup, wherever the tree holds them.
-    budget.consume(1)?;
+    budget.admit(1)?;
     while let Some(reference) = pending.pop_front() {
         let segment = placement.segment().get();
         if reference.first().segment().get() > segment || reference.last().segment().get() < segment
@@ -195,12 +197,13 @@ fn collect(
             root.node_capacity(),
             // The lookup is charged; each block is one view, of no more
             // entries than recovery admits, whatever is left of them.
-            budget.admitted(),
+            ViewEntryCap::of(budget).admitted(),
             trace,
         )
         .map_err(|failure| match failure {
             MembershipProjectionFailure::EntryLimit { observed } => {
-                budget.refuse_view(observed).into()
+                let view = ViewEntryCap::of(budget).refuse(observed);
+                budget.view_refused(view).into()
             }
             MembershipProjectionFailure::Integrity(_) => HistoricalFailure::Invalid,
         })?;

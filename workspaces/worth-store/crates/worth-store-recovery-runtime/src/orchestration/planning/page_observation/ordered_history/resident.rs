@@ -7,7 +7,7 @@ use worth_store_physical_format::{
     RecordSegmentPageManifestEntry,
 };
 
-use crate::orchestration::planning::manifest_entry_budget::ManifestEntryBudget;
+use crate::orchestration::planning::manifest_entry_budget::{ManifestEntryBudget, ViewEntryCap};
 use crate::progression::RecoverySelectedSourceInventory;
 
 use super::walk_failure::{Verdict, WalkFailure};
@@ -99,8 +99,9 @@ fn view_fits(
     available: u64,
     staging: RecoveryAllowance,
 ) -> Result<(), WalkFailure> {
-    if count > budget.admitted() {
-        return Err(budget.refuse_view(count).into());
+    let view = ViewEntryCap::of(budget);
+    if count > view.admitted() {
+        return Err(budget.view_refused(view.refuse(count)).into());
     }
     let bytes = count.checked_mul(width).ok_or(WalkFailure::CountOverflow)?;
     if bytes > available {

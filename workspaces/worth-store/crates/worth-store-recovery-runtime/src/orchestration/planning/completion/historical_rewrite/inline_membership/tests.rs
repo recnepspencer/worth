@@ -182,16 +182,16 @@ fn non_tail_page_generation_must_advance_by_one() {
 
 #[test]
 fn collecting_one_placements_pages_is_one_lookup_charged_before_its_reads() {
-    use crate::entry::PhysicalRecoveryLimitDimension::ManifestEntries;
-    use crate::orchestration::planning::manifest_entry_budget::ManifestEntryBudget;
+    use crate::orchestration::planning::manifest_entry_budget::{
+        manifest_entry_limit_for_test, EntryAdmission, ManifestEntryBudget,
+    };
     use crate::orchestration::planning::page_observation::PageLimit;
     use crate::orchestration::planning::selected_world_fixture::selected_world;
-    use crate::orchestration::recovery_budget::recovery_limit_for_test;
     const ADMITTED: u64 = 4_096;
     let placement = coordinates().source;
     let collect = |name: &str, observed: u64| {
         selected_world(name, 4).read(|source| {
-            let mut budget = ManifestEntryBudget::new(ADMITTED, observed);
+            let mut budget = ManifestEntryBudget::for_test(ADMITTED, observed);
             let mut trace = Default::default();
             let outcome = super::collect(
                 source.discovery,
@@ -215,8 +215,8 @@ fn collecting_one_placements_pages_is_one_lookup_charged_before_its_reads() {
     assert_eq!(
         collect("inline-lookup-none-left", ADMITTED),
         (
-            Err(HistoricalFailure::Limit(PageLimit::Recovery(
-                recovery_limit_for_test(ManifestEntries, ADMITTED + 1, ADMITTED)
+            Err(HistoricalFailure::Limit(PageLimit::Entries(
+                manifest_entry_limit_for_test(ADMITTED + 1, ADMITTED)
             ))),
             0,
             0

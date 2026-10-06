@@ -1,0 +1,18 @@
+error[E0382]: use of moved value: `charge`
+  --> tests/ui/manifest_entry_charge_cannot_be_reused.rs:15:35
+   |
+11 |     let charge = budget
+   |         ------ move occurs because `charge` has type `Performed<EntriesCharged, ManifestEntryAuthority, ChargeTarget>`, which does not implement the `Copy` trait
+...
+14 |     let _ = walk_entry::read_root(charge, 7);
+   |                                   ------ value moved here
+15 |     let _ = walk_entry::read_root(charge, 7);
+   |                                   ^^^^^^ value used here after move
+   |
+note: consider changing this parameter type in function `read_root` to borrow instead if owning the value isn't necessary
+  --> tests/ui/manifest_entry/walk_entry.rs
+   |
+   | pub fn read_root(charge: ChargeToken, generation: u64) {
+   |        ---------         ^^^^^^^^^^^ this parameter takes ownership of the value
+   |        |
+   |        in this function

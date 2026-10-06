@@ -51,6 +51,8 @@ pub(super) fn only_a_limit(denial: &Planning) -> bool {
         Planning::Redo(PhysicalRedoPlanningDenial::ProjectionLimit { .. }) => true,
         // Every cost denial is a limit the plan's cost ran past.
         Planning::Cost(_) => true,
+        // The successor root is charged its entry before it is probed.
+        Planning::SuccessorCandidate(Candidate::ManifestEntryLimit { .. }) => true,
         Planning::SuccessorCandidate(Candidate::Discovery { failure, .. }) => reader(failure),
         Planning::SelectedReleaseHead(denial) => head(denial),
         _ => false,

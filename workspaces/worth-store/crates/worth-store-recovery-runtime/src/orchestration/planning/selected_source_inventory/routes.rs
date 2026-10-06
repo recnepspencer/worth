@@ -10,11 +10,11 @@ use worth_store_physical_format::{
     PhysicalTreeIdentity, RecordArtifactFile,
 };
 
-use super::{
-    invalid, ManifestEntryBudget, PageObservationFailure, ResidentAllowance, ResidentTraceDenial,
-    RootUnit,
-};
+use super::{invalid, PageObservationFailure, ResidentAllowance, ResidentTraceDenial};
 use crate::integrity_ingress::RecoveryIntegrityIngressTrace;
+use crate::orchestration::planning::manifest_entry_budget::{
+    spend, ChargeToken, EntriesStopped, EntryAdmission,
+};
 
 /// What a routes traversal keeps in memory, told to whoever bounds that.
 pub(in crate::orchestration::planning) trait RoutesHold {
@@ -78,40 +78,40 @@ impl<R> From<PageObservationFailure> for RoutesFailure<R> {
     }
 }
 
+impl<R> From<EntriesStopped> for RoutesFailure<R> {
+    fn from(stopped: EntriesStopped) -> Self {
+        Self::Observation(stopped.into())
+    }
+}
+
 pub(in crate::orchestration::planning) fn observe_routes_with_budget(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     root: &DurablePhysicalRootManifest,
     format: PhysicalRecordFormatDeclaration,
-    root_unit: &RootUnit,
-    budget: &mut ManifestEntryBudget,
+    charge: ChargeToken,
+    entries: &mut impl EntryAdmission,
     trace: &mut RecoveryIntegrityIngressTrace,
 ) -> Result<Vec<CurrentPhysicalRecordPlacement>, PageObservationFailure> {
-    observe_routes_held(
-        discovery,
-        root,
-        format,
-        root_unit,
-        budget,
-        trace,
-        &mut Unheld,
+    observe_routes_held(discovery, root, format, charge, entries, trace, &mut Unheld).map_err(
+        |failure| match failure {
+            RoutesFailure::Observation(failure) => failure,
+            RoutesFailure::Held(never) => match never {},
+        },
     )
-    .map_err(|failure| match failure {
-        RoutesFailure::Observation(failure) => failure,
-        RoutesFailure::Held(never) => match never {},
-    })
 }
 
-/// Every route under `root`, each leaf entry charged. The root's own entry
-/// is charged where the root is read.
+/// Every route under `root`, the last read `charge` pays for, each leaf
+/// entry admitted to `budget`.
 pub(in crate::orchestration::planning) fn observe_routes_held<H: RoutesHold>(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     root: &DurablePhysicalRootManifest,
     format: PhysicalRecordFormatDeclaration,
-    _root_unit: &RootUnit,
-    budget: &mut ManifestEntryBudget,
+    charge: ChargeToken,
+    budget: &mut impl EntryAdmission,
     trace: &mut RecoveryIntegrityIngressTrace,
     hold: &mut H,
 ) -> Result<Vec<CurrentPhysicalRecordPlacement>, RoutesFailure<H::Refused>> {
+    spend(charge, root.generation());
     let root_artifact = RecordArtifactFile::RootManifest {
         generation: root.generation(),
     };
@@ -150,7 +150,7 @@ pub(in crate::orchestration::planning) fn observe_routes_held<H: RoutesHold>(
             denial: denial.diagnostic(),
         })?;
         if let Some(found) = projected.block.entries() {
-            budget.consume(found.len())?;
+            budget.admit(found.len())?;
             hold.entries(
                 found.len(),
                 std::mem::size_of::<CurrentPhysicalRecordPlacement>(),

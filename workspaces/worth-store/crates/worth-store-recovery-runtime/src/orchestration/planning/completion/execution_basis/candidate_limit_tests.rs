@@ -6,6 +6,7 @@ use worth_store::physical_runtime::FilesystemObservationBound;
 use worth_store_physical_format::RecordArtifactFile;
 
 use super::*;
+use crate::orchestration::planning::manifest_entry_budget::EntryAdmission;
 use crate::orchestration::reader_limit::refused_past;
 use crate::orchestration::recovery_budget::recovery_limit_for_test;
 
@@ -21,7 +22,7 @@ fn observation_bytes(observed: u64, admitted: u64) -> Option<PhysicalRecoveryLim
 }
 
 fn budget() -> ManifestEntryBudget {
-    ManifestEntryBudget::new(500, 0)
+    ManifestEntryBudget::for_test(500, 0)
 }
 
 /// A candidate window that refused nothing.
@@ -118,7 +119,7 @@ fn a_candidate_out_of_memory_or_entries_names_that_limit_with_its_counts() {
         generation: 9,
     };
     let mut spent = budget();
-    assert!(spent.charge(501).is_err());
+    assert!(spent.admit(501).is_err());
     assert_eq!(
         candidate_limit(&limits(), &entries, &spent, &window()),
         Some(
@@ -139,7 +140,7 @@ fn a_damaged_candidate_names_no_limit() {
     let artifact = RecordArtifactFile::RootManifest { generation: 9 };
     let cause = Vec::<u8>::new().try_reserve(usize::MAX).unwrap_err();
     let mut spent = budget();
-    assert!(spent.charge(501).is_err());
+    assert!(spent.admit(501).is_err());
     let mut refused = window();
     assert!(refused.transient(1_001).is_err());
     for damage in [

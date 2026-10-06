@@ -14,6 +14,9 @@ use crate::entry::{
     PhysicalRecoveryReleaseHeadControlDenial as Control,
     PhysicalRecoverySelectedRecordReadDenial as RecordRead,
 };
+use crate::orchestration::planning::manifest_entry_budget::{
+    manifest_entry_limit_for_test, EntryAdmission,
+};
 use crate::orchestration::planning::page_observation::{PageLimit, PageObservationFailure};
 use crate::orchestration::planning::selected_source_inventory::{
     ResidentTraceDenial, RoutesFailure,
@@ -69,8 +72,8 @@ fn stated(
 /// A phase's budget of all 40 entries that refused a charge of 5 with 38
 /// already charged: 43 of 40.
 fn refused_budget() -> ManifestEntryBudget {
-    let mut budget = ManifestEntryBudget::new(40, 38);
-    assert!(budget.charge(5).is_err());
+    let mut budget = ManifestEntryBudget::for_test(40, 38);
+    assert!(budget.admit(5).is_err());
     budget
 }
 
@@ -309,7 +312,7 @@ fn source_routes_out_of_a_limit_keep_its_counts() {
             limit,
         )))
     };
-    let entries = PageLimit::Recovery(recovery_limit_for_test(ManifestEntries, 11, 10));
+    let entries = PageLimit::Entries(manifest_entry_limit_for_test(11, 10));
     let reader = PageLimit::Reader(
         ReaderBytes::of(&outgrown(FilesystemObservationBound::ObservationBytes)).unwrap(),
     );

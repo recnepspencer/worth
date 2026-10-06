@@ -16,7 +16,8 @@ use worth_store_recovery_physics::{
 
 use crate::integrity_ingress::RecoveryIntegrityIngressTrace;
 use crate::orchestration::planning::{
-    manifest_entry_budget::ManifestEntryBudget, selected_source_inventory,
+    manifest_entry_budget::{ChargeTarget, EntryAdmission, ManifestEntryBudget, ROOT_ENTRY},
+    selected_source_inventory,
 };
 use crate::progression::RecoverySelectedSourceInventory;
 
@@ -79,21 +80,23 @@ pub(super) fn admit(
     };
     let checkpoint = selection.checkpoint().ok_or(Unverified)?;
     let checkpoint_generation = checkpoint.checkpoint().source().root().generation();
-    let (checkpoint_root, checkpoint_unit) =
-        source_root(discovery, checkpoint_generation, format, budget)?;
-    let checkpoint_inventory = selected_source_inventory::observe_with_budget(
+    let target = ChargeTarget::root(checkpoint_generation);
+    let charge = budget.charge(ROOT_ENTRY, target)?;
+    let checkpoint_root = source_root(discovery, checkpoint_generation, format, &charge)?;
+    let checkpoint_inventory = selected_source_inventory::observe_headers(
         discovery,
         &checkpoint_root,
         format,
-        &checkpoint_unit,
-        budget,
+        &charge,
         trace,
-    )?;
+    )?
+    .observe_segments(discovery, &checkpoint_root, format, &charge, budget, trace)?
+    .observe_free_entries(discovery, &checkpoint_root, format, &charge, budget, trace)?;
     let checkpoint_routes = selected_source_inventory::observe_routes_with_budget(
         discovery,
         &checkpoint_root,
         format,
-        &checkpoint_unit,
+        charge,
         budget,
         trace,
     )?;
@@ -196,7 +199,7 @@ pub(super) fn admit(
         let (next_root, result_inventory) = (roots.result.root, roots.result.inventory);
         let member = match (basis, member) {
             (OrderedRootStepBasis::RetirementIntent(basis), _) => {
-                budget.consume(
+                budget.admit(
                     charge::net_free_difference(
                         &roots.source.inventory.free_entries,
                         &result_inventory.free_entries,

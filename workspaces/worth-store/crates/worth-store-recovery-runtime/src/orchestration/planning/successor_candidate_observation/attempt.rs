@@ -120,7 +120,7 @@ mod tests {
                 media,
                 &root_at(6),
                 format,
-                &mut ManifestEntryBudget::new(8, 0),
+                &mut ManifestEntryBudget::for_test(8, 0),
                 remaining,
                 &mut Default::default(),
                 &mut PlanningResidentAllowance::new(0, 4096).unwrap(),

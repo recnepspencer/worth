@@ -16,6 +16,7 @@ use super::super::{AbsentTarget, PageObservationFailure};
 use super::classification::HistoryWalk;
 use super::{source_root, target_record, HistoricalDropEvidence};
 use crate::entry::HistoricalDropAdmissionStage as Stage;
+use crate::orchestration::planning::manifest_entry_budget::{spend, ChargeTarget, ROOT_ENTRY};
 
 /// The targets historical V3 drops removed, and the ordered history when one
 /// of those drops needed it walked.
@@ -193,17 +194,17 @@ impl ReleasedDrops<'_> {
         {
             return Err(invalid(operation, Stage::ManifestBinding));
         }
-        let (source, _source_unit) = source_root(
-            walk.discovery,
-            drop.projection.source_root_generation(),
-            walk.format,
-            walk.budget,
-        )
-        .map_err(|failure| {
-            failure
-                .stopped()
-                .unwrap_or_else(|| invalid(operation, Stage::SourceRoot))
-        })?;
+        let generation = drop.projection.source_root_generation();
+        let charge = walk
+            .budget
+            .charge(ROOT_ENTRY, ChargeTarget::root(generation))?;
+        let source =
+            source_root(walk.discovery, generation, walk.format, &charge).map_err(|failure| {
+                failure
+                    .stopped()
+                    .unwrap_or_else(|| invalid(operation, Stage::SourceRoot))
+            })?;
+        spend(charge, generation);
         if <[u8; 32]>::from(Sha256::digest(source.encode(walk.format)))
             != drop.descriptor.custody().source_root_frame_sha256()
         {

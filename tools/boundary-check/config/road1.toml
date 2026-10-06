@@ -54,6 +54,22 @@ root = "workspaces/worth-store/crates/worth-store-physical-certification/src"
 forbidden_identifiers = ["PhysicalIsolationEntryIdentity", "RecoveryReadinessBasis", "admit_physical_isolation_entry"]
 guidance = "C.10 removes synthetic readiness admission rather than relocating a report-to-root authority route into certification"
 
+[[source_identifier_denials]]
+root = "workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning"
+exclude_paths = [
+  "workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/page_observation/historical_drop/media_controls.rs",
+  "workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/selected_source_inventory.rs",
+  "workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/selected_source_inventory/routes.rs",
+  "workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/successor_candidate_observation/artifact_read.rs",
+  "workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/page_observation/ordered_history/head_replay.rs",
+  "workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/completion/historical_publication.rs",
+  "workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/completion/historical_rewrite/inline_membership.rs",
+  "workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/completion/blob_reclaim/selected_release_gate/head_v2.rs",
+  "workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/completion/blob_reclaim/selected_release_gate/pending_wal/head_replay.rs",
+]
+forbidden_identifiers = ["PageAddress", "ArtifactCeiling"]
+guidance = "C.11 K3: a manifest page is read only by a wrapper that takes the walk's charge token, or admits its point lookup, before the read; another planning module calls that wrapper instead of addressing a page"
+
 [[source_dependency_allowlists]]
 workspace_manifest = "workspaces/worth-store/Cargo.toml"
 sources = ["worth-store-physical-isolation"]

@@ -8,6 +8,9 @@ use worth_store::physical_runtime::{
 
 use super::*;
 use crate::entry::{PhysicalRecoveryLimitDimension, PhysicalRecoverySelectedRecordReadDenial};
+use crate::orchestration::planning::manifest_entry_budget::{
+    manifest_entry_limit_for_test, EntryAdmission,
+};
 use crate::orchestration::reader_limit::refused_past;
 use crate::orchestration::recovery_budget::recovery_limit_for_test;
 use PhysicalRecoveryLimitDimension::{ManifestEntries, ObservationBytes, StagingBytes};
@@ -57,7 +60,7 @@ fn named(
 #[test]
 fn an_exhausted_limit_is_reported_with_recovery_s_own_counts() {
     let limits = limits();
-    let mut budget = ManifestEntryBudget::new(limits.manifest_entries, 497);
+    let mut budget = ManifestEntryBudget::for_test(limits.manifest_entries, 497);
     assert_eq!(HistoricalFailure::Invalid.limit(&limits, &budget), None);
     assert_eq!(
         HistoricalFailure::CountOverflow.limit(&limits, &budget),
@@ -68,7 +71,7 @@ fn an_exhausted_limit_is_reported_with_recovery_s_own_counts() {
         HistoricalFailure::ManifestEntries.limit(&limits, &budget),
         None
     );
-    assert!(budget.charge(5).is_err());
+    assert!(budget.admit(5).is_err());
     assert_eq!(
         HistoricalFailure::ManifestEntries.limit(&limits, &budget),
         named(ManifestEntries, 502, 500),
@@ -112,7 +115,7 @@ fn only_a_reader_out_of_its_own_bytes_is_a_limit() {
 
 #[test]
 fn a_page_observation_out_of_a_limit_stays_that_limit() {
-    let limit = PageLimit::Recovery(recovery_limit_for_test(ManifestEntries, 9, 8));
+    let limit = PageLimit::Entries(manifest_entry_limit_for_test(9, 8));
     assert_eq!(
         HistoricalFailure::from(PageObservationFailure::Limit(limit)),
         HistoricalFailure::Limit(limit),

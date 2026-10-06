@@ -9,6 +9,7 @@ use super::materialization::CandidateMaterialization;
 use super::resident::memory_failure;
 use crate::entry::PhysicalRecoverySuccessorCandidateDenial;
 use crate::integrity_ingress::{admit_addressed_root, RecoveryArtifactNamespaceJoin};
+use crate::orchestration::planning::manifest_entry_budget::{pays_for, ChargeToken};
 use crate::progression::PlanningResidentAllowance;
 
 pub(super) struct ObservedSuccessorRoot {
@@ -29,17 +30,21 @@ pub(super) fn successor_generation(
     })
 }
 
+/// Probes the root of `generation`, paid by `charge` before it is read. An
+/// absent root is its own last read: the caller spends the entry, since
+/// looking is what it paid for.
 pub(super) fn read(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
-    selected: &DurablePhysicalRootManifest,
+    generation: u64,
     format: PhysicalRecordFormatDeclaration,
+    charge: &ChargeToken,
     materialization: &mut CandidateMaterialization,
     root_protocol_counters: &mut crate::entry::PhysicalRecoveryRootProtocolCounters,
     allowance: &mut PlanningResidentAllowance,
 ) -> Result<Option<ObservedSuccessorRoot>, PhysicalRecoverySuccessorCandidateDenial> {
-    let generation = successor_generation(selected)?;
+    pays_for(charge, generation);
     let artifact = RecordArtifactFile::RootManifest { generation };
-    let source = read_artifact(discovery, artifact, format, allowance)?;
+    let source = read_artifact(discovery, artifact, format, charge, allowance)?;
     if source.bytes().is_none() {
         return Ok(None);
     }
