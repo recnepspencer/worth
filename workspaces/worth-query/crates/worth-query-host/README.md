@@ -87,6 +87,12 @@ Its `require_current_output_demand` checks a direct root/dependent settlement;
 native source lineage at that same observation, including receipt-free checkpoint
 reuse. Read the descriptive fields through that retained request after admission.
 
+A family read rejects an older candidate when its own recorded facts or native
+output witness prove it changed, even if its upstream is pending. Unchanged own
+evidence still returns `PendingUpstream`; it never establishes upstream currentness.
+This lets a value-changing Preserve settlement remain selectable without an older,
+conclusively stale Initial candidate hiding it.
+
 For ordinary candidate declarations, use
 `ApplicationCandidateResourceCeiling::representation_bytes(bytes)` (or omit
 `validator_work` in the mutation-binding macro). Installation derives validator
