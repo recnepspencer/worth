@@ -231,6 +231,18 @@ pub(super) fn currentness(
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     maximum_work: usize,
 ) -> Result<(bool, usize), super::WorthQuerySourceCurrentnessFailure> {
+    let mut remaining_work = maximum_work;
+    let current = currentness_with_remaining(fact, runtime, snapshot, &mut remaining_work)?;
+    Ok((current, maximum_work - remaining_work))
+}
+
+/// The caller retains the bounded probe's actual debit even when lookup fails.
+pub(in crate::domain_computation::primary_graph) fn currentness_with_remaining(
+    fact: &WorthQueryApplicationObservedFact,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    remaining_work: &mut usize,
+) -> Result<bool, super::WorthQuerySourceCurrentnessFailure> {
     use super::WorthQuerySourceCurrentnessFailure as Failure;
     let WorthQueryApplicationObservedFact::IndexedEntitySelection {
         index_id,
@@ -244,7 +256,6 @@ pub(super) fn currentness(
     else {
         return Err(Failure::Unavailable);
     };
-    let mut remaining_work = maximum_work;
     let outcome = bounded_current_selection(
         runtime,
         snapshot,
@@ -253,16 +264,13 @@ pub(super) fn currentness(
         locator,
         value,
         *candidate_limit,
-        &mut remaining_work,
+        remaining_work,
     )
     .map_err(|denial| match denial {
         IndexedSelectionReobserveDenial::WorkBudgetExceeded => Failure::WorkBudgetExceeded,
         _ => Failure::Unavailable,
     })?;
-    Ok((
-        !outcome.overflowed()
-            && outcome.retain_definition().as_ref() == definition.as_ref()
-            && outcome.candidate_entity_ids() == candidates,
-        1 + outcome.examined_entry_count(),
-    ))
+    Ok(!outcome.overflowed()
+        && outcome.retain_definition().as_ref() == definition.as_ref()
+        && outcome.candidate_entity_ids() == candidates)
 }
