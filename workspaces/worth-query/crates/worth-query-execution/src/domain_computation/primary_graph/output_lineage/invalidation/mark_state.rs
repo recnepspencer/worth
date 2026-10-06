@@ -18,6 +18,7 @@ pub(super) struct FactPosting {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum FullVerificationReason {
     NativeRevisionUnavailable,
+    NativeFactRevisionUnavailable(usize),
     UnsupportedFact,
     CheckpointRestore,
     ForeignSource,

@@ -339,6 +339,9 @@ impl WorthQueryApplicationOutputLineage {
                         super::provider::RebaseVerificationReason::NativeRevisionUnavailable => {
                             invalidation::FullVerificationReason::NativeRevisionUnavailable
                         }
+                        super::provider::RebaseVerificationReason::NativeFactRevisionUnavailable(ordinal) => {
+                            invalidation::FullVerificationReason::NativeFactRevisionUnavailable(ordinal)
+                        }
                         super::provider::RebaseVerificationReason::UnsupportedDecisionFact => {
                             invalidation::FullVerificationReason::UnsupportedFact
                         }

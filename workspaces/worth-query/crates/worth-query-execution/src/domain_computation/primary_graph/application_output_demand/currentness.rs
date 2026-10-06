@@ -128,6 +128,11 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         )?;
         require_current_facts(relational, snapshot, read.facts.iter(), remaining_work).map_err(
             |error| match read.verification_requirement {
+                Some(crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason::NativeFactRevisionUnavailable(ordinal)) => WorthQueryOutputDemandDenial::new(
+                    error.kind(),
+                    format!("{}; native revision unavailable for: {}", error.subject(),
+                        read.facts.get(ordinal).map_or_else(|| "unavailable retained fact".into(), |fact| fact.locator_identity())),
+                ),
                 Some(reason) => WorthQueryOutputDemandDenial::new(
                     error.kind(),
                     format!(
