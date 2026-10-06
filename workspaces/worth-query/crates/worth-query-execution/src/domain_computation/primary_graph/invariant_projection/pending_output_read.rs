@@ -1,4 +1,4 @@
-//! An actual failed projected read names one exact native output dependency.
+//! An actual projected read names one exact native output needing managed progress.
 use super::super::output_lineage::{
     invalidation::RetainedConsumedOutputCapacity, RecordedSettlementIdentity,
 };

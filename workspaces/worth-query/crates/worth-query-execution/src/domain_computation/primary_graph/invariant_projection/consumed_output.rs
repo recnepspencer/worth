@@ -20,6 +20,7 @@ use crate::domain_computation::primary_graph::{
 #[cfg(feature = "certification-invalidation-equivalence")]
 mod equivalence;
 mod pending_dependency;
+mod requested_read;
 #[cfg(test)]
 mod test_support;
 mod verification;

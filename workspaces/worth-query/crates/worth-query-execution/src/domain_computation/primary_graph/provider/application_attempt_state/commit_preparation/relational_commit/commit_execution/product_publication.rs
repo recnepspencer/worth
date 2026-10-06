@@ -215,8 +215,8 @@ fn prepare_lineage_slot(
         admission
             .charge_external_work((4 * std::mem::size_of::<Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>>() + 4) as u64)
             .map_err(|_| crate::domain_computation::WorthQueryProviderSessionCommitStop::Deferred(
-                crate::domain_computation::WorthQueryProviderSessionCommitDeferred::new(
-                    crate::domain_computation::WorthQueryProviderSessionCommitDeferredKind::RequiredPrerequisitePending(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded),
+                crate::domain_computation::WorthQueryProviderSessionCommitDeferred::required_prerequisite(
+                    crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""),
                     "",
                 ),
             ))?;
@@ -243,8 +243,8 @@ fn lineage_pending(
     denial: crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
     crate::domain_computation::WorthQueryProviderSessionCommitStop::Deferred(
-        crate::domain_computation::WorthQueryProviderSessionCommitDeferred::new(
-            crate::domain_computation::WorthQueryProviderSessionCommitDeferredKind::RequiredPrerequisitePending(denial.kind()),
+        crate::domain_computation::WorthQueryProviderSessionCommitDeferred::required_prerequisite(
+            denial,
             "exact output lineage and required settlement could not reserve before World publication",
         ),
     )

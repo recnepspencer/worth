@@ -1,4 +1,5 @@
 mod cancellation;
+mod consumed_predecessors;
 mod evidence_handoff;
 mod prerequisite_capacity;
 mod prerequisite_denials;
@@ -33,7 +34,8 @@ pub(in crate::domain_computation::primary_graph) struct PreparedPrerequisiteClai
 impl RequiredOutputDemandContext {
     pub(in crate::domain_computation::primary_graph) fn prepare_prerequisites<'a>(
         self,
-        inputs: impl ExactSizeIterator<Item = &'a Arc<RecordedSettlementIdentity>>,
+        inputs: impl ExactSizeIterator<Item = &'a crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
+        source_owner: &crate::domain_computation::primary_graph::SourceInvalidationOwner,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedPrerequisiteClaims, WorthQueryOutputDemandDenial> {
         if self.work_membership().is_some() {
@@ -85,16 +87,14 @@ impl RequiredOutputDemandContext {
                 "output already has a prepared prerequisite publication",
             ));
         }
-        for identity in inputs {
-            let upstream = state
-                .settlement_keys
-                .get_exact_admitted(identity, admission)?
-                .ok_or_else(prerequisite_denials::stale_upstream_denial)?;
-            if upstream.as_ref() == downstream {
-                return Err(coverage_denial());
-            }
-            predecessors.push(upstream);
-        }
+        consumed_predecessors::select(
+            &state,
+            downstream,
+            inputs,
+            source_owner,
+            admission,
+            &mut predecessors,
+        )?;
         let maximum_key_work = predecessors
             .iter()
             .map(|key| key.producer.len())

@@ -93,12 +93,8 @@ pub(super) fn commit_receipt(
                 crate::domain_computation::primary_graph::WorthQueryApplicationCommitDeferredKind::RequiredPrerequisitePending(_)
             ) =>
         {
-            let crate::domain_computation::primary_graph::WorthQueryApplicationCommitDeferredKind::RequiredPrerequisitePending(kind) = deferred.kind() else {
-                unreachable!("the guarded deferral names required prerequisite custody");
-            };
-            Err(denial(kind, identity.to_owned()).with_recovery_posture(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable,
-            ))
+            Err(deferred.into_prerequisite_denial()
+                .expect("required prerequisite deferral retains its actual denial"))
         }
         WorthQueryApplicationCommitOutcome::Stale(_)
         | WorthQueryApplicationCommitOutcome::ProductStale(_) => Err(denial(

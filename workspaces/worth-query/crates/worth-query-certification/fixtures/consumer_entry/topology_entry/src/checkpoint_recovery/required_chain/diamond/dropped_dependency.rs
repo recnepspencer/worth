@@ -3,20 +3,32 @@ use super::*;
 
 #[test]
 fn changed_own_output_can_drop_unresolved_consumed_dependencies() {
-    journey(true, false);
+    journey(true, false, false);
 }
 
 #[test]
 fn changed_own_decision_still_refreshes_the_dependency_it_reads() {
-    journey(false, false);
+    journey(false, false, false);
+}
+
+#[cfg(feature = "test-output-delivery-faults")]
+#[test]
+fn changed_decision_finishes_a_held_dependency_without_advancing_its_caller() {
+    journey(false, true, false);
 }
 
 #[test]
 fn changed_decision_retries_after_cancellation_with_its_refreshed_child() {
-    journey(false, true);
+    journey(false, false, true);
 }
 
-fn journey(drop_edges: bool, cancel_decision: bool) {
+#[cfg(feature = "test-output-delivery-faults")]
+#[test]
+fn changed_decision_retries_after_cancellation_with_a_held_child() {
+    journey(false, true, true);
+}
+
+fn journey(drop_edges: bool, held_child: bool, cancel_decision: bool) {
     let _guard = checkpoint_recovery_test_guard();
     take_decisions("diamond-join");
     let profile =
@@ -50,8 +62,28 @@ fn journey(drop_edges: bool, cancel_decision: bool) {
 
     // The old dependency needs a new producer decision. The consumer's own native
     // decision fact changes as well; only its fresh handler decides whether to consume it.
-    drop((left, right));
+    let mut root_demands = Some((left, right));
+    if !held_child {
+        drop(root_demands.take());
+    }
     change_root!(request, application, "diamond-left", 5, 0x9176_3580_u64);
+    #[cfg(feature = "test-output-delivery-faults")]
+    if held_child {
+        // A clean independent caller drives the dirty left root as a queue frame.
+        // Its deferred successor is then owned by the registry, not an open caller.
+        application.delay_next_output_readiness_delivery_for_test();
+        settled_in_one_advance!(
+            root_demands.as_mut().unwrap().1,
+            request,
+            "the independent right caller"
+        );
+        assert_eq!(
+            output_lengths!(request, ["diamond-left"]),
+            [6],
+            "the queue actually published the left refresh"
+        );
+    }
+    let _retained_root_interests = root_demands;
     let before = request
         .query(PlanarOutputRead {
             body_key: "diamond-join".into(),
@@ -103,8 +135,26 @@ fn journey(drop_edges: bool, cancel_decision: bool) {
         assert_eq!(output_lengths!(request, ["diamond-left"]), [6]);
         crate::producer::reset_provider_contacts();
     }
-    let refreshed = settled_in_one_advance!(join, request, "the changed decision");
-    if cancel_decision {
+    let prior_join = output_lengths!(request, ["diamond-join"]);
+    let refreshed = if held_child {
+        match join.advance(&request) {
+            Ok(WorthQueryApplicationOutputDemandProgress::Settled(settled)) => settled,
+            Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Superseded)
+            | Ok(WorthQueryApplicationOutputDemandProgress::Pending) => {
+                settled_in_one_advance!(join, request, "the held child retry")
+            }
+            Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial))
+                if denial.kind() == WorthQueryOutputDemandDenialKind::PublicationStale => {
+                    assert_eq!(denial.recovery_posture(), worth_query_host::facade::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable);
+                    assert_eq!(output_lengths!(request, ["diamond-join"]), prior_join, "the stale attempt did not publish the join");
+                    settled_in_one_advance!(join, request, "the refreshed publication retry")
+                }
+            Err(error) => panic!("the exact held dependency failed: {error:?}"),
+        }
+    } else {
+        settled_in_one_advance!(join, request, "the changed decision")
+    };
+    if cancel_decision && !held_child {
         assert_eq!(
             refreshed.producer_contacts_in_this_demand(),
             1,
@@ -127,14 +177,24 @@ fn journey(drop_edges: bool, cancel_decision: bool) {
     } else {
         assert_eq!(
             take_decisions("diamond-join"),
-            [[6, 51]],
-            "the new decision still needs the changed left output"
+            if held_child {
+                vec![vec![6, 51], vec![6, 51]]
+            } else {
+                vec![vec![6, 51]]
+            },
+            "the completed decision retries after readiness changes its publication basis"
         );
         if cancel_decision {
             assert_eq!(
                 crate::producer::provider_contacts(),
                 0,
-                "the refreshed child is reused without another producer decision"
+                "the completed or held child resumes without another producer decision"
+            );
+        } else if held_child {
+            assert_eq!(
+                crate::producer::provider_contacts(),
+                0,
+                "readiness recovery must reuse the actual published child"
             );
         } else {
             assert!(crate::producer::provider_contacts() > 0);
