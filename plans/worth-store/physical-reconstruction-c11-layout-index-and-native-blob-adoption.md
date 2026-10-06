@@ -1681,7 +1681,7 @@ Explicit non-goals, each deferred with its owner:
 | Successor | Adds | Must not force a redesign of |
 | --- | --- | --- |
 | C.12 formal rebinding | Models of ingest/publish/resume/reclaim and index publish/rebuild transitions against the executable owners | Runtime authority; modeled verdicts grant nothing |
-| C.13 integration | Joined workload with blobs, indexes, rewrite and reclaim under one scheduler; sealed platform handoff to S.10 | Facade placement, registry ownership, lifecycle composition |
+| C.13 integration | Facade integration and crash-and-reopen journey; sealed handoff to Runtime Integration Milestone 1 (the joined workload moves to S.12) | Facade placement, registry ownership, lifecycle composition |
 | S.10 backup/repair | Backup holds as reachability edges, capsule and replication artifacts, authorized repair of authoritative chunk corruption | Reclaim proof protocol, drop publication, retirement law |
 | Part II semantics | Release-proof issuers, tenant/key scope policy, cross-scope dedupe, content-defined chunking, Query pushdown, semantic traversal | Physical scopes, chunk identity, family registry, branch-agnostic sessions |
 | Runtime-integration Milestone 12 | Chunk-backed range and streaming providers over `blobs()` | Constant-memory read contract, counters |

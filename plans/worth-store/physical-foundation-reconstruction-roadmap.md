@@ -32,13 +32,19 @@ Physical Database Roadmap S.9 implementation state reopened
   -> C.9 physical integrity, corruption localization, and offline truth
   -> C.10 stable reads, scheduled I/O, and maintenance interference
   -> C.11 layout, index, and native blob adoption
-  -> C.12 formal protocol rebinding to executable owner transitions
-  -> C.13 joined physical-platform integration and S.10 entry
-  -> Physical Database Roadmap S.10
-  -> S.11
-  -> S.12
+  -> C.13 physical facade integration and runtime-integration entry
   -> Runtime And Query Integration Roadmap Milestone 1
 ```
+
+C.12 (formal protocol rebinding) does not gate runtime integration. It grants
+no runtime authority and changes no facade or format, so it runs before Runtime
+Integration Milestone 19. Until it closes, no claim cites an S.9 model as
+evidence about the executable owners. S.10, S.11 and S.12 run before the
+Part II milestones that consume them (see the Physical Database Roadmap
+position section). Work deferred out of C.13 is recorded with its
+owner and returning milestone in the C.13 entry below and in
+`plans/deferred-work.md`. C.11 closes on its full closeout gate, including
+the heavy lane and full matrix, before C.13; nothing in it is deferred.
 
 The `C.*` labels are reconstruction sequence numbers used only in planning,
 specification, evidence, and closeout. Production modules, types, functions,
@@ -198,11 +204,13 @@ leaving ordinary iteration so expensive that broad verification is avoided.
    boundaries, but it runs through consolidated, cache-sharing UI suites rather
    than hundreds of cold nested Cargo projects.
 10. S.1 through S.9 closeout is reopened. Current direct evidence from each
-    owning phase and the joined C.13 integration scenario decides which claims
-    are restored; historical status does not.
-11. S.10, S.11, and S.12 remain in their existing conceptual order after this
-    program. Part II still begins only after the complete physical roadmap
-    closes.
+    owning phase and the C.13 facade tests and crash-and-reopen journey decide
+    which claims are restored; the S.12 joined campaign re-confirms them under
+    load; historical status does not.
+11. S.10, S.11, and S.12 keep their conceptual order but run after this
+    program, each before the Part II milestone that consumes it. Part II
+    Milestone 1 begins when C.13 closes; Part II platform readiness still
+    requires the complete physical roadmap.
 12. Query, Relational, semantic Signal, and Runtime Bridge remain consumers of
    the final platform through Part II. C.5.1 may install a distinct physical
    Signal instance only in the Store-owned physical composition layer. No Part
@@ -1433,8 +1441,8 @@ scheduled producer contracts: exact effect lowering, class-preserving dispatch,
 retention/pending-publication admission before effects, and canonical
 maintenance redo. It does not receive a certification receipt, a matrix
 verdict or semantic authority. C.12 models the actual acquire/publish/retire
-and dispatch transitions without granting capabilities. C.13 joins the
-production workload over the same facade and lifecycle.
+and dispatch transitions without granting capabilities. C.13 integrates the
+same facade and lifecycle and hands them to Runtime Integration Milestone 1.
 
 GitHub CI currently runs the Rust line-cap check only. C.10's focused,
 integration and release/manual test products remain direct implementation and
@@ -1646,6 +1654,11 @@ semantic reachability from its own artifact graph.
 
 ## C.12: Formal Protocol Rebinding To Executable Owner Transitions
 
+**Position:** not on the runtime-integration entry path. C.12 runs before
+Runtime Integration Milestone 19. It grants no runtime authority and changes no
+facade or format. Until it closes, no claim cites an S.9 model as evidence
+about the executable owners.
+
 ### Goal
 
 Run S.9 checked law against the reconstructed runtime's actual durability,
@@ -1704,86 +1717,102 @@ focused tests exercise every claimed production mapping directly, unsupported
 owner cases remain explicit, and no modeled branch, semantic commit, Query, or
 replication transition is promoted in advance of its production owner.
 
-## C.13: Joined Physical-Platform Integration And S.10 Entry
+## C.13: Physical Facade Integration And Runtime-Integration Entry
 
 ### Goal
 
 Exercise the reconstructed S.1 through S.9 owners together through the ordinary
-production runtime, remove obsolete paths exposed by that integration, and
-provide the bounded handoff needed to begin S.10.
+production runtime facade, remove obsolete paths exposed by that integration,
+and provide the sealed handoff Runtime Integration Milestone 1 consumes.
 
 ### Boundary
 
-This milestone adds no new physical feature. It is a joined integration and
-source-cutover phase. S.10, S.11, S.12, and Part II retain their own future
-obligations. C.13 may expose the physical facade shape those programs consume;
-it cannot issue Part II semantic readiness or pre-authorize branch, Query, or
+This milestone adds no new physical feature. It is a facade integration and
+source-cutover phase. S.10, S.11, S.12, C.12 and Part II keep their own
+obligations. C.13 exposes the physical facade shape those programs consume. It
+cannot issue Part II semantic readiness or pre-authorize branch, Query, or
 replica behavior.
 
 ### Must Ship
 
 - hard deletion or non-production quarantine of heap runtimes, replay-based
   reopen, duplicate backends, fake physical fixtures, obsolete certification
-  paths, and shadow authority discovered by the program
+  paths, and shadow authority discovered by the program, so the runtime cannot
+  bind to a wrong path
 - dependency checks proving ordinary product paths reach only the canonical
   runtime facade and physical owners depend in the admitted direction
 - direct public-facade compilation and focused integration tests proving it
-  exposes independently borrowable bounded reads, independently borrowable
-  generation-fenced mutation submission, exact physical scope, exact terminal
-  and recovery fate, capability negotiation, lifecycle/drainage, and pressure
-  evidence while exporting no Query, Relational, branch, MVCC, or semantic
-  writer vocabulary
-- cross-milestone hostile execution combining real writes, stores larger than
-  memory, checkpoint/WAL recovery, corruption, stable readers, scheduled
-  maintenance, index rebuild, and blob streaming
-- focused regressions at the owning boundaries for acknowledgment inversion,
-  live-state reuse, checksum bypass, generation bypass, reclaim-with-live-lease,
-  scheduler bypass, broad scan, full materialization, derived-authority
-  promotion, model/owner drift, accidental whole-Store submission
-  serialization, and branch-label-based physical admission
-- typed `S10PhysicalPlatformReadiness` or equivalently responsibility-named
-  handoff whose private construction requires every restored claim and whose
-  payload exposes the exact S.10 owner ports
-- direct adapter-facing compilation proving the lower contracts required by the
-  runtime-integration roadmap remain available and branch-agnostic, without a
-  carried compatibility report or second readiness token
+  exposes all of the following, while exporting no Query, Relational, branch,
+  MVCC, or semantic writer vocabulary:
+  - independently borrowable bounded reads;
+  - independently borrowable generation-fenced mutation submission;
+  - exact physical scope;
+  - exact terminal and recovery fate;
+  - capability negotiation;
+  - lifecycle and drainage;
+  - pressure evidence
+- a focused crash-and-reopen journey through the facade: real writes, a
+  checkpoint, a WAL tail, a crash, and a fresh-process reopen with exact
+  surviving reads. It includes a crash before the first checkpoint.
+- typed `RuntimeIntegrationPhysicalHandoff` or an equivalently
+  responsibility-named handoff. Its private construction requires every
+  restored claim, and its payload exposes the exact physical facade ports
+  Milestone 1 consumes.
+- direct adapter-facing compilation proving the lower contracts required by
+  the runtime-integration roadmap remain available and branch-agnostic, without
+  a carried compatibility report or second readiness token
 - explicit list of remaining non-platform-grade or unsupported capability
-  profiles; no unnamed debt
+  profiles. Each reports `Absent` through capability negotiation and names its
+  owner and returning milestone; there is no unnamed debt.
+
+- a facade concurrency test: submissions on disjoint physical scope make
+  concurrent progress and submissions on shared scope coordinate exactly, with
+  no whole-Store lock
+- focused owner regressions, green at closeout, for:
+
+- acknowledgment inversion;
+- live-state reuse;
+- checksum bypass;
+- generation bypass;
+- reclaim with a live lease;
+- scheduler bypass;
+- broad scan;
+- full materialization;
+- derived-authority promotion;
+- whole-Store submission serialization;
+- branch-label-based admission.
+
+### Deferred To S.12
+
+The joined hostile campaign moves to S.12, the physical qualification program.
+It runs a store at least eight times the memory budget with concurrent
+checkpoint, scrub, rewrite, reclaim, index rebuild and blob streaming, crash
+and corruption injection, and offline verification.
 
 ### Non-Fake Acceptance Setup
 
-- **Production subject:** one release-built canonical runtime and the distinct
-  offline verifier executable. No milestone-local runtime or fixture backend
-  may satisfy an aggregate predicate.
-- **Initial world:** real store at least eight times the memory budget with
-  pages, extents, checkpoints, WAL tail, B-tree/LSM indexes, multi-segment
-  blobs, derived and authoritative artifacts, and declared backend assumptions.
-- **Execution:** foreground reads/writes from multiple independent submission
-  capabilities continue during checkpoint, scrub,
-  rewrite, reclaim, index rebuild, and blob streaming; inject crash and
-  corruption at declared seams; start a fresh recovery process; run offline
-  verification; run direct regressions for known failure modes.
-- **Independent observation:** an external history model supplies semantic
-  expectations; the offline verifier supplies physical classification; OS/media
-  observation supplies actual artifact and barrier evidence. None receives
-  runtime heap state.
-- **Assertions:** all restored S.1 through S.9 predicates, exact resource and
-  interference counters, deterministic recovery, independent classification,
-  zero forbidden paths, concurrent progress for disjoint physical submissions,
-  exact coordination for shared physical scope, and absence of semantic branch
-  authority below the adapter boundary.
-- **Forbidden substitutes:** combining milestone receipts without rerunning the
-  joined system, using a memory backend, reusing a live process, omitting larger-
-  than-memory pressure, or granting readiness through a public constructor
-  cannot close this milestone.
+- **Production subject:** the canonical runtime facade and the distinct offline
+  verifier executable. No milestone-local runtime or fixture backend may
+  satisfy a facade test.
+- **Execution:** facade-level writes, reads, checkpoint, crash, and
+  fresh-process reopen; capability negotiation against the installed families.
+- **Independent observation:** an external model of the written history; the
+  offline verifier's physical classification. Neither receives runtime heap
+  state.
+- **Forbidden substitutes:** a memory backend, reusing a live process,
+  capability status that reports a deferred family `Present`, or granting the
+  handoff through a public constructor.
 
 ### Closeout Gate
 
-`C.13` closes only when S.1 through S.9 work together in one real physical
-database runtime, every obsolete substitute is unreachable from production,
-the joined hostile scenario and focused owner regressions are green, and the
-sealed S.10 readiness handoff is constructible only from the completed runtime
-progression.
+`C.13` closes only when:
+
+- every obsolete substitute is unreachable from production;
+- the facade tests and the crash-and-reopen journey are green;
+- the focused owner regressions and the facade concurrency test are green;
+- each deferred capability reports `Absent` with its named owner;
+- the sealed runtime-integration handoff is constructible only from the
+  completed runtime progression.
 
 ## Required Engineering Specs
 
@@ -1855,11 +1884,22 @@ history; Cargo metadata and current callers expose the live graph. Generated
 catalogs, audit CSVs, proof bundles, mutation reports, source fingerprints, and
 report-to-report reconciliation are not program deliverables.
 
-The final joined evidence is a real physical database scenario covering
-larger-than-memory access, durability and crash boundaries, fresh-process
-recovery, corruption localization, stable reads, maintenance interference,
-layout/index rebuild, and blob streaming, with focused owner tests providing
-local failure diagnosis. The sealed S.10 handoff remains a production typestate
+The entry evidence is the C.13 facade tests and crash-and-reopen journey over
+the production runtime. Focused owner tests provide local failure diagnosis.
+
+The final joined evidence moves to S.12. It is a real physical database
+scenario covering:
+
+- larger-than-memory access;
+- durability and crash boundaries;
+- fresh-process recovery;
+- corruption localization;
+- stable reads;
+- maintenance interference;
+- layout/index rebuild;
+- blob streaming.
+
+The sealed runtime-integration handoff remains a production typestate
 boundary, not a certification receipt.
 
 ## Sequencing Rules
@@ -1885,8 +1925,10 @@ boundary, not a certification receipt.
   cannot publish unchecked bytes.
 - C.10 precedes C.11 closeout so index and blob rewrite/reclaim use real stable
   reads and scheduled I/O.
-- C.12 follows the executable transitions it models.
-- C.13 is last and is the joined production integration route into S.10.
+- C.12 follows the executable transitions it models and runs before Runtime
+  Integration Milestone 19.
+- C.13 closes the program and is the facade handoff into Runtime Integration
+  Milestone 1.
 
 ## Completion Standard
 
@@ -1917,10 +1959,13 @@ This roadmap is complete only when Worth Store can honestly say:
   classifiable offline
 - stable readers survive real maintenance and scheduled I/O interference
 - layouts, indexes, and blobs use the same canonical physical platform
-- formal laws map to executable owner transitions
-- S.1 through S.9 have been revalidated over the joined production runtime
-- S.10 receives a sealed readiness handoff rather than another vocabulary claim
+- S.1 through S.9 have been revalidated over the production runtime facade,
+  and under joined load in S.12
+- Runtime Integration Milestone 1 receives a sealed facade handoff rather than
+  another vocabulary claim, and every deferred capability reports `Absent`
 
-Only then may operational recovery resume. The later runtime-integration
+Formal rebinding (C.12) completes this standard later, before Runtime
+Integration Milestone 19. S.10 operational recovery may begin once C.13
+closes. The later runtime-integration
 roadmap can subsequently build the existing Worth runtime on top of this
 physical platform without inheriting a fake database boundary.
