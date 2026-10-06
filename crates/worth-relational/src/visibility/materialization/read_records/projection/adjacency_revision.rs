@@ -16,8 +16,18 @@ pub struct AdjacencyStructuralRevision {
     work_units: usize,
 }
 
+/// Why a bounded structural-revision read gave no answer. Each cause is
+/// distinct so a caller can tell an unpaid read from a missing anchor.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct AdjacencyStructuralRevisionDenial;
+pub enum AdjacencyStructuralRevisionDenial {
+    /// The caller's maximum cannot pay the one owner-index lookup. Nothing
+    /// was read.
+    WorkBudgetExceeded,
+    /// The anchor is not visible at this snapshot.
+    AnchorUnavailable,
+    /// The snapshot's basis retains no adjacency index to read.
+    BasisUnavailable,
+}
 
 impl AdjacencyStructuralRevision {
     pub const fn revision(self) -> Option<VersionId> {
@@ -37,6 +47,9 @@ impl VisibilityProjectionView<'_> {
         direction: RelationalAdjacencyDirection,
         maximum_work: usize,
     ) -> Result<AdjacencyStructuralRevision, AdjacencyStructuralRevisionDenial> {
+        if maximum_work < 1 {
+            return Err(AdjacencyStructuralRevisionDenial::WorkBudgetExceeded);
+        }
         if self
             .entity_record_with_projection_scope(
                 anchor,
@@ -45,17 +58,14 @@ impl VisibilityProjectionView<'_> {
             )
             .is_none()
         {
-            return Err(AdjacencyStructuralRevisionDenial);
+            return Err(AdjacencyStructuralRevisionDenial::AnchorUnavailable);
         }
         let direction = match direction {
             RelationalAdjacencyDirection::Outgoing => AdjacencyDirection::Outgoing,
             RelationalAdjacencyDirection::Incoming => AdjacencyDirection::Incoming,
         };
-        if maximum_work < 1 {
-            return Err(AdjacencyStructuralRevisionDenial);
-        }
         let Some(root) = self.basis.root() else {
-            return Err(AdjacencyStructuralRevisionDenial);
+            return Err(AdjacencyStructuralRevisionDenial::BasisUnavailable);
         };
         let revision = root
             .get_partition(anchor.partition_id)
@@ -121,17 +131,43 @@ mod tests {
             revision_at(&deletion_commit.snapshot),
             Some(deletion_commit.version_id)
         );
-        assert!(runtime
+        let deleted_view = runtime
             .read_truth()
             .project_snapshot(&deletion_commit.snapshot)
-            .expect("deleted-relation snapshot remains readable")
-            .bounded_adjacency_structural_revision(
+            .expect("deleted-relation snapshot remains readable");
+        assert_eq!(
+            deleted_view.bounded_adjacency_structural_revision(
                 source,
                 KindId(2),
                 RelationalAdjacencyDirection::Outgoing,
                 0,
-            )
-            .is_err());
+            ),
+            Err(AdjacencyStructuralRevisionDenial::WorkBudgetExceeded)
+        );
+        let missing_anchor = EntityId::new(
+            source.partition_id,
+            source.local_slot_value() + 1_000,
+            source.generation_value(),
+        );
+        assert_eq!(
+            deleted_view.bounded_adjacency_structural_revision(
+                missing_anchor,
+                KindId(2),
+                RelationalAdjacencyDirection::Outgoing,
+                1,
+            ),
+            Err(AdjacencyStructuralRevisionDenial::AnchorUnavailable)
+        );
+        // An unpaid read refuses before it reads the anchor.
+        assert_eq!(
+            deleted_view.bounded_adjacency_structural_revision(
+                missing_anchor,
+                KindId(2),
+                RelationalAdjacencyDirection::Outgoing,
+                0,
+            ),
+            Err(AdjacencyStructuralRevisionDenial::WorkBudgetExceeded)
+        );
 
         runtime
             .durability_authority()

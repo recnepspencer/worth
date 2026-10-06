@@ -32,20 +32,13 @@ pub(super) fn publish(
     runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
     committed: WorthQueryCommittedApplicationSession,
     evidence: super::super::WorthQueryPrimaryGraphCommitEvidence,
-    publication_admission: Option<crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
 ) -> Result<WorthQueryPublishedApplicationCommit, WorthQueryProviderSessionFailure> {
     let release_published_snapshot = matches!(
         committed.published_snapshot_custody,
         PublishedSnapshotCustody::LiveOwned
     );
     let native_result = std::sync::Arc::clone(&committed.committed);
-    let publication = publish_retained(
-        provider,
-        runtime,
-        committed,
-        evidence,
-        publication_admission,
-    );
+    let publication = publish_retained(provider, runtime, committed, evidence);
     if release_published_snapshot {
         crate::relational_snapshot_release::release_query_snapshot(
             runtime,
@@ -60,7 +53,6 @@ fn publish_retained(
     runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
     committed: WorthQueryCommittedApplicationSession,
     evidence: super::super::WorthQueryPrimaryGraphCommitEvidence,
-    publication_admission: Option<crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
 ) -> Result<WorthQueryPublishedApplicationCommit, WorthQueryProviderSessionFailure> {
     let WorthQueryCommittedApplicationSession {
         mut attempt,
@@ -72,6 +64,7 @@ fn publish_retained(
         required_prerequisites,
         mut prepared_lineage_slot,
         prepared_output_witness,
+        publication_admission,
         ..
     } = committed;
     if let (Some(witness), Some(slot)) = (prepared_output_witness, prepared_lineage_slot.as_mut()) {

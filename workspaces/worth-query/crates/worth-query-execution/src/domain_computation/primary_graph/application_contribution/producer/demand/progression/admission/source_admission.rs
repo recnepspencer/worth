@@ -59,41 +59,23 @@ where
             retained_program_basis.clone(),
             registry_admission,
         )?;
-        let before_selection = registry_admission.remaining_work();
-        let mut remaining_source_work = before_selection;
-        let selection = match selected_product {
+        // Selection spends this request's meter on success and failure; it
+        // cannot mint a fresh allowance during refresh.
+        let (selected, entry) = match selected_product {
             Some(selected) => self.select_output_producer_with_remaining_on_selected::<Family>(
                 selection_source.unwrap_or(&observed_source),
                 profile_kind,
-                &mut remaining_source_work,
+                registry_admission,
                 retained_program_basis.as_deref(),
                 selected,
             ),
             None => self.select_output_producer_with_remaining::<Family>(
                 selection_source.unwrap_or(&observed_source),
                 profile_kind,
-                &mut remaining_source_work,
+                registry_admission,
                 retained_program_basis.as_deref(),
             ),
-        };
-        // This synchronous legacy selector carries a bounded remainder on both
-        // success and failure. It cannot mint a fresh allowance during refresh.
-        registry_admission
-            .charge_external_work(
-                u64::try_from(before_selection - remaining_source_work).map_err(|_| {
-                    denial(
-                        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                        Family::IDENTITY,
-                    )
-                })?,
-            )
-            .map_err(|_| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                    Family::IDENTITY,
-                )
-            })?;
-        let (selected, entry) = selection?;
+        }?;
         if selected_product.is_some() {
             source_selection.admit_selected_producer(&selected.identity, registry_admission)?;
         }

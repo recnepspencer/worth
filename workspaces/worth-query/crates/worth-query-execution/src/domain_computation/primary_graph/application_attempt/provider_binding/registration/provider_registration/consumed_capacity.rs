@@ -1,30 +1,35 @@
-use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
+use crate::domain_computation::primary_graph::invariant_projection::{
+    ConsumedOutputEvidence, ConsumedOutputVerificationStop,
+};
+use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
+use crate::domain_computation::primary_graph::RequiredOutputDemandContext;
 
-/// Admit the new Arc-slice backing before any application effect. Every row
-/// retains the shared ticket, so a selected upstream edge keeps the backing
-/// funded after the original lineage and attempt retire.
-pub(super) fn admit_backing(
+/// The request's meter: a managed demand's carried one, or an ordinary
+/// commit's installed publication allowance. Before any application effect it
+/// pays the backing the consumed edges are held in, then every check the
+/// commit makes.
+pub(super) fn request_meter(
     provider: &WorthQueryPrimaryGraphProvider,
+    required_output_demand: Option<&mut RequiredOutputDemandContext>,
     consumed_outputs: &mut [ConsumedOutputEvidence],
-) -> Result<(), &'static str> {
-    if consumed_outputs.is_empty() {
-        return Ok(());
-    }
-    let alignment = std::mem::align_of::<ConsumedOutputEvidence>();
-    let backing_bytes = consumed_outputs
-        .len()
-        .checked_mul(std::mem::size_of::<ConsumedOutputEvidence>())
-        .and_then(|bytes| bytes.checked_add(std::mem::size_of::<usize>() * 2 + alignment * 2))
-        .and_then(|bytes| u64::try_from(bytes).ok())
-        .ok_or("consumed output backing capacity overflow")?;
+) -> Result<InvalidationEditAdmission, &'static str> {
     let owner = &provider.graph.source_owner.invalidation_owner;
-    let mut admission = owner.edit_admission();
-    let backing = owner
-        .retain_consumed_output_backing(backing_bytes, &mut admission)
-        .map_err(|_| "consumed output backing capacity unavailable")?;
-    for consumed in consumed_outputs {
-        consumed.attach_backing_capacity(std::sync::Arc::clone(&backing));
-    }
-    Ok(())
+    let mut admission = required_output_demand.map_or_else(
+        || owner.edit_admission(),
+        RequiredOutputDemandContext::take_request_admission,
+    );
+    ConsumedOutputEvidence::admit_backing(consumed_outputs, owner, &mut admission).map_err(
+        |stop| match stop {
+            ConsumedOutputVerificationStop::WorkExhausted => {
+                "consumed output backing exceeds request work"
+            }
+            ConsumedOutputVerificationStop::Unavailable
+            | ConsumedOutputVerificationStop::PendingUpstream
+            | ConsumedOutputVerificationStop::RetryCurrentness(_) => {
+                "consumed output backing capacity unavailable"
+            }
+        },
+    )?;
+    Ok(admission)
 }

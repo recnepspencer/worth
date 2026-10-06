@@ -39,7 +39,8 @@ pub enum WorthQueryPartitionedComputationFullCause {
     InputChanged,
     /// A fact the membership or an item's key read changed.
     PartitionerRebuilt,
-    /// The last run's state did not fit what may be retained.
+    /// The last run's state did not fit what may be retained, or held more
+    /// facts than this run's declared work may compare.
     Evicted,
 }
 

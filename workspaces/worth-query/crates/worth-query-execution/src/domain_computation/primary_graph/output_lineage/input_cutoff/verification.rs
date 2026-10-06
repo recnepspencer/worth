@@ -303,24 +303,13 @@ fn fact_is_current(
     snapshot: &SnapshotHandle,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<bool, InputCutoffVerificationStop> {
-    let remaining = admission.remaining_work();
-    if remaining == 0 {
-        return Err(InputCutoffVerificationStop::WorkExhausted);
-    }
-    let prepaid = fact
-        .exact_probe_work()
-        .map_err(|_| InputCutoffVerificationStop::WorkExhausted)?
-        .unwrap_or(0);
-    admission.charge_external_work(prepaid as u64)?;
-    let (movement, work) = match fact.source_currentness_in(runtime, snapshot, remaining) {
-        Ok(value) => value,
-        Err(WorthQuerySourceCurrentnessFailure::Unavailable) => return Ok(false),
+    match fact.source_currentness_in(runtime, snapshot, admission)? {
+        Ok(movement) => Ok(movement.movement() == Movement::Unmoved),
+        Err(WorthQuerySourceCurrentnessFailure::Unavailable) => Ok(false),
         Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) => {
-            return Err(InputCutoffVerificationStop::WorkExhausted);
+            Err(InputCutoffVerificationStop::WorkExhausted)
         }
-    };
-    admission.charge_external_work(work.saturating_sub(prepaid) as u64)?;
-    Ok(movement.movement() == Movement::Unmoved)
+    }
 }
 
 mod matched_roots;

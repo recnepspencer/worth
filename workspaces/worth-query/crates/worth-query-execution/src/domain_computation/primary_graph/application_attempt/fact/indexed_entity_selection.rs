@@ -33,6 +33,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_indexed_entity_selec
         locator,
         value,
         candidate_limit,
+        candidate_limit,
     )
     .map(|(selection, _)| selection)
 }
@@ -61,7 +62,9 @@ pub(in crate::domain_computation::primary_graph) fn observe_indexed_candidates(
 }
 
 /// The selection as the snapshot holds it, with the index entries its lookup
-/// examined.
+/// examined. The lookup reads at most `lookup_limit` candidates, which is the
+/// recorded `candidate_limit` unless a caller's work caps it lower.
+#[allow(clippy::too_many_arguments)]
 fn observe_examined(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -70,6 +73,7 @@ fn observe_examined(
     locator: AspectFieldLocator,
     value: AspectValue,
     candidate_limit: usize,
+    lookup_limit: usize,
 ) -> Result<(WorthQueryApplicationObservedFact, usize), WorthQueryIndexedSelectionRefusal> {
     let outcome = bounded_entity_field_selection(
         runtime,
@@ -78,7 +82,7 @@ fn observe_examined(
         entity_kind,
         &locator,
         &value,
-        candidate_limit,
+        lookup_limit,
     )?;
     let examined = outcome.examined_entry_count();
     let definition = outcome.retain_definition();
@@ -148,11 +152,23 @@ fn bounded_entity_field_selection(
     Ok(outcome)
 }
 
+/// Why the selection could not be observed again.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph) enum IndexedReobservation {
+    /// The work cap stopped the lookup below the recorded candidate limit.
+    Unpaid,
+    /// The snapshot no longer yields the selection within its limit.
+    Unavailable,
+}
+
+/// The selection observed again, reading at most `maximum_work - 1` index
+/// entries. A selection the cap cut short of its recorded limit is unpaid.
 pub(in crate::domain_computation::primary_graph) fn reobserve(
     fact: &WorthQueryApplicationObservedFact,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-) -> Option<(WorthQueryApplicationObservedFact, usize)> {
+    maximum_work: usize,
+) -> Result<(WorthQueryApplicationObservedFact, usize), IndexedReobservation> {
     let WorthQueryApplicationObservedFact::IndexedEntitySelection {
         index_id,
         entity_kind,
@@ -162,9 +178,11 @@ pub(in crate::domain_computation::primary_graph) fn reobserve(
         ..
     } = fact
     else {
-        return None;
+        return Err(IndexedReobservation::Unavailable);
     };
-    observe_examined(
+    let lookup_limit =
+        lookup_limit(*candidate_limit, maximum_work).ok_or(IndexedReobservation::Unpaid)?;
+    match observe_examined(
         runtime,
         snapshot,
         *index_id,
@@ -172,8 +190,26 @@ pub(in crate::domain_computation::primary_graph) fn reobserve(
         locator.clone(),
         value.clone(),
         *candidate_limit,
-    )
-    .ok()
+        lookup_limit,
+    ) {
+        Ok(observed) => Ok(observed),
+        Err(WorthQueryIndexedSelectionRefusal::Overflowed) if lookup_limit < *candidate_limit => {
+            Err(IndexedReobservation::Unpaid)
+        }
+        Err(
+            WorthQueryIndexedSelectionRefusal::Overflowed
+            | WorthQueryIndexedSelectionRefusal::Unavailable,
+        ) => Err(IndexedReobservation::Unavailable),
+    }
+}
+
+/// The candidates a lookup paid `maximum_work` may read: one unit is the
+/// lookup itself. `None` when the work cannot pay for a candidate the
+/// recorded limit allows.
+fn lookup_limit(candidate_limit: usize, maximum_work: usize) -> Option<usize> {
+    let affordable = maximum_work.checked_sub(1)?;
+    let limit = candidate_limit.min(affordable);
+    (limit > 0 || candidate_limit == 0).then_some(limit)
 }
 
 pub(super) fn currentness(
@@ -195,25 +231,26 @@ pub(super) fn currentness(
     else {
         return Err(Failure::Unavailable);
     };
-    if candidate_limit
-        .checked_add(1)
-        .is_none_or(|work| work > maximum_work)
-    {
-        return Err(Failure::WorkBudgetExceeded);
-    }
+    let lookup_limit =
+        lookup_limit(*candidate_limit, maximum_work).ok_or(Failure::WorkBudgetExceeded)?;
     let request = BoundedEntityFieldLookupRequest::new(
         snapshot.clone(),
         *index_id,
         *entity_kind,
         locator.clone(),
         value.clone(),
-        *candidate_limit,
+        lookup_limit,
     )
     .map_err(|_| Failure::Unavailable)?;
     let outcome = runtime
         .index_access()
         .execute_bounded_entity_field_lookup(request, BoundedIndexParityMode::Production)
         .map_err(|_| Failure::Unavailable)?;
+    // More candidates than a capped lookup may read can still fit the
+    // recorded limit, so the cap gives no answer.
+    if outcome.overflowed() && lookup_limit < *candidate_limit {
+        return Err(Failure::WorkBudgetExceeded);
+    }
     Ok((
         !outcome.overflowed()
             && outcome.retain_definition().as_ref() == definition.as_ref()

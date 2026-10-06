@@ -98,7 +98,9 @@ impl<Schema, Operation>
 
     /// The fact `key` names at this projection's snapshot, comparable only
     /// with the fact retained under it. Comparing a retained fact charges
-    /// nothing: a full run would not compare it.
+    /// nothing: a full run would not compare it. The comparator compares only
+    /// a state whose summed worst-case observation the computation's declared
+    /// work admits.
     pub(in crate::domain_computation::primary_graph) fn observe_retained(
         &self,
         comparator: &Comparator,

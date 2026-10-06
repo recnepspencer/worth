@@ -22,25 +22,19 @@ impl SealedNativeOutputWitness {
         }
         for fact in facts {
             admission.charge_external_work(1)?;
-            let work = match fact {
+            match fact {
                 Fact::SourceEntity { .. }
                 | Fact::SourceFieldRevision { .. }
                 | Fact::Entity { .. }
-                | Fact::SourceAdjacencyRevision { .. } => 1,
-                Fact::SourceAspectRevision { aspect, .. } => {
-                    admission.charge_external_work(1)?;
-                    aspect.as_str().len().checked_add(1).ok_or_else(overflow)?
-                }
-                // The lookup examines at most its recorded candidate limit.
-                Fact::IndexedEntitySelection {
-                    candidate_limit, ..
-                } => candidate_limit.checked_add(1).ok_or_else(overflow)?,
+                | Fact::SourceAdjacencyRevision { .. }
+                | Fact::SourceAspectRevision { .. }
+                | Fact::IndexedEntitySelection { .. } => {}
                 _ => return Ok(false),
-            };
-            admission.charge_external_work(u64::try_from(work).map_err(|_| overflow())?)?;
-            match fact.source_currentness_in(relational, snapshot, work) {
-                Ok((movement, actual))
-                    if movement.movement() == Movement::Unmoved && actual <= work => {}
+            }
+            // The comparison reserves its worst case on this meter and is
+            // capped at that reservation.
+            match fact.source_currentness_in(relational, snapshot, admission)? {
+                Ok(movement) if movement.movement() == Movement::Unmoved => {}
                 Ok(_) | Err(_) => return Ok(false),
             }
         }

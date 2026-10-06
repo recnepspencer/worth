@@ -77,7 +77,7 @@ impl RelationalAuthorizationDurableDependencies {
                         direction,
                         1,
                     )
-                    .map_err(|_| Denial::DependencyUnavailable)?
+                    .map_err(capture::adjacency_denial)?
                     .revision();
                 if revision != adjacency.revision {
                     return Ok(false);

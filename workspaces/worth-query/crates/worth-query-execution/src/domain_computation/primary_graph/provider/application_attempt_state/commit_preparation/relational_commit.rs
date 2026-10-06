@@ -37,10 +37,10 @@ pub(super) fn commit_owner_validated(
         prepared,
         WorthQueryCommitProgressionMint::witness(),
     )?;
-    let (evidence, publication_admission) = evidence_seal::seal(provider, &mut committed);
+    let evidence = evidence_seal::seal(provider, &mut committed);
     provider.graph.with_runtime_mut_unwind_isolated(|runtime| {
         committed
-            .publish_and_encode(provider, runtime, evidence, publication_admission)
+            .publish_and_encode(provider, runtime, evidence)
             .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied)
     })
 }
@@ -55,8 +55,8 @@ pub(in crate::domain_computation::primary_graph::provider) fn publish_recovered(
     crate::domain_computation::WorthQueryProviderTerminalDescription,
     crate::domain_computation::WorthQueryProviderSessionFailure,
 > {
-    let (evidence, publication_admission) = evidence_seal::seal(provider, &mut committed);
+    let evidence = evidence_seal::seal(provider, &mut committed);
     provider.graph.with_runtime_mut_unwind_isolated(|runtime| {
-        committed.publish_and_encode(provider, runtime, evidence, publication_admission)
+        committed.publish_and_encode(provider, runtime, evidence)
     })
 }

@@ -3,7 +3,9 @@ use std::sync::Arc;
 
 use worth_foundational::facade::{AspectKey, FieldKey};
 use worth_relational::facade::identity::{EntityId, KindId};
-use worth_relational::facade::runtime::{RelationalAdjacencyDirection, VisibilityProjectionView};
+use worth_relational::facade::runtime::{
+    AdjacencyStructuralRevisionDenial, RelationalAdjacencyDirection, VisibilityProjectionView,
+};
 
 use super::{read_execution_denial, RootSelectionWork, WorthQueryApplicationReadExecutionDenial};
 use crate::domain_computation::primary_graph::application_query::{
@@ -127,7 +129,18 @@ impl RootPathSourceBuilder {
                 work.charge_source_observation(subject)?;
                 let revision = projection
                     .bounded_adjacency_structural_revision(anchor, relation_kind, direction, 1)
-                    .map_err(|_| source_denial(subject))?;
+                    .map_err(|unavailable| match unavailable {
+                        AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => {
+                            read_execution_denial(
+                                WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
+                                subject,
+                            )
+                        }
+                        AdjacencyStructuralRevisionDenial::AnchorUnavailable
+                        | AdjacencyStructuralRevisionDenial::BasisUnavailable => {
+                            source_denial(subject)
+                        }
+                    })?;
                 Ok(entry
                     .insert(WorthQueryObservedAdjacencyRevision {
                         anchor,

@@ -98,12 +98,16 @@ impl SourceInvalidationOwner {
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn read_admission(
+    /// The meter of a read whose caller declared its own ceiling: the
+    /// installed allowance, no larger than `maximum_work`.
+    pub(in crate::domain_computation::primary_graph) fn edit_admission_within(
         &self,
-        remaining_work: usize,
+        maximum_work: std::num::NonZeroUsize,
     ) -> InvalidationEditAdmission {
         let mut budget = self.resources.preflight_budget();
-        budget.maximum_work_visits = budget.maximum_work_visits.min(remaining_work as u64);
+        budget.maximum_work_visits = budget
+            .maximum_work_visits
+            .min(u64::try_from(maximum_work.get()).unwrap_or(u64::MAX));
         InvalidationEditAdmission::new(budget)
     }
 

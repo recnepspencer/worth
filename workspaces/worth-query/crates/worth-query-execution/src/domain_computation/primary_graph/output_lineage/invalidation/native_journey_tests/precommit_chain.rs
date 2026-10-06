@@ -6,7 +6,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use im::OrdSet;
-use worth_relational::facade::mvcc::CompanionPreflightBudget;
 
 use super::{field_fact, register, snapshot, AccountLabel, AccountStatus};
 use super::{DownstreamOutput, SemanticSource, StatusOutput};
@@ -122,21 +121,24 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
         None,
         Arc::new(before),
     );
+    request_custody::assert_backing_paid_by_the_request(owner, std::slice::from_ref(&b_evidence));
 
     // World publication advances both the native and product selected roots.
     // The unrelated field leaves the actual consumed source fact current.
     publish_field(&world, entity, label, "unrelated-label");
     let (unrelated_handle, unrelated) = handle.with_runtime(snapshot);
-    let mut work = 1_000_000;
+    let mut work = owner.edit_admission();
     assert_eq!(
-        handle.with_runtime(|runtime| ConsumedOutputEvidence::verify_many_at(
-            std::slice::from_ref(&b_evidence),
-            owner,
-            runtime,
-            &unrelated_handle,
-            &unrelated,
-            &mut work,
-        )),
+        handle.with_runtime(
+            |runtime| ConsumedOutputEvidence::verify_many_with_admission(
+                std::slice::from_ref(&b_evidence),
+                owner,
+                runtime,
+                &unrelated_handle,
+                &unrelated,
+                &mut work,
+            )
+        ),
         Ok(ConsumedOutputVerification::Current),
     );
 
@@ -155,7 +157,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
             )
         })
     };
-    let mut shared = owner.read_admission(1_000_000);
+    let mut shared = owner.edit_admission();
     let first = verify_unrelated(&mut shared);
     assert_eq!(first, Ok(ConsumedOutputVerification::Current));
     let first_work = shared.charged_work();
@@ -166,50 +168,28 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
     let total_bytes = shared.charged_bytes();
     assert!(total_work > first_work && total_bytes > first_bytes);
     request_custody::assert_carried_native_verification(owner, total_work, verify_unrelated);
-
-    let mut short_work = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: total_work - 1,
-        maximum_preparation_bytes: total_bytes,
-    });
-    assert_eq!(
-        verify_unrelated(&mut short_work),
-        Ok(ConsumedOutputVerification::Current)
-    );
-    assert_eq!(
-        verify_unrelated(&mut short_work),
-        Err(ConsumedOutputVerificationStop::WorkExhausted),
-    );
-    let mut short_scratch = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: total_work,
-        maximum_preparation_bytes: total_bytes - 1,
-    });
-    assert_eq!(
-        verify_unrelated(&mut short_scratch),
-        Ok(ConsumedOutputVerification::Current)
-    );
-    assert_eq!(
-        verify_unrelated(&mut short_scratch),
-        Err(ConsumedOutputVerificationStop::Unavailable),
-    );
+    request_custody::assert_closures_share_the_meter(total_work, total_bytes, verify_unrelated);
 
     // C has already consumed B. Changing A leaves B pending at the new
     // product-selected source, before C's provider commit can prepare effects.
     publish_field(&world, entity, status, "closed");
     let (after_handle, after) = handle.with_runtime(snapshot);
-    let mut work = 1_000_000;
+    let mut work = owner.edit_admission();
     assert_eq!(
-        handle.with_runtime(|runtime| ConsumedOutputEvidence::verify_many_at(
-            std::slice::from_ref(&b_evidence),
-            owner,
-            runtime,
-            &after_handle,
-            &after,
-            &mut work,
-        )),
+        handle.with_runtime(
+            |runtime| ConsumedOutputEvidence::verify_many_with_admission(
+                std::slice::from_ref(&b_evidence),
+                owner,
+                runtime,
+                &after_handle,
+                &after,
+                &mut work,
+            )
+        ),
         Err(ConsumedOutputVerificationStop::PendingUpstream),
     );
     assert!(
-        work < 1_000_000,
+        work.charged_work() > 0,
         "the wrapper debits the work spent before denial"
     );
 
@@ -236,16 +216,18 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
             FullVerificationReason::DeclaredChangeUnavailable
         ))
     ));
-    let mut work = 1_000_000;
+    let mut work = owner.edit_admission();
     assert_eq!(
-        handle.with_runtime(|runtime| ConsumedOutputEvidence::verify_many_at(
-            std::slice::from_ref(&b_evidence),
-            owner,
-            runtime,
-            &after_handle,
-            &after,
-            &mut work,
-        )),
+        handle.with_runtime(
+            |runtime| ConsumedOutputEvidence::verify_many_with_admission(
+                std::slice::from_ref(&b_evidence),
+                owner,
+                runtime,
+                &after_handle,
+                &after,
+                &mut work,
+            )
+        ),
         Ok(ConsumedOutputVerification::ChangedUpstream),
     );
     handle.with_runtime_mut(|runtime| {

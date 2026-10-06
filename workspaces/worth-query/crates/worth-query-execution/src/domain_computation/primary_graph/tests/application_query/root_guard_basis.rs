@@ -125,7 +125,11 @@ fn root_path_guard_reads_its_pinned_truth_version() {
         native_revision: None,
     };
     let unavailable_currentness = graph.integration_handle().with_runtime(|runtime| {
-        unavailable.source_currentness_in(runtime, current.application_basis().snapshot_handle(), 1)
+        unavailable.source_currentness_within(
+            runtime,
+            current.application_basis().snapshot_handle(),
+            1,
+        )
     });
     assert!(matches!(
         unavailable_currentness,
@@ -133,10 +137,14 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     ), "an unavailable restored field revision must preserve its typed verification failure");
     assert!(
         !graph.integration_handle().with_runtime(|runtime| {
-            fact.source_currentness_in(runtime, current.application_basis().snapshot_handle(), 1)
-                .unwrap()
-                .0
-                .movement()
+            fact.source_currentness_within(
+                runtime,
+                current.application_basis().snapshot_handle(),
+                1,
+            )
+            .unwrap()
+            .0
+            .movement()
                 == Movement::Unmoved
         }),
         "changed root-path guard must stale the selected source"
@@ -160,7 +168,11 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     assert!(
         !graph.integration_handle().with_runtime(|runtime| {
             absent_fact
-                .source_currentness_in(runtime, reopened.application_basis().snapshot_handle(), 1)
+                .source_currentness_within(
+                    runtime,
+                    reopened.application_basis().snapshot_handle(),
+                    1,
+                )
                 .unwrap()
                 .0
                 .movement()
@@ -250,7 +262,7 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
     let current = world.selected_product();
     let graph = world.application.runtime.primary_graph().unwrap();
     assert!(!graph.integration_handle().with_runtime(|runtime| {
-        fact.source_currentness_in(runtime, current.application_basis().snapshot_handle(), 1)
+        fact.source_currentness_within(runtime, current.application_basis().snapshot_handle(), 1)
             .unwrap()
             .0
             .movement()
@@ -272,7 +284,7 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
     change_account_status(&world, account.entity_id(), "open");
     let reopened = world.selected_product();
     assert!(!graph.integration_handle().with_runtime(|runtime| {
-        fact.source_currentness_in(runtime, reopened.application_basis().snapshot_handle(), 1)
+        fact.source_currentness_within(runtime, reopened.application_basis().snapshot_handle(), 1)
             .unwrap()
             .0
             .movement()

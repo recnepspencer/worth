@@ -295,7 +295,7 @@ fn normal_rebase(world: &AuthorizationWorld, facts: Vec<Fact>) -> std::sync::Arc
                 &BTreeSet::new(),
                 true,
                 64,
-                Some(&mut admission()),
+                &mut admission(),
             ))
         })
 }
@@ -333,7 +333,13 @@ fn selection(world: &AuthorizationWorld, facts: &[Fact]) -> bool {
                     selected.application_basis().snapshot_handle(),
                     true,
                     Some(facts),
-                    &mut 64,
+                    &mut world
+                        .application
+                        .primary_provider
+                        .graph
+                        .source_owner
+                        .invalidation_owner
+                        .edit_admission_within(std::num::NonZeroUsize::new(64).unwrap()),
                 )
                 .unwrap(),
                 OutputDependencySelection::Reuse

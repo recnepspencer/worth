@@ -17,9 +17,26 @@ use super::{
     WorthQuerySelectedApplicationProducer,
 };
 use crate::domain_computation::primary_graph::{
+    output_lineage::invalidation::InvalidationEditAdmission,
     WorthQueryPrimaryGraphInstallationDenial,
     WorthQueryPrimaryGraphInstallationDenialKind as DenialKind,
 };
+
+/// Selection work on the request's meter; running out is the selection's
+/// work denial.
+fn charge_selection(
+    admission: &mut InvalidationEditAdmission,
+    work: usize,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    admission
+        .charge_external_work(u64::try_from(work).unwrap_or(u64::MAX))
+        .map_err(|_| {
+            WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+                "",
+            )
+        })
+}
 
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph::application_contribution) struct DeclaredProducerBinding
@@ -112,28 +129,23 @@ where
     Schema: ApplicationSchema,
 {
     // Ordinary producer selection retains its established installation/read
-    // class. Required Fresh supplies its carried remainder, so each reached
+    // class. Required Fresh supplies its request meter, so each reached
     // installed predicate and the chosen identity copy are paid before use.
     pub(super) fn select_entry<Family>(
         &self,
-        mut remaining_work: Option<&mut usize>,
+        mut admission: Option<&mut InvalidationEditAdmission>,
         mut accepts: impl FnMut(&Arc<InstalledProducerProvider<Schema>>) -> bool,
         missing: WorthQueryOutputDemandDenialKind,
     ) -> Result<&Arc<InstalledProducerProvider<Schema>>, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        if let Some(remaining) = remaining_work.as_deref_mut() {
-            *remaining = remaining.checked_sub(3).ok_or_else(|| {
-                WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                    "",
-                )
-            })?;
+        if let Some(admission) = admission.as_deref_mut() {
+            charge_selection(admission, 3)?;
         }
         let mut selected = None;
         for entry in self.entries.values() {
-            if let Some(remaining) = remaining_work.as_deref_mut() {
+            if let Some(admission) = admission.as_deref_mut() {
                 let headers = std::mem::size_of::<Arc<InstalledProducerProvider<Schema>>>()
                     .checked_add(7)
                     .ok_or_else(|| {
@@ -142,12 +154,7 @@ where
                             "",
                         )
                     })?;
-                *remaining = remaining.checked_sub(headers).ok_or_else(|| {
-                    WorthQueryOutputDemandDenial::new(
-                        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                        "",
-                    )
-                })?;
+                charge_selection(admission, headers)?;
                 let predicate = Family::IDENTITY
                     .len()
                     .checked_add(entry.declaration.output_family.len())
@@ -166,12 +173,7 @@ where
                             "",
                         )
                     })?;
-                *remaining = remaining.checked_sub(predicate).ok_or_else(|| {
-                    WorthQueryOutputDemandDenial::new(
-                        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                        "",
-                    )
-                })?;
+                charge_selection(admission, predicate)?;
             }
             if accepts(entry) {
                 if selected.is_some() {
@@ -185,7 +187,7 @@ where
         }
         let selected =
             selected.ok_or_else(|| WorthQueryOutputDemandDenial::new(missing, Family::IDENTITY))?;
-        if let Some(remaining) = remaining_work {
+        if let Some(admission) = admission {
             let copied = selected
                 .declaration
                 .identity
@@ -198,12 +200,7 @@ where
                         "",
                     )
                 })?;
-            *remaining = remaining.checked_sub(copied).ok_or_else(|| {
-                WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                    "",
-                )
-            })?;
+            charge_selection(admission, copied)?;
         }
         Ok(selected)
     }
@@ -272,7 +269,7 @@ where
     pub(super) fn select_exact<Family>(
         &self,
         output_binding: TypeId,
-        remaining_work: Option<&mut usize>,
+        remaining_work: Option<&mut InvalidationEditAdmission>,
     ) -> Result<
         (
             WorthQuerySelectedApplicationProducer,

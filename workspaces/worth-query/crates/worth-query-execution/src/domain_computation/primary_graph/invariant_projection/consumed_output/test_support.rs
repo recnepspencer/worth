@@ -1,4 +1,3 @@
-use std::mem::{align_of, size_of};
 use std::sync::Arc;
 
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
@@ -21,21 +20,8 @@ impl ConsumedOutputEvidence {
         selected: Arc<PositionedRelationalSnapshot>,
     ) -> Self {
         let mut admission = owner.edit_admission();
-        if !upstream.is_empty() {
-            let backing = upstream
-                .len()
-                .checked_mul(size_of::<Self>())
-                .and_then(|bytes| bytes.checked_add(size_of::<usize>() * 2))
-                .and_then(|bytes| bytes.checked_add(align_of::<Self>() * 2))
-                .and_then(|bytes| u64::try_from(bytes).ok())
-                .expect("bounded test carrier backing");
-            let ticket = owner
-                .retain_consumed_output_backing(backing, &mut admission)
-                .expect("test carrier backing has installed capacity");
-            for consumed in &mut upstream {
-                consumed.attach_backing_capacity(Arc::clone(&ticket));
-            }
-        }
+        Self::admit_backing(&mut upstream, owner, &mut admission)
+            .expect("test carrier backing has installed capacity");
         let capacity = owner
             .retain_consumed_output(
                 &source_facts,

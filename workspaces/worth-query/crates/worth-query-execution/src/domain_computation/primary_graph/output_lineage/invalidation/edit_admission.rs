@@ -251,6 +251,36 @@ impl InvalidationEditAdmission {
         })
     }
 
+    /// A bounded read that reports what it spent, paid from this meter. The
+    /// remaining work is reserved before the read, the read stays within it,
+    /// and the reservation settles at what the read spent. A read that fails
+    /// keeps its reservation charged. A read that reports spending more than
+    /// it was given is a bug, never a budget answer: the only stop returned
+    /// is the reservation's own.
+    pub(in crate::domain_computation::primary_graph) fn reserved_read<Answer, Failure>(
+        &mut self,
+        read: impl FnOnce(usize) -> Result<(Answer, usize), Failure>,
+    ) -> Result<Result<Answer, Failure>, CompanionPreflightStop> {
+        let maximum = self.remaining_work();
+        let reserved = self.reserve_external_work(u64::try_from(maximum).unwrap_or(u64::MAX))?;
+        match read(maximum) {
+            Ok((answer, spent)) => {
+                let spent = u64::try_from(spent).unwrap_or(u64::MAX);
+                debug_assert!(
+                    spent <= reserved.reserved,
+                    "a reserved read spent {spent} of {}",
+                    reserved.reserved
+                );
+                let spent = spent.min(reserved.reserved);
+                reserved
+                    .settle(spent)
+                    .expect("settling within a reservation returns only its unused work");
+                Ok(Ok(answer))
+            }
+            Err(failure) => Ok(Err(failure)),
+        }
+    }
+
     /// A closure's visited set uses the same pinned im ordered index as the
     /// reverse index. Exact settlement identities contain only fixed-width
     /// structural identities; they own no variable comparison payload.

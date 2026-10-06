@@ -14,6 +14,22 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
 
+/// The most work observing `key` can take, in the relational work units its
+/// read is bounded by, or `None` when nothing bounds it. An entity or a field
+/// is one record read, and an adjacency reads at most its declared units and
+/// its anchor's list. A relation scans its source's whole outgoing
+/// neighborhood, which no key declares a bound for.
+pub(super) fn observation_work_bound(key: &WorthQueryApplicationFactKey) -> Option<u64> {
+    match key {
+        WorthQueryApplicationFactKey::Entity { .. }
+        | WorthQueryApplicationFactKey::Field { .. } => Some(1),
+        WorthQueryApplicationFactKey::Relation { .. } => None,
+        WorthQueryApplicationFactKey::Adjacency {
+            maximum_work_units, ..
+        } => u64::try_from(*maximum_work_units).ok()?.checked_add(1),
+    }
+}
+
 /// The fact `key` names as `snapshot` holds it, or the denial seal gives when
 /// it cannot be observed there.
 pub(in crate::domain_computation::primary_graph) fn observe_fact(

@@ -196,6 +196,22 @@ impl SealedComputationFacts {
             .fact = fact;
     }
 
+    /// Files a copy of what seal observed for `key` under `to`, as if the
+    /// calls that read it had also read that key.
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) fn copy_key(
+        &mut self,
+        key: &WorthQueryApplicationFactKey,
+        to: WorthQueryApplicationFactKey,
+    ) {
+        let sealed = self
+            .facts
+            .get(key)
+            .expect("an owner call read the key")
+            .clone();
+        self.facts.insert(to, sealed);
+    }
+
     /// Files what seal observed for `key` under `to`, as if a call had read
     /// that key instead.
     #[cfg(test)]
@@ -206,6 +222,16 @@ impl SealedComputationFacts {
     ) {
         let sealed = self.facts.remove(key).expect("an owner call read the key");
         self.facts.insert(to, sealed);
+    }
+
+    /// The most work observing every fact the calls read can take, or
+    /// `None` when a fact's observation has no bound or the sum overflows.
+    pub(in crate::domain_computation::primary_graph) fn observation_work_bound(
+        &self,
+    ) -> Option<u64> {
+        self.facts.keys().try_fold(0_u64, |work, key| {
+            work.checked_add(super::fact_observation::observation_work_bound(key)?)
+        })
     }
 
     /// Each fact a call read, in key order, with every call that read it.

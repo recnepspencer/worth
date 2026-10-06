@@ -27,6 +27,8 @@ mod marking_ceiling;
 mod precommit_chain;
 #[path = "native_journey_tests/replay_propagation.rs"]
 mod replay_propagation;
+#[path = "native_journey_tests/request_recording.rs"]
+mod request_recording;
 #[path = "native_journey_tests/required_hints.rs"]
 mod required_hints;
 #[path = "native_journey_tests/shared_versions.rs"]

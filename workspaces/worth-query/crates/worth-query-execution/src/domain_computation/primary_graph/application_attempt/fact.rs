@@ -17,9 +17,11 @@ pub(in crate::domain_computation::primary_graph) use adjacency::{
     observe_adjacency_checked, AdjacencyObservationDenial,
 };
 pub(in crate::domain_computation::primary_graph) use dependency_key::WorthQueryApplicationFactStorageKey;
-pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::reobserve as reobserve_indexed_entity_selection;
 pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::{
     observe_indexed_candidates, observe_indexed_entity_selection, WorthQueryIndexedSelectionRefusal,
+};
+pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::{
+    reobserve as reobserve_indexed_entity_selection, IndexedReobservation,
 };
 pub(in crate::domain_computation::primary_graph) use movement::{
     FactMovement, Movement, ObservedRetained,
@@ -247,16 +249,23 @@ impl WorthQueryApplicationObservedFact {
             } => runtime
                 .read_truth()
                 .project_snapshot(snapshot)
-                .and_then(|view| {
-                    view.bounded_adjacency_structural_revision(
+                .is_some_and(|view| {
+                    match view.bounded_adjacency_structural_revision(
                         *anchor,
                         *relation_kind,
                         *direction,
                         *comparison_work_limit,
-                    )
-                    .ok()
-                })
-                .is_some_and(|current| current.revision() == *native_revision),
+                    ) {
+                        Ok(current) => current.revision() == *native_revision,
+                        // Equality needs an answer; an unpaid or unreadable
+                        // revision is not equal.
+                        Err(
+                            worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::WorkBudgetExceeded
+                            | worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::AnchorUnavailable
+                            | worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::BasisUnavailable,
+                        ) => false,
+                    }
+                }),
             Self::Entity {
                 entity_id, kind, ..
             } => runtime

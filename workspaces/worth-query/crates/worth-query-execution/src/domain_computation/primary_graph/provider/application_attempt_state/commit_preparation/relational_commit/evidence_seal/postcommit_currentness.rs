@@ -184,7 +184,7 @@ pub(super) fn rebase_output(
     changed_records: &[worth_relational::facade::transactions::RecordRef],
     producer_output: bool,
     maximum_indexed_rebase_work: usize,
-    admission: Option<&mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
+    admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
 ) -> RebasedSourceFacts {
     let changed_entities = changed_records
         .iter()
@@ -215,7 +215,7 @@ fn rebase(
     retired: &BTreeSet<EntityId>,
     producer_output: bool,
     maximum_indexed_rebase_work: usize,
-    mut admission: Option<&mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
+    admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
 ) -> RebasedSourceFacts {
     let PreparedSourceFactRebase {
         facts,
@@ -223,7 +223,14 @@ fn rebase(
         mut rebased,
         mut superseded,
     } = prepared;
-    let mut indexed_work = maximum_indexed_rebase_work;
+    // The width the decision declared for its indexed selections, metered
+    // across the walk.
+    let mut indexed_width = crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::new(
+        worth_relational::facade::mvcc::CompanionPreflightBudget {
+            maximum_work_visits: u64::try_from(maximum_indexed_rebase_work).unwrap_or(u64::MAX),
+            maximum_preparation_bytes: 0,
+        },
+    );
     let mut failure = None;
     let mut own_effect = OwnEffectOnReads::NONE_ASKED;
     for (ordinal, fact) in facts.iter().enumerate() {
@@ -233,51 +240,18 @@ fn rebase(
             continue;
         }
         let unasked = &facts[ordinal..];
-        // The fact reserves the most its resolution can spend, and settles
-        // at what it spent.
-        let mut spent = resolution::reserved_work(fact, producer_output);
-        let mut reservation = match admission
-            .as_deref_mut()
-            .map(|meter| meter.reserve_external_work(spent as u64))
-            .transpose()
-        {
-            Ok(reservation) => reservation,
-            Err(stop) => return stopped(failure, stop, own_effect, unasked, producer_output),
-        };
-        let adjacency_work = reservation
-            .as_mut()
-            .map_or(0, |reserved| reserved.admission().remaining_work());
-        if matches!(
-            fact,
-            WorthQueryApplicationObservedFact::Relation { .. }
-                | WorthQueryApplicationObservedFact::Adjacency { .. }
-                | WorthQueryApplicationObservedFact::SourceAdjacencyRevision { .. }
-                | WorthQueryApplicationObservedFact::IndexedEntitySelection { .. }
-        ) {
-            if let Some(reserved) = reservation.as_mut() {
-                // The selected native adjacency revision and the indexed
-                // selection each perform one indexed probe. A probe's
-                // per-call cap alone does not spend request work.
-                if let Err(stop) = reserved.admission().charge_external_work(1) {
-                    return stopped(failure, stop, own_effect, unasked, producer_output);
-                }
-            }
-        }
-        let prepared = resolution::PreparedFactRebase::prepare(
+        let prepared = match resolution::PreparedFactRebase::prepare(
             runtime,
             snapshot,
             fact,
             retired,
             producer_output,
-            adjacency_work,
-            &mut indexed_work,
-            &mut spent,
-        );
-        if let Some(reserved) = reservation {
-            if let Err(stop) = reserved.settle(spent as u64) {
-                return stopped(failure, stop, own_effect, unasked, producer_output);
-            }
-        }
+            admission,
+            &mut indexed_width,
+        ) {
+            Ok(prepared) => prepared,
+            Err(stop) => return stopped(failure, stop, own_effect, unasked, producer_output),
+        };
         match prepared {
             Ok(action) => {
                 if matches!(action, resolution::PreparedFactRebase::KeepSuperseded) {

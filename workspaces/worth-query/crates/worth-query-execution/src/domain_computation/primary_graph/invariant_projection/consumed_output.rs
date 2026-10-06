@@ -24,6 +24,7 @@ mod pending_dependency;
 mod test_support;
 mod verification;
 pub(in crate::domain_computation::primary_graph) use pending_dependency::SelectedPendingConsumedOutput;
+use verification::map_admission_stop;
 #[cfg(feature = "certification-invalidation-equivalence")]
 pub(in crate::domain_computation::primary_graph) use verification::EvidenceView;
 pub(in crate::domain_computation::primary_graph) use verification::{
@@ -91,11 +92,31 @@ impl ConsumedOutputEvidence {
             + align_of::<RecordedSettlementIdentity>() * 2) as u64
     }
 
-    pub(in crate::domain_computation::primary_graph) fn attach_backing_capacity(
-        &mut self,
-        capacity: Arc<RetainedInvalidationCapacity>,
-    ) {
-        self.backing_capacity = Some(capacity);
+    /// Admits the one shared allocation `consumed` is held in, on the meter
+    /// of the request that consumed them. Every edge keeps the ticket, so a
+    /// selected upstream edge keeps the backing funded after the lineage and
+    /// attempt that consumed it retire.
+    pub(in crate::domain_computation::primary_graph) fn admit_backing(
+        consumed: &mut [Self],
+        owner: &SourceInvalidationOwner,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<(), ConsumedOutputVerificationStop> {
+        if consumed.is_empty() {
+            return Ok(());
+        }
+        let bytes = consumed
+            .len()
+            .checked_mul(size_of::<Self>())
+            .and_then(|bytes| bytes.checked_add(size_of::<usize>() * 2 + align_of::<Self>() * 2))
+            .and_then(|bytes| u64::try_from(bytes).ok())
+            .ok_or(ConsumedOutputVerificationStop::Unavailable)?;
+        let backing = owner
+            .retain_consumed_output_backing(bytes, admission)
+            .map_err(map_admission_stop)?;
+        for edge in consumed {
+            edge.backing_capacity = Some(Arc::clone(&backing));
+        }
+        Ok(())
     }
 
     pub(in crate::domain_computation::primary_graph) fn identity(
@@ -135,20 +156,31 @@ impl ConsumedOutputEvidence {
     /// consumed it is checked. Its reader compared it in full at the basis it
     /// read; on a branch nothing has published to, that basis is the head and
     /// the branch gets its mark cell there, as a demand's readmission mints
-    /// one. A stop leaves the output without a row, compared in full again.
+    /// one. The commit's meter pays for it, because the commit's answer reads
+    /// the row: an admission stop, in work, in bytes or at the source, stops
+    /// the commit as verification would. A row the owner will not establish
+    /// leaves the output without one, compared in full again.
     pub(in crate::domain_computation::primary_graph) fn establish_restored_before_commit(
         &self,
         source_owner: &WorthQueryRelationalSourceOwner,
         admission: &mut InvalidationEditAdmission,
-    ) {
+    ) -> Result<(), ConsumedOutputVerificationStop> {
         if self.verification_requirement != Some(FullVerificationReason::CheckpointRestore) {
-            return;
+            return Ok(());
         }
-        if source_owner
+        let established = source_owner
             .mint_mark_cell_at_head(&self.selected_native_root, admission)
-            .is_ok()
-        {
-            let _ = self.establish_restored(&source_owner.invalidation_owner, admission);
+            .map_err(SettlementRegistrationStop::Admission)
+            .and_then(|()| self.establish_restored(&source_owner.invalidation_owner, admission));
+        match established {
+            Err(SettlementRegistrationStop::Admission(stop)) => Err(map_admission_stop(stop)),
+            Ok(_)
+            | Err(
+                SettlementRegistrationStop::Alignment(_)
+                | SettlementRegistrationStop::Foreign
+                | SettlementRegistrationStop::SourceUnavailable
+                | SettlementRegistrationStop::Edit(_),
+            ) => Ok(()),
         }
     }
 }

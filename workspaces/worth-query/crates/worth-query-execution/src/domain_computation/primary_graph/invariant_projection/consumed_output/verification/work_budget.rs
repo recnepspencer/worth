@@ -2,22 +2,6 @@
 
 use super::*;
 
-fn claim_work(remaining: &mut usize, units: usize) -> Result<(), ConsumedOutputVerificationStop> {
-    *remaining = remaining
-        .checked_sub(units)
-        .ok_or(ConsumedOutputVerificationStop::WorkExhausted)?;
-    Ok(())
-}
-
-pub(super) fn debit_wrapper_work(
-    admission: &InvalidationEditAdmission,
-    remaining: &mut usize,
-) -> Result<(), ConsumedOutputVerificationStop> {
-    let spent = usize::try_from(admission.charged_work())
-        .map_err(|_| ConsumedOutputVerificationStop::WorkExhausted)?;
-    claim_work(remaining, spent)
-}
-
 pub(in super::super) fn map_admission_stop(
     stop: CompanionPreflightStop,
 ) -> ConsumedOutputVerificationStop {
@@ -106,25 +90,16 @@ pub(super) fn fact_is_current(
     snapshot: &SnapshotHandle,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<bool, ConsumedOutputVerificationStop> {
-    let available = admission.remaining_work();
-    if available == 0 {
-        return Err(ConsumedOutputVerificationStop::WorkExhausted);
+    match fact
+        .source_currentness_in(runtime, snapshot, admission)
+        .map_err(map_admission_stop)?
+    {
+        Ok(movement) => Ok(movement.movement() == Movement::Unmoved),
+        Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) => {
+            Err(ConsumedOutputVerificationStop::WorkExhausted)
+        }
+        Err(WorthQuerySourceCurrentnessFailure::Unavailable) => {
+            Err(ConsumedOutputVerificationStop::Unavailable)
+        }
     }
-    let prepaid = fact
-        .exact_probe_work()
-        .map_err(|_| ConsumedOutputVerificationStop::WorkExhausted)?
-        .unwrap_or(0);
-    charge_external(admission, prepaid)?;
-    let (movement, work) = fact
-        .source_currentness_in(runtime, snapshot, available)
-        .map_err(|failure| match failure {
-            WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => {
-                ConsumedOutputVerificationStop::WorkExhausted
-            }
-            WorthQuerySourceCurrentnessFailure::Unavailable => {
-                ConsumedOutputVerificationStop::Unavailable
-            }
-        })?;
-    charge_external(admission, work.saturating_sub(prepaid))?;
-    Ok(movement.movement() == Movement::Unmoved)
 }

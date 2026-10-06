@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptAffinity, WorthQueryApplicationCommitOutcomeIdentity,
     WorthQueryApplicationIdempotencyBinding,
 };
+use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::provider::{
     dispatch_outbox::WorthQueryDispatchOutboxBasis, WorthQueryPrimaryGraphApplicationDecisionFact,
     WorthQueryPrimaryGraphProvider,
@@ -53,6 +54,9 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
         std::sync::Arc<[super::super::super::WorthQueryApplicationObservedFact]>,
     >,
     consumed_outputs: std::sync::Arc<[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence]>,
+    /// The request's meter from the consumed edges' backing to the commit
+    /// that takes it.
+    request_admission: Option<InvalidationEditAdmission>,
 }
 
 impl WorthQueryPrimaryGraphApplicationAttempt {
@@ -60,6 +64,15 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         &mut self,
     ) -> Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext> {
         self.required_output_demand.take()
+    }
+
+    /// The request's meter, which the commit spends once.
+    pub(in crate::domain_computation::primary_graph) fn take_request_admission(
+        &mut self,
+    ) -> InvalidationEditAdmission {
+        self.request_admission
+            .take()
+            .expect("the commit takes the request's meter once")
     }
 
     pub(in crate::domain_computation::primary_graph) const fn affinity(
@@ -294,7 +307,7 @@ impl WorthQueryPrimaryGraphProvider {
         registration: WorthQueryApplicationAttemptRegistration<'a>,
     ) -> Result<WorthQueryPreparedApplicationAttempt, &'static str> {
         let super::WorthQueryApplicationAttemptRegistration {
-            required_output_demand,
+            mut required_output_demand,
             effect_owner: _effect_owner,
             affinity,
             mut decision_facts,
@@ -339,7 +352,11 @@ impl WorthQueryPrimaryGraphProvider {
         let dispatch_outbox_record = dispatch_outbox
             .as_ref()
             .map(|pending| pending.record().clone());
-        consumed_capacity::admit_backing(self, &mut consumed_outputs)?;
+        let request_admission = consumed_capacity::request_meter(
+            self,
+            required_output_demand.as_mut(),
+            &mut consumed_outputs,
+        )?;
         Ok(WorthQueryPreparedApplicationAttempt {
             attempt: WorthQueryPrimaryGraphApplicationAttempt {
                 required_output_demand,
@@ -362,6 +379,7 @@ impl WorthQueryPrimaryGraphProvider {
                 producer_required_invariants,
                 output_currentness_facts,
                 consumed_outputs: std::sync::Arc::from(consumed_outputs),
+                request_admission: Some(request_admission),
             },
             requests,
             dispatch_outbox: dispatch_outbox_record,

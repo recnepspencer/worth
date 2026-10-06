@@ -2,7 +2,9 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAdjacencyDirection as DecisionDirection,
     WorthQueryApplicationObservedFact as Fact,
 };
-use worth_relational::facade::runtime::RelationalAdjacencyDirection as NativeDirection;
+use worth_relational::facade::runtime::{
+    AdjacencyStructuralRevisionDenial, RelationalAdjacencyDirection as NativeDirection,
+};
 
 // A relation-pair read has no declared traversal bound, so use a fixed small
 // ceiling, never a limit inferred from its matched pair count. A broader
@@ -59,14 +61,18 @@ pub(super) fn prepare_decision_adjacency(
         }
         _ => return None,
     };
-    let native_revision = runtime
-        .read_truth()
-        .project_snapshot(snapshot)
-        .and_then(|view| {
-            view.bounded_adjacency_structural_revision(anchor, relation_kind, direction, limit)
-                .ok()
-        })
-        .map(|revision| revision.revision())?;
+    let view = runtime.read_truth().project_snapshot(snapshot)?;
+    let native_revision =
+        match view.bounded_adjacency_structural_revision(anchor, relation_kind, direction, limit) {
+            Ok(revision) => revision.revision(),
+            // A zero recorded limit, or a missing anchor or basis, leaves the
+            // decision fact without a native revision.
+            Err(
+                AdjacencyStructuralRevisionDenial::WorkBudgetExceeded
+                | AdjacencyStructuralRevisionDenial::AnchorUnavailable
+                | AdjacencyStructuralRevisionDenial::BasisUnavailable,
+            ) => return None,
+        };
     let endpoints = match fact {
         Fact::Relation { to, .. } => vec![*to],
         Fact::Adjacency {
@@ -153,7 +159,7 @@ mod tests {
                         &std::collections::BTreeSet::new(),
                         true,
                         0,
-                        Some(&mut zero_work)
+                        &mut zero_work
                     ),
                     super::super::RebasedSourceFacts::VerificationRequired { .. }
                 ),
@@ -177,7 +183,7 @@ mod tests {
                     &std::collections::BTreeSet::new(),
                     true,
                     64,
-                    Some(&mut producer_work),
+                    &mut producer_work,
                 ),
                 super::super::RebasedSourceFacts::VerificationRequired { .. }
             ));
@@ -190,7 +196,7 @@ mod tests {
                 &std::collections::BTreeSet::new(),
                 false,
                 64,
-                Some(&mut ordinary_work),
+                &mut ordinary_work,
             ) {
                 super::super::RebasedSourceFacts::Exact(facts) => {
                     assert_eq!(facts.as_ref(), &[stale_revision])

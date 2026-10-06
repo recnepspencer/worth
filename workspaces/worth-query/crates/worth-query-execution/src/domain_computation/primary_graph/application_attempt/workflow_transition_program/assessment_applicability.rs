@@ -1,7 +1,8 @@
 use worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::runtime::{
-    ProjectionAspectScope, RelationalAdjacencyDirection, RelationalRuntime,
+    AdjacencyStructuralRevisionDenial, ProjectionAspectScope, RelationalAdjacencyDirection,
+    RelationalRuntime,
 };
 use worth_relational::facade::storage::RecordLifecycleState;
 
@@ -107,7 +108,17 @@ pub(super) fn observe(
                     RelationalAdjacencyDirection::Outgoing,
                     1,
                 )
-                .map_err(|_| denial("applicability native revision is unavailable"))?
+                .map_err(|unavailable| match unavailable {
+                    AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => {
+                        denial("applicability native revision exceeds its comparison work")
+                    }
+                    AdjacencyStructuralRevisionDenial::AnchorUnavailable => {
+                        denial("applicability resource is not visible")
+                    }
+                    AdjacencyStructuralRevisionDenial::BasisUnavailable => {
+                        denial("applicability native revision is unavailable")
+                    }
+                })?
                 .revision();
             let relations = observe_adjacency_checked(
                 runtime,

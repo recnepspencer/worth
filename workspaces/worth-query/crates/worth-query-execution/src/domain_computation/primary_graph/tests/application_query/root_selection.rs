@@ -274,10 +274,14 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
     let current = world.selected_product();
     assert!(
         !graph.integration_handle().with_runtime(|runtime| {
-            fact.source_currentness_in(runtime, current.application_basis().snapshot_handle(), 1)
-                .unwrap()
-                .0
-                .movement()
+            fact.source_currentness_within(
+                runtime,
+                current.application_basis().snapshot_handle(),
+                1,
+            )
+            .unwrap()
+            .0
+            .movement()
                 == Movement::Unmoved
         }),
         "same endpoints after relation ABA must stale even a merged adjacency fact"

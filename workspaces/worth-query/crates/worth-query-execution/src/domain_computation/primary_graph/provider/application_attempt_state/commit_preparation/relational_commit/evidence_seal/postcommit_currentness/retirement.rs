@@ -3,15 +3,9 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 use std::collections::BTreeSet;
 use worth_relational::facade::identity::EntityId;
 
-/// The committed retirement that replaces `fact`, when `fact` was read at an
-/// entity this commit retired; `None` for every other fact. `Some(None)` when
-/// the snapshot does not hold that retirement at its own version.
-pub(super) fn resolve(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    fact: &Fact,
-    retired: &BTreeSet<EntityId>,
-) -> Option<Option<Fact>> {
+/// The entity this commit retired that `fact` was read at; `None` for every
+/// other fact. It reads nothing.
+pub(super) fn retired_anchor(fact: &Fact, retired: &BTreeSet<EntityId>) -> Option<EntityId> {
     let anchor = match fact {
         Fact::SourceEntity { entity_id }
         | Fact::Entity { entity_id, .. }
@@ -27,11 +21,12 @@ pub(super) fn resolve(
         Fact::Relation { from, .. } => Some(*from),
         _ => None,
     };
-    let entity_id = anchor.filter(|entity| retired.contains(entity))?;
-    Some(committed_retirement(runtime, snapshot, entity_id, fact))
+    anchor.filter(|entity| retired.contains(entity))
 }
 
-fn committed_retirement(
+/// The committed retirement that replaces `fact`; `None` when the snapshot
+/// does not hold that retirement at its own version.
+pub(super) fn committed_retirement(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     entity_id: EntityId,
@@ -60,8 +55,8 @@ pub(super) fn rebase(
 ) -> Option<Vec<Fact>> {
     facts
         .into_iter()
-        .map(|fact| match resolve(runtime, snapshot, &fact, retired) {
-            Some(retirement) => retirement,
+        .map(|fact| match retired_anchor(&fact, retired) {
+            Some(entity_id) => committed_retirement(runtime, snapshot, entity_id, &fact),
             None => Some(fact),
         })
         .collect()

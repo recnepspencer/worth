@@ -120,7 +120,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         candidate.verification_requirement,
         Some(FullVerificationReason::NativeRevisionUnavailable)
     );
-    let mut admission = owner.read_admission(1_000_000);
+    let mut admission = owner.edit_admission();
     let result = handle.with_runtime(|runtime| {
         ConsumedOutputEvidence::verify_candidate_with_admission(
             &candidate.settlement_identity,

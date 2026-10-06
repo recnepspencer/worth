@@ -13,7 +13,6 @@ use crate::domain_computation::{
 
 pub(super) struct VerifiedConsumedOutputPublication {
     pub(super) publication_admission: crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
-    pub(super) source_fact_work_is_bounded: bool,
     pub(super) required_prerequisites:
         Option<crate::domain_computation::primary_graph::PreparedPrerequisiteClaims>,
 }
@@ -25,27 +24,28 @@ enum PrecommitOutputStop {
 }
 
 /// Recheck every shared upstream observation at the exact selected precommit
-/// root. Managed demands carry their original request meter; ordinary commits
-/// use the installed publication allowance through all later preparation.
+/// root, on the request's meter, which registration opened and paid the
+/// consumed edges' backing from, through all later preparation.
 pub(super) fn verify(
     provider: &WorthQueryPrimaryGraphProvider,
     attempt: &mut WorthQueryPrimaryGraphApplicationAttempt,
     before: &SnapshotHandle,
 ) -> Result<VerifiedConsumedOutputPublication, WorthQueryProviderSessionCommitStop> {
     let owner = &provider.graph.source_owner.invalidation_owner;
-    let mut context = attempt.take_required_output_demand();
-    let mut admission = context.as_mut().map_or_else(
-        || owner.edit_admission(),
-        |context| context.take_request_admission(),
-    );
-    // Recording a restored output's row is the owner's edit, so the answer
-    // below never depends on the caller's allowance for it.
-    let mut edit = owner.edit_admission();
-    for consumed in attempt.consumed_outputs() {
-        consumed.establish_restored_before_commit(&provider.graph.source_owner, &mut edit);
-    }
+    let context = attempt.take_required_output_demand();
+    let mut admission = attempt.take_request_admission();
     if !attempt.consumed_outputs().is_empty() {
-        provider
+        // A restored output's row is recorded before the check reads it, on
+        // the same meter as the check.
+        attempt
+            .consumed_outputs()
+            .iter()
+            .try_for_each(|consumed| {
+                consumed
+                    .establish_restored_before_commit(&provider.graph.source_owner, &mut admission)
+                    .map_err(PrecommitOutputStop::Verification)
+            })
+            .and_then(|()| provider
         .graph
         .with_runtime(|runtime| {
             let selected = runtime
@@ -65,7 +65,7 @@ pub(super) fn verify(
                 return Err(PrecommitOutputStop::Changed);
             }
             Ok::<(), PrecommitOutputStop>(())
-        })
+        }))
         .map_err(|stop| match stop {
             PrecommitOutputStop::Verification(
                 ConsumedOutputVerificationStop::RetryCurrentness(cause),
@@ -123,7 +123,6 @@ pub(super) fn verify(
     };
     Ok(VerifiedConsumedOutputPublication {
         publication_admission: admission,
-        source_fact_work_is_bounded: true,
         required_prerequisites,
     })
 }

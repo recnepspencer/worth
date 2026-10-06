@@ -31,7 +31,7 @@ fn admitted_selected_principal_matches_ordinary_and_certification_and_stops_one_
         WorthQueryPrincipalResolutionMode::Ordinary,
         WorthQueryPrincipalResolutionMode::Certification,
     ] {
-        let mut admission = owner.read_admission(1_000_000);
+        let mut admission = owner.edit_admission();
         let fresh = selected
             .resolve_authenticated_principal_admitted(
                 &world.binding,
@@ -51,7 +51,9 @@ fn admitted_selected_principal_matches_ordinary_and_certification_and_stops_one_
         );
         let charged = admission.charged_work();
         assert!(charged > 1);
-        let mut short = owner.read_admission(usize::try_from(charged - 1).unwrap());
+        let mut short = owner.edit_admission_within(
+            std::num::NonZeroUsize::new(usize::try_from(charged - 1).unwrap()).unwrap(),
+        );
         let denial = match selected.resolve_authenticated_principal_admitted(
             &world.binding,
             &external,

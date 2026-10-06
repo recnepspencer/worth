@@ -42,7 +42,8 @@ impl<Schema, Operation, Input, Scope>
     >
 {
     /// Appends the selection of every unique value `effects` create, within
-    /// the operation's decision fact budget.
+    /// the operation's decision fact budget. Each selection's place in that
+    /// budget is admitted before it reads.
     pub(super) fn observe_created_unique_values(
         &mut self,
         effects: &[WorthQueryApplicationRealizedEffect],
@@ -76,6 +77,17 @@ impl<Schema, Operation, Input, Scope>
                 if !observed.insert(key) {
                     continue;
                 }
+                if self.facts.len().saturating_add(appended.len())
+                    >= self
+                        .admission
+                        .allowed_graph_contract()
+                        .decision_fact_budget()
+                {
+                    return Err(denial(
+                        WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
+                        self.admission.operation(),
+                    ));
+                }
                 let selection = self.lease.handle().with_runtime(|runtime| {
                     observe_indexed_entity_selection(
                         runtime,
@@ -96,17 +108,6 @@ impl<Schema, Operation, Input, Scope>
                     WorthQueryIndexedSelectionRefusal::Unavailable => unavailable(locator),
                 })?);
             }
-        }
-        if self.facts.len().saturating_add(appended.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.admission.operation(),
-            ));
         }
         self.facts.extend(appended);
         Ok(())

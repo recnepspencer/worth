@@ -1,6 +1,7 @@
-//! Retained candidate selection preserves its spent legacy Work on every exit.
+//! Retained candidate selection pays the request's meter on every exit.
 
 use super::*;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 
 /// The latest output one binding recorded for a source, with everything
 /// selection compares before it reuses that output.
@@ -44,8 +45,13 @@ impl WorthQueryApplicationOutputLineage {
         source_partition_identity: [u8; 32],
         maximum_work: usize,
     ) -> Result<(Vec<WorthQueryRetainedOutputCandidate>, usize), ()> {
-        let mut remaining = maximum_work;
-        let candidates = self.retained_output_candidates_with_remaining(
+        let mut admission = InvalidationEditAdmission::new(
+            worth_relational::facade::mvcc::CompanionPreflightBudget {
+                maximum_work_visits: maximum_work as u64,
+                maximum_preparation_bytes: 0,
+            },
+        );
+        let candidates = self.retained_output_candidates_metered(
             runtime_authority,
             schema,
             scope,
@@ -53,12 +59,15 @@ impl WorthQueryApplicationOutputLineage {
             generation,
             output_bindings,
             source_partition_identity,
-            &mut remaining,
+            &mut admission,
         )?;
-        Ok((candidates, maximum_work - remaining))
+        Ok((candidates, admission.charged_work() as usize))
     }
 
-    pub(in crate::domain_computation::primary_graph) fn retained_output_candidates_with_remaining(
+    /// Each binding's latest retained output, with every lookup reserved on
+    /// the request's meter before it reads. A lookup that runs out keeps its
+    /// reservation spent.
+    pub(in crate::domain_computation::primary_graph) fn retained_output_candidates_metered(
         &self,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
@@ -67,7 +76,7 @@ impl WorthQueryApplicationOutputLineage {
         generation: u64,
         output_bindings: &[TypeId],
         source_partition_identity: [u8; 32],
-        remaining: &mut usize,
+        admission: &mut InvalidationEditAdmission,
     ) -> Result<Vec<WorthQueryRetainedOutputCandidate>, ()> {
         let mut candidates = Vec::new();
         for output_binding in output_bindings {
@@ -78,7 +87,7 @@ impl WorthQueryApplicationOutputLineage {
                 output_binding: *output_binding,
             };
             if !self.by_source.contains_key(&source) {
-                *remaining = remaining.checked_sub(1).ok_or(())?;
+                admission.charge_external_work(1).map_err(|_| ())?;
                 continue;
             }
             let mut coordinate = ProductCoordinate {
@@ -86,22 +95,18 @@ impl WorthQueryApplicationOutputLineage {
                 generation,
             };
             loop {
-                let lookup = self.latest_output_in_partition_budgeted(
-                    &source,
-                    coordinate,
-                    source_partition_identity,
-                    *remaining,
-                );
-                let (recorded, work) = match lookup {
-                    Ok(found) => found,
-                    Err(()) => {
-                        // This owner returns only budget exhaustion. Its bounded
-                        // legacy scan spent the available visits before stopping.
-                        *remaining = 0;
-                        return Err(());
-                    }
-                };
-                *remaining = remaining.checked_sub(work).ok_or(())?;
+                // The lookup returns only budget exhaustion; its scan spent
+                // the whole reservation before stopping.
+                let recorded = admission
+                    .reserved_read(|maximum_work| {
+                        self.latest_output_in_partition_budgeted(
+                            &source,
+                            coordinate,
+                            source_partition_identity,
+                            maximum_work,
+                        )
+                    })
+                    .map_err(|_| ())??;
                 if let Some(recorded) = recorded {
                     candidates.push(WorthQueryRetainedOutputCandidate {
                         binding: *output_binding,

@@ -1,53 +1,95 @@
-use super::{FactMovement, WorthQueryApplicationObservedFact};
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial;
 
+use super::{FactMovement, WorthQueryApplicationObservedFact};
+use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+
+/// Why a fact comparison gave no answer. The meter that pays for the
+/// comparison stops separately, as a `CompanionPreflightStop`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQuerySourceCurrentnessFailure {
+    /// The fact's own recorded bound refuses the comparison.
     WorkBudgetExceeded,
     Unavailable,
 }
 
 impl WorthQueryApplicationObservedFact {
-    /// Exact-root native probes have a known cost before they run. Callers
-    /// with cumulative Work custody prepay this amount so an unavailable
-    /// result cannot erase already performed lookup/hash work.
-    pub(in crate::domain_computation::primary_graph) fn exact_probe_work(
-        &self,
-    ) -> Result<Option<usize>, WorthQuerySourceCurrentnessFailure> {
+    /// The most comparing this fact can cost: its probe, and for a native
+    /// probe that found nothing the liveness check that answers it
+    /// (`unanswered_probe`). A relation fact records no bound of its own, so
+    /// only the meter bounds it.
+    fn most_comparison_work(&self) -> usize {
         match self {
-            Self::Entity { .. } => Ok(Some(1)),
-            Self::SourceAspectRevision { aspect, .. } => aspect
-                .as_str()
-                .len()
-                .checked_add(1)
-                .map(Some)
-                .ok_or(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded),
-            _ => Ok(None),
+            Self::RetiredOutputEntity { .. }
+            | Self::SourceEntity { .. }
+            | Self::Entity { .. }
+            | Self::WorkflowHistoryBasis { .. }
+            | Self::WorkflowDefinitionPredecessor { lineage: None, .. } => 1,
+            // A revision recorded with no comparison work cannot be compared.
+            Self::SourceAdjacencyRevision {
+                comparison_work_limit: 0,
+                ..
+            } => 0,
+            Self::SourceFieldRevision { .. } | Self::SourceAdjacencyRevision { .. } => 2,
+            Self::SourceAspectRevision { aspect, .. } => aspect.as_str().len().saturating_add(2),
+            Self::Adjacency {
+                maximum_work_units, ..
+            }
+            | Self::WorkflowDefinitionPredecessor {
+                maximum_work_units, ..
+            }
+            | Self::WorkflowDefinitionCurrent {
+                maximum_work_units, ..
+            } => maximum_work_units.saturating_add(1),
+            Self::WorkflowInstanceCapacity {
+                maximum_instances, ..
+            } => maximum_instances.saturating_mul(2).saturating_add(2),
+            Self::IndexedEntitySelection {
+                candidate_limit, ..
+            } => candidate_limit.saturating_add(1),
+            Self::Relation { .. } => usize::MAX,
+            Self::Field { .. } | Self::AbsentField { .. } => 0,
         }
     }
 
-    /// The most comparing a source read can cost: its probe, and for a field
-    /// revision the liveness check that answers a probe that found nothing
-    /// (`unanswered_probe`).
-    pub(in crate::domain_computation::primary_graph) const fn most_source_comparison_work(
-        &self,
-    ) -> usize {
-        match self {
-            Self::SourceFieldRevision { .. } => 2,
-            _ => 1,
-        }
-    }
-
-    /// Whether the fact moved between the basis that read it and `snapshot`,
-    /// and the work the comparison did. A comparison that cannot answer is
-    /// its failure, never a movement.
+    /// Whether the fact moved between the basis that read it and `snapshot`.
+    /// The comparison reserves the least of its worst case and the meter's
+    /// remaining work before it reads, reads within that reservation, and
+    /// settles at what it spent. A comparison that cannot answer keeps its
+    /// reservation charged and is its failure, never a movement. A read the
+    /// reservation cut short is the meter's stop.
     pub(in crate::domain_computation::primary_graph) fn source_currentness_in(
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-        maximum_work: usize,
-    ) -> Result<(FactMovement, usize), WorthQuerySourceCurrentnessFailure> {
-        let (equal, work) = self.comparison(runtime, snapshot, maximum_work)?;
-        Ok((FactMovement::from_equal(equal), work))
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<Result<FactMovement, WorthQuerySourceCurrentnessFailure>, CompanionPreflightStop>
+    {
+        // Decision facts are value observations, not native revisions.
+        // Output lineage must first rebase them at the committed snapshot.
+        if matches!(self, Self::Field { .. } | Self::AbsentField { .. }) {
+            return Ok(Err(WorthQuerySourceCurrentnessFailure::Unavailable));
+        }
+        let most = self.most_comparison_work();
+        let reserved_work = most.min(admission.remaining_work());
+        let reserved =
+            admission.reserve_external_work(u64::try_from(reserved_work).unwrap_or(u64::MAX))?;
+        match self.comparison(runtime, snapshot, reserved_work) {
+            Ok((equal, work)) => {
+                reserved.settle(u64::try_from(work).unwrap_or(u64::MAX))?;
+                Ok(Ok(FactMovement::from_equal(equal)))
+            }
+            Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) if reserved_work < most => {
+                // The reservation is the meter's remaining work, and the
+                // comparison needed more.
+                let maximum = admission.charged_work();
+                Err(CompanionPreflightStop::WorkExhausted {
+                    required: maximum.saturating_add(1),
+                    maximum,
+                })
+            }
+            Err(failure) => Ok(Err(failure)),
+        }
     }
 
     fn comparison(
@@ -85,12 +127,12 @@ impl WorthQueryApplicationObservedFact {
             } => {
                 // The native symbol lookup hashes initialized aspect text.
                 // Admit it before borrowing the exact selected root.
-                let work = self
-                    .exact_probe_work()?
-                    .expect("an aspect fact has exact native probe work");
-                if work > maximum_work {
-                    return Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded);
-                }
+                let work = aspect
+                    .as_str()
+                    .len()
+                    .checked_add(1)
+                    .filter(|work| *work <= maximum_work)
+                    .ok_or(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)?;
                 let Some(current) = runtime
                     .read_truth()
                     .exact_snapshot_entity_aspect_version(snapshot, *entity_id, aspect)
@@ -120,25 +162,34 @@ impl WorthQueryApplicationObservedFact {
                 anchor,
                 direction,
                 native_revision,
-                comparison_work_limit,
                 ..
             } => {
                 let view = runtime
                     .read_truth()
                     .project_snapshot(snapshot)
                     .ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
-                let Ok(comparison) = view.bounded_adjacency_structural_revision(
+                // The owner-index lookup costs one unit whatever the fact's
+                // recorded limit.
+                match view.bounded_adjacency_structural_revision(
                     *anchor,
                     *relation_kind,
                     *direction,
-                    (*comparison_work_limit).min(maximum_work),
-                ) else {
-                    return unanswered_probe(runtime, snapshot, *anchor, 1, maximum_work);
-                };
-                Ok((
-                    comparison.revision() == *native_revision,
-                    comparison.work_units(),
-                ))
+                    1,
+                ) {
+                    Ok(comparison) => Ok((
+                        comparison.revision() == *native_revision,
+                        comparison.work_units(),
+                    )),
+                    Err(AdjacencyStructuralRevisionDenial::AnchorUnavailable) => {
+                        unanswered_probe(runtime, snapshot, *anchor, 1, maximum_work)
+                    }
+                    Err(AdjacencyStructuralRevisionDenial::WorkBudgetExceeded) => {
+                        Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)
+                    }
+                    Err(AdjacencyStructuralRevisionDenial::BasisUnavailable) => {
+                        Err(WorthQuerySourceCurrentnessFailure::Unavailable)
+                    }
+                }
             }
             Self::Entity { entity_id, kind } => Ok((
                 runtime
@@ -275,8 +326,6 @@ impl WorthQueryApplicationObservedFact {
                 ),
                 1,
             )),
-            // Decision facts are value observations, not native revisions.
-            // Output lineage must first rebase them at the committed snapshot.
             Self::Field { .. } | Self::AbsentField { .. } => {
                 Err(WorthQuerySourceCurrentnessFailure::Unavailable)
             }
@@ -318,5 +367,29 @@ fn map_adjacency_denial(
         super::AdjacencyObservationDenial::WorkBudgetExceeded => {
             WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded
         }
+    }
+}
+
+#[cfg(test)]
+impl WorthQueryApplicationObservedFact {
+    /// The comparison on a meter of `maximum_work` alone, with the work it
+    /// charged. A meter it runs out is the comparison's work failure.
+    pub(in crate::domain_computation::primary_graph) fn source_currentness_within(
+        &self,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        maximum_work: usize,
+    ) -> Result<(FactMovement, usize), WorthQuerySourceCurrentnessFailure> {
+        let mut admission = InvalidationEditAdmission::new(
+            worth_relational::facade::mvcc::CompanionPreflightBudget {
+                maximum_work_visits: u64::try_from(maximum_work).unwrap_or(u64::MAX),
+                maximum_preparation_bytes: 0,
+            },
+        );
+        let movement = self
+            .source_currentness_in(runtime, snapshot, &mut admission)
+            .map_err(|_| WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)??;
+        let work = usize::try_from(admission.charged_work()).unwrap_or(usize::MAX);
+        Ok((movement, work))
     }
 }

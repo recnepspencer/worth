@@ -127,7 +127,12 @@ fn selection(
             selected.application_basis().snapshot_handle(),
             true,
             Some(facts),
-            &mut 32,
+            &mut application
+                .primary_provider
+                .graph
+                .source_owner
+                .invalidation_owner
+                .edit_admission_within(std::num::NonZeroUsize::new(32).unwrap()),
         )
         .unwrap()
     })

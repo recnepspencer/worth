@@ -134,16 +134,9 @@ impl SourceInvalidationOwner {
             let fact = row
                 .fact_at(ordinal)
                 .ok_or(SettlementVerificationStop::Alignment)?;
-            let remaining = admission.remaining_work();
-            let prepaid = fact
-                .exact_probe_work()
-                .map_err(SettlementVerificationStop::SourceRead)?
-                .unwrap_or(0);
-            admission.work(prepaid as u64)?;
-            let (movement, work) = fact
-                .source_currentness_in(runtime, snapshot, remaining)
+            let movement = fact
+                .source_currentness_in(runtime, snapshot, admission)?
                 .map_err(SettlementVerificationStop::SourceRead)?;
-            admission.work(work.saturating_sub(prepaid) as u64)?;
             if movement.movement() == Movement::Moved {
                 return Ok(DirtyReverification::ChangedOrdinal(ordinal));
             }

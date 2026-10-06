@@ -123,19 +123,19 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             )
             .unwrap());
         // Producer selection reads both halves of the retained fact set.
-        let mut selection_work = 4_096;
+        let mut selection_work =
+            owner.edit_admission_within(std::num::NonZeroUsize::new(4_096).unwrap());
         assert!(matches!(
             compare_retained_output_witness(
                 runtime,
                 &before,
                 restored.get(),
-                owner,
                 &mut selection_work,
             ),
             Ok(OutputDependencySelection::Reuse)
         ));
         assert!(
-            selection_work < 4_096,
+            selection_work.charged_work() > 0,
             "the witness comparison draws from the selection allowance"
         );
         let missing = &facts[..facts.len() - 1];
@@ -201,7 +201,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             .unwrap());
         assert!(
             producer_facts[0]
-                .source_currentness_in(runtime, &after, 1)
+                .source_currentness_within(runtime, &after, 1)
                 .unwrap()
                 .0
                 .movement()
@@ -219,7 +219,8 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             .unwrap());
         // The source facts alone would reuse this output. Its performed
         // output moved, so selection may not: a producer has to run again.
-        let mut selection_work = 4_096;
+        let mut selection_work =
+            owner.edit_admission_within(std::num::NonZeroUsize::new(4_096).unwrap());
         assert!(matches!(
             compare_retained_output_dependencies(
                 runtime,
@@ -235,22 +236,24 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
                 runtime,
                 &after,
                 after_restore.get(),
-                owner,
                 &mut selection_work,
             ),
             Ok(OutputDependencySelection::FreshRequired)
         ));
         // A row no sealed witness covers is decided by its source facts.
         assert!(matches!(
-            compare_retained_output_witness(runtime, &after, None, owner, &mut selection_work),
+            compare_retained_output_witness(runtime, &after, None, &mut selection_work),
             Ok(OutputDependencySelection::Reuse)
         ));
+        let mut no_work = owner.edit_admission();
+        no_work
+            .charge_external_work(u64::try_from(no_work.remaining_work()).unwrap())
+            .unwrap();
         let exhausted = compare_retained_output_witness(
             runtime,
             &before,
             restored.get(),
-            owner,
-            &mut 0,
+            &mut no_work,
         )
         .err()
         .expect("a witness comparison beyond the selection allowance is denied");

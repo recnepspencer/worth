@@ -100,12 +100,20 @@ pub(super) struct IncrementalRun<Key, Item, Reduced> {
 }
 
 /// Compares the state the producer handed the reader with this attempt's
-/// facts. `installation` names the installed owner and `input_digest` is
-/// the input value's digest, already charged.
+/// facts. `installation` names the installed owner, `input_digest` is the
+/// input value's digest, already charged, and `remaining_work` is what the
+/// digest left of the declared work.
+///
+/// Comparing a retained fact is charged to no one, because a full run would
+/// not compare it, and charging it would make whether a later call passes
+/// depend on reuse. The declared work bounds it instead: a state whose facts'
+/// summed worst-case observation passes what that work still admits, or has
+/// a fact nothing bounds, is not compared, and runs in full.
 pub(super) fn begin<Key, Item, Reduced, Schema, Operation>(
     reader: &mut Reader<'_, '_, Schema, Operation>,
     installation: &ComputationInstallation,
     input_digest: [u8; 32],
+    remaining_work: RemainingWork,
 ) -> Begun<Key, Item, Reduced>
 where
     Key: Send + Sync + 'static,
@@ -129,6 +137,13 @@ where
     };
     if let Some(cause) = basis.drift(&retained.basis) {
         return full(basis, cause);
+    }
+    if retained
+        .facts
+        .observation_work_bound()
+        .is_none_or(|work| work > remaining_work.remaining())
+    {
+        return full(basis, WorthQueryPartitionedComputationFullCause::Evicted);
     }
     // The installation fixes the state's type, so its own owner's state
     // always downcasts.

@@ -178,7 +178,11 @@ fn currentness(world: &AuthorizationWorld, fact: &Fact) -> (bool, usize) {
         .graph
         .with_runtime(|runtime| {
             let (movement, work) = fact
-                .source_currentness_in(runtime, selected.application_basis().snapshot_handle(), 3)
+                .source_currentness_within(
+                    runtime,
+                    selected.application_basis().snapshot_handle(),
+                    3,
+                )
                 .unwrap();
             (movement.movement() == Movement::Unmoved, work)
         })

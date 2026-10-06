@@ -104,7 +104,7 @@ fn current(world: &AuthorizationWorld, fact: &WorthQueryApplicationObservedFact)
     let selected = world.selected_product();
     let graph = world.application.runtime.primary_graph().unwrap();
     graph.integration_handle().with_runtime(|runtime| {
-        fact.source_currentness_in(runtime, selected.application_basis().snapshot_handle(), 1)
+        fact.source_currentness_within(runtime, selected.application_basis().snapshot_handle(), 1)
             .unwrap()
             .0
             .movement()

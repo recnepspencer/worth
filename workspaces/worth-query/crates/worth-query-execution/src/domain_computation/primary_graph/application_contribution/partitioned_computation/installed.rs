@@ -150,7 +150,7 @@ where
                     Owner::PartitionResult,
                     _,
                     _,
-                >(reader, &self.installation, input_digest)
+                >(reader, &self.installation, input_digest, remaining_work)
             }
         };
         let deposit = reader.computation_deposit();

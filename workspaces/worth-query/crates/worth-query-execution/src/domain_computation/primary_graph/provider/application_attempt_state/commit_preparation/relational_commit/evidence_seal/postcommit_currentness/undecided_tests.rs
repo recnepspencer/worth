@@ -25,25 +25,30 @@ fn an_indexed_selection_the_width_cannot_pay_for_is_not_kept() {
     let selection = indexed_selection(&world);
     assert!(
         matches!(
-            rebase_within_width(&world, selection.clone(), false, 1),
+            rebase_within_width(&world, selection.clone(), false, 2),
             RebasedSourceFacts::Exact(_)
         ),
-        "one unit observes the empty selection again"
+        "the lookup and one candidate observe the empty selection again"
     );
-    for producer_output in [false, true] {
-        assert_eq!(
-            rebase_within_width(&world, selection.clone(), producer_output, 0),
-            RebasedSourceFacts::VerificationRequired {
-                reason: RebaseVerificationReason::AdmissionDenied(
-                    CompanionPreflightStop::WorkExhausted {
-                        required: 1,
-                        maximum: 0,
-                    }
-                ),
-                own_effect: OwnEffectOnReads::NONE_ASKED,
-            },
-            "a budget miss is the request's stop, for a producer or not"
-        );
+    // The observation reads only what it reserved. One unit pays the lookup
+    // and no candidate, so even an empty selection is not observed: a
+    // lookup that may read nothing cannot tell empty from cut short.
+    for (indexed_width, required) in [(0, 1), (1, 2)] {
+        for producer_output in [false, true] {
+            assert_eq!(
+                rebase_within_width(&world, selection.clone(), producer_output, indexed_width),
+                RebasedSourceFacts::VerificationRequired {
+                    reason: RebaseVerificationReason::AdmissionDenied(
+                        CompanionPreflightStop::WorkExhausted {
+                            required,
+                            maximum: u64::try_from(indexed_width).unwrap(),
+                        }
+                    ),
+                    own_effect: OwnEffectOnReads::NONE_ASKED,
+                },
+                "a budget miss is the request's stop, for a producer or not"
+            );
+        }
     }
 }
 
@@ -181,7 +186,7 @@ fn rebase_within_width(
                 &BTreeSet::new(),
                 producer_output,
                 indexed_width,
-                Some(&mut admission),
+                &mut admission,
             )
         })
 }

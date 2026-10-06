@@ -1,5 +1,7 @@
 use worth_relational::facade::identity::{EntityId, VersionId};
-use worth_relational::facade::runtime::RelationalAdjacencyDirection;
+use worth_relational::facade::runtime::{
+    AdjacencyStructuralRevisionDenial, RelationalAdjacencyDirection,
+};
 
 use super::{
     denial, ObservedWorkflowTransition, PublishedWorkflowInstanceRef,
@@ -103,7 +105,17 @@ pub(super) fn observe_progress(
             RelationalAdjacencyDirection::Outgoing,
             COMPARISON_WORK_LIMIT,
         )
-        .map_err(|_| denial("workflow transition membership revision is unavailable"))?
+        .map_err(|unavailable| match unavailable {
+            AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => {
+                denial("workflow transition membership revision exceeds its comparison work")
+            }
+            AdjacencyStructuralRevisionDenial::AnchorUnavailable => {
+                denial("workflow instance is not visible for its membership revision")
+            }
+            AdjacencyStructuralRevisionDenial::BasisUnavailable => {
+                denial("workflow transition membership revision is unavailable")
+            }
+        })?
         .revision();
     facts.push(WorthQueryApplicationObservedFact::SourceAdjacencyRevision {
         relation_kind,

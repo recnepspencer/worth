@@ -42,6 +42,10 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
         use crate::domain_computation::primary_graph::invariant_projection::{
             ConsumedOutputEvidence, ConsumedOutputVerification,
         };
+        let mut exhausted = owner.edit_admission();
+        exhausted
+            .charge_external_work(u64::try_from(exhausted.remaining_work()).unwrap())
+            .unwrap();
         assert_eq!(
             ConsumedOutputEvidence::verify_many_with_admission(
                 &[],
@@ -49,7 +53,7 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
                 runtime,
                 &old_handle,
                 &old_basis,
-                &mut owner.read_admission(0)
+                &mut exhausted
             ),
             Ok(ConsumedOutputVerification::Current),
             "an empty closure needs no actor image or fact authority"

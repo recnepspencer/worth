@@ -318,7 +318,7 @@ pub(super) fn rebase_result_within(
                 &BTreeSet::new(),
                 true,
                 64,
-                Some(&mut admission),
+                &mut admission,
             )
         })
 }
@@ -344,7 +344,13 @@ fn output_selection(
                 selected.application_basis().snapshot_handle(),
                 true,
                 Some(facts),
-                &mut 16,
+                &mut world
+                    .application
+                    .primary_provider
+                    .graph
+                    .source_owner
+                    .invalidation_owner
+                    .edit_admission_within(std::num::NonZeroUsize::new(16).unwrap()),
             )
             .unwrap()
         })
@@ -362,7 +368,11 @@ fn currentness(
         .unwrap()
         .integration_handle()
         .with_runtime(|runtime| {
-            fact.source_currentness_in(runtime, selected.application_basis().snapshot_handle(), 1)
+            fact.source_currentness_within(
+                runtime,
+                selected.application_basis().snapshot_handle(),
+                1,
+            )
         })
 }
 

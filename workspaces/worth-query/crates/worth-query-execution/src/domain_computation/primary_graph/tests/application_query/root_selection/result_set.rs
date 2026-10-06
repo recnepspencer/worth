@@ -125,7 +125,7 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
     );
     let current = world.selected_product();
     assert!(!graph.integration_handle().with_runtime(|runtime| {
-        fact.source_currentness_in(runtime, current.application_basis().snapshot_handle(), 1)
+        fact.source_currentness_within(runtime, current.application_basis().snapshot_handle(), 1)
             .unwrap()
             .0
             .movement()

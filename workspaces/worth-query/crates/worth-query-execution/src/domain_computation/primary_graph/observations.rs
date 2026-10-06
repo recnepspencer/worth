@@ -295,7 +295,18 @@ fn principal_adjacency_revision(
         1,
     )
     .map(|revision| revision.revision())
-    .map_err(|_| stale_proof_denial(binding))
+    .map_err(|unavailable| match unavailable {
+        worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => {
+            WorthQueryPrincipalResolutionDenial::new(
+                WorthQueryPrincipalResolutionDenialKind::ProjectionWorkBudgetExceeded,
+                binding,
+            )
+        }
+        worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::AnchorUnavailable
+        | worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::BasisUnavailable => {
+            stale_proof_denial(binding)
+        }
+    })
 }
 
 fn projection_requirement(

@@ -25,9 +25,7 @@ use crate::domain_computation::primary_graph::{
     SourceInvalidationOwner,
 };
 pub(super) use work_budget::map_admission_stop;
-use work_budget::{
-    charge_external, debit_wrapper_work, fact_is_current, map_verification_stop, reserve_pending,
-};
+use work_budget::{charge_external, fact_is_current, map_verification_stop, reserve_pending};
 
 #[derive(Clone, Copy)]
 pub(in crate::domain_computation::primary_graph) struct EvidenceView<'a> {
@@ -99,7 +97,7 @@ pub(in crate::domain_computation::primary_graph) enum ConsumedOutputVerification
 impl ConsumedOutputEvidence {
     /// The source owner decides whether this settlement is clean, which exact
     /// fact ordinals are dirty, or whether retained evidence must be verified.
-    /// Every actor lookup and fact comparison uses the same remaining allowance.
+    /// Every actor lookup and fact comparison is paid from the caller's meter.
     /// The iterative worklist visits each exact settlement at most once.
     pub(in crate::domain_computation::primary_graph::invariant_projection) fn verify_candidate_at(
         identity: &Arc<RecordedSettlementIdentity>,
@@ -112,10 +110,9 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
-        remaining_work: &mut usize,
+        admission: &mut InvalidationEditAdmission,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
-        let mut admission = owner.read_admission(*remaining_work);
-        let result = Self::verify_views(
+        Self::verify_views(
             std::iter::once(EvidenceView {
                 identity,
                 source_facts,
@@ -128,10 +125,8 @@ impl ConsumedOutputEvidence {
             runtime,
             snapshot,
             selected,
-            &mut admission,
-        );
-        debit_wrapper_work(&admission, remaining_work)?;
-        result
+            admission,
+        )
     }
 
     #[cfg(test)]
@@ -162,28 +157,6 @@ impl ConsumedOutputEvidence {
             selected,
             admission,
         )
-    }
-
-    #[cfg(all(test, not(feature = "certification-invalidation-equivalence")))]
-    pub(in crate::domain_computation::primary_graph) fn verify_many_at(
-        roots: &[Self],
-        owner: &SourceInvalidationOwner,
-        runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
-        selected: &PositionedRelationalSnapshot,
-        remaining_work: &mut usize,
-    ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
-        let mut admission = owner.read_admission(*remaining_work);
-        let result = Self::verify_many_with_admission(
-            roots,
-            owner,
-            runtime,
-            snapshot,
-            selected,
-            &mut admission,
-        );
-        debit_wrapper_work(&admission, remaining_work)?;
-        result
     }
 
     pub(in crate::domain_computation::primary_graph) fn verify_many_with_admission(
@@ -236,10 +209,9 @@ impl ConsumedOutputEvidence {
             // Each of these rows had its facts and output compared in full.
             // Consumed rows come last, so they are re-established first and
             // their consumers find them clean. A row that cannot be
-            // re-established keeps requiring verification. The caller's
-            // allowance pays for the comparison alone: recording it is the
-            // owner's edit, so the answer never depends on whether a row moves.
-            let mut edit = owner.edit_admission();
+            // re-established keeps requiring verification. The caller's meter
+            // pays for recording it too; the answer is already decided, so a
+            // meter that runs out here leaves the row unrecorded.
             for (evidence, _) in verified.into_iter().rev() {
                 let _ = owner.reestablish_verified(
                     runtime,
@@ -247,11 +219,11 @@ impl ConsumedOutputEvidence {
                     selected,
                     evidence.identity,
                     evidence.source_facts,
-                    &mut edit,
+                    admission,
                 );
             }
             // Rows answered from their marks are verified through this image.
-            let _ = owner.carry_read_basis(runtime, snapshot, selected, &marked, &mut edit);
+            let _ = owner.carry_read_basis(runtime, snapshot, selected, &marked, admission);
         }
         result
     }

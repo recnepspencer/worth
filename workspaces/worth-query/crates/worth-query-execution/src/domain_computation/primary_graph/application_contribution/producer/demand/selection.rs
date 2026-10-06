@@ -1,5 +1,6 @@
 use super::*;
 use crate::domain_computation::primary_graph::{
+    output_lineage::invalidation::InvalidationEditAdmission,
     output_reuse::{
         compare_retained_output_dependencies, compare_retained_output_witness,
         require_installed_output_dependencies, retained_output_settlement_is_verified,
@@ -16,7 +17,7 @@ type SelectedWithEntry<'a, Schema> = (
 
 mod recovered_candidates;
 mod selected_basis;
-use selected_basis::{selection_budget_denial, source_basis_is_admitted};
+use selected_basis::{charge, selection_budget_denial, source_basis_is_admitted};
 
 #[cfg(test)]
 #[path = "selection/retained_basis_tests.rs"]
@@ -37,50 +38,38 @@ where
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        self.select_output_producer_with_retained_basis::<Family>(
-            source,
-            profile_kind,
+        // The selection's meter is the caller's declared maximum.
+        let maximum_work = std::num::NonZeroUsize::new(
             maximum_work.min(
                 self.output_demand_resource_profile()
                     .limits()
                     .source_currentness_work(),
             ),
-            None,
         )
-    }
-
-    pub(super) fn select_output_producer_with_retained_basis<Family>(
-        &self,
-        source: &WorthQueryObservedSource<
-            <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
-        >,
-        profile_kind: &'static str,
-        maximum_work: usize,
-        retained_program_basis: Option<
-            &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
-        >,
-    ) -> Result<WorthQuerySelectedApplicationProducer, WorthQueryOutputDemandDenial>
-    where
-        Family: WorthQueryProducerOutputFamily<Schema>,
-    {
-        let mut remaining_work = maximum_work;
+        .ok_or_else(|| selection_budget_denial(Family::IDENTITY))?;
+        let mut admission = self
+            .primary_provider
+            .graph
+            .source_owner
+            .invalidation_owner
+            .edit_admission_within(maximum_work);
         self.select_output_producer_with_remaining::<Family>(
             source,
             profile_kind,
-            &mut remaining_work,
-            retained_program_basis,
+            &mut admission,
+            None,
         )
         .map(|(selected, _)| selected)
     }
 
-    /// The admitted demand continues with this exact remaining allowance.
+    /// The admitted demand continues on this request's meter.
     pub(super) fn select_output_producer_with_remaining<Family>(
         &self,
         source: &WorthQueryObservedSource<
             <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
         >,
         profile_kind: &'static str,
-        remaining_work: &mut usize,
+        admission: &mut InvalidationEditAdmission,
         retained_program_basis: Option<
             &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
         >,
@@ -91,7 +80,7 @@ where
         self.select_output_producer_with_remaining_core::<Family>(
             source,
             profile_kind,
-            remaining_work,
+            admission,
             retained_program_basis,
             None,
         )
@@ -103,7 +92,7 @@ where
             <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
         >,
         profile_kind: &'static str,
-        remaining_work: &mut usize,
+        admission: &mut InvalidationEditAdmission,
         retained_program_basis: Option<
             &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
         >,
@@ -143,7 +132,7 @@ where
                     self,
                     retained_basis,
                     shared,
-                    remaining_work,
+                    admission,
                     Family::IDENTITY,
                 )? {
                     return Err(WorthQueryOutputDemandDenial::new(
@@ -176,7 +165,7 @@ where
                 self,
                 observation,
                 shared,
-                remaining_work,
+                admission,
                 Family::IDENTITY,
             )?;
         }
@@ -196,7 +185,7 @@ where
             &mut lineage,
         );
         let candidates = lineage
-            .retained_output_candidates_with_remaining(
+            .retained_output_candidates_metered(
                 self.runtime.authority_identity().as_u64(),
                 &self.installed_schema.binding_identity(),
                 scope,
@@ -204,7 +193,7 @@ where
                 observation.reference_generation().get(),
                 &output_bindings,
                 source.partition_identity(),
-                remaining_work,
+                admission,
             )
             .map_err(|()| selection_budget_denial(Family::IDENTITY))?;
         drop(lineage);
@@ -224,9 +213,7 @@ where
                 .len()
                 .checked_add(1)
                 .ok_or_else(|| selection_budget_denial(Family::IDENTITY))?;
-            *remaining_work = remaining_work
-                .checked_sub(required_work)
-                .ok_or_else(|| selection_budget_denial(Family::IDENTITY))?;
+            charge(admission, required_work, Family::IDENTITY)?;
             let newly_selected = if selected_override.is_none() {
                 Some(
                     self.on_branch(observation.product_branch())
@@ -317,7 +304,7 @@ where
                                         candidate.verification_requirement,
                                         &candidate.settlement_identity,
                                         owner,
-                                        remaining_work,
+                                        admission,
                                     )?
                             }
                         };
@@ -328,7 +315,7 @@ where
                                 selected.application_basis().snapshot_handle(),
                                 identity_current,
                                 candidate.observed_source_facts.as_deref(),
-                                remaining_work,
+                                admission,
                             )?,
                             OutputDependencySelection::Reuse
                         )
@@ -337,8 +324,7 @@ where
                                 runtime,
                                 selected.application_basis().snapshot_handle(),
                                 witness,
-                                owner,
-                                remaining_work,
+                                admission,
                             )?,
                             OutputDependencySelection::Reuse
                         );
@@ -361,7 +347,7 @@ where
                     })?;
                     let (mut selected, entry) = self.installed_producers.select_exact::<Family>(
                         candidate.binding,
-                        selected_override.map(|_| &mut *remaining_work),
+                        selected_override.map(|_| &mut *admission),
                     )?;
                     selected.retained_resources = Some(resources);
                     selected.retained_idempotency_key = Some(candidate.idempotency_key_identity);
@@ -376,7 +362,7 @@ where
                         profile_kind,
                         WorthQueryProducerLifecyclePosture::Preserve,
                     ),
-                    selected_override.map(|_| &mut *remaining_work),
+                    selected_override.map(|_| &mut *admission),
                 );
             }
         }
@@ -385,7 +371,7 @@ where
                 profile_kind,
                 WorthQueryProducerLifecyclePosture::Initial,
             ),
-            selected_override.map(|_| &mut *remaining_work),
+            selected_override.map(|_| &mut *admission),
         )
     }
 }

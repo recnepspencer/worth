@@ -17,7 +17,6 @@ pub(in crate::domain_computation::primary_graph::provider) struct ManagedUnpubli
     pub(super) before: super::precommit_snapshot::WorthQueryPrecommitSnapshot,
     pub(super) managed_views: Option<managed_views::PreparedViewPublication>,
     pub(super) source_fact_rebase: Option<super::super::PreparedSourceFactRebase>,
-    pub(super) source_fact_work_is_bounded: bool,
     pub(super) required_prerequisites:
         Option<crate::domain_computation::primary_graph::PreparedPrerequisiteClaims>,
     pub(super) prepared_lineage_slot:
@@ -161,9 +160,7 @@ impl ManagedUnpublishedAttempt {
             product_publication,
             managed_views: self.managed_views,
             source_fact_rebase: self.source_fact_rebase,
-            source_fact_admission: self
-                .source_fact_work_is_bounded
-                .then_some(self.publication_admission),
+            publication_admission: self.publication_admission,
             required_prerequisites: self.required_prerequisites,
             prepared_lineage_slot: self.prepared_lineage_slot,
             prepared_output_witness: self.prepared_output_witness,

@@ -344,7 +344,9 @@ where
     pub(super) fn select<Family>(
         &self,
         applicability: WorthQueryProducerApplicability,
-        remaining_work: Option<&mut usize>,
+        remaining_work: Option<
+            &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
+        >,
     ) -> Result<
         (
             WorthQuerySelectedApplicationProducer,

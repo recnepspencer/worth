@@ -24,44 +24,52 @@ pub(in crate::domain_computation::primary_graph) fn compare_retained_output_depe
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     identity_current: bool,
     facts: Option<&[WorthQueryApplicationObservedFact]>,
-    remaining_work: &mut usize,
+    admission: &mut InvalidationEditAdmission,
 ) -> Result<OutputDependencySelection, WorthQueryOutputDemandDenial> {
     let facts = match reusable_facts(identity_current, facts) {
         Ok(facts) => facts,
         Err(fresh) => return Ok(fresh),
     };
+    match first_moved_fact(runtime, snapshot, facts, admission) {
+        Ok(None) => Ok(OutputDependencySelection::Reuse),
+        Ok(Some(_)) => Ok(OutputDependencySelection::FreshRequired),
+        Err(RetainedFactStop::Work) => Err(work_denial()),
+        Err(RetainedFactStop::Unavailable(fact)) => Err(WorthQueryOutputDemandDenial::new(
+            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+            fact.locator_identity(),
+        )),
+    }
+}
+
+/// Why a retained output's facts could not be compared.
+pub(in crate::domain_computation::primary_graph) enum RetainedFactStop<'fact> {
+    /// The request's meter, or the fact's own recorded bound, stopped it.
+    Work,
+    /// The snapshot cannot answer this fact.
+    Unavailable(&'fact WorthQueryApplicationObservedFact),
+}
+
+/// The first of a retained output's facts that moved at `snapshot`, compared
+/// in order and paid from the request's meter. `None` when every fact holds.
+pub(in crate::domain_computation::primary_graph) fn first_moved_fact<'fact>(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
+    admission: &mut InvalidationEditAdmission,
+) -> Result<Option<&'fact WorthQueryApplicationObservedFact>, RetainedFactStop<'fact>> {
     for fact in facts {
-        let available = *remaining_work;
-        let prepaid = fact
-            .exact_probe_work()
-            .map_err(|_| work_denial())?
-            .unwrap_or(0);
-        if prepaid > *remaining_work {
-            return Err(work_denial());
-        }
-        *remaining_work -= prepaid;
-        let (movement, work) = fact
-            .source_currentness_in(runtime, snapshot, available)
-            .map_err(|failure| match failure {
-                WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => {
-                    WorthQueryOutputDemandDenial::new(
-                        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                        "output dependency comparison exceeded the admitted work budget",
-                    )
-                }
-                WorthQuerySourceCurrentnessFailure::Unavailable => {
-                    WorthQueryOutputDemandDenial::new(
-                        WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                        fact.locator_identity(),
-                    )
-                }
-            })?;
-        *remaining_work -= work.saturating_sub(prepaid);
-        if movement.movement() == Movement::Moved {
-            return Ok(OutputDependencySelection::FreshRequired);
+        match fact.source_currentness_in(runtime, snapshot, admission) {
+            Ok(Ok(movement)) if movement.movement() == Movement::Moved => return Ok(Some(fact)),
+            Ok(Ok(_)) => {}
+            Ok(Err(WorthQuerySourceCurrentnessFailure::Unavailable)) => {
+                return Err(RetainedFactStop::Unavailable(fact));
+            }
+            Ok(Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)) | Err(_) => {
+                return Err(RetainedFactStop::Work);
+            }
         }
     }
-    Ok(OutputDependencySelection::Reuse)
+    Ok(None)
 }
 
 /// The other half of a retained output's canonical fact set: the performed
@@ -74,18 +82,13 @@ pub(in crate::domain_computation::primary_graph) fn compare_retained_output_witn
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     witness: Option<&SealedNativeOutputWitness>,
-    owner: &SourceInvalidationOwner,
-    remaining_work: &mut usize,
+    admission: &mut InvalidationEditAdmission,
 ) -> Result<OutputDependencySelection, WorthQueryOutputDemandDenial> {
     let Some(witness) = witness else {
         return Ok(OutputDependencySelection::Reuse);
     };
-    let mut admission = owner.read_admission(*remaining_work);
-    let unchanged = witness.unchanged_in(runtime, snapshot, &mut admission);
     let unchanged = owner_read(
-        unchanged,
-        &admission,
-        remaining_work,
+        witness.unchanged_in(runtime, snapshot, admission),
         "retained output witness could not be compared",
     )?;
     Ok(if unchanged {
@@ -104,7 +107,7 @@ pub(in crate::domain_computation::primary_graph) fn retained_output_settlement_i
     requirement: Option<FullVerificationReason>,
     settlement: &RecordedSettlementIdentity,
     owner: &SourceInvalidationOwner,
-    remaining_work: &mut usize,
+    admission: &mut InvalidationEditAdmission,
 ) -> Result<bool, WorthQueryOutputDemandDenial> {
     const UNAVAILABLE: &str = "retained output settlement could not be read";
     if cutoff_declines(requirement, None) {
@@ -119,24 +122,19 @@ pub(in crate::domain_computation::primary_graph) fn retained_output_settlement_i
                 UNAVAILABLE,
             )
         })?;
-    let mut admission = owner.read_admission(*remaining_work);
-    let current = owner.currentness(&selected, settlement, &mut admission);
-    let current = owner_read(current, &admission, remaining_work, UNAVAILABLE)?;
+    let current = owner_read(
+        owner.currentness(&selected, settlement, admission),
+        UNAVAILABLE,
+    )?;
     Ok(!cutoff_declines(requirement, Some(&current)))
 }
 
-/// Settle one owner read against the selection's work: what the read charged
-/// is spent whether or not it answered.
+/// One owner read on the selection's meter: what it charged stays spent
+/// whether or not it answered.
 fn owner_read<Answer>(
     answer: Result<Answer, CompanionPreflightStop>,
-    admission: &InvalidationEditAdmission,
-    remaining_work: &mut usize,
     unavailable: &'static str,
 ) -> Result<Answer, WorthQueryOutputDemandDenial> {
-    let charged = usize::try_from(admission.charged_work()).map_err(|_| work_denial())?;
-    *remaining_work = remaining_work
-        .checked_sub(charged)
-        .ok_or_else(work_denial)?;
     answer.map_err(|stop| match stop {
         CompanionPreflightStop::WorkExhausted { .. }
         | CompanionPreflightStop::WorkCounterOverflow => work_denial(),

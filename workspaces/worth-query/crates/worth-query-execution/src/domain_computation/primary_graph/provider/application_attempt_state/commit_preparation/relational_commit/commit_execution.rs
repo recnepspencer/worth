@@ -41,7 +41,9 @@ pub(in crate::domain_computation::primary_graph::provider) struct WorthQueryComm
     product_publication: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationReceipt,
     managed_views: Option<managed_views::PreparedViewPublication>,
     source_fact_rebase: Option<super::PreparedSourceFactRebase>,
-    source_fact_admission: Option<crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
+    /// The request's meter from consumed-output verification through the
+    /// source-fact rebase to completed registration.
+    publication_admission: crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     required_prerequisites:
         Option<crate::domain_computation::primary_graph::PreparedPrerequisiteClaims>,
     prepared_lineage_slot:
@@ -88,19 +90,15 @@ pub(super) fn commit(
     })
     .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::from)?;
     let consumed_output::VerifiedConsumedOutputPublication {
-        publication_admission,
-        source_fact_work_is_bounded,
+        mut publication_admission,
         mut required_prerequisites,
     } = consumed_output::verify(provider, &mut attempt, before.as_snapshot())?;
-    let mut publication_admission = Some(publication_admission);
     let prepared_output_witness =
         crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness::prepare(
             &attempt,
             &provider.graph.layout,
             &provider.graph.source_owner.invalidation_owner,
-            publication_admission
-                .as_mut()
-                .expect("verified output retains its cumulative admission"),
+            &mut publication_admission,
         )
         .map_err(native_output_witness_stop)?;
     let mut candidate = provider
@@ -110,9 +108,7 @@ pub(super) fn commit(
     let prepared_touched_records = touched_records::PreparedTouchedRecords::prepare(
         provider,
         &candidate,
-        publication_admission
-            .as_mut()
-            .expect("verified output retains its cumulative admission"),
+        &mut publication_admission,
     )?;
     let ordinary_index_budget =
         crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget();
@@ -172,15 +168,12 @@ pub(super) fn commit(
                 before,
                 managed_views,
                 source_fact_rebase: Some(source_fact_rebase),
-                source_fact_work_is_bounded,
                 required_prerequisites,
                 prepared_lineage_slot,
                 prepared_output_witness,
                 prepared_touched_records,
                 lineage_metadata: None,
-                publication_admission: publication_admission
-                    .take()
-                    .expect("partial publication retains cumulative admission"),
+                publication_admission,
                 reserved_terminal,
             };
             reservation.retain_managed(unpublished.recovery_handle(), retained);
@@ -191,11 +184,6 @@ pub(super) fn commit(
             );
         }
     };
-    let source_fact_admission = source_fact_work_is_bounded.then(|| {
-        publication_admission
-            .take()
-            .expect("performed publication retains its cumulative admission")
-    });
     let prepared_lineage_slot = performed.prepared_lineage_slot;
     let performed = performed.publication;
     let next_basis = performed
@@ -223,7 +211,7 @@ pub(super) fn commit(
         product_publication: performed,
         managed_views,
         source_fact_rebase: Some(source_fact_rebase),
-        source_fact_admission,
+        publication_admission,
         required_prerequisites,
         prepared_lineage_slot,
         prepared_output_witness,
@@ -258,8 +246,19 @@ fn world_no_effect(
     }
 }
 impl WorthQueryCommittedApplicationSession {
-    pub(super) fn take_source_fact_admission(&mut self) -> Option<crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>{
-        self.source_fact_admission.take()
+    /// What the source-fact rebase reads and the request meter it spends.
+    pub(super) fn rebase_parts(
+        &mut self,
+    ) -> (
+        &worth_relational::facade::transactions::CommitResult,
+        usize,
+        &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
+    ){
+        (
+            self.committed.as_ref(),
+            self.attempt.indexed_rebase_work_budget(),
+            &mut self.publication_admission,
+        )
     }
     pub(super) fn take_prepared_touched_records(&mut self) -> PreparedTouchedRecords {
         self.prepared_touched_records
@@ -304,13 +303,11 @@ impl WorthQueryCommittedApplicationSession {
         provider: &WorthQueryPrimaryGraphProvider,
         runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
         evidence: super::WorthQueryPrimaryGraphCommitEvidence,
-        publication_admission: Option<crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
     ) -> Result<
         crate::domain_computation::WorthQueryProviderTerminalDescription,
         WorthQueryProviderSessionFailure,
     > {
-        let published =
-            publication::publish(provider, runtime, self, evidence, publication_admission)?;
+        let published = publication::publish(provider, runtime, self, evidence)?;
         publication::encode(provider, published)
     }
 }

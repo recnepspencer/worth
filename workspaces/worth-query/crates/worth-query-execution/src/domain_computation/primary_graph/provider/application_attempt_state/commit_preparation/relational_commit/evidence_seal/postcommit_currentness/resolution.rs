@@ -1,11 +1,15 @@
 use worth_foundational::facade::{AspectFieldLocator, LocatorAuthority};
 use worth_relational::facade::{
-    identity::VersionId, mvcc::CompanionPreflightStop, runtime::RelationalFieldRevision,
+    identity::VersionId,
+    mvcc::CompanionPreflightStop,
+    runtime::{AdjacencyStructuralRevisionDenial, RelationalFieldRevision},
 };
 
 use crate::domain_computation::primary_graph::application_attempt::{
-    reobserve_indexed_entity_selection, Movement,
+    reobserve_indexed_entity_selection, IndexedReobservation, Movement,
+    WorthQuerySourceCurrentnessFailure,
 };
+use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 
 use super::{
     adjacency, retirement, RebaseVerificationReason, WorthQueryApplicationObservedFact as Fact,
@@ -19,16 +23,6 @@ pub(super) fn reads_source(fact: &Fact) -> bool {
         fact,
         Fact::SourceEntity { .. } | Fact::Entity { .. } | Fact::SourceFieldRevision { .. }
     )
-}
-
-/// The most resolving `fact` can spend: one unit, or for a producer's source
-/// read the most its comparison can cost.
-pub(super) fn reserved_work(fact: &Fact, producer_output: bool) -> usize {
-    if producer_output && reads_source(fact) {
-        fact.most_source_comparison_work()
-    } else {
-        1
-    }
 }
 
 /// One selected-snapshot resolution paired by ordinal with the original fact.
@@ -48,24 +42,76 @@ pub(super) enum PreparedFactRebase {
 }
 
 impl PreparedFactRebase {
-    /// `spent` enters as the fact's reserved work and leaves as the work it
-    /// spent, which only a source read's comparison makes smaller.
-    #[allow(clippy::too_many_arguments)]
+    /// Every resolution pays before it reads. A producer's source read
+    /// reserves its own comparison; every other resolution is one unit, and
+    /// an indexed probe one more. The request meter's stop is the outer
+    /// error; the inner one is a fact the walk could not resolve.
     pub(super) fn prepare(
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         fact: &Fact,
         retired: &std::collections::BTreeSet<worth_relational::facade::identity::EntityId>,
         producer_output: bool,
+        admission: &mut InvalidationEditAdmission,
+        indexed_width: &mut InvalidationEditAdmission,
+    ) -> Result<Result<Self, RebaseVerificationReason>, CompanionPreflightStop> {
+        let unavailable = RebaseVerificationReason::NativeRevisionUnavailable;
+        if let Some(entity_id) = retirement::retired_anchor(fact, retired) {
+            admission.charge_external_work(1)?;
+            // No other fact may stand in for a retirement the snapshot lacks.
+            return Ok(
+                retirement::committed_retirement(runtime, snapshot, entity_id, fact)
+                    .map(Self::Replace)
+                    .ok_or(unavailable),
+            );
+        }
+        if producer_output && reads_source(fact) {
+            return Ok(
+                match fact.source_currentness_in(runtime, snapshot, admission)? {
+                    Ok(movement) => Ok(match movement.movement() {
+                        Movement::Unmoved => Self::Keep,
+                        Movement::Moved => Self::KeepSuperseded,
+                    }),
+                    Err(
+                        WorthQuerySourceCurrentnessFailure::Unavailable
+                        | WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded,
+                    ) => Err(unavailable),
+                },
+            );
+        }
+        admission.charge_external_work(1)?;
+        let maximum_pair_rebase_work = admission.remaining_work();
+        if matches!(
+            fact,
+            Fact::Relation { .. }
+                | Fact::Adjacency { .. }
+                | Fact::SourceAdjacencyRevision { .. }
+                | Fact::IndexedEntitySelection { .. }
+        ) {
+            // The selected native adjacency revision and the indexed
+            // selection each perform one indexed probe. A probe's per-call
+            // cap alone does not spend request work.
+            admission.charge_external_work(1)?;
+        }
+        Ok(Self::resolve(
+            runtime,
+            snapshot,
+            fact,
+            producer_output,
+            maximum_pair_rebase_work,
+            indexed_width,
+        ))
+    }
+
+    fn resolve(
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        fact: &Fact,
+        producer_output: bool,
         maximum_pair_rebase_work: usize,
-        indexed_rebase_work: &mut usize,
-        spent: &mut usize,
+        indexed_width: &mut InvalidationEditAdmission,
     ) -> Result<Self, RebaseVerificationReason> {
         let unavailable = RebaseVerificationReason::NativeRevisionUnavailable;
-        if let Some(retirement) = retirement::resolve(runtime, snapshot, fact, retired) {
-            // No other fact may stand in for a retirement the snapshot lacks.
-            return retirement.map(Self::Replace).ok_or(unavailable);
-        }
         match fact {
             Fact::Field {
                 entity_id, locator, ..
@@ -101,32 +147,42 @@ impl PreparedFactRebase {
                     None => Ok(Self::Keep),
                 }
             }
-            Fact::SourceFieldRevision {
-                native_revision: None,
-                ..
-            } if producer_output => Err(unavailable),
             Fact::SourceAdjacencyRevision {
                 relation_kind,
                 anchor,
                 direction,
                 comparison_work_limit,
                 ..
-            } => match runtime
-                .read_truth()
-                .project_snapshot(snapshot)
-                .and_then(|view| {
-                    view.bounded_adjacency_structural_revision(
-                        *anchor,
-                        *relation_kind,
-                        *direction,
-                        (*comparison_work_limit).min(maximum_pair_rebase_work),
-                    )
-                    .ok()
-                }) {
-                Some(comparison) => Ok(Self::Adjacency(comparison.revision())),
-                None if producer_output => Err(unavailable),
-                None => Ok(Self::Keep),
-            },
+            } => {
+                let Some(view) = runtime.read_truth().project_snapshot(snapshot) else {
+                    return if producer_output {
+                        Err(unavailable)
+                    } else {
+                        Ok(Self::Keep)
+                    };
+                };
+                match view.bounded_adjacency_structural_revision(
+                    *anchor,
+                    *relation_kind,
+                    *direction,
+                    (*comparison_work_limit).min(maximum_pair_rebase_work),
+                ) {
+                    Ok(comparison) => Ok(Self::Adjacency(comparison.revision())),
+                    // The request paid the lookup above; a refusal here is
+                    // the fact's own recorded limit, or a missing anchor or
+                    // basis, so the fact is not resolved.
+                    Err(
+                        AdjacencyStructuralRevisionDenial::WorkBudgetExceeded
+                        | AdjacencyStructuralRevisionDenial::AnchorUnavailable
+                        | AdjacencyStructuralRevisionDenial::BasisUnavailable,
+                    ) if producer_output => Err(unavailable),
+                    Err(
+                        AdjacencyStructuralRevisionDenial::WorkBudgetExceeded
+                        | AdjacencyStructuralRevisionDenial::AnchorUnavailable
+                        | AdjacencyStructuralRevisionDenial::BasisUnavailable,
+                    ) => Ok(Self::Keep),
+                }
+            }
             Fact::Relation { .. } | Fact::Adjacency { .. } => {
                 match adjacency::prepare_decision_adjacency(
                     runtime,
@@ -139,41 +195,45 @@ impl PreparedFactRebase {
                     None => Ok(Self::Keep),
                 }
             }
-            Fact::IndexedEntitySelection { .. } => {
+            Fact::IndexedEntitySelection {
+                candidate_limit, ..
+            } => {
                 // The selection is observed again at the committed snapshot,
                 // so it names the members this commit itself published. It is
                 // charged what it examined, as the decision that read it was.
                 // Facts are walked in key order, not the order they were read
                 // in, so the width that decision admitted bounds each
                 // observation and no selection waits on the ones before it.
-                // One the width cannot pay for is not decided, and never kept.
-                match reobserve_indexed_entity_selection(fact, runtime, snapshot) {
-                    Some((observed, examined)) => {
-                        let charged = examined.checked_add(1).ok_or(unpaid(None))?;
-                        *indexed_rebase_work = indexed_rebase_work
-                            .checked_sub(charged)
-                            .ok_or_else(|| unpaid(Some((charged, *indexed_rebase_work))))?;
+                // The observation reserves the least of its worst case and
+                // the width left before it reads, and reads within that
+                // reservation. One the width cannot pay for is not decided,
+                // and never kept.
+                let most = candidate_limit.saturating_add(1);
+                let reserved_work = most.min(indexed_width.remaining_work());
+                let reserved = indexed_width
+                    .reserve_external_work(u64::try_from(reserved_work).unwrap_or(u64::MAX))
+                    .map_err(RebaseVerificationReason::AdmissionDenied)?;
+                match reobserve_indexed_entity_selection(fact, runtime, snapshot, reserved_work) {
+                    Ok((observed, examined)) => {
+                        reserved
+                            .settle(u64::try_from(examined.saturating_add(1)).unwrap_or(u64::MAX))
+                            .map_err(RebaseVerificationReason::AdmissionDenied)?;
                         Ok(Self::Replace(observed))
                     }
-                    None if producer_output => Err(unavailable),
-                    None => Ok(Self::Keep),
+                    Err(IndexedReobservation::Unpaid) => {
+                        let maximum = indexed_width.charged_work();
+                        Err(RebaseVerificationReason::AdmissionDenied(
+                            CompanionPreflightStop::WorkExhausted {
+                                required: maximum.saturating_add(1),
+                                maximum,
+                            },
+                        ))
+                    }
+                    Err(IndexedReobservation::Unavailable) if producer_output => Err(unavailable),
+                    Err(IndexedReobservation::Unavailable) => Ok(Self::Keep),
                 }
             }
             Fact::RetiredOutputEntity { .. } => Ok(Self::Keep),
-            read if reads_source(read) && producer_output => {
-                // Granted the most the comparison can cost, so a failure is
-                // one it could not answer, never one it could not pay for.
-                match read.source_currentness_in(runtime, snapshot, *spent) {
-                    Ok((movement, work)) => {
-                        *spent = work;
-                        Ok(match movement.movement() {
-                            Movement::Unmoved => Self::Keep,
-                            Movement::Moved => Self::KeepSuperseded,
-                        })
-                    }
-                    Err(_) => Err(unavailable),
-                }
-            }
             read if reads_source(read) => Ok(Self::Keep),
             _ if producer_output => Err(RebaseVerificationReason::UnsupportedDecisionFact),
             _ => Ok(Self::Keep),
@@ -223,18 +283,4 @@ impl PreparedFactRebase {
             _ => unreachable!("prepared fact resolution must match its original fact"),
         }
     }
-}
-
-/// The rebase's indexed width could not pay `required` from `maximum`, or the
-/// count overflowed.
-fn unpaid(work: Option<(usize, usize)>) -> RebaseVerificationReason {
-    let stop = work
-        .and_then(|(required, maximum)| {
-            Some(CompanionPreflightStop::WorkExhausted {
-                required: u64::try_from(required).ok()?,
-                maximum: u64::try_from(maximum).ok()?,
-            })
-        })
-        .unwrap_or(CompanionPreflightStop::WorkCounterOverflow);
-    RebaseVerificationReason::AdmissionDenied(stop)
 }

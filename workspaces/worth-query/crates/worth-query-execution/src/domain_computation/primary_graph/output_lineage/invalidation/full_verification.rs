@@ -238,16 +238,9 @@ fn fact_is_current(
     snapshot: &SnapshotHandle,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<bool, FullVerificationStop> {
-    let available = admission.remaining_work();
-    let prepaid = fact
-        .exact_probe_work()
-        .map_err(FullVerificationStop::SourceRead)?
-        .unwrap_or(0);
-    admission.work(prepaid as u64)?;
-    let (movement, work) = fact
-        .source_currentness_in(runtime, snapshot, available)
+    let movement = fact
+        .source_currentness_in(runtime, snapshot, admission)?
         .map_err(FullVerificationStop::SourceRead)?;
-    admission.work(work.saturating_sub(prepaid) as u64)?;
     Ok(movement.movement() == Movement::Unmoved)
 }
 

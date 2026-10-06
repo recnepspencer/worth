@@ -117,8 +117,8 @@ pub use elevation_request_program::WorthQueryElevationRequestProgram;
 pub(in crate::domain_computation) use fact::WorthQueryApplicationObservedFact;
 pub(in crate::domain_computation::primary_graph) use fact::{
     observe_adjacency, observe_indexed_candidates, observe_indexed_entity_selection,
-    reobserve_indexed_entity_selection, FactMovement, Movement, ObservedRetained,
-    WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey,
+    reobserve_indexed_entity_selection, FactMovement, IndexedReobservation, Movement,
+    ObservedRetained, WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey,
     WorthQueryApplicationFactStorageKey, WorthQueryIndexedSelectionRefusal,
     WorthQuerySourceCurrentnessFailure,
 };

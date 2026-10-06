@@ -1,6 +1,8 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryResultTraversalDirection;
 use worth_query_installation::facade::WorthQueryInstalledGraphReadContract;
-use worth_relational::facade::runtime::{RelationalAdjacencyDirection, VisibilityProjectionView};
+use worth_relational::facade::runtime::{
+    AdjacencyStructuralRevisionDenial, RelationalAdjacencyDirection, VisibilityProjectionView,
+};
 
 use super::{allocate_claimed_result_vector, projection_denial, ResultTreeWork};
 use crate::domain_computation::primary_graph::application_query::{
@@ -249,11 +251,17 @@ fn collect_node(
                 direction,
                 work.remaining_work(),
             )
-            .map_err(|_| {
-                crate::domain_computation::primary_graph::application_query::read_execution::read_execution_denial(
-                    crate::domain_computation::primary_graph::application_query::read_execution::WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
-                    relation.result_path(),
-                )
+            .map_err(|unavailable| match unavailable {
+                AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => {
+                    crate::domain_computation::primary_graph::application_query::read_execution::read_execution_denial(
+                        crate::domain_computation::primary_graph::application_query::read_execution::WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
+                        relation.result_path(),
+                    )
+                }
+                AdjacencyStructuralRevisionDenial::AnchorUnavailable
+                | AdjacencyStructuralRevisionDenial::BasisUnavailable => {
+                    projection_denial(relation.result_path())
+                }
             })?;
         if let Some(predicate) = relation.predicate() {
             let contract_revision = graph

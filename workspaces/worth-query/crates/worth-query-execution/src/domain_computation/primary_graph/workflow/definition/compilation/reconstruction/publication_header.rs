@@ -1,6 +1,8 @@
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_relational::facade::identity::EntityId;
-use worth_relational::facade::runtime::RelationalAdjacencyDirection;
+use worth_relational::facade::runtime::{
+    AdjacencyStructuralRevisionDenial, RelationalAdjacencyDirection,
+};
 
 use super::{
     exact_adjacent, exact_text, exact_u64, observed_optional_text, observed_text,
@@ -77,7 +79,17 @@ fn observe_adjacency_revision(
             RelationalAdjacencyDirection::Outgoing,
             COMPARISON_WORK_LIMIT,
         )
-        .map_err(|_| super::denial("workflow publication membership revision is unavailable"))?
+        .map_err(|unavailable| match unavailable {
+            AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => super::denial(
+                "workflow publication membership revision exceeds its comparison work",
+            ),
+            AdjacencyStructuralRevisionDenial::AnchorUnavailable => {
+                super::denial("workflow definition is not visible for its membership revision")
+            }
+            AdjacencyStructuralRevisionDenial::BasisUnavailable => {
+                super::denial("workflow publication membership revision is unavailable")
+            }
+        })?
         .revision();
     facts.push(WorthQueryApplicationObservedFact::SourceAdjacencyRevision {
         relation_kind,

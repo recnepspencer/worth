@@ -1125,7 +1125,9 @@ digest, which is computed only for a producer whose owner can retain, decided
 statically; a reinstalled owner of the same type has another basis. The
 computation and owner types are checked by the one downcast. One comparator
 module owns the incremental run: it observes every retained fact at the
-attempt's own snapshot, and a read is recorded with its fact on every outcome,
+attempt's own snapshot, uncharged, only when the facts' summed worst-case
+observation fits what the computation's declared work still admits, and runs
+in full past it or when a fact's observation has no bound; a read is recorded with its fact on every outcome,
 a failed one included, so a fact it could not observe still marks. It
 marks partitions, charges each carried call where a full run charges it and
 enters its facts as admitted reads, and builds the next tree from the prior's
@@ -2213,10 +2215,6 @@ before machinery for another lands.
       commit facts that do not rebase, and a producer whose every commit
       does so never leaves a row with facts: it runs again after each later
       publication. No fixture has such a producer.
-    - A rebase observes a selection before it charges for what the
-      observation examined, so one observation past the budget runs before
-      the rebase is refused. Each observation stays capped by its own
-      declared candidate limit.
     - Any later publication on the branch, even an unrelated one, supersedes
       a settlement without facts: nothing is left to compare with it. A
       publication between the commit and its certification therefore makes
@@ -2416,14 +2414,34 @@ The next phase may trust that the touched graph alone decides what recomputes.
   effect records `RegistrationIncomplete`. The reasons no mark row answers for
   are named once.
   *Limitations:* an own effect whose comparison cannot answer stays denied
-  until a later publication on the branch supersedes the commit. The adjacency rebase still
-  reads a budget miss as an unavailable anchor, because its denial does not
-  tell the two apart. An interrupted consumed-output verification answers
+  until a later publication on the branch supersedes the commit. An interrupted consumed-output verification answers
   `Unavailable` (`work_budget.rs:45`), not an interruption; carrying the
   request lease owns that.
 - **6.6** Charge every work meter as a reservation before the read it pays for,
   including the post-commit rebase, and say for each fresh edit admission
   whether the request or platform housekeeping pays.
+  *Completed:* every request work meter is an `InvalidationEditAdmission`, and
+  no work is a `&mut usize` but the producer contact counts and a read's own
+  bound. Each charged read reserves the least of its real worst case and what
+  remains, reads no more than it reserved, and settles at what it spent; a
+  read reporting more than its reservation is a bug, not a work answer. The
+  comparator's observation of retained facts is the one uncharged read: a
+  full run would not make it, so charging it would let reuse decide a later
+  ceiling. It runs only when the facts' summed worst-case observation fits
+  what the computation's declared work still admits. The rebase's indexed
+  width is that meter, so a width that cannot pay a lookup and one candidate
+  is a typed work stop. The adjacency revision denial tells a work miss from
+  an unavailable anchor or basis. The backing consumed edges are held in is
+  paid on the request's meter, which registration opens and the commit
+  spends. Recording a row a demand or a verification compared in full is paid
+  by the request; a commit that cannot pay, in work or bytes, to record a
+  restored output it reads stops. Retirement,
+  republication, capture and pending publication are housekeeping. Delegation
+  checks its fact budget before the child-absence read.
+  *Limitation:* an empty indexed selection at width 1 is a work stop, though
+  its lookup alone would prove it empty. Relational's bounded lookup refuses a
+  zero candidate limit, so the cheapest lookup may verify one candidate, two
+  units. A zero-limit count probe in Relational lifts it.
 - **6.7** Carry the request lease into managed computations before membership edits.
   Resource denials are one Query-owned denial converted from the execution
   authority's in one place, and partition identity lists are canonical and

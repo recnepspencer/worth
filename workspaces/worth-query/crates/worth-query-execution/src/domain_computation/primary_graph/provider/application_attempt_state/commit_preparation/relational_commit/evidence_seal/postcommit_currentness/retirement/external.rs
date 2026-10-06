@@ -139,7 +139,7 @@ fn a_retired_entity_changes_each_revision_fact_read_without_its_entity_fact() {
         let selected = world.selected_product();
         let graph = world.application.runtime.primary_graph().unwrap();
         graph.integration_handle().with_runtime(|runtime| {
-            fact.source_currentness_in(
+            fact.source_currentness_within(
                 runtime,
                 selected.application_basis().snapshot_handle(),
                 maximum_work,

@@ -2,6 +2,7 @@
 
 use super::*;
 use crate::domain_computation::primary_graph::{
+    output_lineage::invalidation::InvalidationEditAdmission,
     product_operation::SharedSelectedProductOperation, WorthQueryApplicationReadObservation,
 };
 
@@ -20,7 +21,7 @@ where
             <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
         >,
         profile_kind: &'static str,
-        remaining_work: &mut usize,
+        admission: &mut InvalidationEditAdmission,
         retained_program_basis: Option<&WorthQueryApplicationReadObservation>,
         shared: &SharedSelectedProductOperation<'_, Schema>,
     ) -> Result<SelectedWithEntry<'_, Schema>, WorthQueryOutputDemandDenial>
@@ -30,7 +31,7 @@ where
         self.select_output_producer_with_remaining_core::<Family>(
             source,
             profile_kind,
-            remaining_work,
+            admission,
             retained_program_basis,
             Some(shared),
         )
@@ -43,16 +44,14 @@ pub(super) fn historical_basis_matches<Schema>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     retained: &WorthQueryApplicationReadObservation,
     shared: &SharedSelectedProductOperation<'_, Schema>,
-    remaining_work: &mut usize,
+    admission: &mut InvalidationEditAdmission,
     family: &str,
 ) -> Result<bool, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
 {
     // Admit the owner and observation metadata visit before reading widths.
-    *remaining_work = remaining_work
-        .checked_sub(4)
-        .ok_or_else(|| selection_budget_denial(family))?;
+    charge(admission, 4, family)?;
     let selected = shared.selected();
     let selected_observation = selected.product().observation();
     let selected_width = selected_observation.branch_identity().name().as_str().len();
@@ -62,9 +61,7 @@ where
         // The schema binding compares its package and schema digests.
         .and_then(|work| work.checked_add(64 + 7))
         .ok_or_else(|| selection_budget_denial(family))?;
-    *remaining_work = remaining_work
-        .checked_sub(comparison)
-        .ok_or_else(|| selection_budget_denial(family))?;
+    charge(admission, comparison, family)?;
     Ok(std::ptr::eq(runtime, selected.application())
         && retained.belongs_to_selected_occurrence(runtime, selected_observation))
 }
@@ -75,16 +72,14 @@ pub(super) fn require_fresh_source<Schema>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     source: &crate::basis::WorthQueryProductBranchReadIdentity,
     shared: &SharedSelectedProductOperation<'_, Schema>,
-    remaining_work: &mut usize,
+    admission: &mut InvalidationEditAdmission,
     family: &str,
 ) -> Result<(), WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
 {
     // These metadata reads precede the variable-width branch comparison.
-    *remaining_work = remaining_work
-        .checked_sub(4)
-        .ok_or_else(|| selection_budget_denial(family))?;
+    charge(admission, 4, family)?;
     let selected = shared.selected();
     let selected_observation = selected.product().observation();
     let source_width = source.branch_identity().name().as_str().len();
@@ -95,9 +90,7 @@ where
         // axes use fixed-width comparisons after the two branch texts.
         .and_then(|work| work.checked_add(160))
         .ok_or_else(|| selection_budget_denial(family))?;
-    *remaining_work = remaining_work
-        .checked_sub(comparison)
-        .ok_or_else(|| selection_budget_denial(family))?;
+    charge(admission, comparison, family)?;
     if std::ptr::eq(runtime, selected.application())
         && source.matches_observation(selected_observation)
     {
@@ -121,6 +114,17 @@ pub(super) fn source_basis_is_admitted(
     } else {
         source == current
     }
+}
+
+/// Selection work on the request's meter.
+pub(super) fn charge(
+    admission: &mut InvalidationEditAdmission,
+    work: usize,
+    family: &str,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    admission
+        .charge_external_work(work as u64)
+        .map_err(|_| selection_budget_denial(family))
 }
 
 pub(super) fn selection_budget_denial(family: &str) -> WorthQueryOutputDemandDenial {

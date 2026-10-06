@@ -37,7 +37,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPendingApplica
         Option<crate::domain_computation::primary_graph::PreparedPrerequisiteClaims>,
     prepared_lineage_slot:
         Option<crate::domain_computation::primary_graph::output_lineage::PreparedOutputLineageSlot>,
-    publication_admission: Option<crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
+    publication_admission: crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
 }
 
 impl WorthQueryPendingApplicationPublication {
@@ -53,7 +53,7 @@ impl WorthQueryPendingApplicationPublication {
         prepared_lineage_slot: Option<
             crate::domain_computation::primary_graph::output_lineage::PreparedOutputLineageSlot,
         >,
-        publication_admission: Option<crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
+        publication_admission: crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     ) -> Self {
         let product_incarnation = application
             .committed_product_publication()
@@ -318,15 +318,7 @@ fn publish_with_snapshot(
     if let Some(identity) = settlement_identity {
         let failure_membership = work_membership.clone();
         let owner = &provider.graph.source_owner.invalidation_owner;
-        let mut ordinary_admission = pending
-            .publication_admission
-            .is_none()
-            .then(|| owner.edit_admission());
-        let admission = pending
-            .publication_admission
-            .as_mut()
-            .or(ordinary_admission.as_mut())
-            .expect("completed publication has a carried or installed admission");
+        let admission = &mut pending.publication_admission;
         let registration_result = crate::domain_computation::primary_graph::output_lineage::invalidation::register_completed(
             owner,
             &completed,

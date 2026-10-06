@@ -44,10 +44,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryMutationWorkCo
 pub(super) fn seal(
     provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
     committed: &mut WorthQueryCommittedApplicationSession,
-) -> (
-    WorthQueryPrimaryGraphCommitEvidence,
-    Option<crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
-){
+) -> WorthQueryPrimaryGraphCommitEvidence {
     let prepared_touched_records = committed.take_prepared_touched_records();
     let touched_records = prepared_touched_records.fill(&committed.committed().changed_records);
     let mutation_work =
@@ -65,25 +62,25 @@ pub(super) fn seal(
         .attempt()
         .seal_output_correspondence(committed.committed());
     let prepared_rebase = committed.take_source_fact_rebase();
-    let mut source_fact_admission = committed.take_source_fact_admission();
     let producer_output = committed
         .attempt()
         .idempotency()
         .producer_dependency_identity()
         .is_some();
+    let (committed_result, indexed_rebase_width, admission) = committed.rebase_parts();
     let observed_source_facts = provider.graph.with_runtime(|runtime| {
         postcommit_currentness::rebase_output(
             runtime,
-            &committed.committed().snapshot,
+            &committed_result.snapshot,
             prepared_rebase,
             &output_correspondence,
-            &committed.committed().changed_records,
+            &committed_result.changed_records,
             producer_output,
-            committed.attempt().indexed_rebase_work_budget(),
-            source_fact_admission.as_mut(),
+            indexed_rebase_width,
+            admission,
         )
     });
-    let evidence = WorthQueryPrimaryGraphCommitEvidence {
+    WorthQueryPrimaryGraphCommitEvidence {
         provider_session_binding: committed.attempt().affinity().provider_session().clone(),
         idempotency: committed.attempt().idempotency(),
         commit: committed.committed().envelope().commit.clone(),
@@ -94,8 +91,7 @@ pub(super) fn seal(
         operation_scope: committed.attempt().affinity().operation_scope().clone(),
         observed_source_facts,
         committed_changes: crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges::from_commit(committed.committed()),
-    };
-    (evidence, source_fact_admission)
+    }
 }
 
 impl WorthQueryMutationWorkCommitSeal {

@@ -56,7 +56,8 @@ impl ConsumedOutputEvidence {
     /// Verify the settlement a reader at a retained observation selected, at
     /// that reader's own position. The lineage row it selected may be older
     /// than the row recorded at its observation, which retention has since
-    /// released; the reader never takes it on its position alone.
+    /// released; the reader never takes it on its position alone. Both the
+    /// marked and the full comparison are paid from the reader's meter.
     pub(in crate::domain_computation::primary_graph) fn verify_at_observation(
         identity: &Arc<RecordedSettlementIdentity>,
         source_facts: &[WorthQueryApplicationObservedFact],
@@ -67,7 +68,7 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
-        remaining_work: &mut usize,
+        admission: &mut InvalidationEditAdmission,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         let marked = Self::verify_candidate_at(
             identity,
@@ -80,14 +81,13 @@ impl ConsumedOutputEvidence {
             runtime,
             snapshot,
             selected,
-            remaining_work,
+            admission,
         );
         if marked != Err(ConsumedOutputVerificationStop::Unavailable) {
             return marked;
         }
         // No marks are retained for this position.
-        let mut admission = owner.read_admission(*remaining_work);
-        let result = Self::compare_in_full(
+        Self::compare_in_full(
             EvidenceView {
                 identity,
                 source_facts,
@@ -99,10 +99,8 @@ impl ConsumedOutputEvidence {
             runtime,
             snapshot,
             selected,
-            &mut admission,
-        );
-        debit_wrapper_work(&admission, remaining_work)?;
-        result
+            admission,
+        )
     }
 
     fn compare_in_full<'a>(

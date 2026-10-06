@@ -86,7 +86,7 @@ fn sealed_rebase(
                 changed,
                 true,
                 64,
-                Some(&mut admission()),
+                &mut admission(),
             ))
         })
 }

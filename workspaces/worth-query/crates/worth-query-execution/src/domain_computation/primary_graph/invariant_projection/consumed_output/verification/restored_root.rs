@@ -22,16 +22,15 @@ impl ConsumedOutputEvidence {
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
-        remaining_work: &mut usize,
+        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<Arc<OnceLock<SealedNativeOutputWitness>>>, ConsumedOutputVerificationStop>
     {
-        let mut admission = owner.read_admission(*remaining_work);
-        let witness = SealedNativeOutputWitness::from_checkpoint_facts(
+        SealedNativeOutputWitness::from_checkpoint_facts(
             correspondence,
             layout,
             source_facts,
             owner,
-            &mut admission,
+            admission,
         )
         .and_then(|witness| {
             let Some(witness) = witness else {
@@ -40,11 +39,9 @@ impl ConsumedOutputEvidence {
             let current = witness
                 .get()
                 .expect("checkpoint constructor sealed its witness")
-                .checkpoint_facts_current_in(runtime, snapshot, source_facts, &mut admission)?;
+                .checkpoint_facts_current_in(runtime, snapshot, source_facts, admission)?;
             Ok(current.then_some(witness))
         })
-        .map_err(map_admission_stop);
-        debit_wrapper_work(&admission, remaining_work)?;
-        witness
+        .map_err(map_admission_stop)
     }
 }

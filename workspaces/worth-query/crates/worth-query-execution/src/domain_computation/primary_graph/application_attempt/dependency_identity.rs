@@ -49,26 +49,31 @@ impl<Schema, Operation, Input, Scope>
         self.read_set
             .admission
             .retain_execution_canonical_work(work);
-        // The lineage head lookup is framework preparation on the request meter.
-        let (head, lookup_work) = runtime
+        // The lineage head lookup is framework preparation on the request
+        // meter, reserved before it reads.
+        let partition = self
+            .read_set
+            .admission
+            .source_partition_identity()
+            .ok_or(WorthQueryProducerIdentityDenial::MissingSourcePartition)?;
+        let lineage = runtime
             .primary_provider
             .graph
             .output_lineage
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .producer_head::<OutputBinding>(
-                self.read_set.admission.operation_scope_binding(),
-                self.read_set.lease.product().observation(),
-                self.read_set
-                    .admission
-                    .source_partition_identity()
-                    .ok_or(WorthQueryProducerIdentityDenial::MissingSourcePartition)?,
-                request_admission.remaining_work(),
-            )
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let head = request_admission
+            .reserved_read(|maximum_work| {
+                lineage.producer_head::<OutputBinding>(
+                    self.read_set.admission.operation_scope_binding(),
+                    self.read_set.lease.product().observation(),
+                    partition,
+                    maximum_work,
+                )
+            })
+            .map_err(|_| WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded)?
             .map_err(|()| WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded)?;
-        request_admission
-            .charge_external_work(lookup_work as u64)
-            .map_err(|_| WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded)?;
+        drop(lineage);
         let force_successor = successor_of.is_some_and(|stale_key| {
             head.as_ref()
                 .is_some_and(|head| head.idempotency_key_identity == stale_key)

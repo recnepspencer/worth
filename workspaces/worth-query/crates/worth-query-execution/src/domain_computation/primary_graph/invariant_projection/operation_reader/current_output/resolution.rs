@@ -213,8 +213,20 @@ where
             };
             match verification {
                 ConsumedOutputVerification::Current => {
-                    let before = self.reader.work_budget.remaining();
-                    let mut admission = self.reader.invalidation_owner.read_admission(before);
+                    // Retention is paid from the reader's remaining work.
+                    let Some(maximum_work) =
+                        std::num::NonZeroUsize::new(self.reader.work_budget.remaining())
+                    else {
+                        self.reader.work_budget.mark_exceeded();
+                        return Err(WorthQueryCurrentOutputDenial::new(
+                            WorthQueryCurrentOutputDenialKind::WorkBudgetExceeded,
+                            Family::IDENTITY,
+                        ));
+                    };
+                    let mut admission = self
+                        .reader
+                        .invalidation_owner
+                        .edit_admission_within(maximum_work);
                     let capacity = self.reader.invalidation_owner.retain_consumed_output(
                         &candidate.observed_source_facts,
                         &selected_native_root,
@@ -222,13 +234,6 @@ where
                         &mut admission,
                     );
                     let charged = usize::try_from(admission.charged_work()).unwrap_or(usize::MAX);
-                    if charged > before {
-                        self.reader.work_budget.mark_exceeded();
-                        return Err(WorthQueryCurrentOutputDenial::new(
-                            WorthQueryCurrentOutputDenialKind::WorkBudgetExceeded,
-                            Family::IDENTITY,
-                        ));
-                    }
                     self.reader.work_budget.consume(charged);
                     self.reader.work.record_output_lineage_selection(charged);
                     let capacity = capacity.map_err(|stop| {

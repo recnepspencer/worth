@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryApplicationObservedFact,
     application_contribution::WorthQueryProducerDemandResources,
     invariant_projection::ConsumedOutputEvidence,
+    output_lineage::invalidation::InvalidationEditAdmission,
 };
 
 /// One retained output as a retained observation selects it. Holding it
@@ -28,7 +29,8 @@ pub(in crate::domain_computation::primary_graph) struct ObservedRetainedOutput {
 
 impl WorthQueryApplicationOutputLineage {
     /// The latest output of each binding at or before `observation`, through
-    /// the origins of its branch occurrence.
+    /// the origins of its branch occurrence. Each lookup is reserved on the
+    /// reader's meter before it reads.
     pub(in crate::domain_computation::primary_graph) fn outputs_at_observation(
         &self,
         runtime_authority: u64,
@@ -37,7 +39,7 @@ impl WorthQueryApplicationOutputLineage {
         observation: &worth_runtime_world::facade::ProductBranchObservation,
         output_bindings: &[TypeId],
         source_partition_identity: [u8; 32],
-        remaining: &mut usize,
+        admission: &mut InvalidationEditAdmission,
     ) -> Result<Vec<ObservedRetainedOutput>, ()> {
         let mut outputs = Vec::new();
         for output_binding in output_bindings {
@@ -48,7 +50,7 @@ impl WorthQueryApplicationOutputLineage {
                 output_binding: *output_binding,
             };
             if !self.by_source.contains_key(&source) {
-                *remaining = remaining.checked_sub(1).ok_or(())?;
+                admission.charge_external_work(1).map_err(|_| ())?;
                 continue;
             }
             let mut coordinate = ProductCoordinate {
@@ -56,13 +58,16 @@ impl WorthQueryApplicationOutputLineage {
                 generation: observation.reference_generation().get(),
             };
             loop {
-                let (cell, work) = self.latest_cell_in_partition_budgeted(
-                    &source,
-                    coordinate,
-                    source_partition_identity,
-                    *remaining,
-                )?;
-                *remaining = remaining.checked_sub(work).ok_or(())?;
+                let cell = admission
+                    .reserved_read(|maximum_work| {
+                        self.latest_cell_in_partition_budgeted(
+                            &source,
+                            coordinate,
+                            source_partition_identity,
+                            maximum_work,
+                        )
+                    })
+                    .map_err(|_| ())??;
                 if let Some((cell, recorded)) = cell.and_then(|cell| Some((cell, cell.get()?))) {
                     let origin = recorded
                         .performed_origin

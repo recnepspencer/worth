@@ -29,7 +29,7 @@ pub(super) fn publish(
     required_prerequisites: &mut Option<
         crate::domain_computation::primary_graph::PreparedPrerequisiteClaims,
     >,
-    admission: &mut Option<crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
+    admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
 ) -> Result<
     WorthQueryApplicationProductPublicationOutcome,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
@@ -54,9 +54,7 @@ pub(super) fn publish(
             attempt,
             prepared.planned_successor(),
             required_prerequisites,
-            admission
-                .as_mut()
-                .expect("publication admission remains live before effects"),
+            admission,
         )?;
         let recovery_handle = prepared.unpublished_recovery_handle();
         let terminal = crate::domain_computation::execution_runtime::product_world::WorthQueryReservedProductPublicationReceipt::new(
@@ -131,7 +129,7 @@ pub(super) fn publish(
         let bridge_prepared = bridge
             .prepare_owned_conditional_definition_successor(&predecessor, parts.request)
             .map_err(|_| denied("Bridge rejected combined conditional preparation"))?;
-        let lineage_slot = prepare_lineage_slot(provider, attempt, prepared.planned_successor(), required_prerequisites, admission.as_mut().expect("publication admission remains live before effects"))?;
+        let lineage_slot = prepare_lineage_slot(provider, attempt, prepared.planned_successor(), required_prerequisites, admission)?;
         let recovery_handle = prepared.unpublished_recovery_handle();
         let terminal = crate::domain_computation::execution_runtime::product_world::WorthQueryReservedProductPublicationReceipt::new(
             product.root_identity(),

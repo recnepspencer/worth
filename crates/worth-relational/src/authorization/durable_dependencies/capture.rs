@@ -5,7 +5,8 @@ use crate::runtime::RelationalRuntime;
 use crate::storage::data::RecordLifecycleState;
 use crate::storage::overlay::PartitionAccess;
 use crate::visibility::materialization::read_records::{
-    ProjectionAspectScope, RelationalAdjacencyDirection, VisibilityProjectionView,
+    AdjacencyStructuralRevisionDenial, ProjectionAspectScope, RelationalAdjacencyDirection,
+    VisibilityProjectionView,
 };
 
 use super::{
@@ -77,7 +78,7 @@ pub(super) fn capture(
                         direction,
                         1,
                     )
-                    .map_err(|_| Denial::DependencyUnavailable)?
+                    .map_err(adjacency_denial)?
                     .revision();
                 Ok(AdjacencyDependency {
                     entity: dependency.entity(),
@@ -200,6 +201,14 @@ pub(super) fn capture_relation(
         })
     })
     .ok_or(Denial::DependencyUnavailable)
+}
+
+pub(super) const fn adjacency_denial(denial: AdjacencyStructuralRevisionDenial) -> Denial {
+    match denial {
+        AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => Denial::DependencyBudgetExceeded,
+        AdjacencyStructuralRevisionDenial::AnchorUnavailable => Denial::DependencyUnavailable,
+        AdjacencyStructuralRevisionDenial::BasisUnavailable => Denial::SnapshotUnavailable,
+    }
 }
 
 pub(super) fn consume(remaining: &mut usize) -> Result<(), Denial> {

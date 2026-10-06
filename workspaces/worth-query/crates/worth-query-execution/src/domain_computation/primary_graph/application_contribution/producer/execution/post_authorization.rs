@@ -124,13 +124,21 @@ where
         .map_err(|error| input_cutoff::source_preparation_denial(Binding::IDENTITY, error))?;
     required_output.retain_actual_resources(resources);
     // Only re-verifying marked facts and the full-verification fallback spend
-    // the source-currentness allowance; exhausting it selects Fresh.
+    // the source-currentness allowance; exhausting it selects Fresh. Demand
+    // admission refuses a zero allowance, so an admitted demand has one.
+    let currentness_work = std::num::NonZeroUsize::new(limits.source_currentness_work())
+        .ok_or_else(|| {
+            denial(
+                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+                Binding::IDENTITY,
+            )
+        })?;
     let mut currentness = runtime
         .primary_provider
         .graph
         .source_owner
         .invalidation_owner
-        .read_admission(limits.source_currentness_work());
+        .edit_admission_within(currentness_work);
     let (mut required_output, prepared_source, prepared_key, prepared_context) =
         match input_cutoff::advance_input_cutoff::<Schema, Binding, _, _, _>(
             runtime,
